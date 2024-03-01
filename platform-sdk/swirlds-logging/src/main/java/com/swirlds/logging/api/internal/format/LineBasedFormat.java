@@ -16,6 +16,8 @@
 
 package com.swirlds.logging.api.internal.format;
 
+import static java.util.Objects.requireNonNullElse;
+
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
@@ -24,6 +26,7 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Objects;
 
@@ -32,13 +35,14 @@ import java.util.Objects;
  */
 public class LineBasedFormat {
 
+    private static final String THREAD_SUFFIX = "UNDEFINED-THREAD";
+    private static final String LOGGER_SUFFIX = "UNDEFINED-LOGGER";
+    private static final String UNDEFINED_MESSAGE = "UNDEFINED-MESSAGE";
+    private static final String BROKEN_MESSAGE = "BROKEN-MESSAGE";
     /**
      * The emergency logger.
      */
     private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
-
-    public static final String THREAD_SUFFIX = "THREAD";
-    public static final String LOGGER_SUFFIX = "LOGGER";
 
     private final boolean formatTimestamp;
 
@@ -48,10 +52,8 @@ public class LineBasedFormat {
 
     /**
      * Converts the given object to a string. If the object is {@code null}, the given default value is used.
-     *
-     * @param event
      */
-    public void print(@NonNull final Appendable writer, @NonNull final LogEvent event) {
+    public void print(@Nullable final Appendable writer, @Nullable final LogEvent event) {
         if (writer == null) {
             EMERGENCY_LOGGER.logNPE("printer");
             return;
@@ -64,14 +66,14 @@ public class LineBasedFormat {
             if (formatTimestamp) {
                 writer.append(DateFormatUtils.timestampAsString(event.timestamp()));
             } else {
-                writer.append(event.timestamp() + "");
+                writer.append(Long.toString(event.timestamp()));
             }
             writer.append(' ');
             writer.append(asString(event.level()));
             writer.append(" [");
-            writer.append(asString(event.threadName(), THREAD_SUFFIX));
+            writer.append(requireNonNullElse(event.threadName(), THREAD_SUFFIX));
             writer.append("] ");
-            writer.append(asString(event.loggerName(), LOGGER_SUFFIX));
+            writer.append(requireNonNullElse(event.loggerName(), LOGGER_SUFFIX));
             writer.append(" - ");
             writer.append(asString(event.message()));
 
@@ -82,7 +84,8 @@ public class LineBasedFormat {
                 writer.append("]");
             }
 
-            final Map<String, String> context = event.context();
+            final Map<String, String> context;
+            context = event.context();
             if (context != null && !context.isEmpty()) {
                 writer.append(" - ");
                 writer.append(context.toString());
@@ -101,25 +104,10 @@ public class LineBasedFormat {
     /**
      * Converts the given object to a string.
      *
-     * @param str    The string
-     * @param suffix The suffix that is used if the string is {@code null}
-     * @return The string
-     */
-    private static String asString(String str, String suffix) {
-        if (str == null) {
-            return "UNDEFINED-" + suffix;
-        } else {
-            return str;
-        }
-    }
-
-    /**
-     * Converts the given object to a string.
-     *
      * @param level The level
      * @return The string
      */
-    private static String asString(@NonNull Level level) {
+    private static String asString(@Nullable Level level) {
         if (level == null) {
             EMERGENCY_LOGGER.logNPE("level");
             return "NO_LV"; // Must be 5 chars long to fit in pattern
@@ -134,16 +122,16 @@ public class LineBasedFormat {
      * @param message The message
      * @return The string
      */
-    private static String asString(@NonNull final LogMessage message) {
+    private static String asString(@Nullable final LogMessage message) {
         if (message == null) {
             EMERGENCY_LOGGER.logNPE("message");
-            return "UNDEFINED-MESSAGE";
+            return UNDEFINED_MESSAGE;
         } else {
             try {
                 return message.getMessage();
             } catch (final Throwable e) {
                 EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format message", e);
-                return "BROKEN-MESSAGE";
+                return BROKEN_MESSAGE;
             }
         }
     }
@@ -154,7 +142,7 @@ public class LineBasedFormat {
      * @param marker The marker
      * @return The string
      */
-    private static String asString(@NonNull final Marker marker) {
+    private static String asString(@Nullable final Marker marker) {
         if (marker == null) {
             EMERGENCY_LOGGER.logNPE("marker");
             return "null";
@@ -163,12 +151,17 @@ public class LineBasedFormat {
         }
     }
 
-    public static LineBasedFormat createForHandler(
+    /**
+     * Creates in instance of {@link LineBasedFormat}
+     *
+     * @throws NullPointerException if any of the arguments is {@code null}
+     */
+    public static @NonNull LineBasedFormat createForHandler(
             @NonNull final String handlerName, @NonNull final Configuration configuration) {
         Objects.requireNonNull(handlerName, "handlerName must not be null");
         Objects.requireNonNull(configuration, "configuration must not be null");
         final String formatTimestampKey = "logging.handler." + handlerName + ".formatTimestamp";
         final Boolean formatTimestamp = configuration.getValue(formatTimestampKey, Boolean.class, true);
-        return new LineBasedFormat(formatTimestamp);
+        return new LineBasedFormat(formatTimestamp != null && formatTimestamp);
     }
 }
