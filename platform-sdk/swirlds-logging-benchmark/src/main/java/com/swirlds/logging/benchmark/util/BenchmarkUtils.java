@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.benchmark;
+package com.swirlds.logging.benchmark.util;
 
 import java.util.UUID;
 
-class BenchmarkUtils {
+public class BenchmarkUtils {
     public static final Throwable THROWABLE = createThrowable();
 
     public static final Throwable DEEP_THROWABLE = createThrowableWithDeepCause(20, 20);

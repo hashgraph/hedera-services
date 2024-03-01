@@ -18,6 +18,7 @@ package com.swirlds.logging.benchmark;
 
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.benchmark.util.BenchmarkUtils;
 
 public class LogWithSwirlds implements Runnable {
 

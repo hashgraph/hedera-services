@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.benchmark;
+package com.swirlds.logging.benchmark.util;
 
+import com.swirlds.logging.benchmark.config.LoggingHandlingType;
+import com.swirlds.logging.benchmark.config.LoggingImplementation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;

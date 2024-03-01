@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.benchmark;
+package com.swirlds.logging.benchmark.config;
 
-public enum LoggingHandlingType {
-    CONSOLE,
-    FILE,
-    CONSOLE_AND_FILE;
-
-    public static final String CONSOLE_TYPE = "CONSOLE";
-
-    public static final String FILE_TYPE = "FILE";
-
-    public static final String CONSOLE_AND_FILE_TYPE = "CONSOLE_AND_FILE";
+public enum LoggingImplementation {
+    SWIRLDS,
+    LOG4J2;
 }

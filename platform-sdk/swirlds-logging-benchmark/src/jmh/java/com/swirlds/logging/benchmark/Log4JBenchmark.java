@@ -16,9 +16,9 @@
 
 package com.swirlds.logging.benchmark;
 
-import static com.swirlds.logging.benchmark.LoggingHandlingType.CONSOLE_AND_FILE_TYPE;
-import static com.swirlds.logging.benchmark.LoggingHandlingType.CONSOLE_TYPE;
-import static com.swirlds.logging.benchmark.LoggingHandlingType.FILE_TYPE;
+import static com.swirlds.logging.benchmark.config.LoggingHandlingType.CONSOLE_AND_FILE_TYPE;
+import static com.swirlds.logging.benchmark.config.LoggingHandlingType.CONSOLE_TYPE;
+import static com.swirlds.logging.benchmark.config.LoggingHandlingType.FILE_TYPE;
 import static com.swirlds.logging.benchmark.util.BenchmarkConstants.FORK_COUNT;
 import static com.swirlds.logging.benchmark.util.BenchmarkConstants.MEASUREMENT_ITERATIONS;
 import static com.swirlds.logging.benchmark.util.BenchmarkConstants.MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION;
