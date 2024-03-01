@@ -24,14 +24,14 @@ import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.benchmark.config.LoggingHandlingType;
 import com.swirlds.logging.benchmark.config.LoggingImplementation;
-import com.swirlds.logging.benchmark.util.LogFileUtlis;
+import com.swirlds.logging.benchmark.util.LogFiles;
 import com.swirlds.logging.external.benchmark.BenchmarkFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class ConfigureSwirldsLog {
 
     public static @NonNull LoggingSystem configureFileLogging() {
-        final String logFile = LogFileUtlis.provideLogFilePath(LoggingImplementation.SWIRLDS, LoggingHandlingType.FILE);
+        final String logFile = LogFiles.provideLogFilePath(LoggingImplementation.SWIRLDS, LoggingHandlingType.FILE);
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
@@ -67,7 +67,7 @@ public class ConfigureSwirldsLog {
 
     public static @NonNull LoggingSystem configureFileAndConsoleLogging() {
         final String logFile =
-                LogFileUtlis.provideLogFilePath(LoggingImplementation.SWIRLDS, LoggingHandlingType.CONSOLE_AND_FILE);
+                LogFiles.provideLogFilePath(LoggingImplementation.SWIRLDS, LoggingHandlingType.CONSOLE_AND_FILE);
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())

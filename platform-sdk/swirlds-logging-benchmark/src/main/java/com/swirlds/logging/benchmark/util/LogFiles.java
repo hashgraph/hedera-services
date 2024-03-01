@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class LogFileUtlis {
+public class LogFiles {
 
     @NonNull
     public static String provideLogFilePath(LoggingImplementation implementation, LoggingHandlingType type) {

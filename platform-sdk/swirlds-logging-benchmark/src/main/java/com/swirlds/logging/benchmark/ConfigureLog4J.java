@@ -18,7 +18,7 @@ package com.swirlds.logging.benchmark;
 
 import com.swirlds.logging.benchmark.config.LoggingHandlingType;
 import com.swirlds.logging.benchmark.config.LoggingImplementation;
-import com.swirlds.logging.benchmark.util.LogFileUtlis;
+import com.swirlds.logging.benchmark.util.LogFiles;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -49,7 +49,7 @@ public class ConfigureLog4J {
     }
 
     public static @NonNull LoggerContext configureFileLogging() {
-        final String logFile = LogFileUtlis.provideLogFilePath(LoggingImplementation.LOG4J2, LoggingHandlingType.FILE);
+        final String logFile = LogFiles.provideLogFilePath(LoggingImplementation.LOG4J2, LoggingHandlingType.FILE);
         System.clearProperty("log4j2.contextSelector");
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.DEBUG);
@@ -61,7 +61,7 @@ public class ConfigureLog4J {
 
     public static @NonNull LoggerContext configureFileAndConsoleLogging() {
         final String logFile =
-                LogFileUtlis.provideLogFilePath(LoggingImplementation.LOG4J2, LoggingHandlingType.CONSOLE_AND_FILE);
+                LogFiles.provideLogFilePath(LoggingImplementation.LOG4J2, LoggingHandlingType.CONSOLE_AND_FILE);
         System.clearProperty("log4j2.contextSelector");
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
