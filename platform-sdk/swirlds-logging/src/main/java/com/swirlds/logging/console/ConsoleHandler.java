@@ -46,11 +46,11 @@ public class ConsoleHandler extends AbstractSyncedHandler {
      * @param handlerName   The unique name of this handler.
      * @param configuration The configuration for this handler.
      */
-    public ConsoleHandler(@NonNull final String handlerName, @NonNull final Configuration configuration,
-            final boolean buffered) {
+    public ConsoleHandler(
+            @NonNull final String handlerName, @NonNull final Configuration configuration, final boolean buffered) {
         super(handlerName, configuration);
         format = LineBasedFormat.createForHandler(handlerName, configuration);
-        this.outputStream = buffered ? new BufferedOutputStream(System.out,1024) : System.out;
+        this.outputStream = buffered ? new BufferedOutputStream(System.out, 1024) : System.out;
     }
 
     /**
@@ -65,7 +65,7 @@ public class ConsoleHandler extends AbstractSyncedHandler {
         format.print(builder, event);
         try {
             outputStream.write(builder.toString().getBytes());
-        } catch (IOException exception) {//Should not happen
+        } catch (IOException exception) { // Should not happen
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to console", exception);
         }
     }
@@ -78,7 +78,7 @@ public class ConsoleHandler extends AbstractSyncedHandler {
     protected void handleStopAndFinalize() {
         try {
             outputStream.flush();
-        } catch (IOException exception) { //Should Not happen
+        } catch (IOException exception) { // Should Not happen
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to close file output stream", exception);
         }
     }

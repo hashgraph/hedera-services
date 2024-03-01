@@ -23,7 +23,6 @@ plugins {
 
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
 
-
 testModuleInfo {
     requires("org.apache.logging.log4j.core")
     requires("com.swirlds.config.extensions.test.fixtures")

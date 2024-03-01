@@ -23,12 +23,9 @@ import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
 import com.swirlds.logging.buffer.BufferedOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.Closeable;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -77,12 +74,11 @@ public class FileHandler extends AbstractSyncedHandler {
             }
             Files.createDirectories(filePath.getParent());
             final OutputStream outputStream = new FileOutputStream(filePath.toFile(), append);
-            this.writer = new BufferedOutputStream(outputStream,BUFFER_CAPACITY);
+            this.writer = new BufferedOutputStream(outputStream, BUFFER_CAPACITY);
         } catch (IOException e) {
             throw new IOException("Could not create log file " + filePath.toAbsolutePath(), e);
         }
     }
-
 
     /**
      * Handles a log event by appending it to the file using the {@link LineBasedFormat}.

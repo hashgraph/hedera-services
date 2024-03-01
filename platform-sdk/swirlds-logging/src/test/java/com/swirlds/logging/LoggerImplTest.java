@@ -27,7 +27,6 @@ import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
 import com.swirlds.logging.file.FileHandlerFactory;
 import com.swirlds.logging.util.DummyConsumer;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

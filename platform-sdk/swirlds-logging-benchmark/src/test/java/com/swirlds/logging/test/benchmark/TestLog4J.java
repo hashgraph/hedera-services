@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.logging.test.benchmark;
@@ -20,7 +19,6 @@ package com.swirlds.logging.test.benchmark;
 import static com.swirlds.logging.benchmark.LogFileUtlis.getLogStatementsFromLogFile;
 import static com.swirlds.logging.benchmark.LogFileUtlis.linesToStatements;
 
-import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.ConfigureLog4J;
 import com.swirlds.logging.benchmark.LogFileUtlis;
 import com.swirlds.logging.benchmark.LogLikeHellLog4J;
@@ -82,15 +80,14 @@ public class TestLog4J {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        final List<String> logStatementsFromLogFile = getLogStatementsFromLogFile(
-                LoggingImplementation.LOG4J2,
-                LoggingHandlingType.FILE);
+        final List<String> logStatementsFromLogFile =
+                getLogStatementsFromLogFile(LoggingImplementation.LOG4J2, LoggingHandlingType.FILE);
 
         Assertions.assertEquals(75 * TOTAL, (long) logStatementsFromLogFile.size());
 
         final List<String> strings = linesToStatements("TestLogging4J", logStatementsFromLogFile);
 
-        Assertions.assertTrue(LogFileUtlis.isSorted(strings.stream().map(LogFileUtlis::extractNumber).collect(Collectors.toList())));
-
+        Assertions.assertTrue(LogFileUtlis.isSorted(
+                strings.stream().map(LogFileUtlis::extractNumber).collect(Collectors.toList())));
     }
 }
