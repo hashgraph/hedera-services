@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isTopLevelTransaction;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.recordBuilderFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setPropagatedCallFailure;
@@ -149,9 +150,11 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
 
         // For mono-service fidelity, we need to consider called contracts
         // as a special case eligible for staking rewards
-        final var maybeCalledContract = proxyUpdaterFor(frame).get(codeAddress);
-        if (maybeCalledContract instanceof ProxyEvmAccount a && a.isContract()) {
-            recordBuilderFor(frame).trackExplicitRewardSituation(a.hederaId());
+        if (isTopLevelTransaction(frame)) {
+            final var maybeCalledContract = proxyUpdaterFor(frame).get(codeAddress);
+            if (maybeCalledContract instanceof ProxyEvmAccount a && a.isContract()) {
+                recordBuilderFor(frame).trackExplicitRewardSituation(a.hederaId());
+            }
         }
 
         frame.setState(MessageFrame.State.CODE_EXECUTING);

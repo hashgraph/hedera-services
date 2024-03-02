@@ -90,19 +90,14 @@ public class StakingRewardsHelper {
             @NonNull final Set<AccountID> possibleRewardReceivers,
             @NonNull final FilterType filterType) {
         for (final AccountID id : ids) {
-            final var modifiedAcct = requireNonNull(writableAccountStore.get(id));
             if (filterType == FilterType.IS_CANONICAL_REWARD_SITUATION) {
+                final var modifiedAcct = requireNonNull(writableAccountStore.get(id));
                 final var originalAcct = writableAccountStore.getOriginalValue(id);
-                // It is possible that original account is null if the account was created in this transaction
-                // In that case it is not a reward situation
-                // If the account existed before this transaction and is staked to a node,
-                // and the current transaction modified the stakedToMe field or declineReward or
-                // the stakedId field, then it is a reward situation
                 if (isRewardSituation(modifiedAcct, originalAcct)) {
                     possibleRewardReceivers.add(id);
                 }
             } else {
-                if (modifiedAcct.stakedNodeIdOrElse(SENTINEL_NODE_ID) != SENTINEL_NODE_ID) {
+                if (isCurrentlyStakedToNode(writableAccountStore.get(id))) {
                     possibleRewardReceivers.add(id);
                 }
             }
@@ -271,5 +266,12 @@ public class StakingRewardsHelper {
         }
         accountAmounts.sort(ACCOUNT_AMOUNT_COMPARATOR);
         return accountAmounts;
+    }
+
+    private static boolean isCurrentlyStakedToNode(@Nullable final Account account) {
+        // Null check here because it's possible for the contract service to naively
+        // list the id of an account that doesn't exist in the store, but was created
+        // and then reverted inside an overall successful transaction
+        return account != null && account.stakedNodeIdOrElse(SENTINEL_NODE_ID) != SENTINEL_NODE_ID;
     }
 }
