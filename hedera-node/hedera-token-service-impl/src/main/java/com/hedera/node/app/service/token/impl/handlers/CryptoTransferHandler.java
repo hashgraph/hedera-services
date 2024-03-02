@@ -564,6 +564,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         try {
             assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
         } catch (HandleException ignore) {
+            System.out.println("OKOKOK - " + ignore.getStatus());
+            ignore.printStackTrace();
             final var status = ignore.getStatus();
             // If the transaction tried and failed to use custom fees, enable this flag.
             // This is used to charge a different canonical fees.

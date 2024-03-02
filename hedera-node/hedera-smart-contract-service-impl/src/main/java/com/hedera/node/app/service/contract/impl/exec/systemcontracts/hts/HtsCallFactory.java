@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.QUALIFIED_DELEGATE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.systemContractGasCalculatorOf;
@@ -23,6 +24,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -57,17 +60,21 @@ public class HtsCallFactory {
      *
      * @param input the input
      * @param frame the message frame
+     * @param callType the call type
      * @return the new attempt
      * @throws RuntimeException if the call cannot be created
      */
     public @NonNull HtsCallAttempt createCallAttemptFrom(
-            @NonNull final Bytes input, @NonNull final MessageFrame frame) {
+            @NonNull final Bytes input,
+            @NonNull final CallType callType,
+            @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
         final var enhancement = proxyUpdaterFor(frame).enhancement();
         return new HtsCallAttempt(
                 input,
                 frame.getSenderAddress(),
+                callType == QUALIFIED_DELEGATE ? frame.getRecipientAddress() : frame.getSenderAddress(),
                 addressChecks.hasParentDelegateCall(frame),
                 enhancement,
                 configOf(frame),

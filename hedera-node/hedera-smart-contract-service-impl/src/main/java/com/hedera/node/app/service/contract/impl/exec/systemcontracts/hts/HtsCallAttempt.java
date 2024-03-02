@@ -54,6 +54,11 @@ public class HtsCallAttempt {
     private final byte[] selector;
     private final Bytes input;
     private final boolean isRedirect;
+
+    // The Hedera id of the sender in the EVM frame
+    private final AccountID evmSenderId;
+    // The id of the authorizing sender of the call (which could be the
+    // recipient of the frame in case of a qualified delegate call)
     private final AccountID senderId;
     private final Address senderAddress;
     private final boolean onlyDelegatableContractKeysActive;
@@ -72,7 +77,8 @@ public class HtsCallAttempt {
     @SuppressWarnings("java:S107")
     public HtsCallAttempt(
             @NonNull final Bytes input,
-            @NonNull final Address senderAddress,
+            @NonNull final Address evmSenderAddress,
+            @NonNull final Address authorizingSenderAddress,
             boolean onlyDelegatableContractKeysActive,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final Configuration configuration,
@@ -82,9 +88,10 @@ public class HtsCallAttempt {
             @NonNull final List<HtsCallTranslator> callTranslators,
             final boolean isStaticCall) {
         requireNonNull(input);
+        requireNonNull(evmSenderAddress);
         this.callTranslators = requireNonNull(callTranslators);
         this.gasCalculator = requireNonNull(gasCalculator);
-        this.senderAddress = requireNonNull(senderAddress);
+        this.senderAddress = requireNonNull(authorizingSenderAddress);
         this.configuration = requireNonNull(configuration);
         this.addressIdConverter = requireNonNull(addressIdConverter);
         this.enhancement = requireNonNull(enhancement);
@@ -114,7 +121,8 @@ public class HtsCallAttempt {
             this.input = input;
         }
         this.selector = this.input.slice(0, 4).toArrayUnsafe();
-        this.senderId = addressIdConverter.convertSender(senderAddress);
+        this.evmSenderId = addressIdConverter.convertSender(evmSenderAddress);
+        this.senderId = addressIdConverter.convertSender(authorizingSenderAddress);
         this.isStaticCall = isStaticCall;
     }
 
@@ -336,6 +344,15 @@ public class HtsCallAttempt {
      */
     public boolean isStaticCall() {
         return isStaticCall;
+    }
+
+    /**
+     * Returns the ID of the sender of this call in the EVM frame.
+     *
+     * @return the ID of the sender of this call in the EVM frame
+     */
+    public AccountID evmSenderId() {
+        return evmSenderId;
     }
 
     private boolean isRedirect(final byte[] input) {

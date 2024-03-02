@@ -243,6 +243,18 @@ class MiscUtilsTest {
     }
 
     @Test
+    void compare() throws InvalidProtocolBufferException, TextFormat.InvalidEscapeSequenceException {
+        final var expectedEncoded = "\\n:\\n\\026\\n\\f\\b\\316\\272\\317\\256\\006\\020\\316\\270\\370\\311\\001\\022\\004\\030\\346\\261+ \\001r \\022\\036\\n\\004\\030\\251\\362/\\022\\v\\n\\004\\030\\346\\261+\\020\\341\\026\\030\\001\\022\\t\\n\\004\\030\\216\\245Y\\020\\342\\026";
+        final var actualEncoded = "\\n8\\n\\026\\n\\f\\b\\316\\272\\317\\256\\006\\020\\316\\270\\370\\311\\001\\022\\004\\030\\346\\261+ \\001r\\036\\022\\034\\n\\004\\030\\251\\362/\\022\\t\\n\\004\\030\\346\\261+\\020\\341\\026\\022\\t\\n\\004\\030\\216\\245Y\\020\\342\\026";
+        final var expected = bodyOf(expectedEncoded);
+        final var actual = bodyOf(actualEncoded);
+        System.out.println("--------- EXPECTED ----------");
+        System.out.println(expected);
+        System.out.println("--------- ACTUAL ----------");
+        System.out.println(actual);
+    }
+
+    @Test
     void canGetSynthAccessor() {
         final var synth = MiscUtils.synthAccessorFor(TransactionBody.newBuilder()
                 .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.getDefaultInstance()));

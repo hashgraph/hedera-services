@@ -46,7 +46,6 @@ import javax.inject.Singleton;
 @Singleton
 public class GetAllowanceCall extends AbstractHtsCall {
 
-    private static final String HTS_PRECOMPILE_ADDRESS = "0x167";
     private final Address owner;
     private final Address spender;
     private final AddressIdConverter addressIdConverter;
@@ -76,19 +75,25 @@ public class GetAllowanceCall extends AbstractHtsCall {
     }
 
     @Override
+    public boolean allowsStaticFrame() {
+        return true;
+    }
+
+    @Override
     public @NonNull PricedResult execute() {
+        System.out.println("GetAllowanceCall.execute -\n owner " + owner + "\n spender " + spender);
         final var gasRequirement = gasCalculator.viewGasRequirement();
         if (token == null || token.tokenType() != TokenType.FUNGIBLE_COMMON) {
             if (isStaticCall) {
                 return gasOnly(
                         FullResult.revertResult(
-                                com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID, gasRequirement),
+                                INVALID_TOKEN_ID, gasRequirement),
                         INVALID_TOKEN_ID,
                         false);
             } else {
                 return gasOnly(
                         FullResult.successResult(
-                                ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS),
+                                ReturnTypes.encodedRc(SUCCESS),
                                 gasRequirement),
                         SUCCESS,
                         false);

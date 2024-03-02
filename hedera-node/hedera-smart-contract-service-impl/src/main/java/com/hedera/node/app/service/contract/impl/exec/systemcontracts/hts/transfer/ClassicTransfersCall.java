@@ -140,6 +140,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                     gasRequirement,
                     systemContractOperations().externalizePreemptedDispatch(syntheticTransfer, NOT_SUPPORTED));
         }
+        System.out.println("(senderId=" + senderId + " -> initial transfer: " + syntheticTransfer);
         final var transferToDispatch = shouldRetryWithApprovals()
                 ? syntheticTransfer
                         .copyBuilder()

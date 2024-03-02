@@ -59,6 +59,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
@@ -285,7 +286,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(requiresDelegatePermission);
         Mockito.lenient().when(frame.getValue()).thenReturn(Wei.MAX_WEI);
 
-        final var attempt = callAttemptFactory.createCallAttemptFrom(input, frame);
+        final var attempt = callAttemptFactory.createCallAttemptFrom(input, FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT, frame);
         final var call = attempt.asExecutableCall();
 
         final var pricedResult = requireNonNull(call).execute(frame);
