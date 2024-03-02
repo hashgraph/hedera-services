@@ -70,7 +70,7 @@ class GetAllowanceCallTest extends HtsCallTestBase {
                 true,
                 true);
         given(addressIdConverter.convert(OWNER_HEADLONG_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
-        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNum())).willReturn(null);
+        given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID)).willReturn(null);
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
@@ -89,7 +89,7 @@ class GetAllowanceCallTest extends HtsCallTestBase {
                 true,
                 false);
         given(addressIdConverter.convert(any())).willReturn(B_NEW_ACCOUNT_ID);
-        given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
+        given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID)).willReturn(OPERATOR);
 
         final var result = subject.execute().fullResult().result();
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
@@ -113,7 +113,7 @@ class GetAllowanceCallTest extends HtsCallTestBase {
                 false,
                 true);
         given(addressIdConverter.convert(any())).willReturn(B_NEW_ACCOUNT_ID);
-        given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
+        given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID)).willReturn(OPERATOR);
 
         final var result = subject.execute().fullResult().result();
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allow
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static java.util.Objects.requireNonNull;
@@ -81,9 +82,8 @@ public class GetAllowanceCall extends AbstractHtsCall {
 
     @Override
     public @NonNull PricedResult execute() {
-        System.out.println("GetAllowanceCall.execute -\n owner " + owner + "\n spender " + spender);
         final var gasRequirement = gasCalculator.viewGasRequirement();
-        if (token == null || token.tokenType() != TokenType.FUNGIBLE_COMMON) {
+        if (token == null || token.tokenType() != FUNGIBLE_COMMON) {
             if (isStaticCall) {
                 return gasOnly(FullResult.revertResult(INVALID_TOKEN_ID, gasRequirement), INVALID_TOKEN_ID, false);
             } else {
