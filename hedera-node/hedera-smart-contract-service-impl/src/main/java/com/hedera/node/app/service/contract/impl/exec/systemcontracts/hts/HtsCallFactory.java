@@ -24,7 +24,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -65,9 +64,7 @@ public class HtsCallFactory {
      * @throws RuntimeException if the call cannot be created
      */
     public @NonNull HtsCallAttempt createCallAttemptFrom(
-            @NonNull final Bytes input,
-            @NonNull final CallType callType,
-            @NonNull final MessageFrame frame) {
+            @NonNull final Bytes input, @NonNull final CallType callType, @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
         final var enhancement = proxyUpdaterFor(frame).enhancement();

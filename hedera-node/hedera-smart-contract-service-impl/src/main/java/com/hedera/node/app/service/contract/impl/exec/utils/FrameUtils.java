@@ -38,9 +38,7 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Optional;
-
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -338,9 +336,8 @@ public class FrameUtils {
         return initialFrameOf(frame).getContextVariable(PENDING_CREATION_BUILDER_CONTEXT_VARIABLE);
     }
 
-    private static boolean isQualifiedDelegate(
-            @NonNull final Address recipient,
-            @NonNull final MessageFrame frame) {
-        return isLongZero(recipient) && contractsConfigOf(frame).permittedDelegateCallers().contains(numberOfLongZero(recipient));
+    private static boolean isQualifiedDelegate(@NonNull final Address recipient, @NonNull final MessageFrame frame) {
+        return isLongZero(recipient)
+                && contractsConfigOf(frame).permittedDelegateCallers().contains(numberOfLongZero(recipient));
     }
 }

@@ -21,9 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep.validateSpenderHasAllowance;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -89,20 +87,6 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
 
                 final var nft = nftStore.get(tokenId, nftTransfer.serialNumber());
                 validateTrue(nft != null, INVALID_NFT_ID);
-
-                final var senderAccount = getIfUsable(senderId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
-                if (nftTransfer.isApproval()) {
-                    // If isApproval flag is set then the spender account must have paid for the transaction.
-                    // The transfer list specifies the owner who granted allowance as sender
-                    // check if the allowances from the sender account has the payer account as spender
-                    validateSpenderHasAllowance(senderAccount, payer, tokenId, nft);
-                }
-
-                if (nft.hasOwnerId()) {
-                    validateTrue(nft.ownerId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-                } else {
-                    validateTrue(token.treasuryAccountId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-                }
 
                 final TokenAssociation newAssociation = validateAndBuildAutoAssociation(
                         receiverId, tokenId, token, accountStore, tokenRelStore, handleContext);

@@ -20,8 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.UNQUALIFIED_DELEGATE;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.callTypeOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOf;
@@ -46,7 +46,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
@@ -71,7 +70,6 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         requireNonNull(input);
         requireNonNull(frame);
         final var callType = callTypeOf(frame);
-        System.out.println("CALL TYPE: " + callType);
         if (callType == UNQUALIFIED_DELEGATE) {
             return haltResult(PRECOMPILE_ERROR, frame.getRemainingGas());
         }
@@ -83,7 +81,6 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             call = requireNonNull(attempt.asExecutableCall());
             System.out.println(input.toHexString() + " -> " + call.getClass().getSimpleName());
             if (frame.isStatic() && !call.allowsStaticFrame()) {
-                System.out.println("STATIC CALL NOT ALLOWED");
                 // FUTURE - we should really set an explicit halt reason here; instead we just halt the frame
                 // without setting a halt reason to simulate mono-service for differential testing
                 return haltResult(contractsConfigOf(frame).precompileHtsDefaultGasCost());

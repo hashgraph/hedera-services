@@ -85,18 +85,10 @@ public class GetAllowanceCall extends AbstractHtsCall {
         final var gasRequirement = gasCalculator.viewGasRequirement();
         if (token == null || token.tokenType() != TokenType.FUNGIBLE_COMMON) {
             if (isStaticCall) {
-                return gasOnly(
-                        FullResult.revertResult(
-                                INVALID_TOKEN_ID, gasRequirement),
-                        INVALID_TOKEN_ID,
-                        false);
+                return gasOnly(FullResult.revertResult(INVALID_TOKEN_ID, gasRequirement), INVALID_TOKEN_ID, false);
             } else {
                 return gasOnly(
-                        FullResult.successResult(
-                                ReturnTypes.encodedRc(SUCCESS),
-                                gasRequirement),
-                        SUCCESS,
-                        false);
+                        FullResult.successResult(ReturnTypes.encodedRc(SUCCESS), gasRequirement), SUCCESS, false);
             }
         }
 
