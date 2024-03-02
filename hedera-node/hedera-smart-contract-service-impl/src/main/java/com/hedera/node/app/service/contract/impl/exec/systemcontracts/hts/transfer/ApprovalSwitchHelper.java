@@ -96,9 +96,7 @@ public class ApprovalSwitchHelper {
             @NonNull final AccountID senderId) {
         final AccountAmount[] revision = new AccountAmount[original.size()];
         for (int i = 0, n = original.size(); i < n; i++) {
-            System.out.println("Revising adjustment " + original.get(i));
             revision[i] = revisedAdjust(original.get(i), signatureTest, nativeOperations, senderId);
-            System.out.println(" --->>> BECAME " + revision[i]);
         }
         return revision;
     }

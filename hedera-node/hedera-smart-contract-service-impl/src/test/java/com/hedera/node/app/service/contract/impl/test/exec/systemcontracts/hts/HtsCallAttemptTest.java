@@ -44,7 +44,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTra
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
@@ -78,7 +77,6 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -122,19 +120,6 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 new TokenUriTranslator(),
                 new OwnerOfTranslator(),
                 new DecimalsTranslator());
-    }
-
-    @Test
-    void decodePackedRedirect() {
-        final var hexedInput =
-                "618dc65e000000000000000000000000000000000014013ddd62ed3e00000000000000000000000000000000000000000000000000000000001ea07500000000000000000000000000000000000000000000000000000000003be093";
-        var input = Bytes.fromHexString(hexedInput);
-        final var tokenAddress = Address.wrap(input.slice(4, 20));
-        System.out.println("tokenAddress " + tokenAddress);
-        input = input.slice(24);
-        System.out.println(CommonUtils.hex(input.toArrayUnsafe()));
-        final var call = GetAllowanceTranslator.ERC_GET_ALLOWANCE.decodeCall(input.toArrayUnsafe());
-        System.out.println(call);
     }
 
     @Test

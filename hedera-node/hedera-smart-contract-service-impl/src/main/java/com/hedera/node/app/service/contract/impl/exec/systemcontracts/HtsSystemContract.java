@@ -79,15 +79,12 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             attempt = callFactory.createCallAttemptFrom(input, callType, frame);
             call = requireNonNull(attempt.asExecutableCall());
-            System.out.println(input.toHexString() + " -> " + call.getClass().getSimpleName());
             if (frame.isStatic() && !call.allowsStaticFrame()) {
                 // FUTURE - we should really set an explicit halt reason here; instead we just halt the frame
                 // without setting a halt reason to simulate mono-service for differential testing
                 return haltResult(contractsConfigOf(frame).precompileHtsDefaultGasCost());
             }
         } catch (final Exception e) {
-            System.out.println("BANG");
-            e.printStackTrace();
             log.warn("Failed to create HTS call from input {}", input, e);
             return haltResult(INVALID_OPERATION, frame.getRemainingGas());
         }
@@ -102,9 +99,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             @NonNull final MessageFrame frame) {
         final HtsCall.PricedResult pricedResult;
         try {
-            System.out.println("EXECUTING " + call.getClass().getSimpleName());
             pricedResult = call.execute(frame);
-            System.out.println(" -> got " + pricedResult);
             final var dispatchedRecordBuilder = pricedResult.fullResult().recordBuilder();
             if (dispatchedRecordBuilder != null) {
                 dispatchedRecordBuilder.contractCallResult(pricedResult.asResultOfCall(
@@ -147,12 +142,8 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 }
             }
         } catch (final HandleException handleException) {
-            System.out.println("BOOM");
-            handleException.printStackTrace();
             return haltHandleException(handleException, frame.getRemainingGas());
         } catch (final Exception internal) {
-            System.out.println("KABLAM");
-            internal.printStackTrace();
             log.error("Unhandled failure for input {} to HTS system contract", input, internal);
             return haltResult(PRECOMPILE_ERROR, frame.getRemainingGas());
         }

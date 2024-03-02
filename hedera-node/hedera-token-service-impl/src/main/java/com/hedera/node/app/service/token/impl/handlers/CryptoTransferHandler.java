@@ -212,9 +212,6 @@ public class CryptoTransferHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var txn = context.body();
-        if ("SentX NFT Purchase: 0.0.3103996 #132 (Offer)".equals(txn.memo())) {
-            System.out.println("SentX NFT Purchase: 0.0.3103996 #132 (Offer)");
-        }
         final var op = txn.cryptoTransferOrThrow();
         final var topLevelPayer = context.payer();
 
@@ -567,8 +564,6 @@ public class CryptoTransferHandler implements TransactionHandler {
         try {
             assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
         } catch (HandleException ignore) {
-            System.out.println("OKOKOK - " + ignore.getStatus());
-            ignore.printStackTrace();
             final var status = ignore.getStatus();
             // If the transaction tried and failed to use custom fees, enable this flag.
             // This is used to charge a different canonical fees.
