@@ -224,8 +224,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         final var amount = (BigInteger) decodedArguments.get(1);
 
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-        addSignedAdjustment(fungibleTransfers, token, recipient, amount.longValueExact(), false);
-        addSignedAdjustment(fungibleTransfers, token, caller, -amount.longValueExact(), false);
+        addSignedAdjustment(fungibleTransfers, token, recipient, amount.longValueExact(), false, true);
+        addSignedAdjustment(fungibleTransfers, token, caller, -amount.longValueExact(), false, false);
 
         final var tokenTransferWrappers =
                 Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
@@ -265,9 +265,9 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
             final var amount = (BigInteger) decodedArguments.get(offset + 2);
 
-            addSignedAdjustment(fungibleTransfers, token, to, amount.longValueExact(), false);
+            addSignedAdjustment(fungibleTransfers, token, to, amount.longValueExact(), false, true);
 
-            addSignedAdjustment(fungibleTransfers, token, from, -amount.longValueExact(), true);
+            addSignedAdjustment(fungibleTransfers, token, from, -amount.longValueExact(), true, false);
 
             final var tokenTransferWrappers =
                     Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
@@ -303,7 +303,6 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 amount = BigInteger.valueOf(fungibleTransfer.amount());
             }
         }
-
         return EncodingFacade.LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.TRANSFER_EVENT)

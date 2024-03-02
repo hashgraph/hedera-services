@@ -93,7 +93,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull PricedResult execute() {
+    public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
         // https://eips.ethereum.org/EIPS/eip-20
         final var syntheticTransfer = syntheticTransferOrTransferFrom(senderId);
         final var selector = (from == null) ? ERC_20_TRANSFER.selector() : ERC_20_TRANSFER_FROM.selector();
@@ -103,11 +103,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             return reversionWith(INVALID_TOKEN_ID, gasRequirement);
         }
         final var recordBuilder = systemContractOperations()
-                .dispatch(
-                        syntheticTransferOrTransferFrom(senderId),
-                        verificationStrategy,
-                        senderId,
-                        ContractCallRecordBuilder.class);
+                .dispatch(syntheticTransfer, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var status = recordBuilder.status();
         if (status != SUCCESS) {
             if (status == NOT_SUPPORTED) {
@@ -118,6 +114,15 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                 return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
             }
         } else {
+            final var tokenTransferLists =
+                    syntheticTransfer.cryptoTransferOrThrow().tokenTransfersOrThrow();
+            for (final var fungibleTransfers : tokenTransferLists) {
+                TransferEventLoggingUtils.logSuccessfulFungibleTransfer(
+                        requireNonNull(tokenId),
+                        fungibleTransfers.transfersOrThrow(),
+                        enhancement.nativeOperations().readableAccountStore(),
+                        frame);
+            }
             final var encodedOutput = (from == null)
                     ? ERC_20_TRANSFER.getOutputs().encodeElements(true)
                     : ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
@@ -126,26 +131,6 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                     .build());
             return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }
-    }
-
-    @NonNull
-    @Override
-    public PricedResult execute(final MessageFrame frame) {
-        final var result = execute();
-
-        if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
-            final var tokenTransferLists = syntheticTransferOrTransferFrom(senderId)
-                    .cryptoTransferOrThrow()
-                    .tokenTransfersOrThrow();
-            for (final var fungibleTransfers : tokenTransferLists) {
-                TransferEventLoggingUtils.logSuccessfulFungibleTransfer(
-                        requireNonNull(tokenId),
-                        fungibleTransfers.transfersOrThrow(),
-                        enhancement.nativeOperations().readableAccountStore(),
-                        frame);
-            }
-        }
-        return result;
     }
 
     private TransactionBody syntheticTransferOrTransferFrom(@NonNull final AccountID spenderId) {

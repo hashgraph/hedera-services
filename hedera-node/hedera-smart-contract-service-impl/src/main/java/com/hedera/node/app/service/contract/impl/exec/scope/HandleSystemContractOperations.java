@@ -76,7 +76,6 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(strategy);
         requireNonNull(syntheticPayerId);
         requireNonNull(recordBuilderClass);
-
         return context.dispatchChildTransaction(
                 syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId, CHILD);
     }
