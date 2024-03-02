@@ -35,7 +35,7 @@ class IsTokenCallTest extends HtsCallTestBase {
     void returnsIsTokenForPresentToken() {
         final var subject = new IsTokenCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -50,7 +50,7 @@ class IsTokenCallTest extends HtsCallTestBase {
     void returnsIsTokenForMissingToken() {
         final var subject = new IsTokenCall(gasCalculator, mockEnhancement(), false, null);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
