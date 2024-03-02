@@ -69,8 +69,9 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
-        validateFalsePreCheck(contractFrom(context) == null, INVALID_CONTRACT_ID);
-        validateFalsePreCheck(contractFrom(context).deleted(), CONTRACT_DELETED);
+        final var contract = contractFrom(context);
+        validateFalsePreCheck(contract == null, INVALID_CONTRACT_ID);
+        validateFalsePreCheck(requireNonNull(contract).deleted(), CONTRACT_DELETED);
     }
 
     @Override
