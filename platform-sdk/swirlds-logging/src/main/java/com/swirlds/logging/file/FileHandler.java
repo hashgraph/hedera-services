@@ -21,8 +21,8 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
-import com.swirlds.logging.buffer.BufferedOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -74,10 +74,11 @@ public class FileHandler extends AbstractSyncedHandler {
             if (Files.exists(filePath) && !(append && Files.isWritable(filePath))) {
                 throw new IOException("Log file exist and is not writable or is not append mode");
             }
-            Files.createDirectories(filePath.getParent());
+            if (filePath.getParent() != null) Files.createDirectories(filePath.getParent());
             final OutputStream fileOutputStream = new FileOutputStream(filePath.toFile(), append);
             this.outputStream =
-                    buffered ? new BufferedOutputStream(fileOutputStream, BUFFER_CAPACITY) : fileOutputStream;
+                    /*Subclasses of BufferedOutputStream have a fixed buffer and synchronized blocks instead of locks*/
+                    buffered ? new BufferedOutputStream(fileOutputStream, BUFFER_CAPACITY) {} : fileOutputStream;
         } catch (IOException e) {
             throw new IOException("Could not create log file " + filePath.toAbsolutePath(), e);
         }
@@ -106,7 +107,7 @@ public class FileHandler extends AbstractSyncedHandler {
     protected void handleStopAndFinalize() {
         super.handleStopAndFinalize();
         try {
-            outputStream.flush();
+            outputStream.close();
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to close file output stream", exception);
         }
