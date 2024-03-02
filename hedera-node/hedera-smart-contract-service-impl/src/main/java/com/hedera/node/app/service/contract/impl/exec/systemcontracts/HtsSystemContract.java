@@ -111,15 +111,6 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 final var responseCode = pricedResult.responseCode();
 
                 if (responseCode == SUCCESS) {
-                    if (pricedResult.fullResult().result().getState().equals(MessageFrame.State.REVERT)
-                            || pricedResult
-                                    .fullResult()
-                                    .result()
-                                    .getState()
-                                    .equals(MessageFrame.State.EXCEPTIONAL_HALT)) {
-                        return pricedResult.fullResult();
-                    }
-
                     enhancement
                             .systemOperations()
                             .externalizeResult(
@@ -137,7 +128,8 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                             .systemOperations()
                             .externalizeResult(
                                     contractFunctionResultFailedFor(
-                                            pricedResult.fullResult().gasRequirement(),
+                                            attempt.senderId(),
+                                            pricedResult.fullResult(),
                                             responseCode.toString(),
                                             HTS_CONTRACT_ID),
                                     responseCode,

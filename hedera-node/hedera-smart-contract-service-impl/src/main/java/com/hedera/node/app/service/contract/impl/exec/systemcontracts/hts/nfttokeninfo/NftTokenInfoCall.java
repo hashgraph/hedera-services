@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.nftTokenInfoTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo.NftTokenInfoTranslator.NON_FUNGIBLE_TOKEN_INFO;
@@ -59,13 +61,13 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
+    protected @NonNull PricedResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         final var nft = enhancement
                 .nativeOperations()
                 .getNft(token.tokenIdOrElse(ZERO_TOKEN_ID).tokenNum(), serialNumber);
-        final var status = nft != null ? SUCCESS : ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-        return fullResultsFor(status, gasCalculator.viewGasRequirement(), token, nft);
+        final var status = nft != null ? SUCCESS : INVALID_TOKEN_NFT_SERIAL_NUMBER;
+        return gasOnly(fullResultsFor(status, gasCalculator.viewGasRequirement(), token, nft), status, true);
     }
 
     @Override
