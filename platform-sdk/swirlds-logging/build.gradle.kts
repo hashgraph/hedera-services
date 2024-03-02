@@ -38,7 +38,7 @@ jmhModuleInfo {
     requires("com.swirlds.logging")
     requires("org.apache.logging.log4j")
     requires("com.swirlds.config.api")
-    requires("com.swirlds.config.impl")
+    runtimeOnly("com.swirlds.config.impl")
     requires("org.apache.logging.log4j.core")
     requires("com.github.spotbugs.annotations")
     requires("jmh.core")
