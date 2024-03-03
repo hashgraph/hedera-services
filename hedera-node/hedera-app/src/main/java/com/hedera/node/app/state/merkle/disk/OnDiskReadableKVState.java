@@ -86,7 +86,8 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
                         AccountID.newBuilder().accountNum(1L).build());
                 final var value = virtualMap.get((OnDiskKey<K>) onDiskKey);
                 log.info("OnDiskValue for account 1: {}", virtualMap.get((OnDiskKey<K>) onDiskKey));
-                if (value == null && !HAVE_LOGGED_MISSING_CONTENTS.get()) {
+                log.info("VERSUS containsKey()? {}", virtualMap.containsKey((OnDiskKey<K>) onDiskKey));
+                if (false && value == null && !HAVE_LOGGED_MISSING_CONTENTS.get()) {
                     log.error(
                             "Missing key {} had hashCode={} and classId={}",
                             onDiskKey,

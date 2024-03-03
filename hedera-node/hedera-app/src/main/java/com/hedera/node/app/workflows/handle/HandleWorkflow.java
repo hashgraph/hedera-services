@@ -98,6 +98,7 @@ import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
+import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -128,6 +129,7 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -613,37 +615,42 @@ public class HandleWorkflow {
                         onDiskKey,
                         onDiskKey.hashCode(),
                         onDiskKey.getClassId());
-                final var mws = mhs.writableStatesMap.get(TokenService.NAME);
-                try {
-                    final WritableKVState<AccountID, Account> accountsState = mws.get(TokenServiceImpl.ACCOUNTS_KEY);
-                    logger.error("Underlying writable states map has {} entries", accountsState.size());
-                    final var maybeCreatorAccount = accountsState.get(creatorId);
-                    logger.error(
-                            "Account {} was {} found via direct lookup",
-                            creatorId,
-                            maybeCreatorAccount == null ? "not " : "");
-                } catch (Exception ex) {
-                    logger.error(
-                            "Could not directly lookup account {} in underlying writable states map", creatorId, ex);
-                }
-                try {
-                    VirtualMapLike.from(requireNonNull(requireNonNull(mhs)
-                                    .getChild(mhs.findNodeIndex(TokenService.NAME, TokenServiceImpl.ACCOUNTS_KEY))))
-                            .extractVirtualMapData(
-                                    AdHocThreadManager.getStaticThreadManager(),
-                                    entry -> {
-                                        final var key = (OnDiskKey<AccountID>) entry.key();
-                                        logger.error(
-                                                "  {} (hashCode={}, classId={}) -> {}",
-                                                key,
-                                                key.hashCode(),
-                                                key.getClassId(),
-                                                entry.value());
-                                    },
-                                    1);
-                } catch (InterruptedException ex) {
-                    throw new RuntimeException(ex);
-                }
+                final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> vmap =
+                        mhs.getChild(mhs.findNodeIndex(TokenService.NAME, TokenServiceImpl.ACCOUNTS_KEY));
+                logger.error("Underlying virtual map has {} entries", vmap.size());
+                logger.error("  vmap.get(key) -> {}", vmap.get(onDiskKey));
+                logger.error("  vmap.containsKey(key) -> {}", vmap.containsKey(onDiskKey));
+//                final var mws = mhs.writableStatesMap.get(TokenService.NAME);
+//                try {
+//                    final WritableKVState<AccountID, Account> accountsState = mws.get(TokenServiceImpl.ACCOUNTS_KEY);
+//                    logger.error("Underlying writable states map has {} entries", accountsState.size());
+//                    final var maybeCreatorAccount = accountsState.get(creatorId);
+//                    logger.error(
+//                            "Account {} was {} found via direct lookup",
+//                            creatorId,
+//                            maybeCreatorAccount == null ? "not " : "");
+//                } catch (Exception ex) {
+//                    logger.error(
+//                            "Could not directly lookup account {} in underlying writable states map", creatorId, ex);
+//                }
+//                try {
+//                    VirtualMapLike.from(requireNonNull(requireNonNull(mhs)
+//                                    .getChild(mhs.findNodeIndex(TokenService.NAME, TokenServiceImpl.ACCOUNTS_KEY))))
+//                            .extractVirtualMapData(
+//                                    AdHocThreadManager.getStaticThreadManager(),
+//                                    entry -> {
+//                                        final var key = (OnDiskKey<AccountID>) entry.key();
+//                                        logger.error(
+//                                                "  {} (hashCode={}, classId={}) -> {}",
+//                                                key,
+//                                                key.hashCode(),
+//                                                key.getClassId(),
+//                                                entry.value());
+//                                    },
+//                                    1);
+//                } catch (InterruptedException ex) {
+//                    throw new RuntimeException(ex);
+//                }
                 OnDiskReadableKVState.LOG_CONSTRUCTIONS.set(false);
                 ReadableKVStateBase.LOG_MISSES.set(false);
                 ReadableKVStateBase.LOG_READS.set(false);
