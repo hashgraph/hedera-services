@@ -131,6 +131,6 @@ class HtsCallFactoryTest extends HtsCallTestBase {
         final var call = Objects.requireNonNull(attempt.asExecutableCall());
 
         assertInstanceOf(BalanceOfCall.class, call);
-        assertEquals(A_NEW_ACCOUNT_ID, attempt.evmSenderId());
+        assertEquals(A_NEW_ACCOUNT_ID, attempt.senderId());
     }
 }

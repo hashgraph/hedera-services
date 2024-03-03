@@ -103,7 +103,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
             final var dispatchedRecordBuilder = pricedResult.fullResult().recordBuilder();
             if (dispatchedRecordBuilder != null) {
                 dispatchedRecordBuilder.contractCallResult(pricedResult.asResultOfCall(
-                        attempt.evmSenderId(),
+                        attempt.senderId(),
                         HTS_CONTRACT_ID,
                         ConversionUtils.tuweniToPbjBytes(input),
                         frame.getRemainingGas()));
@@ -118,7 +118,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                             .systemOperations()
                             .externalizeResult(
                                     successResultOf(
-                                            attempt.evmSenderId(),
+                                            attempt.senderId(),
                                             pricedResult.fullResult(),
                                             frame,
                                             !call.allowsStaticFrame()),
@@ -131,7 +131,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                             .systemOperations()
                             .externalizeResult(
                                     contractFunctionResultFailedFor(
-                                            attempt.evmSenderId(),
+                                            attempt.senderId(),
                                             pricedResult.fullResult(),
                                             responseCode.toString(),
                                             HTS_CONTRACT_ID),
