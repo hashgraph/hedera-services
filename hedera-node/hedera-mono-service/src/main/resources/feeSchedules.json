@@ -1468,8 +1468,8 @@
             {
               "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
               "nodedata": {
-                "constant": 10000000000,
-                "bpt": 0,
+                "constant": 0,
+                "bpt": 7000000000,
                 "vpt": 0,
                 "rbh": 0,
                 "sbh": 0,
@@ -1481,7 +1481,7 @@
               },
               "networkdata": {
                 "constant": 0,
-                "bpt": 0,
+                "bpt": 3000000000,
                 "vpt": 0,
                 "rbh": 0,
                 "sbh": 0,
@@ -4853,8 +4853,8 @@
             {
               "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
               "nodedata": {
-                "constant": 10000000000,
-                "bpt": 0,
+                "constant": 0,
+                "bpt": 7000000000,
                 "vpt": 0,
                 "rbh": 0,
                 "sbh": 0,
@@ -4866,7 +4866,7 @@
               },
               "networkdata": {
                 "constant": 0,
-                "bpt": 0,
+                "bpt": 3000000000,
                 "vpt": 0,
                 "rbh": 0,
                 "sbh": 0,

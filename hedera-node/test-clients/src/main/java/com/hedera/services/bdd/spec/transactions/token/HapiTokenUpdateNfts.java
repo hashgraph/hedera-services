@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -118,12 +119,14 @@ public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
         final UsageAccumulator accumulator = new UsageAccumulator();
-        final var tokenUpdateNftsMeta =
-                TOKEN_OPS_USAGE_UTILS.tokenUpdateNftUsageFrom(txn.getTokenUpdateNfts(), subType);
-        final var baseTransactionMeta =
-                new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
-        final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-        tokenOpsUsage.tokenUpdateNftsUsage(suFrom(svo), baseTransactionMeta, tokenUpdateNftsMeta, accumulator);
+//        final var tokenUpdateNftsMeta =
+//                TOKEN_OPS_USAGE_UTILS.tokenUpdateNftUsageFrom(txn.getTokenUpdateNfts(), subType);
+//        final var baseTransactionMeta =
+//                new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+//        final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+//        tokenOpsUsage.tokenUpdateNftsUsage(suFrom(svo), baseTransactionMeta, tokenUpdateNftsMeta, accumulator);
+        final var serials = txn.getTokenUpdateNfts().getSerialNumbersList().size();
+        accumulator.addSbpr((long) serials * LONG_SIZE);
         return AdapterUtils.feeDataFrom(accumulator);
     }
 

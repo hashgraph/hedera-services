@@ -139,6 +139,41 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                 .then(validateChargedUsdWithin(nftUpdateTxn, expectedNftUpdatePriceUsd, 0.01));
     }
 
+    @HapiTest
+    final HapiSpec updateMultipleNftsFeeChargedAsExpected() {
+        final var expectedNftUpdatePriceUsd = 0.005;
+        final var nftUpdateTxn = "nftUpdateTxn";
+
+        return defaultHapiSpec("updateNftFeeChargedAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(WIPE_KEY),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(12L)
+                                .wipeKey(WIPE_KEY)
+                                .supplyKey(SUPPLY_KEY)
+                                .initialSupply(0L),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        copyFromUtf8("a"),
+                                        copyFromUtf8("b"),
+                                        copyFromUtf8("c"),
+                                        copyFromUtf8("d"),
+                                        copyFromUtf8("e"),
+                                        copyFromUtf8("f"),
+                                        copyFromUtf8("g"))))
+                .when(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L,2L,3L,4L,5L))
+                        .payingWith(TOKEN_TREASURY).fee(10 * ONE_HBAR)
+                        .via(nftUpdateTxn))
+                .then(validateChargedUsdWithin(nftUpdateTxn, expectedNftUpdatePriceUsd, 0.01));
+    }
+
+
     @Override
     protected Logger getResultsLogger() {
         return log;
