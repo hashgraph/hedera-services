@@ -28,6 +28,14 @@ public class ConcurrentFactoryPlatformSample {
 
     public static void main(String[] args) {
         final String platformId = "platform-123";
+        final ConcurrentFactory factory = getConcurrentFactoryForPlatform(platformId);
+
+        factory.createExecutorService(1).submit(() -> {
+            throw new RuntimeException("This is a sample exception");
+        });
+    }
+
+    public static ConcurrentFactory getConcurrentFactoryForPlatform(final String platformId) {
         final String groupName = "platform-group";
         final Runnable onStartup = () -> {
             Context.getThreadLocalContext().add("platformId", platformId);
@@ -35,10 +43,6 @@ public class ConcurrentFactoryPlatformSample {
         final UncaughtExceptionHandler handler = (t, e) -> {
             log.withContext("platformId", platformId).error("Uncaught exception in thread: " + t.getName(), e);
         };
-        final ConcurrentFactory factory = ConcurrentFactoryImpl.create(groupName, onStartup, handler);
-
-        factory.createExecutorService(1).submit(() -> {
-            throw new RuntimeException("This is a sample exception");
-        });
+        return ConcurrentFactoryImpl.create(groupName, onStartup, handler);
     }
 }
