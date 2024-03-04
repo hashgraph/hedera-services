@@ -58,7 +58,7 @@ moduleInfo {
     version("com.google.jimfs", "1.2")
     version("com.google.protobuf", protobufVersion)
     version("com.google.protobuf.util", protobufVersion)
-    version("com.hedera.pbj.runtime", "0.7.19")
+    version("com.hedera.pbj.runtime", "0.7.20")
     version("com.squareup.javapoet", "1.13.0")
     version("com.sun.jna", "5.12.1")
     version("dagger", daggerVersion)
