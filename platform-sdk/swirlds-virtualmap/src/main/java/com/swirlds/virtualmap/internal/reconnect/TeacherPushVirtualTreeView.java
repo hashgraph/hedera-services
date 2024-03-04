@@ -322,7 +322,6 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     @Override
     public void close() {
-        System.err.println("Processed: " + processed.get());
         try {
             waitUntilReady();
             records.getDataSource().close();

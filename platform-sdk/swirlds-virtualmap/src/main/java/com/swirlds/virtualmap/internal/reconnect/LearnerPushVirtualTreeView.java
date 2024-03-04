@@ -279,7 +279,6 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
             root.prepareReconnectHashing(firstLeafPath, lastLeafPath);
             nodeRemover.setPathInformation(firstLeafPath, lastLeafPath);
         }
-        nodeRemover.newInternalNode(node);
         return node;
     }
 
@@ -296,6 +295,7 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     @Override
     public void close() {
+        nodeRemover.allNodesReceived();
         root.endLearnerReconnect();
     }
 

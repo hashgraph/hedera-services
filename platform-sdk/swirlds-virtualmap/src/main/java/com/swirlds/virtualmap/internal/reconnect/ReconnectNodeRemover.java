@@ -80,9 +80,8 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
     /**
      * Set of keys (actually, keys + paths) collected for removal. This set is empties every
      * time {@link #getRecordsToDelete()} is called, and a new set is started. The set is
-     * populated in {@link #newLeafNode(long, VirtualKey)} and {@link #newInternalNode(long)}
-     * based on what is received from the teacher (method args) and what was on the learner
-     * ({@link #oldRecords}).
+     * populated in {@link #newLeafNode(long, VirtualKey)} based on what is received from the
+     * teacher (method args) and what was on the learner ({@link #oldRecords}).
      */
     private Set<VirtualLeafRecord<K, ?>> leavesToDelete = new HashSet<>();
 
@@ -115,21 +114,14 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
     public void setPathInformation(final long newFirstLeafPath, final long newLastLeafPath) {
         this.newFirstLeafPath = newFirstLeafPath;
         this.newLastLeafPath = newLastLeafPath;
-    }
 
-    /**
-     * Register the receipt of a new internal node. If the internal node is in the position that was
-     * formally occupied by a leaf node then this method will ensure that the old leaf node is properly
-     * deleted.
-     *
-     * @param path
-     * 		the path of the node
-     */
-    public synchronized void newInternalNode(final long path) {
-        if ((path >= oldFirstLeafPath) && (path <= oldLastLeafPath) && (path > 0)) {
-            final VirtualLeafRecord<K, ?> oldRecord = oldRecords.findLeafRecord(path, false);
-            assert oldRecord != null;
-            leavesToDelete.add(oldRecord);
+        if (oldLastLeafPath > 0) {
+            // no-op if new first leaf path is less or equal to old first leaf path
+            for (long path = oldFirstLeafPath; path < Math.min(newFirstLeafPath, oldLastLeafPath + 1); path++) {
+                final VirtualLeafRecord<K, ?> oldRecord = oldRecords.findLeafRecord(path, false);
+                assert oldRecord != null;
+                leavesToDelete.add(oldRecord);
+            }
         }
     }
 
@@ -147,14 +139,19 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
         if ((oldRecord != null) && !newKey.equals(oldRecord.getKey())) {
             leavesToDelete.add(oldRecord);
         }
+    }
 
-        if ((path == newLastLeafPath) && (newLastLeafPath < oldLastLeafPath)) {
-            for (long p = newLastLeafPath + 1; p <= oldLastLeafPath; p++) {
-                final VirtualLeafRecord<K, ?> oldExtraLeafRecord = oldRecords.findLeafRecord(p, false);
-                assert oldExtraLeafRecord != null || p < oldFirstLeafPath;
-                if (oldExtraLeafRecord != null) {
-                    leavesToDelete.add(oldExtraLeafRecord);
-                }
+    public synchronized void allNodesReceived() {
+        if (newLastLeafPath < 0) {
+            // Empty teacher
+            return;
+        }
+        // no-op if newLastLeafPath is greater or equal to oldLastLeafPath
+        for (long p = newLastLeafPath + 1; p <= oldLastLeafPath; p++) {
+            final VirtualLeafRecord<K, ?> oldExtraLeafRecord = oldRecords.findLeafRecord(p, false);
+            assert oldExtraLeafRecord != null || p < oldFirstLeafPath;
+            if (oldExtraLeafRecord != null) {
+                leavesToDelete.add(oldExtraLeafRecord);
             }
         }
     }
@@ -162,7 +159,7 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
     /**
      * Return a stream of keys collected so far for deletion. The set of collected keys is reset,
      * so subsequent calls to this method will return different keys collected in {@link
-     * #newInternalNode(long)} and {@link #newLeafNode(long, VirtualKey)}.
+     * #newLeafNode(long, VirtualKey)}.
      *
      * @return a stream of keys to be deleted. Only the key and path in these records
      * 		are populated, all other data is uninitialized.

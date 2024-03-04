@@ -76,11 +76,15 @@ import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import com.swirlds.virtualmap.internal.reconnect.ConcurrentBlockingIterator;
 import com.swirlds.virtualmap.internal.reconnect.LearnerPullVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.LearnerPushVirtualTreeView;
+import com.swirlds.virtualmap.internal.reconnect.NodeTraversalOrder;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectHashListener;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectNodeRemover;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectState;
 import com.swirlds.virtualmap.internal.reconnect.TeacherPullVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.TeacherPushVirtualTreeView;
+import com.swirlds.virtualmap.internal.reconnect.TopToBottomTraversalOrder;
+import com.swirlds.virtualmap.internal.reconnect.TwoPhaseParentsTraversalOrder;
+import com.swirlds.virtualmap.internal.reconnect.VirtualLearnerTreeView;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -1374,10 +1378,18 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public TeacherTreeView<Long> buildTeacherView(final ReconnectConfig reconnectConfig) {
-        if (config.reconnectPullResponse()) {
-            return new TeacherPullVirtualTreeView<>(getStaticThreadManager(), reconnectConfig, this, state, pipeline);
-        } else {
-            return new TeacherPushVirtualTreeView<>(getStaticThreadManager(), reconnectConfig, this, state, pipeline);
+        switch (config.reconnectMode()) {
+            case "pullTopToBottom":
+            case "pullTwoPhaseParents":
+                return new TeacherPullVirtualTreeView<>(
+                        getStaticThreadManager(), reconnectConfig, this, state, pipeline);
+            default:
+                logger.warn(RECONNECT.getMarker(), "Unknown reconnect mode: " + config.reconnectMode());
+                logger.warn(RECONNECT.getMarker(), "Using default reconnect mode: push");
+                // fallthrough
+            case "push":
+                return new TeacherPushVirtualTreeView<>(
+                        getStaticThreadManager(), reconnectConfig, this, state, pipeline);
         }
     }
 
@@ -1446,12 +1458,35 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         nodeRemover = new ReconnectNodeRemover<>(
                 originalMap.getRecords(), originalState.getFirstLeafPath(), originalState.getLastLeafPath());
         final LearnerTreeView<Long> learnerTreeView;
-        if (config.reconnectPullResponse()) {
-            learnerTreeView = new LearnerPullVirtualTreeView<>(
-                    reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
-        } else {
-            learnerTreeView = new LearnerPushVirtualTreeView<>(
-                    reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
+        switch (config.reconnectMode()) {
+            case "pullTopToBottom":
+                {
+                    final VirtualLearnerTreeView view = new LearnerPullVirtualTreeView<>(
+                            reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
+                    final NodeTraversalOrder order = new TopToBottomTraversalOrder(
+                            view, originalState.getFirstLeafPath(), originalState.getLastLeafPath());
+                    view.setNodeTraveralOrder(order);
+                    learnerTreeView = view;
+                }
+                break;
+            case "pullTwoPhaseParents":
+                {
+                    final VirtualLearnerTreeView view = new LearnerPullVirtualTreeView<>(
+                            reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
+                    final NodeTraversalOrder order = new TwoPhaseParentsTraversalOrder(
+                            view, originalState.getFirstLeafPath(), originalState.getLastLeafPath());
+                    view.setNodeTraveralOrder(order);
+                    learnerTreeView = view;
+                }
+                break;
+            default:
+                logger.warn(RECONNECT.getMarker(), "Unknown reconnect mode: " + config.reconnectMode());
+                logger.warn(RECONNECT.getMarker(), "Using default reconnect mode: push");
+                // fallthrough
+            case "push":
+                learnerTreeView = new LearnerPushVirtualTreeView<>(
+                        reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
+                break;
         }
         return learnerTreeView;
     }

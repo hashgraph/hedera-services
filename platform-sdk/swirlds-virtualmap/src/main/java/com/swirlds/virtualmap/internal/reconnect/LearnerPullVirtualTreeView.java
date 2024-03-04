@@ -41,12 +41,8 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -91,9 +87,11 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     private final RecordAccessor<K, V> originalRecords;
 
-    private final Set<Long> cleanNodes = ConcurrentHashMap.newKeySet();
+    private NodeTraversalOrder traversalOrder;
 
     private final AtomicLong expectedResponses = new AtomicLong(0);
+
+    private boolean firstNode = true;
 
     /**
      * True until we have handled our first leaf
@@ -130,6 +128,11 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     }
 
     @Override
+    public void setNodeTraveralOrder(final NodeTraversalOrder traversalOrder) {
+        this.traversalOrder = traversalOrder;
+    }
+
+    @Override
     public void startLearnerTasks(
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,
@@ -149,8 +152,9 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
                 workGroup, in, this, senderIsFinished, expectedResponses, rootResponseReceived);
         learnerReceiveTask.start();
         reconstructedRoot.set(0L);
+        assert traversalOrder != null;
         final LearnerPullVirtualTreeSendTask learnerSendTask = new LearnerPullVirtualTreeSendTask(
-                workGroup, outputStream, this, senderIsFinished, rootResponseReceived);
+                workGroup, outputStream, this, traversalOrder, senderIsFinished, rootResponseReceived);
         learnerSendTask.start();
     }
 
@@ -182,42 +186,25 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         if (path == Path.ROOT_PATH) {
             final long firstLeafPath = in.readLong();
             final long lastLeafPath = in.readLong();
-            reconnectState.setFirstLeafPath(firstLeafPath);
-            reconnectState.setLastLeafPath(lastLeafPath);
-            root.prepareReconnectHashing(firstLeafPath, lastLeafPath);
-            nodeRemover.setPathInformation(firstLeafPath, lastLeafPath);
-            if (lastLeafPath <= 0) {
-                return;
+            if (firstNode) {
+                reconnectState.setFirstLeafPath(firstLeafPath);
+                reconnectState.setLastLeafPath(lastLeafPath);
+                root.prepareReconnectHashing(firstLeafPath, lastLeafPath);
+                nodeRemover.setPathInformation(firstLeafPath, lastLeafPath);
+                traversalOrder.start(firstLeafPath, lastLeafPath, nodeCount);
+                firstNode = false;
+                if (lastLeafPath <= 0) {
+                    return;
+                }
             }
         }
+        assert !firstNode : "Root node must be the first node received from the teacher";
         final Hash hash = new Hash(DigestType.SHA_384);
         if (completelyRead(in, hash.getValue()) != DigestType.SHA_384.digestLength()) {
             throw new IOException("Failed to read node hash from the teacher");
         }
         final boolean isLeaf = isLeaf(path);
-        long parent = Path.getParentPath(path);
-        boolean isClean = false;
-        while ((parent > 0) && !isClean) {
-            isClean = cleanNodes.contains(parent);
-            parent = Path.getParentPath(parent);
-        }
-        if (!isClean) {
-            if (path <= originalState.getLastLeafPath()) {
-                final Hash originalHash = getNodeHash(path);
-                assert originalHash != null;
-                isClean = hash.equals(originalHash);
-                if (isClean && !isLeaf) {
-                    cleanNodes.add(path);
-                }
-            }
-        }
-        if (isClean) {
-            if (isLeaf) {
-                nodeCount.incrementRedundantLeafCount();
-            } else {
-                nodeCount.incrementRedundantInternalCount();
-            }
-        }
+        final boolean isClean = traversalOrder.nodeReceived(path, hash);
         if (isLeaf) {
             if (firstLeaf) {
                 root.prepareForFirstLeaf();
@@ -228,50 +215,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
                 nodeRemover.newLeafNode(path, leaf.getKey());
                 root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest
             }
-            nodeCount.incrementLeafCount();
-        } else {
-            nodeRemover.newInternalNode(path);
-            nodeCount.incrementInternalCount();
         }
-    }
-
-    @Override
-    public long getNextPathToSend(long path) throws InterruptedException {
-        long result = skipCleanPaths(path);
-        while ((result != Path.INVALID_PATH) && (result != path)) {
-            path = result;
-            result = skipCleanPaths(path);
-        }
-        applySendBackpressure();
-        return result;
-    }
-
-    private long skipCleanPaths(final long path) {
-        assert path > 0;
-        if (path > reconnectState.getLastLeafPath()) {
-            return Path.INVALID_PATH;
-        }
-        long parent = Path.getParentPath(path);
-        long cleanParent = Path.INVALID_PATH;
-        int parentRanksAbove = 1;
-        int cleanParentRanksAbove = 1;
-        while (parent != ROOT_PATH) {
-            if (cleanNodes.contains(parent)) {
-                cleanParent = parent;
-                cleanParentRanksAbove = parentRanksAbove;
-            }
-            parentRanksAbove++;
-            parent = Path.getParentPath(parent);
-        }
-        final long result;
-        if (cleanParent == Path.INVALID_PATH) {
-            // no clean parent found
-            result = path;
-        } else {
-            result = Path.getRightGrandChildPath(cleanParent, cleanParentRanksAbove) + 1;
-        }
-        assert result >= path;
-        return (result <= reconnectState.getLastLeafPath()) ? result : Path.INVALID_PATH;
     }
 
     @Override
@@ -280,7 +224,8 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         in.anticipateMessage();
     }
 
-    private void applySendBackpressure() throws InterruptedException {
+    @Override
+    public void applySendBackpressure() throws InterruptedException {
         final long t = expectedResponses.get();
         if (t > 1024) {
             Thread.sleep(t - 1024);
@@ -384,6 +329,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     @Override
     public void close() {
+        nodeRemover.allNodesReceived();
         root.endLearnerReconnect();
     }
 

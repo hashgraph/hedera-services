@@ -169,7 +169,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         void setOut(final ChunkHashTask out) {
             this.out = out;
             assert path == 0 || Path.getRank(path) - out.height == Path.getRank(out.path)
-                    : "setOut " + path + " " + height + " " + out.path;
+                    : "setOut " + path + " " + out.height + " " + out.path;
             send();
         }
 

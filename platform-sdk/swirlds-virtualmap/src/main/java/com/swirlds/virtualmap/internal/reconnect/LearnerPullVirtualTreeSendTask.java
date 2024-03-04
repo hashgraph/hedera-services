@@ -37,6 +37,7 @@ public class LearnerPullVirtualTreeSendTask {
     private final StandardWorkGroup workGroup;
     private final SerializableDataOutputStream out;
     private final VirtualLearnerTreeView view;
+    private final NodeTraversalOrder traversalOrder;
     private final AtomicBoolean senderIsFinished;
     private final CountDownLatch rootResponseReceived;
 
@@ -56,11 +57,13 @@ public class LearnerPullVirtualTreeSendTask {
             final StandardWorkGroup workGroup,
             final SerializableDataOutputStream out,
             final VirtualLearnerTreeView view,
+            final NodeTraversalOrder traversalOrder,
             final AtomicBoolean senderIsFinished,
             final CountDownLatch rootResponseReceived) {
         this.workGroup = workGroup;
         this.out = out;
         this.view = view;
+        this.traversalOrder = traversalOrder;
         this.senderIsFinished = senderIsFinished;
         this.rootResponseReceived = rootResponseReceived;
     }
@@ -81,9 +84,11 @@ public class LearnerPullVirtualTreeSendTask {
 
             int requestCounter = 0;
             long lastFlushTime = System.currentTimeMillis();
-            path = view.getNextPathToSend(path + 1);
+            path = traversalOrder.getNextPathToSend();
             while (true) {
-                out.writeLong(path);
+                if (path >= Path.INVALID_PATH) {
+                    out.writeLong(path);
+                }
                 final long now = System.currentTimeMillis();
                 if ((requestCounter++ == 128) || (now - lastFlushTime > 128)) {
                     out.flush();
@@ -92,9 +97,10 @@ public class LearnerPullVirtualTreeSendTask {
                 }
                 if (path == Path.INVALID_PATH) {
                     break;
+                } else if (path >= 0) {
+                    view.anticipateMesssage();
                 }
-                view.anticipateMesssage();
-                path = view.getNextPathToSend(path + 1);
+                path = traversalOrder.getNextPathToSend();
             }
             out.flush();
         } catch (final InterruptedException ex) {

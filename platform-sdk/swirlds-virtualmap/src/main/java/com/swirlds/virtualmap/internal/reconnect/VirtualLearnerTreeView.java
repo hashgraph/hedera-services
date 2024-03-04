@@ -22,10 +22,12 @@ import java.io.IOException;
 
 public interface VirtualLearnerTreeView extends LearnerTreeView<Long> {
 
+    void setNodeTraveralOrder(final NodeTraversalOrder traversalOrder);
+
     // Reads the node from the teacher
     void readNode(final SerializableDataInputStream in, final long path) throws IOException;
 
-    long getNextPathToSend(final long path) throws InterruptedException;
-
     void anticipateMesssage();
+
+    void applySendBackpressure() throws InterruptedException;
 }
