@@ -59,6 +59,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeBuffer;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -190,7 +191,7 @@ public final class IngestChecker {
         }
 
         // 2. Check the time box of the transaction
-        transactionChecker.checkTimeBox(txBody, consensusTime);
+        transactionChecker.checkTimeBox(txBody, consensusTime, RequireMinValidLifetimeBuffer.YES);
 
         // This should never happen, because HapiUtils#checkFunctionality() will throw
         // UnknownHederaFunctionality if it cannot map to a proper value, and WorkflowOnset

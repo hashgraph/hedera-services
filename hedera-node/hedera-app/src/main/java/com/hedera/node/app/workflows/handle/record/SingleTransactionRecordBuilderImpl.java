@@ -149,7 +149,8 @@ public class SingleTransactionRecordBuilderImpl
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
-    private List<AccountAmount> paidStakingRewards = new LinkedList<>();
+
+    public List<AccountAmount> paidStakingRewards = new LinkedList<>();
     private final TransactionRecord.Builder transactionRecordBuilder = TransactionRecord.newBuilder();
     private TransferList transferList = TransferList.DEFAULT;
 
@@ -1188,5 +1189,14 @@ public class SingleTransactionRecordBuilderImpl
     public EthereumTransactionRecordBuilder feeChargedToPayer(@NonNull long amount) {
         transactionRecordBuilder.transactionFee(transactionFee + amount);
         return this;
+    }
+
+    /**
+     * Returns the staking rewards paid in this transaction.
+     *
+     * @return the staking rewards paid in this transaction
+     */
+    public List<AccountAmount> getPaidStakingRewards() {
+        return paidStakingRewards;
     }
 }

@@ -27,6 +27,8 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
+import static com.hedera.node.app.workflows.handle.HandleWorkflow.extraRewardReceivers;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -48,9 +50,11 @@ import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
+import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DelegateKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
@@ -99,8 +103,10 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -123,6 +129,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final TransactionCategory category;
     private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final SavepointStackImpl stack;
+    private final BlockRecordManager blockRecordManager;
     private final Configuration configuration;
     private final KeyVerifier verifier;
     private final RecordListBuilder recordListBuilder;
@@ -141,6 +148,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final Authorizer authorizer;
     private final SolvencyPreCheck solvencyPreCheck;
     private final ChildRecordFinalizer childRecordFinalizer;
+    private final ParentRecordFinalizer parentRecordFinalizer;
     private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
@@ -148,6 +156,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private AttributeValidator attributeValidator;
     private ExpiryValidator expiryValidator;
     private ExchangeRateInfo exchangeRateInfo;
+    private Set<AccountID> dispatchPaidStakerIds;
 
     /**
      * Constructs a {@link HandleContextImpl}.
@@ -161,6 +170,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param category The {@link TransactionCategory} of the transaction (either user, preceding, or child)
      * @param recordBuilder The main {@link SingleTransactionRecordBuilderImpl}
      * @param stack The {@link SavepointStackImpl} used to manage savepoints
+     * @param blockRecordManager The {@link BlockRecordManager} used to manage block records
      * @param configuration The current {@link Configuration}
      * @param verifier The {@link KeyVerifier} used to verify signatures and hollow accounts
      * @param recordListBuilder The {@link RecordListBuilder} used to build the record stream
@@ -173,6 +183,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param authorizer The {@link Authorizer} used to authorize the transaction
      * @param solvencyPreCheck The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
      * @param childRecordFinalizer The {@link ChildRecordFinalizer} used to finalize child records
+     * @param parentRecordFinalizer The {@link ParentRecordFinalizer} used to finalize parent records (if schedule dispatch)
      * @param networkUtilizationManager The {@link NetworkUtilizationManager} used to manage the tracking of backend network throttling
      * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage the tracking of frontend network throttling
      */
@@ -186,6 +197,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionCategory category,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final SavepointStackImpl stack,
+            @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final Configuration configuration,
             @NonNull final KeyVerifier verifier,
             @NonNull final RecordListBuilder recordListBuilder,
@@ -200,6 +212,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final Authorizer authorizer,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
+            @NonNull final ParentRecordFinalizer parentRecordFinalizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
@@ -211,6 +224,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.category = requireNonNull(category, "category must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
         this.stack = requireNonNull(stack, "stack must not be null");
+        this.blockRecordManager = blockRecordManager;
         this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.verifier = requireNonNull(verifier, "verifier must not be null");
         this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
@@ -224,6 +238,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 requireNonNull(userTransactionConsensusTime, "userTransactionConsensusTime must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.childRecordFinalizer = requireNonNull(childRecordFinalizer, "childRecordFinalizer must not be null");
+        this.parentRecordFinalizer = requireNonNull(parentRecordFinalizer, "parentRecordFinalizer must not be null");
         this.networkUtilizationManager =
                 requireNonNull(networkUtilizationManager, "networkUtilization must not be null");
         this.synchronizedThrottleAccumulator =
@@ -622,6 +637,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
 
+    public @NonNull Set<AccountID> dispatchPaidStakerIds() {
+        return dispatchPaidStakerIds == null ? emptySet() : dispatchPaidStakerIds;
+    }
+
     private void dispatchSyntheticTxn(
             @NonNull final AccountID syntheticPayer,
             @NonNull final TransactionBody txBody,
@@ -703,6 +722,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 childCategory,
                 childRecordBuilder,
                 childStack,
+                blockRecordManager,
                 configuration,
                 childVerifier,
                 recordListBuilder,
@@ -717,6 +737,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 authorizer,
                 solvencyPreCheck,
                 childRecordFinalizer,
+                parentRecordFinalizer,
                 networkUtilizationManager,
                 synchronizedThrottleAccumulator);
 
@@ -741,11 +762,32 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildrenOf(recordBuilder);
         }
-        final var finalizeContext = new ChildFinalizeContextImpl(
-                new ReadableStoreFactory(childStack),
-                new WritableStoreFactory(childStack, TokenService.NAME),
-                childRecordBuilder);
-        childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
+        // For mono-service fidelity, we need to attach staking rewards for a
+        // triggered transaction to the record of the child here, and not the
+        // "parent" ScheduleCreate or ScheduleSign transaction
+        if (childCategory == SCHEDULED) {
+            final var finalizeContext = new TriggeredFinalizeContext(
+                    new ReadableStoreFactory(childStack),
+                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    childRecordBuilder,
+                    consensusNow(),
+                    configuration);
+            parentRecordFinalizer.finalizeParentRecord(
+                    payer, finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
+            final var paidStakingRewards = childRecordBuilder.getPaidStakingRewards();
+            if (!paidStakingRewards.isEmpty()) {
+                if (dispatchPaidStakerIds == null) {
+                    dispatchPaidStakerIds = new LinkedHashSet<>();
+                }
+                paidStakingRewards.forEach(aa -> dispatchPaidStakerIds.add(aa.accountIDOrThrow()));
+            }
+        } else {
+            final var finalizeContext = new ChildFinalizeContextImpl(
+                    new ReadableStoreFactory(childStack),
+                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    childRecordBuilder);
+            childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
+        }
         childStack.commitFullStack();
     }
 
