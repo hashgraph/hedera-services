@@ -50,10 +50,6 @@ public enum ConsensusRoundHandlerPhase {
      */
     UPDATING_PLATFORM_STATE_RUNNING_HASH,
     /**
-     * The consensus hash manager is being informed that the round has been handled.
-     */
-    MARKING_ROUND_COMPLETE,
-    /**
      * The handler is getting the state to sign.
      */
     GETTING_STATE_TO_SIGN,
