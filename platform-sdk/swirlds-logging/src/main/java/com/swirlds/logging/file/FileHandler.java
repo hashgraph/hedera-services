@@ -21,8 +21,8 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
+import com.swirlds.logging.buffer.BufferedOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -77,8 +77,7 @@ public class FileHandler extends AbstractSyncedHandler {
             if (filePath.getParent() != null) Files.createDirectories(filePath.getParent());
             final OutputStream fileOutputStream = new FileOutputStream(filePath.toFile(), append);
             this.outputStream =
-                    /*Subclasses of BufferedOutputStream have a fixed buffer and synchronized blocks instead of locks*/
-                    buffered ? new BufferedOutputStream(fileOutputStream, BUFFER_CAPACITY) {} : fileOutputStream;
+                    buffered ? new BufferedOutputStream(fileOutputStream, BUFFER_CAPACITY) : fileOutputStream;
         } catch (IOException e) {
             throw new IOException("Could not create log file " + filePath.toAbsolutePath(), e);
         }

@@ -21,8 +21,8 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.LineBasedFormat;
+import com.swirlds.logging.buffer.BufferedOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -51,7 +51,7 @@ public class ConsoleHandler extends AbstractSyncedHandler {
             @NonNull final String handlerName, @NonNull final Configuration configuration, final boolean buffered) {
         super(handlerName, configuration);
         this.format = LineBasedFormat.createForHandler(handlerName, configuration);
-        this.outputStream = buffered ? new BufferedOutputStream(System.out, BUFFER_CAPACITY) {} : System.out;
+        this.outputStream = buffered ? new BufferedOutputStream(System.out, BUFFER_CAPACITY) : System.out;
     }
 
     /**
