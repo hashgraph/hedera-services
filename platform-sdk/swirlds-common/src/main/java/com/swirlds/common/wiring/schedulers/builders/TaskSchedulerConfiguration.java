@@ -45,21 +45,31 @@ public record TaskSchedulerConfiguration(
      * Parse a string representation of a task scheduler configuration.
      * <p>
      * Syntax is as follows:
+     * <ul>
+     *     <li>
+     *         Zero or one values from the {@link TaskSchedulerType} enum, specifies the type of the task scheduler.
+     *         If not present then the default is used.
+     *     </li>
+     *     <li>
+     *         Zero or one integer values, specifies the unhandled task capacity. If not present then the default is
+     *         used.
+     *     </li>
+     *     <li>
+     *         Zero or more values from the {@link TaskSchedulerConfigOption} enum, specifies the configuration options.
+     *         Sets a boolean configuration option to true if the value is present, and false if the value is prefixed
+     *         with a "!". If not present then the default is used.
+     *     </li>
+     * </ul>
+     * Example: "SEQUENTIAL 500 !FLUSHABLE UNHANDLED_TASK_METRIC"
      * <p>
-     * Each parameter is optional. The order of the parameters is not important. The parameters are separated by commas.
-     * Each parameter is a key value pair separated by a space. The key is the name of the parameter, the value is the
-     * value of the parameter. The key is case sensitive. The value is case sensitive.
-     * <p>
-     * Example: "type SEQUENTIAL, unhandledTaskCapacity 100, unhandledTaskMetricEnabled true"
+     * Note that default values are not specified within this class. Default values are the responsibility of the
+     * {@link TaskSchedulerBuilder} class.
      *
      * @param string the string to parse
      * @return the parsed configuration
      */
     @NonNull
     public static TaskSchedulerConfiguration parse(@NonNull final String string) {
-
-        // TODO switch parser
-
         TaskSchedulerType type = null;
         Long unhandledTaskCapacity = null;
         Boolean unhandledTaskMetricEnabled = null;
@@ -68,25 +78,44 @@ public record TaskSchedulerConfiguration(
         Boolean squelchingEnabled = null;
 
         try {
-            final String[] parts = string.split(",");
+            final String[] parts = string.split(" ");
             for (final String part : parts) {
-                final String[] keyValue = part.strip().split(" ");
-                if (keyValue.length != 2) {
-                    throw new IllegalArgumentException("Invalid configuration \"" + string + "\", part \"" + part
-                            + "\" should be a space separated key value pair");
-                }
-                final String key = keyValue[0];
-                final String value = keyValue[1];
+                String strippedPart = part.strip();
 
-                switch (key) {
-                    case "type" -> type = TaskSchedulerType.valueOf(value);
-                    case "unhandledTaskCapacity" -> unhandledTaskCapacity = Long.parseLong(value);
-                    case "unhandledTaskMetricEnabled" -> unhandledTaskMetricEnabled = Boolean.parseBoolean(value);
-                    case "busyFractionMetricEnabled" -> busyFractionMetricEnabled = Boolean.parseBoolean(value);
-                    case "flushingEnabled" -> flushingEnabled = Boolean.parseBoolean(value);
-                    case "squelchingEnabled" -> squelchingEnabled = Boolean.parseBoolean(value);
-                    default -> throw new IllegalArgumentException(
-                            "Invalid configuration \"" + string + "\", unknown key \"" + key + "\"");
+                try {
+                    // if the part can be parsed as a TaskSchedulerType, then it is the type
+                    type = TaskSchedulerType.valueOf(strippedPart);
+                    continue;
+                } catch (final IllegalArgumentException e) {
+                    // ignore
+                }
+
+                try {
+                    // If the part can be parsed as an integer, then it is the unhandled task capacity
+                    unhandledTaskCapacity = Long.parseLong(strippedPart);
+                    continue;
+                } catch (final NumberFormatException e) {
+                    // ignore
+                }
+
+                try {
+                    // All other values must be TaskSchedulerConfigOption values.
+                    boolean value = true;
+                    if (strippedPart.startsWith("!")) {
+                        value = false;
+                        strippedPart = strippedPart.substring(1);
+                    }
+
+                    final TaskSchedulerConfigOption option = TaskSchedulerConfigOption.valueOf(strippedPart);
+
+                    switch (option) {
+                        case UNHANDLED_TASK_METRIC -> unhandledTaskMetricEnabled = value;
+                        case BUSY_FRACTION_METRIC -> busyFractionMetricEnabled = value;
+                        case FLUSHABLE -> flushingEnabled = value;
+                        case SQUELCHABLE -> squelchingEnabled = value;
+                    }
+                } catch (final IllegalArgumentException e) {
+                    throw new IllegalArgumentException("Invalid task scheduler configuration \"" + string + "\"", e);
                 }
             }
         } catch (final NumberFormatException e) {
