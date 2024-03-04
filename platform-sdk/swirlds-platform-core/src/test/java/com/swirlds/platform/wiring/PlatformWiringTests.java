@@ -42,6 +42,7 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
+import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.util.HashLogger;
@@ -82,6 +83,7 @@ class PlatformWiringTests {
                 mock(EventStreamManager.class),
                 mock(FutureEventBuffer.class),
                 mock(IssDetector.class),
+                mock(IssHandler.class),
                 mock(HashLogger.class),
                 mock(LatestCompleteStateNotifier.class));
 

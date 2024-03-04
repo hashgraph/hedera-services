@@ -68,8 +68,6 @@ module com.hedera.node.app {
             com.swirlds.common;
     exports com.hedera.node.app.authorization to
             com.swirlds.platform.core;
-    exports com.hedera.node.app.state.merkle.adapters to
-            com.swirlds.platform.core;
     exports com.hedera.node.app.fees to
             com.swirlds.platform.core;
     exports com.hedera.node.app.fees.congestion to

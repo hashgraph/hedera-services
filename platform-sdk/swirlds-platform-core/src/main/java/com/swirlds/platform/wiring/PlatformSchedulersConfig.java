@@ -95,7 +95,7 @@ import com.swirlds.config.api.ConfigProperty;
 public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
         @ConfigProperty(defaultValue = "0") int defaultPoolConstant,
-        @ConfigProperty(defaultValue = "10000") int eventHasherUnhandledCapacity,
+        @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType internalEventValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventDeduplicatorSchedulerType,

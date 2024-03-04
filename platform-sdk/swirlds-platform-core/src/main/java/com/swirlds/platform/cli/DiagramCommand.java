@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.cli;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
@@ -24,11 +26,17 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.ModelManualLink;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
+import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
+import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -92,6 +100,16 @@ public final class DiagramCommand extends AbstractCommand {
                 configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         final PlatformWiring platformWiring = new PlatformWiring(platformContext, Time.getCurrent());
+
+        final ThreadManager threadManager = getStaticThreadManager();
+        final NotificationEngine notificationEngine = NotificationEngine.buildEngine(threadManager);
+        platformWiring.wireExternalComponents(
+                new PlatformStatusManager(platformContext, platformContext.getTime(), threadManager, a -> {}),
+                new TransactionPool(platformContext),
+                new LatestCompleteStateNexus(
+                        platformContext.getConfiguration().getConfigData(StateConfig.class),
+                        platformContext.getMetrics()),
+                notificationEngine);
 
         final String diagramString = platformWiring
                 .getModel()

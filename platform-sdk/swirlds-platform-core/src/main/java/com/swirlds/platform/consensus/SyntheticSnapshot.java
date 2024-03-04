@@ -17,7 +17,7 @@
 package com.swirlds.platform.consensus;
 
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.MinimumJudgeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -31,7 +31,7 @@ public final class SyntheticSnapshot {
     private static final ConsensusSnapshot GENESIS_SNAPSHOT = new ConsensusSnapshot(
             ConsensusConstants.ROUND_FIRST,
             List.of(),
-            List.of(new MinGenInfo(ConsensusConstants.ROUND_FIRST, GraphGenerations.FIRST_GENERATION)),
+            List.of(new MinimumJudgeInfo(ConsensusConstants.ROUND_FIRST, GraphGenerations.FIRST_GENERATION)),
             ConsensusConstants.FIRST_CONSENSUS_NUMBER,
             Instant.EPOCH);
 
@@ -59,14 +59,14 @@ public final class SyntheticSnapshot {
             @NonNull final Instant roundTimestamp,
             @NonNull final ConsensusConfig config,
             @NonNull final GossipEvent judge) {
-        final List<MinGenInfo> minGenInfos = LongStream.range(
+        final List<MinimumJudgeInfo> minimumJudgeInfos = LongStream.range(
                         RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), round), round + 1)
-                .mapToObj(r -> new MinGenInfo(r, judge.getGeneration()))
+                .mapToObj(r -> new MinimumJudgeInfo(r, judge.getGeneration()))
                 .toList();
         return new ConsensusSnapshot(
                 round,
                 List.of(judge.getHashedData().getHash()),
-                minGenInfos,
+                minimumJudgeInfos,
                 lastConsensusOrder + 1,
                 ConsensusUtils.calcMinTimestampForNextEvent(roundTimestamp));
     }
