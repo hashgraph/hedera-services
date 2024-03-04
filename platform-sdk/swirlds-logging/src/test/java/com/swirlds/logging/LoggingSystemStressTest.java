@@ -18,7 +18,7 @@ package com.swirlds.logging;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.logging.util.LoggingTestUtils.EXPECTED_STATEMENTS;
-import static com.swirlds.logging.util.LoggingTestUtils.countNewLines;
+import static com.swirlds.logging.util.LoggingTestUtils.countLinesInStatements;
 import static com.swirlds.logging.util.LoggingTestUtils.getLines;
 import static com.swirlds.logging.util.LoggingTestUtils.linesToStatements;
 
@@ -28,16 +28,10 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
-import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
-import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
-import com.swirlds.logging.api.internal.format.LineBasedFormat;
-import com.swirlds.logging.api.internal.level.ConfigLevel;
-import com.swirlds.logging.api.internal.level.MarkerState;
 import com.swirlds.logging.file.FileHandler;
 import com.swirlds.logging.test.fixtures.internal.LoggingMirrorImpl;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.logging.util.LoggingTestUtils;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,7 +60,7 @@ public class LoggingSystemStressTest {
         loggingSystem.addHandler(handler);
         final List<Runnable> runnables = IntStream.range(0, TOTAL_RUNNABLE)
                 .mapToObj(i -> loggingSystem.getLogger("logger-" + i))
-                .map(l -> (Runnable) () -> LoggingTestUtils.generateExtensiveLogMessages(l))
+                .map(l -> (Runnable) () -> LoggingTestUtils.loggExtensively(l))
                 .collect(Collectors.toList());
 
         // when
@@ -105,9 +99,9 @@ public class LoggingSystemStressTest {
     void testFileLoggingFileMultipleEventsInParallel(TestExecutor testExecutor) throws IOException {
 
         // given
-        final String logFile = prepareLoggingFile();
+        final String logFile = LoggingTestUtils.prepareLoggingFile(LOG_FILE);
         final String fileHandlerName = "file";
-        final Configuration configuration = prepareConfiguration(logFile, fileHandlerName);
+        final Configuration configuration = LoggingTestUtils.prepareConfiguration(logFile, fileHandlerName);
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final FileHandler handler = new FileHandler(fileHandlerName, configuration, true);
         final LoggingMirrorImpl mirror = new LoggingMirrorImpl();
@@ -122,13 +116,13 @@ public class LoggingSystemStressTest {
         loggingSystem.stopAndFinalize();
 
         try {
-            final List<String> statementsInMirror = formatMirrorEvents(mirror);
+            final List<String> statementsInMirror = LoggingTestUtils.mirrorToStatements(mirror);
             final List<String> logLines = getLines(logFile);
-            final List<String> statementsInFile = linesToStatements(loggerName, logLines);
+            final List<String> statementsInFile = linesToStatements(logLines);
 
             // then
             Assertions.assertEquals(EXPECTED_STATEMENTS * 10, statementsInFile.size());
-            final int expectedLineCountInFile = countNewLines(statementsInMirror) + statementsInMirror.size();
+            final int expectedLineCountInFile = countLinesInStatements(statementsInMirror);
             Assertions.assertEquals(expectedLineCountInFile, (long) logLines.size());
             org.assertj.core.api.Assertions.assertThat(statementsInMirror).isSubsetOf(statementsInFile);
 
@@ -137,40 +131,9 @@ public class LoggingSystemStressTest {
         }
     }
 
-    private static List<String> formatMirrorEvents(final LoggingMirrorImpl mirror) {
-        final LineBasedFormat formattedEvents = new LineBasedFormat(false);
-        return mirror.getEvents().stream()
-                .map(e -> {
-                    final StringBuilder stringBuilder = new StringBuilder();
-                    formattedEvents.print(stringBuilder, e);
-                    stringBuilder.setLength(stringBuilder.length() - 1);
-                    return stringBuilder.toString();
-                })
-                .collect(Collectors.toList());
-    }
-
     private static void doLog(final TestExecutor testExecutor, final Logger logger, final int totalRunnable) {
         testExecutor.executeAndWait(IntStream.range(0, totalRunnable)
-                .mapToObj(l -> (Runnable) () -> LoggingTestUtils.generateExtensiveLogMessages(logger))
+                .mapToObj(l -> (Runnable) () -> LoggingTestUtils.loggExtensively(logger))
                 .collect(Collectors.toList()));
-    }
-
-    private static String prepareLoggingFile() throws IOException {
-        final File testMultipleLoggersInParallel = new File(LOG_FILE);
-        Files.deleteIfExists(testMultipleLoggersInParallel.toPath());
-        return testMultipleLoggersInParallel.getAbsolutePath();
-    }
-
-    private static Configuration prepareConfiguration(final String logFile, final String fileHandlerName) {
-        return new TestConfigBuilder()
-                .withConverter(ConfigLevel.class, new ConfigLevelConverter())
-                .withConverter(MarkerState.class, new MarkerStateConverter())
-                .withValue("logging.level", "trace")
-                .withValue("logging.handler.%s.type".formatted(fileHandlerName), "file")
-                .withValue("logging.handler.%s.active".formatted(fileHandlerName), "true")
-                .withValue("logging.handler.%s.formatTimestamp".formatted(fileHandlerName), "false")
-                .withValue("logging.handler.%s.level".formatted(fileHandlerName), "trace")
-                .withValue("logging.handler.%s.file".formatted(fileHandlerName), logFile)
-                .getOrCreateConfig();
     }
 }
