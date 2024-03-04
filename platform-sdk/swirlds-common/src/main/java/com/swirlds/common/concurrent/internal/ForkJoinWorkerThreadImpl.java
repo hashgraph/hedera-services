@@ -14,24 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.concurrent;
+package com.swirlds.common.concurrent.internal;
 
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
 
-public class ForkJoinPoolFactory {
+public class ForkJoinWorkerThreadImpl extends ForkJoinWorkerThread {
 
-    private final ForkJoinWorkerThreadFactoryImpl factory;
-
-    private final UncaughtExceptionHandler handler;
-
-    public ForkJoinPoolFactory(String platformId, UncaughtExceptionHandler handler) {
-        this.handler = handler;
-        ThreadGroup threadGroup = new ThreadGroup("ForkJoinPool-" + platformId);
-        this.factory = new ForkJoinWorkerThreadFactoryImpl(threadGroup, platformId);
-    }
-
-    public ForkJoinPool create(int parallelism) {
-        return new ForkJoinPool(parallelism, factory, handler, false);
+    protected ForkJoinWorkerThreadImpl(final String name, ThreadGroup group, ForkJoinPool pool) {
+        super(group, pool, true);
+        setName(name);
     }
 }

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.concurrent;
+package com.swirlds.common.concurrent;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinWorkerThread;
 
-public class ForkJoinWorkerThreadImpl extends ForkJoinWorkerThread {
+public interface ConcurrentFactory {
 
-    protected ForkJoinWorkerThreadImpl(ThreadGroup group, ForkJoinPool pool) {
-        super(group, pool, true);
-    }
+    ForkJoinPool createForkJoinPool(int parallelism);
+
+    ExecutorService createExecutorService(int threadCount);
 }
