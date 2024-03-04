@@ -19,8 +19,6 @@ package com.swirlds.common.wiring.schedulers.builders;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-// TODO unit test
-
 /**
  * Configures a task scheduler.
  *
