@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep.validateSpenderHasAllowance;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -133,7 +134,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
      * @param accountStore      The account store
      * @param tokenRelStore     The token relation store
      * @param handleContext     The context
-     * @param amount            The amount of tokens to be transferred
+     * @param amount            The amount of tokens to be transferred, only used for FUNGIBLE_COMMON
      */
     private TokenAssociation validateAndBuildAutoAssociation(
             @NonNull final AccountID accountId,
@@ -147,7 +148,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
         final var config = handleContext.configuration();
 
-        if (amount != 0) {
+        if (token.tokenType() == FUNGIBLE_COMMON) {
             checkTokenAllowances(account, topLevelPayer, tokenId, amount);
         }
 
