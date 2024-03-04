@@ -19,12 +19,12 @@ package com.swirlds.logging.benchmark;
 import static com.swirlds.logging.benchmark.config.LoggingHandlingType.CONSOLE_AND_FILE_TYPE;
 import static com.swirlds.logging.benchmark.config.LoggingHandlingType.CONSOLE_TYPE;
 import static com.swirlds.logging.benchmark.config.LoggingHandlingType.FILE_TYPE;
-import static com.swirlds.logging.benchmark.util.BenchmarkConstants.FORK_COUNT;
-import static com.swirlds.logging.benchmark.util.BenchmarkConstants.MEASUREMENT_ITERATIONS;
-import static com.swirlds.logging.benchmark.util.BenchmarkConstants.MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION;
-import static com.swirlds.logging.benchmark.util.BenchmarkConstants.PARALLEL_THREAD_COUNT;
-import static com.swirlds.logging.benchmark.util.BenchmarkConstants.WARMUP_ITERATIONS;
-import static com.swirlds.logging.benchmark.util.BenchmarkConstants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
+import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.FORK_COUNT;
+import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.MEASUREMENT_ITERATIONS;
+import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION;
+import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.PARALLEL_THREAD_COUNT;
+import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.WARMUP_ITERATIONS;
+import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
 
 import com.swirlds.logging.api.Logger;
 import java.util.Objects;
@@ -52,7 +52,7 @@ public class SwirldsLogBenchmark {
     LogWithSwirlds logRunner;
 
     @Setup(Level.Trial)
-    public void init() throws Exception {
+    public void init() {
         if (Objects.equals(loggingType, FILE_TYPE)) {
             logger = ConfigureSwirldsLog.configureFileLogging().getLogger("SwirldsLogBenchmark");
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
