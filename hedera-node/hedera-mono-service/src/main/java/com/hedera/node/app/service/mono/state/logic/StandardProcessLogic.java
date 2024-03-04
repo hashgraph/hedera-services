@@ -33,8 +33,10 @@ import com.hedera.node.app.service.mono.stats.ExecutionTimeTracker;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.service.mono.txns.schedule.ScheduleProcessing;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
+import com.hedera.node.app.service.mono.txns.span.SpanMapManager;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -63,6 +65,7 @@ public class StandardProcessLogic implements ProcessLogic {
     private final RecordStreaming recordStreaming;
     private final RecordCache recordCache;
     private final InitTrigger initTrigger;
+    private final SpanMapManager spanMapManager;
 
     @Inject
     public StandardProcessLogic(
@@ -79,7 +82,8 @@ public class StandardProcessLogic implements ProcessLogic {
             final RecordStreaming recordStreaming,
             final StateView workingView,
             final RecordCache recordCache,
-            @NonNull final InitTrigger initTrigger) {
+            @NonNull final InitTrigger initTrigger,
+            SpanMapManager spanMapManager) {
         this.expiries = expiries;
         this.invariantChecks = invariantChecks;
         this.expandHandleSpan = expandHandleSpan;
@@ -94,6 +98,7 @@ public class StandardProcessLogic implements ProcessLogic {
         this.workingView = workingView;
         this.recordCache = recordCache;
         this.initTrigger = requireNonNull(initTrigger);
+        this.spanMapManager = spanMapManager;
     }
 
     @Override
@@ -185,6 +190,10 @@ public class StandardProcessLogic implements ProcessLogic {
         txnManager.process(accessor, consensusTime, submittingMember);
         final var triggeredAccessor = txnCtx.triggeredTxn();
         if (triggeredAccessor != null) {
+            // Ensure we take custom fees into account when charging fees
+            if (triggeredAccessor.getFunction() == HederaFunctionality.CryptoTransfer) {
+                spanMapManager.expandImpliedTransfers(triggeredAccessor);
+            }
             txnManager.process(triggeredAccessor, consensusTimeTracker.nextTransactionTime(false), submittingMember);
         }
         executionTimeTracker.stop();

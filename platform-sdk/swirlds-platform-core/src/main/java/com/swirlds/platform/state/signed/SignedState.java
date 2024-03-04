@@ -20,7 +20,7 @@ import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.SIGNED_STATE;
-import static com.swirlds.platform.state.PlatformData.GENESIS_ROUND;
+import static com.swirlds.platform.state.PlatformState.GENESIS_ROUND;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
@@ -46,7 +46,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -465,27 +464,6 @@ public class SignedState implements SignedStateInfo {
      */
     public @NonNull Hash getHashEventsCons() {
         return state.getPlatformState().getRunningEventHash();
-    }
-
-    /**
-     * The minimum generation of famous witnesses for the round specified. This method only looks at non-ancient rounds
-     * contained within this state.
-     *
-     * @param round the round whose minimum generation will be returned
-     * @return the minimum generation for the round specified
-     * @throws NoSuchElementException if the generation information for this round is not contained withing this state
-     */
-    public long getMinGen(final long round) {
-        return getState().getPlatformState().getMinGen(round);
-    }
-
-    /**
-     * Return the round generation of the oldest round in this state
-     *
-     * @return the generation of the oldest round
-     */
-    public long getMinRoundGeneration() {
-        return getState().getPlatformState().getMinRoundGeneration();
     }
 
     /**

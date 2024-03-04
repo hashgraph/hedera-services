@@ -37,8 +37,7 @@ public record LatestCompleteStateNotifierWiring(
      * @return the new wiring instance
      */
     public static LatestCompleteStateNotifierWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
-        return new LatestCompleteStateNotifierWiring(
-                taskScheduler.buildInputWire("completed reserved signed state to notify"));
+        return new LatestCompleteStateNotifierWiring(taskScheduler.buildInputWire("complete states"));
     }
 
     /**
