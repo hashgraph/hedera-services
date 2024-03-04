@@ -112,7 +112,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private static final long CLASS_ID = 0x2de3ead3caf06392L;
     // Uncomment the following class ID to run a mono -> modular state migration
     // NOTE: also change class ID of ServicesState
-    //    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
+//        private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
     private static final int VERSION_1 = 30;
     private static final int CURRENT_VERSION = VERSION_1;
 
