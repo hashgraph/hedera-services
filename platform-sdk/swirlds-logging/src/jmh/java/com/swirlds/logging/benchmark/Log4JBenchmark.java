@@ -47,8 +47,8 @@ public class Log4JBenchmark {
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
 
-    Logger logger;
-    LogWithLog4J logRunner;
+    private Logger logger;
+    private LogWithLog4J logRunner;
 
     @Setup(Level.Trial)
     public void init() {
