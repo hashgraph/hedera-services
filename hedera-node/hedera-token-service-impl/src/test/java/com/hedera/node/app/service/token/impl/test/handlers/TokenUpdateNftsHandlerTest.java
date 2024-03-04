@@ -225,10 +225,10 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
         given(feeContext.body()).willReturn(txnBody);
         given(feeContext.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(feeCalculator);
-        given(feeCalculator.addBytesPerTransaction(32L)).willReturn(feeCalculator);
+        given(feeCalculator.addConstant(8L)).willReturn(feeCalculator);
         subject.calculateFees(feeContext);
 
-        verify(feeCalculator).addBytesPerTransaction(32L);
+        verify(feeCalculator).addConstant(8L);
     }
 
     private class TokenUpdateNftBuilder {
