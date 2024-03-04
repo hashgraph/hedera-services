@@ -77,7 +77,7 @@ public class BufferedOutputStream extends OutputStream {
      */
     @Override
     public synchronized void write(final int b) throws IOException {
-        if (buffer.capacity() >= 1) {
+        if (buffer.remaining() >= 1) {
             buffer.put((byte) b);
         } else {
             // if request length exceeds buffer capacity,
