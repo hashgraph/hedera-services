@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -132,9 +131,8 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body();
         final var serials = op.tokenUpdateNftsOrThrow().serialNumbers();
-        return feeContext
-                .feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
-                .addBytesPerTransaction((long) serials.size() * LONG_SIZE)
-                .calculate();
+        final var feeCalculator = feeContext.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+        feeCalculator.resetUsage();
+        return feeCalculator.addBytesPerTransaction(serials.size()).calculate();
     }
 }

@@ -167,12 +167,12 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                                         copyFromUtf8("e"),
                                         copyFromUtf8("f"),
                                         copyFromUtf8("g"))))
-                .when(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L,2L,3L,4L,5L))
-                        .payingWith(TOKEN_TREASURY).fee(10 * ONE_HBAR)
+                .when(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L, 2L, 3L, 4L, 5L))
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
                         .via(nftUpdateTxn))
                 .then(validateChargedUsdWithin(nftUpdateTxn, expectedNftUpdatePriceUsd, 0.01));
     }
-
 
     @Override
     protected Logger getResultsLogger() {
