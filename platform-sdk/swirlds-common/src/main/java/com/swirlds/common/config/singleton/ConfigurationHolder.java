@@ -16,13 +16,10 @@
 
 package com.swirlds.common.config.singleton;
 
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -48,9 +45,7 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
 
     private Configuration configuration;
 
-    private ConfigurationHolder() {
-
-    }
+    private ConfigurationHolder() {}
 
     /**
      * Reset this object to its initial state.

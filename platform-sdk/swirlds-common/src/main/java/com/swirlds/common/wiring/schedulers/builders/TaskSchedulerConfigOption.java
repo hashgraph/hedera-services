@@ -36,5 +36,11 @@ public enum TaskSchedulerConfigOption {
     /**
      * If present, the scheduler will be capable of squelching.
      */
-    SQUELCHABLE,
+    SQUELCHABLE;
+
+    /**
+     * This is not defined as an enum constant because it is used in a special way. To specify the capacity,
+     * use a string in the form "CAPACITY(1234)" where 1234 is the desired capacity.
+     */
+    public static final String CAPACITY = "CAPACITY";
 }

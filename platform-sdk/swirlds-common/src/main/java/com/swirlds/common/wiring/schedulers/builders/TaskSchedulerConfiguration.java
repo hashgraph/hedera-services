@@ -51,8 +51,7 @@ public record TaskSchedulerConfiguration(
      *         If not present then the default is used.
      *     </li>
      *     <li>
-     *         Zero or one integer values, specifies the unhandled task capacity. If not present then the default is
-     *         used.
+     *         Zero or one string of the form "CAPACITY(1234)", specifies the maximum number of unhandled tasks.
      *     </li>
      *     <li>
      *         Zero or more values from the {@link TaskSchedulerConfigOption} enum, specifies the configuration options.
@@ -60,7 +59,7 @@ public record TaskSchedulerConfiguration(
      *         with a "!". If not present then the default is used.
      *     </li>
      * </ul>
-     * Example: "SEQUENTIAL 500 !FLUSHABLE UNHANDLED_TASK_METRIC"
+     * Example: "SEQUENTIAL CAPACITY(500) !FLUSHABLE UNHANDLED_TASK_METRIC"
      * <p>
      * Note that default values are not specified within this class. Default values are the responsibility of the
      * {@link TaskSchedulerBuilder} class.
@@ -90,12 +89,19 @@ public record TaskSchedulerConfiguration(
                     // ignore
                 }
 
-                try {
-                    // If the part can be parsed as an integer, then it is the unhandled task capacity
-                    unhandledTaskCapacity = Long.parseLong(strippedPart);
-                    continue;
-                } catch (final NumberFormatException e) {
-                    // ignore
+                if (strippedPart.startsWith(TaskSchedulerConfigOption.CAPACITY)) {
+                    try {
+                        // parse a string in the form "CAPACITY(1234)"
+                        final int openParenIndex = strippedPart.indexOf('(');
+                        final int closeParenIndex = strippedPart.indexOf(')');
+                        if (openParenIndex == -1 || closeParenIndex == -1) {
+                            throw new IllegalArgumentException("Invalid capacity \"" + strippedPart + "\"");
+                        }
+                        final String capacityString = strippedPart.substring(openParenIndex + 1, closeParenIndex);
+                        unhandledTaskCapacity = Long.parseLong(capacityString);
+                    } catch (final NumberFormatException e) {
+                        throw new IllegalArgumentException("Invalid capacity \"" + strippedPart + "\"", e);
+                    }
                 }
 
                 try {
