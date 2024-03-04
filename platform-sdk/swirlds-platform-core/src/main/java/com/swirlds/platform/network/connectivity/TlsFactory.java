@@ -73,7 +73,7 @@ public class TlsFactory implements SocketFactory {
         Objects.requireNonNull(peers);
         this.socketConfig = Objects.requireNonNull(socketConfig);
         Objects.requireNonNull(cryptoConfig);
-        
+
         final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(peers);
 
         final char[] password = cryptoConfig.keystorePassword().toCharArray();
