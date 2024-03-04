@@ -88,9 +88,7 @@ public class BufferedOutputStreamTest {
     void testWriteNoFlush() throws IOException {
         // Given
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try (
-                BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream, 1);
-        ) {
+        try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream, 1); ) {
 
             // When / Then
             bufferedOutputStream.write('A');
@@ -105,9 +103,7 @@ public class BufferedOutputStreamTest {
     void testWriteNoFlushArray() throws IOException {
         // Given
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try (
-                BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream, 7);
-        ) {
+        try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream, 7); ) {
 
             // When / Then
             final byte[] a = "Hello ".getBytes();
@@ -125,7 +121,7 @@ public class BufferedOutputStreamTest {
         // Given
         final AtomicBoolean underlyingCloseWasCalled = new AtomicBoolean();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream() {
-            //Small hack so we don't add mockito dependency
+            // Small hack so we don't add mockito dependency
             @Override
             public void close() throws IOException {
                 super.close();

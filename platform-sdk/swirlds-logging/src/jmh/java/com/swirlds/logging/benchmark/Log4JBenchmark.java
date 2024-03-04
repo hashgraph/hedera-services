@@ -16,15 +16,15 @@
 
 package com.swirlds.logging.benchmark;
 
-import static com.swirlds.logging.benchmark.config.LoggingHandlingType.CONSOLE_AND_FILE_TYPE;
-import static com.swirlds.logging.benchmark.config.LoggingHandlingType.CONSOLE_TYPE;
-import static com.swirlds.logging.benchmark.config.LoggingHandlingType.FILE_TYPE;
 import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.FORK_COUNT;
 import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.MEASUREMENT_ITERATIONS;
 import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION;
 import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.PARALLEL_THREAD_COUNT;
 import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.WARMUP_ITERATIONS;
 import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
+import static com.swirlds.logging.benchmark.config.LoggingHandlingType.CONSOLE_AND_FILE_TYPE;
+import static com.swirlds.logging.benchmark.config.LoggingHandlingType.CONSOLE_TYPE;
+import static com.swirlds.logging.benchmark.config.LoggingHandlingType.FILE_TYPE;
 
 import java.util.Objects;
 import org.apache.logging.log4j.Logger;
