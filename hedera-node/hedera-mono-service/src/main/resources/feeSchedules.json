@@ -1468,14 +1468,14 @@
             {
               "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
               "nodedata": {
-                "constant": 0,
+                "constant": 10000000000,
                 "bpt": 0,
                 "vpt": 0,
                 "rbh": 0,
                 "sbh": 0,
                 "gas": 0,
                 "bpr": 0,
-                "sbpr": 10000000000,
+                "sbpr": 0,
                 "min": 0,
                 "max": 1000000000000000
               },
@@ -4853,14 +4853,14 @@
             {
               "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
               "nodedata": {
-                "constant": 0,
+                "constant": 10000000000,
                 "bpt": 0,
                 "vpt": 0,
                 "rbh": 0,
                 "sbh": 0,
                 "gas": 0,
                 "bpr": 0,
-                "sbpr": 10000000000,
+                "sbpr": 0,
                 "min": 0,
                 "max": 1000000000000000
               },

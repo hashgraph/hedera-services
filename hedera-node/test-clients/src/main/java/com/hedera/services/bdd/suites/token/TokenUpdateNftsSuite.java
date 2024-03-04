@@ -64,7 +64,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(updateMetadataOfNftInCollection(), updateNftFeeChargedAsExpected());
+        return List.of(updateMetadataOfNftInCollection(), updateSingleNftFeeChargedAsExpected());
     }
 
     @HapiTest
@@ -106,7 +106,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateNftFeeChargedAsExpected() {
+    final HapiSpec updateSingleNftFeeChargedAsExpected() {
         final var expectedNftUpdatePriceUsd = 0.001;
         final var nftUpdateTxn = "nftUpdateTxn";
 

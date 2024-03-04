@@ -66,6 +66,18 @@ public class NoOpFeeCalculator implements FeeCalculator {
         return this;
     }
 
+    /**
+     * Adds to the "constant" component a constant contribution per request used by the transaction.
+     *
+     * @param amount The number of tiny cents per request per transaction. Must not be negative.
+     * @return {@code this} for fluent usage.
+     */
+    @NonNull
+    @Override
+    public FeeCalculator addConstant(long amount) {
+        return this;
+    }
+
     @NonNull
     public FeeCalculator addVerificationsPerTransaction(long amount) {
         return this;

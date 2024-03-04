@@ -134,7 +134,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var serials = op.tokenUpdateNftsOrThrow().serialNumbers();
         return feeContext
                 .feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
-                .addSbpr((long) serials.size() * LONG_SIZE)
+                .addConstant((long) serials.size() * LONG_SIZE)
                 .calculate();
     }
 }
