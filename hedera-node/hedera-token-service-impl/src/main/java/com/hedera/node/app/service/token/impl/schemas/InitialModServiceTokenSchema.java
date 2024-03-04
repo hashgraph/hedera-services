@@ -522,7 +522,7 @@ public class InitialModServiceTokenSchema extends Schema {
         // ---------- Balances Safety Check -------------------------
         // Aadd up the balances of all accounts, they must match 50,000,000,000 HBARs (config)
         var totalBalance = 0L;
-        for (int i = 1; i < hederaConfig.firstUserEntity(); i++) {
+        for (int i = 1; i < accounts.size(); i++) {
             final var account = accounts.get(asAccountId(i, hederaConfig));
             if (account != null) {
                 totalBalance += account.tinybarBalance();
