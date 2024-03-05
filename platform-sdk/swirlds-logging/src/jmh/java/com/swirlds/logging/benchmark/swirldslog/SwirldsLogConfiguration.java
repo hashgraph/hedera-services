@@ -24,6 +24,7 @@ import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.util.LogFiles;
+import com.swirlds.logging.benchmark.util.TimestampManagement;
 import com.swirlds.logging.console.ConsoleHandlerFactory;
 import com.swirlds.logging.file.FileHandlerFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,7 +42,7 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.file.type", "file")
                 .withValue("logging.handler.file.active", "true")
-                .withValue("logging.handler.file.formatTimestamp", Constants.ENABLE_TIME_FORMATTING + "")
+                .withValue("logging.handler.file.formatTimestamp", TimestampManagement.formatTimestamp() + "")
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", logFile)
                 .build();
@@ -58,7 +59,7 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.console.type", "console")
                 .withValue("logging.handler.console.active", "true")
-                .withValue("logging.handler.console.formatTimestamp", Constants.ENABLE_TIME_FORMATTING + "")
+                .withValue("logging.handler.console.formatTimestamp", TimestampManagement.formatTimestamp() + "")
                 .withValue("logging.handler.console.level", "trace")
                 .build();
         final LogHandler consoleHandler = CONSOLE_HANDLER_FACTORY.create("console", configuration);
@@ -75,7 +76,7 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.file.type", "file")
                 .withValue("logging.handler.file.active", "true")
-                .withValue("logging.handler.file.formatTimestamp", Constants.ENABLE_TIME_FORMATTING + "")
+                .withValue("logging.handler.file.formatTimestamp", TimestampManagement.formatTimestamp() + "")
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", logFile)
                 .withValue("logging.handler.console.type", "console")

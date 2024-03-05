@@ -19,6 +19,7 @@ package com.swirlds.logging.benchmark.log4j2;
 import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.util.LogFiles;
+import com.swirlds.logging.benchmark.util.TimestampManagement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -37,7 +38,7 @@ import org.apache.logging.log4j.spi.LoggerContext;
 public class Log4JConfiguration implements Configuration<LoggerContext> {
 
     private static final String PATTERN =
-            (Constants.ENABLE_TIME_FORMATTING ? "%d{yyyy-MM-dd HH:mm:ss.SSS}" : "%d{UNIX_MILLIS}")
+            (TimestampManagement.formatTimestamp() ? "%d{yyyy-MM-dd HH:mm:ss.SSS}" : "%d{UNIX_MILLIS}")
                     + " %-5level [%t] %c - %msg - [%marker] %X %n%throwable";
     public static final String CONSOLE_APPENDER_NAME = "console";
     public static final String FILE_APPENDER_NAME = "file";
