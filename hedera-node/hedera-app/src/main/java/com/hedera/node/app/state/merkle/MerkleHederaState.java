@@ -318,10 +318,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformState platformState) {
         throwIfImmutable();
-        logger.info(
-                "Handling consensus round " + " in MHS instance {} via lifecycles {}",
-                System.identityHashCode(this),
-                System.identityHashCode(((HederaLifecyclesImpl) lifecycles).hedera));
         lifecycles.onHandleConsensusRound(round, platformState, this);
     }
 
