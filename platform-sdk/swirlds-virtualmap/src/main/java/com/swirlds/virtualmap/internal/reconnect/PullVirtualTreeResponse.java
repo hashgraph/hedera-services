@@ -51,7 +51,7 @@ public class PullVirtualTreeResponse implements SelfSerializable {
     /**
      * This constructor is used by the teacher to create new responses.
      */
-    public PullVirtualTreeResponse(final VirtualTeacherTreeView teacherView, final long path) throws IOException {
+    public PullVirtualTreeResponse(final VirtualTeacherTreeView teacherView, final long path) {
         this.teacherView = teacherView;
         this.learnerView = null;
         this.path = path;

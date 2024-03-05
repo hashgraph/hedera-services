@@ -26,6 +26,7 @@ import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.throttle.RateLimiter;
+import com.swirlds.virtualmap.internal.Path;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
@@ -87,7 +88,7 @@ public class TeacherPullVirtualTreeReceiveTask {
     /**
      * Start the thread that sends lessons and queries to the learner.
      */
-    public void start() {
+    void exec() {
         workGroup.execute(NAME, this::run);
     }
 
@@ -108,19 +109,18 @@ public class TeacherPullVirtualTreeReceiveTask {
      * This thread is responsible for sending lessons (and nested queries) to the learner.
      */
     private void run() {
-        // try { // ASYNC MODE
-        try (out) {
+        try {
             while (true) {
                 rateLimit();
                 final long path = in.readLong();
-                if (path == -1) {
+                logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher receive path: " + path);
+                if (path == Path.INVALID_PATH) {
                     logger.info(RECONNECT.getMarker(), "Teacher receiver is complete as requested by the learner");
                     break;
                 }
-                // view.registerRequest(path); // ASYNC MODE
-                final PullVirtualTreeResponse response = new PullVirtualTreeResponse(view, path); // sync mode
-                out.sendAsync(response); // sync mode
+                view.registerRequest(path);
             }
+            logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher receive done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Teacher's receiving task is interrupted");
             Thread.currentThread().interrupt();

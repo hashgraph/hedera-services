@@ -150,12 +150,12 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
 
         final LearnerPullVirtualTreeReceiveTask learnerReceiveTask = new LearnerPullVirtualTreeReceiveTask(
                 workGroup, in, this, senderIsFinished, expectedResponses, rootResponseReceived);
-        learnerReceiveTask.start();
+        learnerReceiveTask.exec();
         reconstructedRoot.set(0L);
         assert traversalOrder != null;
         final LearnerPullVirtualTreeSendTask learnerSendTask = new LearnerPullVirtualTreeSendTask(
                 workGroup, outputStream, this, traversalOrder, senderIsFinished, rootResponseReceived);
-        learnerSendTask.start();
+        learnerSendTask.exec();
     }
 
     @Override

@@ -40,9 +40,7 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
 import java.util.Deque;
-import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,8 +71,6 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
      * This latch counts down when the view is fully initialized and ready for use.
      */
     private final CountDownLatch ready = new CountDownLatch(1);
-
-    private StandardWorkGroup workGroup;
 
     /**
      * Create a new {@link TeacherPullVirtualTreeView}.
@@ -115,8 +111,6 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,
             final Queue<TeacherSubtree> subtrees) {
-        this.workGroup = workGroup;
-
         final AsyncOutputStream<PullVirtualTreeResponse> out =
                 new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig);
         out.start();
@@ -125,12 +119,10 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
 
         final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
                 time, reconnectConfig, workGroup, inputStream, out, this, allRequestsReceived);
-        teacherReceiveTask.start();
-        /* ASYNC MODE
+        teacherReceiveTask.exec();
         final TeacherPullVirtualTreeSendTask teacherSendTask = new TeacherPullVirtualTreeSendTask(
                 reconnectConfig, workGroup, out, this, allRequestsReceived);
-        teacherSendTask.start();
-        */
+        teacherSendTask.exec();
     }
 
     private boolean isLeaf(final long path) {
@@ -161,58 +153,21 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
         return records.findHash(path);
     }
 
-    private final Deque<Long> requests = new ConcurrentLinkedDeque<>();
-    private final Map<Long, PullVirtualTreeResponse> responses = new ConcurrentHashMap<>();
-
-    /* ASYNC MODE
-    private final ThreadManager threadManager = AdHocThreadManager.getStaticThreadManager();
-    private final ThreadConfiguration configuration = new ThreadConfiguration(threadManager)
-            .setExceptionHandler((t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception ", ex))
-            .setThreadName("reconnect-teacher-receiver");
-    private final ExecutorService exec = Executors.newFixedThreadPool(8, configuration.buildFactory());
-    */
+    private final Deque<PullVirtualTreeResponse> responses = new ConcurrentLinkedDeque<>();
 
     @Override
     public void registerRequest(final long path) {
-        assert workGroup != null;
-
-        final class ResponseRunnable implements Runnable {
-            private final long p;
-
-            private ResponseRunnable(final long p) {
-                this.p = p;
-            }
-
-            public void run() {
-                try {
-                    responses.put(p, new PullVirtualTreeResponse(TeacherPullVirtualTreeView.this, p));
-                } catch (final IOException e) {
-                    throw new MerkleSynchronizationException(e);
-                }
-            }
-        }
-
-        requests.addLast(path);
-        workGroup.execute(new ResponseRunnable(path));
-        // exec.execute(new ResponseRunnable(path)); // ASYNC MODE
+        responses.addLast(new PullVirtualTreeResponse(TeacherPullVirtualTreeView.this, path));
     }
 
     @Override
     public boolean hasPendingRequests() {
-        return !requests.isEmpty();
+        return !responses.isEmpty();
     }
 
     @Override
-    public PullVirtualTreeResponse getNextResponse() throws InterruptedException {
-        final Long path = requests.poll();
-        if (path == null) {
-            return null;
-        }
-        PullVirtualTreeResponse response;
-        while ((response = responses.get(path)) == null) {
-            Thread.sleep(1);
-        }
-        return response;
+    public PullVirtualTreeResponse getNextResponse() {
+        return responses.pollFirst();
     }
 
     /**
@@ -332,7 +287,6 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
         try {
             waitUntilReady();
             records.getDataSource().close();
-            workGroup = null;
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "interrupted while attempting to close data source");
         } catch (final InterruptedException e) {

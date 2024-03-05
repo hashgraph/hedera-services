@@ -66,7 +66,7 @@ public class TeacherPullVirtualTreeSendTask {
     /**
      * Start the thread that sends lessons and queries to the learner.
      */
-    public void start() {
+    void exec() {
         workGroup.execute(NAME, this::run);
     }
 
@@ -81,8 +81,10 @@ public class TeacherPullVirtualTreeSendTask {
                     Thread.sleep(1);
                     continue;
                 }
+                logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher send path: " + response.getPath());
                 out.sendAsync(response);
             }
+            logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher send done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Teacher's sending task is interrupted");
             Thread.currentThread().interrupt();

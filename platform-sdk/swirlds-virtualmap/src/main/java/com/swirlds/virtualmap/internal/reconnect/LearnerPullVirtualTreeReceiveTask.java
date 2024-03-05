@@ -68,7 +68,7 @@ public class LearnerPullVirtualTreeReceiveTask {
         this.rootResponseReceived = rootResponseReceived;
     }
 
-    public void start() {
+    public void exec() {
         workGroup.execute(NAME, this::run);
     }
 
@@ -82,6 +82,7 @@ public class LearnerPullVirtualTreeReceiveTask {
                 if (responseExpected) {
                     final PullVirtualTreeResponse response =
                             in.readAnticipatedMessage(); // will call the view to read hash and leaf
+                    logger.info(RECONNECT.getMarker(), "TOREMOVE Learner receive path: " + response.getPath());
                     if (response.getPath() == 0) {
                         rootResponseReceived.countDown();
                     }
@@ -93,6 +94,7 @@ public class LearnerPullVirtualTreeReceiveTask {
                 finished = senderIsFinished.get();
                 responseExpected = expectedResponses.get() > 0;
             }
+            logger.info(RECONNECT.getMarker(), "TOREMOVE Learner receive done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Learner's receiving task interrupted");
             Thread.currentThread().interrupt();

@@ -50,10 +50,13 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
     private final Deque<Long> phase1Paths = new ConcurrentLinkedDeque<>();
     private final AtomicInteger pendingPhase1Nodes = new AtomicInteger();
 
+    // Rank right above the first leaf rank
     private int leafParentRank;
+    // First path in leafParentRank
     private long firstPathInLeafParentRank;
-    private int batchesCount;
-    private int batchHeight;
+    // Number of parent node chunks processed in parallel in phase 1
+    private int chunkCount;
+    // Number of nodes at leafParentRank in a chunk
     private int batchWidth;
 
     private long lastLeafPath = Path.INVALID_PATH;
@@ -77,13 +80,13 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
             return; // no phase 1, just iterate over all leaves
         }
 
-        final int batchesCountPow = Math.min(DEFAULT_BATCH_COUNT_POW, leafParentRank - 1);
-        batchesCount = 1 << batchesCountPow;
-        batchHeight = leafParentRank - batchesCountPow;
-        batchWidth = 1 << batchHeight;
+        final int chunkCountPow = Math.min(DEFAULT_BATCH_COUNT_POW, leafParentRank - 1);
+        chunkCount = 1 << chunkCountPow;
+        final int chunkHeight = leafParentRank - chunkCountPow;
+        batchWidth = 1 << chunkHeight;
 
         firstPathInLeafParentRank = Path.getLeftGrandChildPath(0, leafParentRank);
-        for (int i = 0; i < batchesCount; i++) {
+        for (int i = 0; i < chunkCount; i++) {
             long path = firstPathInLeafParentRank + (long) i * batchWidth;
             phase1Node(path);
         }
@@ -163,7 +166,7 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
         if (pendingPhase1Nodes.get() > 0) {
             result = phase1Paths.pollFirst();
             if (result == null) {
-                return -2;
+                return PATH_NOT_AVAILABLE_YET;
             }
         } else {
             result = getNextLeafPath();
@@ -173,9 +176,6 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
     }
 
     private long getNextLeafPath() {
-        if (lastLeafPath == Path.INVALID_PATH) {
-            System.err.println("Clean nodes: " + cleanNodes.size());
-        }
         long path = lastLeafPath == Path.INVALID_PATH ? reconnectFirstLeafPath : lastLeafPath + 1;
         if (path == Path.INVALID_PATH) {
             return Path.INVALID_PATH;
