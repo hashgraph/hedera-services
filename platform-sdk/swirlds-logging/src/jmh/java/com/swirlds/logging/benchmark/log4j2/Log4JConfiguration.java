@@ -37,9 +37,8 @@ import org.apache.logging.log4j.spi.LoggerContext;
 public class Log4JConfiguration implements Configuration<LoggerContext> {
 
     private static final String PATTERN =
-            (Constants.ENABLE_TIME_FORMATTING ?
-                    "%d{yyyy-MM-dd HH:mm:ss.SSS}" :
-                    "%d{UNIX_MILLIS}") + " %-5level [%t] %c - %msg - [%marker] %X %n%throwable";
+            (Constants.ENABLE_TIME_FORMATTING ? "%d{yyyy-MM-dd HH:mm:ss.SSS}" : "%d{UNIX_MILLIS}")
+                    + " %-5level [%t] %c - %msg - [%marker] %X %n%throwable";
     public static final String CONSOLE_APPENDER_NAME = "console";
     public static final String FILE_APPENDER_NAME = "file";
 
@@ -54,8 +53,7 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
     }
 
     public @NonNull LoggerContext configureFileLogging() {
-        final String logFile =
-                LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.FILE_TYPE);
+        final String logFile = LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.FILE_TYPE);
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.DEBUG);
@@ -66,8 +64,7 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
     }
 
     public @NonNull LoggerContext configureFileAndConsoleLogging() {
-        final String logFile =
-                LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.CONSOLE_AND_FILE_TYPE);
+        final String logFile = LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.CONSOLE_AND_FILE_TYPE);
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);

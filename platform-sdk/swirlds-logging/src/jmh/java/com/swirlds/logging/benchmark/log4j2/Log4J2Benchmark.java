@@ -26,8 +26,8 @@ import static com.swirlds.logging.benchmark.config.Constants.PARALLEL_THREAD_COU
 import static com.swirlds.logging.benchmark.config.Constants.WARMUP_ITERATIONS;
 import static com.swirlds.logging.benchmark.config.Constants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
 
-import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.Configuration;
+import com.swirlds.logging.benchmark.config.Constants;
 import java.util.Objects;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.spi.LoggerContext;
@@ -51,7 +51,6 @@ public class Log4J2Benchmark {
 
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
-
 
     private Logger logger;
     private Log4JRunner logRunner;

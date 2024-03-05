@@ -49,7 +49,7 @@ public class LogFiles {
     @NonNull
     public static String getPath(final @NonNull String implementation, final @NonNull String type) {
         final long pid = ProcessHandle.current().pid();
-        return LOGGING_FOLDER +"benchmark-" + implementation + "-" + pid + "-" + type + ".log";
+        return LOGGING_FOLDER + "benchmark-" + implementation + "-" + pid + "-" + type + ".log";
     }
 
     /**

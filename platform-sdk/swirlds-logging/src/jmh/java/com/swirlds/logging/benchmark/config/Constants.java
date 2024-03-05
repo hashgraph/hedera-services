@@ -38,5 +38,5 @@ public class Constants {
     public static final boolean DELETE_OUTPUT_FILES = false;
     public static final boolean DELETE_OUTPUT_FOLDER = false;
 
-    private Constants(){}
+    private Constants() {}
 }

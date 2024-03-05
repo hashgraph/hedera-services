@@ -34,8 +34,7 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
     private static final ConsoleHandlerFactory CONSOLE_HANDLER_FACTORY = new ConsoleHandlerFactory();
 
     public @NonNull LoggingSystem configureFileLogging() {
-        final String logFile =
-                LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE);
+        final String logFile = LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE);
         final com.swirlds.config.api.Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
@@ -69,8 +68,7 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
     }
 
     public @NonNull LoggingSystem configureFileAndConsoleLogging() {
-        final String logFile =
-                LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE);
+        final String logFile = LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE);
         final com.swirlds.config.api.Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())

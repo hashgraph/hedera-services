@@ -28,8 +28,8 @@ import static com.swirlds.logging.benchmark.config.Constants.WARMUP_TIME_IN_SECO
 
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
-import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.Configuration;
+import com.swirlds.logging.benchmark.config.Constants;
 import java.util.Objects;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
