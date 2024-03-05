@@ -131,8 +131,8 @@ class FutureEventBufferTests {
                 newPendingConsensusRound <= maxFutureRound;
                 newPendingConsensusRound++) {
 
-            final NonAncientEventWindow newEventWindow =
-                    new NonAncientEventWindow(newPendingConsensusRound, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
+            final NonAncientEventWindow newEventWindow = new NonAncientEventWindow(
+                    newPendingConsensusRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
 
             final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
 
