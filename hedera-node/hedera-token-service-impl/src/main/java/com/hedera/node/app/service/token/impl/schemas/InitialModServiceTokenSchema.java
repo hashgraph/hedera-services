@@ -523,9 +523,10 @@ public class InitialModServiceTokenSchema extends Schema {
         // ---------- Balances Safety Check -------------------------
         // Add up the balances of all accounts, they must match 50,000,000,000 HBARs (config)
         var totalBalance = 0L;
+        int accountStart = 1;
         log.info("Size of accounts map is {}", accounts.size());
-        for (int i = 1; i < accounts.size(); i++) {
-            final var account = accounts.get(asAccountId(i, hederaConfig));
+        while(accountStart <= accounts.size()) {
+            final var account = accounts.get(asAccountId(accountStart, hederaConfig));
             if (account != null) {
                 totalBalance += account.tinybarBalance();
                 log.info(
@@ -533,10 +534,12 @@ public class InitialModServiceTokenSchema extends Schema {
                         account.accountId(),
                         account.tinybarBalance(),
                         totalBalance);
+                accountStart++;
             } else {
-                log.info("Account {} is null", i);
+                log.info("Account {} is null", accountStart);
             }
         }
+
         if (totalBalance != ledgerConfig.totalTinyBarFloat()) {
             throw new IllegalStateException("Total balance of all accounts does not match the total float: actual: "
                     + totalBalance + " vs expected: " + ledgerConfig.totalTinyBarFloat());
