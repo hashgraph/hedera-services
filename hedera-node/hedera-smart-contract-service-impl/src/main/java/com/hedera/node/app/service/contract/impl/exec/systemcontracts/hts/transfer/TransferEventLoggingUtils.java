@@ -44,6 +44,9 @@ public class TransferEventLoggingUtils {
      * Logs a successful ERC-20 transfer event based on the Hedera-style representation of the fungible
      * balance adjustments.
      *
+     * <p><b>IMPORTANT:</b> The adjusts list must be length two and the credit adjustment
+     * must appear first.
+     *
      * @param tokenId the token ID
      * @param adjusts the Hedera-style representation of the fungible balance adjustments
      * @param accountStore the account store to get account addresses from
@@ -58,19 +61,12 @@ public class TransferEventLoggingUtils {
         requireNonNull(frame);
         requireNonNull(adjusts);
         requireNonNull(accountStore);
-        var senderId = AccountID.DEFAULT;
-        var receiverId = AccountID.DEFAULT;
-        long amount = 0L;
-        for (final var adjust : adjusts) {
-            amount = Math.abs(adjust.amount());
-            if (adjust.amount() > 0) {
-                receiverId = adjust.accountIDOrThrow();
-            } else {
-                senderId = adjust.accountIDOrThrow();
-            }
+        final var credit = adjusts.getFirst();
+        if (credit.amount() < 0) {
+            throw new IllegalArgumentException("Credit adjustment must appear first");
         }
-        frame.addLog(builderFor(tokenId, senderId, receiverId, accountStore)
-                .forDataItem(amount)
+        frame.addLog(builderFor(tokenId, adjusts.getLast().accountIDOrThrow(), credit.accountIDOrThrow(), accountStore)
+                .forDataItem(credit.amount())
                 .build());
     }
 
