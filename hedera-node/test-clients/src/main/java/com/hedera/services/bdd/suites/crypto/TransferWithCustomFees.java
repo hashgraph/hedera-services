@@ -85,26 +85,26 @@ public class TransferWithCustomFees extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-            transferErc20WithFixedHbarCustomFees(),
-            transferErc20WithFixedHtsCustomFees(),
-            transferErc721WithFixedHbarCustomFees(),
-            transferErc721WithFixedHtsCustomFees(),
-            transferApprovedErc20WithFixedHbarCustomFee(),
-            transferApprovedErc20WithFixedHtsCustomFeeAsOwner(),
-            transferApprovedErc20WithFixedHtsCustomFeeAsSpender(),
-            transferApprovedErc721WithFixedHbarCustomFees(),
-            transferApprovedErc721WithFixedHtsCustomFeesAsOwner(),
-            transferApprovedErc721WithFixedHtsCustomFeeAsSpender(),
-            transferErc20WithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt(),
-            transferErc20WithThreeFixedHtsCustomFeesWithAllCollectorsExempt(),
+            transferFungibleTokenWithFixedHbarCustomFees(),
+            transferFungibleTokenWithFixedHtsCustomFees(),
+            transferNonFungibleTokenWithFixedHbarCustomFees(),
+            transferNonFungibleTokenWithFixedHtsCustomFees(),
+            transferApprovedFungibleTokenWithFixedHbarCustomFee(),
+            transferApprovedFungibleTokenWithFixedHtsCustomFeeAsOwner(),
+            transferApprovedFungibleTokenWithFixedHtsCustomFeeAsSpender(),
+            transferApprovedNonFungibleTokenWithFixedHbarCustomFees(),
+            transferApprovedNonFungibleTokenWithFixedHtsCustomFeesAsOwner(),
+            transferApprovedNonFungibleTokenWithFixedHtsCustomFeeAsSpender(),
+            transferFungibleTokenWithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt(),
+            transferFungibleTokenWithThreeFixedHtsCustomFeesWithAllCollectorsExempt(),
             transferWithFractionalCustomFee(),
             transferWithInsufficientCustomFees()
         });
     }
 
     @HapiTest
-    public HapiSpec transferErc20WithFixedHbarCustomFees() {
-        return defaultHapiSpec("transferErc20WithFixedHbarCustomFees")
+    public HapiSpec transferFungibleTokenWithFixedHbarCustomFees() {
+        return defaultHapiSpec("transferFungibleTokenWithFixedHbarCustomFees")
                 .given(
                         cryptoCreate(hbarCollector).balance(0L),
                         cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
@@ -128,8 +128,8 @@ public class TransferWithCustomFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferErc20WithFixedHtsCustomFees() {
-        return defaultHapiSpec("transferErc20WithFixedHtsCustomFees")
+    public HapiSpec transferFungibleTokenWithFixedHtsCustomFees() {
+        return defaultHapiSpec("transferFungibleTokenWithFixedHtsCustomFees")
                 .given(
                         cryptoCreate(htsCollector),
                         cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
@@ -157,8 +157,8 @@ public class TransferWithCustomFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferErc721WithFixedHbarCustomFees() {
-        return defaultHapiSpec("transferErc721WithFixedHbarCustomFees")
+    public HapiSpec transferNonFungibleTokenWithFixedHbarCustomFees() {
+        return defaultHapiSpec("transferNonFungibleTokenWithFixedHbarCustomFees")
                 .given(
                         newKeyNamed(NFT_KEY),
                         cryptoCreate(hbarCollector).balance(0L),
@@ -186,8 +186,8 @@ public class TransferWithCustomFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferErc721WithFixedHtsCustomFees() {
-        return defaultHapiSpec("transferErc721WithFixedHtsCustomFees")
+    public HapiSpec transferNonFungibleTokenWithFixedHtsCustomFees() {
+        return defaultHapiSpec("transferNonFungibleTokenWithFixedHtsCustomFees")
                 .given(
                         newKeyNamed(NFT_KEY),
                         cryptoCreate(htsCollector),
@@ -217,8 +217,8 @@ public class TransferWithCustomFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferApprovedErc20WithFixedHbarCustomFee() {
-        return defaultHapiSpec("transferApprovedErc20WithFixedHbarCustomFee")
+    public HapiSpec transferApprovedFungibleTokenWithFixedHbarCustomFee() {
+        return defaultHapiSpec("transferApprovedFungibleTokenWithFixedHbarCustomFee")
                 .given(
                         cryptoCreate(hbarCollector).balance(0L),
                         cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
@@ -255,8 +255,8 @@ public class TransferWithCustomFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferApprovedErc20WithFixedHtsCustomFeeAsOwner() {
-        return defaultHapiSpec("transferApprovedErc20WithFixedHtsCustomFeeAsOwner")
+    public HapiSpec transferApprovedFungibleTokenWithFixedHtsCustomFeeAsOwner() {
+        return defaultHapiSpec("transferApprovedFungibleTokenWithFixedHtsCustomFeeAsOwner")
                 .given(
                         cryptoCreate(htsCollector),
                         cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
@@ -299,8 +299,8 @@ public class TransferWithCustomFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferApprovedErc20WithFixedHtsCustomFeeAsSpender() {
-        return defaultHapiSpec("transferApprovedErc20WithFixedHtsCustomFeeAsSpender")
+    public HapiSpec transferApprovedFungibleTokenWithFixedHtsCustomFeeAsSpender() {
+        return defaultHapiSpec("transferApprovedFungibleTokenWithFixedHtsCustomFeeAsSpender")
                 .given(
                         cryptoCreate(htsCollector),
                         cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
@@ -343,8 +343,8 @@ public class TransferWithCustomFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferApprovedErc721WithFixedHbarCustomFees() {
-        return defaultHapiSpec("transferApprovedErc721WithFixedHbarCustomFees")
+    public HapiSpec transferApprovedNonFungibleTokenWithFixedHbarCustomFees() {
+        return defaultHapiSpec("transferApprovedNonFungibleTokenWithFixedHbarCustomFees")
                 .given(
                         newKeyNamed(NFT_KEY),
                         cryptoCreate(hbarCollector).balance(0L),
@@ -381,8 +381,8 @@ public class TransferWithCustomFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferApprovedErc721WithFixedHtsCustomFeesAsOwner() {
-        return defaultHapiSpec("transferApprovedErc721WithFixedHtsCustomFeesAsOwner")
+    public HapiSpec transferApprovedNonFungibleTokenWithFixedHtsCustomFeesAsOwner() {
+        return defaultHapiSpec("transferApprovedNonFungibleTokenWithFixedHtsCustomFeesAsOwner")
                 .given(
                         newKeyNamed(NFT_KEY),
                         cryptoCreate(htsCollector),
@@ -425,8 +425,8 @@ public class TransferWithCustomFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferApprovedErc721WithFixedHtsCustomFeeAsSpender() {
-        return defaultHapiSpec("transferApprovedErc721WithFixedHtsCustomFeeAsSpender")
+    public HapiSpec transferApprovedNonFungibleTokenWithFixedHtsCustomFeeAsSpender() {
+        return defaultHapiSpec("transferApprovedNonFungibleTokenWithFixedHtsCustomFeeAsSpender")
                 .given(
                         newKeyNamed(NFT_KEY),
                         cryptoCreate(htsCollector),
@@ -468,9 +468,9 @@ public class TransferWithCustomFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferErc20WithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt() {
+    public HapiSpec transferFungibleTokenWithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt() {
         final long amountToSend = 400L;
-        return defaultHapiSpec("transferErc20WithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt")
+        return defaultHapiSpec("transferFungibleTokenWithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt")
                 .given(
                         cryptoCreate(alice).balance(0L),
                         cryptoCreate(bob).balance(0L),
@@ -508,9 +508,9 @@ public class TransferWithCustomFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferErc20WithThreeFixedHtsCustomFeesWithAllCollectorsExempt() {
+    public HapiSpec transferFungibleTokenWithThreeFixedHtsCustomFeesWithAllCollectorsExempt() {
         final long amountToSend = 400L;
-        return defaultHapiSpec("transferErc20WithThreeFixedHtsCustomFeesAndAllCollectorsExempt")
+        return defaultHapiSpec("transferFungibleTokenWithThreeFixedHtsCustomFeesWithAllCollectorsExempt")
                 .given(
                         cryptoCreate(alice).balance(0L),
                         cryptoCreate(bob).balance(0L),
