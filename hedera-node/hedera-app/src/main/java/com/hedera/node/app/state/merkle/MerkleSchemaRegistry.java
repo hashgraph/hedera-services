@@ -183,15 +183,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         for (final var schema : schemasToApply) {
             final var applicationType = checkApplicationType(previousVersion, latestVersion, schema);
             logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), applicationType);
-            // Now we can migrate the schema and then commit all the changes
-            // We just have one merkle tree -- the just-loaded working tree -- to work from.
-            // We get a ReadableStates for everything in the current tree, but then wrap
-            // it with a FilteredReadableStates that is locked into exactly the set of states
-            // available at this moment in time. This is done to make sure that even after we
-            // add new states into the tree, it doesn't increase the number of states that can
-            // be seen by the schema migration code
-            final var readableStates = hederaState.getReadableStates(serviceName);
-            final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
 
             // Create the new states (based on the schema) which, thanks to the above, does not
             // expand the set of states that the migration code will see
@@ -229,6 +220,16 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             });
                         }
                     });
+
+            // Now we can migrate the schema and then commit all the changes
+            // We just have one merkle tree -- the just-loaded working tree -- to work from.
+            // We get a ReadableStates for everything in the current tree, but then wrap
+            // it with a FilteredReadableStates that is locked into exactly the set of states
+            // available at this moment in time. This is done to make sure that even after we
+            // add new states into the tree, it doesn't increase the number of states that can
+            // be seen by the schema migration code
+            final var readableStates = hederaState.getReadableStates(serviceName);
+            final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
 
             // Create the writable states. We won't commit anything from these states
             // until we have completed migration.
