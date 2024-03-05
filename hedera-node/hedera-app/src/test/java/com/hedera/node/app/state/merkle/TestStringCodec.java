@@ -61,7 +61,8 @@ class TestStringCodec implements Codec<String> {
     }
 
     @Override
-    public boolean fastEquals(final @NonNull String value, final @NonNull ReadableSequentialData input) throws ParseException {
+    public boolean fastEquals(final @NonNull String value, final @NonNull ReadableSequentialData input)
+            throws ParseException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(input);
         return value.equals(parse(input));

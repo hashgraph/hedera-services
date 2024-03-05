@@ -58,7 +58,8 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth) throws ParseException {
+            public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+                    throws ParseException {
                 final var buffer = new byte[input.readInt()];
                 input.readBytes(buffer);
                 final var bais = new ByteArrayInputStream(buffer);
@@ -104,7 +105,8 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth) throws ParseException {
+            public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+                    throws ParseException {
                 try {
                     if (input instanceof ReadableStreamingData in) {
                         final var item = factory.get();
@@ -174,7 +176,8 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth) throws ParseException {
+            public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+                    throws ParseException {
                 try {
                     if (input instanceof ReadableStreamingData in) {
                         final var item = factory.get();
