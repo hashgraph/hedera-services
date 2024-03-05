@@ -71,12 +71,6 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     private List<VirtualLeafRecord<K, V>> leaves;
     private List<VirtualHashRecord> hashes;
 
-    // Flushes are initiated from onNodeHashed(). While a flush is in progress, other nodes
-    // are still hashed in parallel, so it may happen that enough nodes are hashed to
-    // start a new flush, while the previous flush is not complete yet. This flag is
-    // protection from that
-    private final AtomicBoolean flushInProgress = new AtomicBoolean(false);
-
     private int reconnectFlushInterval = 0;
 
     /**
@@ -108,7 +102,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     }
 
     @Override
-    public synchronized void onHashingStarted() {
+    public void onHashingStarted() {
         hashes = new ArrayList<>();
         leaves = new ArrayList<>();
         reconnectFlushInterval =
@@ -121,70 +115,41 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     @Override
     public void onNodeHashed(final long path, final Hash hash) {
         assert hashes != null && leaves != null : "onNodeHashed called without onHashingStarted";
-        final List<VirtualHashRecord> dirtyHashesToFlush;
-        final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush;
-        synchronized (this) {
-            hashes.add(new VirtualHashRecord(path, hash));
-            if ((reconnectFlushInterval > 0)
-                    && (hashes.size() >= reconnectFlushInterval)
-                    && flushInProgress.compareAndSet(false, true)) {
-                dirtyHashesToFlush = hashes;
-                hashes = new ArrayList<>();
-                dirtyLeavesToFlush = leaves;
-                leaves = new ArrayList<>();
-            } else {
-                dirtyHashesToFlush = null;
-                dirtyLeavesToFlush = null;
-            }
-        }
-        if ((dirtyHashesToFlush != null) && (dirtyLeavesToFlush != null)) {
-            flush(dirtyHashesToFlush, dirtyLeavesToFlush);
+        hashes.add(new VirtualHashRecord(path, hash));
+        if ((reconnectFlushInterval > 0) && (hashes.size() >= reconnectFlushInterval)) {
+            flush(hashes, leaves);
+            hashes.clear();
+            leaves.clear();
         }
     }
 
     @Override
-    public synchronized void onLeafHashed(final VirtualLeafRecord<K, V> leaf) {
+    public void onLeafHashed(final VirtualLeafRecord<K, V> leaf) {
         leaves.add(leaf);
     }
 
     @Override
     public void onHashingCompleted() {
-        final List<VirtualHashRecord> finalNodesToFlush;
-        final List<VirtualLeafRecord<K, V>> finalLeavesToFlush;
-        synchronized (this) {
-            finalNodesToFlush = hashes;
-            hashes = null;
-            finalLeavesToFlush = leaves;
-            leaves = null;
+        if (!hashes.isEmpty() || !leaves.isEmpty()) {
+            flush(hashes, leaves);
         }
-        if (!finalNodesToFlush.isEmpty() || !finalLeavesToFlush.isEmpty()) {
-            assert !flushInProgress.get() : "Flush must not be in progress when hashing is complete";
-            flushInProgress.set(true);
-            flush(finalNodesToFlush, finalLeavesToFlush);
-        }
+        hashes = null;
+        leaves = null;
     }
 
-    // Since flushes may take quite some time, this method is called outside synchronized blocks,
-    // otherwise all hashing tasks would be blocked on listener calls until flush is completed.
     private void flush(
             @NonNull final List<VirtualHashRecord> hashesToFlush,
             @NonNull final List<VirtualLeafRecord<K, V>> leavesToFlush) {
-        assert flushInProgress.get() : "Flush in progress flag must be set";
         try {
-            // flush it down
-            try {
-                dataSource.saveRecords(
-                        firstLeafPath,
-                        lastLeafPath,
-                        hashesToFlush.stream(),
-                        leavesToFlush.stream(),
-                        findLeavesToRemove(),
-                        true);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        } finally {
-            flushInProgress.set(false);
+            dataSource.saveRecords(
+                    firstLeafPath,
+                    lastLeafPath,
+                    hashesToFlush.stream(),
+                    leavesToFlush.stream(),
+                    findLeavesToRemove(),
+                    true);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 

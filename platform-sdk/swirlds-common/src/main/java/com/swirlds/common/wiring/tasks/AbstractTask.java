@@ -67,7 +67,7 @@ public abstract class AbstractTask extends ForkJoinTask<Void> {
      * If the task has no dependencies then execute it. If the task has dependencies, decrement the dependency count and
      * execute it if the resulting number of dependencies is zero.
      */
-    protected void send() {
+    public void send() {
         if (dependencyCount == null || dependencyCount.decrementAndGet() == 0) {
             if ((Thread.currentThread() instanceof ForkJoinWorkerThread t) && (t.getPool() == pool)) {
                 fork();
