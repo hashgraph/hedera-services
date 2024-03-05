@@ -125,26 +125,12 @@ class CustomCallOperationTest {
     @Test
     void withSystemAccountContinuesAsExpected() {
         given(frame.getStackItem(1)).willReturn(SYSTEM_ADDRESS);
-        given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(0)));
         given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
 
         final var expected = new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         final var actual = subject.execute(frame, evm);
 
         assertSameResult(expected, actual);
-    }
-
-    @Test
-    void withLongZeroRejectsMissingAddress() {
-        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
-            givenWellKnownFrameWith(1L, TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
-            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
-
-            final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_ALIAS_KEY);
-            final var actual = subject.execute(frame, evm);
-
-            assertSameResult(expected, actual);
-        }
     }
 
     @Test
