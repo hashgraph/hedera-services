@@ -70,7 +70,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         transferContext = new TransferContextImpl(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, payerId);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
 
         final var replacedOp = getReplacedOp();
         subject = new CustomFeeAssessmentStep(replacedOp);
@@ -431,7 +431,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         transferContext = new TransferContextImpl(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, payerId);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         System.out.println("Before " + handleContext.payer());
 
         final var replacedOp = getReplacedOp();

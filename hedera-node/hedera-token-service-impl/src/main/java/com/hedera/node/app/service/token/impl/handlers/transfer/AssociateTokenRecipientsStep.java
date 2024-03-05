@@ -18,13 +18,11 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep.validateSpenderHasAllowance;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -35,7 +33,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -46,7 +43,6 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -55,12 +51,9 @@ import java.util.List;
  */
 public class AssociateTokenRecipientsStep extends BaseTokenHandler implements TransferStep {
     private final CryptoTransferTransactionBody op;
-    private final AccountID topLevelPayer;
 
-    public AssociateTokenRecipientsStep(
-            @NonNull final CryptoTransferTransactionBody op, @NonNull final AccountID topLevelPayer) {
+    public AssociateTokenRecipientsStep(@NonNull final CryptoTransferTransactionBody op) {
         this.op = requireNonNull(op);
-        this.topLevelPayer = requireNonNull(topLevelPayer);
     }
 
     @Override
@@ -82,7 +75,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             for (final var aa : xfers.transfersOrElse(emptyList())) {
                 final var accountId = aa.accountID();
                 final TokenAssociation newAssociation = validateAndBuildAutoAssociation(
-                        accountId, tokenId, token, accountStore, tokenRelStore, handleContext, aa.amount());
+                        accountId, tokenId, token, accountStore, tokenRelStore, handleContext);
                 if (newAssociation != null) {
                     newAssociations.add(newAssociation);
                 }
@@ -112,7 +105,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 }
 
                 final TokenAssociation newAssociation = validateAndBuildAutoAssociation(
-                        receiverId, tokenId, token, accountStore, tokenRelStore, handleContext, 0);
+                        receiverId, tokenId, token, accountStore, tokenRelStore, handleContext);
                 if (newAssociation != null) {
                     newAssociations.add(newAssociation);
                 }
@@ -134,7 +127,6 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
      * @param accountStore      The account store
      * @param tokenRelStore     The token relation store
      * @param handleContext     The context
-     * @param amount            The amount of tokens to be transferred, only used for FUNGIBLE_COMMON
      */
     private TokenAssociation validateAndBuildAutoAssociation(
             @NonNull final AccountID accountId,
@@ -142,15 +134,10 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             @NonNull final Token token,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final HandleContext handleContext,
-            long amount) {
+            @NonNull final HandleContext handleContext) {
         final var account = getIfUsable(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
         final var config = handleContext.configuration();
-
-        if (token.tokenType() == FUNGIBLE_COMMON) {
-            checkTokenAllowances(account, topLevelPayer, tokenId, amount);
-        }
 
         if (tokenRel == null && account.maxAutoAssociations() > 0) {
             validateFalse(
@@ -164,18 +151,6 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
             validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
             return null;
-        }
-    }
-
-    private void checkTokenAllowances(Account account, AccountID topLevelPayer, TokenID tokenId, long amount) {
-        final var tokenAllowances = account.tokenAllowancesOrElse(Collections.emptyList());
-        for (int i = 0; i < tokenAllowances.size(); i++) {
-            final var allowance = tokenAllowances.get(i);
-
-            if (topLevelPayer.equals(allowance.spenderId()) && tokenId.equals(allowance.tokenId())) {
-                final var newAllowanceAmount = allowance.amount() + amount;
-                validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
-            }
         }
     }
 }
