@@ -552,14 +552,7 @@ public class InitialModServiceTokenSchema extends Schema {
             Account account = accounts.get(asAccountId(i, hederaConfig));
             if (account != null) {
                 totalBalance += account.tinybarBalance();
-                log.info(
-                        "Account {} has balance {}, total balance is {}",
-                        account.accountId(),
-                        account.tinybarBalance(),
-                        totalBalance);
                 totalAccounts--;
-            } else {
-                log.info("Account {} is null", i);
             }
             i++;
         } while (totalAccounts > 0);
