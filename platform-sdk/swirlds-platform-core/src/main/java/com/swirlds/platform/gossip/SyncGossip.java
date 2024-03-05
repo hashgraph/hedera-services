@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.sync;
+package com.swirlds.platform.gossip;
 
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.state.Lifecycle;
 import com.swirlds.base.state.LifecyclePhase;
+import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -31,27 +33,41 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.config.BasicConfig;
+import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.gossip.AbstractGossip;
-import com.swirlds.platform.gossip.FallenBehindManagerImpl;
-import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.gossip.ProtocolConfig;
-import com.swirlds.platform.gossip.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
+import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
+import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
+import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.network.ConnectionTracker;
+import com.swirlds.platform.network.NetworkMetrics;
+import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
+import com.swirlds.platform.network.connectivity.ConnectionServer;
+import com.swirlds.platform.network.connectivity.InboundConnectionHandler;
+import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
+import com.swirlds.platform.network.connectivity.SocketFactory;
+import com.swirlds.platform.network.topology.NetworkTopology;
+import com.swirlds.platform.network.topology.StaticConnectionManagers;
+import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
+import com.swirlds.platform.reconnect.ReconnectHelper;
+import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
+import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectProtocol;
+import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -59,6 +75,7 @@ import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -73,11 +90,13 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
- * Sync gossip using the protocol negotiator.
+ * Boilerplate code for gossip.
  */
-public class SyncGossip extends AbstractGossip {
+public class SyncGossip implements ConnectionTracker, Lifecycle {
+    private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
 
     private final ReconnectController reconnectController;
+
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
     private final SyncPermitProvider syncPermitProvider;
     protected final SyncConfig syncConfig;
@@ -93,12 +112,27 @@ public class SyncGossip extends AbstractGossip {
      */
     private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
 
+    protected final PlatformContext platformContext;
+    protected final AddressBook addressBook;
+    protected final NodeId selfId;
+    protected final NetworkTopology topology;
+    protected final NetworkMetrics networkMetrics;
+    protected final ReconnectHelper reconnectHelper;
+    protected final StaticConnectionManagers connectionManagers;
+    protected final FallenBehindManagerImpl fallenBehindManager;
+    protected final SyncManagerImpl syncManager;
+    protected final ReconnectThrottle reconnectThrottle;
+    protected final ReconnectMetrics reconnectMetrics;
+    protected final PlatformStatusManager platformStatusManager;
+
+    protected final List<Startable> thingsToStart = new ArrayList<>();
+
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
-     * @param time                          the wall clock time
+     * @param time                          the time object used to get the current time
      * @param keysAndCerts                  private keys and public certificates
      * @param notificationEngine            used to send notifications to the app
      * @param addressBook                   the current address book
@@ -118,7 +152,7 @@ public class SyncGossip extends AbstractGossip {
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
      * @param emergencyStateSupplier        returns the emergency state if available
      */
-    public SyncGossip(
+    protected SyncGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
@@ -140,21 +174,80 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final Runnable clearAllPipelinesForReconnect,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final Supplier<ReservedSignedState> emergencyStateSupplier) {
-        super(
-                platformContext,
-                threadManager,
-                time,
-                keysAndCerts,
-                addressBook,
-                selfId,
-                appVersion,
-                intakeQueueSizeSupplier,
-                swirldStateManager,
-                latestCompleteState,
-                platformStatusManager,
-                loadReconnectState,
-                clearAllPipelinesForReconnect);
 
+        this.platformContext = Objects.requireNonNull(platformContext);
+        this.addressBook = Objects.requireNonNull(addressBook);
+        this.selfId = Objects.requireNonNull(selfId);
+        this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
+
+        Objects.requireNonNull(time);
+
+        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
+
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+
+        topology = new StaticTopology(addressBook, selfId, basicConfig.numConnections());
+
+        final SocketFactory socketFactory =
+                NetworkUtils.createSocketFactory(selfId, addressBook, keysAndCerts, platformContext.getConfiguration());
+        // create an instance that can create new outbound connections
+        final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
+                platformContext, selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
+        connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
+        final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
+                platformContext,
+                this,
+                selfId,
+                addressBook,
+                connectionManagers::newConnection,
+                shouldDoVersionCheck(),
+                appVersion,
+                time);
+        // allow other members to create connections to me
+        final Address address = addressBook.getAddress(selfId);
+        final ConnectionServer connectionServer = new ConnectionServer(
+                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle);
+        thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
+                .setPriority(threadConfig.threadPrioritySync())
+                .setNodeId(selfId)
+                .setComponent(PLATFORM_THREAD_POOL_NAME)
+                .setThreadName("connectionServer")
+                .setWork(connectionServer)
+                .build());
+
+        fallenBehindManager = buildFallenBehindManager();
+
+        syncManager = new SyncManagerImpl(
+                platformContext,
+                intakeQueueSizeSupplier,
+                fallenBehindManager,
+                platformContext.getConfiguration().getConfigData(EventConfig.class));
+
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+
+        reconnectThrottle = new ReconnectThrottle(reconnectConfig, time);
+
+        networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook);
+        platformContext.getMetrics().addUpdater(networkMetrics::update);
+
+        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), addressBook);
+
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        reconnectHelper = new ReconnectHelper(
+                this::pause,
+                clearAllPipelinesForReconnect::run,
+                swirldStateManager::getConsensusState,
+                latestCompleteState::getRound,
+                new ReconnectLearnerThrottle(time, selfId, reconnectConfig),
+                loadReconnectState,
+                new ReconnectLearnerFactory(
+                        platformContext,
+                        threadManager,
+                        addressBook,
+                        reconnectConfig.asyncStreamTimeout(),
+                        reconnectMetrics),
+                stateConfig);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
@@ -173,12 +266,8 @@ public class SyncGossip extends AbstractGossip {
                 intakeEventCounter,
                 shadowgraphExecutor);
 
-        final ReconnectConfig reconnectConfig =
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-
         reconnectController = new ReconnectController(reconnectConfig, threadManager, reconnectHelper, this::resume);
 
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final ProtocolConfig protocolConfig = platformContext.getConfiguration().getConfigData(ProtocolConfig.class);
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
@@ -196,9 +285,49 @@ public class SyncGossip extends AbstractGossip {
             // If we still need an emergency recovery state, we need it via emergency reconnect.
             // Start the helper first so that it is ready to receive a connection to perform reconnect with when the
             // protocol is initiated.
-            thingsToStart.add(0, reconnectController::start);
+            thingsToStart.addFirst(reconnectController::start);
         }
 
+        buildSyncProtocolThreads(
+                platformContext,
+                threadManager,
+                time,
+                notificationEngine,
+                selfId,
+                appVersion,
+                epochHash,
+                emergencyRecoveryManager,
+                intakeQueueSizeSupplier,
+                latestCompleteState,
+                syncMetrics,
+                platformStatusManager,
+                emergencyStateSupplier,
+                hangingThreadDuration,
+                protocolConfig,
+                reconnectConfig,
+                eventConfig);
+
+        thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
+    }
+
+    private void buildSyncProtocolThreads(
+            final PlatformContext platformContext,
+            final ThreadManager threadManager,
+            final Time time,
+            final NotificationEngine notificationEngine,
+            final NodeId selfId,
+            final SoftwareVersion appVersion,
+            final Hash epochHash,
+            final EmergencyRecoveryManager emergencyRecoveryManager,
+            final LongSupplier intakeQueueSizeSupplier,
+            final SignedStateNexus latestCompleteState,
+            final SyncMetrics syncMetrics,
+            final PlatformStatusManager platformStatusManager,
+            final Supplier<ReservedSignedState> emergencyStateSupplier,
+            final Duration hangingThreadDuration,
+            final ProtocolConfig protocolConfig,
+            final ReconnectConfig reconnectConfig,
+            final EventConfig eventConfig) {
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
@@ -262,16 +391,49 @@ public class SyncGossip extends AbstractGossip {
                                             platformStatusManager)))))
                     .build());
         }
+    }
 
-        thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
+    /**
+     * Build the fallen behind manager.
+     */
+    @NonNull
+    protected FallenBehindManagerImpl buildFallenBehindManager() {
+        return new FallenBehindManagerImpl(
+                addressBook,
+                selfId,
+                topology.getConnectionGraph(),
+                platformStatusManager,
+                // this fallen behind impl is different from that of
+                // SingleNodeSyncGossip which was a no-op. Same for the pause/resume impls
+                // which only logged (but they do more here)
+                () -> getReconnectController().start(),
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
+    }
+
+    /**
+     * Get the reconnect controller. This method is needed to break a circular dependency.
+     */
+    private ReconnectController getReconnectController() {
+        return reconnectController;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public LifecyclePhase getLifecyclePhase() {
+        return lifecyclePhase;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected boolean unidirectionalConnectionsEnabled() {
-        return false;
+    public void start() {
+        throwIfNotInPhase(LifecyclePhase.NOT_STARTED);
+        lifecyclePhase = LifecyclePhase.STARTED;
+        thingsToStart.forEach(Startable::start);
     }
 
     /**
@@ -279,7 +441,9 @@ public class SyncGossip extends AbstractGossip {
      */
     @Override
     public void stop() {
-        super.stop();
+        throwIfNotInPhase(LifecyclePhase.STARTED);
+        lifecyclePhase = LifecyclePhase.STOPPED;
+        syncManager.haltRequestedObserver("stopping gossip");
         gossipHalted.set(true);
         // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
         // we've fallen behind
@@ -290,58 +454,59 @@ public class SyncGossip extends AbstractGossip {
     }
 
     /**
-     * Get the reconnect controller. This method is needed to break a circular dependency.
+     * This method is called when the node has finished a reconnect
      */
-    public ReconnectController getReconnectController() {
-        return reconnectController;
+    public void resetFallenBehind() {
+        syncManager.resetFallenBehind();
     }
 
     /**
-     * {@inheritDoc}
+     * Check if we have fallen behind.
      */
-    @NonNull
-    @Override
-    protected FallenBehindManagerImpl buildFallenBehindManager() {
-        return new FallenBehindManagerImpl(
-                addressBook,
-                selfId,
-                topology.getConnectionGraph(),
-                statusActionSubmitter,
-                () -> getReconnectController().start(),
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
+    public boolean hasFallenBehind() {
+        return syncManager.hasFallenBehind();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void loadFromSignedState(@NonNull SignedState signedState) {
-        // intentional no-op
+    public void newConnectionOpened(@NonNull final Connection sc) {
+        Objects.requireNonNull(sc);
+        networkMetrics.connectionEstablished(sc);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
+    public void connectionClosed(final boolean outbound, @NonNull final Connection conn) {
+        Objects.requireNonNull(conn);
+        networkMetrics.recordDisconnect(conn);
+    }
+
+    /**
+     * Should the network layer do a version check prior to initiating a connection?
+     *
+     * @return true if a version check should be done
+     */
     protected boolean shouldDoVersionCheck() {
         return false;
     }
 
     /**
-     * {@inheritDoc}
+     * Stop gossiping until {@link #resume()} is called. If called when already paused then this has no effect.
      */
-    @Override
-    public void pause() {
+    protected void pause() {
         throwIfNotInPhase(LifecyclePhase.STARTED);
         gossipHalted.set(true);
         syncPermitProvider.waitForAllSyncsToFinish();
     }
 
     /**
-     * {@inheritDoc}
+     * Resume gossiping. If called when already running then this has no effect.
      */
-    @Override
-    public void resume() {
+    protected void resume() {
         throwIfNotInPhase(LifecyclePhase.STARTED);
         intakeEventCounter.reset();
         gossipHalted.set(false);

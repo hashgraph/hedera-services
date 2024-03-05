@@ -19,7 +19,7 @@ package com.swirlds.platform.network.connectivity;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -29,10 +29,12 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.util.List;
 import java.util.Objects;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -51,21 +53,28 @@ public class TlsFactory implements SocketFactory {
     private final SSLSocketFactory sslSocketFactory;
 
     /**
-     * Construct this object to create and receive TLS connections. This is done using the trustStore
-     * whose reference was passed in as an argument. That trustStore must contain certs for all
-     * the members before calling this constructor. This method will then create the appropriate
-     * KeyManagerFactory, TrustManagerFactory, SSLContext, SSLServerSocketFactory, and SSLSocketFactory, so
-     * that it can later create the TLS sockets.
+     * Construct this object to create and receive TLS connections.
+     * @param agrCert the TLS certificate to use
+     * @param agrKey the private key corresponding to the public key in the certificate
+     * @param peers the list of peers to allow connections with
+     * @param socketConfig the configuration for the sockets
+     * @param cryptoConfig the configuration for the cryptography
      */
     public TlsFactory(
-            @NonNull final KeysAndCerts keysAndCerts,
+            @NonNull final Certificate agrCert,
+            @NonNull final PrivateKey agrKey,
+            @NonNull final List<PeerInfo> peers,
             @NonNull final SocketConfig socketConfig,
             @NonNull final CryptoConfig cryptoConfig)
             throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, KeyManagementException,
                     CertificateException, IOException {
-        Objects.requireNonNull(keysAndCerts);
-        Objects.requireNonNull(cryptoConfig);
+        Objects.requireNonNull(agrCert);
+        Objects.requireNonNull(agrKey);
+        Objects.requireNonNull(peers);
         this.socketConfig = Objects.requireNonNull(socketConfig);
+        Objects.requireNonNull(cryptoConfig);
+
+        final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(peers);
 
         final char[] password = cryptoConfig.keystorePassword().toCharArray();
         /* nondeterministic CSPRNG */
@@ -75,17 +84,17 @@ public class TlsFactory implements SocketFactory {
         // PKCS12 uses file extension .p12 or .pfx
         final KeyStore agrKeyStore = KeyStore.getInstance(CryptoConstants.KEYSTORE_TYPE);
         agrKeyStore.load(null, null); // initialize
-        agrKeyStore.setKeyEntry(
-                "key", keysAndCerts.agrKeyPair().getPrivate(), password, new Certificate[] {keysAndCerts.agrCert()});
+        agrKeyStore.setKeyEntry("key", agrKey, password, new Certificate[] {agrCert});
 
         // "PKIX" may be more interoperable than KeyManagerFactory.getDefaultAlgorithm or
         // TrustManagerFactory.getDefaultAlgorithm(), which was "SunX509" on one system tested
-        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(CryptoConstants.KEY_MANAGER_FACTORY_TYPE);
+        final KeyManagerFactory keyManagerFactory =
+                KeyManagerFactory.getInstance(CryptoConstants.KEY_MANAGER_FACTORY_TYPE);
         keyManagerFactory.init(agrKeyStore, password);
-        TrustManagerFactory trustManagerFactory =
+        final TrustManagerFactory trustManagerFactory =
                 TrustManagerFactory.getInstance(CryptoConstants.TRUST_MANAGER_FACTORY_TYPE);
-        trustManagerFactory.init(keysAndCerts.publicStores().sigTrustStore());
-        SSLContext sslContext = SSLContext.getInstance(CryptoConstants.SSL_VERSION);
+        trustManagerFactory.init(signingTrustStore);
+        final SSLContext sslContext = SSLContext.getInstance(CryptoConstants.SSL_VERSION);
         SSLContext.setDefault(sslContext);
         sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), nonDetRandom);
         sslServerSocketFactory = sslContext.getServerSocketFactory();
@@ -93,18 +102,19 @@ public class TlsFactory implements SocketFactory {
     }
 
     @Override
-    public ServerSocket createServerSocket(final byte[] ipAddress, final int port) throws IOException {
+    public @NonNull ServerSocket createServerSocket(final int port) throws IOException {
         final SSLServerSocket serverSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
         serverSocket.setEnabledCipherSuites(new String[] {CryptoConstants.TLS_SUITE});
         serverSocket.setWantClientAuth(true);
         serverSocket.setNeedClientAuth(true);
-        SocketFactory.configureAndBind(serverSocket, socketConfig, ipAddress, port);
+        SocketFactory.configureAndBind(serverSocket, socketConfig, port);
         return serverSocket;
     }
 
     @Override
-    public Socket createClientSocket(final String hostname, final int port) throws IOException {
-        SSLSocket clientSocket = (SSLSocket) sslSocketFactory.createSocket();
+    public @NonNull Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException {
+        Objects.requireNonNull(hostname);
+        final SSLSocket clientSocket = (SSLSocket) sslSocketFactory.createSocket();
         // ensure the connection is ALWAYS the exact cipher suite we've chosen
         clientSocket.setEnabledCipherSuites(new String[] {CryptoConstants.TLS_SUITE});
         clientSocket.setWantClientAuth(true);

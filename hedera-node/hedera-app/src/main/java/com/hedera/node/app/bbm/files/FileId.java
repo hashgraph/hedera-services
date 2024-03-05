@@ -21,7 +21,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.bbm.utils.Writer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-record FileId(long shardNum, long realmNum, long fileNum) implements Comparable<FileId> {
+public record FileId(long shardNum, long realmNum, long fileNum) implements Comparable<FileId> {
 
     static FileId fromMod(@NonNull final FileID fileID) {
         return new FileId(fileID.shardNum(), fileID.realmNum(), fileID.fileNum());
