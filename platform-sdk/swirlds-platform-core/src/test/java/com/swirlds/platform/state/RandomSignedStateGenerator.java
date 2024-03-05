@@ -61,14 +61,15 @@ public class RandomSignedStateGenerator {
     private Hash hashEventsCons;
     private AddressBook addressBook;
     private Instant consensusTimestamp;
-    private Boolean freezeState = false;
+    private Boolean freezeState;
     private SoftwareVersion softwareVersion;
     private List<NodeId> signingNodeIds;
     private Map<NodeId, Signature> signatures;
-    private boolean protectionEnabled = false;
-    private Hash stateHash = null;
-    private Integer roundsNonAncient = null;
-    private Hash epoch = null;
+    private boolean protectionEnabled;
+    private Hash stateHash;
+    private Integer roundsNonAncient;
+    private Hash epoch;
+    private ConsensusSnapshot consensusSnapshot;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -162,6 +163,20 @@ public class RandomSignedStateGenerator {
             softwareVersionInstance = softwareVersion;
         }
 
+        final ConsensusSnapshot consensusSnapshotInstance;
+        if (consensusSnapshot == null) {
+            consensusSnapshotInstance = new ConsensusSnapshot(
+                    roundInstance,
+                    Stream.generate(() -> randomHash(random)).limit(10).toList(),
+                    IntStream.range(0, roundsNonAncientInstance)
+                            .mapToObj(i -> new MinimumJudgeInfo(roundInstance - i, 0L))
+                            .toList(),
+                    roundInstance,
+                    consensusTimestampInstance);
+        } else {
+            consensusSnapshotInstance = consensusSnapshot;
+        }
+
         final PlatformState platformState = stateInstance.getPlatformState();
 
         platformState.setRound(roundInstance);
@@ -169,14 +184,7 @@ public class RandomSignedStateGenerator {
         platformState.setConsensusTimestamp(consensusTimestampInstance);
         platformState.setCreationSoftwareVersion(softwareVersionInstance);
         platformState.setRoundsNonAncient(roundsNonAncientInstance);
-        platformState.setSnapshot(new ConsensusSnapshot(
-                roundInstance,
-                Stream.generate(() -> randomHash(random)).limit(10).toList(),
-                IntStream.range(0, roundsNonAncientInstance)
-                        .mapToObj(i -> new MinimumJudgeInfo(roundInstance - i, 0L))
-                        .toList(),
-                roundInstance,
-                consensusTimestampInstance));
+        platformState.setSnapshot(consensusSnapshot);
 
         final SignedState signedState = new SignedState(
                 new TestConfigBuilder()
@@ -390,6 +398,12 @@ public class RandomSignedStateGenerator {
      */
     public RandomSignedStateGenerator setEpoch(Hash epoch) {
         this.epoch = epoch;
+        return this;
+    }
+
+    @NonNull
+    public RandomSignedStateGenerator setConsensusSnapshot(@NonNull final ConsensusSnapshot consensusSnapshot) {
+        this.consensusSnapshot = consensusSnapshot;
         return this;
     }
 }

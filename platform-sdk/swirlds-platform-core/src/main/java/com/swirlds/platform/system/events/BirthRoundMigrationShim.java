@@ -78,7 +78,7 @@ public class BirthRoundMigrationShim {
      */
     public BirthRoundMigrationShim(
             @NonNull final PlatformContext platformContext,
-            final SoftwareVersion firstVersionInBirthRoundMode,
+            @NonNull final SoftwareVersion firstVersionInBirthRoundMode,
             final long lastRoundBeforeBirthRoundMode,
             final long lowestJudgeGenerationBeforeBirthRoundMode) {
 

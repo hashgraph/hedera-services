@@ -326,7 +326,7 @@ public class SwirldsPlatform implements Platform {
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
 
-        // This method if we are not in birth round mode, or if we have already migrated.
+        // This method is a no-op if we are not in birth round mode, or if we have already migrated.
         modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion);
 
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");

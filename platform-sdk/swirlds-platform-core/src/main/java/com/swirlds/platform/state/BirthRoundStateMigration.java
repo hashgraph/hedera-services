@@ -73,8 +73,7 @@ public final class BirthRoundStateMigration {
             return;
         }
 
-        final long lastRoundBeforeMigration =
-                initialState.getState().getPlatformState().getRound();
+        final long lastRoundBeforeMigration = platformState.getRound();
 
         final ConsensusSnapshot consensusSnapshot = Objects.requireNonNull(platformState.getSnapshot());
         final List<MinimumJudgeInfo> judgeInfoList = consensusSnapshot.getMinimumJudgeInfoList();
@@ -95,9 +94,7 @@ public final class BirthRoundStateMigration {
 
         final List<MinimumJudgeInfo> modifiedJudgeInfoList = new ArrayList<>(judgeInfoList.size());
         for (final MinimumJudgeInfo judgeInfo : judgeInfoList) {
-            modifiedJudgeInfoList.add(new MinimumJudgeInfo(
-                    judgeInfo.round(),
-                    initialState.getState().getPlatformState().getRound()));
+            modifiedJudgeInfoList.add(new MinimumJudgeInfo(judgeInfo.round(), lastRoundBeforeMigration));
         }
         final ConsensusSnapshot modifiedConsensusSnapshot = new ConsensusSnapshot(
                 consensusSnapshot.round(),

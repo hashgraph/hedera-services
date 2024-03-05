@@ -25,13 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -45,15 +43,7 @@ class BirthRoundStateMigrationTests {
     private SignedState generateSignedState(
             @NonNull final Random random, @NonNull final PlatformContext platformContext) {
 
-        final State state = new State();
-        final PlatformState platformState = new PlatformState();
-        state.setPlatformState(platformState);
-
-        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextInt(1, 100));
-        platformState.setCreationSoftwareVersion(softwareVersion);
-
         final long round = random.nextLong(1, 1_000_000);
-        platformState.setRound(round);
 
         final List<Hash> judgeHashes = new ArrayList<>();
         final int judgeHashCount = random.nextInt(5, 10);
@@ -76,11 +66,10 @@ class BirthRoundStateMigrationTests {
         final ConsensusSnapshot snapshot = new ConsensusSnapshot(
                 round, judgeHashes, minimumJudgeInfoList, nextConsensusNumber, consensusTimestamp);
 
-        platformState.setSnapshot(snapshot);
-
-        MerkleCryptoFactory.getInstance().digestTreeSync(state);
-
-        return new SignedState(platformContext, state, "test", false);
+        return new RandomSignedStateGenerator(random)
+                .setConsensusSnapshot(snapshot)
+                .setRound(round)
+                .build();
     }
 
     @Test
