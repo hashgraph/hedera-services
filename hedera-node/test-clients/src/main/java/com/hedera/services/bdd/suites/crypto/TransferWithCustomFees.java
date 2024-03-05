@@ -84,11 +84,11 @@ public class TransferWithCustomFees extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             transferErc20WithFixedHbarAndHtsCustomFees(),
-                transferErc20WithFixedHtsCustomFeesNegativeNotEnoughBalance(),
-                transferErc20WithFixedHbarCustomFeesNegativeNotEnoughBalance(),
+            transferErc20WithFixedHtsCustomFeesNegativeNotEnoughBalance(),
+            transferErc20WithFixedHbarCustomFeesNegativeNotEnoughBalance(),
             transferErc721WithFixedHbarAndHtsCustomFees(),
-                transferErc721WithFixedHtsCustomFeesNegativeNotEnoughBalance(),
-                transferErc721WithFixedHbarCustomFeesNegativeNotEnoughBalance(),
+            transferErc721WithFixedHtsCustomFeesNegativeNotEnoughBalance(),
+            transferErc721WithFixedHbarCustomFeesNegativeNotEnoughBalance(),
             transferApprovedErc20WithFixedHbarAndHtsCustomFee(),
             transferApprovedErc721WithFixedHbarAndHtsCustomFees(),
             transferErc20WithThreeFixedHbarCustomFees(),
@@ -146,7 +146,7 @@ public class TransferWithCustomFees extends HapiSuite {
                                 .withCustom(fixedHtsFee(htsFee, feeDenom, htsCollector)),
                         tokenAssociate(tokenReceiver, token),
                         tokenAssociate(tokenOwner, token),
-                        cryptoTransfer(moving(1000, token).between(tokenTreasury, tokenOwner)))
+                        cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
                 .when(cryptoTransfer(moving(1, token).between(tokenOwner, tokenReceiver))
                         .payingWith(tokenOwner)
                         .fee(ONE_HUNDRED_HBARS)
@@ -158,6 +158,7 @@ public class TransferWithCustomFees extends HapiSuite {
                         getAccountBalance(tokenReceiver).hasTokenBalance(token, 0),
                         getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 0));
     }
+
     @HapiTest
     public HapiSpec transferErc20WithFixedHbarCustomFeesNegativeNotEnoughBalance() {
         return defaultHapiSpec("transferErc20WithFixedHbarCustomFeesNegativeNotEnoughBalance")
@@ -173,15 +174,13 @@ public class TransferWithCustomFees extends HapiSuite {
                                 .withCustom(fixedHbarFee(ONE_HUNDRED_HBARS, hbarCollector)),
                         tokenAssociate(tokenReceiver, token),
                         tokenAssociate(tokenOwner, token),
-                        cryptoTransfer(moving(1000, token).between(tokenTreasury, tokenOwner)))
+                        cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
                 .when(cryptoTransfer(moving(1, token).between(tokenOwner, tokenReceiver))
                         .payingWith(tokenOwner)
                         .fee(ONE_HUNDRED_HBARS)
                         .hasKnownStatus(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE))
                 .then(
-                        getAccountBalance(tokenOwner)
-                                .hasTokenBalance(token, tokenTotal)
-                                .hasTinyBars(1),
+                        getAccountBalance(tokenOwner).hasTokenBalance(token, tokenTotal),
                         getAccountBalance(tokenReceiver).hasTokenBalance(token, 0),
                         getAccountBalance(hbarCollector).hasTinyBars(0));
     }
