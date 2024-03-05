@@ -35,14 +35,14 @@ import com.swirlds.config.api.validation.annotation.Min;
  */
 @ConfigData("hedera.blockStream")
 public record BlockStreamConfig(
-        @ConfigProperty(defaultValue = "false") @NodeProperty boolean enabled,
+        @ConfigProperty(defaultValue = "true") @NodeProperty boolean enabled,
         /* [file|grpc] */
         @ConfigProperty(defaultValue = "file") @NodeProperty String writer,
         @ConfigProperty(defaultValue = "hedera-node/data/block-streams") @NodeProperty String logDir,
         @ConfigProperty(defaultValue = "1") @Min(1) @NetworkProperty int numRoundsInBlock,
         @ConfigProperty(defaultValue = "7") @Min(1) @NetworkProperty int blockVersion,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean logEveryTransaction,
-        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation, // NOT SURE
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
         @ConfigProperty(defaultValue = "256") @Min(1) @Max(4096) @NetworkProperty int numOfBlockHashesInState,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean writeSignatureFile,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean writeBlockProof,
