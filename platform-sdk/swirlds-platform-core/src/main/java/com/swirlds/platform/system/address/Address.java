@@ -67,7 +67,6 @@ public class Address implements SelfSerializable {
         public static final int X509_CERT_SUPPORT = 6;
     }
 
-    private static final byte[] ALL_INTERFACES = new byte[] {0, 0, 0, 0};
     private static final int MAX_IP_LENGTH = 16;
     private static final int STRING_MAX_BYTES = 512;
 
@@ -273,16 +272,6 @@ public class Address implements SelfSerializable {
      */
     public boolean isLocalTo(Address a) {
         return Objects.equals(getHostnameExternal(), a.getHostnameExternal());
-    }
-
-    /**
-     * Get the IPv4 address for listening all interfaces, [0.0.0.0].
-     *
-     * @return The IPv4 address to listen all interface: [0.0.0.0].
-     */
-    @NonNull
-    public byte[] getListenAddressIpv4() {
-        return ALL_INTERFACES;
     }
 
     /**
