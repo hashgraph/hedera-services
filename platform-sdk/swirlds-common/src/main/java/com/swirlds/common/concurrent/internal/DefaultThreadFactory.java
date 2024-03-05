@@ -22,48 +22,47 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
-public class ThreadFactoryImpl implements ThreadFactory {
+public class DefaultThreadFactory implements ThreadFactory {
 
     private final ThreadGroup group;
 
-    private final String threadNamePrefix;
-
-    private final AtomicLong threadNumber;
+    private final Supplier<String> threadNameFactory;
 
     private final Runnable onStartup;
 
     private final UncaughtExceptionHandler exceptionHandler;
 
-    public ThreadFactoryImpl(
+    public DefaultThreadFactory(
             @NonNull final ThreadGroup group,
-            @NonNull final String name,
-            @NonNull final UncaughtExceptionHandler exceptionHandler) {
-        this(group, name, exceptionHandler, null);
-    }
-
-    public ThreadFactoryImpl(
-            @NonNull final ThreadGroup group,
-            @NonNull final String threadNamePrefix,
+            @NonNull final Supplier<String> threadNameFactory,
             @NonNull final UncaughtExceptionHandler exceptionHandler,
             @Nullable final Runnable onStartup) {
         this.group = Objects.requireNonNull(group, "group must not be null");
-        this.threadNamePrefix = Objects.requireNonNull(threadNamePrefix, "name must not be null");
+        this.threadNameFactory = Objects.requireNonNull(threadNameFactory, "name must not be null");
         this.exceptionHandler = Objects.requireNonNull(exceptionHandler, "exceptionHandler must not be null");
         this.onStartup = onStartup;
-        this.threadNumber = new AtomicLong(1);
     }
 
     @Override
-    public Thread newThread(Runnable r) {
+    public Thread newThread(@NonNull final Runnable innerRunnable) {
+        Objects.requireNonNull(innerRunnable, "innerRunnable must not be null");
         final Runnable runnable = () -> {
             if (onStartup != null) {
                 onStartup.run();
             }
-            r.run();
+            innerRunnable.run();
         };
-        Thread thread = new Thread(group, onStartup, threadNamePrefix + "-" + threadNumber.getAndIncrement(), 0);
+        Thread thread = new Thread(group, runnable, threadNameFactory.get(), 0);
         thread.setUncaughtExceptionHandler(exceptionHandler);
         return thread;
+    }
+
+    @NonNull
+    public static Supplier<String> createThreadNameFactory(@NonNull final String threadNamePrefix) {
+        Objects.requireNonNull(threadNamePrefix, "threadNamePrefix must not be null");
+        final AtomicLong threadNumber = new AtomicLong(1);
+        return () -> threadNamePrefix + "-" + threadNumber.getAndIncrement();
     }
 }

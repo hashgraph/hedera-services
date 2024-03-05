@@ -18,44 +18,36 @@ package com.swirlds.common.concurrent.internal;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinWorkerThread;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
-public class ForkJoinWorkerThreadFactoryImpl implements ForkJoinWorkerThreadFactory {
+public class DefaultForkJoinWorkerThreadFactory implements ForkJoinWorkerThreadFactory {
 
     private final ThreadGroup threadGroup;
 
-    private final String threadNamePrefix;
-
-    private final AtomicLong threadNumber;
+    private final Supplier<String> threadNameFactory;
 
     private final Runnable onStartup;
 
-    public ForkJoinWorkerThreadFactoryImpl(
+    public DefaultForkJoinWorkerThreadFactory(
             @NonNull final ThreadGroup threadGroup,
-            @NonNull final String threadNamePrefix,
+            @NonNull final Supplier<String> threadNameFactory,
             @Nullable final Runnable onStartup) {
-        this.threadGroup = threadGroup;
-        this.threadNamePrefix = threadNamePrefix;
+        this.threadGroup = Objects.requireNonNull(threadGroup, "threadGroup must not be null");
+        this.threadNameFactory = Objects.requireNonNull(threadNameFactory, "threadNameFactory must not be null");
         this.onStartup = onStartup;
-        this.threadNumber = new AtomicLong(1);
     }
 
     @Override
     public ForkJoinWorkerThread newThread(@NonNull final ForkJoinPool pool) {
-        ForkJoinWorkerThread thread =
-                new ForkJoinWorkerThreadImpl(
-                        threadNamePrefix + "-" + threadNumber.getAndIncrement(), threadGroup, pool) {
-                    @Override
-                    protected void onStart() {
-                        super.onStart();
-                        if (onStartup != null) {
-                            onStartup.run();
-                        }
-                    }
-                };
-        return thread;
+        return new DefaultForkJoinWorkerThread(threadNameFactory.get(), threadGroup, pool, onStartup);
+    }
+
+    @NonNull
+    public static Supplier<String> createThreadNameFactory(@NonNull final String threadNamePrefix) {
+        return DefaultThreadFactory.createThreadNameFactory(threadNamePrefix);
     }
 }
