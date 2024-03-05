@@ -20,11 +20,11 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.benchmark.util.Throwables;
 
-public class LogWithSwirlds implements Runnable {
+public class SwirldsLogRunner implements Runnable {
 
     private final Logger logger;
 
-    public LogWithSwirlds(Logger logger) {
+    public SwirldsLogRunner(Logger logger) {
         this.logger = logger;
     }
 

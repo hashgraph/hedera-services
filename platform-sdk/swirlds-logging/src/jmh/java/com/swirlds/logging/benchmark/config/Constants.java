@@ -16,7 +16,7 @@
 
 package com.swirlds.logging.benchmark.config;
 
-public class RunBenchmarkConstants {
+public class Constants {
     public static final String CONSOLE_TYPE = "CONSOLE";
     public static final String FILE_TYPE = "FILE";
     public static final String CONSOLE_AND_FILE_TYPE = "CONSOLE_AND_FILE";
@@ -34,4 +34,9 @@ public class RunBenchmarkConstants {
     public static final int PARALLEL_THREAD_COUNT = 1;
 
     public static final int FORK_COUNT = 1;
+    public static final boolean ENABLE_TIME_FORMATTING = true;
+    public static final boolean DELETE_OUTPUT_FILES = false;
+    public static final boolean DELETE_OUTPUT_FOLDER = false;
+
+    private Constants(){}
 }

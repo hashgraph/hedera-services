@@ -26,6 +26,8 @@ import java.nio.file.Path;
  */
 public class LogFiles {
 
+    public static final String LOGGING_FOLDER = "logging-out/";
+
     private LogFiles() {}
 
     /**
@@ -47,7 +49,7 @@ public class LogFiles {
     @NonNull
     public static String getPath(final @NonNull String implementation, final @NonNull String type) {
         final long pid = ProcessHandle.current().pid();
-        return "logging-out/benchmark-" + implementation + "-" + pid + "-" + type + ".log";
+        return LOGGING_FOLDER +"benchmark-" + implementation + "-" + pid + "-" + type + ".log";
     }
 
     /**

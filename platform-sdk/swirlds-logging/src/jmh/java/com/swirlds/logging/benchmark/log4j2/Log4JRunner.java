@@ -23,14 +23,14 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.ThreadContext;
 
-public class LogWithLog4J implements Runnable {
+public class Log4JRunner implements Runnable {
 
     private final Logger logger;
 
     private final Marker marker1 = MarkerManager.getMarker("marker");
     private final Marker marker2 = MarkerManager.getMarker("marker2", marker1);
 
-    public LogWithLog4J(Logger logger) {
+    public Log4JRunner(Logger logger) {
         this.logger = logger;
     }
 

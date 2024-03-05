@@ -16,13 +16,13 @@
 
 package com.swirlds.logging.benchmark.log4j2;
 
-import com.swirlds.logging.benchmark.config.RunBenchmarkConstants;
+import com.swirlds.logging.benchmark.config.Configuration;
+import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.util.LogFiles;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
-import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
@@ -34,13 +34,16 @@ import org.apache.logging.log4j.spi.LoggerContext;
 /**
  * Convenience methods for configuring log4j logger
  */
-public class ConfigureLog4J {
+public class Log4JConfiguration implements Configuration<LoggerContext> {
 
-    private static final String PATTERN = "%d{UNIX_MILLIS} %-5level [%t] %c - %msg - [%marker] %X %n%throwable";
+    private static final String PATTERN =
+            (Constants.ENABLE_TIME_FORMATTING ?
+                    "%d{yyyy-MM-dd HH:mm:ss.SSS}" :
+                    "%d{UNIX_MILLIS}") + " %-5level [%t] %c - %msg - [%marker] %X %n%throwable";
     public static final String CONSOLE_APPENDER_NAME = "console";
     public static final String FILE_APPENDER_NAME = "file";
 
-    public static @NonNull LoggerContext configureConsoleLogging() {
+    public @NonNull LoggerContext configureConsoleLogging() {
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
@@ -50,9 +53,9 @@ public class ConfigureLog4J {
         return create(builder);
     }
 
-    public static @NonNull LoggerContext configureFileLogging() {
+    public @NonNull LoggerContext configureFileLogging() {
         final String logFile =
-                LogFiles.provideLogFilePath(RunBenchmarkConstants.LOG4J2, RunBenchmarkConstants.FILE_TYPE);
+                LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.FILE_TYPE);
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.DEBUG);
@@ -62,9 +65,9 @@ public class ConfigureLog4J {
         return create(builder);
     }
 
-    public static @NonNull LoggerContext configureFileAndConsoleLogging() {
+    public @NonNull LoggerContext configureFileAndConsoleLogging() {
         final String logFile =
-                LogFiles.provideLogFilePath(RunBenchmarkConstants.LOG4J2, RunBenchmarkConstants.CONSOLE_AND_FILE_TYPE);
+                LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.CONSOLE_AND_FILE_TYPE);
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
@@ -78,7 +81,7 @@ public class ConfigureLog4J {
     }
 
     private static @NonNull LoggerContext create(final @NonNull ConfigurationBuilder<BuiltConfiguration> builder) {
-        final Configuration configuration = builder.build();
+        final org.apache.logging.log4j.core.config.Configuration configuration = builder.build();
         final org.apache.logging.log4j.core.LoggerContext context = Configurator.initialize(configuration);
         LogManager.getFactory().removeContext(context);
         return Configurator.initialize(configuration);
@@ -88,7 +91,7 @@ public class ConfigureLog4J {
             final @NonNull ConfigurationBuilder<BuiltConfiguration> builder) {
         final LayoutComponentBuilder layoutComponentBuilder =
                 builder.newLayout("PatternLayout").addAttribute("pattern", PATTERN);
-        return builder.newAppender(ConfigureLog4J.CONSOLE_APPENDER_NAME, "CONSOLE")
+        return builder.newAppender(Log4JConfiguration.CONSOLE_APPENDER_NAME, "CONSOLE")
                 .addAttribute("target", ConsoleAppender.Target.SYSTEM_OUT)
                 .add(layoutComponentBuilder);
     }
@@ -97,9 +100,20 @@ public class ConfigureLog4J {
             final @NonNull ConfigurationBuilder<BuiltConfiguration> builder, final @NonNull String path) {
         final LayoutComponentBuilder layoutBuilder =
                 builder.newLayout("PatternLayout").addAttribute("pattern", PATTERN);
-        return builder.newAppender(ConfigureLog4J.FILE_APPENDER_NAME, "File")
+        return builder.newAppender(Log4JConfiguration.FILE_APPENDER_NAME, "File")
                 .addAttribute("fileName", path)
                 .addAttribute("append", true)
                 .add(layoutBuilder);
+    }
+
+    @Override
+    public void tierDown() {
+        if (Constants.DELETE_OUTPUT_FILES) {
+            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.FILE_TYPE));
+            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.CONSOLE_AND_FILE_TYPE));
+        }
+        if (Constants.DELETE_OUTPUT_FOLDER) {
+            LogFiles.deleteFile(LogFiles.LOGGING_FOLDER);
+        }
     }
 }
