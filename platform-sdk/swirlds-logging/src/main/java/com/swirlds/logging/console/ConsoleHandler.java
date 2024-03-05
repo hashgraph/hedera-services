@@ -25,6 +25,7 @@ import com.swirlds.logging.buffer.BufferedOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A handler that logs events to the console.
@@ -65,7 +66,7 @@ public class ConsoleHandler extends AbstractSyncedHandler {
         StringBuilder builder = new StringBuilder();
         format.print(builder, event);
         try {
-            outputStream.write(builder.toString().getBytes());
+            outputStream.write(builder.toString().getBytes(StandardCharsets.UTF_8));
         } catch (IOException exception) { // Should not happen
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to console", exception);
         }

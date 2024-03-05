@@ -106,8 +106,8 @@ public class BufferedOutputStreamTest {
         try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream, 7); ) {
 
             // When / Then
-            final byte[] a = "Hello ".getBytes();
-            final byte[] b = "Swirlds!".getBytes();
+            final byte[] a = "Hello ".getBytes(StandardCharsets.UTF_8);
+            final byte[] b = "Swirlds!".getBytes(StandardCharsets.UTF_8);
             bufferedOutputStream.write(a);
             assertThat(outputStream.size()).isEqualTo(0);
             bufferedOutputStream.write(b);
