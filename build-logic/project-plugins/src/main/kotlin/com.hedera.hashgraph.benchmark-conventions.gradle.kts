@@ -19,7 +19,7 @@ import me.champeau.jmh.JMHTask
 plugins { id("me.champeau.jmh") }
 
 jmh {
-    jmhVersion = "1.36"
+    jmhVersion = "1.37"
     includeTests = false
 }
 
@@ -38,9 +38,9 @@ configurations {
     // The way the JMH plugin interacts with this in the 'jmhJar' task triggers this Gradle issue:
     // https://github.com/gradle/gradle/issues/27372
     // And since 'jmhJar' builds a fat jar, module information is not needed here anyway.
-    jmhRuntimeClasspath {
-        attributes { attribute(Attribute.of("javaModule", Boolean::class.javaObjectType), false) }
-    }
+    val javaModule = Attribute.of("javaModule", Boolean::class.javaObjectType)
+    jmhRuntimeClasspath { attributes { attribute(javaModule, false) } }
+    jmhCompileClasspath { attributes { attribute(javaModule, false) } }
 }
 
 tasks.assemble {

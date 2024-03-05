@@ -173,7 +173,7 @@ public class RandomSignedStateGenerator {
                 roundInstance,
                 Stream.generate(() -> randomHash(random)).limit(10).toList(),
                 IntStream.range(0, roundsNonAncientInstance)
-                        .mapToObj(i -> new MinGenInfo(roundInstance - i, 0L))
+                        .mapToObj(i -> new MinimumJudgeInfo(roundInstance - i, 0L))
                         .toList(),
                 roundInstance,
                 consensusTimestampInstance));

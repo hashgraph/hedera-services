@@ -16,14 +16,19 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
@@ -32,6 +37,7 @@ import com.swirlds.platform.state.PlatformState;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -92,5 +98,37 @@ class PlatformStateTests {
         MerkleCryptoFactory.getInstance().digestTreeSync(decodedState);
 
         assertEquals(state.getHash(), decodedState.getHash(), "expected deserialized object to be equal");
+    }
+
+    @Test
+    @DisplayName("Update Epoch Hash Test")
+    void updateEpochHashTest() {
+        final Random random = getRandomPrintSeed();
+        final PlatformState platformData = randomPlatformState(random);
+        final Hash hash = randomHash(random);
+
+        platformData.setEpochHash(null);
+        platformData.setNextEpochHash(null);
+        assertDoesNotThrow(platformData::updateEpochHash);
+        assertNull(platformData.getEpochHash(), "epoch hash should not change");
+        assertNull(platformData.getNextEpochHash(), "next epoch hash should not change");
+
+        platformData.setEpochHash(hash);
+        platformData.setNextEpochHash(null);
+        assertDoesNotThrow(platformData::updateEpochHash);
+        assertEquals(hash, platformData.getEpochHash(), "epoch hash should not change");
+        assertNull(platformData.getNextEpochHash(), "next epoch hash should not change");
+
+        platformData.setEpochHash(null);
+        platformData.setNextEpochHash(hash);
+        assertDoesNotThrow(platformData::updateEpochHash);
+        assertEquals(hash, platformData.getEpochHash(), "epoch hash should be updated");
+        assertNull(platformData.getNextEpochHash(), "next epoch hash should be set to null");
+
+        platformData.setEpochHash(randomHash(random));
+        platformData.setNextEpochHash(hash);
+        assertDoesNotThrow(platformData::updateEpochHash);
+        assertEquals(hash, platformData.getEpochHash(), "epoch hash should be updated");
+        assertNull(platformData.getNextEpochHash(), "next epoch hash should be set to null");
     }
 }

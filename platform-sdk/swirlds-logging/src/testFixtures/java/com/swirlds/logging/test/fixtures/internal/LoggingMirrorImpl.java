@@ -24,20 +24,19 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
- * A concrete implementation of the {@link LoggingMirror} interface that serves as a logging mirror
- * and also implements the {@link LogHandler} interface to receive and store log events. It extends
- * {@link AbstractLoggingMirror} to provide common filtering operations for log events.
+ * A concrete implementation of the {@link LoggingMirror} interface that serves as a logging mirror and also implements
+ * the {@link LogHandler} interface to receive and store log events.
  */
-public class LoggingMirrorImpl extends AbstractLoggingMirror implements LogHandler {
+public class LoggingMirrorImpl implements LoggingMirror, LogHandler {
 
     private final List<LogEvent> events = new CopyOnWriteArrayList<>();
 
     /**
-     * Constructs a new {@code LoggingMirrorImpl} instance. It registers itself as a log handler
-     * with the default logging system to receive log events.
+     * Constructs a new {@code LoggingMirrorImpl} instance. It registers itself as a log handler with the default
+     * logging system to receive log events.
      */
     public LoggingMirrorImpl() {
         DefaultLoggingSystem.getInstance().addHandler(this);
@@ -52,19 +51,20 @@ public class LoggingMirrorImpl extends AbstractLoggingMirror implements LogHandl
     }
 
     /**
-     * {@inheritDoc}
+     * Clears the mirror and disposes it. This method is automatically called before and after a test.
      */
     @Override
-    public void dispose() {
+    public void close() {
         DefaultLoggingSystem.getInstance().removeHandler(this);
     }
 
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    protected LoggingMirror filter(@NonNull final Function<LogEvent, Boolean> filter) {
-        return new FilteredLoggingMirror(events, filter, this::dispose);
+    public LoggingMirror filter(@NonNull final Predicate<LogEvent> filter) {
+        return new FilteredLoggingMirror(events, filter, this::close);
     }
 
     /**

@@ -62,6 +62,7 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.spi.state.MigrationContext;
@@ -341,6 +342,12 @@ public class InitialModServiceTokenSchema extends Schema {
                                         aliasesState
                                                 .get()
                                                 .put(new ProtoBytes(toAcct.alias()), toAcct.accountIdOrThrow());
+                                        if (toAcct.alias().toByteArray().length > 20) {
+                                            final var result = AliasUtils.extractEvmAddress(toAcct.alias());
+                                            if (result != null) {
+                                                aliasesState.get().put(new ProtoBytes(result), toAcct.accountId());
+                                            }
+                                        }
                                         if (numAliasesInsertions.incrementAndGet() % 10_000 == 0) {
                                             // Make sure we are flushing data to disk as we go
                                             ((WritableKVStateBase) aliasesState.get()).commit();
@@ -513,7 +520,7 @@ public class InitialModServiceTokenSchema extends Schema {
                 blocklistAccts.get().size());
 
         // ---------- Balances Safety Check -------------------------
-        // Aadd up the balances of all accounts, they must match 50,000,000,000 HBARs (config)
+        // Add up the balances of all accounts, they must match 50,000,000,000 HBARs (config)
         var totalBalance = 0L;
         for (int i = 1; i < accounts.size(); i++) {
             final var account = accounts.get(asAccountId(i, hederaConfig));
