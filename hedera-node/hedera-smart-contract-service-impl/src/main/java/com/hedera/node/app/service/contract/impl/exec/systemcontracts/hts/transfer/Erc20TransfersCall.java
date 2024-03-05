@@ -64,6 +64,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
     private final AccountID senderId;
     private final AddressIdConverter addressIdConverter;
     private final boolean requiresApproval;
+    private final SpecialRewardReceivers specialRewardReceivers;
 
     // too many parameters
     @SuppressWarnings("java:S107")
@@ -77,7 +78,8 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final AccountID senderId,
             @NonNull final AddressIdConverter addressIdConverter,
-            final boolean requiresApproval) {
+            final boolean requiresApproval,
+            @NonNull final SpecialRewardReceivers specialRewardReceivers) {
         super(gasCalculator, enhancement, false);
         this.amount = amount;
         this.from = from;
@@ -87,6 +89,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
         this.senderId = requireNonNull(senderId);
         this.addressIdConverter = requireNonNull(addressIdConverter);
         this.requiresApproval = requiresApproval;
+        this.specialRewardReceivers = requireNonNull(specialRewardReceivers);
     }
 
     /**
@@ -114,15 +117,15 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                 return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
             }
         } else {
-            final var tokenTransferLists =
-                    syntheticTransfer.cryptoTransferOrThrow().tokenTransfersOrThrow();
-            for (final var fungibleTransfers : tokenTransferLists) {
+            final var op = syntheticTransfer.cryptoTransferOrThrow();
+            for (final var fungibleTransfers : op.tokenTransfersOrThrow()) {
                 TransferEventLoggingUtils.logSuccessfulFungibleTransfer(
                         requireNonNull(tokenId),
                         fungibleTransfers.transfersOrThrow(),
                         enhancement.nativeOperations().readableAccountStore(),
                         frame);
             }
+            specialRewardReceivers.addInFrame(frame, op, recordBuilder.getAssessedCustomFees());
             final var encodedOutput = (from == null)
                     ? ERC_20_TRANSFER.getOutputs().encodeElements(true)
                     : ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
