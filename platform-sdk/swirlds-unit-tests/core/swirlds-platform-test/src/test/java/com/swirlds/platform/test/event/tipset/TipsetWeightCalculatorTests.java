@@ -101,8 +101,8 @@ class TipsetWeightCalculatorTests {
         final TipsetTracker builder =
                 new TipsetTracker(Time.getCurrent(), addressBook, AncientMode.GENERATION_THRESHOLD);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
-        final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
-                platformContext, Time.getCurrent(), addressBook, selfId, builder, childlessEventTracker);
+        final TipsetWeightCalculator calculator =
+                new TipsetWeightCalculator(platformContext, addressBook, selfId, builder, childlessEventTracker);
 
         List<EventDescriptor> previousParents = List.of();
         TipsetAdvancementWeight runningAdvancementScore = ZERO_ADVANCEMENT_WEIGHT;
@@ -234,8 +234,8 @@ class TipsetWeightCalculatorTests {
         final TipsetTracker tracker =
                 new TipsetTracker(Time.getCurrent(), addressBook, AncientMode.GENERATION_THRESHOLD);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
-        final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
-                platformContext, Time.getCurrent(), addressBook, nodeA, tracker, childlessEventTracker);
+        final TipsetWeightCalculator calculator =
+                new TipsetWeightCalculator(platformContext, addressBook, nodeA, tracker, childlessEventTracker);
 
         final Tipset snapshot1 = calculator.getSnapshot();
 
@@ -450,8 +450,8 @@ class TipsetWeightCalculatorTests {
         final TipsetTracker builder =
                 new TipsetTracker(Time.getCurrent(), addressBook, AncientMode.GENERATION_THRESHOLD);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
-        final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
-                platformContext, Time.getCurrent(), addressBook, nodeA, builder, childlessEventTracker);
+        final TipsetWeightCalculator calculator =
+                new TipsetWeightCalculator(platformContext, addressBook, nodeA, builder, childlessEventTracker);
 
         final Tipset snapshot1 = calculator.getSnapshot();
 
@@ -524,8 +524,8 @@ class TipsetWeightCalculatorTests {
         final TipsetTracker builder =
                 new TipsetTracker(Time.getCurrent(), addressBook, AncientMode.GENERATION_THRESHOLD);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
-        final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
-                platformContext, Time.getCurrent(), addressBook, nodeA, builder, childlessEventTracker);
+        final TipsetWeightCalculator calculator =
+                new TipsetWeightCalculator(platformContext, addressBook, nodeA, builder, childlessEventTracker);
 
         // Create generation 1 events.
         final EventDescriptor eventA1 = newEventDescriptor(randomHash(random), nodeA, 1);

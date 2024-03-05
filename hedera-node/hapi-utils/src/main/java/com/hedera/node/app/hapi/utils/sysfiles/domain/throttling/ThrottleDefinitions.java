@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ThrottleDefinitions {
-    List<ThrottleBucket<HederaFunctionality>> buckets = new ArrayList<>();
+    private List<ThrottleBucket<HederaFunctionality>> buckets = new ArrayList<>();
 
     public List<ThrottleBucket<HederaFunctionality>> getBuckets() {
         return buckets;

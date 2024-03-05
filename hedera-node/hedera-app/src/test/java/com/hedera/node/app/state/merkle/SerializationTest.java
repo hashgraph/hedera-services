@@ -32,7 +32,6 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -56,7 +55,6 @@ class SerializationTest extends MerkleTestBase {
     private Path dir;
     private Configuration config;
     private NetworkInfo networkInfo;
-    private HandleThrottleParser handleThrottling;
 
     @Mock
     private HederaLifecycles lifecycles;
@@ -68,7 +66,6 @@ class SerializationTest extends MerkleTestBase {
         this.dir = TemporaryFileBuilder.buildTemporaryDirectory();
         this.config = mock(Configuration.class);
         this.networkInfo = mock(NetworkInfo.class);
-        this.handleThrottling = mock(HandleThrottleParser.class);
         final var hederaConfig = mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
     }
@@ -135,8 +132,7 @@ class SerializationTest extends MerkleTestBase {
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
-        originalRegistry.migrate(
-                originalTree, null, v1, config, networkInfo, handleThrottling, mock(WritableEntityIdStore.class));
+        originalRegistry.migrate(originalTree, null, v1, config, networkInfo, mock(WritableEntityIdStore.class));
 
         // When we serialize it to bytes and deserialize it back into a tree
         originalTree.copy(); // make a fast copy because we can only write to disk an immutable copy
@@ -158,7 +154,6 @@ class SerializationTest extends MerkleTestBase {
                 schemaV1.getVersion(),
                 config,
                 networkInfo,
-                handleThrottling,
                 mock(WritableEntityIdStore.class));
         loadedTree.migrate(1);
 

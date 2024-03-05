@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ThrottleGroup<E extends Enum<E>> {
-    int opsPerSec;
-    long milliOpsPerSec;
-    List<E> operations = new ArrayList<>();
+    private int opsPerSec;
+    private long milliOpsPerSec;
+    private List<E> operations = new ArrayList<>();
 
     public ThrottleGroup() {
         // Needed by Jackson

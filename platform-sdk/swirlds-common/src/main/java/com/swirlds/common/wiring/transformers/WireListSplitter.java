@@ -49,7 +49,7 @@ public class WireListSplitter<T> {
             @NonNull final String splitterName,
             @NonNull final String splitterInputName) {
         final TaskScheduler<T> taskScheduler = model.schedulerBuilder(splitterName)
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
 

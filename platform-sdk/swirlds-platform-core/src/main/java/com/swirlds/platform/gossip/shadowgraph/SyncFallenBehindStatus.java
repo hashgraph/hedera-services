@@ -16,18 +16,28 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public enum SyncFallenBehindStatus {
     NONE_FALLEN_BEHIND,
     SELF_FALLEN_BEHIND,
     OTHER_FALLEN_BEHIND;
 
-    public static SyncFallenBehindStatus getStatus(final GraphGenerations self, final GraphGenerations other) {
-        if (other.getMinGenerationNonAncient() < self.getMinRoundGeneration()) {
+    /**
+     * Compute the fallen behind status between ourselves and a peer.
+     *
+     * @param self  our event window
+     * @param other the peer's event window
+     * @return the status
+     */
+    @NonNull
+    public static SyncFallenBehindStatus getStatus(
+            @NonNull final NonAncientEventWindow self, @NonNull final NonAncientEventWindow other) {
+        if (other.getAncientThreshold() < self.getExpiredThreshold()) {
             return OTHER_FALLEN_BEHIND;
         }
-        if (self.getMinGenerationNonAncient() < other.getMinRoundGeneration()) {
+        if (self.getAncientThreshold() < other.getExpiredThreshold()) {
             return SELF_FALLEN_BEHIND;
         }
         return NONE_FALLEN_BEHIND;

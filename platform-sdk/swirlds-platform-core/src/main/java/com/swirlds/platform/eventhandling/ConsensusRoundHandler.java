@@ -21,7 +21,6 @@ import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.CREA
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.GETTING_STATE_TO_SIGN;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.HANDLING_CONSENSUS_ROUND;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.IDLE;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.MARKING_ROUND_COMPLETE;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.SETTING_EVENT_CONSENSUS_DATA;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
@@ -45,15 +44,14 @@ import com.swirlds.platform.metrics.RoundHandlingMetrics;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
-import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -92,9 +90,9 @@ public class ConsensusRoundHandler {
             new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
     /**
-     * A queue that accepts signed states for hashing and signature collection.
+     * A queue that accepts signed states and rounds for hashing and signature collection.
      */
-    private final BlockingQueue<ReservedSignedState> stateHashSignQueue;
+    private final BlockingQueue<StateAndRound> stateHashSignQueue;
 
     /**
      * Enables submitting platform status actions.
@@ -102,8 +100,6 @@ public class ConsensusRoundHandler {
     private final StatusActionSubmitter statusActionSubmitter;
 
     private final SoftwareVersion softwareVersion;
-
-    private final Consumer<Long> roundAppliedToStateConsumer;
 
     /**
      * A method that blocks until an event becomes durable.
@@ -125,22 +121,20 @@ public class ConsensusRoundHandler {
     /**
      * Constructor
      *
-     * @param platformContext             contains various platform utilities
-     * @param swirldStateManager          the swirld state manager to send events to
-     * @param stateHashSignQueue          the queue thread that handles hashing and collecting signatures of new
-     *                                    self-signed states
-     * @param waitForEventDurability      a method that blocks until an event becomes durable
-     * @param statusActionSubmitter       enables submitting of platform status actions
-     * @param roundAppliedToStateConsumer informs the consensus hash manager that a round has been applied to state
-     * @param softwareVersion             the current version of the software
+     * @param platformContext        contains various platform utilities
+     * @param swirldStateManager     the swirld state manager to send events to
+     * @param stateHashSignQueue     the queue thread that handles hashing and collecting signatures of new
+     *                               self-signed states
+     * @param waitForEventDurability a method that blocks until an event becomes durable
+     * @param statusActionSubmitter  enables submitting of platform status actions
+     * @param softwareVersion        the current version of the software
      */
     public ConsensusRoundHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
+            @NonNull final BlockingQueue<StateAndRound> stateHashSignQueue,
             @NonNull final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final Consumer<Long> roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
@@ -148,7 +142,6 @@ public class ConsensusRoundHandler {
         this.stateHashSignQueue = Objects.requireNonNull(stateHashSignQueue);
         this.waitForEventDurability = Objects.requireNonNull(waitForEventDurability);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-        this.roundAppliedToStateConsumer = Objects.requireNonNull(roundAppliedToStateConsumer);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
         this.roundsNonAncient = platformContext
@@ -225,14 +218,10 @@ public class ConsensusRoundHandler {
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);
             swirldStateManager.handleConsensusRound(consensusRound);
 
-            handlerMetrics.setPhase(MARKING_ROUND_COMPLETE);
-            // this calls into the ConsensusHashManager
-            roundAppliedToStateConsumer.accept(consensusRound.getRoundNum());
-
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE_RUNNING_HASH);
             updatePlatformStateRunningHash(consensusRound);
 
-            createSignedState();
+            createSignedState(consensusRound);
         } catch (final InterruptedException e) {
             logger.error(EXCEPTION.getMarker(), "handleConsensusRound interrupted");
             Thread.currentThread().interrupt();
@@ -284,9 +273,10 @@ public class ConsensusRoundHandler {
     /**
      * Create a signed state
      *
+     * @param consensusRound the consensus round that resulted in the state being created
      * @throws InterruptedException if this thread is interrupted
      */
-    private void createSignedState() throws InterruptedException {
+    private void createSignedState(@NonNull final ConsensusRound consensusRound) throws InterruptedException {
         if (freezeRoundReceived) {
             // Let the swirld state manager know we are about to write the saved state for the freeze period
             swirldStateManager.savedStateInFreezePeriod();
@@ -298,6 +288,8 @@ public class ConsensusRoundHandler {
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
         final SignedState signedState = new SignedState(
                 platformContext, immutableStateCons, "ConsensusRoundHandler.createSignedState()", freezeRoundReceived);
-        stateHashSignQueue.put(signedState.reserve("ConsensusRoundHandler.createSignedState()"));
+
+        stateHashSignQueue.put(
+                new StateAndRound(signedState.reserve("ConsensusRoundHandler.createSignedState()"), consensusRound));
     }
 }

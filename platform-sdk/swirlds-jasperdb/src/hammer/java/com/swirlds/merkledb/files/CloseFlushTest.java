@@ -156,14 +156,16 @@ public class CloseFlushTest {
                         final long lastLeafPath,
                         final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                         final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete) {
+                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+                        final boolean isReconnectContext) {
                     try {
                         delegate.saveRecords(
                                 firstLeafPath,
                                 lastLeafPath,
                                 pathHashRecordsToUpdate,
                                 leafRecordsToAddOrUpdate,
-                                leafRecordsToDelete);
+                                leafRecordsToDelete,
+                                isReconnectContext);
                     } catch (final Exception e) {
                         exceptionSink.set(e);
                     }
