@@ -78,6 +78,9 @@ public record TaskSchedulerConfiguration(
             final String[] parts = string.split(" ");
             for (final String part : parts) {
                 String strippedPart = part.strip();
+                if (strippedPart.isEmpty()) {
+                    continue;
+                }
 
                 try {
                     // if the part can be parsed as a TaskSchedulerType, then it is the type
@@ -97,6 +100,7 @@ public record TaskSchedulerConfiguration(
                         }
                         final String capacityString = strippedPart.substring(openParenIndex + 1, closeParenIndex);
                         unhandledTaskCapacity = Long.parseLong(capacityString);
+                        continue;
                     } catch (final NumberFormatException e) {
                         throw new IllegalArgumentException("Invalid capacity \"" + strippedPart + "\"", e);
                     }

@@ -44,71 +44,73 @@ class TaskSchedulerConfigurationTests {
     void randomValuesTest() {
         final Random random = getRandomPrintSeed();
 
-        final StringBuilder configStringBuilder = new StringBuilder();
+        for (int i = 0; i < 100; i++) {
+            final StringBuilder configStringBuilder = new StringBuilder();
 
-        final TaskSchedulerType expectedTaskSchedulerType;
-        if (random.nextBoolean()) {
-            expectedTaskSchedulerType = TaskSchedulerType.values()[random.nextInt(TaskSchedulerType.values().length)];
-        } else {
-            expectedTaskSchedulerType = null;
+            final TaskSchedulerType expectedTaskSchedulerType;
+            if (random.nextBoolean()) {
+                expectedTaskSchedulerType =
+                        TaskSchedulerType.values()[random.nextInt(TaskSchedulerType.values().length)];
+                configStringBuilder.append(expectedTaskSchedulerType).append(" ");
+            } else {
+                expectedTaskSchedulerType = null;
+            }
+
+            final Long expectedUnhandledTaskCapacity;
+            if (random.nextBoolean()) {
+                expectedUnhandledTaskCapacity = random.nextLong(0, 100);
+                configStringBuilder
+                        .append("CAPACITY(")
+                        .append(expectedUnhandledTaskCapacity)
+                        .append(") ");
+            } else {
+                expectedUnhandledTaskCapacity = null;
+            }
+
+            final Boolean expectedUnhandledTaskMetricEnabled;
+            if (random.nextBoolean()) {
+                expectedUnhandledTaskMetricEnabled = random.nextBoolean();
+                configStringBuilder.append(
+                        expectedUnhandledTaskMetricEnabled ? "UNHANDLED_TASK_METRIC " : "!UNHANDLED_TASK_METRIC ");
+            } else {
+                expectedUnhandledTaskMetricEnabled = null;
+            }
+
+            final Boolean expectedBusyFractionMetricEnabled;
+            if (random.nextBoolean()) {
+                expectedBusyFractionMetricEnabled = random.nextBoolean();
+                configStringBuilder.append(
+                        expectedBusyFractionMetricEnabled ? "BUSY_FRACTION_METRIC " : "!BUSY_FRACTION_METRIC ");
+            } else {
+                expectedBusyFractionMetricEnabled = null;
+            }
+
+            final Boolean expectedFlushingEnabled;
+            if (random.nextBoolean()) {
+                expectedFlushingEnabled = random.nextBoolean();
+                configStringBuilder.append(expectedFlushingEnabled ? "FLUSHABLE " : "!FLUSHABLE ");
+            } else {
+                expectedFlushingEnabled = null;
+            }
+
+            final Boolean expectedSquelchingEnabled;
+            if (random.nextBoolean()) {
+                expectedSquelchingEnabled = random.nextBoolean();
+                configStringBuilder.append(expectedSquelchingEnabled ? "SQUELCHABLE " : "!SQUELCHABLE ");
+            } else {
+                expectedSquelchingEnabled = null;
+            }
+
+            final String configString = configStringBuilder.toString();
+
+            final TaskSchedulerConfiguration config = TaskSchedulerConfiguration.parse(configString);
+
+            assertEquals(expectedTaskSchedulerType, config.type());
+            assertEquals(expectedUnhandledTaskCapacity, config.unhandledTaskCapacity());
+            assertEquals(expectedUnhandledTaskMetricEnabled, config.unhandledTaskMetricEnabled());
+            assertEquals(expectedBusyFractionMetricEnabled, config.busyFractionMetricEnabled());
+            assertEquals(expectedFlushingEnabled, config.flushingEnabled());
+            assertEquals(expectedSquelchingEnabled, config.squelchingEnabled());
         }
-
-        final Long expectedUnhandledTaskCapacity;
-        if (random.nextBoolean()) {
-            expectedUnhandledTaskCapacity = random.nextLong(0, 100);
-            configStringBuilder
-                    .append("CAPACITY(")
-                    .append(expectedUnhandledTaskCapacity)
-                    .append(") ");
-        } else {
-            expectedUnhandledTaskCapacity = null;
-        }
-
-        final Boolean expectedUnhandledTaskMetricEnabled;
-        if (random.nextBoolean()) {
-            expectedUnhandledTaskMetricEnabled = random.nextBoolean();
-            configStringBuilder.append(
-                    expectedUnhandledTaskMetricEnabled ? "UNHANDLED_TASK_METRIC " : "!UNHANDLED_TASK_METRIC ");
-        } else {
-            expectedUnhandledTaskMetricEnabled = null;
-        }
-
-        final Boolean expectedBusyFractionMetricEnabled;
-        if (random.nextBoolean()) {
-            expectedBusyFractionMetricEnabled = random.nextBoolean();
-            configStringBuilder.append(
-                    expectedBusyFractionMetricEnabled ? "BUSY_FRACTION_METRIC " : "!BUSY_FRACTION_METRIC ");
-        } else {
-            expectedBusyFractionMetricEnabled = null;
-        }
-
-        final Boolean expectedFlushingEnabled;
-        if (random.nextBoolean()) {
-            expectedFlushingEnabled = random.nextBoolean();
-            configStringBuilder.append(expectedFlushingEnabled ? "FLUSHABLE " : "!FLUSHABLE ");
-        } else {
-            expectedFlushingEnabled = null;
-        }
-
-        final Boolean expectedSquelchingEnabled;
-        if (random.nextBoolean()) {
-            expectedSquelchingEnabled = random.nextBoolean();
-            configStringBuilder.append(expectedSquelchingEnabled ? "SQUELCHABLE " : "!SQUELCHABLE ");
-        } else {
-            expectedSquelchingEnabled = null;
-        }
-
-        final String configString = configStringBuilder.toString();
-
-        final TaskSchedulerConfiguration config = TaskSchedulerConfiguration.parse(configString);
-
-        assertEquals(expectedTaskSchedulerType, config.type());
-        assertEquals(expectedUnhandledTaskCapacity, config.unhandledTaskCapacity());
-        assertEquals(expectedUnhandledTaskMetricEnabled, config.unhandledTaskMetricEnabled());
-        assertEquals(expectedBusyFractionMetricEnabled, config.busyFractionMetricEnabled());
-        assertEquals(expectedFlushingEnabled, config.flushingEnabled());
-        assertEquals(expectedSquelchingEnabled, config.squelchingEnabled());
-
-        // TODO finish this test, repeat in a loop to get different combinations
     }
 }
