@@ -536,6 +536,13 @@ public class InitialModServiceTokenSchema extends Schema {
                 accounts.modifiedKeys().size());
     }
 
+    /**
+     * Get the total balance of all accounts. Since we cannot iterate over the accounts in VirtualMap,
+     * we have to do this manually.
+     * @param accounts The accounts map
+     * @param hederaConfig The Hedera configuration
+     * @return The total balance of all accounts
+     */
     public long getTotalBalanceOfAllAccounts(
             @NonNull final WritableKVState<AccountID, Account> accounts, @NonNull final HederaConfig hederaConfig) {
         long totalBalance = 0;
