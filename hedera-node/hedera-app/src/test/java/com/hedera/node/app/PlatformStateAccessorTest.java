@@ -16,6 +16,8 @@
 
 package com.hedera.node.app;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.hedera.node.app.state.PlatformStateAccessor;
 import com.swirlds.platform.state.PlatformState;
 import org.junit.jupiter.api.Assertions;
@@ -23,8 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 @ExtendWith(MockitoExtension.class)
 class PlatformStateAccessorTest {
