@@ -135,6 +135,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.event.hashing;
     exports com.swirlds.platform.event.orphan;
 
+    requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
