@@ -187,7 +187,7 @@ public class InitialModServiceTokenSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        final var isGenesis = ctx.previousStates().isEmpty();
+        final var isGenesis = ctx.previousVersion() == null;
         if (isGenesis) {
             createGenesisSchema(ctx);
         }

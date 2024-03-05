@@ -246,7 +246,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 // MigrationContext API so that only changes explicitly specified in the
                 // interface can be made (instead of allowing any arbitrary state change).
                 final var migrationContext = new MigrationContextImpl(
-                        previousStates, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore);
+                        previousStates,
+                        newStates,
+                        config,
+                        networkInfo,
+                        genesisRecordsBuilder,
+                        entityIdStore,
+                        previousVersion);
                 if (applicationType != SchemaApplicationType.RESTART_ONLY) {
                     schema.migrate(migrationContext);
                 }
