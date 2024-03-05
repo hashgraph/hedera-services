@@ -718,10 +718,10 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
      */
     @Override
     public <T extends SelfSerializable> List<T> readSerializableList(
-            final int maxListSize, @Nullable final Set<Long> permissibleCLassIds) throws IOException {
+            final int maxListSize, @Nullable final Set<Long> permissibleClassIds) throws IOException {
         startOperation(SerializationOperation.READ_SERIALIZABLE_LIST);
         try {
-            return super.readSerializableList(maxListSize, permissibleCLassIds);
+            return super.readSerializableList(maxListSize, permissibleClassIds);
         } finally {
             finishOperation();
         }
@@ -735,12 +735,12 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
             final int maxListSize,
             final boolean readClassId,
             @NonNull final Supplier<T> serializableConstructor,
-            @Nullable final Set<Long> permissibleCLassIds)
+            @Nullable final Set<Long> permissibleClassIds)
             throws IOException {
 
         startOperation(SerializationOperation.READ_SERIALIZABLE_LIST);
         try {
-            return super.readSerializableList(maxListSize, readClassId, serializableConstructor, permissibleCLassIds);
+            return super.readSerializableList(maxListSize, readClassId, serializableConstructor, permissibleClassIds);
         } finally {
             finishOperation();
         }
