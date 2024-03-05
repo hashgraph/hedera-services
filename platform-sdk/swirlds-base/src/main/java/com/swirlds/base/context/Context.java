@@ -17,7 +17,6 @@
 package com.swirlds.base.context;
 
 import com.swirlds.base.context.internal.GlobalContext;
-import com.swirlds.base.context.internal.ThreadGroupContext;
 import com.swirlds.base.context.internal.ThreadLocalContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -123,10 +122,5 @@ public interface Context {
     @NonNull
     static Context getThreadLocalContext() {
         return ThreadLocalContext.getInstance();
-    }
-
-    @NonNull
-    static Context getThreadGroupContext() {
-        return ThreadGroupContext.getInstance();
     }
 }
