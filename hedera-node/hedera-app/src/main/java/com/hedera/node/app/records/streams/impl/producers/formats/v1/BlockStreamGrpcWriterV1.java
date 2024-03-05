@@ -17,8 +17,8 @@
 package com.hedera.node.app.records.streams.impl.producers.formats.v1;
 
 import com.hedera.block.node.api.proto.java.BlockServiceGrpc;
-import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentRequest;
-import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentResponse;
+import com.hedera.block.node.api.proto.java.WriteBlockStreamRequest;
+import com.hedera.block.node.api.proto.java.WriteBlockStreamResponse;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.hapi.streams.v7.Block;
@@ -66,7 +66,7 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
     /**
      * A requestObserver for writing a block to the BlockNode.
      */
-    private StreamObserver<BlocksPutIfAbsentRequest> requestObserver;
+    private StreamObserver<WriteBlockStreamRequest> requestObserver;
 
     /**
      * Create a block stream writer to write a block to a block node.
@@ -99,10 +99,10 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
 
         // Get a connection to the block node so that we can start streaming BlockItems to it.
         BlockServiceGrpc.BlockServiceStub client = blockNodeClient();
-        StreamObserver<BlocksPutIfAbsentRequest> requestObserver =
-                client.blocksPutIfAbsent(new StreamObserver<BlocksPutIfAbsentResponse>() {
+        StreamObserver<WriteBlockStreamRequest> requestObserver =
+                client.writeBlockStream(new StreamObserver<WriteBlockStreamResponse>() {
                     @Override
-                    public void onNext(BlocksPutIfAbsentResponse response) {
+                    public void onNext(WriteBlockStreamResponse response) {
                         // TODO(nickpoorman): Implement this.
                         logger.info("Response received: " + response.getStatus());
                     }
@@ -121,7 +121,7 @@ public final class BlockStreamGrpcWriterV1 implements BlockStreamWriter {
                 });
 
         // TODO(nickpoorman): For every BlockItem we produce, we will need to send it using:
-        //        BlocksPutIfAbsentRequest request = BlocksPutIfAbsentRequest.newBuilder()
+        //        WriteBlockStreamRequest request = WriteBlockStreamRequest.newBuilder()
         //                // Set request data here
         //                .build();
         //        requestObserver.onNext(request);
