@@ -20,7 +20,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
-import com.swirlds.logging.api.internal.format.LineBasedFormat;
+import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
 import com.swirlds.logging.buffer.BufferedOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileOutputStream;
@@ -48,7 +48,7 @@ public class FileHandler extends AbstractSyncedHandler {
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
     private static final int BUFFER_CAPACITY = 8192 * 8;
     private final OutputStream outputStream;
-    private final LineBasedFormat format;
+    private final FormattedLinePrinter format;
 
     /**
      * Creates a new file handler.
@@ -62,7 +62,7 @@ public class FileHandler extends AbstractSyncedHandler {
             throws IOException {
         super(handlerName, configuration);
 
-        this.format = LineBasedFormat.createForHandler(handlerName, configuration);
+        this.format = FormattedLinePrinter.createForHandler(handlerName, configuration);
 
         final String propertyPrefix = PROPERTY_HANDLER.formatted(handlerName);
         final Path filePath = Objects.requireNonNullElse(
@@ -84,7 +84,7 @@ public class FileHandler extends AbstractSyncedHandler {
     }
 
     /**
-     * Handles a log event by appending it to the file using the {@link LineBasedFormat}.
+     * Handles a log event by appending it to the file using the {@link FormattedLinePrinter}.
      *
      * @param event The log event to be printed.
      */

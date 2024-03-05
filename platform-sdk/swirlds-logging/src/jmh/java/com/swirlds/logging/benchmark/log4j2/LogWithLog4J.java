@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.benchmark;
+package com.swirlds.logging.benchmark.log4j2;
 
-import com.swirlds.logging.benchmark.util.BenchmarkUtils;
+import com.swirlds.logging.benchmark.util.Throwables;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -38,7 +38,7 @@ public class LogWithLog4J implements Runnable {
     public void run() {
         logger.log(Level.INFO, "L0, Hello world!");
         logger.log(Level.INFO, "L1, A quick brown fox jumps over the lazy dog.");
-        logger.log(Level.INFO, "L2, Hello world!", BenchmarkUtils.THROWABLE);
+        logger.log(Level.INFO, "L2, Hello world!", Throwables.THROWABLE);
         logger.log(Level.INFO, "L3, Hello {}!", "placeholder");
 
         ThreadContext.put("key", "value");
@@ -47,16 +47,16 @@ public class LogWithLog4J implements Runnable {
 
         logger.log(Level.INFO, marker1, "L5, Hello world!");
 
-        ThreadContext.put("user-id", BenchmarkUtils.USER_1);
+        ThreadContext.put("user-id", Throwables.USER_1);
         logger.log(Level.INFO, "L6, Hello world!");
         ThreadContext.clearAll();
 
-        ThreadContext.put("user-id", BenchmarkUtils.USER_2);
+        ThreadContext.put("user-id", Throwables.USER_2);
         logger.log(Level.INFO, "L7, Hello {}, {}, {}, {}, {}, {}, {}, {}, {}!", 1, 2, 3, 4, 5, 6, 7, 8, 9);
         ThreadContext.clearAll();
 
         ThreadContext.put("key", "value");
-        ThreadContext.put("user-id", BenchmarkUtils.USER_3);
+        ThreadContext.put("user-id", Throwables.USER_3);
         logger.log(Level.INFO, "L8, Hello world!");
         ThreadContext.clearAll();
 
@@ -67,6 +67,6 @@ public class LogWithLog4J implements Runnable {
         logger.log(Level.INFO, marker2, "L11, Hello {}, {}, {}, {}, {}, {}, {}, {}, {}!", 1, 2, 3, 4, 5, 6, 7, 8, 9);
         ThreadContext.clearAll();
 
-        logger.log(Level.INFO, "L12, Hello world!", BenchmarkUtils.DEEP_THROWABLE);
+        logger.log(Level.INFO, "L12, Hello world!", Throwables.DEEP_THROWABLE);
     }
 }

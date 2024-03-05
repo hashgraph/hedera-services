@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.benchmark;
+package com.swirlds.logging.benchmark.swirldslog;
 
-import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.FORK_COUNT;
-import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.MEASUREMENT_ITERATIONS;
-import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION;
-import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.PARALLEL_THREAD_COUNT;
-import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.WARMUP_ITERATIONS;
-import static com.swirlds.logging.benchmark.config.BenchmarkConfigConstants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
-import static com.swirlds.logging.benchmark.config.LoggingHandlingType.CONSOLE_AND_FILE_TYPE;
-import static com.swirlds.logging.benchmark.config.LoggingHandlingType.CONSOLE_TYPE;
-import static com.swirlds.logging.benchmark.config.LoggingHandlingType.FILE_TYPE;
+import static com.swirlds.logging.benchmark.config.RunBenchmarkConstants.CONSOLE_AND_FILE_TYPE;
+import static com.swirlds.logging.benchmark.config.RunBenchmarkConstants.CONSOLE_TYPE;
+import static com.swirlds.logging.benchmark.config.RunBenchmarkConstants.FILE_TYPE;
+import static com.swirlds.logging.benchmark.config.RunBenchmarkConstants.FORK_COUNT;
+import static com.swirlds.logging.benchmark.config.RunBenchmarkConstants.MEASUREMENT_ITERATIONS;
+import static com.swirlds.logging.benchmark.config.RunBenchmarkConstants.MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION;
+import static com.swirlds.logging.benchmark.config.RunBenchmarkConstants.PARALLEL_THREAD_COUNT;
+import static com.swirlds.logging.benchmark.config.RunBenchmarkConstants.WARMUP_ITERATIONS;
+import static com.swirlds.logging.benchmark.config.RunBenchmarkConstants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
 
+import com.swirlds.logging.api.Logger;
 import java.util.Objects;
-import org.apache.logging.log4j.Logger;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -42,24 +42,25 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 @State(Scope.Benchmark)
-public class Log4JBenchmark {
+public class SwirldsLogBenchmark {
 
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
 
     private Logger logger;
-    private LogWithLog4J logRunner;
+
+    private LogWithSwirlds logRunner;
 
     @Setup(Level.Trial)
     public void init() {
         if (Objects.equals(loggingType, FILE_TYPE)) {
-            logger = ConfigureLog4J.configureFileLogging().getLogger("Log4JBenchmark");
+            logger = ConfigureSwirldsLog.configureFileLogging().getLogger("SwirldsLogBenchmark");
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
-            logger = ConfigureLog4J.configureConsoleLogging().getLogger("Log4JBenchmark");
+            logger = ConfigureSwirldsLog.configureConsoleLogging().getLogger("SwirldsLogBenchmark");
         } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
-            logger = ConfigureLog4J.configureFileAndConsoleLogging().getLogger("Log4JBenchmark");
+            logger = ConfigureSwirldsLog.configureFileAndConsoleLogging().getLogger("SwirldsLogBenchmark");
         }
-        logRunner = new LogWithLog4J(logger);
+        logRunner = new LogWithSwirlds(logger);
     }
 
     @Benchmark
@@ -68,7 +69,7 @@ public class Log4JBenchmark {
     @BenchmarkMode(Mode.Throughput)
     @Warmup(iterations = WARMUP_ITERATIONS, time = WARMUP_TIME_IN_SECONDS_PER_ITERATION)
     @Measurement(iterations = MEASUREMENT_ITERATIONS, time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION)
-    public void log4J() {
+    public void swirldsLogging() {
         logRunner.run();
     }
 }

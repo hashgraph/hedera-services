@@ -16,29 +16,44 @@
 
 package com.swirlds.logging.benchmark.util;
 
-import com.swirlds.logging.benchmark.config.LoggingHandlingType;
-import com.swirlds.logging.benchmark.config.LoggingImplementation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Convenience methods for handling logFiles pre and after benchmark runs
+ */
 public class LogFiles {
 
+    private LogFiles() {}
+
+    /**
+     * Provides the path to the log file based on the implementationName of the logging system under benchmark
+     * {@code implementationName} and the type of benchmark {@code type}. Previously deleting the file
+     * if exists in the FS.
+     */
     @NonNull
-    public static String provideLogFilePath(LoggingImplementation implementation, LoggingHandlingType type) {
-        final String path = getPath(implementation, type);
+    public static String provideLogFilePath(final @NonNull String implementationName, final @NonNull String type) {
+        final String path = getPath(implementationName, type);
         deleteFile(path);
         return path;
     }
 
+    /**
+     * Provides the path to the log file based on the implementation of the logging system under benchmark
+     * {@code implementationName} and the type of benchmark {@code type}
+     */
     @NonNull
-    public static String getPath(final LoggingImplementation implementation, final LoggingHandlingType type) {
+    public static String getPath(final @NonNull String implementation, final @NonNull String type) {
         final long pid = ProcessHandle.current().pid();
         return "logging-out/benchmark-" + implementation + "-" + pid + "-" + type + ".log";
     }
 
-    private static void deleteFile(final String logFile) {
+    /**
+     * Deletes the file
+     */
+    public static void deleteFile(final @NonNull String logFile) {
         try {
             Files.deleteIfExists(Path.of(logFile));
         } catch (IOException e) {

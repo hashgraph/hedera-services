@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.benchmark;
+package com.swirlds.logging.benchmark.swirldslog;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -22,16 +22,20 @@ import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
-import com.swirlds.logging.benchmark.config.LoggingHandlingType;
-import com.swirlds.logging.benchmark.config.LoggingImplementation;
+import com.swirlds.logging.benchmark.config.RunBenchmarkConstants;
 import com.swirlds.logging.benchmark.util.LogFiles;
-import com.swirlds.logging.external.benchmark.BenchmarkFactory;
+import com.swirlds.logging.console.ConsoleHandlerFactory;
+import com.swirlds.logging.file.FileHandlerFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class ConfigureSwirldsLog {
 
+    private static final FileHandlerFactory FILE_HANDLER_FACTORY = new FileHandlerFactory();
+    private static final ConsoleHandlerFactory CONSOLE_HANDLER_FACTORY = new ConsoleHandlerFactory();
+
     public static @NonNull LoggingSystem configureFileLogging() {
-        final String logFile = LogFiles.provideLogFilePath(LoggingImplementation.SWIRLDS, LoggingHandlingType.FILE);
+        final String logFile =
+                LogFiles.provideLogFilePath(RunBenchmarkConstants.SWIRLDS, RunBenchmarkConstants.FILE_TYPE);
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
@@ -42,7 +46,7 @@ public class ConfigureSwirldsLog {
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", logFile)
                 .build();
-        final LogHandler fileHandler = BenchmarkFactory.getFileHandlerFactory().create("file", configuration);
+        final LogHandler fileHandler = FILE_HANDLER_FACTORY.create("file", configuration);
         LoggingSystem loggingSystem = new LoggingSystem(configuration);
         loggingSystem.addHandler(fileHandler);
         return loggingSystem;
@@ -58,8 +62,7 @@ public class ConfigureSwirldsLog {
                 .withValue("logging.handler.console.formatTimestamp", "false")
                 .withValue("logging.handler.console.level", "trace")
                 .build();
-        final LogHandler consoleHandler =
-                BenchmarkFactory.getConsoleHandlerFactory().create("console", configuration);
+        final LogHandler consoleHandler = CONSOLE_HANDLER_FACTORY.create("console", configuration);
         LoggingSystem loggingSystem = new LoggingSystem(configuration);
         loggingSystem.addHandler(consoleHandler);
         return loggingSystem;
@@ -67,7 +70,7 @@ public class ConfigureSwirldsLog {
 
     public static @NonNull LoggingSystem configureFileAndConsoleLogging() {
         final String logFile =
-                LogFiles.provideLogFilePath(LoggingImplementation.SWIRLDS, LoggingHandlingType.CONSOLE_AND_FILE);
+                LogFiles.provideLogFilePath(RunBenchmarkConstants.SWIRLDS, RunBenchmarkConstants.CONSOLE_AND_FILE_TYPE);
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
@@ -82,9 +85,8 @@ public class ConfigureSwirldsLog {
                 .withValue("logging.handler.console.formatTimestamp", "false")
                 .withValue("logging.handler.console.level", "trace")
                 .build();
-        final LogHandler fileHandler = BenchmarkFactory.getFileHandlerFactory().create("file", configuration);
-        final LogHandler consoleHandler =
-                BenchmarkFactory.getConsoleHandlerFactory().create("console", configuration);
+        final LogHandler fileHandler = FILE_HANDLER_FACTORY.create("file", configuration);
+        final LogHandler consoleHandler = CONSOLE_HANDLER_FACTORY.create("console", configuration);
         LoggingSystem loggingSystem = new LoggingSystem(configuration);
         loggingSystem.addHandler(fileHandler);
         loggingSystem.addHandler(consoleHandler);

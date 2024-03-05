@@ -21,7 +21,7 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
-import com.swirlds.logging.api.internal.format.LineBasedFormat;
+import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.PrintStream;
@@ -94,7 +94,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
 
     private final Lock handleLock;
 
-    private final AtomicReference<LineBasedFormat> lineBasedFormat = new AtomicReference<>();
+    private final AtomicReference<FormattedLinePrinter> lineBasedFormat = new AtomicReference<>();
 
     /**
      * Creates the singleton instance of the logger.
@@ -271,9 +271,9 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         }
     }
 
-    private LineBasedFormat getLineBasedFormat() {
+    private FormattedLinePrinter getLineBasedFormat() {
         if (lineBasedFormat.get() == null) {
-            lineBasedFormat.compareAndSet(null, new LineBasedFormat(false));
+            lineBasedFormat.compareAndSet(null, new FormattedLinePrinter(false));
         }
         return lineBasedFormat.get();
     }

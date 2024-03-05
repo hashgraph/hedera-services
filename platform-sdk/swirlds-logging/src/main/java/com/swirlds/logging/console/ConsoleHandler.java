@@ -20,7 +20,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
-import com.swirlds.logging.api.internal.format.LineBasedFormat;
+import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
 import com.swirlds.logging.buffer.BufferedOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -30,15 +30,15 @@ import java.io.OutputStream;
  * A handler that logs events to the console.
  * <p>
  * This class extends the {@link AbstractSyncedHandler} and provides a simple way to log {@link LogEvent}s to the
- * console using a {@link LineBasedFormat}.
+ * console using a {@link FormattedLinePrinter}.
  *
  * @see AbstractSyncedHandler
- * @see LineBasedFormat
+ * @see FormattedLinePrinter
  */
 public class ConsoleHandler extends AbstractSyncedHandler {
 
     private static final int BUFFER_CAPACITY = 8192;
-    private final LineBasedFormat format;
+    private final FormattedLinePrinter format;
     private final OutputStream outputStream;
 
     /**
@@ -50,12 +50,12 @@ public class ConsoleHandler extends AbstractSyncedHandler {
     public ConsoleHandler(
             @NonNull final String handlerName, @NonNull final Configuration configuration, final boolean buffered) {
         super(handlerName, configuration);
-        this.format = LineBasedFormat.createForHandler(handlerName, configuration);
+        this.format = FormattedLinePrinter.createForHandler(handlerName, configuration);
         this.outputStream = buffered ? new BufferedOutputStream(System.out, BUFFER_CAPACITY) : System.out;
     }
 
     /**
-     * Handles a log event by printing it to the console using the {@link LineBasedFormat}. May be buffered and not
+     * Handles a log event by printing it to the console using the {@link FormattedLinePrinter}. May be buffered and not
      * immediately flushed.
      *
      * @param event The log event to be printed.

@@ -24,7 +24,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-public class DateFormatUtils {
+/**
+ * Utility class to help formatting epoc milliseconds like those coming from ({@link System#currentTimeMillis()}) to a
+ * String representation matching  {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME}
+ */
+public class EpochFormatUtils {
 
     /**
      * The emergency logger.
@@ -37,7 +41,25 @@ public class DateFormatUtils {
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault());
 
-    public static final String BROKEN_TIMESTAMP = "BROKEN-TIMESTAMP          ";
+    private static final String BROKEN_TIMESTAMP = "BROKEN-TIMESTAMP          ";
+
+    private EpochFormatUtils() {}
+
+    /**
+     * Returns the String representation matching {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME}
+     * for the epoc value {@code timestamp}
+     */
+    public static @NonNull String timestampAsString(final long timestamp) {
+        try {
+            final StringBuilder sb = new StringBuilder(26);
+            sb.append(FORMATTER.format(Instant.ofEpochMilli(timestamp)));
+            sb.append(getFiller(26 - sb.length()));
+            return sb.toString();
+        } catch (final Throwable e) {
+            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
+            return BROKEN_TIMESTAMP;
+        }
+    }
 
     private static @NonNull String getFiller(final int length) {
         if (length == 0) {
@@ -96,18 +118,6 @@ public class DateFormatUtils {
             return "                          ";
         } else {
             throw new IllegalArgumentException("Unsupported length: " + length);
-        }
-    }
-
-    public static @NonNull String timestampAsString(long timestamp) {
-        try {
-            final StringBuilder sb = new StringBuilder(26);
-            sb.append(FORMATTER.format(Instant.ofEpochMilli(timestamp)));
-            sb.append(getFiller(26 - sb.length()));
-            return sb.toString();
-        } catch (final Throwable e) {
-            EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
-            return BROKEN_TIMESTAMP;
         }
     }
 }

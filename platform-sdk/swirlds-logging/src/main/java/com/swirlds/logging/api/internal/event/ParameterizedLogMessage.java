@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * of the {} placeholders.
  * <p>
  * The implementation is copied from slf4j for first tests. need to be replaced in future. SLF4J is using MIT license
- * (https://github.com/qos-ch/slf4j/blob/master/LICENSE.txt). Based on that we can use it in our project for now
+ * (<a href="https://github.com/qos-ch/slf4j/blob/master/LICENSE.txt">...</a>). Based on that we can use it in our project for now
  *
  * @see LogMessage
  */
@@ -45,7 +45,7 @@ public class ParameterizedLogMessage implements LogMessage {
      * @param messagePattern the message pattern
      * @param args           the arguments
      */
-    public ParameterizedLogMessage(final String messagePattern, final Object... args) {
+    public ParameterizedLogMessage(final @NonNull String messagePattern, final @NonNull Object... args) {
         this.messagePattern = messagePattern;
         this.args = args;
     }
@@ -59,7 +59,7 @@ public class ParameterizedLogMessage implements LogMessage {
         return message;
     }
 
-    private String createMessage() {
+    private @NonNull String createMessage() {
         if (messagePattern == null) {
             return "";
         }

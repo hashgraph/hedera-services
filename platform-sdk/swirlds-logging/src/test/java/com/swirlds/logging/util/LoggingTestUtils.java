@@ -21,7 +21,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
-import com.swirlds.logging.api.internal.format.LineBasedFormat;
+import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
 import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.api.internal.level.MarkerState;
 import com.swirlds.logging.test.fixtures.internal.LoggingMirrorImpl;
@@ -152,7 +152,7 @@ public final class LoggingTestUtils {
     }
 
     public static List<String> mirrorToStatements(final LoggingMirrorImpl mirror) {
-        final LineBasedFormat formattedEvents = new LineBasedFormat(false);
+        final FormattedLinePrinter formattedEvents = new FormattedLinePrinter(false);
         return mirror.getEvents().stream()
                 .map(e -> {
                     final StringBuilder stringBuilder = new StringBuilder();

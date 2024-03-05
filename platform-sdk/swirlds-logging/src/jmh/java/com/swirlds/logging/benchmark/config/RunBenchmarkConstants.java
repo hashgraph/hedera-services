@@ -16,7 +16,12 @@
 
 package com.swirlds.logging.benchmark.config;
 
-public class BenchmarkConfigConstants {
+public class RunBenchmarkConstants {
+    public static final String CONSOLE_TYPE = "CONSOLE";
+    public static final String FILE_TYPE = "FILE";
+    public static final String CONSOLE_AND_FILE_TYPE = "CONSOLE_AND_FILE";
+    public static final String SWIRLDS = "SWIRLDS";
+    public static final String LOG4J2 = "LOG4J2";
 
     public static final int WARMUP_ITERATIONS = 3;
 

@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A utility class that formats a {@link LogEvent} as a line based format.
+ * Formats a {@link LogEvent} as a {@link String} and prints it to a given {@link Appendable}
  */
-public class LineBasedFormat {
+public class FormattedLinePrinter {
 
     private static final String THREAD_SUFFIX = "UNDEFINED-THREAD";
     private static final String LOGGER_SUFFIX = "UNDEFINED-LOGGER";
@@ -44,17 +44,29 @@ public class LineBasedFormat {
      */
     private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
+    /**
+     * Defines whether timestamps should be formatted as string or raw epoc values.
+     */
     private final boolean formatTimestamp;
 
-    public LineBasedFormat(boolean formatTimestamp) {
+    /**
+     * Creates a format
+     *
+     * @param formatTimestamp if true, timestamps will be converted to a human-readable format defined by
+     *                           {@link EpochFormatUtils}
+     */
+    public FormattedLinePrinter(boolean formatTimestamp) {
         this.formatTimestamp = formatTimestamp;
     }
 
     /**
-     * Converts the given object to a string. If the object is {@code null}, the given default value is used.
+     * Formats a {@link LogEvent} as a {@link String} and prints it to a given {@link Appendable}
+     *
+     * @param appendable Non-null appendable. Destination to write into.
+     * @param event      Non-null event to write.
      */
-    public void print(@Nullable final Appendable writer, @Nullable final LogEvent event) {
-        if (writer == null) {
+    public void print(@NonNull final Appendable appendable, @NonNull final LogEvent event) {
+        if (appendable == null) {
             EMERGENCY_LOGGER.logNPE("printer");
             return;
         }
@@ -64,37 +76,36 @@ public class LineBasedFormat {
         }
         try {
             if (formatTimestamp) {
-                writer.append(DateFormatUtils.timestampAsString(event.timestamp()));
+                appendable.append(EpochFormatUtils.timestampAsString(event.timestamp()));
             } else {
-                writer.append(Long.toString(event.timestamp()));
+                appendable.append(Long.toString(event.timestamp()));
             }
-            writer.append(' ');
-            writer.append(asString(event.level()));
-            writer.append(" [");
-            writer.append(requireNonNullElse(event.threadName(), THREAD_SUFFIX));
-            writer.append("] ");
-            writer.append(requireNonNullElse(event.loggerName(), LOGGER_SUFFIX));
-            writer.append(" - ");
-            writer.append(asString(event.message()));
+            appendable.append(' ');
+            appendable.append(asString(event.level()));
+            appendable.append(" [");
+            appendable.append(requireNonNullElse(event.threadName(), THREAD_SUFFIX));
+            appendable.append("] ");
+            appendable.append(requireNonNullElse(event.loggerName(), LOGGER_SUFFIX));
+            appendable.append(" - ");
+            appendable.append(asString(event.message()));
 
             Marker marker = event.marker();
             if (marker != null) {
-                writer.append(" - [");
-                writer.append(asString(marker));
-                writer.append("]");
+                appendable.append(" - [");
+                appendable.append(asString(marker));
+                appendable.append("]");
             }
 
-            final Map<String, String> context;
-            context = event.context();
+            final Map<String, String> context = event.context();
             if (context != null && !context.isEmpty()) {
-                writer.append(" - ");
-                writer.append(context.toString());
+                appendable.append(" - ");
+                appendable.append(context.toString());
             }
-            writer.append(System.lineSeparator());
+            appendable.append(System.lineSeparator());
 
             Throwable throwable = event.throwable();
             if (throwable != null) {
-                StackTracePrinter.print(writer, throwable);
+                StackTracePrinter.print(appendable, throwable);
             }
         } catch (final Throwable e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format and print event", e);
@@ -102,12 +113,12 @@ public class LineBasedFormat {
     }
 
     /**
-     * Converts the given object to a string.
+     * Converts the given {@link Level} object to a string.
      *
      * @param level The level
      * @return The string
      */
-    private static String asString(@Nullable Level level) {
+    private static String asString(@Nullable final Level level) {
         if (level == null) {
             EMERGENCY_LOGGER.logNPE("level");
             return "NO_LV"; // Must be 5 chars long to fit in pattern
@@ -152,16 +163,16 @@ public class LineBasedFormat {
     }
 
     /**
-     * Creates in instance of {@link LineBasedFormat}
+     * Creates in instance of {@link FormattedLinePrinter}
      *
      * @throws NullPointerException if any of the arguments is {@code null}
      */
-    public static @NonNull LineBasedFormat createForHandler(
+    public static @NonNull FormattedLinePrinter createForHandler(
             @NonNull final String handlerName, @NonNull final Configuration configuration) {
         Objects.requireNonNull(handlerName, "handlerName must not be null");
         Objects.requireNonNull(configuration, "configuration must not be null");
         final String formatTimestampKey = "logging.handler." + handlerName + ".formatTimestamp";
         final Boolean formatTimestamp = configuration.getValue(formatTimestampKey, Boolean.class, true);
-        return new LineBasedFormat(formatTimestamp != null && formatTimestamp);
+        return new FormattedLinePrinter(formatTimestamp != null && formatTimestamp);
     }
 }
