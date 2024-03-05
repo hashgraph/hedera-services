@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
@@ -36,7 +37,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collections;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferStep {
     private final CryptoTransferTransactionBody op;
@@ -62,7 +63,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
             // Expected decimals are already validated in AdjustFungibleTokenChangesStep.
             // So not doing same check again here
 
-            for (final var nftTransfer : xfers.nftTransfersOrElse(Collections.emptyList())) {
+            for (final var nftTransfer : xfers.nftTransfersOrElse(emptyList())) {
                 final var senderId = nftTransfer.senderAccountID();
                 final var receiverId = nftTransfer.receiverAccountID();
                 final var serial = nftTransfer.serialNumber();
@@ -110,8 +111,28 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
     }
 
     /**
+     * Validate if the spender has allowance to transfer the nft, if the account and
+     * nft are not null.
+     *
+     * @param owner maybe the owner of the nft
+     * @param spender spender of the nft
+     * @param tokenId token id of the nft
+     * @param nft maybe the nft to be transferred
+     */
+    static void maybeValidateSpenderHasAllowance(
+            @Nullable final Account owner,
+            @NonNull final AccountID spender,
+            @NonNull final TokenID tokenId,
+            @Nullable final Nft nft) {
+        if (owner != null || nft != null) {
+            validateSpenderHasAllowance(owner, spender, tokenId, nft);
+        }
+    }
+
+    /**
      * Validate if the spender has allowance to transfer the nft, if the nft is being transferred
      * with an isApproval flag set to true.
+     *
      * @param owner owner of the nft
      * @param spender spender of the nft
      * @param tokenId token id of the nft
@@ -119,7 +140,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
      */
     static void validateSpenderHasAllowance(
             final Account owner, final AccountID spender, final TokenID tokenId, final Nft nft) {
-        final var approveForAllAllowances = owner.approveForAllNftAllowances();
+        final var approveForAllAllowances = owner.approveForAllNftAllowancesOrElse(emptyList());
         final var allowance = AccountApprovalForAllAllowance.newBuilder()
                 .spenderId(spender)
                 .tokenId(tokenId)

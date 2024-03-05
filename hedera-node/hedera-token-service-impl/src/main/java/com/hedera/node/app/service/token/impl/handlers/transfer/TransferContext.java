@@ -74,6 +74,8 @@ public interface TransferContext {
 
     HandleContext getHandleContext();
 
+    void validateTopLevelAllowances();
+
     /* ------------------- Needed for building records ------------------- */
 
     /**
