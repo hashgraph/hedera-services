@@ -137,7 +137,13 @@ final class InitialModServiceTokenSchemaTest {
                 newWritableEntityIdState());
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
-                nonEmptyPrevStates, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore);
+                nonEmptyPrevStates,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -153,7 +159,13 @@ final class InitialModServiceTokenSchemaTest {
     void initializesStakingData() {
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore);
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -167,7 +179,13 @@ final class InitialModServiceTokenSchemaTest {
     void createsAllAccounts() {
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore);
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -276,7 +294,13 @@ final class InitialModServiceTokenSchemaTest {
                 new MapWritableKVState<>(ALIASES_KEY, blocklistAccts),
                 newWritableEntityIdState());
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore);
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -396,7 +420,13 @@ final class InitialModServiceTokenSchemaTest {
                 new MapWritableKVState<>(ALIASES_KEY, blocklistEvmAliasMappings),
                 newWritableEntityIdState());
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore);
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -435,7 +465,13 @@ final class InitialModServiceTokenSchemaTest {
         // None of the blocklist accounts will exist, but they shouldn't be created since blocklists aren't enabled
         config = buildConfig(DEFAULT_NUM_SYSTEM_ACCOUNTS, false);
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore);
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -460,7 +496,13 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 CURRENT_VERSION);
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (int i = 1; i < DEFAULT_NUM_SYSTEM_ACCOUNTS; i++) {
@@ -484,7 +526,13 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 CURRENT_VERSION);
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         final var stakingRewardAccount = acctsStateResult.get(ACCT_IDS[800]);
@@ -510,7 +558,13 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 CURRENT_VERSION);
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (final long reservedNum : NON_CONTRACT_RESERVED_NUMS) {
@@ -534,7 +588,13 @@ final class InitialModServiceTokenSchemaTest {
                 Collections::emptySortedSet,
                 CURRENT_VERSION);
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
 
@@ -557,7 +617,13 @@ final class InitialModServiceTokenSchemaTest {
                 this::allBlocklistAccts,
                 CURRENT_VERSION);
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION));
 
         // Verify that the assigned account ID matches the expected entity IDs
         for (int i = 0; i < EVM_ADDRESSES.length; i++) {
@@ -570,7 +636,13 @@ final class InitialModServiceTokenSchemaTest {
     void onlyExpectedIdsUsed() {
         final var schema = newSubjectWithAllExpected();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                CURRENT_VERSION));
 
         // Verify contract entity IDs aren't used
         for (int i = 350; i < 400; i++) {

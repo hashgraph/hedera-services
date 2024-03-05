@@ -145,7 +145,7 @@ public class InitialModFileGenesisSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         logger.debug("Migrating genesis state");
-        final var isGenesis = ctx.previousStates().isEmpty();
+        final var isGenesis = ctx.previousVersion() == null;
         if (isGenesis) {
             final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
             final var filesConfig = ctx.configuration().getConfigData(FilesConfig.class);
