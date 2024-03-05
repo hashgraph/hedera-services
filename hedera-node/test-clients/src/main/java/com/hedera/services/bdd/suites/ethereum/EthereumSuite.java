@@ -214,6 +214,7 @@ public class EthereumSuite extends HapiSuite {
                                     .type(EthTxData.EthTransactionType.EIP1559)
                                     .signingWith(SECP_256K1_SOURCE_KEY)
                                     .payingWith(RELAYER)
+                                    .hasRetryPrecheckFrom(BUSY)
                                     .nonce(1)
                                     .gasPrice(10L)
                                     .sending(ONE_HUNDRED_HBARS)
