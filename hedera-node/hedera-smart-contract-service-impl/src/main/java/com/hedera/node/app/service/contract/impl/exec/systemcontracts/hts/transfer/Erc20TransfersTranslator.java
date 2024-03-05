@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers.SPECIAL_REWARD_RECEIVERS;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -83,7 +84,8 @@ public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
                 attempt.defaultVerificationStrategy(),
                 attempt.senderId(),
                 attempt.addressIdConverter(),
-                requiresApproval);
+                requiresApproval,
+                SPECIAL_REWARD_RECEIVERS);
     }
 
     private boolean selectorsInclude(@NonNull final byte[] selector) {

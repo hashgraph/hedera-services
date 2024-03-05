@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -87,9 +88,11 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A custom builder for create a {@link SingleTransactionRecord}.
@@ -164,6 +167,9 @@ public class SingleTransactionRecordBuilderImpl
     // Fields that are not in TransactionRecord, but are needed for computing staking rewards
     // These are not persisted to the record file
     private final Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
+
+    @Nullable
+    private Set<AccountID> calledContractIds;
 
     // While the fee is sent to the underlying builder all the time, it is also cached here because, as of today,
     // there is no way to get the transaction fee from the PBJ object.
@@ -448,6 +454,7 @@ public class SingleTransactionRecordBuilderImpl
     public Transaction transaction() {
         return transaction;
     }
+
     /**
      * Gets the consensus instant.
      *
@@ -485,6 +492,19 @@ public class SingleTransactionRecordBuilderImpl
         this.transactionFee = transactionFee;
         this.transactionRecordBuilder.transactionFee(transactionFee);
         return this;
+    }
+
+    @Override
+    public void trackExplicitRewardSituation(@NonNull final AccountID contractId) {
+        if (calledContractIds == null) {
+            calledContractIds = new LinkedHashSet<>();
+        }
+        calledContractIds.add(contractId);
+    }
+
+    @Override
+    public Set<AccountID> explicitRewardSituationIds() {
+        return calledContractIds != null ? calledContractIds : emptySet();
     }
 
     /**
@@ -743,6 +763,11 @@ public class SingleTransactionRecordBuilderImpl
         requireNonNull(evmAddress, "evmAddress must not be null");
         transactionRecordBuilder.evmAddress(evmAddress);
         return this;
+    }
+
+    @Override
+    public @NonNull List<AssessedCustomFee> getAssessedCustomFees() {
+        return assessedCustomFees;
     }
 
     // ------------------------------------------------------------------------------------------------------------------------

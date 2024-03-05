@@ -26,13 +26,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-final class ScheduleStoreUtility {
+public final class ScheduleStoreUtility {
     private ScheduleStoreUtility() {}
 
     // @todo('7773') This requires rebuilding the equality virtual map on migration,
     //      because it's different from ScheduleVirtualValue (and must be, due to PBJ shift)
     @SuppressWarnings("UnstableApiUsage")
-    static String calculateStringHash(@NonNull final Schedule scheduleToHash) {
+    public static String calculateStringHash(@NonNull final Schedule scheduleToHash) {
         Objects.requireNonNull(scheduleToHash);
         final Hasher hasher = Hashing.sha256().newHasher();
         if (scheduleToHash.memo() != null) {

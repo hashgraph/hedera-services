@@ -41,14 +41,17 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAY
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -116,6 +119,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
@@ -594,7 +598,9 @@ public class HandleWorkflow {
         }
 
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
-        transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext, transactionInfo.functionality());
+        final var function = transactionInfo.functionality();
+        transactionFinalizer.finalizeParentRecord(
+                payer, tokenServiceContext, function, extraRewardReceivers(transactionInfo, recordBuilder));
 
         // Commit all state changes
         stack.commitFullStack();
@@ -607,6 +613,64 @@ public class HandleWorkflow {
 
         final int handleDuration = (int) (System.nanoTime() - handleStart);
         handleWorkflowMetrics.update(transactionInfo.functionality(), handleDuration);
+    }
+
+    /**
+     * Returns a set of "extra" account ids that should be considered as eligible for
+     * collecting their accrued staking rewards with the given transaction info and
+     * record builder.
+     *
+     * <p><b>IMPORTANT:</b> Needed only for mono-service fidelity.
+     *
+     * <p>There are three cases, none of which HIP-406 defined as a reward situation;
+     * but were "false positives" in the original mono-service implementation:
+     * <ol>
+     *     <li>For a crypto transfer, any account explicitly listed in the HBAR
+     *     transfer list, even with a zero balance adjustment.</li>
+     *     <li>For a contract operation, any called contract.</li>
+     *     <li>For a contract operation, any account loaded in a child
+     *     transaction (primarily, any account involved in a child
+     *     token transfer).</li>
+     * </ol>
+     *
+     * @param transactionInfo the transaction info
+     * @param recordBuilder the record builder
+     * @return the set of extra account ids
+     */
+    private Set<AccountID> extraRewardReceivers(
+            @NonNull final TransactionInfo transactionInfo,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+        if (recordBuilder.status() != SUCCESS) {
+            return emptySet();
+        }
+        return switch (transactionInfo.functionality()) {
+            case CRYPTO_TRANSFER -> zeroAdjustIdsFrom(transactionInfo
+                    .txBody()
+                    .cryptoTransferOrThrow()
+                    .transfersOrElse(TransferList.DEFAULT)
+                    .accountAmountsOrElse(emptyList()));
+            case ETHEREUM_TRANSACTION, CONTRACT_CALL, CONTRACT_CREATE -> recordBuilder.explicitRewardSituationIds();
+            default -> emptySet();
+        };
+    }
+
+    /**
+     * Returns any ids from the given list of explicit hbar adjustments that have a zero amount.
+     *
+     * @param explicitHbarAdjustments the list of explicit hbar adjustments
+     * @return the set of account ids that have a zero amount
+     */
+    private @NonNull Set<AccountID> zeroAdjustIdsFrom(@NonNull final List<AccountAmount> explicitHbarAdjustments) {
+        Set<AccountID> zeroAdjustmentAccounts = null;
+        for (final var aa : explicitHbarAdjustments) {
+            if (aa.amount() == 0) {
+                if (zeroAdjustmentAccounts == null) {
+                    zeroAdjustmentAccounts = new LinkedHashSet<>();
+                }
+                zeroAdjustmentAccounts.add(aa.accountID());
+            }
+        }
+        return zeroAdjustmentAccounts == null ? emptySet() : zeroAdjustmentAccounts;
     }
 
     /**

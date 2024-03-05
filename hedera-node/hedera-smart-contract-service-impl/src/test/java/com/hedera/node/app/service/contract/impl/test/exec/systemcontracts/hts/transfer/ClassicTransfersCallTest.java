@@ -45,6 +45,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transf
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.CallStatusStandardizer;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
@@ -78,6 +79,9 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
 
     @Mock
     private SystemContractGasCalculator systemContractGasCalculator;
+
+    @Mock
+    private SpecialRewardReceivers specialRewardReceivers;
 
     private ClassicTransfersCall subject;
 
@@ -232,7 +236,8 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 approvalSwitchHelper,
                 callStatusStandardizer,
                 verificationStrategy,
-                systemAccountCreditScreen);
+                systemAccountCreditScreen,
+                specialRewardReceivers);
     }
 
     private void givenHaltingSubject() {
@@ -247,7 +252,8 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 approvalSwitchHelper,
                 callStatusStandardizer,
                 verificationStrategy,
-                systemAccountCreditScreen);
+                systemAccountCreditScreen,
+                specialRewardReceivers);
     }
 
     private void givenV2SubjectWithV2Enabled() {
@@ -265,7 +271,8 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 null,
                 callStatusStandardizer,
                 verificationStrategy,
-                systemAccountCreditScreen);
+                systemAccountCreditScreen,
+                specialRewardReceivers);
     }
 
     private void givenV2SubjectWithV2Disabled() {
@@ -280,6 +287,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 null,
                 callStatusStandardizer,
                 verificationStrategy,
-                systemAccountCreditScreen);
+                systemAccountCreditScreen,
+                specialRewardReceivers);
     }
 }

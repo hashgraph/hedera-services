@@ -30,6 +30,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
+import com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility;
 import com.hedera.node.app.service.schedule.impl.codec.ScheduleServiceStateTranslator;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
@@ -40,6 +41,7 @@ import com.hedera.pbj.runtime.ParseException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -144,26 +146,30 @@ public final class InitialModServiceScheduleSchema extends Schema {
             final WritableKVState<ProtoString, ScheduleList> schedulesByEquality =
                     ctx.newStates().get(SCHEDULES_BY_EQUALITY_KEY);
             fs.byEquality().forEachNode((scheduleEqualityVirtualKey, sevv) -> {
-                List<Schedule> schedules = new ArrayList<>();
                 sevv.getIds().forEach(new BiConsumer<String, Long>() {
                     @Override
                     public void accept(String scheduleObjHash, Long scheduleId) {
                         var schedule = schedulesById.get(
                                 ScheduleID.newBuilder().scheduleNum(scheduleId).build());
-                        if (schedule != null) schedules.add(schedule);
-                        else {
+                        if (schedule != null) {
+                            final var equalityKey = new ProtoString(ScheduleStoreUtility.calculateStringHash(schedule));
+                            final var existingList = schedulesByEquality.get(equalityKey);
+                            final List<Schedule> existingSchedules = existingList == null
+                                    ? new ArrayList<>()
+                                    : new ArrayList<>(existingList.schedulesOrElse(Collections.emptyList()));
+                            existingSchedules.add(schedule);
+                            schedulesByEquality.put(
+                                    equalityKey,
+                                    ScheduleList.newBuilder()
+                                            .schedules(existingSchedules)
+                                            .build());
+                        } else {
                             log.error("BBM: ERROR: no schedule for scheduleObjHash->id "
                                     + scheduleObjHash + " -> "
                                     + scheduleId);
                         }
                     }
                 });
-
-                schedulesByEquality.put(
-                        ProtoString.newBuilder()
-                                .value(String.valueOf(scheduleEqualityVirtualKey.getKeyAsLong()))
-                                .build(),
-                        ScheduleList.newBuilder().schedules(schedules).build());
             });
             if (schedulesByEquality.isModified()) ((WritableKVStateBase) schedulesByEquality).commit();
             log.info("BBM: finished schedule by equality migration");
