@@ -34,10 +34,9 @@ public class BlockNodeServer {
         final var blockNodeConfig = configProvider.configuration.getConfigData(BlockNodeGrpcConfig.class);
 
         this.port = blockNodeConfig.port();
-        this.server =
-                ServerBuilder.forPort(port)
-//                        .addService(new BlockNodeService())
-                        .build();
+        this.server = ServerBuilder.forPort(port)
+                //                        .addService(new BlockNodeService())
+                .build();
     }
 
     public void start() throws IOException {
