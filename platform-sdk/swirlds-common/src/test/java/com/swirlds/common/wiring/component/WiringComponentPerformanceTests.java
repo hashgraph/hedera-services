@@ -84,6 +84,9 @@ class WiringComponentPerformanceTests {
         return inputWire;
     }
 
+    // When testing locally on my macbook (m1), the old style component took 0.76s to run 100,000,000 iterations,
+    // and the automatic component took 0.79s to run 100,000,000 iterations.
+
     @Test
     void oldStylePerformanceTest() {
         final long iterations = 100_000_000;

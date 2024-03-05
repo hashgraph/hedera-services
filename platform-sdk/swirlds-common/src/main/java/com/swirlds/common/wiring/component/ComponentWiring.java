@@ -53,7 +53,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
     /**
      * Create a new component wiring.
      *
-     * @param clazz     the class of the component
+     * @param clazz     the interface class of the component
      * @param scheduler the task scheduler that will run the component
      */
     @SuppressWarnings("unchecked")
@@ -61,6 +61,9 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             @NonNull final Class<COMPONENT_TYPE> clazz, @NonNull final TaskScheduler<OUTPUT_TYPE> scheduler) {
 
         this.scheduler = Objects.requireNonNull(scheduler);
+        if (!clazz.isInterface()) {
+            throw new IllegalArgumentException("Component class " + clazz.getName() + " is not an interface.");
+        }
 
         proxyComponent = (COMPONENT_TYPE) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {clazz}, proxy);
     }
