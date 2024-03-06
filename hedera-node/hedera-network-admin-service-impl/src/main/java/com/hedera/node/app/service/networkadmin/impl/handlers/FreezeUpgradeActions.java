@@ -30,11 +30,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -139,16 +138,7 @@ public class FreezeUpgradeActions {
     private void extractAndReplaceArtifacts(
             String artifactsLoc, Bytes archiveData, long size, String desc, String marker, Timestamp now) {
         try {
-            try (Stream<Path> paths = Files.walk(Paths.get(artifactsLoc))) {
-                // delete any existing files in the artifacts directory
-                paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
-            }
-        } catch (final IOException e) {
-            // above is a best-effort delete
-            // if it fails, we log the error and continue
-            log.error("Failed to delete existing files in {}", artifactsLoc, e);
-        }
-        try {
+            FileUtils.cleanDirectory(new File(artifactsLoc));
             UnzipUtility.unzip(archiveData.toByteArray(), Paths.get(artifactsLoc));
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             writeSecondMarker(marker, now);
