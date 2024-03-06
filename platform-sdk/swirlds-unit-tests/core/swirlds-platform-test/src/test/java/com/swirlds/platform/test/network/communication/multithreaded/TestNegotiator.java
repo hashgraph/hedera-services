@@ -19,7 +19,7 @@ package com.swirlds.platform.test.network.communication.multithreaded;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
-import com.swirlds.platform.network.communication.NegotiatorThread;
+import com.swirlds.platform.network.communication.ProtocolNegotiatorThread;
 import com.swirlds.platform.test.network.communication.TestProtocol;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 class TestNegotiator {
     private final TestProtocol protocol;
-    private final NegotiatorThread negotiator;
+    private final ProtocolNegotiatorThread negotiator;
     private final Thread thread;
     private final AtomicInteger handshakeRan = new AtomicInteger(0);
     private volatile Exception thrown;
@@ -38,7 +38,7 @@ class TestNegotiator {
         final ConnectionManager connectionManager = new ReturnOnceConnectionManager(connection);
         // disconnect the connection after running the protocol once in order to stop the thread
         this.protocol = protocol.setRunProtocol(Connection::disconnect);
-        negotiator = new NegotiatorThread(
+        negotiator = new ProtocolNegotiatorThread(
                 connectionManager,
                 100,
                 List.of(c -> handshakeRan.incrementAndGet()),

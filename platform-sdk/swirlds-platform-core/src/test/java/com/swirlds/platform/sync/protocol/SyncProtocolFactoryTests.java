@@ -40,6 +40,9 @@ import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
+import com.swirlds.platform.network.protocol.Protocol;
+import com.swirlds.platform.network.protocol.ProtocolFactory;
+import com.swirlds.platform.network.protocol.SyncProtocolFactory;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.io.IOException;
 import java.time.Duration;
@@ -53,7 +56,7 @@ import org.mockito.Mockito;
  * Tests for {@link SyncProtocol}
  */
 @DisplayName("Sync Protocol Tests")
-class SyncProtocolTests {
+class SyncProtocolFactoryTests {
     private NodeId peerId;
     private ShadowgraphSynchronizer shadowGraphSynchronizer;
     private FallenBehindManager fallenBehindManager;
@@ -86,9 +89,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol should initiate connection")
     void shouldInitiate() {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -99,7 +101,7 @@ class SyncProtocolTests {
                 () -> PlatformStatus.ACTIVE);
 
         assertEquals(2, permitProvider.getNumAvailable());
-        assertTrue(protocol.shouldInitiate());
+        assertTrue(syncProtocolFactory.build(peerId).shouldInitiate());
         assertEquals(1, permitProvider.getNumAvailable());
     }
 
@@ -108,9 +110,8 @@ class SyncProtocolTests {
     void initiateCooldown() {
         assertEquals(2, permitProvider.getNumAvailable());
 
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -119,7 +120,7 @@ class SyncProtocolTests {
                 Duration.ofMillis(100),
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
-
+        final Protocol protocol = syncProtocolFactory.build(peerId);
         // do an initial sync, so we can verify that the resulting cooldown period is respected
         assertTrue(protocol.shouldInitiate());
         assertEquals(1, permitProvider.getNumAvailable());
@@ -146,9 +147,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol doesn't initiate if platform has the wrong status")
     void incorrectStatusToInitiate() {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -157,6 +157,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.BEHIND);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
@@ -166,9 +167,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol doesn't initiate without a permit")
     void noPermitAvailableToInitiate() {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -177,11 +177,12 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         // obtain the only existing permits, so none are available to the protocol
-        assertSame(permitProvider.tryAcquire(peerId), PERMIT_ACQUIRED);
-        assertSame(permitProvider.tryAcquire(peerId), PERMIT_ACQUIRED);
+        assertSame(PERMIT_ACQUIRED, permitProvider.tryAcquire(peerId));
+        assertSame(PERMIT_ACQUIRED, permitProvider.tryAcquire(peerId));
         assertEquals(0, permitProvider.getNumAvailable());
 
         assertFalse(protocol.shouldInitiate());
@@ -191,9 +192,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol doesn't initiate if peer agnostic checks fail")
     void peerAgnosticChecksFailAtInitiate() {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -202,6 +202,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
@@ -214,9 +215,8 @@ class SyncProtocolTests {
         // node is fallen behind
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
 
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -225,6 +225,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
@@ -236,9 +237,8 @@ class SyncProtocolTests {
     void initiateForFallenBehind() {
 
         // peer *is* needed for fallen behind (by default)
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -247,6 +247,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
@@ -257,9 +258,8 @@ class SyncProtocolTests {
     @DisplayName("Protocol initiates if peer is part of critical quorum")
     void initiateForCriticalQuorum() {
         // peer 6 isn't needed for fallen behind, but it *is* in critical quorum (by default)
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                new NodeId(6),
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -268,6 +268,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(new NodeId(6));
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
@@ -279,12 +280,11 @@ class SyncProtocolTests {
     void shouldAccept() {
         assertEquals(2, permitProvider.getNumAvailable());
         // obtain 1 of the permits, but 1 will still be available to accept
-        assertSame(permitProvider.tryAcquire(peerId), PERMIT_ACQUIRED);
+        assertSame(PERMIT_ACQUIRED, permitProvider.tryAcquire(peerId));
         assertEquals(1, permitProvider.getNumAvailable());
 
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -293,6 +293,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertTrue(protocol.shouldAccept());
         assertEquals(0, permitProvider.getNumAvailable());
@@ -303,9 +304,8 @@ class SyncProtocolTests {
     void acceptCooldown() {
         assertEquals(2, permitProvider.getNumAvailable());
 
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -314,6 +314,7 @@ class SyncProtocolTests {
                 Duration.ofMillis(100),
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // do an initial sync, so we can verify that the resulting cooldown period is respected
         assertTrue(protocol.shouldAccept());
@@ -341,9 +342,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol doesn't accept if platform has the wrong status")
     void incorrectStatusToAccept() {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -352,6 +352,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.BEHIND);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldAccept());
@@ -364,14 +365,13 @@ class SyncProtocolTests {
         assertEquals(2, permitProvider.getNumAvailable());
 
         // waste both available permits
-        assertSame(permitProvider.tryAcquire(peerId), PERMIT_ACQUIRED);
-        assertSame(permitProvider.tryAcquire(peerId), PERMIT_ACQUIRED);
+        assertSame(PERMIT_ACQUIRED, permitProvider.tryAcquire(peerId));
+        assertSame(PERMIT_ACQUIRED, permitProvider.tryAcquire(peerId));
 
         assertEquals(0, permitProvider.getNumAvailable());
 
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -380,6 +380,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertFalse(protocol.shouldAccept());
         assertEquals(0, permitProvider.getNumAvailable());
@@ -388,9 +389,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol doesn't accept if peer agnostic checks fail")
     void peerAgnosticChecksFailAtAccept() {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -399,6 +399,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldAccept());
@@ -411,9 +412,8 @@ class SyncProtocolTests {
         // node is fallen behind
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
 
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -422,6 +422,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldAccept());
@@ -431,9 +432,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Permit closes after failed accept")
     void permitClosesAfterFailedAccept() {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -442,6 +442,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldAccept());
@@ -453,9 +454,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Permit closes after failed initiate")
     void permitClosesAfterFailedInitiate() {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -464,6 +464,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
@@ -475,9 +476,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol runs successfully when initiating")
     void successfulInitiatedProtocol() {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -486,6 +486,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         protocol.shouldInitiate();
@@ -497,9 +498,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol runs successfully when accepting")
     void successfulAcceptedProtocol() {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -508,6 +508,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertEquals(2, permitProvider.getNumAvailable());
         protocol.shouldAccept();
@@ -520,9 +521,8 @@ class SyncProtocolTests {
     @DisplayName("ParallelExecutionException is caught and rethrown as NetworkProtocolException")
     void rethrowParallelExecutionException()
             throws ParallelExecutionException, IOException, SyncException, InterruptedException {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -531,6 +531,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a ParallelExecutionException
         Mockito.when(shadowGraphSynchronizer.synchronize(any(), any()))
@@ -549,9 +550,8 @@ class SyncProtocolTests {
     @DisplayName("Exception with IOException as root cause is caught and rethrown as IOException")
     void rethrowRootCauseIOException()
             throws ParallelExecutionException, IOException, SyncException, InterruptedException {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -560,6 +560,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a ParallelExecutionException with root cause being an IOException
         Mockito.when(shadowGraphSynchronizer.synchronize(any(), any()))
@@ -577,9 +578,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("SyncException is caught and rethrown as NetworkProtocolException")
     void rethrowSyncException() throws ParallelExecutionException, IOException, SyncException, InterruptedException {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -588,6 +588,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a SyncException
         Mockito.when(shadowGraphSynchronizer.synchronize(any(), any())).thenThrow(new SyncException(""));
@@ -604,9 +605,8 @@ class SyncProtocolTests {
     @Test
     @DisplayName("acceptOnSimultaneousInitiate should return true")
     void acceptOnSimultaneousInitiate() {
-        final SyncProtocol protocol = new SyncProtocol(
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
-                peerId,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -615,6 +615,7 @@ class SyncProtocolTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> PlatformStatus.ACTIVE);
+        final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertTrue(protocol.acceptOnSimultaneousInitiate());
     }
