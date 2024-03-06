@@ -356,6 +356,7 @@ public abstract class HapiSpecOperation {
 
         setKeyControlOverrides(spec);
         List<Key> keys = signersToUseFor(spec);
+        // TODO: figure out why there are null keys in the list
         Iterables.removeIf(keys, Predicates.isNull());
 
         final Transaction.Builder builder = spec.txns().getReadyToSign(netDef);
