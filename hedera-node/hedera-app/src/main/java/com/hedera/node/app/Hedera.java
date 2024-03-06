@@ -892,8 +892,8 @@ public final class Hedera implements SwirldMain {
     public void onHandleConsensusRound(
             @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final HederaState state) {
         daggerApp.workingStateAccessor().setHederaState(state);
-        daggerApp.handleWorkflow().handleRound(state, platformState, round);
         daggerApp.platformStateAccessor().setPlatformState(platformState);
+        daggerApp.handleWorkflow().handleRound(state, platformState, round);
     }
 
     /*==================================================================================================================
