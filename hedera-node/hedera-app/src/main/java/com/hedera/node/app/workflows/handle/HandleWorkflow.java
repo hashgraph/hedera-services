@@ -632,7 +632,7 @@ public class HandleWorkflow {
                     final var lastLeafPath = rootNode.getState().getLastLeafPath();
                     logger.error("  leaf range -> {} - {}", firstLeafPath, lastLeafPath);
                     final long keyPath = LongStream.range(firstLeafPath, lastLeafPath + 1)
-                            .filter(p -> rootNode.getRecords().findLeafRecord(p, false) != null)
+                            .filter(p -> rootNode.getRecords().findLeafRecord(p, false).getKey().equals(onDiskKey))
                             .findFirst()
                             .orElse(-1);
                     logger.error("  key path -> {}", keyPath);
