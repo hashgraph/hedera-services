@@ -30,6 +30,8 @@ import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.Console;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -182,6 +184,7 @@ public class StatsDemoMain implements SwirldMain {
         long now = System.nanoTime();
         double tps = transPerSecToCreate / platform.getAddressBook().getSize();
         int numCreated = 0;
+        final Transaction t = Transaction.newBuilder().signedTransactionBytes(Bytes.wrap(transaction)).build();
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
             toCreate += ((double) now - lastEventTime) * NANOSECONDS_TO_SECONDS * tps;
@@ -195,7 +198,7 @@ public class StatsDemoMain implements SwirldMain {
                 break; // don't create too many transactions per event
             }
             random.nextBytes(transaction); // random, so it's non-compressible
-            if (!platform.createTransaction(transaction)) {
+            if (!platform.createTransaction(Transaction.PROTOBUF.toBytes(t).toByteArray())) {
                 break; // if the queue is full, the stop adding to it
             }
             numCreated++;
