@@ -643,4 +643,8 @@ public class TxnVerbs {
     public static HapiTokenUnlock tokenUnlock(String token, String account, List<Long> serialNumbers) {
         return new HapiTokenUnlock(token, account, serialNumbers);
     }
+
+    public static HapiPartitionDelete deletePartitionDefinitions(String token) {
+        return new HapiPartitionDelete(token);
+    }
 }
