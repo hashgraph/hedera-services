@@ -81,8 +81,8 @@ public class ClassicTransfersCall extends AbstractHtsCall {
 
     private final CallStatusStandardizer callStatusStandardizer;
     private final SystemAccountCreditScreen systemAccountCreditScreen;
-
     private final VerificationStrategy verificationStrategy;
+    private final SpecialRewardReceivers specialRewardReceivers;
 
     // too many parameters
     @SuppressWarnings("java:S107")
@@ -97,7 +97,8 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @Nullable ApprovalSwitchHelper approvalSwitchHelper,
             @NonNull final CallStatusStandardizer callStatusStandardizer,
             @NonNull final VerificationStrategy verificationStrategy,
-            @NonNull final SystemAccountCreditScreen systemAccountCreditScreen) {
+            @NonNull final SystemAccountCreditScreen systemAccountCreditScreen,
+            @NonNull final SpecialRewardReceivers specialRewardReceivers) {
         super(gasCalculator, enhancement, false);
         this.selector = requireNonNull(selector);
         this.senderId = requireNonNull(senderId);
@@ -108,6 +109,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         this.callStatusStandardizer = requireNonNull(callStatusStandardizer);
         this.systemAccountCreditScreen = systemAccountCreditScreen;
         this.verificationStrategy = requireNonNull(verificationStrategy);
+        this.specialRewardReceivers = requireNonNull(specialRewardReceivers);
     }
 
     /**
@@ -154,6 +156,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         final var op = transferToDispatch.cryptoTransferOrThrow();
         if (recordBuilder.status() == SUCCESS) {
             maybeEmitErcLogsFor(op, frame);
+            specialRewardReceivers.addInFrame(frame, op, recordBuilder.getAssessedCustomFees());
         } else {
             recordBuilder.status(callStatusStandardizer.codeForFailure(recordBuilder.status(), frame, op));
         }
