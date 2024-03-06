@@ -152,11 +152,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     public MerkleHederaState(@NonNull final HederaLifecycles lifecycles) {
         this.lifecycles = requireNonNull(lifecycles);
-        logger.info(
-                "MerkleHederaState {} constructed with lifecycles Hedera instance {} (of all instances {})",
-                System.identityHashCode(this),
-                System.identityHashCode(((HederaLifecyclesImpl) lifecycles).hedera),
-                Hedera.ALL_INSTANCES.stream().mapToInt(System::identityHashCode).toArray());
         this.classId = CLASS_ID;
     }
 

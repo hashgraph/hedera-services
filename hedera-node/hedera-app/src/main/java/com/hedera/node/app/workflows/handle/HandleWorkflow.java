@@ -579,62 +579,6 @@ public class HandleWorkflow {
             }
         } catch (final Exception e) {
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
-            if (!haveLoggedCatastrophe.getAndSet(true)) {
-                logger.error("Contents of TokenService -> ACCOUNTS map follows");
-                final var mhs = (MerkleHederaState) Hedera.ALL_INSTANCES
-                        .iterator()
-                        .next()
-                        .daggerApp
-                        .workingStateAccessor()
-                        .getHederaState();
-                final var creatorId = creator.accountId();
-                final var manufacturedStore =
-                        (ReadableAccountStoreImpl) readableStoreFactory.getStore(ReadableAccountStore.class);
-                final var creatorFromStore = manufacturedStore.getAccountById(creatorId);
-                logger.error(
-                        "Creator {} was {} found in the readable store",
-                        creatorId,
-                        creatorFromStore == null ? "not " : "");
-                logger.error("Underlying readable store has {} entries", manufacturedStore.accountState.size());
-                final var accountsMetadata = mhs.services.get(TokenService.NAME).get(TokenServiceImpl.ACCOUNTS_KEY);
-                final var onDiskKey = new OnDiskKey<>((StateMetadata<AccountID, ?>) accountsMetadata, creatorId);
-                logger.error(
-                        "Missing key {} had hashCode={} and classId={}",
-                        onDiskKey,
-                        onDiskKey.hashCode(),
-                        onDiskKey.getClassId());
-                final var mws = mhs.writableStatesMap.get(TokenService.NAME);
-                try {
-                    final WritableKVState<AccountID, Account> accountsState = mws.get(TokenServiceImpl.ACCOUNTS_KEY);
-                    logger.error("Underlying writable states map has {} entries", accountsState.size());
-                    final var maybeCreatorAccount = accountsState.get(creatorId);
-                    logger.error(
-                            "Account {} was {} found via direct lookup",
-                            creatorId,
-                            maybeCreatorAccount == null ? "not " : "");
-                } catch (Exception ex) {
-                    logger.error(
-                            "Could not directly lookup account {} in underlying writable states map", creatorId, ex);
-                }
-                try {
-                    VirtualMapLike.from(requireNonNull(requireNonNull(mhs)
-                                    .getChild(mhs.findNodeIndex(TokenService.NAME, TokenServiceImpl.ACCOUNTS_KEY))))
-                            .extractVirtualMapData(
-                                    AdHocThreadManager.getStaticThreadManager(),
-                                    entry -> {
-                                        final var key = (OnDiskKey<AccountID>) entry.key();
-                                        logger.error(
-                                                "  {} (hashCode={}, classId={}) -> {}",
-                                                key,
-                                                key.hashCode(),
-                                                key.getClassId(),
-                                                entry.value());
-                                    },
-                                    1);
-                } catch (InterruptedException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
             if (payer != null && fees != null) {

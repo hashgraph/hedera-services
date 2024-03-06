@@ -51,12 +51,6 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
     private final SortedSet<Registration> entries;
 
     private final GenesisRecordsBuilder genesisRecords;
-    /**
-     * Use a constant version to be passed to the schema registration.
-     * If the version changes the class id will be different and the upgrade will have issues.
-     */
-    private final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(48).patch(0).build();
 
     /**
      * Creates a new registry.
