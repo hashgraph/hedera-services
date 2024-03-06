@@ -25,6 +25,8 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
 import com.swirlds.platform.test.fixtures.stream.StreamUtils;
 import com.swirlds.platform.test.simulated.RandomSigner;
@@ -37,7 +39,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -45,6 +49,16 @@ class EventStreamReportingToolTest {
 
     @TempDir
     Path tmpDir;
+
+    @BeforeAll
+    static void beforeAll() {
+        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        StaticSoftwareVersion.reset();
+    }
 
     /**
      * Generates events, feeds them to consensus, then writes these consensus events to stream files. One the files a

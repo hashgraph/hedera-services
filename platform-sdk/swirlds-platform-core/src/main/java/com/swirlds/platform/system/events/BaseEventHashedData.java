@@ -31,6 +31,8 @@ import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -38,6 +40,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A class used to store base event data that is used to create the hash of that event.
@@ -109,6 +112,12 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      * version right before the birth round migration.
      */
     private long birthRoundOverride;
+
+    /**
+     * Class IDs of permitted transaction types.
+     */
+    private static final Set<Long> TRANSACTION_TYPES =
+            Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
 
     public BaseEventHashedData() {}
 
@@ -212,7 +221,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
         timeCreated = in.readInstant();
         in.readInt(); // read serialized length
-        transactions = in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true);
+        transactions =
+                in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true, TRANSACTION_TYPES);
     }
 
     @Override

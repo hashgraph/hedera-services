@@ -101,10 +101,9 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
-import com.swirlds.platform.gossip.Gossip;
-import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
+import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -272,7 +271,7 @@ public class SwirldsPlatform implements Platform {
     /**
      * Responsible for transmitting and receiving events from the network.
      */
-    private final Gossip gossip;
+    private final SyncGossip gossip;
 
     /**
      * The round of the most recent reconnect state received, or {@link UptimeData#NO_ROUND} if no reconnect state has
@@ -729,7 +728,7 @@ public class SwirldsPlatform implements Platform {
                     }
                 };
 
-        gossip = GossipFactory.buildGossip(
+        gossip = new SyncGossip(
                 platformContext,
                 threadManager,
                 time,
@@ -750,7 +749,7 @@ public class SwirldsPlatform implements Platform {
                 this::loadReconnectState,
                 this::clearAllPipelines,
                 intakeEventCounter,
-                () -> emergencyState.getState("emergency reconnect"));
+                () -> emergencyState.getState("emergency reconnect")) {};
 
         consensusRef.set(new ConsensusImpl(
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
@@ -931,8 +930,6 @@ public class SwirldsPlatform implements Platform {
                 ancientMode);
 
         shadowGraph.startWithEventWindow(eventWindow);
-
-        gossip.loadFromSignedState(signedState);
     }
 
     /**
