@@ -47,6 +47,7 @@ public class EpochFormatUtils {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(UTC);
 
     private static final String BROKEN_TIMESTAMP = "BROKEN-TIMESTAMP          ";
+    public static final int DATE_FIELD_MAX_SIZE = 26;
 
     private EpochFormatUtils() {}
 
@@ -56,9 +57,9 @@ public class EpochFormatUtils {
      */
     public static @NonNull String timestampAsString(final long timestamp) {
         try {
-            final StringBuilder sb = new StringBuilder(26);
+            final StringBuilder sb = new StringBuilder(DATE_FIELD_MAX_SIZE);
             sb.append(FORMATTER.format(Instant.ofEpochMilli(timestamp)));
-            sb.append(getFiller(26 - sb.length()));
+            sb.append(getFiller(DATE_FIELD_MAX_SIZE - sb.length()));
             return sb.toString();
         } catch (final Throwable e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
@@ -67,16 +68,16 @@ public class EpochFormatUtils {
     }
 
     private static @NonNull String getFiller(final int length) {
-        if (length < 0 || length >= 27) {
+        if (length < 0 || length > DATE_FIELD_MAX_SIZE) {
             throw new IllegalArgumentException("Unsupported length: " + length);
         }
         return FILLERS[length];
     }
 
     private static String[] prepareFillers() {
-        final String[] fillers = new String[27];
+        final String[] fillers = new String[DATE_FIELD_MAX_SIZE+1];
         fillers[0] = "";
-        for (int i = 1; i < fillers.length; i++) {
+        for (int i = 1; i <= DATE_FIELD_MAX_SIZE; i++) {
             fillers[i] = " ".repeat(i);
         }
         return fillers;
