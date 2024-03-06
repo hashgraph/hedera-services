@@ -129,7 +129,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final TransactionCategory category;
     private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final SavepointStackImpl stack;
-    private final BlockRecordManager blockRecordManager;
     private final Configuration configuration;
     private final KeyVerifier verifier;
     private final RecordListBuilder recordListBuilder;
@@ -170,7 +169,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param category The {@link TransactionCategory} of the transaction (either user, preceding, or child)
      * @param recordBuilder The main {@link SingleTransactionRecordBuilderImpl}
      * @param stack The {@link SavepointStackImpl} used to manage savepoints
-     * @param blockRecordManager The {@link BlockRecordManager} used to manage block records
      * @param configuration The current {@link Configuration}
      * @param verifier The {@link KeyVerifier} used to verify signatures and hollow accounts
      * @param recordListBuilder The {@link RecordListBuilder} used to build the record stream
@@ -197,7 +195,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionCategory category,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final SavepointStackImpl stack,
-            @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final Configuration configuration,
             @NonNull final KeyVerifier verifier,
             @NonNull final RecordListBuilder recordListBuilder,
@@ -224,7 +221,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.category = requireNonNull(category, "category must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
         this.stack = requireNonNull(stack, "stack must not be null");
-        this.blockRecordManager = blockRecordManager;
         this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.verifier = requireNonNull(verifier, "verifier must not be null");
         this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
@@ -722,7 +718,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 childCategory,
                 childRecordBuilder,
                 childStack,
-                blockRecordManager,
                 configuration,
                 childVerifier,
                 recordListBuilder,

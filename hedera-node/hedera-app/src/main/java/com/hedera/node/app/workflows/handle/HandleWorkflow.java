@@ -406,7 +406,6 @@ public class HandleWorkflow {
                     TransactionCategory.USER,
                     recordBuilder,
                     stack,
-                    blockRecordManager,
                     configuration,
                     verifier,
                     recordListBuilder,

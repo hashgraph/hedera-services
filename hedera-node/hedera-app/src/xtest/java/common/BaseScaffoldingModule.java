@@ -289,7 +289,6 @@ public interface BaseScaffoldingModule {
                     USER,
                     parentRecordBuilder,
                     new SavepointStackImpl(state),
-                    blockRecordManager,
                     configuration,
                     new DefaultKeyVerifier(1, configuration.getConfigData(HederaConfig.class), Map.of()),
                     recordListBuilder,

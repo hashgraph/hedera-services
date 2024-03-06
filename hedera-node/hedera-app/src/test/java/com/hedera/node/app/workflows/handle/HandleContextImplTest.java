@@ -57,7 +57,6 @@ import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -186,9 +185,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private ParentRecordFinalizer parentRecordFinalizer;
 
     @Mock
-    private BlockRecordManager blockRecordManager;
-
-    @Mock
     private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     @Mock
@@ -233,7 +229,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 TransactionCategory.USER,
                 recordBuilder,
                 stack,
-                blockRecordManager,
                 DEFAULT_CONFIGURATION,
                 verifier,
                 recordListBuilder,
@@ -266,7 +261,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             TransactionCategory.USER,
             recordBuilder,
             stack,
-            blockRecordManager,
             DEFAULT_CONFIGURATION,
             verifier,
             recordListBuilder,
@@ -398,7 +392,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     TransactionCategory.USER,
                     recordBuilder,
                     stack,
-                    blockRecordManager,
                     DEFAULT_CONFIGURATION,
                     verifier,
                     recordListBuilder,
@@ -933,7 +926,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     category,
                     recordBuilder,
                     stack,
-                    blockRecordManager,
                     DEFAULT_CONFIGURATION,
                     verifier,
                     recordListBuilder,
