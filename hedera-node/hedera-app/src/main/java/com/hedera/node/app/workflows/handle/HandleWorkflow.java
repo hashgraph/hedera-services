@@ -125,11 +125,13 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.MerkleDbDataSource;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -137,6 +139,8 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -620,6 +624,30 @@ public class HandleWorkflow {
                 logger.error("Underlying virtual map has {} entries", vmap.size());
                 logger.error("  vmap.get(key) -> {}", vmap.get(onDiskKey));
                 logger.error("  vmap.containsKey(key) -> {}", vmap.containsKey(onDiskKey));
+                try {
+                    final var rootNode = (VirtualRootNode) vmap.getRight();
+                    logger.error("  cache.lookupLeafByKey(key) -> {}",
+                            rootNode.getCache().lookupLeafByKey(onDiskKey, false));
+                    final var firstLeafPath = rootNode.getState().getFirstLeafPath();
+                    final var lastLeafPath = rootNode.getState().getLastLeafPath();
+                    logger.error("  leaf range -> {} - {}", firstLeafPath, lastLeafPath);
+                    final long keyPath = LongStream.range(firstLeafPath, lastLeafPath + 1)
+                            .filter(p -> rootNode.getRecords().findLeafRecord(p, false) != null)
+                            .findFirst()
+                            .orElse(-1);
+                    logger.error("  key path -> {}", keyPath);
+                    logger.error("  cache.lookupLeafByKey(keyPath) -> {}",
+                            rootNode.getCache().lookupLeafByPath(keyPath, false));
+                    final var dataSource = (MerkleDbDataSource) rootNode.getDataSource();
+                    logger.error("  ds leaf range -> {} - {}", dataSource.getFirstLeafPath(), dataSource.getLastLeafPath());
+                    logger.error("  ds.loadLeafRecord(key) -> {}", dataSource.loadLeafRecord(onDiskKey));
+                    logger.error("  ds.loadLeafRecord(path) -> {}", dataSource.loadLeafRecord(keyPath));
+                    logger.error("  ds.objectKeyToPath.get(key) -> {}", dataSource.objectKeyToPath.get(onDiskKey, -1));
+                    logger.error("  ds.pathToKeyValue.get(keyPath) -> {}", dataSource.pathToKeyValue.get(keyPath));
+                } catch (Exception z) {
+                    logger.error("Exception", z);
+                    throw new RuntimeException(z);
+                }
 //                final var mws = mhs.writableStatesMap.get(TokenService.NAME);
 //                try {
 //                    final WritableKVState<AccountID, Account> accountsState = mws.get(TokenServiceImpl.ACCOUNTS_KEY);

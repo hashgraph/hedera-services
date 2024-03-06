@@ -154,10 +154,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      * Mixed disk and off-heap memory store for key to path map, this is used if
      * isLongKeyMode=false, and we have complex keys.
      */
-    private final HalfDiskHashMap<K> objectKeyToPath;
+    public final HalfDiskHashMap<K> objectKeyToPath;
 
     /** Mixed disk and off-heap memory store for path to leaf key and value */
-    private final MemoryIndexDiskKeyValueStore<VirtualLeafRecord<K, V>> pathToKeyValue;
+    public final MemoryIndexDiskKeyValueStore<VirtualLeafRecord<K, V>> pathToKeyValue;
 
     /**
      * Cache size for reading virtual leaf records. Initialized in data source creation time from
