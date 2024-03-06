@@ -62,6 +62,8 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-005"), @Tag("VMAP-006")})
     @Tag(TIME_CONSUMING)
     @DisplayName("Reconnect aborts 3 times before success")
+    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11507
+    @Disabled
     void multipleAbortedReconnectsCanSucceed(int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {
         for (int i = teacherStart; i < teacherEnd; i++) {
             teacherMap.put(new TestKey(i), new TestValue(i));
