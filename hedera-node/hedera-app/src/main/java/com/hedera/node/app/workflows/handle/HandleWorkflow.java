@@ -300,6 +300,11 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
+        var logStuff = false;
+        if (consensusNow.equals(Instant.parse("2024-02-19T07:19:10.258185825Z"))) {
+            System.out.println("Ok");
+            logStuff = true;
+        }
         // Determine if this is the first transaction after startup. This needs to be determined BEFORE starting the
         // user transaction
         final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
@@ -351,7 +356,13 @@ public class HandleWorkflow {
         TransactionInfo transactionInfo = null;
         Set<AccountID> prePaidRewardReceivers = emptySet();
         try {
+            if (logStuff) {
+                System.out.println("Getting preHandleResult");
+            }
             final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
+            if (logStuff) {
+                System.out.println("Got preHandleResult - " + preHandleResult);
+            }
 
             transactionInfo = preHandleResult.txInfo();
 
@@ -424,9 +435,15 @@ public class HandleWorkflow {
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator);
 
+            if (logStuff) {
+                System.out.println("Getting fees");
+            }
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
 
+            if (logStuff) {
+                System.out.println("Got fees - " + fees);
+            }
             // Run all pre-checks
             final var validationResult = validate(
                     consensusNow,
@@ -435,6 +452,9 @@ public class HandleWorkflow {
                     readableStoreFactory,
                     fees,
                     platformEvent.getCreatorId().id());
+            if (logStuff) {
+                System.out.println("Got validationResult - " + validationResult);
+            }
 
             final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
             if (validationResult.status() != SO_FAR_SO_GOOD) {
@@ -479,6 +499,9 @@ public class HandleWorkflow {
                 try {
                     // Any hollow accounts that must sign to have all needed signatures, need to be finalized
                     // as a result of transaction being handled.
+                    if (logStuff) {
+                        System.out.println("Finalizing hollow accounts");
+                    }
                     Set<Account> hollowAccounts = preHandleResult.getHollowAccounts();
                     SignatureVerification maybeEthTxVerification = null;
                     if (transactionInfo.functionality() == ETHEREUM_TRANSACTION) {
@@ -511,7 +534,13 @@ public class HandleWorkflow {
                     }
                     finalizeHollowAccounts(context, configuration, hollowAccounts, verifier, maybeEthTxVerification);
 
+                    if (logStuff) {
+                        System.out.println("Finalized hollow accounts");
+                    }
                     networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
+                    if (logStuff) {
+                        System.out.println("Tracked txn");
+                    }
                     // If the payer is authorized to waive fees, then we don't charge them
                     if (!hasWaivedFees) {
                         // privileged transactions are not charged fees
