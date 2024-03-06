@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_NOT_PROVIDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
@@ -58,8 +58,8 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
         requireNonNull(token);
         if (key == null) {
             return gasOnly(
-                    fullResultsFor(CONTRACT_REVERT_EXECUTED, gasCalculator.viewGasRequirement(), Key.DEFAULT),
-                    CONTRACT_REVERT_EXECUTED,
+                    fullResultsFor(KEY_NOT_PROVIDED, gasCalculator.viewGasRequirement(), Key.DEFAULT),
+                    KEY_NOT_PROVIDED,
                     true);
         }
         return gasOnly(fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), key), SUCCESS, true);
