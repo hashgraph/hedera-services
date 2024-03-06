@@ -65,6 +65,9 @@ public class StakingRewardsDistributor {
         final Map<AccountID, Long> rewardsPaid = new HashMap<>();
         for (final var receiver : possibleRewardReceivers) {
             final var originalAccount = writableStore.getOriginalValue(receiver);
+            if (originalAccount == null) {
+                continue;
+            }
             final var modifiedAccount = writableStore.get(receiver);
             final var reward = rewardCalculator.computePendingReward(
                     originalAccount, stakingInfoStore, stakingRewardsStore, consensusNow);
