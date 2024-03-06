@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * in-memory simple data layer for Inventory
@@ -49,7 +49,7 @@ public class InventoryDao {
             INVENTORY.put(existence.itemId(), new InnerItemExistence(existence.amount()));
         } else {
             INVENTORY.put(existence.itemId(), new InnerItemExistence(existence.amount(), ie.lock));
-            ie.lock.writeLock().unlock();
+            ie.lock.unlock();
         }
         return existence;
     }
@@ -80,13 +80,13 @@ public class InventoryDao {
     public void release(final @NonNull String itemId) {
         final InnerItemExistence itemExistence = INVENTORY.get(itemId);
         if (itemExistence != null) {
-            itemExistence.lock.writeLock().unlock();
+            itemExistence.lock.unlock();
         }
     }
 
     public void deleteByItemId(final String itemId) {
-        if (INVENTORY.get(itemId).lock.isWriteLockedByCurrentThread()) {
-            INVENTORY.get(itemId).lock.writeLock().unlock();
+        if (INVENTORY.get(itemId).lock.isHeldByCurrentThread()) {
+            INVENTORY.get(itemId).lock.unlock();
         }
         INVENTORY.remove(itemId);
     }
@@ -96,13 +96,13 @@ public class InventoryDao {
         if (itemExistence == null) {
             return null;
         }
-        itemExistence.lock.writeLock().lock();
+        itemExistence.lock.lock();
         return itemExistence;
     }
 
-    private record InnerItemExistence(Integer amount, ReentrantReadWriteLock lock) {
+    private record InnerItemExistence(Integer amount, ReentrantLock lock) {
         public InnerItemExistence(final Integer amount) {
-            this(amount, new ReentrantReadWriteLock());
+            this(amount, new ReentrantLock());
         }
     }
 }
