@@ -161,7 +161,7 @@ public final class NetworkUtils {
                     keysAndCerts.agrKeyPair().getPrivate(),
                     Utilities.createPeerInfoList(addressBook, selfId),
                     socketConfig,
-                    cryptoConfig);
+                    cryptoConfig.keystorePassword());
         } catch (final NoSuchAlgorithmException
                 | UnrecoverableKeyException
                 | KeyStoreException
