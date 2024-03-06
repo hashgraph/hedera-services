@@ -23,13 +23,13 @@ public class Constants {
     public static final String SWIRLDS = "SWIRLDS";
     public static final String LOG4J2 = "LOG4J2";
 
-    public static final int WARMUP_ITERATIONS = 3;
+    public static final int WARMUP_ITERATIONS = 10;
 
-    public static final int WARMUP_TIME_IN_SECONDS_PER_ITERATION = 1;
+    public static final int WARMUP_TIME_IN_SECONDS_PER_ITERATION = 20;
 
-    public static final int MEASUREMENT_ITERATIONS = 4;
+    public static final int MEASUREMENT_ITERATIONS = 20;
 
-    public static final int MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION = 1;
+    public static final int MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION = 200;
 
     public static final int PARALLEL_THREAD_COUNT = 1;
 

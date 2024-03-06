@@ -31,12 +31,14 @@ import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -56,10 +58,11 @@ public class SwirldsLogBenchmark {
     private SwirldsLogRunner logRunner;
     private LoggingSystem loggingSystem;
 
-    private final Configuration<LoggingSystem> config = new SwirldsLogConfiguration();
+    private Configuration<LoggingSystem> config;
 
     @Setup(Level.Trial)
     public void init() {
+        config = new SwirldsLogConfiguration();
         if (Objects.equals(loggingType, FILE_TYPE)) {
             loggingSystem = config.configureFileLogging();
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
@@ -72,17 +75,25 @@ public class SwirldsLogBenchmark {
     }
 
     @Benchmark
-    @Fork(FORK_COUNT)
+    @Fork(value = FORK_COUNT)
     @Threads(PARALLEL_THREAD_COUNT)
     @BenchmarkMode(Mode.Throughput)
-    @Warmup(iterations = WARMUP_ITERATIONS, time = WARMUP_TIME_IN_SECONDS_PER_ITERATION)
-    @Measurement(iterations = MEASUREMENT_ITERATIONS, time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @Warmup(
+            iterations = WARMUP_ITERATIONS,
+            time = WARMUP_TIME_IN_SECONDS_PER_ITERATION,
+            timeUnit = TimeUnit.MILLISECONDS)
+    @Measurement(
+            iterations = MEASUREMENT_ITERATIONS,
+            time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
+            timeUnit = TimeUnit.MILLISECONDS)
     public void swirldsLogging() {
         logRunner.run();
     }
 
-    @TearDown(Level.Iteration)
+    @TearDown(Level.Trial)
     public void tearDown() {
+        // loggingSystem.stopAndFinalize();
         config.tierDown();
     }
 }

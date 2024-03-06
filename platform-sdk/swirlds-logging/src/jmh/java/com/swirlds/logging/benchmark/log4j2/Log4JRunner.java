@@ -49,23 +49,19 @@ public class Log4JRunner implements Runnable {
 
         ThreadContext.put("user-id", Throwables.USER_1);
         logger.log(Level.INFO, "L6, Hello world!");
-        ThreadContext.clearAll();
 
         ThreadContext.put("user-id", Throwables.USER_2);
         logger.log(Level.INFO, "L7, Hello {}, {}, {}, {}, {}, {}, {}, {}, {}!", 1, 2, 3, 4, 5, 6, 7, 8, 9);
-        ThreadContext.clearAll();
 
         ThreadContext.put("key", "value");
         ThreadContext.put("user-id", Throwables.USER_3);
         logger.log(Level.INFO, "L8, Hello world!");
-        ThreadContext.clearAll();
 
         logger.log(Level.INFO, marker1, "L9, Hello world!");
         logger.log(Level.INFO, marker2, "L10, Hello world!");
 
         ThreadContext.put("key", "value");
         logger.log(Level.INFO, marker2, "L11, Hello {}, {}, {}, {}, {}, {}, {}, {}, {}!", 1, 2, 3, 4, 5, 6, 7, 8, 9);
-        ThreadContext.clearAll();
 
         logger.log(Level.INFO, "L12, Hello world!", Throwables.DEEP_THROWABLE);
     }

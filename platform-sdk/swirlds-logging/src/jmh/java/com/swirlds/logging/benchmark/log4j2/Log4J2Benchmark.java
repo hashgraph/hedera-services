@@ -29,6 +29,8 @@ import static com.swirlds.logging.benchmark.config.Constants.WARMUP_TIME_IN_SECO
 import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.spi.LoggerContext;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -37,6 +39,7 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -55,10 +58,12 @@ public class Log4J2Benchmark {
     private Logger logger;
     private Log4JRunner logRunner;
 
-    private final Configuration<LoggerContext> config = new Log4JConfiguration();
+    private Configuration<LoggerContext> config;
+    ;
 
     @Setup(Level.Trial)
     public void init() {
+        config = new Log4JConfiguration();
         if (Objects.equals(loggingType, FILE_TYPE)) {
             logger = config.configureFileLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
@@ -70,17 +75,25 @@ public class Log4J2Benchmark {
     }
 
     @Benchmark
-    @Fork(FORK_COUNT)
+    @Fork(value = FORK_COUNT)
     @Threads(PARALLEL_THREAD_COUNT)
     @BenchmarkMode(Mode.Throughput)
-    @Warmup(iterations = WARMUP_ITERATIONS, time = WARMUP_TIME_IN_SECONDS_PER_ITERATION)
-    @Measurement(iterations = MEASUREMENT_ITERATIONS, time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @Warmup(
+            iterations = WARMUP_ITERATIONS,
+            time = WARMUP_TIME_IN_SECONDS_PER_ITERATION,
+            timeUnit = TimeUnit.MILLISECONDS)
+    @Measurement(
+            iterations = MEASUREMENT_ITERATIONS,
+            time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
+            timeUnit = TimeUnit.MILLISECONDS)
     public void log4J() {
         logRunner.run();
     }
 
     @TearDown(Level.Iteration)
     public void tearDown() {
+        LogManager.shutdown();
         config.tierDown();
     }
 }

@@ -94,6 +94,7 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
 
     @Override
     public void tierDown() {
+
         if (ConfigManagement.deleteOutputFiles()) {
             LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE));
             LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE));
