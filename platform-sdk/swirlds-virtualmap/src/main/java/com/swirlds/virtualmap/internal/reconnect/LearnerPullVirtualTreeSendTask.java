@@ -72,6 +72,8 @@ public class LearnerPullVirtualTreeSendTask {
         workGroup.execute(NAME, this::run);
     }
 
+    private long waitPaths = 0;
+
     private void run() {
         try {
             long path = Path.ROOT_PATH;
@@ -87,11 +89,19 @@ public class LearnerPullVirtualTreeSendTask {
             path = traversalOrder.getNextPathToSend();
             while (true) {
                 logger.info(RECONNECT.getMarker(), "TOREMOVE Learner send path: " + path);
+                final long now = System.currentTimeMillis();
+                if (path == -2) {
+                    waitPaths++;
+                    if (requestCounter > 0) {
+                        out.flush();
+                        requestCounter = 0;
+                        lastFlushTime = now;
+                    }
+                }
                 if (path >= Path.INVALID_PATH) {
                     out.writeLong(path);
                 }
-                final long now = System.currentTimeMillis();
-                if ((requestCounter++ == 128) || (now - lastFlushTime > 128)) {
+                if ((requestCounter++ == 128) || (now - lastFlushTime > 8)) {
                     out.flush();
                     requestCounter = 0;
                     lastFlushTime = now;
@@ -104,6 +114,7 @@ public class LearnerPullVirtualTreeSendTask {
                 path = traversalOrder.getNextPathToSend();
             }
             out.flush();
+            logger.info(RECONNECT.getMarker(), "TOREMOVE waitPaths = {}", waitPaths);
             logger.info(RECONNECT.getMarker(), "TOREMOVE Learner send done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Learner's sending task interrupted");
