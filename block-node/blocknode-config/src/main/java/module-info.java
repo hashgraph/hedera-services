@@ -3,6 +3,6 @@ module com.hedera.storage.blocknode.config {
     exports com.hedera.node.blocknode.config;
     exports com.hedera.node.blocknode.config.data;
 
-    requires com.swirlds.config.extensions;
+    requires transitive com.swirlds.config.api;
     requires static com.github.spotbugs.annotations;
 }

@@ -5,6 +5,4 @@ module com.hedera.storage.blocknode.core.test {
 
     // Require other modules needed for the unit tests to compile.
     requires com.hedera.storage.blocknode.core;
-    requires com.swirlds.platform.core;
-    requires org.junit.jupiter.api;
 }
