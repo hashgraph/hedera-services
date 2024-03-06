@@ -119,7 +119,7 @@ class NetworkUtilizationManagerImplTest {
                 CRYPTO_TRANSFER);
 
         // when
-        subject.trackFeePayments(payer, consensusNow, state);
+        subject.trackFeePayments(consensusNow, state);
 
         // then
         verify(throttleAccumulator).shouldThrottle(expectedTxnToBeChargedFor, consensusNow, state);
