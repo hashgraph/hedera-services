@@ -129,7 +129,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                         .stakedNodeId(stakedNodeId)
                                         .fee(ONE_HBAR)
                                         .deferStatusResolution()
-                                                .logged()
+                                        .logged()
                                         .signedBy("sender", DEFAULT_PAYER));
                             }
                             allRunFor(spec, ops);

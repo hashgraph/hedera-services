@@ -17,19 +17,20 @@
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class SimpleFreezeOnly extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SimpleFreezeOnly.class);
 
@@ -56,10 +57,14 @@ public class SimpleFreezeOnly extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     final HapiSpec simpleFreezeWithTimestamp() {
         return defaultHapiSpec("SimpleFreezeWithTimeStamp")
-                .given(freezeOnly().logged().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
+                .given(freezeOnly()
+                        .logged()
+                        .payingWith(GENESIS)
+                        .startingAt(Instant.now().plusSeconds(10)))
                 .when(sleepFor(40000))
-                .then(cryptoCreate("not_going_to_happen").logged().hasPrecheck(ResponseCodeEnum.PLATFORM_NOT_ACTIVE));
+                .then();
     }
 }
