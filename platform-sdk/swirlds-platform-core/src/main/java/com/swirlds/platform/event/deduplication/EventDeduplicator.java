@@ -48,6 +48,7 @@ public interface EventDeduplicator {
      * @return the event if it is not a duplicate, or null if it is a duplicate
      */
     @Nullable
+    @InputWireLabel("non-deduplicated events")
     GossipEvent handleEvent(@NonNull GossipEvent event);
 
     /**
