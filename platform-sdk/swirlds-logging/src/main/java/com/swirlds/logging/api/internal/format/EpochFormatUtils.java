@@ -16,12 +16,13 @@
 
 package com.swirlds.logging.api.internal.format;
 
+import static java.time.ZoneOffset.UTC;
+
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -36,18 +37,22 @@ public class EpochFormatUtils {
     private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
     /**
+     * Space filler values, so we can return a fixed size string
+     */
+    private static final String[] FILLERS = prepareFillers();
+
+    /**
      * The formatter for the timestamp.
      */
-    private static final DateTimeFormatter FORMATTER =
-            DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(UTC);
 
     private static final String BROKEN_TIMESTAMP = "BROKEN-TIMESTAMP          ";
 
     private EpochFormatUtils() {}
 
     /**
-     * Returns the String representation matching {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME}
-     * for the epoc value {@code timestamp}
+     * Returns the String representation matching {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME} for the epoc value
+     * {@code timestamp}
      */
     public static @NonNull String timestampAsString(final long timestamp) {
         try {
@@ -62,62 +67,18 @@ public class EpochFormatUtils {
     }
 
     private static @NonNull String getFiller(final int length) {
-        if (length == 0) {
-            return "";
-        } else if (length == 1) {
-            return " ";
-        } else if (length == 2) {
-            return "  ";
-        } else if (length == 3) {
-            return "   ";
-        } else if (length == 4) {
-            return "    ";
-        } else if (length == 5) {
-            return "     ";
-        } else if (length == 6) {
-            return "      ";
-        } else if (length == 7) {
-            return "       ";
-        } else if (length == 8) {
-            return "        ";
-        } else if (length == 9) {
-            return "         ";
-        } else if (length == 10) {
-            return "          ";
-        } else if (length == 11) {
-            return "           ";
-        } else if (length == 12) {
-            return "            ";
-        } else if (length == 13) {
-            return "             ";
-        } else if (length == 14) {
-            return "              ";
-        } else if (length == 15) {
-            return "               ";
-        } else if (length == 16) {
-            return "                ";
-        } else if (length == 17) {
-            return "                 ";
-        } else if (length == 18) {
-            return "                  ";
-        } else if (length == 19) {
-            return "                   ";
-        } else if (length == 20) {
-            return "                    ";
-        } else if (length == 21) {
-            return "                     ";
-        } else if (length == 22) {
-            return "                      ";
-        } else if (length == 23) {
-            return "                       ";
-        } else if (length == 24) {
-            return "                        ";
-        } else if (length == 25) {
-            return "                         ";
-        } else if (length == 26) {
-            return "                          ";
-        } else {
+        if (length < 0 || length >= 27) {
             throw new IllegalArgumentException("Unsupported length: " + length);
         }
+        return FILLERS[length];
+    }
+
+    private static String[] prepareFillers() {
+        final String[] fillers = new String[27];
+        fillers[0] = "";
+        for (int i = 1; i < fillers.length; i++) {
+            fillers[i] = " ".repeat(i);
+        }
+        return fillers;
     }
 }
