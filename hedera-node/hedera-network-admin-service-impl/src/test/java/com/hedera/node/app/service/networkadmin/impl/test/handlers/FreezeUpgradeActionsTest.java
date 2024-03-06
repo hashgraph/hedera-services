@@ -83,6 +83,9 @@ class FreezeUpgradeActionsTest {
     @LoggingSubject
     private FreezeUpgradeActions subject;
 
+    @Mock
+    private WritableUpgradeFileStore upgradeFileStore;
+
     @BeforeEach
     void setUp() throws IOException {
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");

@@ -764,6 +764,10 @@ public interface HandleContext {
         }
     }
 
+    /**
+     * Returns the freeze time from state, if it is set.
+     * @return the freeze time, if it is set
+     */
     @Nullable
     Instant freezeTime();
 }

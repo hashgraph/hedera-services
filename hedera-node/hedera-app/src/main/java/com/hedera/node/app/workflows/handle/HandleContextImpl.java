@@ -154,30 +154,30 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     /**
      * Constructs a {@link HandleContextImpl}.
      *
-     * @param txBody                          The {@link TransactionBody} of the transaction
-     * @param functionality                   The {@link HederaFunctionality} of the transaction
-     * @param signatureMapSize                The size of the {@link com.hedera.hapi.node.base.SignatureMap} of the transaction
-     * @param payer                           The {@link AccountID} of the payer
-     * @param payerKey                        The {@link Key} of the payer
-     * @param networkInfo                     The {@link NetworkInfo} of the network
-     * @param category                        The {@link TransactionCategory} of the transaction (either user, preceding, or child)
-     * @param recordBuilder                   The main {@link SingleTransactionRecordBuilderImpl}
-     * @param stack                           The {@link SavepointStackImpl} used to manage savepoints
-     * @param configuration                   The current {@link Configuration}
-     * @param verifier                        The {@link KeyVerifier} used to verify signatures and hollow accounts
-     * @param recordListBuilder               The {@link RecordListBuilder} used to build the record stream
-     * @param checker                         The {@link TransactionChecker} used to check dispatched transaction
-     * @param dispatcher                      The {@link TransactionDispatcher} used to dispatch child transactions
-     * @param serviceScopeLookup              The {@link ServiceScopeLookup} used to look up the scope of a service
-     * @param feeManager                      The {@link FeeManager} used to convert usage into fees
-     * @param exchangeRateManager             The {@link ExchangeRateManager} used to obtain exchange rate information
-     * @param userTransactionConsensusTime    The consensus time of the user transaction, not any child transactions
-     * @param authorizer                      The {@link Authorizer} used to authorize the transaction
-     * @param solvencyPreCheck                The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
-     * @param childRecordFinalizer            The {@link ChildRecordFinalizer} used to finalize child records
-     * @param networkUtilizationManager       The {@link NetworkUtilizationManager} used to manage the tracking of backend network throttling
+     * @param txBody The {@link TransactionBody} of the transaction
+     * @param functionality The {@link HederaFunctionality} of the transaction
+     * @param signatureMapSize The size of the {@link com.hedera.hapi.node.base.SignatureMap} of the transaction
+     * @param payer The {@link AccountID} of the payer
+     * @param payerKey The {@link Key} of the payer
+     * @param networkInfo The {@link NetworkInfo} of the network
+     * @param category The {@link TransactionCategory} of the transaction (either user, preceding, or child)
+     * @param recordBuilder The main {@link SingleTransactionRecordBuilderImpl}
+     * @param stack The {@link SavepointStackImpl} used to manage savepoints
+     * @param configuration The current {@link Configuration}
+     * @param verifier The {@link KeyVerifier} used to verify signatures and hollow accounts
+     * @param recordListBuilder The {@link RecordListBuilder} used to build the record stream
+     * @param checker The {@link TransactionChecker} used to check dispatched transaction
+     * @param dispatcher The {@link TransactionDispatcher} used to dispatch child transactions
+     * @param serviceScopeLookup The {@link ServiceScopeLookup} used to look up the scope of a service
+     * @param feeManager The {@link FeeManager} used to convert usage into fees
+     * @param exchangeRateManager The {@link ExchangeRateManager} used to obtain exchange rate information
+     * @param userTransactionConsensusTime The consensus time of the user transaction, not any child transactions
+     * @param authorizer The {@link Authorizer} used to authorize the transaction
+     * @param solvencyPreCheck The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
+     * @param childRecordFinalizer The {@link ChildRecordFinalizer} used to finalize child records
+     * @param networkUtilizationManager The {@link NetworkUtilizationManager} used to manage the tracking of backend network throttling
      * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage the tracking of frontend network throttling
-     * @param platformState
+     * @param platformState The {@link PlatformState} of the node
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,

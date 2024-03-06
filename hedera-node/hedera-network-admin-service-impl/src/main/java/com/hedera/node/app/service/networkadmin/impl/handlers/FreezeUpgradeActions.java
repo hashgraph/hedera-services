@@ -58,7 +58,7 @@ public class FreezeUpgradeActions extends ReadableFreezeUpgradeActions {
 
     public void abortScheduledFreeze() {
         requireNonNull(freezeStore, "Cannot abort freeze without access to the dual state");
-        freezeStore.freezeTime(EPOCH_FREEZE_TIME);
+        freezeStore.freezeTime(Timestamp.DEFAULT);
         writeCheckMarker(FREEZE_ABORTED_MARKER);
     }
 }

@@ -236,6 +236,16 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final var readableStates = hederaState.getReadableStates(serviceName);
             final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
 
+            // Now we can migrate the schema and then commit all the changes
+            // We just have one merkle tree -- the just-loaded working tree -- to work from.
+            // We get a ReadableStates for everything in the current tree, but then wrap
+            // it with a FilteredReadableStates that is locked into exactly the set of states
+            // available at this moment in time. This is done to make sure that even after we
+            // add new states into the tree, it doesn't increase the number of states that can
+            // be seen by the schema migration code
+            final var readableStates = hederaState.getReadableStates(serviceName);
+            final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
+
             // Create the writable states. We won't commit anything from these states
             // until we have completed migration.
             final var writableStates = hederaState.getWritableStates(serviceName);

@@ -131,7 +131,6 @@ import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -199,7 +198,7 @@ public final class Hedera implements SwirldMain {
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
      * and used to initialize the system, and more concrete dependencies are used from there.
      */
-    public HederaInjectionComponent daggerApp;
+    private HederaInjectionComponent daggerApp;
     /**
      * Indicates whether the platform is active
      */
@@ -226,8 +225,6 @@ public final class Hedera implements SwirldMain {
     private static RecordCacheService RECORD_SERVICE;
     private static BlockRecordService BLOCK_SERVICE;
     private static FeeService FEE_SERVICE;
-
-    public static final Set<Hedera> ALL_INSTANCES = new HashSet<>();
 
     /*==================================================================================================================
     *
@@ -320,7 +317,6 @@ public final class Hedera implements SwirldMain {
             logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
             throw new RuntimeException(e);
         }
-        ALL_INSTANCES.add(this);
     }
 
     /**
@@ -766,8 +762,6 @@ public final class Hedera implements SwirldMain {
                     }
                 }
             });
-
-            // TBD: notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
             // The main job of the reconnect listener (com.hedera.node.app.service.mono.state.logic.ReconnectListener)
             // is to log some output (including hashes from the tree for the main state per service) and then to
             // "catchUpOnMissedSideEffects". This last part worries me, because it looks like it invades into the space
@@ -779,11 +773,13 @@ public final class Hedera implements SwirldMain {
             // that we reconnected with. In that case, we need to save the file to disk. Similar to how we have to hook
             // for all the other special files on restart / genesis / reconnect.
             notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
-            // It looks like this notification is handled by
-            // com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener
-            // which looks like it is related to freeze / upgrade.
-            // see issue #8660
+            // This notifaction is needed for freeze / upgrade.
             notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
+
+            // TBD: notifications.register(NewSignedStateListener.class, daggerApp.newSignedStateListener());
+            // com.hedera.node.app.service.mono.state.exports.NewSignedStateListener
+            // Has some relationship to freeze/upgrade, but also with balance exports. This was the trigger that
+            // caused us to export balance files on a certain schedule.
         } catch (final Throwable th) {
             logger.error("Fatal precondition violation in HederaNode#{}", daggerApp.nodeId(), th);
             daggerApp.systemExits().fail(1); // TBD: Better exit code?
@@ -931,7 +927,7 @@ public final class Hedera implements SwirldMain {
     /**
      * Implements the code flow for initializing the state of a new Hedera node with NO SAVED STATE.
      */
-    private void genesis(@NonNull final MerkleHederaState state, final PlatformState platformState) {
+    private void genesis(@NonNull final MerkleHederaState state, @NonNull final PlatformState platformState) {
         logger.debug("Genesis Initialization");
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null, GENESIS);
@@ -970,8 +966,10 @@ public final class Hedera implements SwirldMain {
     /**
      * The initialization needed for reconnect. It constructs all schemas appropriately.
      * These are exactly the same steps done as restart trigger.
-     * @param state The current state
+     *
+     * @param state               The current state
      * @param deserializedVersion version of deserialized state
+     * @param platformState       platform state
      */
     private void reconnect(
             @NonNull final MerkleHederaState state,

@@ -414,7 +414,6 @@ public class InitialModServiceTokenSchema extends Schema {
 
         // Get the map for storing all the created accounts
         final var accounts = ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY);
-        log.info("Size of accounts map creating Genesis Schema {}", accounts.size());
 
         // We will use these various configs for creating accounts. It would be nice to consolidate them somehow
         final var ledgerConfig = ctx.configuration().getConfigData(LedgerConfig.class);
@@ -522,14 +521,12 @@ public class InitialModServiceTokenSchema extends Schema {
                 blocklistAccts.get().size());
 
         // ---------- Balances Safety Check -------------------------
-        // Add up the balances of all accounts, they must match 50,000,000,000 HBARs (config)
-        log.info("Size of accounts map is {}", accounts.size());
-        var totalBalance = getTotalBalanceOfAllAccounts(accounts, hederaConfig);
+        // Aadd up the balances of all accounts, they must match 50,000,000,000 HBARs (config)
+        final var totalBalance = getTotalBalanceOfAllAccounts(accounts, hederaConfig);
         if (totalBalance != ledgerConfig.totalTinyBarFloat()) {
             throw new IllegalStateException("Total balance of all accounts does not match the total float: actual: "
                     + totalBalance + " vs expected: " + ledgerConfig.totalTinyBarFloat());
         }
-
         log.info(
                 "Ledger float is {} tinyBars; {} modified accounts.",
                 totalBalance,

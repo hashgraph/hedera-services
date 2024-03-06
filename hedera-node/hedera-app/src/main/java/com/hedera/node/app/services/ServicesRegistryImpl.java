@@ -39,6 +39,12 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public final class ServicesRegistryImpl implements ServicesRegistry {
     private static final Logger logger = LogManager.getLogger(ServicesRegistryImpl.class);
+    /**
+     * Use a constant version to be passed to the schema registration.
+     * If the version changes the class id will be different and the upgrade will have issues.
+     */
+    private final SemanticVersion VERSION =
+            SemanticVersion.newBuilder().major(0).minor(48).patch(0).build();
     /** We have to register with the {@link ConstructableRegistry} based on the schemas of the services */
     private final ConstructableRegistry constructableRegistry;
     /** The set of registered services */
