@@ -440,5 +440,4 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     protected MoreObjects.ToStringHelper toStringHelper() {
         return super.toStringHelper().add("contract", contract).add("abi", abi).add("params", Arrays.toString(params));
     }
-
 }
