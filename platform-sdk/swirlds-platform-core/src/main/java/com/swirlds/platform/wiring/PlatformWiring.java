@@ -28,6 +28,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -113,7 +114,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventHasherWiring eventHasherWiring;
     private final PostHashCollectorWiring postHashCollectorWiring;
     private final InternalEventValidatorWiring internalEventValidatorWiring;
-    private final EventDeduplicatorWiring eventDeduplicatorWiring;
+    private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
@@ -177,7 +178,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         postHashCollectorWiring = PostHashCollectorWiring.create(schedulers.postHashCollectorScheduler());
         internalEventValidatorWiring =
                 InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
-        eventDeduplicatorWiring = EventDeduplicatorWiring.create(schedulers.eventDeduplicatorScheduler());
+        eventDeduplicatorWiring =
+                new ComponentWiring<>(EventDeduplicator.class, schedulers.eventDeduplicatorScheduler());
         eventSignatureValidatorWiring =
                 EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
         orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
@@ -248,7 +250,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         final OutputWire<NonAncientEventWindow> nonAncientEventWindowOutputWire =
                 eventWindowManagerWiring.nonAncientEventWindowOutput();
 
-        nonAncientEventWindowOutputWire.solderTo(eventDeduplicatorWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(
+                eventDeduplicatorWiring.getInputWire(EventDeduplicator::setNonAncientEventWindow), INJECT);
         nonAncientEventWindowOutputWire.solderTo(eventSignatureValidatorWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
@@ -265,8 +268,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         gossipWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
         eventHasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
         postHashCollectorWiring.eventOutput().solderTo(internalEventValidatorWiring.eventInput());
-        internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
-        eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
+        internalEventValidatorWiring
+                .eventOutput()
+                .solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::handleEvent));
+        eventDeduplicatorWiring.getOutputWire().solderTo(eventSignatureValidatorWiring.eventInput());
         eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(pcesSequencerWiring.eventInput());
         pcesSequencerWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
