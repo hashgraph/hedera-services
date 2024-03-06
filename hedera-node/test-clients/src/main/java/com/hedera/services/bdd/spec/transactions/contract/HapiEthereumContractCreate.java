@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
@@ -29,6 +30,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_TO_TINYBARS;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -56,7 +58,8 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEthereumContractCreate> {
     private EthTxData.EthTransactionType type;
-    private long nonce;
+    private long nonce = 0L;
+    private boolean useSpecNonce = true;
     private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
     private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
     private long maxPriorityGas = 20_000L;
@@ -94,6 +97,44 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.payer = Optional.of(RELAYER);
         super.omitAdminKey = true;
     }
+
+    public HapiEthereumContractCreate(HapiContractCreate contractCreate, String privateKeyRef, Key adminKey) {
+        super(contractCreate.contract);
+        this.type = EthTransactionType.EIP1559;
+        this.privateKeyRef = privateKeyRef;
+        this.omitAdminKey = contractCreate.omitAdminKey;
+        this.makeImmutable = contractCreate.makeImmutable;
+        this.advertiseCreation = contractCreate.advertiseCreation;
+        this.shouldAlsoRegisterAsAccount = contractCreate.shouldAlsoRegisterAsAccount;
+        this.useDeprecatedAdminKey = contractCreate.useDeprecatedAdminKey;
+        this.contract = contractCreate.contract;
+        this.gas = contractCreate.gas;
+        this.key = contractCreate.key;
+        this.autoRenewPeriodSecs = contractCreate.autoRenewPeriodSecs;
+        this.balance = contractCreate.balance;
+        this.adminKeyControl = contractCreate.adminKeyControl;
+        this.adminKeyType = contractCreate.adminKeyType;
+        this.memo = contractCreate.memo;
+        this.bytecodeFile = contractCreate.bytecodeFile;
+        this.bytecodeFileFn = contractCreate.bytecodeFileFn;
+        this.successCb = contractCreate.successCb;
+        this.abi = contractCreate.abi;
+        this.args = contractCreate.args;
+        this.gasObserver = contractCreate.gasObserver;
+        this.newNumObserver = contractCreate.newNumObserver;
+        this.proxy = contractCreate.proxy;
+        this.explicitHexedParams = contractCreate.explicitHexedParams;
+        this.stakedAccountId = contractCreate.stakedAccountId;
+        this.stakedNodeId = contractCreate.stakedNodeId;
+        this.isDeclinedReward = contractCreate.isDeclinedReward;
+
+        this.adminKey = adminKey;
+
+        // TODO: see how it's set in the EthereumCall
+        this.maxGasAllowance = Optional.of(220 * ONE_HBAR);
+        this.gas(1000000002);
+    }
+
 
     public HapiEthereumContractCreate(
             @NonNull final String contract, @NonNull final BiConsumer<HapiSpec, EthereumTransactionBody.Builder> spec) {
@@ -171,6 +212,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
     public HapiEthereumContractCreate nonce(long nonce) {
         this.nonce = nonce;
+        useSpecNonce = false;
         return this;
     }
 
@@ -220,6 +262,10 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var maxFeePerGasBytes = gasLongToBytes(maxFeePerGas.longValueExact());
         final var maxPriorityGasBytes = gasLongToBytes(maxPriorityGas);
 
+        if (useSpecNonce) {
+            nonce = spec.getNonce(privateKeyRef);
+            spec.incrementNonce(privateKeyRef); // TODO: why the contract call is not calling this.
+        }
         final var ethTxData = new EthTxData(
                 null,
                 type,

@@ -81,6 +81,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
     private Optional<ByteString> inlineInitcode = Optional.empty();
+    private boolean convertableToEthCreate = true;
 
     @Nullable
     private BiConsumer<HapiSpec, ContractCreateTransactionBody.Builder> spec;
@@ -223,6 +224,15 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 
     public HapiContractCreate declinedReward(boolean isDeclined) {
         isDeclinedReward = isDeclined;
+        return this;
+    }
+
+    public boolean isConvertableToEthCreate() {
+        return convertableToEthCreate;
+    }
+
+    public HapiContractCreate refusingEthConversion() {
+        convertableToEthCreate = false;
         return this;
     }
 
