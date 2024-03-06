@@ -40,7 +40,7 @@ class TestLongCodec implements Codec<Long> {
 
     @NonNull
     @Override
-    public Long parse(@NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+    public Long parse(@NonNull final ReadableSequentialData input, final boolean strictMode, final int maxDepth)
             throws ParseException {
         Objects.requireNonNull(input);
         return Long.valueOf(input.readLong());
@@ -64,7 +64,8 @@ class TestLongCodec implements Codec<Long> {
     }
 
     @Override
-    public boolean fastEquals(@NonNull Long value, @NonNull ReadableSequentialData input) throws ParseException {
+    public boolean fastEquals(@NonNull final Long value, @NonNull final ReadableSequentialData input)
+            throws ParseException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(input);
         return value.equals(parse(input));
