@@ -38,7 +38,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 
 /**
  * Manages all interactions with the state object required by {@link SwirldState}.
@@ -71,11 +70,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     private final UptimeTracker uptimeTracker;
 
     /**
-     * Handles system transactions post-consensus
-     */
-    private final BiConsumer<State, ConsensusRound> roundAndStateConsumer;
-
-    /**
      * The current software version.
      */
     private final SoftwareVersion softwareVersion;
@@ -86,8 +80,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
      * @param platformContext       the platform context
      * @param addressBook           the address book
      * @param selfId                this node's id
-     * @param roundAndStateConsumer consumes a consensus round and the state that results from applying the consensus
-     *                              transactions
      * @param swirldStateMetrics    metrics related to SwirldState
      * @param statusActionSubmitter enables submitting platform status actions
      * @param state                 the genesis state
@@ -97,7 +89,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final BiConsumer<State, ConsensusRound> roundAndStateConsumer,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final State state,
@@ -106,7 +97,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
-        this.roundAndStateConsumer = Objects.requireNonNull(roundAndStateConsumer);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
         Objects.requireNonNull(statusActionSubmitter);
         Objects.requireNonNull(state);
@@ -167,7 +157,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
                 state.getPlatformState().getUptimeData(),
                 state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
-        roundAndStateConsumer.accept(state, round);
         updateEpoch();
     }
 

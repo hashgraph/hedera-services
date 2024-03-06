@@ -18,7 +18,6 @@ package com.swirlds.platform.event.validation;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
 import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -135,40 +134,6 @@ class InternalEventValidatorTests {
     }
 
     @Test
-    @DisplayName("Generation Threshold With Negative BirthRound should NOT validate")
-    void generationThresholdWithNegativeBirthRound() {
-        final EventDescriptor selfParent = new EventDescriptor(randomHash(random), new NodeId(0), 0, -1);
-        final EventDescriptor otherParent = new EventDescriptor(randomHash(random), new NodeId(0), 0, -1);
-        final EventDescriptor self = new EventDescriptor(randomHash(random), new NodeId(0), 1, -1);
-        final GossipEvent event = generateEvent(self, selfParent, otherParent, 1111);
-
-        final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
-        doAnswer(invocation -> {
-                    exitedIntakePipelineCount.incrementAndGet();
-                    return null;
-                })
-                .when(intakeEventCounter)
-                .eventExitedIntakePipeline(any());
-
-        final PlatformContext platformContext = TestPlatformContextBuilder.create()
-                .withConfiguration(new TestConfigBuilder()
-                        .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, false)
-                        .getOrCreateConfig())
-                .build();
-
-        final Time time = new FakeTime();
-
-        final InternalEventValidator multinodeValidator =
-                new InternalEventValidator(platformContext, time, false, intakeEventCounter);
-        final InternalEventValidator singleNodeValidator =
-                new InternalEventValidator(platformContext, time, true, intakeEventCounter);
-
-        assertNull(multinodeValidator.validateEvent(event));
-        assertNull(singleNodeValidator.validateEvent(event));
-        assertEquals(2, exitedIntakePipelineCount.get());
-    }
-
-    @Test
     @DisplayName("An event with null hashed data is invalid")
     void nullHashedData() {
         final GossipEvent event = generateGoodEvent(random, 1111);
@@ -214,13 +179,6 @@ class InternalEventValidatorTests {
                 new EventDescriptor(randomHash(random), new NodeId(1), 6, 1),
                 1111);
 
-        // self parent has invalid birth round.
-        final GossipEvent invalidSelfParentBirthRound = generateEvent(
-                new EventDescriptor(randomHash(random), new NodeId(0), 7, 1),
-                new EventDescriptor(randomHash(random), new NodeId(0), 5, ROUND_NEGATIVE_INFINITY),
-                new EventDescriptor(randomHash(random), new NodeId(1), 6, 1),
-                1111);
-
         // other parent has invalid generation.
         final GossipEvent invalidOtherParentGeneration = generateEvent(
                 new EventDescriptor(randomHash(random), new NodeId(0), 7, 1),
@@ -228,24 +186,13 @@ class InternalEventValidatorTests {
                 new EventDescriptor(randomHash(random), new NodeId(1), GENERATION_UNDEFINED, 1),
                 1111);
 
-        // other parent has invalid birth round.
-        final GossipEvent invalidOtherParentBirthRound = generateEvent(
-                new EventDescriptor(randomHash(random), new NodeId(0), 7, 1),
-                new EventDescriptor(randomHash(random), new NodeId(0), 5, 1),
-                new EventDescriptor(randomHash(random), new NodeId(1), 6, ROUND_NEGATIVE_INFINITY),
-                1111);
-
         assertNull(multinodeValidator.validateEvent(invalidSelfParentGeneration));
-        assertNull(multinodeValidator.validateEvent(invalidSelfParentBirthRound));
         assertNull(multinodeValidator.validateEvent(invalidOtherParentGeneration));
-        assertNull(multinodeValidator.validateEvent(invalidOtherParentBirthRound));
 
         assertNull(singleNodeValidator.validateEvent(invalidSelfParentGeneration));
-        assertNull(singleNodeValidator.validateEvent(invalidSelfParentBirthRound));
         assertNull(singleNodeValidator.validateEvent(invalidOtherParentGeneration));
-        assertNull(singleNodeValidator.validateEvent(invalidOtherParentBirthRound));
 
-        assertEquals(8, exitedIntakePipelineCount.get());
+        assertEquals(4, exitedIntakePipelineCount.get());
     }
 
     @Test

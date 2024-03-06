@@ -38,6 +38,31 @@ import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInter
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC20ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC721ContractInteractions;
 import com.hedera.services.bdd.suites.contract.precompile.*;
+import com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite;
+import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileV2SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DefaultTokenStatusSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DeleteTokenPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite;
+import com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.PrngPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.SigningReqsSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenAndTypeCheckSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
@@ -147,6 +172,7 @@ public class ConcurrentSuites {
             TokenInfoHTSSuite::new,
             TokenUpdatePrecompileSuite::new,
             WipeTokenAccountPrecompileSuite::new,
+            AssociatePrecompileV2SecurityModelSuite::new,
             // contract.records
             LogsSuite::new,
             RecordsSuite::new,

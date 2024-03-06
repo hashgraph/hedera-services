@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.consensus;
 
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.events.EventConstants;
 import java.util.function.LongUnaryOperator;
 
@@ -60,21 +59,5 @@ public final class RoundCalculationUtils {
         return Math.max(
                 roundGenerationProvider.applyAsLong(getOldestNonAncientRound(roundsNonAncient, lastRoundDecided)),
                 GraphGenerations.FIRST_GENERATION);
-    }
-
-    /**
-     * Returns the minimum generation below which all events are ancient for the round of the signed state
-     *
-     * @param roundsNonAncient
-     * 		the number of non-ancient rounds
-     * @param signedState
-     * 		the signed state that holds the minumum generation information
-     * @return minimum non-ancient generation
-     */
-    public static long getMinGenNonAncient(final int roundsNonAncient, final SignedState signedState) {
-        return getMinGenNonAncient(
-                roundsNonAncient,
-                signedState.getRound(),
-                round -> signedState.getState().getPlatformState().getMinGen(round));
     }
 }

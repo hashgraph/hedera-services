@@ -62,6 +62,7 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.spi.state.MigrationContext;
@@ -103,10 +104,10 @@ public class InitialModServiceTokenSchema extends Schema {
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
     // buckets will be too full which results in very poor performance. Have chosen 10 billion as should give us
     // plenty of runway.
-    private static final long MAX_TOKENS = 10_000_000_000L;
-    private static final long MAX_ACCOUNTS = 10_000_000_000L;
-    private static final long MAX_TOKEN_RELS = 10_000_000_000L;
-    private static final long MAX_MINTABLE_NFTS = 10_000_000_000L;
+    private static final long MAX_TOKENS = 1_000_000_000L;
+    private static final long MAX_ACCOUNTS = 1_000_000_000L;
+    private static final long MAX_TOKEN_RELS = 1_000_000_000L;
+    private static final long MAX_MINTABLE_NFTS = 1_000_000_000L;
     private static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;
     private static final long LAST_RESERVED_SYSTEM_CONTRACT = 399L;
     private static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
@@ -341,6 +342,12 @@ public class InitialModServiceTokenSchema extends Schema {
                                         aliasesState
                                                 .get()
                                                 .put(new ProtoBytes(toAcct.alias()), toAcct.accountIdOrThrow());
+                                        if (toAcct.alias().toByteArray().length > 20) {
+                                            final var result = AliasUtils.extractEvmAddress(toAcct.alias());
+                                            if (result != null) {
+                                                aliasesState.get().put(new ProtoBytes(result), toAcct.accountId());
+                                            }
+                                        }
                                         if (numAliasesInsertions.incrementAndGet() % 10_000 == 0) {
                                             // Make sure we are flushing data to disk as we go
                                             ((WritableKVStateBase) aliasesState.get()).commit();

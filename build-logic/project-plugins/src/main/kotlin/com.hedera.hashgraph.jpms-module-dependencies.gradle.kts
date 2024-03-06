@@ -16,6 +16,14 @@
 
 plugins { id("org.gradlex.java-module-dependencies") }
 
-// The following is required as long as we use different Module Name prefixes in the project. Right
-// now we have 'com.hedera.node.' (works automatically) and 'com.' (for 'com.swirlds...' modules).
-javaModuleDependencies { moduleNamePrefixToGroup.put("com.", "com.swirlds") }
+// The following is required as we use different Module Name prefixes. Right now we have:
+// - 'com.' for 'com.swirlds' modules
+// - 'com.hedera.node.' for 'com.hedera.hashgraph' modules
+// - 'com.hedera.storage' for 'com.hedera.storage.blocknode' modules
+// If one of the module groups has 'requires' to modules of another group, we need to register
+// that module group here.
+javaModuleDependencies {
+    moduleNamePrefixToGroup.put("com.", "com.swirlds")
+    moduleNamePrefixToGroup.put("com.hedera.node.", "com.hedera.hashgraph")
+    moduleNamePrefixToGroup.put("com.hedera.storage.", "com.hedera.storage.blocknode")
+}
