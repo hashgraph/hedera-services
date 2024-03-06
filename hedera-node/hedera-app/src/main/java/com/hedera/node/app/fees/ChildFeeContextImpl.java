@@ -32,7 +32,6 @@ import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -54,11 +53,6 @@ public class ChildFeeContextImpl implements FeeContext {
         this.context = Objects.requireNonNull(context);
         this.body = Objects.requireNonNull(body);
         this.payerId = Objects.requireNonNull(payerId);
-    }
-
-    @Override
-    public Instant currentTime() {
-        return context.consensusNow();
     }
 
     @Override
@@ -96,5 +90,10 @@ public class ChildFeeContextImpl implements FeeContext {
     @Override
     public @Nullable Authorizer authorizer() {
         return context.authorizer();
+    }
+
+    @Override
+    public int numTxnSignatures() {
+        return context.numTxnSignatures();
     }
 }

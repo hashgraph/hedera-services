@@ -48,6 +48,7 @@ sourceSets {
     main { resources { srcDir("src/main/resource") } }
 
     create("rcdiff")
+    create("yahcli")
 }
 
 // IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
@@ -221,8 +222,9 @@ tasks.shadowJar {
 val yahCliJar =
     tasks.register<ShadowJar>("yahCliJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
-
+        from(sourceSets["yahcli"].output)
         archiveClassifier.set("yahcli")
+        configurations = listOf(project.configurations.getByName("yahcliRuntimeClasspath"))
 
         manifest {
             attributes(
@@ -272,7 +274,7 @@ val copyValidation =
 
 val cleanValidation =
     tasks.register<Delete>("cleanValidation") {
-        group = "build"
+        group = "copy"
         delete(File(project.file("validation-scenarios"), "ValidationScenarios.jar"))
     }
 
@@ -286,7 +288,7 @@ val copyYahCli =
 
 val cleanYahCli =
     tasks.register<Delete>("cleanYahCli") {
-        group = "build"
+        group = "copy"
         delete(File(project.file("yahcli"), "yahcli.jar"))
     }
 

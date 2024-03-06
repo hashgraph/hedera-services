@@ -53,7 +53,7 @@ public class SynchronizedThrottleAccumulator {
      * @return whether the transaction should be throttled
      */
     public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state) {
-        setDecisionTime();
+        setDecisionTime(Instant.now());
         return frontendThrottle.shouldThrottle(txnInfo, lastDecisionTime, state);
     }
 
@@ -67,16 +67,15 @@ public class SynchronizedThrottleAccumulator {
      * @return whether the query should be throttled
      */
     public synchronized boolean shouldThrottle(HederaFunctionality queryFunction, Query query, AccountID queryPayerId) {
-        setDecisionTime();
+        setDecisionTime(Instant.now());
         return frontendThrottle.shouldThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
-    }
-
-    private void setDecisionTime() {
-        final var now = Instant.now();
-        lastDecisionTime = now.isBefore(lastDecisionTime) ? lastDecisionTime : now;
     }
 
     public void leakUnusedThrottlePreviouslyReserved(int n, HederaFunctionality function) {
         frontendThrottle.leakCapacityForNOfUnscaled(n, function);
+    }
+
+    private void setDecisionTime(@NonNull final Instant time) {
+        lastDecisionTime = time.isBefore(lastDecisionTime) ? lastDecisionTime : time;
     }
 }

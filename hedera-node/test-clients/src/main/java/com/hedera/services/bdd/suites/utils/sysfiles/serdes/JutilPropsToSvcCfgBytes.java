@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Comparator;
@@ -47,7 +48,7 @@ public class JutilPropsToSvcCfgBytes implements SysFileSerde<String> {
     }
 
     @Override
-    public byte[] toRawFile(String styledFile) {
+    public byte[] toRawFile(String styledFile, @Nullable String interpolatedSrcDir) {
         var jutilConfig = new Properties();
         try {
             jutilConfig.load(new StringReader(styledFile));
