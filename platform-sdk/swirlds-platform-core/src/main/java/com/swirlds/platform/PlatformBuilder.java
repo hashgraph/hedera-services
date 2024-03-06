@@ -56,6 +56,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
@@ -119,6 +120,8 @@ public final class PlatformBuilder {
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.genesisStateBuilder = Objects.requireNonNull(genesisStateBuilder);
         this.selfId = Objects.requireNonNull(selfId);
+
+        StaticSoftwareVersion.setSoftwareVersion(softwareVersion);
     }
 
     /**

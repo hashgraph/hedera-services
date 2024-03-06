@@ -29,8 +29,11 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -39,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A class used to store base event data that is used to create the hash of that event.
@@ -104,6 +108,12 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     private Instant timeCreated;
     /** the payload: an array of transactions */
     private ConsensusTransactionImpl[] transactions;
+
+    /**
+     * Class IDs of permitted transaction types.
+     */
+    private static final Set<Long> TRANSACTION_TYPES =
+            Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
 
     public BaseEventHashedData() {}
 
@@ -193,11 +203,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             throws IOException {
         Objects.requireNonNull(in, "The input stream must not be null");
         serializedVersion = version;
-        if (version >= ClassVersion.SOFTWARE_VERSION) {
-            softwareVersion = in.readSerializable();
-        } else {
-            softwareVersion = SoftwareVersion.NO_VERSION;
-        }
+        softwareVersion = in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
         if (version < ClassVersion.BIRTH_ROUND) {
             // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
             // Changing the event format may require a HIP.  The old format is preserved for now.
@@ -227,7 +233,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         }
         timeCreated = in.readInstant();
         in.readInt(); // read serialized length
-        transactions = in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true);
+        transactions =
+                in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true, TRANSACTION_TYPES);
     }
 
     @Override
