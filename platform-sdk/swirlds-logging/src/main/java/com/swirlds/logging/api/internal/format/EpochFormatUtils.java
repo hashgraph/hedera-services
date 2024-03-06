@@ -75,7 +75,7 @@ public class EpochFormatUtils {
     }
 
     private static String[] prepareFillers() {
-        final String[] fillers = new String[DATE_FIELD_MAX_SIZE+1];
+        final String[] fillers = new String[DATE_FIELD_MAX_SIZE + 1];
         fillers[0] = "";
         for (int i = 1; i <= DATE_FIELD_MAX_SIZE; i++) {
             fillers[i] = " ".repeat(i);
