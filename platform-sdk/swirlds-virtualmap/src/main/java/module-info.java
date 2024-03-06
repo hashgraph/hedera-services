@@ -5,14 +5,10 @@ open module com.swirlds.virtualmap {
     exports com.swirlds.virtualmap;
     exports com.swirlds.virtualmap.datasource;
     // Currently, exported only for tests.
+    exports com.swirlds.virtualmap.internal;
+    exports com.swirlds.virtualmap.internal.cache;
     exports com.swirlds.virtualmap.internal.merkle;
     exports com.swirlds.virtualmap.config;
-
-    // Testing-only exports
-    exports com.swirlds.virtualmap.internal to
-            com.swirlds.virtualmap.test.fixtures;
-    exports com.swirlds.virtualmap.internal.cache to
-            com.swirlds.virtualmap.test.fixtures;
 
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
