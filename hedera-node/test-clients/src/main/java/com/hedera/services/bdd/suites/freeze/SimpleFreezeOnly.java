@@ -58,8 +58,8 @@ public class SimpleFreezeOnly extends HapiSuite {
 
     final HapiSpec simpleFreezeWithTimestamp() {
         return defaultHapiSpec("SimpleFreezeWithTimeStamp")
-                .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
+                .given(freezeOnly().logged().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
                 .when(sleepFor(40000))
-                .then(cryptoCreate("not_going_to_happen").hasPrecheck(ResponseCodeEnum.PLATFORM_NOT_ACTIVE));
+                .then(cryptoCreate("not_going_to_happen").logged().hasPrecheck(ResponseCodeEnum.PLATFORM_NOT_ACTIVE));
     }
 }

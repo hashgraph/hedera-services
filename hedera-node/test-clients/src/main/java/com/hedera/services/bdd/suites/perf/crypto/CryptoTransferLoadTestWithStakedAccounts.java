@@ -90,6 +90,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                 INSUFFICIENT_ACCOUNT_BALANCE)
                         .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
                         .deferStatusResolution()
+                        .logged()
             };
         };
 
@@ -106,14 +107,14 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                 .key(GENESIS)
                                 .rechargeWindow(3)
                                 .stakedNodeId(settings.getNodeToStake())
-                                .logging()
+                                .logged()
                                 .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
                         cryptoCreate("receiver")
                                 .payingWith(GENESIS)
                                 .stakedNodeId(settings.getNodeToStake())
                                 .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
                                 .key(GENESIS)
-                                .logging(),
+                                .logged(),
                         withOpContext((spec, opLog) -> {
                             List<HapiSpecOperation> ops = new ArrayList<>();
                             var stakedNodeId = settings.getNodeToStake();
@@ -128,6 +129,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                         .stakedNodeId(stakedNodeId)
                                         .fee(ONE_HBAR)
                                         .deferStatusResolution()
+                                                .logged()
                                         .signedBy("sender", DEFAULT_PAYER));
                             }
                             allRunFor(spec, ops);
