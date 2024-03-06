@@ -61,14 +61,14 @@ public class RandomSignedStateGenerator {
     private Hash hashEventsCons;
     private AddressBook addressBook;
     private Instant consensusTimestamp;
-    private Boolean freezeState;
+    private Boolean freezeState = false;
     private SoftwareVersion softwareVersion;
     private List<NodeId> signingNodeIds;
     private Map<NodeId, Signature> signatures;
-    private boolean protectionEnabled;
-    private Hash stateHash;
-    private Integer roundsNonAncient;
-    private Hash epoch;
+    private boolean protectionEnabled = false;
+    private Hash stateHash = null;
+    private Integer roundsNonAncient = null;
+    private Hash epoch = null;
     private ConsensusSnapshot consensusSnapshot;
 
     /**
