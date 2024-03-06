@@ -184,7 +184,7 @@ public class RandomSignedStateGenerator {
         platformState.setConsensusTimestamp(consensusTimestampInstance);
         platformState.setCreationSoftwareVersion(softwareVersionInstance);
         platformState.setRoundsNonAncient(roundsNonAncientInstance);
-        platformState.setSnapshot(consensusSnapshot);
+        platformState.setSnapshot(consensusSnapshotInstance);
 
         final SignedState signedState = new SignedState(
                 new TestConfigBuilder()

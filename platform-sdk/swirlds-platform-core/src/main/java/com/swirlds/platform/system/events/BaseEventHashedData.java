@@ -145,7 +145,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.TRANSACTION_SUBCLASSES;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     @Override
