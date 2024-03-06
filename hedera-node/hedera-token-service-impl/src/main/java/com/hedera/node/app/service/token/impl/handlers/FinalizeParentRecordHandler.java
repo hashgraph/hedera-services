@@ -50,6 +50,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -74,7 +75,8 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
     public void finalizeParentRecord(
             @NonNull final AccountID payer,
             @NonNull final FinalizeContext context,
-            @NonNull final HederaFunctionality functionality) {
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final Set<AccountID> explicitRewardReceivers) {
         final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
@@ -93,7 +95,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             // a node. They are also triggered if staking related fields are modified
             // Calculate staking rewards and add them also to hbarChanges here, before assessing
             // net changes for transaction record
-            final var rewardsPaid = stakingRewardsHandler.applyStakingRewards(context);
+            final var rewardsPaid = stakingRewardsHandler.applyStakingRewards(context, explicitRewardReceivers);
             if (requiresExternalization(rewardsPaid)) {
                 recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
             }
