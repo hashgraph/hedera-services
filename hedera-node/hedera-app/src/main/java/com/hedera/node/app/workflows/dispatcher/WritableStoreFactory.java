@@ -124,6 +124,7 @@ public class WritableStoreFactory {
     public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
+        final var entryName = entry != null ? entry.name() : "";
         if (entry != null && serviceName.equals(entry.name())) {
             final var store = entry.factory().apply(states);
             if (!storeInterface.isInstance(store)) {
@@ -135,7 +136,7 @@ public class WritableStoreFactory {
         logger.info(
                 "Creating store for {},entry {}, serviceName {}, all stores {}",
                 storeInterface,
-                entry.name(),
+                entryName,
                 serviceName,
                 STORE_FACTORY.keySet());
         throw new IllegalArgumentException("No store of the given class is available");
