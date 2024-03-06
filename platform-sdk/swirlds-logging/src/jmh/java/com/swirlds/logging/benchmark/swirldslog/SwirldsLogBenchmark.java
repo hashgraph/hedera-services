@@ -54,18 +54,20 @@ public class SwirldsLogBenchmark {
     private static final String LOGGER_NAME = Constants.SWIRLDS + "Benchmark";
     private Logger logger;
     private SwirldsLogRunner logRunner;
+    private LoggingSystem loggingSystem;
 
     private final Configuration<LoggingSystem> config = new SwirldsLogConfiguration();
 
     @Setup(Level.Trial)
     public void init() {
         if (Objects.equals(loggingType, FILE_TYPE)) {
-            logger = config.configureFileLogging().getLogger(LOGGER_NAME);
+            loggingSystem = config.configureFileLogging();
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
-            logger = config.configureConsoleLogging().getLogger(LOGGER_NAME);
+            loggingSystem = config.configureConsoleLogging();
         } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
-            logger = config.configureFileAndConsoleLogging().getLogger(LOGGER_NAME);
+            loggingSystem = config.configureFileAndConsoleLogging();
         }
+        logger = loggingSystem.getLogger(LOGGER_NAME);
         logRunner = new SwirldsLogRunner(logger);
     }
 

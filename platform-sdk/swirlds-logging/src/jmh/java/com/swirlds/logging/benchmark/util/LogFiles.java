@@ -17,23 +17,26 @@
 package com.swirlds.logging.benchmark.util;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.stream.Stream;
 
 /**
  * Convenience methods for handling logFiles pre and after benchmark runs
  */
 public class LogFiles {
 
-    public static final String LOGGING_FOLDER = "logging-out/";
+    public static final String LOGGING_FOLDER = "logging-out";
 
     private LogFiles() {}
 
     /**
      * Provides the path to the log file based on the implementationName of the logging system under benchmark
-     * {@code implementationName} and the type of benchmark {@code type}. Previously deleting the file
-     * if exists in the FS.
+     * {@code implementationName} and the type of benchmark {@code type}. Previously deleting the file if exists in the
+     * FS.
      */
     @NonNull
     public static String provideLogFilePath(final @NonNull String implementationName, final @NonNull String type) {
@@ -49,7 +52,7 @@ public class LogFiles {
     @NonNull
     public static String getPath(final @NonNull String implementation, final @NonNull String type) {
         final long pid = ProcessHandle.current().pid();
-        return LOGGING_FOLDER + "benchmark-" + implementation + "-" + pid + "-" + type + ".log";
+        return LOGGING_FOLDER + File.separator + "benchmark-" + implementation + "-" + pid + "-" + type + ".log";
     }
 
     /**
@@ -60,6 +63,18 @@ public class LogFiles {
             Files.deleteIfExists(Path.of(logFile));
         } catch (IOException e) {
             throw new RuntimeException("Can not delete old log file", e);
+        }
+    }
+
+    public static void tryForceDeleteDir() {
+        final Path path = Path.of(LOGGING_FOLDER);
+        try (Stream<Path> walk = Files.walk(path)) {
+            walk.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .map(File::getAbsolutePath)
+                    .forEach(LogFiles::deleteFile);
+        } catch (IOException e) {
+            // do nothing
         }
     }
 }

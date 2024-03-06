@@ -18,8 +18,8 @@ package com.swirlds.logging.benchmark.log4j2;
 
 import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
+import com.swirlds.logging.benchmark.util.ConfigManagement;
 import com.swirlds.logging.benchmark.util.LogFiles;
-import com.swirlds.logging.benchmark.util.TimestampManagement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -38,7 +38,7 @@ import org.apache.logging.log4j.spi.LoggerContext;
 public class Log4JConfiguration implements Configuration<LoggerContext> {
 
     private static final String PATTERN =
-            (TimestampManagement.formatTimestamp() ? "%d{yyyy-MM-dd HH:mm:ss.SSS}" : "%d{UNIX_MILLIS}")
+            (ConfigManagement.formatTimestamp() ? "%d{yyyy-MM-dd HH:mm:ss.SSS}" : "%d{UNIX_MILLIS}")
                     + " %-5level [%t] %c - %msg - [%marker] %X %n%throwable";
     public static final String CONSOLE_APPENDER_NAME = "console";
     public static final String FILE_APPENDER_NAME = "file";
@@ -106,12 +106,12 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
 
     @Override
     public void tierDown() {
-        if (Constants.DELETE_OUTPUT_FILES) {
-            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.FILE_TYPE));
-            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.CONSOLE_AND_FILE_TYPE));
+        if (ConfigManagement.deleteOutputFiles()) {
+            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE));
+            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE));
         }
-        if (Constants.DELETE_OUTPUT_FOLDER) {
-            LogFiles.deleteFile(LogFiles.LOGGING_FOLDER);
+        if (ConfigManagement.deleteOutputFolder()) {
+            LogFiles.tryForceDeleteDir();
         }
     }
 }
