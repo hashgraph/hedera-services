@@ -44,9 +44,9 @@ public abstract class ConfigProviderBase implements ConfigProvider {
      */
     public static final String APPLICATION_PROPERTIES_PATH_ENV = "HEDERA_APP_PROPERTIES_PATH";
     /** Default path to the genesis.properties file. */
-    public static final String GENESIS_PROPERTIES_DEFAULT_PATH = "genesis.properties";
+    public static final String GENESIS_PROPERTIES_DEFAULT_PATH = "data/config/genesis.properties";
     /** Default path to the application.properties file. */
-    public static final String APPLICATION_PROPERTIES_DEFAULT_PATH = "application.properties";
+    public static final String APPLICATION_PROPERTIES_DEFAULT_PATH = "data/config/application.properties";
 
     private static final Logger logger = LogManager.getLogger(ConfigProviderBase.class);
     /** Default path to the semantic-version.properties file. */
