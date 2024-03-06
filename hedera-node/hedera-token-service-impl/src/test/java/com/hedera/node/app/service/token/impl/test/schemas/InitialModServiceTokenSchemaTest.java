@@ -156,7 +156,7 @@ final class InitialModServiceTokenSchemaTest {
     }
 
     @Test
-    void initializesStakingData() {
+    void initializesStakingDataOnGenesisStart() {
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
@@ -165,7 +165,7 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION);
+                null);
 
         schema.migrate(migrationContext);
 
@@ -176,7 +176,7 @@ final class InitialModServiceTokenSchemaTest {
     }
 
     @Test
-    void createsAllAccounts() {
+    void createsAllAccountsOnGenesisStart() {
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
@@ -185,7 +185,7 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION);
+                null);
 
         schema.migrate(migrationContext);
 
@@ -300,7 +300,7 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION);
+                null);
 
         schema.migrate(migrationContext);
 
@@ -487,7 +487,7 @@ final class InitialModServiceTokenSchemaTest {
     }
 
     @Test
-    void createsSystemAccountsOnly() {
+    void createsSystemAccountsOnlyOnGenesisStart() {
         final var schema = new InitialModServiceTokenSchema(
                 this::allDefaultSysAccts,
                 Collections::emptySortedSet,
@@ -502,7 +502,7 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION));
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (int i = 1; i < DEFAULT_NUM_SYSTEM_ACCOUNTS; i++) {
@@ -532,7 +532,7 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION));
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         final var stakingRewardAccount = acctsStateResult.get(ACCT_IDS[800]);
@@ -564,7 +564,7 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION));
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (final long reservedNum : NON_CONTRACT_RESERVED_NUMS) {
@@ -594,7 +594,7 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION));
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
 
@@ -623,7 +623,7 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION));
+                null));
 
         // Verify that the assigned account ID matches the expected entity IDs
         for (int i = 0; i < EVM_ADDRESSES.length; i++) {
@@ -642,7 +642,7 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION));
+                null));
 
         // Verify contract entity IDs aren't used
         for (int i = 350; i < 400; i++) {

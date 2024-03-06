@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
+import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
@@ -72,8 +73,11 @@ class FreezeUpgradeActionsTest {
     @LoggingTarget
     private LogCaptor logCaptor;
 
-    @LoggingSubject
     private FreezeUpgradeActions subject;
+
+    // Since all logs are moved to base class
+    @LoggingSubject
+    private ReadableFreezeUpgradeActions loggingSubject;
 
     @Mock
     private WritableUpgradeFileStore upgradeFileStore;
