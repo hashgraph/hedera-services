@@ -17,7 +17,6 @@
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.evm.Evm38ValidationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
-import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSV2SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.staking.StakingSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
@@ -47,7 +46,6 @@ public class SequentialSuites {
         return (Supplier<HapiSuite>[]) new Supplier[] {
             SpecialAccountsAreExempted::new,
             PrivilegedOpsSuite::new,
-            ContractBurnHTSV2SecurityModelSuite::new,
             TraceabilitySuite::new,
             LeakyContractTestsSuite::new,
             LeakyCryptoTestsSuite::new,

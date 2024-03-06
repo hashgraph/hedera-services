@@ -92,12 +92,12 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
             "FungibleTokenHasTheContractIdOnDelegateCall";
 
     public static void main(final String... args) {
-        new ContractBurnHTSV2SecurityModelSuite().runSuiteSync();
+        new ContractBurnHTSV2SecurityModelSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     public List<HapiSpec> getSpecsInSuite() {
