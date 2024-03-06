@@ -81,7 +81,7 @@ final class FileSchemaTest {
                 networkInfo,
                 new GenesisRecordsConsensusHook(),
                 mock(WritableEntityIdStore.class),
-                CURRENT_VERSION));
+                null));
 
         // Then the new state has empty bytes for files 151-158 and proper values
         final var files = newStates.<FileID, File>get(FileServiceImpl.BLOBS_KEY);

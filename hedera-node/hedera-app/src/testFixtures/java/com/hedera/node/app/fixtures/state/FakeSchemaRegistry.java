@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.fixtures.state;
 
+import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -83,7 +85,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
 
                 @Override
                 public SemanticVersion previousVersion() {
-                    return null;
+                    return CURRENT_VERSION;
                 }
 
                 @NonNull

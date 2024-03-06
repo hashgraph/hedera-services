@@ -276,7 +276,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             solvencyPreCheck,
             childRecordFinalizer,
             networkUtilizationManager,
-            synchronizedThrottleAccumulator
+            synchronizedThrottleAccumulator,
+            platformState
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];

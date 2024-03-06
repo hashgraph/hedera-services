@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
-import static java.time.Instant.EPOCH;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
@@ -25,14 +24,15 @@ import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides all the needed actions that need to take place during upgrade
  */
 public class FreezeUpgradeActions extends ReadableFreezeUpgradeActions {
+    private static final Logger log = LogManager.getLogger(FreezeUpgradeActions.class);
     private final WritableFreezeStore freezeStore;
-    public static Timestamp EPOCH_FREEZE_TIME =
-            Timestamp.newBuilder().seconds(EPOCH.getEpochSecond()).build();
 
     public FreezeUpgradeActions(
             @NonNull final NetworkAdminConfig adminServiceConfig,

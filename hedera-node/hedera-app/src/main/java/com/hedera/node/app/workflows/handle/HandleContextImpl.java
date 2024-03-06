@@ -205,7 +205,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            final PlatformState platformState) {
+            @NonNull final PlatformState platformState) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
