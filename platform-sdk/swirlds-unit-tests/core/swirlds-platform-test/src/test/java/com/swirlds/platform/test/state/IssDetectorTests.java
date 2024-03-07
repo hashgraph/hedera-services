@@ -182,33 +182,34 @@ class IssDetectorTests {
         // in subsequent rounds
         final List<EventImpl> signatureEvents = new ArrayList<>();
 
-        issDetectorTestHelper.overridingState(mockState(0, randomHash()));
+        long currentRound = 0;
 
-        final int rounds = 1_000;
-        for (long roundNumber = 1; roundNumber <= rounds; roundNumber++) {
+        issDetectorTestHelper.overridingState(mockState(currentRound, randomHash()));
+
+        for (currentRound++; currentRound <= 1_000; currentRound++) {
             final Hash roundHash = randomHash(random);
 
             // create signature transactions for this round
-            signatureEvents.addAll(generateEventsWithConsistentSignatures(addressBook, roundNumber, roundHash));
+            signatureEvents.addAll(generateEventsWithConsistentSignatures(addressBook, currentRound, roundHash));
 
             // randomly select half of unsubmitted signature events to include in this round
             final List<EventImpl> eventsToInclude = selectRandomEvents(random, signatureEvents);
-            final ConsensusRound consensusRound = createRoundWithSignatureEvents(roundNumber, eventsToInclude);
+            final ConsensusRound consensusRound = createRoundWithSignatureEvents(currentRound, eventsToInclude);
 
             issDetectorTestHelper.handleStateAndRound(
-                    new StateAndRound(mockState(roundNumber, roundHash), consensusRound));
+                    new StateAndRound(mockState(currentRound, roundHash), consensusRound));
         }
 
         // Add all remaining unsubmitted signature events
-        final ConsensusRound consensusRound = createRoundWithSignatureEvents(1001, signatureEvents);
+        final ConsensusRound consensusRound = createRoundWithSignatureEvents(currentRound, signatureEvents);
         issDetectorTestHelper.handleStateAndRound(
-                new StateAndRound(mockState(1001, randomHash(random)), consensusRound));
+                new StateAndRound(mockState(currentRound, randomHash(random)), consensusRound));
 
         assertEquals(0, issDetectorTestHelper.getSelfIssCount(), "there should be no ISS notifications");
         assertEquals(
                 0,
                 issDetectorTestHelper.getCatastrophicIssCount(),
-                "there should be no catastrophic ISS " + "notifications");
+                "there should be no catastrophic ISS notifications");
         assertEquals(0, issDetectorTestHelper.getIssNotificationList().size(), "there should be no ISS notifications");
     }
 
@@ -297,23 +298,25 @@ class IssDetectorTests {
                 DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
-        issDetectorTestHelper.overridingState(mockState(0L, selfHashes.getFirst()));
+        long currentRound = 0;
+
+        issDetectorTestHelper.overridingState(mockState(currentRound, selfHashes.getFirst()));
 
         // signature events are generated for each round when that round is handled, and then are included randomly
         // in subsequent rounds
         final List<EventImpl> signatureEvents =
                 new ArrayList<>(generateEventsContainingSignatures(0, roundData.getFirst()));
 
-        for (long round = 1; round < roundsNonAncient; round++) {
+        for (currentRound++; currentRound < roundsNonAncient; currentRound++) {
             // create signature transactions for this round
-            signatureEvents.addAll(generateEventsContainingSignatures(round, roundData.get((int) round)));
+            signatureEvents.addAll(generateEventsContainingSignatures(currentRound, roundData.get((int) currentRound)));
 
             // randomly select half of unsubmitted signature events to include in this round
             final List<EventImpl> eventsToInclude = selectRandomEvents(random, signatureEvents);
 
-            final ConsensusRound consensusRound = createRoundWithSignatureEvents(round, eventsToInclude);
+            final ConsensusRound consensusRound = createRoundWithSignatureEvents(currentRound, eventsToInclude);
             issDetectorTestHelper.handleStateAndRound(
-                    new StateAndRound(mockState(round, selfHashes.get((int) round)), consensusRound));
+                    new StateAndRound(mockState(currentRound, selfHashes.get((int) currentRound)), consensusRound));
         }
 
         // Add all remaining signature events
