@@ -162,13 +162,8 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
 
     @Override
     public long getNextPathToSend() throws InterruptedException {
-        Long result;
-        if (pendingPhase1Nodes.get() > 0) {
-            result = phase1Paths.pollFirst();
-            if (result == null) {
-                return PATH_NOT_AVAILABLE_YET;
-            }
-        } else {
+        Long result = phase1Paths.pollFirst();
+        if (result == null) {
             result = getNextLeafPath();
         }
         view.applySendBackpressure();
