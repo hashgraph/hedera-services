@@ -89,9 +89,10 @@ public enum Level {
      * The method returns the name of the logging level as a string with a fixed size of 5 characters.
      * <p>
      * e.g:
+     * <ul>
      * <li>If the logging level is {@code OFF}, the method returns "OFF  ".
      * <li>If the logging level is none of the predefined levels, the method returns "     ".
-     *
+     *</ul>
      * @return The name of the logging level with a fixed size.
      */
     public String nameWithFixedSize() {
