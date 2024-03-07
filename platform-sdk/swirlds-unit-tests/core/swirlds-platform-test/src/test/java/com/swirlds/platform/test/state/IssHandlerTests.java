@@ -26,13 +26,13 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.test.fixtures.SimpleScratchpad;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +48,7 @@ class IssHandlerTests {
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
@@ -81,7 +81,7 @@ class IssHandlerTests {
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
@@ -109,7 +109,7 @@ class IssHandlerTests {
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
@@ -139,7 +139,7 @@ class IssHandlerTests {
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
@@ -169,7 +169,7 @@ class IssHandlerTests {
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
@@ -205,7 +205,7 @@ class IssHandlerTests {
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
@@ -235,7 +235,7 @@ class IssHandlerTests {
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
@@ -271,7 +271,7 @@ class IssHandlerTests {
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
