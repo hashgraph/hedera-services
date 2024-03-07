@@ -271,7 +271,11 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         }
     }
 
-    private FormattedLinePrinter getLinePrinter() {
+    /**
+     * Gets with lazy initialization the field an instance of {@link FormattedLinePrinter}
+     * @return a {@link FormattedLinePrinter} instance
+     */
+    private @NonNull FormattedLinePrinter getLinePrinter() {
         if (linePrinter.get() == null) {
             linePrinter.compareAndSet(null, new FormattedLinePrinter(false));
         }
