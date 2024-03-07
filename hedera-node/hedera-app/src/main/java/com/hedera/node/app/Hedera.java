@@ -112,6 +112,8 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
+import com.swirlds.platform.listeners.ReconnectCompleteListener;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -585,9 +587,9 @@ public final class Hedera implements SwirldMain {
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
         try {
             switch (trigger) {
-                case GENESIS -> genesis(state);
-                case RECONNECT -> reconnect(state, deserializedVersion);
-                case RESTART, EVENT_STREAM_RECOVERY -> restart(state, deserializedVersion, trigger);
+                case GENESIS -> genesis(state, platformState);
+                case RECONNECT -> reconnect(state, deserializedVersion, platformState);
+                case RESTART, EVENT_STREAM_RECOVERY -> restart(state, deserializedVersion, trigger, platformState);
             }
         } catch (final Throwable th) {
             logger.fatal("Critical failure during initialization", th);
@@ -760,8 +762,6 @@ public final class Hedera implements SwirldMain {
                     }
                 }
             });
-
-            // TBD: notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
             // The main job of the reconnect listener (com.hedera.node.app.service.mono.state.logic.ReconnectListener)
             // is to log some output (including hashes from the tree for the main state per service) and then to
             // "catchUpOnMissedSideEffects". This last part worries me, because it looks like it invades into the space
@@ -772,13 +772,9 @@ public final class Hedera implements SwirldMain {
             // ANSWER: We need to look and see if there is an update to the upgrade file that happened on other nodes
             // that we reconnected with. In that case, we need to save the file to disk. Similar to how we have to hook
             // for all the other special files on restart / genesis / reconnect.
-
-            // TBD: notifications.register(StateWriteToDiskCompleteListener.class,
-            // It looks like this notification is handled by
-            // com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener
-            // which looks like it is related to freeze / upgrade.
-            // daggerApp.stateWriteToDiskListener());
-            // see issue #8660
+            notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
+            // This notifaction is needed for freeze / upgrade.
+            notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
 
             // TBD: notifications.register(NewSignedStateListener.class, daggerApp.newSignedStateListener());
             // com.hedera.node.app.service.mono.state.exports.NewSignedStateListener
@@ -896,6 +892,7 @@ public final class Hedera implements SwirldMain {
     public void onHandleConsensusRound(
             @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final HederaState state) {
         daggerApp.workingStateAccessor().setHederaState(state);
+        daggerApp.platformStateAccessor().setPlatformState(platformState);
         daggerApp.handleWorkflow().handleRound(state, platformState, round);
     }
 
@@ -930,12 +927,12 @@ public final class Hedera implements SwirldMain {
     /**
      * Implements the code flow for initializing the state of a new Hedera node with NO SAVED STATE.
      */
-    private void genesis(@NonNull final MerkleHederaState state) {
+    private void genesis(@NonNull final MerkleHederaState state, @NonNull final PlatformState platformState) {
         logger.debug("Genesis Initialization");
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null, GENESIS);
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
-        initializeDagger(state, GENESIS);
+        initializeDagger(state, GENESIS, platformState);
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
         // from information held in state (especially those in special files).
@@ -955,8 +952,9 @@ public final class Hedera implements SwirldMain {
     private void restart(
             @NonNull final MerkleHederaState state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
-            @NonNull final InitTrigger trigger) {
-        initializeForTrigger(state, deserializedVersion, trigger);
+            @NonNull final InitTrigger trigger,
+            @NonNull final PlatformState platformState) {
+        initializeForTrigger(state, deserializedVersion, trigger, platformState);
     }
 
     /*==================================================================================================================
@@ -968,18 +966,23 @@ public final class Hedera implements SwirldMain {
     /**
      * The initialization needed for reconnect. It constructs all schemas appropriately.
      * These are exactly the same steps done as restart trigger.
-     * @param state The current state
+     *
+     * @param state               The current state
      * @param deserializedVersion version of deserialized state
+     * @param platformState       platform state
      */
     private void reconnect(
-            @NonNull final MerkleHederaState state, @Nullable final HederaSoftwareVersion deserializedVersion) {
-        initializeForTrigger(state, deserializedVersion, RECONNECT);
+            @NonNull final MerkleHederaState state,
+            @Nullable final HederaSoftwareVersion deserializedVersion,
+            @NonNull final PlatformState platformState) {
+        initializeForTrigger(state, deserializedVersion, RECONNECT, platformState);
     }
 
     private void initializeForTrigger(
             @NonNull final MerkleHederaState state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
-            @NonNull final InitTrigger trigger) {
+            @NonNull final InitTrigger trigger,
+            @NonNull final PlatformState platformState) {
         logger.info(trigger + " Initialization");
 
         // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
@@ -1002,7 +1005,7 @@ public final class Hedera implements SwirldMain {
         }
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
-        initializeDagger(state, trigger);
+        initializeDagger(state, trigger, platformState);
 
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
@@ -1020,7 +1023,10 @@ public final class Hedera implements SwirldMain {
     *
     =================================================================================================================*/
 
-    private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
+    private void initializeDagger(
+            @NonNull final MerkleHederaState state,
+            @NonNull final InitTrigger trigger,
+            final PlatformState platformState) {
         logger.debug("Initializing dagger");
         final var selfId = platform.getSelfId();
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
@@ -1042,6 +1048,7 @@ public final class Hedera implements SwirldMain {
                 .build();
 
         daggerApp.workingStateAccessor().setHederaState(state);
+        daggerApp.platformStateAccessor().setPlatformState(platformState);
     }
 
     private boolean isDowngrade(
