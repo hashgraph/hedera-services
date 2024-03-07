@@ -18,11 +18,9 @@ package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_IMMEDIATE_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_TELEMETRY_MARKER;
-import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.FREEZE_ABORTED_MARKER;
-import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.FREEZE_SCHEDULED_MARKER;
+import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.NOW_FROZEN_MARKER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
@@ -34,12 +32,15 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.zip.ZipEntry;
@@ -52,9 +53,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
-class FreezeUpgradeActionsTest {
+class ReadableFreezeUpgradeActionsTest {
     private static final Timestamp then =
             Timestamp.newBuilder().seconds(1_234_567L).nanos(890).build();
+    private Path noiseFileLoc;
     private Path noiseSubFileLoc;
     private Path zipArchivePath; // path to valid.zip test zip file (in zipSourceDir directory)
 
@@ -73,17 +75,15 @@ class FreezeUpgradeActionsTest {
     @LoggingTarget
     private LogCaptor logCaptor;
 
-    private FreezeUpgradeActions subject;
-
-    // Since all logs are moved to base class
     @LoggingSubject
-    private ReadableFreezeUpgradeActions loggingSubject;
+    private ReadableFreezeUpgradeActions subject;
 
     @Mock
     private WritableUpgradeFileStore upgradeFileStore;
 
     @BeforeEach
     void setUp() throws IOException {
+        noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
         final Executor freezeExectuor = new ForkJoinPool(
@@ -105,56 +105,66 @@ class FreezeUpgradeActionsTest {
     }
 
     @Test
-    void setsExpectedFreezeAndWritesMarkerForFreezeUpgrade() throws IOException {
-        rmIfPresent(FREEZE_SCHEDULED_MARKER);
+    void complainsLoudlyWhenUnableToUnzipArchive() {
+        rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
-        subject.scheduleFreezeUpgradeAt(then);
+        final Bytes invalidArchive = Bytes.wrap("Not a valid zip archive".getBytes(StandardCharsets.UTF_8));
+        subject.extractSoftwareUpgrade(invalidArchive).join();
 
-        verify(freezeStore).freezeTime(then);
+        assertThat(logCaptor.errorLogs())
+                .anyMatch(l -> l.startsWith("Failed to unzip archive for NMT consumption java.io.IOException:" + " "));
+        assertThat(logCaptor.errorLogs())
+                .anyMatch(l -> l.equals("Manual remediation may be necessary to avoid node ISS"));
 
-        assertMarkerCreated(FREEZE_SCHEDULED_MARKER, then);
+        assertThat(new File(zipOutputDir, EXEC_IMMEDIATE_MARKER)).doesNotExist();
     }
 
     @Test
-    void setsExpectedFreezeOnlyForFreezeOnly() {
-        rmIfPresent(FREEZE_SCHEDULED_MARKER);
-
-        subject.scheduleFreezeOnlyAt(then);
-
-        verify(freezeStore).freezeTime(then);
-    }
-
-    @Test
-    void nullsOutDualOnAborting() throws IOException {
-        rmIfPresent(FREEZE_ABORTED_MARKER);
+    void preparesForUpgrade() throws IOException {
+        setupNoiseFiles();
+        rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
-        subject.abortScheduledFreeze();
+        final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
+        subject.extractSoftwareUpgrade(realArchive).join();
 
-        verify(freezeStore).freezeTime(Timestamp.DEFAULT);
-
-        assertMarkerCreated(FREEZE_ABORTED_MARKER, Timestamp.DEFAULT);
+        assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
     }
 
     @Test
-    void canStillWriteMarkersEvenIfDirDoesntExist() throws IOException {
-        final Path otherMarkerFilesLoc = noiseSubFileLoc;
-        rmIfPresent(otherMarkerFilesLoc, FREEZE_ABORTED_MARKER);
-        final var d = otherMarkerFilesLoc.toFile();
-        if (d.exists()) {
-            assertThat(d.delete()).isTrue();
-        }
+    void upgradesTelemetry() throws IOException {
+        rmIfPresent(EXEC_TELEMETRY_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(otherMarkerFilesLoc.toString());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
-        subject.abortScheduledFreeze();
+        final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
+        subject.extractTelemetryUpgrade(realArchive, then).join();
 
-        verify(freezeStore).freezeTime(Timestamp.DEFAULT);
+        assertMarkerCreated(EXEC_TELEMETRY_MARKER, then);
+    }
 
-        assertMarkerCreated(FREEZE_ABORTED_MARKER, Timestamp.DEFAULT, otherMarkerFilesLoc);
+    @Test
+    void externalizesFreeze() throws IOException {
+        rmIfPresent(NOW_FROZEN_MARKER);
+
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(freezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
+
+        subject.externalizeFreezeIfUpgradePending();
+
+        assertMarkerCreated(NOW_FROZEN_MARKER, null);
+    }
+
+    @Test
+    void determinesIfFreezeIsScheduled() {
+        assertThat(subject.isFreezeScheduled()).isFalse();
+
+        given(freezeStore.freezeTime()).willReturn(then);
+
+        assertThat(subject.isFreezeScheduled()).isTrue();
     }
 
     private void rmIfPresent(final String file) {
@@ -199,11 +209,24 @@ class FreezeUpgradeActionsTest {
         } else {
             assertThat(logCaptor.infoLogs()).anyMatch(l -> (l.contains("Wrote marker " + filePath)));
         }
-        if (when != null && !when.equals(Timestamp.DEFAULT)) {
+        if (when != null) {
             final var writtenEpochSecond = Long.parseLong(contents);
             assertThat(when.seconds()).isEqualTo(writtenEpochSecond);
         } else {
             assertThat(contents).isEqualTo(FreezeUpgradeActions.MARK);
         }
+    }
+
+    private void setupNoiseFiles() throws IOException {
+        Files.write(
+                noiseFileLoc,
+                List.of("There, the eyes are", "Sunlight on a broken column", "There, is a tree swinging"));
+        Files.write(
+                noiseSubFileLoc,
+                List.of(
+                        "And voices are",
+                        "In the wind's singing",
+                        "More distant and more solemn",
+                        "Than a fading star"));
     }
 }

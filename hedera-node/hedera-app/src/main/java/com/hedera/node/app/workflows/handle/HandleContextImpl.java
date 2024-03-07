@@ -96,6 +96,7 @@ import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -148,6 +149,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private AttributeValidator attributeValidator;
     private ExpiryValidator expiryValidator;
     private ExchangeRateInfo exchangeRateInfo;
+    private PlatformState platformState;
 
     /**
      * Constructs a {@link HandleContextImpl}.
@@ -175,6 +177,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param childRecordFinalizer The {@link ChildRecordFinalizer} used to finalize child records
      * @param networkUtilizationManager The {@link NetworkUtilizationManager} used to manage the tracking of backend network throttling
      * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage the tracking of frontend network throttling
+     * @param platformState The {@link PlatformState} of the node
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -201,7 +204,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
-            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
+            @NonNull final PlatformState platformState) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -253,6 +257,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
+        this.platformState = requireNonNull(platformState, "platformState must not be null");
     }
 
     private WrappedHederaState current() {
@@ -718,7 +723,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 solvencyPreCheck,
                 childRecordFinalizer,
                 networkUtilizationManager,
-                synchronizedThrottleAccumulator);
+                synchronizedThrottleAccumulator,
+                platformState);
 
         // in order to work correctly isSuperUser(), we need to keep track of top level payer in child context
         childContext.setTopLevelPayer(topLevelPayer);
@@ -1010,5 +1016,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     private void setTopLevelPayer(@NonNull AccountID topLevelPayer) {
         this.topLevelPayer = requireNonNull(topLevelPayer, "payer must not be null");
+    }
+
+    @Nullable
+    @Override
+    public Instant freezeTime() {
+        return platformState.getFreezeTime();
     }
 }

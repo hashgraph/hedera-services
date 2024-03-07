@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -97,7 +98,8 @@ class WritableFreezeStoreTest {
         store.updateFileHash(Bytes.wrap("test hash"));
         assertEquals(Bytes.wrap("test hash"), store.updateFileHash());
 
-        store.updateFileHash(null);
-        assertNull(store.updateFileHash());
+        // test with file hash set
+        assertThatThrownBy(() -> store.updateFileHash(null)).isInstanceOf(NullPointerException.class);
+        assertEquals(Bytes.wrap("test hash"), store.updateFileHash());
     }
 }
