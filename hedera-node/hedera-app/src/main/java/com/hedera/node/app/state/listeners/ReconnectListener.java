@@ -73,8 +73,7 @@ public class ReconnectListener implements ReconnectCompleteListener {
             final var upgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
             final var upgradeActions =
                     new ReadableFreezeUpgradeActions(networkAdminConfig, freezeStore, executor, upgradeFileStore);
-            upgradeActions.catchUpOnMissedSideEffects(
-                    platformStateAccessor.getPlatformState().getFreezeTime());
+            upgradeActions.catchUpOnMissedSideEffects(platformStateAccessor.getPlatformState());
         }
     }
 }

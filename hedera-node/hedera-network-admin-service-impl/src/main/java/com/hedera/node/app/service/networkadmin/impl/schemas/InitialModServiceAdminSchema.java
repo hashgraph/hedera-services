@@ -19,11 +19,13 @@ package com.hedera.node.app.service.networkadmin.impl.schemas;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,6 +38,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class InitialModServiceAdminSchema extends Schema {
     private static final Logger log = LogManager.getLogger(InitialModServiceAdminSchema.class);
+    private static MerkleNetworkContext mnc;
 
     public InitialModServiceAdminSchema(@NonNull final SemanticVersion version) {
         super(version);
@@ -47,8 +50,7 @@ public class InitialModServiceAdminSchema extends Schema {
     public Set<StateDefinition> statesToCreate() {
         return Set.of(
                 StateDefinition.singleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY, ProtoBytes.PROTOBUF),
-                StateDefinition.singleton(FreezeServiceImpl.FREEZE_TIME_KEY, Timestamp.PROTOBUF),
-                StateDefinition.singleton(FreezeServiceImpl.LAST_FROZEN_TIME_KEY, Timestamp.PROTOBUF));
+                StateDefinition.singleton(FreezeServiceImpl.FREEZE_TIME_KEY, Timestamp.PROTOBUF));
     }
 
     @Override
@@ -61,15 +63,16 @@ public class InitialModServiceAdminSchema extends Schema {
         final var upgradeFileHashKeyState =
                 ctx.newStates().<ProtoBytes>getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY);
         final var freezeTimeKeyState = ctx.newStates().<Timestamp>getSingleton(FreezeServiceImpl.FREEZE_TIME_KEY);
-        final var lastFrozenTimeKeyState =
-                ctx.newStates().<Timestamp>getSingleton(FreezeServiceImpl.LAST_FROZEN_TIME_KEY);
 
-        if (isGenesis) {
+        if (isGenesis || mnc != null) {
             upgradeFileHashKeyState.put(ProtoBytes.DEFAULT);
             freezeTimeKeyState.put(Timestamp.DEFAULT);
-            lastFrozenTimeKeyState.put(Timestamp.DEFAULT);
         }
 
         log.info("BBM: no migration actions necessary for admin service");
+    }
+
+    public static void setFs(@Nullable final MerkleNetworkContext mn) {
+        mnc = mn;
     }
 }
