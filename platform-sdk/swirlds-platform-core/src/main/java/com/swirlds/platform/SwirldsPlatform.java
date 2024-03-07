@@ -76,14 +76,13 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
-import com.swirlds.platform.dispatch.DispatchBuilder;
-import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -149,7 +148,6 @@ import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.SystemExitCode;
@@ -166,7 +164,7 @@ import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.util.HashLogger;
-import com.swirlds.platform.util.PlatformComponents;
+import com.swirlds.platform.util.ThingsToStart;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
@@ -245,9 +243,9 @@ public class SwirldsPlatform implements Platform {
     private final Clearable clearAllPipelines;
 
     /**
-     * All components that need to be started or that have dispatch observers.
+     * All things that need to be started when the platform is started.
      */
-    private final PlatformComponents components;
+    private final ThingsToStart thingsToStart;
 
     /**
      * For passing notifications between the platform and the application.
@@ -346,17 +344,12 @@ public class SwirldsPlatform implements Platform {
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
         final Time time = Time.getCurrent();
 
-        final DispatchBuilder dispatchBuilder =
-                new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
-
-        components = new PlatformComponents(dispatchBuilder);
+        thingsToStart = new ThingsToStart();
 
         // FUTURE WORK: use a real thread manager here
         final ThreadManager threadManager = getStaticThreadManager();
 
         notificationEngine = NotificationEngine.buildEngine(threadManager);
-
-        dispatchBuilder.registerObservers(this);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
@@ -372,8 +365,10 @@ public class SwirldsPlatform implements Platform {
             notificationEngine.dispatch(PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(s));
             emergencyState.platformStatusChanged(s);
         };
-        platformStatusManager =
-                components.add(new PlatformStatusManager(platformContext, time, threadManager, statusChangeConsumer));
+        platformStatusManager = thingsToStart.add(
+                new PlatformStatusManager(platformContext, time, threadManager, statusChangeConsumer));
+
+        thingsToStart.add(Objects.requireNonNull(recycleBin));
 
         this.metrics = platformContext.getMetrics();
 
@@ -384,8 +379,6 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager::getCurrentStatus));
 
         registerAddressBookMetrics(metrics, currentAddressBook, selfId);
-
-        components.add(Objects.requireNonNull(recycleBin));
 
         final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
@@ -489,7 +482,7 @@ public class SwirldsPlatform implements Platform {
         final LatestCompleteStateNexus latestCompleteState =
                 new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
-        platformWiring = components.add(new PlatformWiring(platformContext));
+        platformWiring = thingsToStart.add(new PlatformWiring(platformContext));
 
         final boolean useOldStyleIntakeQueue = eventConfig.useOldStyleIntakeQueue();
 
@@ -502,7 +495,7 @@ public class SwirldsPlatform implements Platform {
                     .setHandler(event -> platformWiring.getGossipEventInput().put(event))
                     .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                     .build();
-            components.add(oldStyleIntakeQueue);
+            thingsToStart.add(oldStyleIntakeQueue);
 
         } else {
             oldStyleIntakeQueue = null;
@@ -536,10 +529,7 @@ public class SwirldsPlatform implements Platform {
                 () -> latestImmutableState.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
 
-        components.add(stateManagementComponent);
-
-        // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
-        components.add(new Shutdown());
+        thingsToStart.add(stateManagementComponent);
 
         final Address address = getSelfAddress();
         final String eventStreamManagerName;
@@ -605,7 +595,7 @@ public class SwirldsPlatform implements Platform {
             stateAndRound.reservedSignedState().close();
         };
 
-        stateHashSignQueue = components.add(new QueueThreadConfiguration<StateAndRound>(threadManager)
+        stateHashSignQueue = thingsToStart.add(new QueueThreadConfiguration<StateAndRound>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("state_hash_sign")
@@ -634,7 +624,7 @@ public class SwirldsPlatform implements Platform {
 
         final InternalEventValidator internalEventValidator = new InternalEventValidator(
                 platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
-        final EventDeduplicator eventDeduplicator = new EventDeduplicator(platformContext, intakeEventCounter);
+        final EventDeduplicator eventDeduplicator = new StandardEventDeduplicator(platformContext, intakeEventCounter);
         final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(
                 platformContext,
                 time,
@@ -798,7 +788,7 @@ public class SwirldsPlatform implements Platform {
             platformWiring.getIssDetectorWiring().overridingState().put(initialState.reserve("initialize issDetector"));
 
             // We don't want to invoke these callbacks until after we are starting up.
-            components.add((Startable) () -> {
+            thingsToStart.add((Startable) () -> {
                 // If we loaded from disk then call the appropriate dispatch.
                 // Let the app know that a state was loaded.
                 notificationEngine.dispatch(
@@ -823,7 +813,7 @@ public class SwirldsPlatform implements Platform {
                         Pair.of(transactionPool, "transactionPool")));
 
         if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {
-            components.add(new JvmAnchor(threadManager));
+            thingsToStart.add(new JvmAnchor(threadManager));
         }
 
         // To be removed once the GUI component is better integrated with the platform.
@@ -1048,7 +1038,7 @@ public class SwirldsPlatform implements Platform {
     public void start() {
         logger.info(STARTUP.getMarker(), "Starting platform {}", selfId);
 
-        components.start();
+        thingsToStart.start();
 
         metrics.start();
 
@@ -1066,7 +1056,7 @@ public class SwirldsPlatform implements Platform {
      * </ul>
      */
     public void performPcesRecovery() {
-        components.start();
+        thingsToStart.start();
 
         replayPreconsensusEvents();
         try (final ReservedSignedState reservedState = latestImmutableState.getState("Get PCES recovery state")) {
