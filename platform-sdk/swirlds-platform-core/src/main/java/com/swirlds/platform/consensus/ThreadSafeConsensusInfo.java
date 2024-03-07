@@ -29,7 +29,7 @@ import org.apache.logging.log4j.Logger;
 public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberProvider {
     private static final Logger LOG = LogManager.getLogger(ThreadSafeConsensusInfo.class);
 
-    private final ConsensusConfig config;
+    protected final ConsensusConfig config;
     private final SequentialRingBuffer<MinimumJudgeInfo> storage;
 
     /**
