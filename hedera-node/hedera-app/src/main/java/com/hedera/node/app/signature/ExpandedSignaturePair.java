@@ -17,7 +17,6 @@
 package com.hedera.node.app.signature;
 
 import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey;
-import static com.hedera.node.app.signature.impl.SignatureExpanderImpl.asKey;
 import static com.hedera.node.app.signature.impl.SignatureExpanderImpl.decompressKey;
 
 import com.hedera.hapi.node.base.Key;
@@ -60,12 +59,18 @@ public record ExpandedSignaturePair(
     public static @Nullable ExpandedSignaturePair maybeFrom(
             @NonNull final Bytes compressedEcdsaPubKey, @NonNull final SignaturePair sigPair) {
         final var ecdsaPubKey = decompressKey(compressedEcdsaPubKey);
-        return ecdsaPubKey != null ? from(ecdsaPubKey, sigPair) : null;
+        return ecdsaPubKey != null ? from(ecdsaPubKey, compressedEcdsaPubKey, sigPair) : null;
     }
 
     private static @NonNull ExpandedSignaturePair from(
-            @NonNull final Bytes ecdsaPubKey, @NonNull final SignaturePair sigPair) {
+            @NonNull final Bytes ecdsaPubKey,
+            @NonNull final Bytes compressedEcdsaPubKey,
+            @NonNull final SignaturePair sigPair) {
         final var evmAddress = extractEvmAddressFromDecompressedECDSAKey(ecdsaPubKey.toByteArray());
-        return new ExpandedSignaturePair(asKey(sigPair), ecdsaPubKey, Bytes.wrap(evmAddress), sigPair);
+        return new ExpandedSignaturePair(
+                Key.newBuilder().ecdsaSecp256k1(compressedEcdsaPubKey).build(),
+                ecdsaPubKey,
+                Bytes.wrap(evmAddress),
+                sigPair);
     }
 }
