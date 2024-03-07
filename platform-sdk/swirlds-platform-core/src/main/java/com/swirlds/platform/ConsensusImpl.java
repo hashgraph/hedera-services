@@ -25,7 +25,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.consensus.AncestorSearch;
 import com.swirlds.platform.consensus.CandidateWitness;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.ConsensusRounds;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -35,7 +34,6 @@ import com.swirlds.platform.consensus.CountingVote;
 import com.swirlds.platform.consensus.InitJudges;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.consensus.RoundElections;
-import com.swirlds.platform.consensus.SequentialRingBuffer;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -202,15 +200,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             @NonNull final PlatformContext platformContext,
             @NonNull final ConsensusMetrics consensusMetrics,
             @NonNull final AddressBook addressBook) {
-        super(
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                new SequentialRingBuffer<>(
-                        ConsensusConstants.ROUND_FIRST,
-                        platformContext
-                                        .getConfiguration()
-                                        .getConfigData(ConsensusConfig.class)
-                                        .roundsExpired()
-                                * 2));
+        super(platformContext);
         this.consensusMetrics = consensusMetrics;
 
         // until we implement address book changes, we will just use the use this address book
