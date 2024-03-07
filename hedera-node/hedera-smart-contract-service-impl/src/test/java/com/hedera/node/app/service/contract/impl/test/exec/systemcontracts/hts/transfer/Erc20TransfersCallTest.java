@@ -42,6 +42,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -71,6 +72,9 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
     @Mock
     private SystemContractGasCalculator systemContractGasCalculator;
 
+    @Mock
+    private SpecialRewardReceivers specialRewardReceivers;
+
     private Erc20TransfersCall subject;
 
     @Test
@@ -85,7 +89,8 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
                 verificationStrategy,
                 SENDER_ID,
                 addressIdConverter,
-                false);
+                false,
+                specialRewardReceivers);
 
         final var result = subject.execute(frame).fullResult().result();
 
@@ -176,7 +181,8 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
                 verificationStrategy,
                 SENDER_ID,
                 addressIdConverter,
-                false);
+                false,
+                specialRewardReceivers);
     }
 
     private Erc20TransfersCall subjectForTransferFrom(final long amount) {
@@ -190,6 +196,7 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
                 verificationStrategy,
                 SENDER_ID,
                 addressIdConverter,
-                false);
+                false,
+                specialRewardReceivers);
     }
 }

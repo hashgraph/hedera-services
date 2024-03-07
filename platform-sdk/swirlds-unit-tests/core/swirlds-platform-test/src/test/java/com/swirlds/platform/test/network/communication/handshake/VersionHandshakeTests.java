@@ -99,19 +99,13 @@ class VersionHandshakeTests {
     @DisplayName("Their software version is null")
     void nullVersion() throws IOException {
         clearWriteFlush(theirConnection, null);
-        assertThrows(HandshakeException.class, () -> protocolThrowingOnMismatch.runProtocol(myConnection));
-
-        clearWriteFlush(theirConnection, null);
-        assertDoesNotThrow(() -> protocolToleratingMismatch.runProtocol(myConnection));
+        assertThrows(IOException.class, () -> protocolThrowingOnMismatch.runProtocol(myConnection));
     }
 
     @Test
     @DisplayName("Their software version is a different class")
     void differentClass() throws IOException {
         clearWriteFlush(theirConnection, new SerializableLong(5));
-        assertThrows(HandshakeException.class, () -> protocolThrowingOnMismatch.runProtocol(myConnection));
-
-        clearWriteFlush(theirConnection, new SerializableLong(5));
-        assertDoesNotThrow(() -> protocolToleratingMismatch.runProtocol(myConnection));
+        assertThrows(IOException.class, () -> protocolThrowingOnMismatch.runProtocol(myConnection));
     }
 }

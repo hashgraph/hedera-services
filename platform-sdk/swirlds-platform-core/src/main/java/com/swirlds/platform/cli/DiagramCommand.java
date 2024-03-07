@@ -99,7 +99,7 @@ public final class DiagramCommand extends AbstractCommand {
         final PlatformContext platformContext = new DefaultPlatformContext(
                 configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
-        final PlatformWiring platformWiring = new PlatformWiring(platformContext, Time.getCurrent());
+        final PlatformWiring platformWiring = new PlatformWiring(platformContext);
 
         final ThreadManager threadManager = getStaticThreadManager();
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(threadManager);

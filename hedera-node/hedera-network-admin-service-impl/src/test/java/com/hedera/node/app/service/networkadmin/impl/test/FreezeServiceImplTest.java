@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UP
 import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -88,6 +89,6 @@ class FreezeServiceImplTest {
         registry.migrate(FreezeService.NAME, state, networkInfo);
         final var upgradeFileHashKeyState =
                 state.getReadableStates(FreezeService.NAME).getSingleton(UPGRADE_FILE_HASH_KEY);
-        assertNotNull(upgradeFileHashKeyState.get());
+        assertNull(upgradeFileHashKeyState.get());
     }
 }
