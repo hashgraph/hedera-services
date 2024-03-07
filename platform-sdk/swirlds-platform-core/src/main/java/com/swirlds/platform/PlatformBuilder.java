@@ -54,7 +54,6 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
@@ -232,8 +231,8 @@ public final class PlatformBuilder {
         // time this class is used.
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                stateConfig, new Shutdown()::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
+        final EmergencyRecoveryManager emergencyRecoveryManager =
+                new EmergencyRecoveryManager(stateConfig, basicConfig.getEmergencyRecoveryFileLoadDir());
 
         try (final ReservedSignedState initialState = getInitialState(
                 platformContext,
