@@ -374,7 +374,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @Override
                     public void migrate(@NonNull final MigrationContext ctx) {
                         assertThat(ctx).isNotNull();
-                        assertThat(ctx.previousStates().isEmpty()).isTrue();
+                        assertThat(ctx.previousVersion()).isNull();
                         assertThat(ctx.newStates().size()).isEqualTo(1);
                         final WritableKVState<String, String> fruit =
                                 ctx.newStates().get(FRUIT_STATE_KEY);

@@ -68,6 +68,7 @@ import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.config.data.AccountsConfig;
@@ -186,7 +187,7 @@ public class InitialModServiceTokenSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        final var isGenesis = ctx.previousStates().isEmpty();
+        final var isGenesis = ctx.previousVersion() == null;
         if (isGenesis) {
             createGenesisSchema(ctx);
         }
@@ -521,13 +522,7 @@ public class InitialModServiceTokenSchema extends Schema {
 
         // ---------- Balances Safety Check -------------------------
         // Aadd up the balances of all accounts, they must match 50,000,000,000 HBARs (config)
-        var totalBalance = 0L;
-        for (int i = 1; i < hederaConfig.firstUserEntity(); i++) {
-            final var account = accounts.get(asAccountId(i, hederaConfig));
-            if (account != null) {
-                totalBalance += account.tinybarBalance();
-            }
-        }
+        final var totalBalance = getTotalBalanceOfAllAccounts(accounts, hederaConfig);
         if (totalBalance != ledgerConfig.totalTinyBarFloat()) {
             throw new IllegalStateException("Total balance of all accounts does not match the total float: actual: "
                     + totalBalance + " vs expected: " + ledgerConfig.totalTinyBarFloat());
@@ -536,6 +531,29 @@ public class InitialModServiceTokenSchema extends Schema {
                 "Ledger float is {} tinyBars; {} modified accounts.",
                 totalBalance,
                 accounts.modifiedKeys().size());
+    }
+
+    /**
+     * Get the total balance of all accounts. Since we cannot iterate over the accounts in VirtualMap,
+     * we have to do this manually.
+     * @param accounts The accounts map
+     * @param hederaConfig The Hedera configuration
+     * @return The total balance of all accounts
+     */
+    public long getTotalBalanceOfAllAccounts(
+            @NonNull final WritableKVState<AccountID, Account> accounts, @NonNull final HederaConfig hederaConfig) {
+        long totalBalance = 0;
+        long i = 1; // Start with the first account ID
+        long totalAccounts = accounts.size();
+        do {
+            Account account = accounts.get(asAccountId(i, hederaConfig));
+            if (account != null) {
+                totalBalance += account.tinybarBalance();
+                totalAccounts--;
+            }
+            i++;
+        } while (totalAccounts > 0);
+        return totalBalance;
     }
 
     @VisibleForTesting
