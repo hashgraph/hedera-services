@@ -18,8 +18,10 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
@@ -39,12 +41,17 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
@@ -409,6 +416,76 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
+    }
+
+    @Test
+    void validateTopLevelAllowancesWithPayer() {
+        givenTxnWithAllowances();
+
+        final var allowance = AccountFungibleTokenAllowance.newBuilder()
+                .tokenId(fungibleTokenId)
+                .spenderId(ownerId)
+                .build();
+        ownerAccount =
+                ownerAccount.copyBuilder().tokenAllowances(List.of(allowance)).build();
+        readableAccounts =
+                emptyReadableAccountStateBuilder().value(ownerId, ownerAccount).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+
+        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+
+        Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
+    }
+
+    @Test
+    void validateTopLevelAllowancesWithAmount0() {
+        givenTxnWithAllowances();
+
+        final var allowance = AccountFungibleTokenAllowance.newBuilder()
+                .tokenId(fungibleTokenId)
+                .spenderId(spenderId)
+                .amount(0)
+                .build();
+        ownerAccount =
+                ownerAccount.copyBuilder().tokenAllowances(List.of(allowance)).build();
+        readableAccounts =
+                emptyReadableAccountStateBuilder().value(ownerId, ownerAccount).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+
+        given(handleContext.payer()).willReturn(spenderId);
+        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+
+        Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
+    }
+
+    @Test
+    void validateTopLevelAllowancesWithAmountLess() {
+        givenTxnWithAllowances();
+
+        final var allowance = AccountFungibleTokenAllowance.newBuilder()
+                .tokenId(fungibleTokenId)
+                .spenderId(spenderId)
+                .amount(10)
+                .build();
+        ownerAccount =
+                ownerAccount.copyBuilder().tokenAllowances(List.of(allowance)).build();
+        readableAccounts =
+                emptyReadableAccountStateBuilder().value(ownerId, ownerAccount).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+
+        given(handleContext.payer()).willReturn(spenderId);
+        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+
+        Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(AMOUNT_EXCEEDS_ALLOWANCE));
     }
 
     private HandleContext mockContext(final TransactionBody txn) {
