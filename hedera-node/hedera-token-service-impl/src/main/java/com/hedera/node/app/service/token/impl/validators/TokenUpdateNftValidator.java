@@ -16,15 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.token.TokenUpdateNftsTransactionBody;
-import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
@@ -34,23 +25,5 @@ public class TokenUpdateNftValidator {
     @Inject
     public TokenUpdateNftValidator(@NonNull final TokenAttributesValidator validator) {
         this.validator = validator;
-    }
-
-    public record ValidationResult(@NonNull Token token, @NonNull ResponseCodeEnum responseCodeEnum) {}
-
-    @NonNull
-    public ValidationResult validateSemantics(
-            @NonNull final HandleContext context, @NonNull final TokenUpdateNftsTransactionBody op) {
-
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        final var tokenId = op.tokenOrThrow();
-        final var token = getIfUsable(tokenId, tokenStore);
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-
-        // validate metadata
-        if (op.hasMetadata()) {
-            validator.validateTokenMetadata(op.metadata(), tokensConfig);
-        }
-        return new ValidationResult(token, OK);
     }
 }

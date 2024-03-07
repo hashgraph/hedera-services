@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -32,7 +33,7 @@ import com.hedera.hapi.node.token.TokenUpdateNftsTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
-import com.hedera.node.app.service.token.impl.validators.TokenUpdateNftValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -41,9 +42,10 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -52,12 +54,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenUpdateNftsHandler implements TransactionHandler {
-
-    private final TokenUpdateNftValidator tokenUpdateNftValidator;
+    private final TokenAttributesValidator validator;
 
     @Inject
-    public TokenUpdateNftsHandler(@NonNull final TokenUpdateNftValidator tokenUpdateNftValidator) {
-        this.tokenUpdateNftValidator = tokenUpdateNftValidator;
+    public TokenUpdateNftsHandler(@NonNull final TokenAttributesValidator validator) {
+        this.validator = validator;
     }
 
     @Override
@@ -65,17 +66,13 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.tokenUpdateNftsOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
+        validateTrue(!op.serialNumbers().isEmpty(), MISSING_SERIAL_NUMBERS);
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.body().tokenUpdateNftsOrThrow();
         pureChecks(context.body());
-        final var tokenId = op.tokenOrThrow();
-        final var tokenStore = context.createStore(ReadableTokenStore.class);
-        final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
-        if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
     }
 
     @Override
@@ -83,40 +80,32 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         requireNonNull(context);
         final var txnBody = context.body();
         final var op = txnBody.tokenUpdateNftsOrThrow();
-        final var tokenNftId = op.tokenOrThrow();
+        final var token = op.tokenOrThrow();
 
-        final var validationResult = tokenUpdateNftValidator.validateSemantics(context, op);
-        final var token = validationResult.token();
+        validateSemantics(context, op);
         final var nftStore = context.writableStore(WritableNftStore.class);
 
         // Wrap in Set to de-duplicate serial numbers
-        final var nftSerialNums = new ArrayList<>(new LinkedHashSet<>(op.serialNumbers()));
-        var nftCount = nftSerialNums.size();
-        validateTrue(nftCount <= nftStore.sizeOfState(), INVALID_TRANSACTION_BODY);
-        validateTrue(!nftSerialNums.isEmpty(), INVALID_TRANSACTION_BODY);
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        final var nftsAreEnabled = tokensConfig.nftsAreEnabled();
-        if (nftCount > 1) {
-            validateTrue(nftsAreEnabled, NOT_SUPPORTED);
-        }
-        updateNftMetadata(nftSerialNums, nftStore, tokenNftId, op);
+        final var nftSerialNums = new LinkedHashSet<>(op.serialNumbers());
+        validateTrue(nftSerialNums.size() <= nftStore.sizeOfState(), INVALID_NFT_ID);
+        updateNftMetadata(nftSerialNums, nftStore, token, op);
     }
 
     private void updateNftMetadata(
-            ArrayList<Long> nftSerialNums,
-            WritableNftStore nftStore,
-            TokenID tokenNftId,
-            TokenUpdateNftsTransactionBody op) {
+            @NonNull final Set<Long> nftSerialNums,
+            @NonNull final WritableNftStore nftStore,
+            @NonNull final TokenID tokenNftId,
+            @NonNull final TokenUpdateNftsTransactionBody op) {
+        final var hasMetadata = op.hasMetadata();
+        final var metadata = hasMetadata ? op.metadata() : Bytes.EMPTY;
         // Validate that the list of NFTs provided in txnBody exist in state
+        // and update the metadata for each NFT
         for (final Long nftSerialNumber : nftSerialNums) {
             validateTrue(nftSerialNumber > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
             final Nft nft = nftStore.get(tokenNftId, nftSerialNumber);
             validateTrue(nft != null, INVALID_NFT_ID);
-            // For now we are only supporting metadata updates to the individual NFTs
-            if (op.hasMetadata()) {
-                var updatedNft =
-                        nft.copyBuilder().metadata(op.metadataOrThrow()).build();
-                // Update the metadata in the listed NFTs
+            if (hasMetadata) {
+                var updatedNft = nft.copyBuilder().metadata(metadata).build();
                 nftStore.put(updatedNft);
             }
         }
@@ -134,5 +123,18 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var feeCalculator = feeContext.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
         feeCalculator.resetUsage();
         return feeCalculator.addBytesPerTransaction(serials.size()).calculate();
+    }
+
+    private void validateSemantics(
+            @NonNull final HandleContext context, @NonNull final TokenUpdateNftsTransactionBody op) {
+        final var tokenStore = context.readableStore(ReadableTokenStore.class);
+        final var tokenId = op.tokenOrThrow();
+        final var token = getIfUsable(tokenId, tokenStore);
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        // validate metadata
+        if (op.hasMetadata()) {
+            validator.validateTokenMetadata(op.metadata(), tokensConfig);
+        }
+        validateTrue(op.serialNumbers().size() <= tokensConfig.nftsMaxBatchSizeUpdate(), BATCH_SIZE_LIMIT_EXCEEDED);
     }
 }

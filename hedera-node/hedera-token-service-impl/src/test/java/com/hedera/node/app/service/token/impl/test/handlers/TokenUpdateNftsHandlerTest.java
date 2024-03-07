@@ -51,7 +51,6 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateNftsHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
-import com.hedera.node.app.service.token.impl.validators.TokenUpdateNftValidator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -101,7 +100,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        final TokenUpdateNftValidator validator = new TokenUpdateNftValidator(new TokenAttributesValidator());
+        final TokenAttributesValidator validator = new TokenAttributesValidator();
         subject = new TokenUpdateNftsHandler(validator);
         givenStoresAndConfig(handleContext);
         setUpTxnContext();

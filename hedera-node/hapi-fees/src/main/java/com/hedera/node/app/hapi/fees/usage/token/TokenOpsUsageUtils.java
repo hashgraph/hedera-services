@@ -36,12 +36,10 @@ import com.hedera.node.app.hapi.fees.usage.token.meta.TokenMintMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenPauseMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenUnpauseMeta;
-import com.hedera.node.app.hapi.fees.usage.token.meta.TokenUpdateNftsMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Function;
@@ -129,15 +127,6 @@ public enum TokenOpsUsageUtils {
     public TokenBurnMeta tokenBurnUsageFrom(final TransactionBody txn, final SubType subType) {
         final var op = txn.getTokenBurn();
         return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenBurnMeta::new);
-    }
-
-    public TokenUpdateNftsMeta tokenUpdateNftUsageFrom(final TransactionBody txn) {
-        final var op = txn.getTokenUpdateNfts();
-        return tokenUpdateNftUsageFrom(op, TOKEN_NON_FUNGIBLE_UNIQUE);
-    }
-
-    public TokenUpdateNftsMeta tokenUpdateNftUsageFrom(final TokenUpdateNftsTransactionBody op, final SubType subType) {
-        return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenUpdateNftsMeta::new);
     }
 
     public TokenWipeMeta tokenWipeUsageFrom(final TransactionBody txn) {
