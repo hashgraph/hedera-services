@@ -131,6 +131,16 @@ public class HapiUtils {
                 .build();
     }
 
+    public static Timestamp asTimestampUnchecked(@Nullable final Instant instant) {
+        if (instant == null) {
+            return Timestamp.DEFAULT;
+        }
+        return Timestamp.newBuilder()
+                .seconds(instant.getEpochSecond())
+                .nanos(instant.getNano())
+                .build();
+    }
+
     /** Converts the given {@link Timestamp} into an {@link Instant}. */
     public static Instant asInstant(@NonNull final Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());

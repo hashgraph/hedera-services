@@ -1008,15 +1008,15 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     @Nullable
-    MultiplierSources getMultiplierSources() {
+    public MultiplierSources getMultiplierSources() {
         return multiplierSources;
     }
 
-    FunctionalityThrottling getThrottling() {
+    public FunctionalityThrottling getThrottling() {
         return throttling;
     }
 
-    DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
+    public DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
         return gasThrottleUsageSnapshot;
     }
 
