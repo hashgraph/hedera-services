@@ -34,14 +34,15 @@ public class TcpFactory implements SocketFactory {
     }
 
     @Override
-    public ServerSocket createServerSocket(final byte[] ipAddress, final int port) throws IOException {
+    public @NonNull ServerSocket createServerSocket(final int port) throws IOException {
         final ServerSocket serverSocket = new ServerSocket();
-        SocketFactory.configureAndBind(serverSocket, socketConfig, ipAddress, port);
+        SocketFactory.configureAndBind(serverSocket, socketConfig, port);
         return serverSocket;
     }
 
     @Override
-    public Socket createClientSocket(final String hostname, final int port) throws IOException {
+    public @NonNull Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException {
+        Objects.requireNonNull(hostname);
         final Socket clientSocket = new Socket();
         SocketFactory.configureAndConnect(clientSocket, socketConfig, hostname, port);
         return clientSocket;

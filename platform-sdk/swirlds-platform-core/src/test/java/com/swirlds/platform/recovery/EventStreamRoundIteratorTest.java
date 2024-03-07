@@ -36,7 +36,9 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamPathIterator;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,12 +49,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("EventStreamRoundIterator Test")
 class EventStreamRoundIteratorTest {
+
+    @BeforeAll
+    static void beforeAll() {
+        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        StaticSoftwareVersion.reset();
+    }
 
     public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
         assertEquals(expected.getBaseEvent(), actual.getBaseEvent());

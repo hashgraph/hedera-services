@@ -55,6 +55,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
     private final VerificationStrategy verificationStrategy;
     private final AccountID senderId;
     private final AddressIdConverter addressIdConverter;
+    private final SpecialRewardReceivers specialRewardReceivers;
 
     // too many parameters
     @SuppressWarnings("java:S107")
@@ -67,7 +68,8 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final AccountID senderId,
-            @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final SpecialRewardReceivers specialRewardReceivers) {
         super(gasCalculator, enhancement, false);
         this.from = requireNonNull(from);
         this.to = requireNonNull(to);
@@ -76,6 +78,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
         this.senderId = requireNonNull(senderId);
         this.addressIdConverter = requireNonNull(addressIdConverter);
         this.serialNo = serialNo;
+        this.specialRewardReceivers = requireNonNull(specialRewardReceivers);
     }
 
     @NonNull

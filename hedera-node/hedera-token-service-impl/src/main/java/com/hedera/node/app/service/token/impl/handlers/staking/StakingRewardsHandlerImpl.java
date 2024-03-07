@@ -68,7 +68,10 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
 
     /** {@inheritDoc} */
     @Override
-    public Map<AccountID, Long> applyStakingRewards(final FinalizeContext context) {
+    public Map<AccountID, Long> applyStakingRewards(
+            final FinalizeContext context, @NonNull final Set<AccountID> explicitRewardReceivers) {
+        requireNonNull(context);
+        requireNonNull(explicitRewardReceivers);
         final var writableStore = context.writableStore(WritableAccountStore.class);
         final var stakingRewardsStore = context.writableStore(WritableNetworkStakingRewardsStore.class);
         final var stakingInfoStore = context.writableStore(WritableStakingInfoStore.class);
@@ -77,10 +80,11 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var consensusNow = context.consensusTime();
         // When an account StakedIdType is FROM_ACCOUNT or TO_ACCOUNT, we need to assess if the staked accountId
         // could be in a reward situation. So add those staked accountIds to the list of possible reward receivers
-        final var specialRewardReceivers = getStakedToMeRewardReceivers(writableStore);
+        final var stakedToMeRewardReceivers = getStakedToMeRewardReceivers(writableStore);
         // In addition to the above set, iterate through all modifications in state and
         // get list of possible reward receivers which are staked to node
-        final var rewardReceivers = getAllRewardReceivers(writableStore, specialRewardReceivers);
+        final var rewardReceivers =
+                getAllRewardReceivers(writableStore, stakedToMeRewardReceivers, explicitRewardReceivers);
         // Pay rewards to all possible reward receivers, returns all rewards paid
         final var recordBuilder = context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class);
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
@@ -163,7 +167,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         Set<AccountID> specialRewardReceivers = null;
         for (final var id : modifiedAccounts) {
             final var originalAccount = writableStore.getOriginalValue(id);
-            final var modifiedAccount = writableStore.get(id);
+            final var modifiedAccount = requireNonNull(writableStore.get(id));
 
             // check if stakedId has changed
             final var scenario = StakeIdChangeType.forCase(originalAccount, modifiedAccount);
@@ -172,7 +176,9 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             // stakedToMe balance of new account. This is needed in order to trigger next level rewards
             // if the account is staked to node
             if (scenario.equals(FROM_ACCOUNT_TO_ACCOUNT)
-                    && originalAccount.stakedAccountId().equals(modifiedAccount.stakedAccountId())) {
+                    && requireNonNull(originalAccount)
+                            .stakedAccountIdOrThrow()
+                            .equals(modifiedAccount.stakedAccountId())) {
                 // Even if the stakee's total stake hasn't changed, we still want to
                 // trigger a reward situation whenever the staker balance changes
                 if (modifiedAccount.tinybarBalance() != originalAccount.tinybarBalance()) {

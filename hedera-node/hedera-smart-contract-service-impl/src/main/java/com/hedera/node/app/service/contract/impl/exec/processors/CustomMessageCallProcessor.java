@@ -23,6 +23,9 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isTopLevelTransaction;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.recordBuilderFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.transfersValue;
 import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.MISSING_RECEIVER_SIGNATURE;
@@ -37,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -103,7 +107,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
      *     <li>An existing account.</li>
      * </ol>
      *
-     * @param frame  the frame to start
+     * @param frame the frame to start
      * @param tracer the operation tracer
      */
     @Override
@@ -144,6 +148,15 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             return;
         }
 
+        // For mono-service fidelity, we need to consider called contracts
+        // as a special case eligible for staking rewards
+        if (isTopLevelTransaction(frame)) {
+            final var maybeCalledContract = proxyUpdaterFor(frame).get(codeAddress);
+            if (maybeCalledContract instanceof ProxyEvmAccount a && a.isContract()) {
+                recordBuilderFor(frame).trackExplicitRewardSituation(a.hederaId());
+            }
+        }
+
         frame.setState(MessageFrame.State.CODE_EXECUTING);
     }
 
@@ -174,9 +187,9 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
      * the call to computePrecompile. Thus, the logic for checking for sufficient gas must be done in a different
      * order vs normal precompiles.
      *
-     * @param systemContract    the system contract to execute
-     * @param frame             the current frame
-     * @param tracer            the operation tracer
+     * @param systemContract the system contract to execute
+     * @param frame the current frame
+     * @param tracer the operation tracer
      */
     private void doExecuteSystemContract(
             @NonNull final HederaSystemContract systemContract,
