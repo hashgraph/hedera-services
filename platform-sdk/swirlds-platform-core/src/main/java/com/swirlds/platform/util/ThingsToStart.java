@@ -18,47 +18,37 @@ package com.swirlds.platform.util;
 
 import com.swirlds.base.state.Mutable;
 import com.swirlds.base.state.Startable;
-import com.swirlds.platform.dispatch.DispatchBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * A helper class for wiring platform components together.
+ * A helper class for holding things we want to start.
  */
-public class PlatformComponents implements Mutable, Startable {
+public class ThingsToStart implements Mutable, Startable {
 
     private final List<Object> components = new LinkedList<>();
-    private final DispatchBuilder dispatchBuilder;
 
     private boolean immutable = false;
 
     /**
      * Create a new container for platform components.
-     *
-     * @param dispatchBuilder
-     * 		the dispatch builder used by this platform instance.
      */
-    public PlatformComponents(final DispatchBuilder dispatchBuilder) {
-        this.dispatchBuilder = dispatchBuilder;
-    }
+    public ThingsToStart() {}
 
     /**
      * Add a platform component that needs to be wired and/or started.
      *
-     * @param component
-     * 		the component
-     * @param <T>
-     * 		the type of the component
+     * @param component the component
+     * @param <T>       the type of the component
      * @return the component
      */
     @NonNull
-    public <T> T add(@NonNull final T component) {
+    public <T extends Startable> T add(@NonNull final T component) {
         throwIfImmutable();
         Objects.requireNonNull(component);
         components.add(component);
-        dispatchBuilder.registerObservers(component);
         return component;
     }
 
@@ -69,7 +59,6 @@ public class PlatformComponents implements Mutable, Startable {
     public void start() {
         throwIfImmutable();
         immutable = true;
-        dispatchBuilder.start();
         for (final Object component : components) {
             if (component instanceof final Startable startable) {
                 startable.start();
