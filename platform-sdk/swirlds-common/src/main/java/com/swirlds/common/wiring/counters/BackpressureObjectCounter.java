@@ -27,6 +27,10 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * A utility for counting the number of objects in various parts of the pipeline. Will apply backpressure if the number
  * of objects exceeds a specified capacity.
+ * <p>
+ * In order to achieve higher performance in high contention environments, this class allows the count returned by
+ * {@link #getCount()} to temporarily exceed the capacity even if {@link #forceOnRamp()} is not used. This doesn't allow
+ * objects to be on-ramped in excess of the capacity, but it may add some slight fuzziness to the count.
  */
 public class BackpressureObjectCounter extends ObjectCounter {
 
@@ -73,17 +77,19 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public void onRamp() {
+        final long resultingCount = count.incrementAndGet();
+        if (resultingCount <= capacity) {
+            // We didn't violate capacity by incrementing the count, so we're done.
+            return;
+        } else {
+            // We may have violated capacity restrictions by incrementing the count.
+            // Decrement count and take the slow pathway.
+            count.decrementAndGet();
+        }
+
+        // Slow case. Capacity wasn't reserved, so we need to block.
+
         while (true) {
-            final long currentCount = count.get();
-            if (currentCount < capacity) {
-                final boolean success = count.compareAndSet(currentCount, currentCount + 1);
-                if (success) {
-                    return;
-                }
-            }
-
-            // Slow case. Capacity wasn't reserved, so we may need to block.
-
             try {
                 // This will block until capacity is available and the count has been incremented.
                 //
@@ -119,15 +125,15 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public boolean attemptOnRamp() {
-        while (true) {
-            final long currentCount = count.get();
-            if (currentCount >= capacity) {
-                return false;
-            }
-
-            if (count.compareAndSet(currentCount, currentCount + 1)) {
-                return true;
-            }
+        final long resultingCount = count.incrementAndGet();
+        if (resultingCount <= capacity) {
+            // We didn't violate capacity by incrementing the count, so we're done.
+            return true;
+        } else {
+            // We may have violated capacity restrictions by incrementing the count.
+            // Decrement count and return failure.
+            count.decrementAndGet();
+            return false;
         }
     }
 

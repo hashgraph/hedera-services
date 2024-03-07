@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.counters;
+package com.swirlds.logging.benchmark.config;
 
-/**
- * An exception thrown when an attempt is made to increment a counter that is already at capacity.
- */
-class NoCapacityException extends RuntimeException {}
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+public interface Configuration<T> {
+
+    @NonNull
+    T configureFileLogging();
+
+    @NonNull
+    T configureConsoleLogging();
+
+    @NonNull
+    T configureFileAndConsoleLogging();
+
+    void tierDown();
+}

@@ -56,7 +56,7 @@ public class InitialModServiceAdminSchema extends Schema {
         // Reset the upgrade file hash to empty
         // It should always be empty at genesis or after an upgrade, to indicate that no upgrade is in progress
         // Nothing in state can ever be null, so use Type.DEFAULT to indicate an empty hash
-        final var isGenesis = ctx.previousStates().isEmpty();
+        final var isGenesis = ctx.previousVersion() == null;
 
         final var upgradeFileHashKeyState =
                 ctx.newStates().<ProtoBytes>getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY);
