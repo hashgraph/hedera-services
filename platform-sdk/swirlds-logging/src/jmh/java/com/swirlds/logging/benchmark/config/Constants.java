@@ -42,7 +42,7 @@ public class Constants {
     public static final String ENABLE_TIME_FORMATTING_ENV = "ENABLE_TIME_FORMATTING";
     public static final String DELETE_OUTPUT_FILES_ENV = "DELETE_OUTPUT_FILES";
     public static final String DELETE_OUTPUT_FOLDER_ENV = "DELETE_OUTPUT_FOLDER";
-    public static final boolean ENABLE_TIME_FORMATTING = false;
+    public static final boolean ENABLE_TIME_FORMATTING = true;
     public static final boolean DELETE_OUTPUT_FILES = true;
     public static final boolean DELETE_OUTPUT_FOLDER = true;
     public static final String USER_1 = UUID.randomUUID().toString();
