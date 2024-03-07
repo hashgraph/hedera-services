@@ -20,7 +20,6 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
-import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -57,12 +56,7 @@ public class StakingInfoDumpUtils {
                     getFieldFormatter(StakingInfo::unclaimedStakeRewardStart, Object::toString)),
             Pair.of("stake", getFieldFormatter(StakingInfo::stake, Object::toString)),
             Pair.of("rewardSumHistory", getFieldFormatter(StakingInfo::rewardSumHistory, Arrays::toString)),
-            Pair.of("weight", getFieldFormatter(StakingInfo::weight, Object::toString)),
-            Pair.of(
-                    "historyHash",
-                    getFieldFormatter(
-                            StakingInfo::historyHash,
-                            getNullableFormatter(ThingsToStrings.getMaybeStringifyByteString(FIELD_SEPARATOR)))));
+            Pair.of("weight", getFieldFormatter(StakingInfo::weight, Object::toString)));
 
     public static void dumpMonoStakingInfo(
             @NonNull final Path path,

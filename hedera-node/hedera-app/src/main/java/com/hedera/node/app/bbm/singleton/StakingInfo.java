@@ -19,7 +19,6 @@ package com.hedera.node.app.bbm.singleton;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 public record StakingInfo(
@@ -32,8 +31,7 @@ public record StakingInfo(
         long unclaimedStakeRewardStart,
         long stake,
         @NonNull long[] rewardSumHistory,
-        int weight,
-        @Nullable byte[] historyHash) {
+        int weight) {
     public static StakingInfo fromMono(@NonNull final MerkleStakingInfo stakingInfo) {
         Objects.requireNonNull(stakingInfo.getRewardSumHistory(), "rewardSumHistory");
         return new StakingInfo(
@@ -46,8 +44,7 @@ public record StakingInfo(
                 stakingInfo.getUnclaimedStakeRewardStart(),
                 stakingInfo.getStake(),
                 stakingInfo.getRewardSumHistory(),
-                stakingInfo.getWeight(),
-                null != stakingInfo.getHistoryHash() ? stakingInfo.getHistoryHash() : EMPTY_BYTES);
+                stakingInfo.getWeight());
     }
 
     public static StakingInfo fromMod(@NonNull final StakingNodeInfo stakingInfo) {
@@ -64,9 +61,7 @@ public record StakingInfo(
                 stakingInfo.rewardSumHistory().stream()
                         .mapToLong(Long::longValue)
                         .toArray(),
-                stakingInfo.weight(),
-                // todo how to map history hash?
-                EMPTY_BYTES);
+                stakingInfo.weight());
     }
 
     static final byte[] EMPTY_BYTES = new byte[0];

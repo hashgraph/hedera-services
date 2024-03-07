@@ -16,7 +16,6 @@
 
 package com.hedera.services.cli.signedstate;
 
-import static com.hedera.services.cli.utils.ThingsToStrings.getMaybeStringifyByteString;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
@@ -28,7 +27,6 @@ import com.hedera.services.cli.utils.FieldBuilder;
 import com.hedera.services.cli.utils.Writer;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -105,8 +103,7 @@ public class DumpStakingInfoSubcommand {
             long unclaimedStakeRewardStart,
             long stake,
             @NonNull long[] rewardSumHistory,
-            int weight,
-            @Nullable byte[] historyHash) {
+            int weight) {
         StakingInfo(@NonNull final MerkleStakingInfo stakingInfo) {
             this(
                     stakingInfo.getKey().intValue(),
@@ -118,12 +115,9 @@ public class DumpStakingInfoSubcommand {
                     stakingInfo.getUnclaimedStakeRewardStart(),
                     stakingInfo.getStake(),
                     stakingInfo.getRewardSumHistory(),
-                    stakingInfo.getWeight(),
-                    null != stakingInfo.getHistoryHash() ? stakingInfo.getHistoryHash() : EMPTY_BYTES);
+                    stakingInfo.getWeight());
             Objects.requireNonNull(rewardSumHistory, "rewardSumHistory");
         }
-
-        static final byte[] EMPTY_BYTES = new byte[0];
     }
 
     @NonNull
@@ -173,12 +167,7 @@ public class DumpStakingInfoSubcommand {
                     getFieldFormatter(StakingInfo::unclaimedStakeRewardStart, Object::toString)),
             Pair.of("stake", getFieldFormatter(StakingInfo::stake, Object::toString)),
             Pair.of("rewardSumHistory", getFieldFormatter(StakingInfo::rewardSumHistory, Object::toString)),
-            Pair.of("weight", getFieldFormatter(StakingInfo::weight, Object::toString)),
-            Pair.of(
-                    "historyHash",
-                    getFieldFormatter(
-                            StakingInfo::historyHash,
-                            getNullableFormatter(getMaybeStringifyByteString(FIELD_SEPARATOR)))));
+            Pair.of("weight", getFieldFormatter(StakingInfo::weight, Object::toString)));
 
     static <T> BiConsumer<FieldBuilder, StakingInfo> getFieldFormatter(
             @NonNull final Function<StakingInfo, T> fun, @NonNull final Function<T, String> formatter) {
