@@ -59,7 +59,6 @@ public class Log4J2Benchmark {
     private Log4JRunner logRunner;
 
     private LoggingBenchmarkConfig<LoggerContext> config;
-    ;
 
     @Setup(Level.Trial)
     public void init() {
