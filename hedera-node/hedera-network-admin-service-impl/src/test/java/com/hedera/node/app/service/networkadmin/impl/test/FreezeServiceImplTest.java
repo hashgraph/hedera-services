@@ -74,7 +74,6 @@ class FreezeServiceImplTest {
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
         assertEquals(FREEZE_TIME_KEY, iter.next());
-        assertEquals(LAST_FROZEN_TIME_KEY, iter.next());
         assertEquals(UPGRADE_FILE_HASH_KEY, iter.next());
     }
 
