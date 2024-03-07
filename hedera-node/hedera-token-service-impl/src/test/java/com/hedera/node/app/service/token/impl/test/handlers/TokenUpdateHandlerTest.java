@@ -205,7 +205,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.autoRenewAccountId()).isEqualTo(nonFungibleToken.autoRenewAccountId());
         assertThat(token.expirationSecond()).isEqualTo(nonFungibleToken.expirationSecond());
         assertThat(token.memo()).isEqualTo(nonFungibleToken.memo());
-        assertThat(token.metadata()).isEqualTo(fungibleToken.metadata());
+        assertThat(token.metadata()).isEqualTo(nonFungibleToken.metadata());
         assertThat(token.autoRenewSeconds()).isEqualTo(nonFungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
 

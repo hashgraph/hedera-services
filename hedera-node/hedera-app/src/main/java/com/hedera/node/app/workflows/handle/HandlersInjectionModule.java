@@ -106,6 +106,7 @@ public interface HandlersInjectionModule {
                 tokenHandlers.tokenFeeScheduleUpdateHandler(),
                 tokenHandlers.tokenPauseHandler(),
                 tokenHandlers.tokenUnpauseHandler(),
+                tokenHandlers.tokenUpdateNftsHandler(),
                 utilHandlers.prngHandler());
     }
 }

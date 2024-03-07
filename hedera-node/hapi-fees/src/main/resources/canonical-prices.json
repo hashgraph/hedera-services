@@ -72,6 +72,9 @@
   "TokenUpdate": {
 	"DEFAULT": 0.001
   },
+  "TokenUpdateNfts": {
+    "DEFAULT": 0.001
+  },
   "TokenFeeScheduleUpdate": {
 	"DEFAULT": 0.001
   },
