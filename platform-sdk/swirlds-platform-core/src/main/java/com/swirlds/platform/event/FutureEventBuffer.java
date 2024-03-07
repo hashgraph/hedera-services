@@ -112,8 +112,13 @@ public class FutureEventBuffer {
     public List<GossipEvent> updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
         this.eventWindow = Objects.requireNonNull(eventWindow);
 
+        // We want to release all events with birth rounds less than or equal to the pending consensus round.
+        // In order to do that, we tell the sequence map to shift its window to the oldest round that we want
+        // to keep within the buffer.
+        final long oldestRoundToBuffer = eventWindow.getPendingConsensusRound() + 1;
+
         final List<GossipEvent> events = new ArrayList<>();
-        futureEvents.shiftWindow(eventWindow.getPendingConsensusRound(), (round, roundEvents) -> {
+        futureEvents.shiftWindow(oldestRoundToBuffer, (round, roundEvents) -> {
             for (final GossipEvent event : roundEvents) {
                 if (!eventWindow.isAncient(event)) {
                     events.add(event);
