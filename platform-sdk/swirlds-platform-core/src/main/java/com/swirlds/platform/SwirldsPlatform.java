@@ -241,7 +241,7 @@ public class SwirldsPlatform implements Platform {
     private final Clearable clearAllPipelines;
 
     /**
-     * All things that need to be started. when the platform is started.
+     * All things that need to be started when the platform is started.
      */
     private final ThingsToStart thingsToStart;
 
