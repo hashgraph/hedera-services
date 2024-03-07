@@ -54,7 +54,7 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 @State(Scope.Benchmark)
-public class Log4J2FineGraneBenchmark {
+public class Log4J2FineGrainBenchmark {
     private static final String LOGGER_NAME = Constants.LOG4J2 + "Benchmark";
 
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
@@ -198,7 +198,7 @@ public class Log4J2FineGraneBenchmark {
             time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
             timeUnit = TimeUnit.MILLISECONDS)
     public void logWithContext() {
-        ThreadContext.put("user-id", Throwables.USER_1);
+        ThreadContext.put("user-id", Constants.USER_1);
         logger.log(org.apache.logging.log4j.Level.INFO, "logWithContext, Hello world!");
         ThreadContext.clearAll();
     }

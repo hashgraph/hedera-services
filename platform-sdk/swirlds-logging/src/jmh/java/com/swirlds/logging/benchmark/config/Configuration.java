@@ -20,14 +20,26 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface Configuration<T> {
 
+    /**
+     * Create an appender for File
+     */
     @NonNull
     T configureFileLogging();
 
+    /**
+     * Create an appender for Console
+     */
     @NonNull
     T configureConsoleLogging();
 
+    /**
+     * Create an appender for Console + File
+     */
     @NonNull
     T configureFileAndConsoleLogging();
 
+    /**
+     * Performs the necessary operations to clean after the benchmark is done
+     */
     void tierDown();
 }

@@ -51,7 +51,7 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 @State(Scope.Benchmark)
-public class SwirldsLogFineGraneBenchmark {
+public class SwirldsLogFineGrainBenchmark {
 
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
@@ -195,7 +195,7 @@ public class SwirldsLogFineGraneBenchmark {
             time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
             timeUnit = TimeUnit.MILLISECONDS)
     public void logWithContext() {
-        logger.withContext("user-id", Throwables.USER_1)
+        logger.withContext("user-id", Constants.USER_1)
                 .log(com.swirlds.logging.api.Level.INFO, "logWithContext, Hello world!");
     }
 

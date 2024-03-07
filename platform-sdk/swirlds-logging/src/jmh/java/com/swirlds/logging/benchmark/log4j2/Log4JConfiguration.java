@@ -40,9 +40,12 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
     private static final String PATTERN =
             (ConfigManagement.formatTimestamp() ? "%d{yyyy-MM-dd HH:mm:ss.SSS}" : "%d{UNIX_MILLIS}")
                     + " %-5level [%t] %c - %msg - [%marker] %X %n%throwable";
-    public static final String CONSOLE_APPENDER_NAME = "console";
-    public static final String FILE_APPENDER_NAME = "file";
+    private static final String CONSOLE_APPENDER_NAME = "console";
+    private static final String FILE_APPENDER_NAME = "file";
 
+    /**
+     * {@inheritDoc}
+     */
     public @NonNull LoggerContext configureConsoleLogging() {
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
@@ -53,6 +56,9 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
         return create(builder);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public @NonNull LoggerContext configureFileLogging() {
         final String logFile = LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.FILE_TYPE);
         System.clearProperty("log4j2.contextSelector");
@@ -64,6 +70,9 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
         return create(builder);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public @NonNull LoggerContext configureFileAndConsoleLogging() {
         final String logFile = LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.CONSOLE_AND_FILE_TYPE);
         System.clearProperty("log4j2.contextSelector");
@@ -76,6 +85,20 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
                 .add(builder.newAppenderRef(FILE_APPENDER_NAME))
                 .add(builder.newAppenderRef(CONSOLE_APPENDER_NAME)));
         return create(builder);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void tierDown() {
+        if (ConfigManagement.deleteOutputFiles()) {
+            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE));
+            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE));
+        }
+        if (ConfigManagement.deleteOutputFolder()) {
+            LogFiles.tryDeleteDirAndContent();
+        }
     }
 
     private static @NonNull LoggerContext create(final @NonNull ConfigurationBuilder<BuiltConfiguration> builder) {
@@ -102,16 +125,5 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
                 .addAttribute("fileName", path)
                 .addAttribute("append", true)
                 .add(layoutBuilder);
-    }
-
-    @Override
-    public void tierDown() {
-        if (ConfigManagement.deleteOutputFiles()) {
-            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE));
-            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE));
-        }
-        if (ConfigManagement.deleteOutputFolder()) {
-            LogFiles.tryForceDeleteDir();
-        }
     }
 }

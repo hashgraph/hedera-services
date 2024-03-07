@@ -16,6 +16,11 @@
 
 package com.swirlds.logging.benchmark.config;
 
+import java.util.UUID;
+
+/**
+ * Static constants needed in the benchmark
+ */
 public class Constants {
     public static final String CONSOLE_TYPE = "CONSOLE";
     public static final String FILE_TYPE = "FILE";
@@ -40,6 +45,9 @@ public class Constants {
     public static final boolean ENABLE_TIME_FORMATTING = false;
     public static final boolean DELETE_OUTPUT_FILES = true;
     public static final boolean DELETE_OUTPUT_FOLDER = true;
+    public static final String USER_1 = UUID.randomUUID().toString();
+    public static final String USER_2 = UUID.randomUUID().toString();
+    public static final String USER_3 = UUID.randomUUID().toString();
 
     private Constants() {}
 }

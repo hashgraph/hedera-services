@@ -94,7 +94,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
 
     private final Lock handleLock;
 
-    private final AtomicReference<FormattedLinePrinter> lineBasedFormat = new AtomicReference<>();
+    private final AtomicReference<FormattedLinePrinter> linePrinter = new AtomicReference<>();
 
     /**
      * Creates the singleton instance of the logger.
@@ -249,7 +249,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         if (printStream != null) {
             handleLock.lock();
             try {
-                getLineBasedFormat().print(printStream, logEvent);
+                getLinePrinter().print(printStream, logEvent);
             } finally {
                 handleLock.unlock();
             }
@@ -271,11 +271,11 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         }
     }
 
-    private FormattedLinePrinter getLineBasedFormat() {
-        if (lineBasedFormat.get() == null) {
-            lineBasedFormat.compareAndSet(null, new FormattedLinePrinter(false));
+    private FormattedLinePrinter getLinePrinter() {
+        if (linePrinter.get() == null) {
+            linePrinter.compareAndSet(null, new FormattedLinePrinter(false));
         }
-        return lineBasedFormat.get();
+        return linePrinter.get();
     }
 
     /**
