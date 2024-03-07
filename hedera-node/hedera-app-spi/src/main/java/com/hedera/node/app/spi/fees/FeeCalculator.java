@@ -77,6 +77,22 @@ public interface FeeCalculator {
     FeeCalculator addRamByteSeconds(long amount);
 
     /**
+     * Adds to the "sbpr" component the number of bytes per request used by the transaction.
+     * @param amount The number bytes per request per transaction. Must not be negative.
+     * @return {@code this} for fluent usage.
+     */
+    @NonNull
+    FeeCalculator addSbpr(long amount);
+
+    /**
+     * Adds to the "constant" component a constant contribution per request used by the transaction.
+     * @param amount The number of tiny cents per request per transaction. Must not be negative.
+     * @return {@code this} for fluent usage.
+     */
+    @NonNull
+    FeeCalculator addConstant(long amount);
+
+    /**
      * Adds to the "vpt" component the number of verifications used by the transaction.
      * @param amount The number of verifications per transaction. Must not be negative.
      * @return {@code this} for fluent usage.

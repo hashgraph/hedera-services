@@ -98,7 +98,8 @@ public class ServiceScopeLookup {
                     TOKEN_DISSOCIATE,
                     TOKEN_FEE_SCHEDULE_UPDATE,
                     TOKEN_PAUSE,
-                    TOKEN_UNPAUSE -> TokenService.NAME;
+                    TOKEN_UNPAUSE,
+                    TOKEN_UPDATE_NFTS -> TokenService.NAME;
 
             case UTIL_PRNG -> UtilService.NAME;
 

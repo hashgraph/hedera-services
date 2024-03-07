@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevoke
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdateNfts;
 
 import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
 import com.hedera.node.app.service.mono.queries.token.TokenAnswers;
@@ -154,5 +155,10 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
     @Override
     public void getTokenNftInfos(Query query, StreamObserver<Response> observer) {
         queryHelper.answer(query, observer, tokenAnswers.getTokenNftInfosAnswer(), TokenGetNftInfos);
+    }
+
+    @Override
+    public void updateNfts(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+        txnHelper.submit(signedTxn, observer, TokenUpdateNfts);
     }
 }

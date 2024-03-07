@@ -74,6 +74,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REVOKE_KYC_FRO
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNPAUSE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE_NFTS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECEIPT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECORD;
@@ -170,6 +171,7 @@ import java.util.function.Function;
  * @param systemUndelete             the permission for {@link HederaFunctionality#SYSTEM_UNDELETE} functionality
  * @param freeze                     the permission for {@link HederaFunctionality#FREEZE} functionality
  * @param getAccountDetails          the permission for {@link HederaFunctionality#GET_ACCOUNT_DETAILS} functionality
+ * @param tokenUpdateNfts            the permission for {@link HederaFunctionality#TOKEN_UPDATE_NFTS} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -234,7 +236,8 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "2-59") PermissionedAccountsRange systemDelete,
         @ConfigProperty(defaultValue = "2-60") PermissionedAccountsRange systemUndelete,
         @ConfigProperty(defaultValue = "2-58") PermissionedAccountsRange freeze,
-        @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails) {
+        @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -280,6 +283,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(SCHEDULE_CREATE, c -> c.scheduleCreate);
         permissionKeys.put(SCHEDULE_DELETE, c -> c.scheduleDelete);
         permissionKeys.put(SCHEDULE_SIGN, c -> c.scheduleSign);
+        permissionKeys.put(TOKEN_UPDATE_NFTS, c -> c.tokenUpdateNfts);
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);
         permissionKeys.put(CONTRACT_CALL_LOCAL, c -> c.contractCallLocalMethod);
