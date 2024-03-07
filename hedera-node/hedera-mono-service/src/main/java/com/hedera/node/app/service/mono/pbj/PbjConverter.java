@@ -1519,6 +1519,10 @@ public final class PbjConverter {
         return builder.build();
     }
 
+    public static FileID toPbj(com.hederahashgraph.api.proto.java.FileID fileID) {
+        return protoToPbj(fileID, FileID.class);
+    }
+
     @NonNull
     public static com.hederahashgraph.api.proto.java.File fromPbj(@Nullable File file) {
         var builder = com.hederahashgraph.api.proto.java.File.newBuilder();
