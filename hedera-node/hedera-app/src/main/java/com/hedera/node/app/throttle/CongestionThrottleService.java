@@ -62,6 +62,7 @@ public class CongestionThrottleService implements Service {
             /** {@inheritDoc} */
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
+                log.info("BBM: migrating congestion throttle service");
                 final var throttleSnapshots = ctx.newStates().getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
                 final var congestionLevelStarts = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
                 if (ctx.previousVersion() == null || mnc != null) {
@@ -72,6 +73,8 @@ public class CongestionThrottleService implements Service {
                     throttleSnapshots.put(ThrottleUsageSnapshots.DEFAULT);
                     congestionLevelStarts.put(CongestionLevelStarts.DEFAULT);
                 }
+                mnc = null;
+                log.info("BBM: finished migrating congestion throttle service");
             }
         });
     }

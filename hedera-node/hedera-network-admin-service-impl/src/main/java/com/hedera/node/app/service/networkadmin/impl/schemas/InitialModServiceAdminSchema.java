@@ -55,6 +55,7 @@ public class InitialModServiceAdminSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
+        log.info("BBM: migrating Admin service");
         // Reset the upgrade file hash to empty
         // It should always be empty at genesis or after an upgrade, to indicate that no upgrade is in progress
         // Nothing in state can ever be null, so use Type.DEFAULT to indicate an empty hash
@@ -68,8 +69,8 @@ public class InitialModServiceAdminSchema extends Schema {
             upgradeFileHashKeyState.put(ProtoBytes.DEFAULT);
             freezeTimeKeyState.put(Timestamp.DEFAULT);
         }
-
-        log.info("BBM: no migration actions necessary for admin service");
+        mnc = null;
+        log.info("BBM: finished migrating Admin service");
     }
 
     public static void setFs(@Nullable final MerkleNetworkContext mn) {
