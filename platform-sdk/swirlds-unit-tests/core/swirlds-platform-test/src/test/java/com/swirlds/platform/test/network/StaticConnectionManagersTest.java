@@ -52,52 +52,62 @@ class StaticConnectionManagersTest {
 
     @ParameterizedTest
     @MethodSource("topologicalVariations")
-    void test(final int numNodes, final int numNeighbors) throws Exception {
+    void testShouldConnectToMe(final int numNodes, final int numNeighbors) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(r).setSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
-        Mockito.when(connectionCreator.createConnection(Mockito.any())).thenAnswer(inv -> {
-            final NodeId peerId = inv.getArgument(0, NodeId.class);
-            return new FakeConnection(selfId, peerId);
-        });
-        for (final Boolean unidirectional : List.of(true, false)) {
-            final StaticTopology topology = new StaticTopology(addressBook, selfId, numNeighbors, unidirectional);
-            final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
-            final List<NodeId> neighbors = topology.getNeighbors();
-            final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
+        final StaticTopology topology = new StaticTopology(addressBook, selfId, numNeighbors);
+        final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
+        final List<NodeId> neighbors = topology.getNeighbors();
+        final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
 
-            if (topology.shouldConnectToMe(neighbor)) {
-                final ConnectionManager manager = managers.getManager(neighbor, false);
-                assertNotNull(manager, "should have a manager for this connection");
-                final Connection c1 = new FakeConnection(selfId, neighbor);
-                managers.newConnection(c1);
-                assertSame(c1, manager.waitForConnection(), "the manager should have received the connection supplied");
-                assertTrue(c1.connected(), "a new inbound connection should be connected");
-                final Connection c2 = new FakeConnection(selfId, neighbor);
-                managers.newConnection(c2);
-                assertFalse(c1.connected(), "the new connection should have disconnected the old one");
-                assertSame(c2, manager.waitForConnection(), "c2 should have replaced c1");
-            } else {
-                final ConnectionManager manager = managers.getManager(neighbor, false);
-                assertNull(manager, "should not have a manager for this connection");
-                final Connection c = new FakeConnection(selfId, neighbor);
-                managers.newConnection(c);
-                assertFalse(
-                        c.connected(),
-                        "if an illegal connection is established, it should be disconnected immediately");
-            }
+        if (topology.shouldConnectToMe(neighbor)) {
+            final ConnectionManager manager = managers.getManager(neighbor, false);
+            assertNotNull(manager, "should have a manager for this connection");
+            final Connection c1 = new FakeConnection(selfId, neighbor);
+            managers.newConnection(c1);
+            assertSame(c1, manager.waitForConnection(), "the manager should have received the connection supplied");
+            assertTrue(c1.connected(), "a new inbound connection should be connected");
+            final Connection c2 = new FakeConnection(selfId, neighbor);
+            managers.newConnection(c2);
+            assertFalse(c1.connected(), "the new connection should have disconnected the old one");
+            assertSame(c2, manager.waitForConnection(), "c2 should have replaced c1");
+        } else {
+            final ConnectionManager manager = managers.getManager(neighbor, false);
+            assertNull(manager, "should not have a manager for this connection");
+            final Connection c = new FakeConnection(selfId, neighbor);
+            managers.newConnection(c);
+            assertFalse(
+                    c.connected(), "if an illegal connection is established, it should be disconnected immediately");
+        }
+    }
 
-            if (topology.shouldConnectTo(neighbor)) {
-                final ConnectionManager manager = managers.getManager(neighbor, true);
-                assertNotNull(manager, "should have a manager for this connection");
-                assertTrue(
-                        manager.waitForConnection().connected(),
-                        "outbound connections should be esablished by the manager");
-            } else {
-                final ConnectionManager manager = managers.getManager(neighbor, true);
-                assertNull(manager, "should not have a manager for this connection");
-            }
+    @ParameterizedTest
+    @MethodSource("topologicalVariations")
+    void testShouldConnectTo(final int numNodes, final int numNeighbors) throws Exception {
+        final Random r = RandomUtils.getRandomPrintSeed();
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(r).setSize(numNodes).build();
+        final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
+        final StaticTopology topology = new StaticTopology(addressBook, selfId, numNeighbors);
+        final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
+        final List<NodeId> neighbors = topology.getNeighbors();
+        final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
+
+        if (topology.shouldConnectTo(neighbor)) {
+            Mockito.when(connectionCreator.createConnection(Mockito.any())).thenAnswer(inv -> {
+                final NodeId peerId = inv.getArgument(0, NodeId.class);
+                return new FakeConnection(selfId, peerId);
+            });
+            final ConnectionManager manager = managers.getManager(neighbor, true);
+            assertNotNull(manager, "should have a manager for this connection");
+            assertTrue(
+                    manager.waitForConnection().connected(),
+                    "outbound connections should be esablished by the manager");
+        } else {
+            final ConnectionManager manager = managers.getManager(neighbor, true);
+            assertNull(manager, "should not have a manager for this connection");
         }
     }
 }

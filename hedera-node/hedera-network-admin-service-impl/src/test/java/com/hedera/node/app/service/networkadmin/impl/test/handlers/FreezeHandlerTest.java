@@ -28,6 +28,7 @@ import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
@@ -332,6 +333,8 @@ class FreezeHandlerTest {
 
         given(handleContext.body()).willReturn(txn);
         assertDoesNotThrow(() -> subject.handle(handleContext));
+
+        assertThat(freezeStore.updateFileHash()).isNull();
     }
 
     @Test

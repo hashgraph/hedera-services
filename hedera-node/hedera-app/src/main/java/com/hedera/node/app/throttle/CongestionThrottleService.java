@@ -59,7 +59,7 @@ public class CongestionThrottleService implements Service {
             /** {@inheritDoc} */
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
-                if (ctx.previousStates().isEmpty()) {
+                if (ctx.previousVersion() == null) {
                     // At genesis we put empty throttle usage snapshots and
                     // congestion level starts into their respective singleton
                     // states just to ensure they exist

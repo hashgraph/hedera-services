@@ -29,6 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -53,6 +54,8 @@ public class ConsensusEngine {
     private final AddedEventMetrics eventAddedMetrics;
 
     private final StaleMetrics staleMetrics;
+    /** Consumes stale events */
+    private final Consumer<EventImpl> staleEventConsumer;
 
     /**
      * Constructor
@@ -63,17 +66,20 @@ public class ConsensusEngine {
      * @param shadowGraph        tracks events in the hashgraph
      * @param intakeEventCounter tracks the number of events from each peer that have been received, but
      *                           aren't yet through the intake pipeline
+     * @param staleEventConsumer a consumer of stale events
      */
     public ConsensusEngine(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final Shadowgraph shadowGraph,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final Consumer<EventImpl> staleEventConsumer) {
 
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
+        this.staleEventConsumer = Objects.requireNonNull(staleEventConsumer);
 
         this.eventAddedMetrics = new AddedEventMetrics(selfId, platformContext.getMetrics());
         this.staleMetrics = new StaleMetrics(platformContext, selfId);
@@ -132,6 +138,7 @@ public class ConsensusEngine {
         for (final EventImpl staleEvent : staleEvents) {
             staleEvent.setStale(true);
             staleMetrics.staleEvent(staleEvent);
+            staleEventConsumer.accept(staleEvent);
         }
     }
 

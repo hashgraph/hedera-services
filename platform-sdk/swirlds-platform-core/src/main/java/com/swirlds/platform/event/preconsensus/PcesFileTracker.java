@@ -210,7 +210,7 @@ public class PcesFileTracker {
                     "The preconsensus event stream has insufficient data to guarantee that all events with the "
                             + "requested lower bound of {} are present, the first file has a lower bound of {}",
                     lowerBound,
-                    files.getFirst().getLowerBound());
+                    files.get(firstFileIndex).getLowerBound());
 
             return new UnmodifiableIterator<>(files.iterator(firstFileIndex));
         }
