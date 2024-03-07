@@ -172,19 +172,18 @@ public class IssDetector {
     }
 
     /**
-     * Check if a round should be ignored
+     * Create an ISS notification if the round shouldn't be ignored
      *
-     * @param roundNumber the round number to check
-     * @return true if the round should be ignored, false otherwise
-     * @throws IllegalArgumentException if the round number is less than or equal to the previous round
+     * @param roundNumber the round number of the ISS
+     * @param issType     the type of the ISS
+     * @return an ISS notification, or null if the round of the ISS should be ignored
      */
-    private boolean isRoundToIgnore(final long roundNumber) {
-        if (roundNumber <= previousRound) {
-            throw new IllegalArgumentException(
-                    "previous round was " + previousRound + ", can't decrease round to " + roundNumber);
+    private @Nullable IssNotification maybeCreateIssNotification(
+            final long roundNumber, @NonNull final IssType issType) {
+        if (roundNumber == ignoredRound) {
+            return null;
         }
-
-        return roundNumber == ignoredRound;
+        return new IssNotification(roundNumber, issType);
     }
 
     /**
@@ -194,9 +193,14 @@ public class IssDetector {
      * force a decision on the hash, and handle any ISS events that result.
      *
      * @param roundNumber the round that was just completed
-     * @return a list of ISS notifications, which may be empty
+     * @return a list of ISS notifications, which may be empty, but will not contain null
      */
     private @NonNull List<IssNotification> shiftRoundDataWindow(final long roundNumber) {
+        if (roundNumber <= previousRound) {
+            throw new IllegalArgumentException(
+                    "previous round was " + previousRound + ", can't decrease round to " + roundNumber);
+        }
+
         final long oldestRoundToValidate = roundNumber - roundData.getSequenceNumberCapacity() + 1;
 
         final List<RoundHashValidator> removedRounds = new ArrayList<>();
@@ -209,10 +213,9 @@ public class IssDetector {
             roundData.shiftWindow(oldestRoundToValidate, (k, v) -> removedRounds.add(v));
         }
 
-        final long roundWeight = addressBook.getTotalWeight();
         previousRound = roundNumber;
 
-        roundData.put(roundNumber, new RoundHashValidator(roundNumber, roundWeight, issMetrics));
+        roundData.put(roundNumber, new RoundHashValidator(roundNumber, addressBook.getTotalWeight(), issMetrics));
 
         return removedRounds.stream()
                 .map(this::handleRemovedRound)
@@ -230,11 +233,8 @@ public class IssDetector {
      * @return a list of ISS notifications, or null if no ISS occurred
      */
     public @Nullable List<IssNotification> handleStateAndRound(@NonNull final StateAndRound stateAndRound) {
-        try (final ReservedSignedState state = stateAndRound.reservedSignedState(); ) {
+        try (final ReservedSignedState state = stateAndRound.reservedSignedState()) {
             final long roundNumber = stateAndRound.round().getRoundNum();
-            if (isRoundToIgnore(roundNumber)) {
-                return null;
-            }
 
             final List<IssNotification> issNotifications = new ArrayList<>(shiftRoundDataWindow(roundNumber));
 
@@ -267,8 +267,14 @@ public class IssDetector {
             final HashValidityStatus status = roundHashValidator.getStatus();
             if (status == HashValidityStatus.CATASTROPHIC_ISS
                     || status == HashValidityStatus.CATASTROPHIC_LACK_OF_DATA) {
-                handleCatastrophic(roundHashValidator);
-                return new IssNotification(roundHashValidator.getRound(), IssType.CATASTROPHIC_ISS);
+
+                final IssNotification notification =
+                        maybeCreateIssNotification(roundHashValidator.getRound(), IssType.CATASTROPHIC_ISS);
+                if (notification != null) {
+                    handleCatastrophic(roundHashValidator);
+                }
+
+                return notification;
             } else if (status == HashValidityStatus.LACK_OF_DATA) {
                 handleLackOfData(roundHashValidator);
             } else {
@@ -283,7 +289,7 @@ public class IssDetector {
      * Handle postconsensus state signatures.
      *
      * @param round the round that may contain state signatures
-     * @return a list of ISS notifications, which may be empty
+     * @return a list of ISS notifications, which may be empty, but will not contain null
      */
     private @NonNull List<IssNotification> handlePostconsensusSignatures(@NonNull final ConsensusRound round) {
         final List<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions =
@@ -324,7 +330,7 @@ public class IssDetector {
         }
 
         if (ignorePreconsensusSignatures && replayingPreconsensusStream) {
-            // We are still replaying preconsensus events and we are configured to ignore signatures during replay
+            // We are still replaying preconsensus events, and we are configured to ignore signatures during replay
             return null;
         }
 
@@ -398,10 +404,6 @@ public class IssDetector {
     public @Nullable List<IssNotification> overridingState(@NonNull final ReservedSignedState state) {
         try (state) {
             final long roundNumber = state.get().getRound();
-            if (isRoundToIgnore(roundNumber)) {
-                return null;
-            }
-
             // this is not practically possible for this to happen. Even if it were to happen, on a reconnect,
             // we are receiving a new state that is fully signed, so any ISSs in the past should be ignored.
             // so we will ignore any ISSs from removed rounds
@@ -426,17 +428,23 @@ public class IssDetector {
         return switch (roundValidator.getStatus()) {
             case VALID -> {
                 if (roundValidator.hasDisagreement()) {
-                    yield new IssNotification(round, IssType.OTHER_ISS);
+                    yield maybeCreateIssNotification(round, IssType.OTHER_ISS);
                 }
                 yield null;
             }
             case SELF_ISS -> {
-                handleSelfIss(roundValidator);
-                yield new IssNotification(round, IssType.SELF_ISS);
+                final IssNotification notification = maybeCreateIssNotification(round, IssType.SELF_ISS);
+                if (notification != null) {
+                    handleSelfIss(roundValidator);
+                }
+                yield notification;
             }
             case CATASTROPHIC_ISS -> {
-                handleCatastrophic(roundValidator);
-                yield new IssNotification(round, IssType.CATASTROPHIC_ISS);
+                final IssNotification notification = maybeCreateIssNotification(round, IssType.CATASTROPHIC_ISS);
+                if (notification != null) {
+                    handleCatastrophic(roundValidator);
+                }
+                yield notification;
             }
             case UNDECIDED -> throw new IllegalStateException(
                     "status is undecided, but method reported a decision, round = " + round);
