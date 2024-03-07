@@ -18,8 +18,7 @@ package com.swirlds.platform.network.protocol;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Implementation of a protocol factory for hash compare handshake
@@ -33,14 +32,13 @@ public class HashCompareHandshakeProtocolFactory implements ProtocolFactory {
      *
      * @param hash this node's hash
      */
-    public HashCompareHandshakeProtocolFactory(@NonNull final Hash hash) {
-        this.hash = Objects.requireNonNull(hash);
+    public HashCompareHandshakeProtocolFactory(@Nullable final Hash hash) {
+        this.hash = hash;
     }
 
     /**
      * {@inheritDoc}
      */
-    @NonNull
     @Override
     public HashCompareHandshake build(final boolean throwOnMismatch) {
         return new HashCompareHandshake(hash, throwOnMismatch);
