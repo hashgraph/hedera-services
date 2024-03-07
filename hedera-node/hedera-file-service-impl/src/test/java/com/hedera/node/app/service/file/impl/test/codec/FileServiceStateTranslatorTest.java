@@ -76,8 +76,7 @@ class FileServiceStateTranslatorTest extends FileTestBase {
         final FileMetadataAndContent convertedFile = FileServiceStateTranslator.pbjToState(fileWithNoKeysAndMemo);
 
         assertArrayEquals(
-                getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys().data(),
-                convertedFile.data());
+                getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys().data(), convertedFile.data());
         assertEquals(
                 getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys()
                         .metadata()
@@ -105,9 +104,7 @@ class FileServiceStateTranslatorTest extends FileTestBase {
 
         final FileMetadataAndContent convertedFile = FileServiceStateTranslator.pbjToState(fileWithNoContent);
 
-        assertArrayEquals(
-                getExpectedMonoFileMetaAndContentEmptyContent().data(),
-                convertedFile.data());
+        assertArrayEquals(getExpectedMonoFileMetaAndContentEmptyContent().data(), convertedFile.data());
         assertEquals(
                 getExpectedMonoFileMetaAndContentEmptyContent().metadata().getExpiry(),
                 convertedFile.metadata().getExpiry());
