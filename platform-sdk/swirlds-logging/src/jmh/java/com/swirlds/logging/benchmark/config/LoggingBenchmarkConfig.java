@@ -18,7 +18,12 @@ package com.swirlds.logging.benchmark.config;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface Configuration<T> {
+/**
+ * An abstraction for logging benchmark configuration
+ *
+ * @param <T> the return type
+ */
+public interface LoggingBenchmarkConfig<T> {
 
     /**
      * Create an appender for File

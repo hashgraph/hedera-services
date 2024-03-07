@@ -21,8 +21,8 @@ import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
-import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
+import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import com.swirlds.logging.benchmark.util.ConfigManagement;
 import com.swirlds.logging.benchmark.util.LogFiles;
 import com.swirlds.logging.console.ConsoleHandlerFactory;
@@ -32,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Convenience methods for configuring swirlds-logging logger
  */
-public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
+public class SwirldsLogLoggingBenchmarkConfig implements LoggingBenchmarkConfig<LoggingSystem> {
 
     private static final FileHandlerFactory FILE_HANDLER_FACTORY = new FileHandlerFactory();
     private static final ConsoleHandlerFactory CONSOLE_HANDLER_FACTORY = new ConsoleHandlerFactory();

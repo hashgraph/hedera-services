@@ -26,8 +26,8 @@ import static com.swirlds.logging.benchmark.config.Constants.PARALLEL_THREAD_COU
 import static com.swirlds.logging.benchmark.config.Constants.WARMUP_ITERATIONS;
 import static com.swirlds.logging.benchmark.config.Constants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
 
-import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
+import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import com.swirlds.logging.benchmark.util.Throwables;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -61,13 +61,13 @@ public class Log4J2FineGrainBenchmark {
     public String loggingType;
 
     private Logger logger;
-    private Configuration<LoggerContext> config;
+    private LoggingBenchmarkConfig<LoggerContext> config;
 
     private static final Marker MARKER = MarkerManager.getMarker("marker");
 
     @Setup(Level.Trial)
     public void init() {
-        config = new Log4JConfiguration();
+        config = new Log4JLoggingBenchmarkConfig();
         if (Objects.equals(loggingType, FILE_TYPE)) {
             logger = config.configureFileLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {

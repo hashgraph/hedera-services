@@ -16,8 +16,8 @@
 
 package com.swirlds.logging.benchmark.log4j2;
 
-import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
+import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import com.swirlds.logging.benchmark.util.ConfigManagement;
 import com.swirlds.logging.benchmark.util.LogFiles;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,7 +35,7 @@ import org.apache.logging.log4j.spi.LoggerContext;
 /**
  * Convenience methods for configuring log4j logger
  */
-public class Log4JConfiguration implements Configuration<LoggerContext> {
+public class Log4JLoggingBenchmarkConfig implements LoggingBenchmarkConfig<LoggerContext> {
 
     private static final String PATTERN =
             (ConfigManagement.formatTimestamp() ? "%d{yyyy-MM-dd HH:mm:ss.SSS}" : "%d{UNIX_MILLIS}")
@@ -112,7 +112,7 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
             final @NonNull ConfigurationBuilder<BuiltConfiguration> builder) {
         final LayoutComponentBuilder layoutComponentBuilder =
                 builder.newLayout("PatternLayout").addAttribute("pattern", PATTERN);
-        return builder.newAppender(Log4JConfiguration.CONSOLE_APPENDER_NAME, "CONSOLE")
+        return builder.newAppender(Log4JLoggingBenchmarkConfig.CONSOLE_APPENDER_NAME, "CONSOLE")
                 .addAttribute("target", ConsoleAppender.Target.SYSTEM_OUT)
                 .add(layoutComponentBuilder);
     }
@@ -121,7 +121,7 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
             final @NonNull ConfigurationBuilder<BuiltConfiguration> builder, final @NonNull String path) {
         final LayoutComponentBuilder layoutBuilder =
                 builder.newLayout("PatternLayout").addAttribute("pattern", PATTERN);
-        return builder.newAppender(Log4JConfiguration.FILE_APPENDER_NAME, "File")
+        return builder.newAppender(Log4JLoggingBenchmarkConfig.FILE_APPENDER_NAME, "File")
                 .addAttribute("fileName", path)
                 .addAttribute("append", true)
                 .add(layoutBuilder);
