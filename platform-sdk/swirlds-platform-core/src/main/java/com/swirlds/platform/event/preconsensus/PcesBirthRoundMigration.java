@@ -51,14 +51,15 @@ public final class PcesBirthRoundMigration {
     private PcesBirthRoundMigration() {}
 
     /**
-     * Migrate a PCES in generation mode to a PCES in birth round mode.
+     * Migrate a PCES in generation mode to a PCES in birth round mode if needed. No op if the migration has already
+     * been completed.
      *
      * @param platformContext                        the platform context
      * @param migrationRound                         the round at which the migration is occurring, this will be equal
      *                                               to the round number of the initial state
      * @param minimumJudgeGenerationInMigrationRound the minimum judge generation in the migration round
      */
-    public static void migrateToBirthRoundMode(
+    public static void migratePcesToBirthRoundMode(
             @NonNull final PlatformContext platformContext,
             @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
@@ -75,7 +76,7 @@ public final class PcesBirthRoundMigration {
 
         if (hasMigrationAlreadyCompleted()) {
             logger.error(EXCEPTION.getMarker(), "PCES birth round migration has already been completed.");
-            cleanUpOldFilesAfterBotchedMigration();
+            cleanUpOldFilesAfterBotchedMigration(recycleBin);
             return;
         }
 
@@ -110,8 +111,9 @@ public final class PcesBirthRoundMigration {
      * If we observe at least one PCES file in birth round mode, it's possible that the node crashed before it finished
      * cleaning up the old files. This method will clean up any old files that may have been left behind.
      */
-    private static void cleanUpOldFilesAfterBotchedMigration() throws IOException {
+    private static void cleanUpOldFilesAfterBotchedMigration(@NonNull final RecycleBin recycleBin) throws IOException {
         final PcesFileTracker tracker = new PcesFileTracker(GENERATION_THRESHOLD);
+        makeBackupFiles(recycleBin, tracker);
         logger.info(
                 STARTUP.getMarker(),
                 "PCES birth round migration has already been completed. Cleaning up old files. There are {} old "
@@ -129,8 +131,8 @@ public final class PcesBirthRoundMigration {
 
         logger.info(
                 STARTUP.getMarker(),
-                "There are {} original PCES files prior to migration. Copying files to the recycle bin in case of "
-                        + "migration failure.",
+                "Backing up {} PCES files prior to PCES modification. "
+                        + "Copying files to the recycle bin in case of unexpected failures.",
                 originalFiles.getFileCount());
 
         final Path copyDirectory = TemporaryFileBuilder.buildTemporaryDirectory("pces-backup");
@@ -217,7 +219,7 @@ public final class PcesBirthRoundMigration {
      * @param originalFiles the original files to be deleted
      */
     private static void cleanUpOldFiles(@NonNull final PcesFileTracker originalFiles) throws IOException {
-        logger.info(STARTUP.getMarker(), "Cleaning up old files.");
+        logger.info(STARTUP.getMarker(), "Cleaning up old PCES files.");
         final Iterator<PcesFile> originalFileIterator = originalFiles.getFileIterator();
         while (originalFileIterator.hasNext()) {
             originalFileIterator.next().deleteFile(null);
