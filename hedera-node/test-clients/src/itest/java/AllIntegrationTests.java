@@ -66,11 +66,7 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @TestFactory
     List<DynamicTest> concurrentSpecs() {
         return List.of(
-            // TODO: do I need to do something here in order to convert the EthContractCreate?
-//                concurrentSpecsFrom(
-//                    ConcurrentSuites.all()), 
-            concurrentEthSpecsFrom(ConcurrentSuites.ethereumSuites()))
-            ;
+                concurrentSpecsFrom(ConcurrentSuites.all()), concurrentEthSpecsFrom(ConcurrentSuites.ethereumSuites()));
     }
 
     @Tag("integration")

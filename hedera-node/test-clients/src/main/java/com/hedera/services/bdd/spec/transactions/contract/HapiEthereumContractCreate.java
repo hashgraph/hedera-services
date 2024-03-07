@@ -135,7 +135,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.gas(1000000002);
     }
 
-
     public HapiEthereumContractCreate(
             @NonNull final String contract, @NonNull final BiConsumer<HapiSpec, EthereumTransactionBody.Builder> spec) {
         super(contract);
@@ -264,7 +263,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
         if (useSpecNonce) {
             nonce = spec.getNonce(privateKeyRef);
-            spec.incrementNonce(privateKeyRef); // TODO: why the contract call is not calling this.
+            spec.incrementNonce(privateKeyRef);
         }
         final var ethTxData = new EthTxData(
                 null,

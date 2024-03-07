@@ -49,8 +49,8 @@ public class CustomSpecAssert extends UtilOp {
     }
 
     private static void executeEthereumOps(final HapiSpec spec, final List<HapiSpecOperation> ops) {
-        final var convertedOps = convertHapiCallsToEthereumCalls(ops, SECP_256K1_SOURCE_KEY,
-            spec.registry().getKey(SECP_256K1_SOURCE_KEY));
+        final var convertedOps = convertHapiCallsToEthereumCalls(
+                ops, SECP_256K1_SOURCE_KEY, spec.registry().getKey(SECP_256K1_SOURCE_KEY));
         for (final var op : convertedOps) {
             handleExec(spec, op);
         }

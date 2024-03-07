@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.unti
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
-import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
@@ -1617,9 +1616,7 @@ public class UtilVerbs {
     }
 
     public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(
-        final List<HapiSpecOperation> ops,
-        final String privateKeyRef,
-        final Key adminKey) {
+            final List<HapiSpecOperation> ops, final String privateKeyRef, final Key adminKey) {
         final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
         for (final var op : ops) {
             if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall()) {
