@@ -26,6 +26,7 @@ import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import static java.time.temporal.ChronoField.YEAR;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -111,33 +112,56 @@ public class EpochCachedFormatter {
         return stringDate;
     }
 
-    private String getFromMinutes(final Instant instant) {
+    private @Nullable String getFromMinutes(final @NonNull Instant instant) {
         final String format = dateHourMinutesCache.get(instant.truncatedTo(ChronoUnit.MINUTES));
         if (format == null) {
             return null;
         }
-        return format + stringFrom(ChronoUnit.SECONDS, instant);
+        return format + stringFrom(instant, ChronoUnit.SECONDS);
     }
 
-    private String getFromHours(final Instant instant) {
+    private @Nullable String getFromHours(final @NonNull Instant instant) {
         final String format = dateHourCache.get(instant.truncatedTo(ChronoUnit.HOURS));
         if (format == null) {
             return null;
         }
-        return format + stringFrom(ChronoUnit.MINUTES, instant);
+        return format + stringFrom(instant, ChronoUnit.MINUTES);
     }
 
-    private String getFromDate(final Instant instant) {
+    private @Nullable String getFromDate(final @NonNull Instant instant) {
         final String format = dateCache.get(instant.truncatedTo(ChronoUnit.DAYS));
 
         if (format == null) {
             return null;
         }
 
-        return format + stringFrom(ChronoUnit.HOURS, instant);
+        return format + stringFrom(instant, ChronoUnit.HOURS);
     }
 
-    private StringBuilder stringFrom(final ChronoUnit unit, final Instant instant) {
+    /**
+     * Constructs a string representation of the given {@link Instant} up to the specified {@link ChronoUnit}.
+     * The last char might be {@code '.'} or {@code ':'} depending on the specified {@link ChronoUnit}.
+     * <p>
+     *
+     * The method constructs a string representation of the Instant up to the specified {@link ChronoUnit}, including
+     * hours, minutes, seconds, and milliseconds.
+     * <p>
+     * e.g:
+     * Given an {@code instant} representing date: {@code "2020-08-26T12:34:56.789"}
+     * <ul>
+     * <li>{@code stringFrom(instant, ChronoUnit.MILLIS)} --> returns a buffer containing "2020-08-26T12:34:56.789" </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.SECONDS)} --> returns a buffer containing "2020-08-26T12:34:56." </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.MINUTES)} --> returns a buffer containing "2020-08-26T12:34:" </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> returns a buffer containing "2020-08-26T12:" </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> returns a buffer containing "2020-08-26T12:" </li>
+     * </ul>
+     *
+     * @param instant The Instant to represent as a string.
+     * @param unit    The {@link ChronoUnit} to which the string representation should be formatted.
+     * @return A {@link StringBuilder} containing the string representation of the Instant up to the specified
+     * {@link ChronoUnit}.
+     */
+    private static @NonNull StringBuilder stringFrom(final @NonNull Instant instant, final @NonNull ChronoUnit unit) {
 
         // Get the total seconds and milliseconds
         long totalSeconds = instant.getEpochSecond();
@@ -168,8 +192,7 @@ public class EpochCachedFormatter {
     }
 
     /**
-     * Appends the digits of the number into the buffer in reverse order and pads to the right with 0.
-     * Examples:
+     * Appends the digits of the number into the buffer in reverse order and pads to the right with 0. Examples:
      * <ul>
      * <li>{@code appendDigitsReverse(1, buffer, 1)} --> 1</li>
      * <li>{@code appendDigitsReverse(1, buffer, 2)} --> 10</li>
@@ -184,7 +207,7 @@ public class EpochCachedFormatter {
      * @param buffer        The buffer to append to.
      * @param desiredLength The maximum length of the number to append.
      */
-    public static void appendDigitsReverse(
+    private static void appendDigitsReverse(
             final int number, final @NonNull StringBuilder buffer, final int desiredLength) {
         int actualLength = 0;
         int num = number;
@@ -205,6 +228,12 @@ public class EpochCachedFormatter {
         }
     }
 
+    /**
+     * A {@link LinkedHashMap} with size as removal policy.
+     *
+     * @param <K> the type for key
+     * @param <V> the type for value
+     */
     private static class LimitedSizeCache<K, V> extends LinkedHashMap<K, V> {
         private static final int MAX_ENTRIES = 10000;
 
