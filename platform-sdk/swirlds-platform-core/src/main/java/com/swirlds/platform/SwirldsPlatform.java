@@ -241,7 +241,7 @@ public class SwirldsPlatform implements Platform {
     private final Clearable clearAllPipelines;
 
     /**
-     * All components that need to be started or that have dispatch observers.
+     * All things that need to be started. when the platform is started.
      */
     private final ThingsToStart thingsToStart;
 
@@ -351,6 +351,8 @@ public class SwirldsPlatform implements Platform {
         };
         platformStatusManager = thingsToStart.add(
                 new PlatformStatusManager(platformContext, time, threadManager, statusChangeConsumer));
+
+        thingsToStart.add(Objects.requireNonNull(recycleBin));
 
         this.metrics = platformContext.getMetrics();
 
