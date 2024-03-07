@@ -51,12 +51,6 @@ sourceSets {
     create("yahcli")
 }
 
-// IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
-tasks.withType<JavaExec> {
-    // Do not yet run things on the '--module-path'
-    modularity.inferModulePath.set(false)
-}
-
 // The following tasks run the 'HapiTestEngine' tests (residing in src/main/java).
 // IntelliJ picks up this task when running tests through in the IDE.
 

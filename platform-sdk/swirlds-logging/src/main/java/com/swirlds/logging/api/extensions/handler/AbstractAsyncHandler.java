@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,20 @@ package com.swirlds.logging.api.extensions.handler;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * An abstract log handler that synchronizes the handling of log events. This handler is used as a base class for all
- * log handlers that need to synchronize the handling of log events like simple handlers that write events to the
- * console or to a file.
- */
-public abstract class AbstractSyncedHandler extends AbstractLogHandler {
+public abstract class AbstractAsyncHandler extends AbstractLogHandler {
+    /**
+     * The executor service that is used to handle log events asynchronously.
+     */
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     /**
      * True if the log handler is stopped, false otherwise.
      */
-    private volatile boolean stopped = false;
+    private final AtomicBoolean stopped = new AtomicBoolean(false);
 
     /**
      * Creates a new log handler.
@@ -38,37 +40,42 @@ public abstract class AbstractSyncedHandler extends AbstractLogHandler {
      * @param configKey     the configuration key
      * @param configuration the configuration
      */
-    public AbstractSyncedHandler(@NonNull final String configKey, @NonNull final Configuration configuration) {
+    public AbstractAsyncHandler(@NonNull final String configKey, @NonNull final Configuration configuration) {
         super(configKey, configuration);
     }
 
     @Override
-    public final void accept(@NonNull LogEvent event) {
-        if (stopped) {
-            // FUTURE: is the emergency logger really the best idea in that case? If multiple handlers are stopped,
-            // the emergency logger will be called multiple times.
+    public void accept(@NonNull LogEvent event) {
+        if (stopped.get()) {
             EMERGENCY_LOGGER.log(event);
-        } else {
-            handleEvent(event);
+            return;
         }
+        executorService.submit(() -> {
+            if (stopped.get()) {
+                EMERGENCY_LOGGER.log(event);
+            } else {
+                handleEvent(event);
+            }
+        });
     }
 
     /**
-     * Handles the log event synchronously.
+     * Handles the log event asynchronously.
      *
      * @param event the log event
      */
     protected abstract void handleEvent(@NonNull LogEvent event);
 
     @Override
-    public final void stopAndFinalize() {
-        stopped = true;
-        handleStopAndFinalize();
+    public void stopAndFinalize() {
+        if (!stopped.getAndSet(true)) {
+            executorService.shutdown();
+            handleStopAndFinalize();
+        }
     }
 
     /**
-     * Implementations can override this method to handle the stop and finalize of the handler. The method will be
-     * called synchronously to the handling of log events.
+     * Implementations can override this method to handle the stop and finalize of the handler.
      */
     protected void handleStopAndFinalize() {}
 }

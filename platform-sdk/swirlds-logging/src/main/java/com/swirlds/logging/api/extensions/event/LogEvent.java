@@ -57,7 +57,6 @@ public interface LogEvent {
      *
      * @return the timestamp
      */
-    @NonNull
     long timestamp();
 
     /**
