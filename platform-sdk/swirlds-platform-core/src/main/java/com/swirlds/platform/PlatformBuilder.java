@@ -63,6 +63,7 @@ import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -160,6 +161,21 @@ public final class PlatformBuilder {
     public PlatformBuilder withConfigPath(@NonNull final Path path) {
         Objects.requireNonNull(path);
         this.configPath = getAbsolutePath(path);
+        return this;
+    }
+
+    /**
+     * Provide the platform with the class ID of the previous software version. Needed at migration boundaries if the
+     * class ID of the software version has changed.
+     *
+     * @param previousSoftwareVersionClassId the class ID of the previous software version
+     * @return this
+     */
+    public PlatformBuilder withPreviousSoftwareVersionClassId(final long previousSoftwareVersionClassId) {
+        final Set<Long> softwareVersions = new HashSet<>();
+        softwareVersions.add(softwareVersion.getClassId());
+        softwareVersions.add(previousSoftwareVersionClassId);
+        StaticSoftwareVersion.setSoftwareVersion(softwareVersions);
         return this;
     }
 
