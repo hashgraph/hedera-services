@@ -135,6 +135,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                                         copyFromUtf8("g"))))
                 .when(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
                         .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
                         .via(nftUpdateTxn))
                 .then(validateChargedUsdWithin(nftUpdateTxn, expectedNftUpdatePriceUsd, 0.01));
     }
