@@ -30,47 +30,44 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Extracts a particular type of system transaction from an event or a round.
+ * Contains utility methods for extracting a particular type of system transaction from an event or a round.
  */
-public class SystemTransactionExtractor<T extends SystemTransaction> {
-    /** the system transaction type to extract */
-    private final Class<T> systemTransactionType;
-
+public class SystemTransactionExtractionUtils {
     /**
-     * Constructs a new extractor for the given system transaction type.
-     *
-     * @param systemTransactionType
-     * 		the system transaction type to extract
+     * Hidden constructor.
      */
-    public SystemTransactionExtractor(@NonNull final Class<T> systemTransactionType) {
-        this.systemTransactionType = Objects.requireNonNull(systemTransactionType);
-    }
+    private SystemTransactionExtractionUtils() {}
 
     /**
-     * Extracts the system transactions from the given round.
+     * Extracts system transactions of a given type from a round.
      *
-     * @param round
-     * 		the round to extract from
+     * @param round                      the round to extract from
+     * @param systemTransactionTypeClass the class of system transaction to extract
+     * @param <T>                        the type of system transaction to extract
      * @return the extracted system transactions, or {@code null} if there are none
      */
-    public @Nullable List<ScopedSystemTransaction<T>> handleRound(@NonNull final ConsensusRound round) {
+    public static @Nullable <T extends SystemTransaction> List<ScopedSystemTransaction<T>> extractFromRound(
+            @NonNull final ConsensusRound round, @NonNull final Class<T> systemTransactionTypeClass) {
+
         return round.getConsensusEvents().stream()
-                .map(this::handleEvent)
+                .map(event -> extractFromEvent(event, systemTransactionTypeClass))
                 .filter(Objects::nonNull)
                 .flatMap(List::stream)
-                .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
+                .collect(collectingAndThen(toList(), list -> list.isEmpty() ? null : list));
     }
 
     /**
-     * Extracts the system transactions from the given event.
+     * Extracts system transactions of a given type from an event.
      *
-     * @param event
-     * 		the event to extract from
+     * @param event                      the event to extract from
+     * @param systemTransactionTypeClass the class of system transaction to extract
+     * @param <T>                        the type of system transaction to extract
      * @return the extracted system transactions, or {@code null} if there are none
      */
     @SuppressWarnings("unchecked")
-    public @Nullable List<ScopedSystemTransaction<T>> handleEvent(@NonNull final BaseEvent event) {
-        // no transactions to transform
+    public static @Nullable <T extends SystemTransaction> List<ScopedSystemTransaction<T>> extractFromEvent(
+            @NonNull final BaseEvent event, @NonNull final Class<T> systemTransactionTypeClass) {
+
         final var transactions = event.getHashedData().getTransactions();
         if (transactions == null) {
             return null;
@@ -79,7 +76,7 @@ public class SystemTransactionExtractor<T extends SystemTransaction> {
         final List<ScopedSystemTransaction<T>> scopedTransactions = new ArrayList<>();
 
         for (final Transaction transaction : event.getHashedData().getTransactions()) {
-            if (systemTransactionType.isInstance(transaction)) {
+            if (systemTransactionTypeClass.isInstance(transaction)) {
                 scopedTransactions.add(new ScopedSystemTransaction<>(
                         event.getHashedData().getCreatorId(),
                         event.getHashedData().getSoftwareVersion(),
