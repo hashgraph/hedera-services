@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.platform.network.protocol;
@@ -70,8 +69,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
             @NonNull final SignedStateValidator validator,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final PlatformStatusGetter platformStatusGetter,
-            @NonNull final Configuration configuration,
-            @NonNull final Time time) {
+            @NonNull final Configuration configuration) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -84,18 +82,19 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
         this.configuration = Objects.requireNonNull(configuration);
-        this.time = Objects.requireNonNull(time);
+        this.time = Objects.requireNonNull(platformContext.getTime());
     }
 
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public ReconnectProtocol build(final NodeId peerId) {
+    public ReconnectProtocol build(@NonNull final NodeId peerId) {
         return new ReconnectProtocol(
                 platformContext,
                 threadManager,
-                peerId,
+                Objects.requireNonNull(peerId),
                 reconnectThrottle,
                 lastCompleteSignedState,
                 reconnectSocketTimeout,

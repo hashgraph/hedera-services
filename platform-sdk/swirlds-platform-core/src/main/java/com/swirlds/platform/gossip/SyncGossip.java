@@ -50,17 +50,17 @@ import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.ProtocolNegotiatorThread;
-import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
-import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.InboundConnectionHandler;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import com.swirlds.platform.network.protocol.EmergencyReconnectProtocolFactory;
+import com.swirlds.platform.network.protocol.HashCompareHandshakeProtocolFactory;
 import com.swirlds.platform.network.protocol.HeartbeatProtocolFactory;
 import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.network.protocol.ReconnectProtocolFactory;
 import com.swirlds.platform.network.protocol.SyncProtocolFactory;
+import com.swirlds.platform.network.protocol.VersionCompareHandshakeProtocolFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
@@ -350,11 +350,9 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                 new DefaultSignedStateValidator(platformContext),
                 fallenBehindManager,
                 platformStatusManager,
-                platformContext.getConfiguration(),
-                time);
+                platformContext.getConfiguration());
         final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
                 platformContext,
-                time,
                 threadManager,
                 notificationEngine,
                 emergencyRecoveryManager,
@@ -367,6 +365,8 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                 platformContext.getConfiguration());
         final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(
                 Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()), networkMetrics, time);
+        final ProtocolFactory hashCompareHandshakeProtocol = new HashCompareHandshakeProtocolFactory(epochHash);
+        final ProtocolFactory versionCompareHandshakeProtocol = new VersionCompareHandshakeProtocolFactory(appVersion);
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
@@ -379,9 +379,8 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
                             syncConfig.syncSleepAfterFailedNegotiation(),
                             List.of(
-                                    new VersionCompareHandshake(
-                                            appVersion, !protocolConfig.tolerateMismatchedVersion()),
-                                    new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash())),
+                                    versionCompareHandshakeProtocol.build(!protocolConfig.tolerateMismatchedVersion()),
+                                    hashCompareHandshakeProtocol.build(!protocolConfig.tolerateMismatchedEpochHash())),
                             new NegotiationProtocols(List.of(
                                     heartbeatProtocolFactory.build(otherId),
                                     emergencyReconnectProtocolFactory.build(otherId),

@@ -107,7 +107,6 @@ public class EmergencyReconnectProtocolTests {
 
         final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
                 platformContext,
-                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 emergencyRecoveryManager,
@@ -119,7 +118,10 @@ public class EmergencyReconnectProtocolTests {
                 mock(StatusActionSubmitter.class),
                 configuration);
 
-        assertEquals(initiateParams.shouldInitiate, emergencyReconnectProtocolFactory.build(PEER_ID).shouldInitiate(), "unexpected initiation result");
+        assertEquals(
+                initiateParams.shouldInitiate,
+                emergencyReconnectProtocolFactory.build(PEER_ID).shouldInitiate(),
+                "unexpected initiation result");
     }
 
     @DisplayName("Test the conditions under which the protocol should accept protocol initiation")
@@ -131,7 +133,6 @@ public class EmergencyReconnectProtocolTests {
 
         final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
                 platformContext,
-                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 mock(EmergencyRecoveryManager.class),
@@ -143,7 +144,10 @@ public class EmergencyReconnectProtocolTests {
                 mock(StatusActionSubmitter.class),
                 configuration);
 
-        assertEquals(!teacherIsThrottled, emergencyReconnectProtocolFactory.build(PEER_ID).shouldAccept(), "unexpected protocol acceptance");
+        assertEquals(
+                !teacherIsThrottled,
+                emergencyReconnectProtocolFactory.build(PEER_ID).shouldAccept(),
+                "unexpected protocol acceptance");
     }
 
     @DisplayName("Tests if the reconnect learner permit gets released")
@@ -163,7 +167,6 @@ public class EmergencyReconnectProtocolTests {
 
         final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
                 platformContext,
-                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 emergencyRecoveryManager,
@@ -214,7 +217,6 @@ public class EmergencyReconnectProtocolTests {
 
         final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
                 platformContext,
-                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 mock(EmergencyRecoveryManager.class),

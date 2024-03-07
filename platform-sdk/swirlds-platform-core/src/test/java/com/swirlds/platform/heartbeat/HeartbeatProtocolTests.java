@@ -94,7 +94,8 @@ class HeartbeatProtocolTests {
     @Test
     @DisplayName("shouldInitiate respects the heartbeat period")
     void shouldInitiate() {
-        final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(heartbeatPeriod, networkMetrics, time);
+        final ProtocolFactory heartbeatProtocolFactory =
+                new HeartbeatProtocolFactory(heartbeatPeriod, networkMetrics, time);
         final Protocol heartbeatProtocol = heartbeatProtocolFactory.build(peerId);
         // first shouldInitiate is always true, since we haven't sent a heartbeat to start the timer yet
         assertTrue(heartbeatProtocol.shouldInitiate());
@@ -118,7 +119,8 @@ class HeartbeatProtocolTests {
     @Test
     @DisplayName("shouldAccept always returns true")
     void shouldAccept() {
-        final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(heartbeatPeriod, networkMetrics, time);
+        final ProtocolFactory heartbeatProtocolFactory =
+                new HeartbeatProtocolFactory(heartbeatPeriod, networkMetrics, time);
         final Protocol heartbeatProtocol = heartbeatProtocolFactory.build(peerId);
 
         assertTrue(heartbeatProtocol.shouldAccept());
@@ -130,7 +132,8 @@ class HeartbeatProtocolTests {
     @Test
     @DisplayName("Exception is thrown if the peer doesn't send a heartbeat byte")
     void peerSendsInvalidHeartbeat() {
-        final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(heartbeatPeriod, networkMetrics, time);
+        final ProtocolFactory heartbeatProtocolFactory =
+                new HeartbeatProtocolFactory(heartbeatPeriod, networkMetrics, time);
         final Protocol heartbeatProtocol = heartbeatProtocolFactory.build(peerId);
 
         // reconfigure the heartbeatSendingConnection so that it sends an invalid byte at the beginning of the protocol
@@ -150,7 +153,8 @@ class HeartbeatProtocolTests {
     @Test
     @DisplayName("Exception is thrown if the peer sends an invalid ack")
     void peerSendsInvalidAcknowledgement() {
-        final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(heartbeatPeriod, networkMetrics, time);
+        final ProtocolFactory heartbeatProtocolFactory =
+                new HeartbeatProtocolFactory(heartbeatPeriod, networkMetrics, time);
         final Protocol heartbeatProtocol = heartbeatProtocolFactory.build(peerId);
 
         // reconfigure the heartbeatSendingConnection so that it sends an invalid byte instead of an ack
@@ -170,7 +174,8 @@ class HeartbeatProtocolTests {
     @Test
     @DisplayName("acceptOnSimultaneousInitiate should return true")
     void acceptOnSimultaneousInitiate() {
-        final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(heartbeatPeriod, networkMetrics, time);
+        final ProtocolFactory heartbeatProtocolFactory =
+                new HeartbeatProtocolFactory(heartbeatPeriod, networkMetrics, time);
         final Protocol heartbeatProtocol = heartbeatProtocolFactory.build(peerId);
 
         assertTrue(heartbeatProtocol.acceptOnSimultaneousInitiate());

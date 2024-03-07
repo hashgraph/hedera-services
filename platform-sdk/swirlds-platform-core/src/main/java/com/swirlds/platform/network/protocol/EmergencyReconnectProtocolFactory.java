@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.platform.network.protocol;
@@ -34,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Supplier;
+
 /**
  * Implementation of a protocol factory for emergency reconnect
  */
@@ -54,7 +54,6 @@ public class EmergencyReconnectProtocolFactory implements ProtocolFactory {
 
     /**
      * @param  platformContext         the platform context
-     * @param time                     provides wall clock time
      * @param threadManager            responsible for managing thread lifecycles
      * @param notificationEngine       the notification engine to use
      * @param emergencyRecoveryManager the state of emergency recovery, if any
@@ -68,7 +67,6 @@ public class EmergencyReconnectProtocolFactory implements ProtocolFactory {
      */
     public EmergencyReconnectProtocolFactory(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final NotificationEngine notificationEngine,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
@@ -81,7 +79,6 @@ public class EmergencyReconnectProtocolFactory implements ProtocolFactory {
             @NonNull final Configuration configuration) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
-        this.time = Objects.requireNonNull(time);
         this.threadManager = Objects.requireNonNull(threadManager);
         this.notificationEngine = Objects.requireNonNull(notificationEngine);
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager);
@@ -92,19 +89,21 @@ public class EmergencyReconnectProtocolFactory implements ProtocolFactory {
         this.reconnectController = Objects.requireNonNull(reconnectController);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.configuration = Objects.requireNonNull(configuration);
+        this.time = Objects.requireNonNull(platformContext.getTime());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public EmergencyReconnectProtocol build(final NodeId peerId) {
+    @NonNull
+    public EmergencyReconnectProtocol build(@NonNull final NodeId peerId) {
         return new EmergencyReconnectProtocol(
                 platformContext,
                 time,
                 threadManager,
                 notificationEngine,
-                peerId,
+                Objects.requireNonNull(peerId),
                 emergencyRecoveryManager,
                 teacherThrottle,
                 emergencyStateSupplier,

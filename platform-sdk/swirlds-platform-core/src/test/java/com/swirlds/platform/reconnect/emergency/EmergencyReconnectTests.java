@@ -24,7 +24,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -287,7 +286,6 @@ class EmergencyReconnectTests {
             final NotificationEngine notificationEngine, final ReconnectController reconnectController) {
         final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
                 platformContext,
-                Time.getCurrent(),
                 getStaticThreadManager(),
                 notificationEngine,
                 mock(EmergencyRecoveryManager.class),
@@ -309,19 +307,18 @@ class EmergencyReconnectTests {
         when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
         return new EmergencyReconnectProtocolFactory(
-                platformContext,
-                Time.getCurrent(),
-                getStaticThreadManager(),
-                notificationEngine,
-                emergencyRecoveryManager,
-                mock(ReconnectThrottle.class),
-                emergencyState,
-                Duration.of(100, ChronoUnit.MILLIS),
-                mock(ReconnectMetrics.class),
-                reconnectController,
-                mock(StatusActionSubmitter.class),
-                configuration)
-        .build(learnerId);
+                        platformContext,
+                        getStaticThreadManager(),
+                        notificationEngine,
+                        emergencyRecoveryManager,
+                        mock(ReconnectThrottle.class),
+                        emergencyState,
+                        Duration.of(100, ChronoUnit.MILLIS),
+                        mock(ReconnectMetrics.class),
+                        reconnectController,
+                        mock(StatusActionSubmitter.class),
+                        configuration)
+                .build(learnerId);
     }
 
     private void mockTeacherHasCompatibleState(final SignedState teacherState) {
