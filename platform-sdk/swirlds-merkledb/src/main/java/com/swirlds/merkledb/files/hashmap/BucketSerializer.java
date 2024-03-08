@@ -29,7 +29,7 @@ public class BucketSerializer {
     private final ReusableBucketPool reusableBucketPool;
 
     public BucketSerializer() {
-        reusableBucketPool = new ReusableBucketPool(Bucket::new);
+        reusableBucketPool = new ReusableBucketPool(ParsedBucket::new);
     }
 
     /**
@@ -40,6 +40,7 @@ public class BucketSerializer {
     public ReusableBucketPool getBucketPool() {
         return reusableBucketPool;
     }
+
 
     public int getSerializedSize(final Bucket bucket) {
         return bucket.sizeInBytes();
