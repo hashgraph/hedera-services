@@ -70,7 +70,7 @@ class FreezeServiceImplTest {
         final var schema = schemaCaptor.getValue();
 
         final var statesToCreate = schema.statesToCreate();
-        assertEquals(3, statesToCreate.size());
+        assertEquals(2, statesToCreate.size());
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
         assertEquals(FREEZE_TIME_KEY, iter.next());
