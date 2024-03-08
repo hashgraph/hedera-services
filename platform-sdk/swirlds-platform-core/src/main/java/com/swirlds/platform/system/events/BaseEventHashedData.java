@@ -29,6 +29,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
@@ -208,7 +209,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             throws IOException {
         Objects.requireNonNull(in, "The input stream must not be null");
         serializedVersion = version;
-        softwareVersion = in.readSerializable();
+        softwareVersion = in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
 
         creatorId = in.readSerializable(false, NodeId::new);
         if (creatorId == null) {

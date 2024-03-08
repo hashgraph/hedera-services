@@ -32,8 +32,6 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig_;
-import com.swirlds.platform.dispatch.DispatchBuilder;
-import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -213,11 +211,6 @@ class StateManagementComponentTests {
             }
         };
 
-        final DispatchConfiguration dispatchConfiguration =
-                platformContext.getConfiguration().getConfigData(DispatchConfiguration.class);
-
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(dispatchConfiguration);
-
         final DefaultStateManagementComponent stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
@@ -226,8 +219,6 @@ class StateManagementComponentTests {
                 ss -> {},
                 new SignedStateMetrics(new NoOpMetrics()),
                 x -> true);
-
-        dispatchBuilder.start();
 
         return stateManagementComponent;
     }

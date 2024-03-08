@@ -16,7 +16,10 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
@@ -39,7 +42,7 @@ public class PlatformCoordinator {
     private final ObjectCounter hashingObjectCounter;
 
     private final InternalEventValidatorWiring internalEventValidatorWiring;
-    private final EventDeduplicatorWiring eventDeduplicatorWiring;
+    private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
@@ -69,7 +72,7 @@ public class PlatformCoordinator {
     public PlatformCoordinator(
             @NonNull final ObjectCounter hashingObjectCounter,
             @NonNull final InternalEventValidatorWiring internalEventValidatorWiring,
-            @NonNull final EventDeduplicatorWiring eventDeduplicatorWiring,
+            @NonNull final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring,
             @NonNull final EventSignatureValidatorWiring eventSignatureValidatorWiring,
             @NonNull final OrphanBufferWiring orphanBufferWiring,
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
@@ -104,7 +107,7 @@ public class PlatformCoordinator {
         hashingObjectCounter.waitUntilEmpty();
 
         internalEventValidatorWiring.flushRunnable().run();
-        eventDeduplicatorWiring.flushRunnable().run();
+        eventDeduplicatorWiring.flush();
         eventSignatureValidatorWiring.flushRunnable().run();
         orphanBufferWiring.flushRunnable().run();
         eventCreationManagerWiring.flush();
@@ -146,7 +149,7 @@ public class PlatformCoordinator {
 
         // Phase 4: clear
         // Data is no longer moving through the system. Clear all the internal data structures in the wiring objects.
-        eventDeduplicatorWiring.clearInput().inject(new ClearTrigger());
+        eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear).inject(new ClearTrigger());
         orphanBufferWiring.clearInput().inject(new ClearTrigger());
         inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
         stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
