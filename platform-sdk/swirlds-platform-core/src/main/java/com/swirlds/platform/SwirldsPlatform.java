@@ -183,9 +183,7 @@ import org.apache.logging.log4j.Logger;
 public class SwirldsPlatform implements Platform {
 
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
-    /**
-     * use this for all logging, as controlled by the optional data/log4j2.xml file
-     */
+
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
     /**
      * the ID of the member running this. Since a node can be a main node or a mirror node, the ID is not a primitive
@@ -203,16 +201,12 @@ public class SwirldsPlatform implements Platform {
      * from disk or getting it through reconnect
      */
     private final AtomicReference<Consensus> consensusRef = new AtomicReference<>();
-    /**
-     * the current nodes in the network and their information
-     */
+    /** the current nodes in the network and their information */
     private final AddressBook currentAddressBook;
 
     private final Metrics metrics;
 
-    /**
-     * the object that contains all key pairs and CSPRNG state for this member
-     */
+    /** the object that contains all key pairs and CSPRNG state for this member */
     private final KeysAndCerts keysAndCerts;
     /**
      * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from a
@@ -235,17 +229,11 @@ public class SwirldsPlatform implements Platform {
     private final SignedStateNexus latestImmutableStateNexus = new LockFreeStateNexus();
 
     private final TransactionPool transactionPool;
-    /**
-     * Handles all interaction with {@link SwirldState}
-     */
+    /** Handles all interaction with {@link SwirldState} */
     private final SwirldStateManager swirldStateManager;
-    /**
-     * Checks the validity of transactions and submits valid ones to the transaction pool
-     */
+    /** Checks the validity of transactions and submits valid ones to the transaction pool */
     private final SwirldTransactionSubmitter transactionSubmitter;
-    /**
-     * clears all pipelines to prepare for a reconnect
-     */
+    /** clears all pipelines to prepare for a reconnect */
     private final Clearable clearAllPipelines;
 
     /**
@@ -284,13 +272,9 @@ public class SwirldsPlatform implements Platform {
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
-    /**
-     * Manages emergency recovery
-     */
+    /** Manages emergency recovery */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
-    /**
-     * Controls which states are saved to disk
-     */
+    /** Controls which states are saved to disk */
     private final SavedStateController savedStateController;
 
     /**

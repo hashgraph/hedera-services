@@ -259,7 +259,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                         .build()
                         .cast());
-
         latestCompleteStateNexusWiring = new ComponentWiring<>(
                 LatestCompleteStateNexus.class,
                 model.schedulerBuilder("latestCompleteStateNexus")
@@ -453,32 +452,36 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Bind components to the wiring.
      *
-     * @param eventHasher             the event hasher to bind
-     * @param internalEventValidator  the internal event validator to bind
-     * @param eventDeduplicator       the event deduplicator to bind
-     * @param eventSignatureValidator the event signature validator to bind
-     * @param orphanBuffer            the orphan buffer to bind
-     * @param inOrderLinker           the in order linker to bind
-     * @param consensusEngine         the consensus engine to bind
-     * @param signedStateFileManager  the signed state file manager to bind
-     * @param stateSigner             the state signer to bind
-     * @param pcesReplayer            the PCES replayer to bind
-     * @param pcesWriter              the PCES writer to bind
-     * @param eventDurabilityNexus    the event durability nexus to bind
-     * @param shadowgraph             the shadowgraph to bind
-     * @param pcesSequencer           the PCES sequencer to bind
-     * @param eventCreationManager    the event creation manager to bind
-     * @param swirldStateManager      the swirld state manager to bind
-     * @param stateSignatureCollector the signed state manager to bind
-     * @param consensusRoundHandler   the consensus round handler to bind
-     * @param eventStreamManager      the event stream manager to bind
-     * @param futureEventBuffer       the future event buffer to bind
-     * @param issDetector             the ISS detector to bind
-     * @param issHandler              the ISS handler to bind
-     * @param hashLogger              the hash logger to bind
-     * @param birthRoundMigrationShim the birth round migration shim to bind, ignored if birth round migration has not
-     *                                yet happened, must not be null if birth round migration has happened
-     * @param completeStateNotifier   the latest complete state notifier to bind
+     * @param eventHasher               the event hasher to bind
+     * @param internalEventValidator    the internal event validator to bind
+     * @param eventDeduplicator         the event deduplicator to bind
+     * @param eventSignatureValidator   the event signature validator to bind
+     * @param orphanBuffer              the orphan buffer to bind
+     * @param inOrderLinker             the in order linker to bind
+     * @param consensusEngine           the consensus engine to bind
+     * @param signedStateFileManager    the signed state file manager to bind
+     * @param stateSigner               the state signer to bind
+     * @param pcesReplayer              the PCES replayer to bind
+     * @param pcesWriter                the PCES writer to bind
+     * @param eventDurabilityNexus      the event durability nexus to bind
+     * @param shadowgraph               the shadowgraph to bind
+     * @param pcesSequencer             the PCES sequencer to bind
+     * @param eventCreationManager      the event creation manager to bind
+     * @param swirldStateManager        the swirld state manager to bind
+     * @param stateSignatureCollector   the signed state manager to bind
+     * @param consensusRoundHandler     the consensus round handler to bind
+     * @param eventStreamManager        the event stream manager to bind
+     * @param futureEventBuffer         the future event buffer to bind
+     * @param issDetector               the ISS detector to bind
+     * @param issHandler                the ISS handler to bind
+     * @param hashLogger                the hash logger to bind
+     * @param birthRoundMigrationShim   the birth round migration shim to bind, ignored if birth round migration has not
+     *                                  yet happened, must not be null if birth round migration has happened
+     * @param completeStateNotifier     the latest complete state notifier to bind
+     * @param latestImmutableStateNexus the latest immutable state nexus to bind
+     * @param latestCompleteStateNexus  the latest complete state nexus to bind
+     * @param savedStateController      the saved state controller to bind
+     * @param signedStateHasher         the signed state hasher to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,

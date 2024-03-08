@@ -89,7 +89,7 @@ public class ConsensusRoundHandler {
             new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
     /**
-     * Signed states are deleted on this background thread.
+     * Contains a background thread responsible for garbage collecting signed states
      */
     private final SignedStateGarbageCollector signedStateGarbageCollector;
 
