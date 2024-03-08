@@ -37,7 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * An epoc millis parser to human-readable String based on {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME}
+ * An epoc millis parser to human-readable String based on pattern: {@code "yyyy-MM-dd HH:mm:ss.SSS"}
  */
 public class EpochCachedFormatter {
 
@@ -50,7 +50,7 @@ public class EpochCachedFormatter {
             .appendValue(MONTH_OF_YEAR, 2)
             .appendLiteral('-')
             .appendValue(DAY_OF_MONTH, 2)
-            .appendLiteral('T')
+            .appendLiteral(' ')
             .appendValue(HOUR_OF_DAY, 2)
             .appendLiteral(':')
             .appendValue(MINUTE_OF_HOUR, 2)
@@ -139,53 +139,49 @@ public class EpochCachedFormatter {
     }
 
     /**
-     * Constructs a string representation of the given {@link Instant} up to the specified {@link ChronoUnit}.
-     * The last char might be {@code '.'} or {@code ':'} depending on the specified {@link ChronoUnit}.
+     * Constructs a string representation of the given {@link Instant} starting from the specified {@link ChronoUnit}.
      * <p>
      *
-     * The method constructs a string representation of the Instant up to the specified {@link ChronoUnit}, including
+     * The method constructs a string representation of the {@link Instant} from the specified {@link ChronoUnit}, including
      * hours, minutes, seconds, and milliseconds.
      * <p>
      * e.g:
-     * Given an {@code instant} representing date: {@code "2020-08-26T12:34:56.789"}
+     * Given an {@code instant} representing date: {@code "2020-08-26 12:34:56.789"}
      * <ul>
-     * <li>{@code stringFrom(instant, ChronoUnit.MILLIS)} --> returns a buffer containing "2020-08-26T12:34:56.789" </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.SECONDS)} --> returns a buffer containing "2020-08-26T12:34:56." </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.MINUTES)} --> returns a buffer containing "2020-08-26T12:34:" </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> returns a buffer containing "2020-08-26T12:" </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> returns a buffer containing "2020-08-26T12:" </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.MILLIS)} --> returns a buffer containing {@code "789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.SECONDS)} --> returns a buffer containing {@code "56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.MINUTES)} --> returns a buffer containing {@code "34:56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> returns a buffer containing {@code " 12:34:56.789"} </li>
      * </ul>
      *
      * @param instant The Instant to represent as a string.
-     * @param unit    The {@link ChronoUnit} to which the string representation should be formatted.
+     * @param unit    The {@link ChronoUnit} from which the string representation should be formatted.
      * @return A {@link StringBuilder} containing the string representation of the Instant up to the specified
      * {@link ChronoUnit}.
      */
     private static @NonNull StringBuilder stringFrom(final @NonNull Instant instant, final @NonNull ChronoUnit unit) {
 
-        // Get the total seconds and milliseconds
-        long totalSeconds = instant.getEpochSecond();
-
         final StringBuilder stringBuilder = new StringBuilder();
         if (unit.ordinal() >= ChronoUnit.MILLIS.ordinal()) {
-            int milliseconds = instant.getNano() / 1_000_000;
+            final int milliseconds = instant.getNano() / 1_000_000;
             appendDigitsReverse(milliseconds, stringBuilder, 3);
         }
+        long totalSeconds = instant.getEpochSecond();
         if (unit.ordinal() >= ChronoUnit.SECONDS.ordinal()) {
             stringBuilder.append(".");
-            int second = (int) (totalSeconds % 60);
+            final int second = (int) (totalSeconds % 60);
             appendDigitsReverse(second, stringBuilder, 2);
         }
         if (unit.ordinal() >= ChronoUnit.MINUTES.ordinal()) {
-            int minute = (int) ((totalSeconds / 60) % 60);
+            final int minute = (int) ((totalSeconds / 60) % 60);
             stringBuilder.append(":");
             appendDigitsReverse(minute, stringBuilder, 2);
         }
         if (unit.ordinal() >= ChronoUnit.HOURS.ordinal()) {
-            int hour = (int) ((totalSeconds / 3600) % 24);
+            final int hour = (int) ((totalSeconds / 3600) % 24);
             stringBuilder.append(":");
             appendDigitsReverse(hour, stringBuilder, 2);
-            stringBuilder.append("T");
+            stringBuilder.append(" ");
         }
 
         return stringBuilder.reverse();
@@ -212,14 +208,9 @@ public class EpochCachedFormatter {
         int actualLength = 0;
         int num = number;
         while ((num > 0) && actualLength < desiredLength) {
-            // Iterate through the digits of the number in reverse order
-            // Extract the last digit from the number using modulo operator
             int digit = num % 10;
-            // Append the digit to the buffer
             buffer.append(digit);
-            // Remove the last digit from the number
             num /= 10;
-            // add the length
             actualLength++;
         }
         while (desiredLength > actualLength) {
