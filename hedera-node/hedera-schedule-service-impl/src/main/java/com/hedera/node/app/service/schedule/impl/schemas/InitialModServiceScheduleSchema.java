@@ -22,8 +22,8 @@ import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHE
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
@@ -143,7 +143,7 @@ public final class InitialModServiceScheduleSchema extends Schema {
             log.info("BBM: finished schedule by expiration migration");
 
             log.info("BBM: doing schedule by equality migration");
-            final WritableKVState<ProtoString, ScheduleList> schedulesByEquality =
+            final WritableKVState<ProtoBytes, ScheduleList> schedulesByEquality =
                     ctx.newStates().get(SCHEDULES_BY_EQUALITY_KEY);
             fs.byEquality().forEachNode((scheduleEqualityVirtualKey, sevv) -> {
                 sevv.getIds().forEach(new BiConsumer<String, Long>() {
@@ -152,7 +152,7 @@ public final class InitialModServiceScheduleSchema extends Schema {
                         var schedule = schedulesById.get(
                                 ScheduleID.newBuilder().scheduleNum(scheduleId).build());
                         if (schedule != null) {
-                            final var equalityKey = new ProtoString(ScheduleStoreUtility.calculateStringHash(schedule));
+                            final var equalityKey = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
                             final var existingList = schedulesByEquality.get(equalityKey);
                             final List<Schedule> existingSchedules = existingList == null
                                     ? new ArrayList<>()
@@ -190,7 +190,7 @@ public final class InitialModServiceScheduleSchema extends Schema {
         return StateDefinition.inMemory(SCHEDULES_BY_EXPIRY_SEC_KEY, ProtoLong.PROTOBUF, ScheduleList.PROTOBUF);
     }
 
-    private static StateDefinition<ProtoString, ScheduleList> schedulesByEquality() {
-        return StateDefinition.inMemory(SCHEDULES_BY_EQUALITY_KEY, ProtoString.PROTOBUF, ScheduleList.PROTOBUF);
+    private static StateDefinition<ProtoBytes, ScheduleList> schedulesByEquality() {
+        return StateDefinition.inMemory(SCHEDULES_BY_EQUALITY_KEY, ProtoBytes.PROTOBUF, ScheduleList.PROTOBUF);
     }
 }

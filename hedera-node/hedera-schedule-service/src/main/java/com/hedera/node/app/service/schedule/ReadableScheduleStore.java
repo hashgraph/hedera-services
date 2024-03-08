@@ -42,7 +42,7 @@ public interface ReadableScheduleStore {
      * @return the schedule with the given id
      */
     @Nullable
-    Schedule get(final @Nullable ScheduleID id);
+    Schedule get(@Nullable ScheduleID id);
 
     /**
      * Get a set of schedules that are "hash equal" to the provided Schedule.
