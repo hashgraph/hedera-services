@@ -55,7 +55,6 @@ import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.consensus.ConsensusConfig;
-import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -148,7 +147,6 @@ public final class BootstrapUtils {
                 .withConfigDataType(VirtualMapConfig.class)
                 .withConfigDataType(ConsensusConfig.class)
                 .withConfigDataType(ThreadConfig.class)
-                .withConfigDataType(DispatchConfiguration.class)
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)

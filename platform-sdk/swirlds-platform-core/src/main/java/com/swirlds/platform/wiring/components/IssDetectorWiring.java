@@ -23,7 +23,7 @@ import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.components.transaction.system.SystemTransactionExtractor;
+import com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -67,7 +67,8 @@ public record IssDetectorWiring(
                         model,
                         "extractSignaturesForIssDetector",
                         "consensus round",
-                        new SystemTransactionExtractor<>(StateSignatureTransaction.class)::handleRound);
+                        round -> SystemTransactionExtractionUtils.extractFromRound(
+                                round, StateSignatureTransaction.class));
         final InputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>> sigInput =
                 taskScheduler.buildInputWire("post consensus signatures");
         roundTransformer.getOutputWire().solderTo(sigInput);
