@@ -25,12 +25,12 @@ import com.swirlds.base.sample.domain.Operation.OperationDetail;
 import com.swirlds.base.sample.domain.OperationType;
 import com.swirlds.base.sample.domain.Stock;
 import com.swirlds.base.sample.domain.StockHandlingMode;
+import com.swirlds.base.sample.internal.Context;
 import com.swirlds.base.sample.metrics.ApplicationMetrics;
 import com.swirlds.base.sample.persistence.InventoryDao;
 import com.swirlds.base.sample.persistence.OperationDao;
 import com.swirlds.base.sample.persistence.OperationDao.Criteria;
 import com.swirlds.base.sample.persistence.StockDao;
-import com.swirlds.common.context.PlatformContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -54,9 +54,9 @@ public class OperationService extends CrudService<Operation> {
     private final @NonNull OperationDao operationDao;
     private final @NonNull InventoryDao inventoryDao;
     private final @NonNull StockDao stockDao;
-    private final @NonNull PlatformContext context;
+    private final @NonNull Context context;
 
-    public OperationService(@NonNull final PlatformContext context) {
+    public OperationService(@NonNull final Context context) {
         super(Operation.class);
         this.context = Objects.requireNonNull(context, "context cannot be null");
         this.operationDao = OperationDao.getInstance();
@@ -154,8 +154,8 @@ public class OperationService extends CrudService<Operation> {
         existences.keySet().forEach(inventoryDao::release);
 
         final Duration duration = Duration.of(System.nanoTime() - startNano, ChronoUnit.NANOS);
-        context.getMetrics().getOrCreate(ApplicationMetrics.OPERATION_TIME).set(duration);
-        context.getMetrics().getOrCreate(ApplicationMetrics.OPERATION_TOTAL).increment();
+        context.metrics().getOrCreate(ApplicationMetrics.OPERATION_TIME).set(duration);
+        context.metrics().getOrCreate(ApplicationMetrics.OPERATION_TOTAL).increment();
         logger.debug("Executed operation {} in {}", saved, duration);
         return saved;
     }

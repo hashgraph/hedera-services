@@ -17,15 +17,12 @@
 package com.swirlds.base.sample;
 
 import com.swirlds.base.sample.config.BaseApiConfig;
+import com.swirlds.base.sample.internal.Context;
 import com.swirlds.base.sample.internal.InitialData;
 import com.swirlds.base.sample.internal.ServerUtils;
 import com.swirlds.base.sample.metrics.ApplicationMetrics;
 import com.swirlds.base.sample.metrics.BenchmarkMetrics;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConfigUtils;
-import com.swirlds.common.context.DefaultPlatformContext;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.metrics.platform.prometheus.AbstractMetricAdapter;
 import com.swirlds.common.platform.NodeId;
@@ -47,8 +44,8 @@ import org.apache.logging.log4j.Logger;
 public class BaseSampleMain {
     private static final Logger logger = LogManager.getLogger(AbstractMetricAdapter.class);
     private static final String SWIRLDS_CONFIG_PACKAGE = "com.swirlds";
-    public static final String APPLICATION_PROPERTIES = "application.properties";
-    public static final Path EXTERNAL_PROPERTIES = Path.of("./config/application.properties");
+    public static final String APPLICATION_PROPERTIES = "app.properties";
+    public static final Path EXTERNAL_PROPERTIES = Path.of("./config/app.properties");
 
     public static void main(String[] args) {
         try {
@@ -66,8 +63,7 @@ public class BaseSampleMain {
             final Configuration configuration = configurationBuilder.build();
             final DefaultMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
             final Metrics metrics = metricsProvider.createPlatformMetrics(NodeId.FIRST_NODE_ID);
-            final PlatformContext context = new DefaultPlatformContext(
-                    configuration, metrics, CryptographyFactory.create(configuration), Time.getCurrent());
+            final Context context = new Context(metrics, configuration);
 
             // Add Benchmark metrics
             BenchmarkMetrics.registerMetrics(context);
@@ -76,7 +72,7 @@ public class BaseSampleMain {
             // Start metric provider
             metricsProvider.start();
 
-            final BaseApiConfig baseApiConfig = context.getConfiguration().getConfigData(BaseApiConfig.class);
+            final BaseApiConfig baseApiConfig = configuration.getConfigData(BaseApiConfig.class);
             logger.trace("Loaded configuration {}", baseApiConfig);
             InitialData.populate();
             ServerUtils.createServer(baseApiConfig, context);

@@ -20,8 +20,8 @@ import com.swirlds.base.sample.domain.Operation;
 import com.swirlds.base.sample.domain.Operation.OperationDetail;
 import com.swirlds.base.sample.domain.OperationType;
 import com.swirlds.base.sample.domain.Purchase;
+import com.swirlds.base.sample.internal.Context;
 import com.swirlds.base.sample.internal.DataTransferUtils;
-import com.swirlds.common.context.PlatformContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -31,7 +31,7 @@ import java.util.List;
 public class PurchaseService extends CrudService<Purchase> {
     private final @NonNull OperationService operationService;
 
-    public PurchaseService(@NonNull final PlatformContext context) {
+    public PurchaseService(@NonNull final Context context) {
         super(Purchase.class);
         this.operationService = new OperationService(context);
     }

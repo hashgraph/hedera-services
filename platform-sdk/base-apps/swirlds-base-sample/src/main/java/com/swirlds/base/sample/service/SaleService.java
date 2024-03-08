@@ -21,8 +21,8 @@ import com.swirlds.base.sample.domain.Operation.OperationDetail;
 import com.swirlds.base.sample.domain.OperationType;
 import com.swirlds.base.sample.domain.Sale;
 import com.swirlds.base.sample.domain.StockHandlingMode;
+import com.swirlds.base.sample.internal.Context;
 import com.swirlds.base.sample.internal.DataTransferUtils;
-import com.swirlds.common.context.PlatformContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -31,10 +31,10 @@ import java.util.Objects;
  * Creates Sales as a DEDUCTION
  */
 public class SaleService extends CrudService<Sale> {
-    private final @NonNull PlatformContext context;
+    private final @NonNull Context context;
     private final @NonNull OperationService operationService;
 
-    public SaleService(@NonNull final PlatformContext context) {
+    public SaleService(@NonNull final Context context) {
         super(Sale.class);
         this.context = Objects.requireNonNull(context, "context cannot be null");
         this.operationService = new OperationService(context);
@@ -44,8 +44,7 @@ public class SaleService extends CrudService<Sale> {
     @Override
     public Sale create(@NonNull final Sale sale) {
         final StockHandlingMode mode = Objects.requireNonNullElse(
-                sale.mode(),
-                context.getConfiguration().getValue("sale.preferredStockHandling", StockHandlingMode.class));
+                sale.mode(), context.configuration().getValue("sale.preferredStockHandling", StockHandlingMode.class));
         final OperationDetail operationDetail =
                 new OperationDetail(sale.itemId(), sale.amount(), sale.salePrice(), mode);
         final Operation operation =

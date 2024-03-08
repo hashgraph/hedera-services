@@ -16,8 +16,9 @@
 
 package com.swirlds.base.sample.metrics;
 
-import com.swirlds.common.context.PlatformContext;
+import com.swirlds.base.sample.internal.Context;
 import com.swirlds.common.metrics.FunctionGauge;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -26,6 +27,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * Registers JVM metrics with the purpose of Benchmarking app behaviour
+ */
 public class BenchmarkMetrics {
 
     private static final OperatingSystemMXBean OS_BEAN = ManagementFactory.getOperatingSystemMXBean();
@@ -77,16 +81,16 @@ public class BenchmarkMetrics {
             .withDescription("Open file descriptors")
             .withFormat(FORMAT_INTEGER);
 
-    public static void registerMetrics(PlatformContext context) {
-        context.getMetrics().getOrCreate(TIMESTAMP_CONFIG);
-        context.getMetrics().getOrCreate(MEM_TOT_CONFIG);
-        context.getMetrics().getOrCreate(MEM_FREE_CONFIG);
-        context.getMetrics().getOrCreate(DIRECT_MEM_CONFIG);
-        context.getMetrics().getOrCreate(CPU_LOAD_PROC_CONFIG);
-        context.getMetrics().getOrCreate(OPEN_FDS_CONFIG);
+    public static void registerMetrics(Context context) {
+        context.metrics().getOrCreate(TIMESTAMP_CONFIG);
+        context.metrics().getOrCreate(MEM_TOT_CONFIG);
+        context.metrics().getOrCreate(MEM_FREE_CONFIG);
+        context.metrics().getOrCreate(DIRECT_MEM_CONFIG);
+        context.metrics().getOrCreate(CPU_LOAD_PROC_CONFIG);
+        context.metrics().getOrCreate(OPEN_FDS_CONFIG);
     }
 
-    private static BufferPoolMXBean getDirectMemMxBean() {
+    private static @Nullable BufferPoolMXBean getDirectMemMxBean() {
         final List<BufferPoolMXBean> pools = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
         for (final BufferPoolMXBean pool : pools) {
             if (pool.getName().equals("direct")) {

@@ -16,9 +16,9 @@
 
 package com.swirlds.base.sample.metrics;
 
+import com.swirlds.base.sample.internal.Context;
 import com.swirlds.base.sample.persistence.InventoryDao;
 import com.swirlds.base.sample.persistence.ItemDao;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.RunningAverageMetric;
@@ -76,13 +76,13 @@ public class ApplicationMetrics {
     /**
      * Register all metrics configurations
      */
-    public static void registerMetrics(@NonNull final PlatformContext context) {
-        context.getMetrics().getOrCreate(REQUEST_TOTAL);
-        context.getMetrics().getOrCreate(REQUEST_AVG_TIME);
-        context.getMetrics().getOrCreate(ERROR_TOTAL);
-        context.getMetrics().getOrCreate(ITEM_TOTAL);
-        context.getMetrics().getOrCreate(OPERATION_TOTAL);
-        context.getMetrics().getOrCreate(OPERATION_TIME);
-        context.getMetrics().getOrCreate(ITEMS_BELOW_STOCK);
+    public static void registerMetrics(@NonNull final Context context) {
+        context.metrics().getOrCreate(REQUEST_TOTAL);
+        context.metrics().getOrCreate(REQUEST_AVG_TIME);
+        context.metrics().getOrCreate(ERROR_TOTAL);
+        context.metrics().getOrCreate(ITEM_TOTAL);
+        context.metrics().getOrCreate(OPERATION_TOTAL);
+        context.metrics().getOrCreate(OPERATION_TIME);
+        context.metrics().getOrCreate(ITEMS_BELOW_STOCK);
     }
 }

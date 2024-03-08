@@ -17,11 +17,9 @@
 package com.swirlds.base.sample.internal;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.swirlds.base.sample.metrics.ApplicationMetrics;
 import com.swirlds.base.sample.persistence.EntityNotFoundException;
 import com.swirlds.base.sample.service.CrudService;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -41,17 +39,16 @@ import org.apache.logging.log4j.Logger;
  */
 public class AdapterHandler<T> implements HttpHandler {
     private static final Logger logger = LogManager.getLogger(AdapterHandler.class);
-    private @NonNull final PlatformContext context;
+    private @NonNull final Context context;
     private @NonNull final CrudService<T> delegatedService;
     private @NonNull final String path;
     private @NonNull final CountPerSecond tps;
 
-    protected AdapterHandler(
-            final @NonNull PlatformContext context, CrudService<T> delegatedService, final String path) {
+    protected AdapterHandler(final @NonNull Context context, CrudService<T> delegatedService, final String path) {
         this.context = Objects.requireNonNull(context);
         this.path = Objects.requireNonNull(path);
         this.delegatedService = Objects.requireNonNull(delegatedService);
-        this.tps = new CountPerSecond(context.getMetrics(), ApplicationMetrics.REQUESTS_PER_SECOND);
+        this.tps = new CountPerSecond(context.metrics(), ApplicationMetrics.REQUESTS_PER_SECOND);
     }
 
     /**
@@ -109,25 +106,25 @@ public class AdapterHandler<T> implements HttpHandler {
             }
         } catch (UnsupportedOperationException e) {
             statusCode = 405;
-            result = ImmutableMap.of("error", "Operation not supported for %s".formatted(requestMethod));
+            result = Map.of("error", "Operation not supported for %s".formatted(requestMethod));
         } catch (IllegalArgumentException e) {
             statusCode = 400;
-            result = ImmutableMap.of("error", e.getMessage());
+            result = Map.of("error", e.getMessage());
         } catch (EntityNotFoundException e) {
             statusCode = 404;
-            result = ImmutableMap.of("error", "%s with code %s not found".formatted(e.getEntityType(), e.getId()));
+            result = Map.of("error", "%s with code %s not found".formatted(e.getEntityType(), e.getId()));
         } catch (RuntimeException e) {
             statusCode = 500;
-            result = ImmutableMap.of("error", "Internal error");
+            result = Map.of("error", "Internal error");
         }
 
         final String response = DataTransferUtils.serializeToJson(result);
         long duration = System.nanoTime() - start;
-        context.getMetrics().getOrCreate(ApplicationMetrics.REQUEST_TOTAL).increment();
-        context.getMetrics().getOrCreate(ApplicationMetrics.REQUEST_AVG_TIME).update(duration);
+        context.metrics().getOrCreate(ApplicationMetrics.REQUEST_TOTAL).increment();
+        context.metrics().getOrCreate(ApplicationMetrics.REQUEST_AVG_TIME).update(duration);
         tps.count();
         if (statusCode - 200 >= 100) {
-            context.getMetrics().getOrCreate(ApplicationMetrics.ERROR_TOTAL).increment();
+            context.metrics().getOrCreate(ApplicationMetrics.ERROR_TOTAL).increment();
         }
         exchange.setStatusCode(statusCode);
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json;charset=utf-8");

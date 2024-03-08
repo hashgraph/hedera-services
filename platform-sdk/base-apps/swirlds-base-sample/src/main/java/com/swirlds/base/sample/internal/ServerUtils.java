@@ -22,7 +22,6 @@ import com.swirlds.base.sample.service.ItemService;
 import com.swirlds.base.sample.service.OperationService;
 import com.swirlds.base.sample.service.PurchaseService;
 import com.swirlds.base.sample.service.SaleService;
-import com.swirlds.common.context.PlatformContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.undertow.Undertow;
 import io.undertow.server.handlers.BlockingHandler;
@@ -39,8 +38,7 @@ public class ServerUtils {
     /**
      * Creates and starts a Http server with a set of defined handlers
      */
-    public static void createServer(
-            final @NonNull BaseApiConfig config, final @NonNull PlatformContext swirldsContext) {
+    public static void createServer(final @NonNull BaseApiConfig config, final @NonNull Context swirldsContext) {
         // Create a path handler to associate handlers with different paths
         final PathHandler pathHandler = new PathHandler();
 
