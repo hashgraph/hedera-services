@@ -184,7 +184,9 @@ public class StatsDemoMain implements SwirldMain {
         long now = System.nanoTime();
         double tps = transPerSecToCreate / platform.getAddressBook().getSize();
         int numCreated = 0;
-        final Transaction t = Transaction.newBuilder().signedTransactionBytes(Bytes.wrap(transaction)).build();
+        final Transaction t = Transaction.newBuilder()
+                .signedTransactionBytes(Bytes.wrap(transaction))
+                .build();
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
             toCreate += ((double) now - lastEventTime) * NANOSECONDS_TO_SECONDS * tps;
