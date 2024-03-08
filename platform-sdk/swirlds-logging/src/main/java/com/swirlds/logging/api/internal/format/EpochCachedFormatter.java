@@ -33,7 +33,6 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.SignStyle;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -62,10 +61,10 @@ public class EpochCachedFormatter {
             .toFormatter()
             .withZone(UTC);
 
-    private final Map<Instant, String> exactCache = new LimitedSizeCache<>();
-    private final Map<Instant, String> dateCache = new LimitedSizeCache<>();
-    private final Map<Instant, String> dateHourCache = new LimitedSizeCache<>();
-    private final Map<Instant, String> dateHourMinutesCache = new LimitedSizeCache<>();
+    private final Map<Instant, String> exactCache = new ShrinkableSizeCache<>();
+    private final Map<Instant, String> dateCache = new ShrinkableSizeCache<>();
+    private final Map<Instant, String> dateHourCache = new ShrinkableSizeCache<>();
+    private final Map<Instant, String> dateHourMinutesCache = new ShrinkableSizeCache<>();
 
     /**
      * Creates a parser and preloads the caches with {@link System#currentTimeMillis()}
@@ -222,29 +221,6 @@ public class EpochCachedFormatter {
         while (desiredLength > actualLength) {
             buffer.append(0);
             actualLength++;
-        }
-    }
-
-    /**
-     * A {@link LinkedHashMap} with size as removal policy.
-     *
-     * @param <K> the type for key
-     * @param <V> the type for value
-     */
-    private static class LimitedSizeCache<K, V> extends LinkedHashMap<K, V> {
-        private static final int MAX_ENTRIES = 10000;
-
-        public LimitedSizeCache() {
-            this(MAX_ENTRIES);
-        }
-
-        public LimitedSizeCache(int entries) {
-            super(entries + 1, 1.0f, true);
-        }
-
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
-            return size() > MAX_ENTRIES;
         }
     }
 }

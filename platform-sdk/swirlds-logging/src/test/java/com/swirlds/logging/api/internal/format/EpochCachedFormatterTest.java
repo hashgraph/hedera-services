@@ -87,7 +87,6 @@ class EpochCachedFormatterTest {
     void testCacheEviction() {
         EpochCachedFormatter formatter = new EpochCachedFormatter();
         for (int i = 0; i < 2000000; i++) {
-            // Ensure cache overflow
             assertDoesNotThrow(() -> formatter.format(generateRandomEpoch()));
         }
     }
