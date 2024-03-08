@@ -43,11 +43,10 @@ public class DefaultSavedStateController implements SavedStateController {
      * written to disk.
      */
     private Instant previousSavedStateTimestamp;
-    /** the state config */
     private final StateConfig stateConfig;
 
     /**
-     * Create a new SavedStateController
+     * Constructor
      *
      * @param stateConfig the state config
      */
@@ -81,11 +80,20 @@ public class DefaultSavedStateController implements SavedStateController {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public synchronized void registerSignedStateFromDisk(@NonNull final SignedState signedState) {
         previousSavedStateTimestamp = signedState.getConsensusTimestamp();
     }
 
+    /**
+     * Marks a signed state with a reason why it should eventually be written to disk
+     *
+     * @param state  the state to mark
+     * @param reason the reason why the state should be written to disk
+     */
     private void markSavingToDisk(@NonNull final ReservedSignedState state, @NonNull final StateToDiskReason reason) {
         final SignedState signedState = state.get();
         logger.info(
