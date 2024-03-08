@@ -20,24 +20,30 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
+import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,6 +73,26 @@ public final class PcesBirthRoundMigration {
             final long minimumJudgeGenerationInMigrationRound)
             throws IOException {
 
+        final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
+
+        if (!findPcesFiles(databaseDirectory, BIRTH_ROUND_THRESHOLD).isEmpty()) {
+            // We write the migrated PCES file atomically, so if it exists,
+            // the important part of the migration has been completed.
+
+            logger.info(STARTUP.getMarker(), "PCES birth round migration has already been completed.");
+
+            if (!findPcesFiles(databaseDirectory, GENERATION_THRESHOLD).isEmpty()) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "PCES birth round migration has already been completed, but there "
+                                + "are still legacy formatted PCES files present. Cleaning up.");
+                makeBackupFiles(recycleBin, databaseDirectory);
+                cleanUpOldFiles(databaseDirectory);
+            }
+
+            return;
+        }
+
         logger.info(
                 STARTUP.getMarker(),
                 "Migrating PCES to birth round mode. Migration round: {}, minimum judge "
@@ -74,17 +100,10 @@ public final class PcesBirthRoundMigration {
                 migrationRound,
                 minimumJudgeGenerationInMigrationRound);
 
-        if (hasMigrationAlreadyCompleted()) {
-            logger.error(EXCEPTION.getMarker(), "PCES birth round migration has already been completed.");
-            cleanUpOldFilesAfterBotchedMigration(recycleBin);
-            return;
-        }
+        makeBackupFiles(recycleBin, databaseDirectory);
 
-        final PcesFileTracker originalFiles = new PcesFileTracker(GENERATION_THRESHOLD);
-        makeBackupFiles(recycleBin, originalFiles);
-
-        final List<GossipEvent> eventsToMigrate =
-                readEventsToBeMigrated(originalFiles, minimumJudgeGenerationInMigrationRound, migrationRound);
+        final List<GossipEvent> eventsToMigrate = readEventsToBeMigrated(
+                platformContext, recycleBin, selfId, minimumJudgeGenerationInMigrationRound, migrationRound);
 
         if (eventsToMigrate.isEmpty()) {
             logger.error(EXCEPTION.getMarker(), "No events to migrate. PCES birth round migration aborted.");
@@ -92,77 +111,84 @@ public final class PcesBirthRoundMigration {
         }
 
         migrateEvents(platformContext, selfId, eventsToMigrate, migrationRound);
-        cleanUpOldFiles(originalFiles);
+        cleanUpOldFiles(databaseDirectory);
 
         logger.info(STARTUP.getMarker(), "PCES birth round migration complete.");
     }
 
     /**
-     * Check if the migration has already been completed.
-     *
-     * @return true if the migration has already been completed, false otherwise
-     */
-    private static boolean hasMigrationAlreadyCompleted() {
-        final PcesFileTracker tracker = new PcesFileTracker(BIRTH_ROUND_THRESHOLD);
-        return tracker.getFileCount() > 0;
-    }
-
-    /**
-     * If we observe at least one PCES file in birth round mode, it's possible that the node crashed before it finished
-     * cleaning up the old files. This method will clean up any old files that may have been left behind.
-     */
-    private static void cleanUpOldFilesAfterBotchedMigration(@NonNull final RecycleBin recycleBin) throws IOException {
-        final PcesFileTracker tracker = new PcesFileTracker(GENERATION_THRESHOLD);
-        makeBackupFiles(recycleBin, tracker);
-        logger.info(
-                STARTUP.getMarker(),
-                "PCES birth round migration has already been completed. Cleaning up old files. There are {} old "
-                        + "file(s) to be deleted.",
-                tracker.getFileCount());
-        cleanUpOldFiles(tracker);
-    }
-
-    /**
      * Copy PCES files into recycle bin. A measure to reduce the chances of permanent data loss in the event of a
      * migration failure.
+     *
+     * @param recycleBin        the recycle bin
+     * @param databaseDirectory the database directory (i.e. where PCES files are stored)
      */
-    private static void makeBackupFiles(
-            @NonNull final RecycleBin recycleBin, @NonNull final PcesFileTracker originalFiles) throws IOException {
-
+    private static void makeBackupFiles(@NonNull final RecycleBin recycleBin, @NonNull final Path databaseDirectory)
+            throws IOException {
         logger.info(
-                STARTUP.getMarker(),
-                "Backing up {} PCES files prior to PCES modification. "
-                        + "Copying files to the recycle bin in case of unexpected failures.",
-                originalFiles.getFileCount());
+                STARTUP.getMarker(), "Backing up PCES files prior to PCES modification in case of unexpected failure.");
 
-        final Path copyDirectory = TemporaryFileBuilder.buildTemporaryDirectory("pces-backup");
-        final Iterator<PcesFile> originalFileIterator = originalFiles.getFileIterator();
-        while (originalFileIterator.hasNext()) {
-            final PcesFile file = originalFileIterator.next();
-            final Path copy = copyDirectory.resolve(file.getFileName());
-            Files.copy(file.getPath(), copy);
-        }
-
+        final Path copyDirectory = TemporaryFileBuilder.buildTemporaryFile("pces-backup");
+        FileUtils.hardLinkTree(databaseDirectory, copyDirectory);
         recycleBin.recycle(copyDirectory);
+    }
+
+    /**
+     * Find all PCES files beneath a given directory. Unlike the normal process of reading PCES files via
+     * {@link PcesFileReader#readFilesFromDisk(PlatformContext, RecycleBin, Path, long, boolean, AncientMode)}, this
+     * method ignores discontinuities and returns all files.
+     *
+     * @param ancientMode only return files that conform to this ancient mode
+     * @return all PCES files beneath the given directory
+     */
+    @NonNull
+    private static List<PcesFile> findPcesFiles(@NonNull final Path path, @NonNull final AncientMode ancientMode) {
+        try (final Stream<Path> fileStream = Files.walk(path)) {
+            return fileStream
+                    .filter(f -> !Files.isDirectory(f))
+                    .map(PcesUtilities::parseFile)
+                    .filter(Objects::nonNull)
+                    .filter(f -> f.getFileType() == ancientMode)
+                    .sorted() // sorting is not strictly necessary, but it makes the output & logs more predictable
+                    .collect(Collectors.toList());
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /**
      * Read all events that will be non-ancient after migration.
      *
-     * @param originalFiles                          the original files
+     * @param platformContext                        the platform context
+     * @param recycleBin                             the recycle bin
+     * @param selfId                                 this node's ID
      * @param minimumJudgeGenerationInMigrationRound the minimum judge generation in the migration round
-     * @param migrationRound                         the migration round
+     * @param migrationRound                         the migration round (i.e. the round number of the state that we are
+     *                                               loading at migration time)
      * @return the events to be migrated
      */
     @NonNull
     private static List<GossipEvent> readEventsToBeMigrated(
-            @NonNull final PcesFileTracker originalFiles,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final NodeId selfId,
             final long minimumJudgeGenerationInMigrationRound,
             final long migrationRound)
             throws IOException {
 
-        // Gather all events that will be non-ancient after migration. Write them to a new PCES file.
-        // The number of events that qualify are expected to be small, so we can gather them all in memory.
+        final PcesFileTracker originalFiles = PcesFileReader.readFilesFromDisk(
+                platformContext,
+                recycleBin,
+                getDatabaseDirectory(platformContext, selfId),
+                migrationRound,
+                platformContext
+                        .getConfiguration()
+                        .getConfigData(PcesConfig.class)
+                        .permitGaps(),
+                GENERATION_THRESHOLD);
+
+        // The number of events that qualify for migration is expected to be small,
+        // so we can gather them all in memory.
 
         final IOIterator<GossipEvent> iterator =
                 originalFiles.getEventIterator(minimumJudgeGenerationInMigrationRound, migrationRound);
@@ -214,15 +240,17 @@ public final class PcesBirthRoundMigration {
     }
 
     /**
-     * Clean up old files..
+     * Clean up old files.
      *
-     * @param originalFiles the original files to be deleted
+     * @param databaseDirectory the database directory (i.e. where PCES files are stored)
      */
-    private static void cleanUpOldFiles(@NonNull final PcesFileTracker originalFiles) throws IOException {
-        logger.info(STARTUP.getMarker(), "Cleaning up old PCES files.");
-        final Iterator<PcesFile> originalFileIterator = originalFiles.getFileIterator();
-        while (originalFileIterator.hasNext()) {
-            originalFileIterator.next().deleteFile(null);
+    private static void cleanUpOldFiles(@NonNull final Path databaseDirectory) throws IOException {
+        final List<PcesFile> filesToDelete = findPcesFiles(databaseDirectory, BIRTH_ROUND_THRESHOLD);
+
+        logger.info(STARTUP.getMarker(), "Cleaning up old {} legacy formatted PCES files.", filesToDelete.size());
+
+        for (final PcesFile file : filesToDelete) {
+            file.deleteFile(databaseDirectory);
         }
     }
 }
