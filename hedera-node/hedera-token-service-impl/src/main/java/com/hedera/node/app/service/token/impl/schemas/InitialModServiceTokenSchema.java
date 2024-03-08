@@ -109,7 +109,6 @@ public class InitialModServiceTokenSchema extends Schema {
     private static final long MAX_ACCOUNTS = 1_000_000_000L;
     private static final long MAX_TOKEN_RELS = 1_000_000_000L;
     private static final long MAX_MINTABLE_NFTS = 1_000_000_000L;
-    private static final long MAX_STAKING = 10_000L;
     private static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;
     private static final long LAST_RESERVED_SYSTEM_CONTRACT = 399L;
     private static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
@@ -159,7 +158,7 @@ public class InitialModServiceTokenSchema extends Schema {
                 StateDefinition.onDisk(ALIASES_KEY, ProtoBytes.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
                 StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, MAX_MINTABLE_NFTS),
                 StateDefinition.onDisk(TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, MAX_TOKEN_RELS),
-                StateDefinition.onDisk(STAKING_INFO_KEY, EntityNumber.PROTOBUF, StakingNodeInfo.PROTOBUF, MAX_STAKING),
+                StateDefinition.inMemory(STAKING_INFO_KEY, EntityNumber.PROTOBUF, StakingNodeInfo.PROTOBUF),
                 StateDefinition.singleton(STAKING_NETWORK_REWARDS_KEY, NetworkStakingRewards.PROTOBUF));
     }
 
