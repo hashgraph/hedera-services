@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.component;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -29,18 +30,27 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 public class WiringComponentTests {
 
     private interface FooBarBaz {
+        @NonNull
         Long handleFoo(@NonNull Integer foo);
 
         @InputWireLabel("bar")
+        @NonNull
         Long handleBar(@NonNull Boolean bar);
 
         void handleBaz(@NonNull String baz);
+
+        @InputWireLabel("data to be transformed")
+        @SchedulerLabel("transformer")
+        @NonNull
+        String transformer(@NonNull Long baseOutput);
     }
 
     private static class FooBarBazImpl implements FooBarBaz {
@@ -63,9 +73,42 @@ public class WiringComponentTests {
             runningValue *= baz.hashCode();
         }
 
+        @Override
+        @NonNull
+        public String transformer(@NonNull final Long baseOutput) {
+            return "" + baseOutput;
+        }
+
         public long getRunningValue() {
             return runningValue;
         }
+    }
+
+    /**
+     * The framework should not permit methods that aren't on the component to be wired.
+     */
+    @Test
+    void methodNotOnComponentTest() {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel =
+                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+
+        final TaskScheduler<Long> scheduler = wiringModel
+                .schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
+
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+
+        assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x, y) -> 0L));
+
+        assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x, y) -> {}));
+
+        assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getTransformedOutput((x, y) -> 0L));
     }
 
     @ParameterizedTest
@@ -83,7 +126,8 @@ public class WiringComponentTests {
                 .build()
                 .cast();
 
-        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring = new ComponentWiring<>(FooBarBaz.class, scheduler);
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
 
         final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
 
@@ -136,6 +180,65 @@ public class WiringComponentTests {
                 barInput.put(choice);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals(expectedRunningValue, outputValue.get());
+            } else {
+                final String value = "value" + i;
+                expectedRunningValue *= value.hashCode();
+                bazInput.put(value);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void transformerTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel =
+                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+
+        final TaskScheduler<Long> scheduler = wiringModel
+                .schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
+
+        final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
+
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+
+        if (bindLocation == 0) {
+            fooBarBazWiring.bind(fooBarBazImpl);
+        }
+
+        final InputWire<Integer> fooInput = fooBarBazWiring.getInputWire(FooBarBaz::handleFoo);
+        final InputWire<Boolean> barInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBar);
+        final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
+
+        final OutputWire<String> output = fooBarBazWiring.getTransformedOutput(FooBarBaz::transformer);
+
+        if (bindLocation == 1) {
+            fooBarBazWiring.bind(fooBarBazImpl);
+        }
+
+        final AtomicReference<String> outputValue = new AtomicReference<>("0");
+        output.solderTo("outputHandler", "output", outputValue::set);
+
+        long expectedRunningValue = 0;
+        for (int i = 0; i < 1000; i++) {
+            if (i % 3 == 0) {
+                expectedRunningValue += i;
+                fooInput.put(i);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+                assertEquals("" + expectedRunningValue, outputValue.get());
+            } else if (i % 3 == 1) {
+                final boolean choice = i % 7 == 0;
+                expectedRunningValue *= choice ? 1 : -1;
+                barInput.put(choice);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+                assertEquals("" + expectedRunningValue, outputValue.get());
             } else {
                 final String value = "value" + i;
                 expectedRunningValue *= value.hashCode();
