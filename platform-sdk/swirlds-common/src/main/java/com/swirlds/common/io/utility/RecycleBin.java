@@ -16,6 +16,7 @@
 
 package com.swirlds.common.io.utility;
 
+import com.swirlds.base.state.Startable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,7 +30,7 @@ import java.nio.file.Path;
  * code that depends on the existence of files in this temporary location. Files in this temporary location should be
  * treated as deleted by java code, and only used for debugging purposes.
  */
-public interface RecycleBin {
+public interface RecycleBin extends Startable {
 
     /**
      * Remove a file or directory tree from its current location and move it to a temporary location.

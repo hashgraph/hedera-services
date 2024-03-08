@@ -29,16 +29,19 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A class used to store base event data that is used to create the hash of that event.
@@ -105,6 +108,18 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /** the payload: an array of transactions */
     private ConsensusTransactionImpl[] transactions;
 
+    /**
+     * The actual birth round to return. May not be the original birth round if this event was created in the software
+     * version right before the birth round migration.
+     */
+    private long birthRoundOverride;
+
+    /**
+     * Class IDs of permitted transaction types.
+     */
+    private static final Set<Long> TRANSACTION_TYPES =
+            Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
+
     public BaseEventHashedData() {}
 
     /**
@@ -133,13 +148,14 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         otherParents.forEach(Objects::requireNonNull);
         this.otherParents = otherParents;
         this.birthRound = birthRound;
+        this.birthRoundOverride = birthRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
         this.transactions = transactions;
     }
 
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.TRANSACTION_SUBCLASSES;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     @Override
@@ -193,41 +209,21 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             throws IOException {
         Objects.requireNonNull(in, "The input stream must not be null");
         serializedVersion = version;
-        if (version >= ClassVersion.SOFTWARE_VERSION) {
-            softwareVersion = in.readSerializable();
-        } else {
-            softwareVersion = SoftwareVersion.NO_VERSION;
+        softwareVersion = in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
+
+        creatorId = in.readSerializable(false, NodeId::new);
+        if (creatorId == null) {
+            throw new IOException("creatorId is null");
         }
-        if (version < ClassVersion.BIRTH_ROUND) {
-            // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
-            // Changing the event format may require a HIP.  The old format is preserved for now.
-            creatorId = NodeId.deserializeLong(in, false);
-            final long selfParentGen = in.readLong();
-            final long otherParentGen = in.readLong();
-            final Hash selfParentHash = in.readSerializable(false, Hash::new);
-            final Hash otherParentHash = in.readSerializable(false, Hash::new);
-            selfParent = selfParentHash == null
-                    ? null
-                    : new EventDescriptor(
-                            selfParentHash, creatorId, selfParentGen, EventConstants.BIRTH_ROUND_UNDEFINED);
-            // The creator for the other parent descriptor is not here and should be retrieved from the unhashed data.
-            otherParents = otherParentHash == null
-                    ? Collections.emptyList()
-                    : Collections.singletonList(
-                            new EventDescriptor(otherParentHash, otherParentGen, EventConstants.BIRTH_ROUND_UNDEFINED));
-            birthRound = EventConstants.BIRTH_ROUND_UNDEFINED;
-        } else {
-            creatorId = in.readSerializable(false, NodeId::new);
-            if (creatorId == null) {
-                throw new IOException("creatorId is null");
-            }
-            selfParent = in.readSerializable(false, EventDescriptor::new);
-            otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
-            birthRound = in.readLong();
-        }
+        selfParent = in.readSerializable(false, EventDescriptor::new);
+        otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
+        birthRound = in.readLong();
+        birthRoundOverride = birthRound;
+
         timeCreated = in.readInstant();
         in.readInt(); // read serialized length
-        transactions = in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true);
+        transactions =
+                in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true, TRANSACTION_TYPES);
     }
 
     @Override
@@ -308,12 +304,22 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     /**
+     * Override the birth round for this event. This will only be called for events created in the software version
+     * right before the birth round migration.
+     *
+     * @param birthRoundOverride the birth round that has been assigned to this event
+     */
+    public void setBirthRoundOverride(final long birthRoundOverride) {
+        this.birthRoundOverride = birthRoundOverride;
+    }
+
+    /**
      * Get the birth round of the event.
      *
      * @return the birth round of the event
      */
     public long getBirthRound() {
-        return birthRound;
+        return birthRoundOverride;
     }
 
     /**

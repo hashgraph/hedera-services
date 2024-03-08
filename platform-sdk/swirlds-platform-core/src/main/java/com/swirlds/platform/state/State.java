@@ -243,6 +243,9 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
                 .addRow("Epoch hash:", epochHash)
                 .addRow("Minimum judge hash code:", minimumJudgeInfo == null ? "null" : minimumJudgeInfo.hashCode())
                 .addRow("Root hash:", getHash())
+                .addRow("First BR Version:", platformState.getFirstVersionInBirthRoundMode())
+                .addRow("Last round before BR:", platformState.getLastRoundBeforeBirthRoundMode())
+                .addRow("Lowest Judge Gen before BR", platformState.getLowestJudgeGenerationBeforeBirthRoundMode())
                 .render(sb);
 
         sb.append("\n");
