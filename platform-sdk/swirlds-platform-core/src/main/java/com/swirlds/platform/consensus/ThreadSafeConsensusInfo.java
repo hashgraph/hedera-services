@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.consensus;
 
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -23,18 +25,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * All information provided by {@link com.swirlds.platform.Consensus} that needs to be accessed at
- * any time by any thread.
+ * All information provided by {@link com.swirlds.platform.Consensus} that needs to be accessed at any time by any
+ * thread.
  */
 public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberProvider {
     private static final Logger LOG = LogManager.getLogger(ThreadSafeConsensusInfo.class);
 
-    private final ConsensusConfig config;
+    protected final ConsensusConfig config;
     private final SequentialRingBuffer<MinimumJudgeInfo> storage;
 
     /**
-     * The minimum judge generation number from the oldest non-expired round, if we have expired any
-     * rounds. Else, this is {@link GraphGenerations#FIRST_GENERATION}.
+     * The minimum judge generation number from the oldest non-expired round, if we have expired any rounds. Else, this
+     * is {@link GraphGenerations#FIRST_GENERATION}.
      *
      * <p>Updated only on consensus thread, read concurrently from gossip threads.
      */
@@ -44,35 +46,35 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
     private volatile long minGenNonAncient = GraphGenerations.FIRST_GENERATION;
 
     /**
-     * The minimum judge generation number from the most recent fame-decided round, if there is one.
-     * Else, this is {@link GraphGenerations#FIRST_GENERATION}.
+     * The minimum judge generation number from the most recent fame-decided round, if there is one. Else, this is
+     * {@link GraphGenerations#FIRST_GENERATION}.
      *
      * <p>Updated only on consensus thread, read concurrently from gossip threads.
      */
     private volatile long maxRoundGeneration = GraphGenerations.FIRST_GENERATION;
 
     /**
-     * maximum round number of all events stored in "storage", or -1 if none. This is the max round
-     * created of all events ever added to the hashgraph.
+     * maximum round number of all events stored in "storage", or -1 if none. This is the max round created of all
+     * events ever added to the hashgraph.
      */
     private volatile long maxRound = ConsensusConstants.ROUND_UNDEFINED;
     /**
-     * minimum round number of all events stored in "storage", or -1 if none. This may not be the min
-     * round created of all events ever added to the hashgraph, since some of the older rounds may
-     * have been decided and discarded.
+     * minimum round number of all events stored in "storage", or -1 if none. This may not be the min round created of
+     * all events ever added to the hashgraph, since some of the older rounds may have been decided and discarded.
      */
     private volatile long minRound = ConsensusConstants.ROUND_UNDEFINED;
     /** fame has been decided for all rounds less than this, but not for this round. */
     private volatile long fameDecidedBelow = ConsensusConstants.ROUND_FIRST;
 
     /**
-     * @param config consensus configuration
-     * @param storage round storage
+     * @param platformContext platform context
      */
-    public ThreadSafeConsensusInfo(
-            @NonNull final ConsensusConfig config, @NonNull final SequentialRingBuffer<MinimumJudgeInfo> storage) {
-        this.config = config;
-        this.storage = storage;
+    public ThreadSafeConsensusInfo(@NonNull final PlatformContext platformContext) {
+        final Configuration config = platformContext.getConfiguration();
+        this.config = config.getConfigData(ConsensusConfig.class);
+        this.storage = new SequentialRingBuffer<>(
+                ConsensusConstants.ROUND_FIRST,
+                config.getConfigData(ConsensusConfig.class).roundsExpired() * 2);
     }
 
     /**
