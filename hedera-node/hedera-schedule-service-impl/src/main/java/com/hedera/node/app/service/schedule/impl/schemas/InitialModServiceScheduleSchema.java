@@ -103,42 +103,33 @@ public final class InitialModServiceScheduleSchema extends Schema {
             final WritableKVState<ProtoLong, ScheduleList> schedulesByExpiration =
                     ctx.newStates().get(SCHEDULES_BY_EXPIRY_SEC_KEY);
             fs.byExpirationSecond()
-                    .forEachNode(new BiConsumer<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>() {
+                    .forEachNode((secondSinceEpocVirtualKey, sVv) -> sVv.getIds().forEach(new BiConsumer<RichInstant, ImmutableLongList>() {
                         @Override
-                        public void accept(
-                                SecondSinceEpocVirtualKey secondSinceEpocVirtualKey, ScheduleSecondVirtualValue sVv) {
-                            sVv.getIds().forEach(new BiConsumer<RichInstant, ImmutableLongList>() {
-                                @Override
-                                public void accept(RichInstant richInstant, ImmutableLongList scheduleIds) {
+                        public void accept(RichInstant richInstant, ImmutableLongList scheduleIds) {
 
-                                    List<Schedule> schedules = new ArrayList<>();
-                                    scheduleIds.forEach(new LongProcedure() {
-                                        @Override
-                                        public void value(long scheduleId) {
-                                            var schedule = schedulesById.get(ScheduleID.newBuilder()
-                                                    .scheduleNum(scheduleId)
-                                                    .build());
-                                            if (schedule != null) schedules.add(schedule);
-                                            else {
-                                                log.info("BBM: ERROR: no schedule for expiration->id "
-                                                        + richInstant
-                                                        + " -> "
-                                                        + scheduleId);
-                                            }
-                                        }
-                                    });
-
-                                    schedulesByExpiration.put(
-                                            ProtoLong.newBuilder()
-                                                    .value(secondSinceEpocVirtualKey.getKeyAsLong())
-                                                    .build(),
-                                            ScheduleList.newBuilder()
-                                                    .schedules(schedules)
-                                                    .build());
+                            List<Schedule> schedules = new ArrayList<>();
+                            scheduleIds.forEach((LongProcedure) scheduleId -> {
+                                var schedule = schedulesById.get(ScheduleID.newBuilder()
+                                        .scheduleNum(scheduleId)
+                                        .build());
+                                if (schedule != null) schedules.add(schedule);
+                                else {
+                                    log.info("BBM: ERROR: no schedule for expiration->id "
+                                            + richInstant
+                                            + " -> "
+                                            + scheduleId);
                                 }
                             });
+
+                            schedulesByExpiration.put(
+                                    ProtoLong.newBuilder()
+                                            .value(secondSinceEpocVirtualKey.getKeyAsLong())
+                                            .build(),
+                                    ScheduleList.newBuilder()
+                                            .schedules(schedules)
+                                            .build());
                         }
-                    });
+                    }));
             if (schedulesByExpiration.isModified()) ((WritableKVStateBase) schedulesByExpiration).commit();
             log.info("BBM: finished schedule by expiration migration");
 

@@ -239,10 +239,9 @@ public class ScheduleTestBase {
 
     // ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,CryptoApproveAllowance
     protected SchedulableTransactionBody createAlternateScheduled() {
-        final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+        return SchedulableTransactionBody.newBuilder()
                 .tokenBurn(TokenBurnTransactionBody.newBuilder())
                 .build();
-        return scheduledTxn;
     }
 
     /**
@@ -472,10 +471,9 @@ public class ScheduleTestBase {
     }
 
     private SchedulableTransactionBody createSampleScheduled() {
-        final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+        return SchedulableTransactionBody.newBuilder()
                 .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder())
                 .build();
-        return scheduledTxn;
     }
 
     private TransactionBody alternateCreateTransaction(final TransactionBody originalTransaction) {
