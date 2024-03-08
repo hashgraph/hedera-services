@@ -43,6 +43,7 @@ public class DefaultSavedStateController implements SavedStateController {
      * written to disk.
      */
     private Instant previousSavedStateTimestamp;
+
     private final StateConfig stateConfig;
 
     /**
