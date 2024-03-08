@@ -100,6 +100,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -189,6 +190,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     @Mock
     private SelfNodeInfo selfNodeInfo;
 
+    @Mock
+    private PlatformState platformState;
+
     @BeforeEach
     void setup() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
@@ -240,7 +244,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 solvencyPreCheck,
                 childRecordFinalizer,
                 networkUtilizationManager,
-                synchronizedThrottleAccumulator);
+                synchronizedThrottleAccumulator,
+                platformState);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -271,7 +276,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             solvencyPreCheck,
             childRecordFinalizer,
             networkUtilizationManager,
-            synchronizedThrottleAccumulator
+            synchronizedThrottleAccumulator,
+            platformState
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -401,7 +407,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     solvencyPreCheck,
                     childRecordFinalizer,
                     networkUtilizationManager,
-                    synchronizedThrottleAccumulator);
+                    synchronizedThrottleAccumulator,
+                    platformState);
         }
 
         @Test
@@ -454,6 +461,61 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             assertThat(actual).isEqualTo(43L);
             verify(entityNumberState).get();
             verify(entityNumberState, never()).put(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Getters work as expected")
+    final class GettersWork {
+
+        @Mock
+        private WritableStates writableStates;
+
+        private HandleContext handleContext;
+
+        @BeforeEach
+        void setUp() {
+            final var payer = ALICE.accountID();
+            final var payerKey = ALICE.account().keyOrThrow();
+            when(stack.getWritableStates(EntityIdService.NAME)).thenReturn(writableStates);
+            when(stack.getWritableStates(TokenService.NAME))
+                    .thenReturn(MapWritableStates.builder()
+                            .state(MapWritableKVState.builder("ACCOUNTS").build())
+                            .state(MapWritableKVState.builder("ALIASES").build())
+                            .build());
+            handleContext = new HandleContextImpl(
+                    defaultTransactionBody(),
+                    HederaFunctionality.CRYPTO_TRANSFER,
+                    0,
+                    payer,
+                    payerKey,
+                    networkInfo,
+                    TransactionCategory.USER,
+                    recordBuilder,
+                    stack,
+                    DEFAULT_CONFIGURATION,
+                    verifier,
+                    recordListBuilder,
+                    checker,
+                    dispatcher,
+                    serviceScopeLookup,
+                    blockRecordInfo,
+                    recordCache,
+                    feeManager,
+                    exchangeRateManager,
+                    DEFAULT_CONSENSUS_NOW,
+                    authorizer,
+                    solvencyPreCheck,
+                    childRecordFinalizer,
+                    networkUtilizationManager,
+                    synchronizedThrottleAccumulator,
+                    platformState);
+        }
+
+        @Test
+        void getsFreezeTime() {
+            given(platformState.getFreezeTime()).willReturn(DEFAULT_CONSENSUS_NOW.plusSeconds(1));
+            assertThat(handleContext.freezeTime()).isEqualTo(DEFAULT_CONSENSUS_NOW.plusSeconds(1));
         }
     }
 
@@ -934,7 +996,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     solvencyPreCheck,
                     childRecordFinalizer,
                     networkUtilizationManager,
-                    synchronizedThrottleAccumulator);
+                    synchronizedThrottleAccumulator,
+                    platformState);
         }
 
         @SuppressWarnings("ConstantConditions")

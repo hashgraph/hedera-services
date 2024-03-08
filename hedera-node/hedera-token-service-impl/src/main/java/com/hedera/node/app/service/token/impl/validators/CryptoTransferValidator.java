@@ -168,7 +168,7 @@ public class CryptoTransferValidator {
 
             // Verify that the current total number of (counted) fungible transfers does not exceed the limit
             validateTrue(
-                    totalFungibleTransfers < ledgerConfig.tokenTransfersMaxLen(),
+                    totalFungibleTransfers <= ledgerConfig.tokenTransfersMaxLen(),
                     TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
             // Verify that the current total number of (counted) nft transfers does not exceed the limit
             validateTrue(totalNftTransfers <= ledgerConfig.nftTransfersMaxLen(), BATCH_SIZE_LIMIT_EXCEEDED);

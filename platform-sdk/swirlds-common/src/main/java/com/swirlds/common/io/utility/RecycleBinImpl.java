@@ -20,7 +20,6 @@ import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateCommonConfig;
@@ -51,7 +50,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A standard implementation of a {@link RecycleBin}.
  */
-public class RecycleBinImpl implements RecycleBin, Startable, Stoppable {
+public class RecycleBinImpl implements RecycleBin, Stoppable {
 
     private static final Logger logger = LogManager.getLogger(RecycleBinImpl.class);
 
