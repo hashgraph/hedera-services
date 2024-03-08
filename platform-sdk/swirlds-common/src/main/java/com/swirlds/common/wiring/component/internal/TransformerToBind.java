@@ -31,4 +31,4 @@ import java.util.function.BiFunction;
  */
 public record TransformerToBind<COMPONENT_TYPE, INPUT_TYPE, OUTPUT_TYPE>(
         @NonNull WireTransformer<INPUT_TYPE, OUTPUT_TYPE> transformer,
-        BiFunction<COMPONENT_TYPE, INPUT_TYPE, OUTPUT_TYPE> transformation) {}
+        @NonNull BiFunction<COMPONENT_TYPE, INPUT_TYPE, OUTPUT_TYPE> transformation) {}
