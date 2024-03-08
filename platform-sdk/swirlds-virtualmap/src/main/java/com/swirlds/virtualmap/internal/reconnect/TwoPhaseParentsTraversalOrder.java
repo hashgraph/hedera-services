@@ -24,6 +24,7 @@ import com.swirlds.virtualmap.internal.Path;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,7 +45,7 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
     // This set is populated during phase 1 (if any) on the receiving thread. After phase 1 is
     // complete, the set is used on the sending thread. No concurrent reads or writes, not a
     // concurrent set
-    private final Set<Long> cleanNodes = new HashSet<>();
+    private final Set<Long> cleanNodes = ConcurrentHashMap.newKeySet();
 
     private boolean usePhase1 = true;
     private final Deque<Long> phase1Paths = new ConcurrentLinkedDeque<>();

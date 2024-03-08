@@ -88,7 +88,7 @@ public class LearnerPullVirtualTreeSendTask {
             long lastFlushTime = System.currentTimeMillis();
             path = traversalOrder.getNextPathToSend();
             while (true) {
-                logger.info(RECONNECT.getMarker(), "TOREMOVE Learner send path: " + path);
+                // logger.info(RECONNECT.getMarker(), "TOREMOVE Learner send path: " + path);
                 final long now = System.currentTimeMillis();
                 if (path == -2) {
                     waitPaths++;
@@ -114,8 +114,8 @@ public class LearnerPullVirtualTreeSendTask {
                 path = traversalOrder.getNextPathToSend();
             }
             out.flush();
-            logger.info(RECONNECT.getMarker(), "TOREMOVE waitPaths = {}", waitPaths);
-            logger.info(RECONNECT.getMarker(), "TOREMOVE Learner send done");
+            // logger.info(RECONNECT.getMarker(), "TOREMOVE waitPaths = {}", waitPaths);
+            // logger.info(RECONNECT.getMarker(), "TOREMOVE Learner send done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Learner's sending task interrupted");
             Thread.currentThread().interrupt();
