@@ -30,7 +30,6 @@ import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.spi.LoggerContext;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -90,9 +89,8 @@ public class Log4J2Benchmark {
         logRunner.run();
     }
 
-    @TearDown(Level.Iteration)
+    @TearDown(Level.Trial)
     public void tearDown() {
-        LogManager.shutdown();
         config.tierDown();
     }
 }
