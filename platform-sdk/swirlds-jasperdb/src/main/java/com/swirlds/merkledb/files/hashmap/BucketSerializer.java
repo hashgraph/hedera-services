@@ -56,7 +56,7 @@ public class BucketSerializer<K extends VirtualKey> implements BaseSerializer<Bu
         currentSerializationVersion =
                 (keySerializer.getCurrentDataVersion() << LOW_ORDER_BYTES_FOR_NON_KEY_SERIALIZATION_VERSION)
                         | BUCKET_SERIALIZATION_VERSION;
-        reusableBucketPool = new ReusableBucketPool<>(pool -> new Bucket<>(keySerializer, pool));
+        reusableBucketPool = new ReusableBucketPool<>(pool -> new ParsedBucket<>(keySerializer, pool));
     }
 
     /**
