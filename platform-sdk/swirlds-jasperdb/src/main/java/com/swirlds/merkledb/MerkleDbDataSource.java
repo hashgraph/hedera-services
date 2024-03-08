@@ -1204,6 +1204,16 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         // Iterate over leaf records to delete
         deletedLeaves.forEach(leafRecord -> {
             final long path = leafRecord.getPath();
+            if (tableName.toLowerCase().contains("accounts")) {
+                try {
+                    logger.info(
+                            "MERKLEDB delete leaf: path=" + path + " key=" + leafRecord.getKey() + "oldPath="
+                                    + objectKeyToPath.get(
+                                    leafRecord.getKey(), -2) + " isReconnect=" + isReconnect);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
             // Update key to path index. In some cases (e.g. during reconnect), some leaves in the
             // deletedLeaves stream have been moved to different paths in the tree. This is good
             // indication that these leaves should not be deleted. This is why putIfEqual() and

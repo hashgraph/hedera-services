@@ -73,20 +73,20 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
             @NonNull final StateMetadata<K, V> md, @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
         this(md, virtualMap, DEFAULT_RUNNER);
         if (LOG_CONSTRUCTIONS.get()) {
-            log.info(
-                    "In thread {}, constructing OnDiskReadableKVState for {} with virtualMap {} of size {}",
-                    Thread.currentThread().getName(),
-                    md,
-                    virtualMap,
-                    virtualMap.size());
+//            log.info(
+//                    "In thread {}, constructing OnDiskReadableKVState for {} with virtualMap {} of size {}",
+//                    Thread.currentThread().getName(),
+//                    md,
+//                    virtualMap,
+//                    virtualMap.size());
             if (md.serviceName().equals(TokenService.NAME)
                     && md.stateDefinition().stateKey().equals(TokenServiceImpl.ACCOUNTS_KEY)) {
                 final var onDiskKey = new OnDiskKey<>(
                         (StateMetadata<AccountID, ?>) md,
                         AccountID.newBuilder().accountNum(1L).build());
                 final var value = virtualMap.get((OnDiskKey<K>) onDiskKey);
-                log.info("OnDiskValue for account 1: {}", virtualMap.get((OnDiskKey<K>) onDiskKey));
-                log.info("VERSUS containsKey()? {}", virtualMap.containsKey((OnDiskKey<K>) onDiskKey));
+//                log.info("OnDiskValue for account 1: {}", virtualMap.get((OnDiskKey<K>) onDiskKey));
+//                log.info("VERSUS containsKey()? {}", virtualMap.containsKey((OnDiskKey<K>) onDiskKey));
                 if (false && value == null && !HAVE_LOGGED_MISSING_CONTENTS.get()) {
                     log.error(
                             "Missing key {} had hashCode={} and classId={}",
