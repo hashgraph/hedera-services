@@ -90,6 +90,8 @@ import com.swirlds.config.api.ConfigProperty;
  * @param hashLoggerUnhandledTaskCapacity                   number of unhandled tasks allowed in the hash logger
  *                                                          task scheduler
  * @param completeStateNotifierUnhandledCapacity            number of unhandled tasks allowed for the state completion notifier
+ * @param stateHasherSchedulerType                          the state hasher scheduler type
+ * @param stateHasherUnhandledCapacity                      number of unhandled tasks allowed for the state hasher
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -134,4 +136,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType hashLoggerSchedulerType,
         @ConfigProperty(defaultValue = "100") int hashLoggerUnhandledTaskCapacity,
-        @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
+        @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity) {}

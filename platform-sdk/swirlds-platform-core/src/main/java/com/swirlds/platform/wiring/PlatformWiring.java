@@ -31,12 +31,14 @@ import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -64,8 +66,10 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
@@ -95,6 +99,7 @@ import com.swirlds.platform.wiring.components.PcesWriterWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.RunningHashUpdaterWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
+import com.swirlds.platform.wiring.components.StateHasherWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -144,6 +149,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final IssHandlerWiring issHandlerWiring;
     private final HashLoggerWiring hashLoggerWiring;
     private final LatestCompleteStateNotifierWiring latestCompleteStateNotifierWiring;
+    private final ComponentWiring<SignedStateNexus, Void> latestImmutableStateNexusWiring;
+    private final ComponentWiring<LatestCompleteStateNexus, Void> latestCompleteStateNexusWiring;
+    private final ComponentWiring<SavedStateController, Void> savedStateControllerWiring;
+    private final StateHasherWiring signedStateHasherWiring;
     private final PlatformCoordinator platformCoordinator;
     private final BirthRoundMigrationShimWiring birthRoundMigrationShimWiring;
 
@@ -244,6 +253,28 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         latestCompleteStateNotifierWiring =
                 LatestCompleteStateNotifierWiring.create(schedulers.latestCompleteStateNotificationScheduler());
 
+        latestImmutableStateNexusWiring = new ComponentWiring<>(
+                SignedStateNexus.class,
+                model.schedulerBuilder("latestImmutableStateNexus")
+                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                        .build()
+                        .cast());
+
+        latestCompleteStateNexusWiring = new ComponentWiring<>(
+                LatestCompleteStateNexus.class,
+                model.schedulerBuilder("latestCompleteStateNexus")
+                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                        .build()
+                        .cast());
+        savedStateControllerWiring = new ComponentWiring<>(
+                SavedStateController.class,
+                model.schedulerBuilder("savedStateController")
+                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                        .build()
+                        .cast());
+
+        signedStateHasherWiring = StateHasherWiring.create(schedulers.stateHasherScheduler());
+
         wire();
     }
 
@@ -308,6 +339,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
         orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preConsensusEventInput());
         stateSignatureCollectorWiring.getAllStatesOutput().solderTo(signedStateFileManagerWiring.saveToDiskFilter());
+        stateSignatureCollectorWiring
+                .getCompleteStatesOutput()
+                .solderTo(latestCompleteStateNexusWiring.getInputWire(LatestCompleteStateNexus::setStateIfNewer));
 
         solderNonAncientEventWindow();
 
@@ -335,6 +369,26 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         consensusRoundHandlerWiring.roundInput()));
         consensusEngineWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
         consensusEngineWiring.consensusEventsOutput().solderTo(eventStreamManagerWiring.eventsInput());
+
+        consensusRoundHandlerWiring
+                .stateOutput()
+                .solderTo(latestImmutableStateNexusWiring.getInputWire(SignedStateNexus::setState));
+        consensusRoundHandlerWiring
+                .stateOutput()
+                .solderTo(savedStateControllerWiring.getInputWire(SavedStateController::markSavedState));
+        consensusRoundHandlerWiring
+                .roundNumberOutput()
+                .solderTo(latestCompleteStateNexusWiring.getInputWire(LatestCompleteStateNexus::newIncompleteState));
+        consensusRoundHandlerWiring.stateAndRoundOutput().solderTo(signedStateHasherWiring.stateAndRoundInput());
+
+        signedStateHasherWiring.stateOutput().solderTo(hashLoggerWiring.hashLoggerInputWire());
+        signedStateHasherWiring.stateOutput().solderTo(stateSignerWiring.signState());
+        signedStateHasherWiring.stateAndRoundOutput().solderTo(issDetectorWiring.stateAndRoundInput());
+
+        // FUTURE WORK: combine these two methods into a single input method, which accepts a StateAndRound object
+        signedStateHasherWiring.stateOutput().solderTo(stateSignatureCollectorWiring.getReservedStateInput());
+        signedStateHasherWiring.roundOutput().solderTo(stateSignatureCollectorWiring.getConsensusRoundInput());
+
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
                 .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
@@ -367,7 +421,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     public void wireExternalComponents(
             @NonNull final PlatformStatusManager statusManager,
             @NonNull final TransactionPool transactionPool,
-            @NonNull final LatestCompleteStateNexus latestCompleteStateNexus,
             @NonNull final NotificationEngine notificationEngine) {
 
         signedStateFileManagerWiring
@@ -379,11 +432,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         stateSignerWiring
                 .stateSignature()
-                .solderTo("transactionPool", "state signature transactions", transactionPool::submitSystemTransaction);
-
-        stateSignatureCollectorWiring
-                .getCompleteStatesOutput()
-                .solderTo("latestCompleteStateNexus", "complete states", latestCompleteStateNexus::setStateIfNewer);
+                .solderTo("transactionPool", "signature transactions", transactionPool::submitSystemTransaction);
 
         issDetectorWiring
                 .issNotificationOutput()
@@ -456,7 +505,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final IssHandler issHandler,
             @NonNull final HashLogger hashLogger,
             @Nullable final BirthRoundMigrationShim birthRoundMigrationShim,
-            @NonNull final LatestCompleteStateNotifier completeStateNotifier) {
+            @NonNull final LatestCompleteStateNotifier completeStateNotifier,
+            @NonNull final SignedStateNexus latestImmutableStateNexus,
+            @NonNull final LatestCompleteStateNexus latestCompleteStateNexus,
+            @NonNull final SavedStateController savedStateController,
+            @NonNull final SignedStateHasher signedStateHasher) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -485,6 +538,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             birthRoundMigrationShimWiring.bind(Objects.requireNonNull(birthRoundMigrationShim));
         }
         latestCompleteStateNotifierWiring.bind(completeStateNotifier);
+        latestImmutableStateNexusWiring.bind(latestImmutableStateNexus);
+        latestCompleteStateNexusWiring.bind(latestCompleteStateNexus);
+        savedStateControllerWiring.bind(savedStateController);
+        signedStateHasherWiring.bind(signedStateHasher);
     }
 
     /**
@@ -531,32 +588,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * @return the input wire for collecting post-consensus signatures
-     */
-    @NonNull
-    public InputWire<ConsensusRound> getSignatureCollectorConsensusInput() {
-        return stateSignatureCollectorWiring.getConsensusRoundInput();
-    }
-
-    /**
      * @return the input wire for states that need their signatures collected
      */
     @NonNull
     public InputWire<ReservedSignedState> getSignatureCollectorStateInput() {
         return stateSignatureCollectorWiring.getReservedStateInput();
-    }
-
-    /**
-     * Get the input wire for signing a state
-     * <p>
-     * Future work: this is a temporary hook to allow the components to sign a state, prior to the whole system being
-     * migrated to the new framework.
-     *
-     * @return the input wire for signing a state
-     */
-    @NonNull
-    public InputWire<ReservedSignedState> getSignStateInput() {
-        return stateSignerWiring.signState();
     }
 
     /**
@@ -664,6 +700,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public void flushConsensusRoundHandler() {
         consensusRoundHandlerWiring.flushRunnable().run();
+    }
+
+    /**
+     * Flush the state hasher.
+     */
+    public void flushStateHasher() {
+        signedStateHasherWiring.flushRunnable().run();
     }
 
     /**

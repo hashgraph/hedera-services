@@ -122,8 +122,8 @@ public class PlatformCoordinator {
      */
     public void clear() {
         // Phase 1: squelch
-        // Break cycles in the system. Flush squelched components just in case there is a task being executed when
-        // squelch is activated.
+        // Break cycles in the system, and squelch components with expensive computation that we don't actually need.
+        // Flush squelched components just in case there is a task being executed when squelch is activated.
         consensusEngineWiring.startSquelchingRunnable().run();
         consensusEngineWiring.flushRunnable().run();
         eventCreationManagerWiring.startSquelching();

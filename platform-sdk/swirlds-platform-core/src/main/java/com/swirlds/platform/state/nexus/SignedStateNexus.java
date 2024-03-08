@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 /**
  * A thread-safe container that also manages reservations for a single signed state.
  */
+// TODO try removing consumer here
 public interface SignedStateNexus extends Consumer<ReservedSignedState>, Clearable {
     /**
      * Returns the current signed state and reserves it. If the current signed state is null, or cannot be reserved,

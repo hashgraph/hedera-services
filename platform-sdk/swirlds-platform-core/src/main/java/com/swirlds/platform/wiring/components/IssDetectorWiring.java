@@ -51,7 +51,7 @@ public record IssDetectorWiring(
 
         return new IssDetectorWiring(
                 taskScheduler.buildInputWire("end of PCES replay"),
-                taskScheduler.buildInputWire("state and round"),
+                taskScheduler.buildInputWire("stateAndRound"),
                 taskScheduler.buildInputWire("overriding state"),
                 taskScheduler.getOutputWire().buildSplitter("issNotificationSplitter", "iss notifications"));
     }

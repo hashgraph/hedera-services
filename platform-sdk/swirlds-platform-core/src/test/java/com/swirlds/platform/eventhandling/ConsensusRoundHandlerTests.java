@@ -36,6 +36,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
@@ -103,7 +104,7 @@ class ConsensusRoundHandlerTests {
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
-                stateHashSignQueue,
+                mock(SignedStateGarbageCollector.class),
                 waitForEventDurability,
                 statusActionSubmitter,
                 mock(SoftwareVersion.class));
@@ -145,7 +146,7 @@ class ConsensusRoundHandlerTests {
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
-                stateHashSignQueue,
+                mock(SignedStateGarbageCollector.class),
                 waitForEventDurability,
                 statusActionSubmitter,
                 mock(SoftwareVersion.class));

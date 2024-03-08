@@ -33,9 +33,7 @@ import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.ModelManualLink;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
-import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -106,9 +104,6 @@ public final class DiagramCommand extends AbstractCommand {
         platformWiring.wireExternalComponents(
                 new PlatformStatusManager(platformContext, platformContext.getTime(), threadManager, a -> {}),
                 new TransactionPool(platformContext),
-                new LatestCompleteStateNexus(
-                        platformContext.getConfiguration().getConfigData(StateConfig.class),
-                        platformContext.getMetrics()),
                 notificationEngine);
 
         final String diagramString = platformWiring
