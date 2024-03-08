@@ -57,9 +57,9 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
      *
      * @param freezeTime the freeze time to set; if null, clears the freeze time
      */
-    public void freezeTime(@Nullable final Timestamp freezeTime) {
+    public void freezeTime(@NonNull final Timestamp freezeTime) {
         freezeTimeState.put(freezeTime);
-        if (freezeTime != null) {
+        if (!freezeTime.equals(Timestamp.DEFAULT)) {
             lastFrozenTimeState.put(freezeTime);
         }
     }
@@ -70,7 +70,7 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
      * Gets the scheduled freeze time. If no freeze has been scheduled, returns null.
      */
     public Timestamp freezeTime() {
-        return freezeTimeState.get();
+        return freezeTimeState.get() == Timestamp.DEFAULT ? null : freezeTimeState.get();
     }
 
     @Override
@@ -87,7 +87,8 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
      *
      * @param updateFileHash The update file hash to set. If null, clears the update file hash.
      */
-    public void updateFileHash(@Nullable final Bytes updateFileHash) {
+    public void updateFileHash(@NonNull final Bytes updateFileHash) {
+        requireNonNull(updateFileHash);
         this.updateFileHash.put(new ProtoBytes(updateFileHash));
     }
 
@@ -95,6 +96,9 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
     @Nullable
     public Bytes updateFileHash() {
         ProtoBytes fileHash = updateFileHash.get();
-        return (fileHash == null ? null : fileHash.value());
+        if (fileHash == null) {
+            return null;
+        }
+        return fileHash.value() == Bytes.EMPTY ? null : fileHash.value();
     }
 }
