@@ -43,6 +43,9 @@ import org.apache.logging.log4j.Logger;
  */
 public class InitialModServiceConsensusSchema extends Schema {
     private static final Logger log = LogManager.getLogger(InitialModServiceConsensusSchema.class);
+
+    private static final long MAX_TOPICS = 1_000_000_000L;
+
     private MerkleMap<EntityNum, MerkleTopic> fs;
 
     public InitialModServiceConsensusSchema(@NonNull final SemanticVersion version) {
@@ -52,7 +55,7 @@ public class InitialModServiceConsensusSchema extends Schema {
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(StateDefinition.inMemory(TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF));
+        return Set.of(StateDefinition.onDisk(TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF, MAX_TOPICS));
     }
 
     public void setFromState(@Nullable final MerkleMap<EntityNum, MerkleTopic> fs) {
