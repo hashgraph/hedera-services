@@ -62,7 +62,7 @@ public class EpochCachedFormatter {
             .toFormatter()
             .withZone(UTC);
 
-    private final Map<Long, String> exactCache = new LimitedSizeCache<>();
+    private final Map<Instant, String> exactCache = new LimitedSizeCache<>();
     private final Map<Instant, String> dateCache = new LimitedSizeCache<>();
     private final Map<Instant, String> dateHourCache = new LimitedSizeCache<>();
     private final Map<Instant, String> dateHourMinutesCache = new LimitedSizeCache<>();
@@ -87,28 +87,33 @@ public class EpochCachedFormatter {
     public @NonNull String format(final long epochMillis) {
 
         String stringDate;
-        if ((stringDate = exactCache.get(epochMillis)) != null) {
+        Instant instant = Instant.ofEpochMilli(epochMillis);
+        if ((stringDate = exactCache.get(instant)) != null) {
             return stringDate;
         }
-        Instant instant = Instant.ofEpochMilli(epochMillis);
         if ((stringDate = getFromMinutes(instant)) != null) {
-            exactCache.put(instant.toEpochMilli(), stringDate);
+            exactCache.put(instant, stringDate);
             return stringDate;
         }
         if ((stringDate = getFromHours(instant)) != null) {
-            exactCache.put(instant.toEpochMilli(), stringDate);
+            exactCache.put(instant, stringDate);
             return stringDate;
         }
         if ((stringDate = getFromDate(instant)) != null) {
-            exactCache.put(instant.toEpochMilli(), stringDate);
+            exactCache.put(instant, stringDate);
             return stringDate;
         }
 
         stringDate = FORMATTER.format(instant);
-        exactCache.put(instant.toEpochMilli(), stringDate);
-        dateCache.put(instant.truncatedTo(ChronoUnit.DAYS), stringDate.substring(0, 10));
-        dateHourCache.put(instant.truncatedTo(ChronoUnit.HOURS), stringDate.substring(0, 14));
-        dateHourMinutesCache.put(instant.truncatedTo(ChronoUnit.MINUTES), stringDate.substring(0, 17));
+        exactCache.put(instant, stringDate);
+        final StringBuilder buffer = new StringBuilder(stringDate);
+        final int length = stringDate.length();
+        buffer.setLength(length - 6);
+        dateHourMinutesCache.put(instant.truncatedTo(ChronoUnit.MINUTES), buffer.toString());
+        buffer.setLength(length - 9);
+        dateHourCache.put(instant.truncatedTo(ChronoUnit.HOURS), buffer.toString());
+        buffer.setLength(length - 12);
+        dateCache.put(instant.truncatedTo(ChronoUnit.DAYS), buffer.toString());
         return stringDate;
     }
 
@@ -141,20 +146,19 @@ public class EpochCachedFormatter {
     /**
      * Constructs a string representation of the given {@link Instant} starting from the specified {@link ChronoUnit}.
      * <p>
-     *
-     * The method constructs a string representation of the {@link Instant} from the specified {@link ChronoUnit}, including
-     * hours, minutes, seconds, and milliseconds.
      * <p>
-     * e.g:
-     * Given an {@code instant} representing date: {@code "2020-08-26 12:34:56.789"}
+     * The method constructs a string representation of the {@link Instant} from the specified {@link ChronoUnit},
+     * including hours, minutes, seconds, and milliseconds.
+     * <p>
+     * e.g: Given an {@code instant} representing date: {@code "2020-08-26 12:34:56.789"}
      * <ul>
      * <li>{@code stringFrom(instant, ChronoUnit.MICROS)} --> a buffer with {@code ""} </li>
      * <li>{@code stringFrom(instant, ChronoUnit.NANOS)} --> a buffer with  {@code ""} </li>
      * <li>{@code stringFrom(instant, ChronoUnit.MILLIS)} --> a buffer with {@code "789"} </li>
      * <li>{@code stringFrom(instant, ChronoUnit.SECONDS)} --> a buffer with {@code "56.789"} </li>
      * <li>{@code stringFrom(instant, ChronoUnit.MINUTES)} --> a buffer with {@code "34:56.789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> a buffer with {@code " 12:34:56.789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.*)} --> a buffer with {@code " 12:34:56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> a buffer with {@code "12:34:56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.*)} --> a buffer with {@code "12:34:56.789"} </li>
      * </ul>
      *
      * @param instant The Instant to represent as a string.
@@ -184,7 +188,6 @@ public class EpochCachedFormatter {
             final int hour = (int) ((totalSeconds / 3600) % 24);
             stringBuilder.append(":");
             appendDigitsReverse(hour, stringBuilder, 2);
-            stringBuilder.append(" ");
         }
 
         return stringBuilder.reverse();
