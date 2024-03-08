@@ -29,7 +29,6 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.token.TokenGetInfoUsage;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.queries.token.GetTokenInfoAnswer;
@@ -55,7 +54,6 @@ class GetTokenInfoResourceUsageTest {
     private static final String symbol = "HEYMAOK";
     private static final String name = "IsItReallyOk";
     private static final TokenID target = IdUtils.asToken("0.0.123");
-    private static final ByteString metadata = ByteString.copyFromUtf8("Test Metadata");
     private static final TokenInfo info = TokenInfo.newBuilder()
             .setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
             .setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey())
@@ -63,13 +61,11 @@ class GetTokenInfoResourceUsageTest {
             .setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey())
             .setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
             .setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey())
-            .setMetadataKey(TxnHandlingScenario.TOKEN_METADATA_KT.asKey())
             .setSymbol(symbol)
             .setName(name)
             .setMemo(memo)
             .setPauseStatus(TokenPauseStatus.Paused)
             .setAutoRenewAccount(IdUtils.asAccount("1.2.3"))
-            .setMetadata(metadata)
             .build();
     private static final Query satisfiableAnswerOnly = tokenInfoQuery(target, ANSWER_ONLY);
 
@@ -98,9 +94,7 @@ class GetTokenInfoResourceUsageTest {
         given(estimator.givenCurrentSymbol(any())).willReturn(estimator);
         given(estimator.givenCurrentName(any())).willReturn(estimator);
         given(estimator.givenCurrentMemo(any())).willReturn(estimator);
-        given(estimator.givenCurrentMetadata(any())).willReturn(estimator);
         given(estimator.givenCurrentPauseKey(any())).willReturn(estimator);
-        given(estimator.givenCurrentMetadataKey(any())).willReturn(estimator);
         given(estimator.givenCurrentlyUsingAutoRenewAccount()).willReturn(estimator);
         given(estimator.get()).willReturn(expected);
 
@@ -167,11 +161,9 @@ class GetTokenInfoResourceUsageTest {
         verify(estimator).givenCurrentKycKey(Optional.of(TxnHandlingScenario.TOKEN_KYC_KT.asKey()));
         verify(estimator).givenCurrentSupplyKey(Optional.of(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey()));
         verify(estimator).givenCurrentFreezeKey(Optional.of(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey()));
-        verify(estimator).givenCurrentMetadataKey(Optional.of(TxnHandlingScenario.TOKEN_METADATA_KT.asKey()));
         verify(estimator).givenCurrentSymbol(symbol);
         verify(estimator).givenCurrentName(name);
         verify(estimator).givenCurrentMemo(memo);
-        verify(estimator).givenCurrentMetadata(String.valueOf(metadata));
     }
 
     private static final Query tokenInfoQuery(final TokenID id, final ResponseType type) {

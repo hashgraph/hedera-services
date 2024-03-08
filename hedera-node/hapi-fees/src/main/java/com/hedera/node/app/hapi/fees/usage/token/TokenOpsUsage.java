@@ -34,7 +34,6 @@ import com.hedera.node.app.hapi.fees.usage.token.meta.TokenMintMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenPauseMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenUnpauseMeta;
-import com.hedera.node.app.hapi.fees.usage.token.meta.TokenUpdateNftsMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -228,16 +227,6 @@ public final class TokenOpsUsage {
         accumulator.resetForTransaction(baseMeta, sigUsage);
 
         accumulator.addBpt(tokenUnpauseMeta.getBpt());
-    }
-
-    public void tokenUpdateNftsUsage(
-            final SigUsage sigUsage,
-            final BaseTransactionMeta baseMeta,
-            final TokenUpdateNftsMeta tokenUpdateNftsMeta,
-            final UsageAccumulator accumulator) {
-        accumulator.resetForTransaction(baseMeta, sigUsage);
-
-        accumulator.addBpt(tokenUpdateNftsMeta.getBpt());
     }
 
     private int plusCollectorSize(final int feeReprSize) {

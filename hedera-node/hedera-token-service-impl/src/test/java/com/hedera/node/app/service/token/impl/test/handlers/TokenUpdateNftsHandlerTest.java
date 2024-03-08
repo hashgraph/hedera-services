@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
@@ -51,7 +51,6 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateNftsHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
-import com.hedera.node.app.service.token.impl.validators.TokenUpdateNftValidator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -101,7 +100,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        final TokenUpdateNftValidator validator = new TokenUpdateNftValidator(new TokenAttributesValidator());
+        final TokenAttributesValidator validator = new TokenAttributesValidator();
         subject = new TokenUpdateNftsHandler(validator);
         givenStoresAndConfig(handleContext);
         setUpTxnContext();
@@ -210,7 +209,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(INVALID_TRANSACTION_BODY));
+                .has(responseCode(INVALID_NFT_ID));
     }
 
     @Test
