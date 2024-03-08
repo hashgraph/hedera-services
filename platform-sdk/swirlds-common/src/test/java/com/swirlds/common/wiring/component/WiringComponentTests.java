@@ -219,6 +219,9 @@ public class WiringComponentTests {
 
         final OutputWire<String> output = fooBarBazWiring.getTransformedOutput(FooBarBaz::transformer);
 
+        // Getting the same transformer multiple times should yield the same instance
+        assertSame(output, fooBarBazWiring.getTransformedOutput(FooBarBaz::transformer));
+
         if (bindLocation == 1) {
             fooBarBazWiring.bind(fooBarBazImpl);
         }

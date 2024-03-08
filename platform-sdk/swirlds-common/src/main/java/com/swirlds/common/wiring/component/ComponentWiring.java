@@ -201,6 +201,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         final WireTransformer<OUTPUT_TYPE, TRANSFORMED_TYPE> transformer =
                 new WireTransformer<>(model, schedulerLabel, wireLabel);
         getOutputWire().solderTo(transformer.getInputWire());
+        alternateOutputs.put(method, transformer.getOutputWire());
 
         if (component == null) {
             // we will bind this later
