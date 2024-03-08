@@ -700,6 +700,13 @@ public class HandleWorkflow {
             throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
         } else {
             for (final var hollowAccount : accounts) {
+                if (hollowAccount.accountIdOrElse(AccountID.DEFAULT).equals(AccountID.DEFAULT)) {
+                    // The CryptoCreateHandler uses a "hack" to validate that a CryptoCreate with
+                    // an EVM address has signed with that alias's ECDSA key; that is, it adds a
+                    // dummy "hollow account" with the EVM address as an alias. But we don't want
+                    // to try to finalize such a dummy account, so skip it here.
+                    continue;
+                }
                 // get the verified key for this hollow account
                 final var verification =
                         ethTxVerification != null && hollowAccount.alias().equals(ethTxVerification.evmAlias())
