@@ -53,6 +53,9 @@ public class DefaultLatestCompleteStateNexus implements LatestCompleteStateNexus
         metrics.addUpdater(() -> avgRoundSupermajority.update(getRound()));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public synchronized void setState(@Nullable final ReservedSignedState reservedSignedState) {
         if (currentState != null) {
@@ -62,8 +65,7 @@ public class DefaultLatestCompleteStateNexus implements LatestCompleteStateNexus
     }
 
     /**
-     * Replace the current state with the given state if the given state is newer than the current state.
-     * @param reservedSignedState the new state
+     * {@inheritDoc}
      */
     @Override
     public synchronized void setStateIfNewer(@NonNull final ReservedSignedState reservedSignedState) {
@@ -80,9 +82,6 @@ public class DefaultLatestCompleteStateNexus implements LatestCompleteStateNexus
      */
     @Override
     public synchronized void newIncompleteState(@NonNull final Long newStateRound) {
-        // NOTE: This logic is duplicated in SignedStateManager, but will be removed from the signed state manager
-        // once its refactor is done
-
         // Any state older than this is unconditionally removed, even if it is the latest
         final long earliestPermittedRound = newStateRound - stateConfig.roundsToKeepForSigning() + 1;
 
@@ -93,6 +92,9 @@ public class DefaultLatestCompleteStateNexus implements LatestCompleteStateNexus
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public synchronized ReservedSignedState getState(@NonNull final String reason) {
@@ -102,6 +104,9 @@ public class DefaultLatestCompleteStateNexus implements LatestCompleteStateNexus
         return currentState.tryGetAndReserve(reason);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public synchronized long getRound() {
         if (currentState == null) {
