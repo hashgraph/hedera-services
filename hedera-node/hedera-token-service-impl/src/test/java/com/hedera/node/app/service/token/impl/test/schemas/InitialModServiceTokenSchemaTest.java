@@ -56,7 +56,6 @@ import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -99,9 +98,6 @@ final class InitialModServiceTokenSchemaTest {
 
     @Mock
     private GenesisRecordsBuilder genesisRecordsBuilder;
-
-    @Mock
-    private HandleThrottleParser handleThrottling;
 
     @Captor
     private ArgumentCaptor<SortedSet<Account>> blocklistMapCaptor;
@@ -146,8 +142,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -160,7 +156,7 @@ final class InitialModServiceTokenSchemaTest {
     }
 
     @Test
-    void initializesStakingData() {
+    void initializesStakingDataOnGenesisStart() {
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
@@ -168,8 +164,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                null);
 
         schema.migrate(migrationContext);
 
@@ -180,7 +176,7 @@ final class InitialModServiceTokenSchemaTest {
     }
 
     @Test
-    void createsAllAccounts() {
+    void createsAllAccountsOnGenesisStart() {
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
@@ -188,8 +184,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                null);
 
         schema.migrate(migrationContext);
 
@@ -303,8 +299,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                null);
 
         schema.migrate(migrationContext);
 
@@ -429,8 +425,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -474,8 +470,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -491,7 +487,7 @@ final class InitialModServiceTokenSchemaTest {
     }
 
     @Test
-    void createsSystemAccountsOnly() {
+    void createsSystemAccountsOnlyOnGenesisStart() {
         final var schema = new InitialModServiceTokenSchema(
                 this::allDefaultSysAccts,
                 Collections::emptySortedSet,
@@ -505,8 +501,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (int i = 1; i < DEFAULT_NUM_SYSTEM_ACCOUNTS; i++) {
@@ -535,8 +531,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         final var stakingRewardAccount = acctsStateResult.get(ACCT_IDS[800]);
@@ -567,8 +563,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (final long reservedNum : NON_CONTRACT_RESERVED_NUMS) {
@@ -597,8 +593,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
 
@@ -626,8 +622,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         // Verify that the assigned account ID matches the expected entity IDs
         for (int i = 0; i < EVM_ADDRESSES.length; i++) {
@@ -645,8 +641,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         // Verify contract entity IDs aren't used
         for (int i = 350; i < 400; i++) {

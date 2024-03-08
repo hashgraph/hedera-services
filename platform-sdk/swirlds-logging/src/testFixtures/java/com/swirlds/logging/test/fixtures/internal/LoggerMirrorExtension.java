@@ -31,8 +31,9 @@ public class LoggerMirrorExtension implements InvocationInterceptor {
             ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext)
             throws Throwable {
-        try (final LoggingMirror loggingMirror = new LoggingMirrorImpl()) {
+        try (final LoggingMirrorImpl loggingMirror = new LoggingMirrorImpl()) {
             TestInjector.injectInTest(LoggingMirror.class, () -> loggingMirror, extensionContext);
+            TestInjector.injectInTest(LoggingMirrorImpl.class, () -> loggingMirror, extensionContext);
             invocation.proceed();
         }
     }

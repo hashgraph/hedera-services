@@ -34,6 +34,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -148,7 +149,7 @@ class EventDeduplicatorTests {
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
-        final EventDeduplicator deduplicator = new EventDeduplicator(
+        final EventDeduplicator deduplicator = new StandardEventDeduplicator(
                 TestPlatformContextBuilder.create()
                         .withConfiguration(new TestConfigBuilder()
                                 .withValue(

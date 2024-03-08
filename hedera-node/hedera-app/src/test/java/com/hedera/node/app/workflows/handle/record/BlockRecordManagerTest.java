@@ -301,7 +301,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         } else {
                             // check nulls as well
                             assertThat(blockRecordManager.getNMinus3RunningHash())
-                                    .isNull();
+                                    .isEqualTo(Bytes.EMPTY);
                         }
                     }
                     j += batchSize;

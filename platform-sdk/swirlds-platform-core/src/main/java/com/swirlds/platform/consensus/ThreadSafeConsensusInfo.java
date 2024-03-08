@@ -16,25 +16,27 @@
 
 package com.swirlds.platform.consensus;
 
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.LogMarker;
-import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.MinimumJudgeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * All information provided by {@link com.swirlds.platform.Consensus} that needs to be accessed at
- * any time by any thread.
+ * All information provided by {@link com.swirlds.platform.Consensus} that needs to be accessed at any time by any
+ * thread.
  */
 public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberProvider {
     private static final Logger LOG = LogManager.getLogger(ThreadSafeConsensusInfo.class);
 
-    private final ConsensusConfig config;
-    private final SequentialRingBuffer<MinGenInfo> storage;
+    protected final ConsensusConfig config;
+    private final SequentialRingBuffer<MinimumJudgeInfo> storage;
 
     /**
-     * The minimum judge generation number from the oldest non-expired round, if we have expired any
-     * rounds. Else, this is {@link GraphGenerations#FIRST_GENERATION}.
+     * The minimum judge generation number from the oldest non-expired round, if we have expired any rounds. Else, this
+     * is {@link GraphGenerations#FIRST_GENERATION}.
      *
      * <p>Updated only on consensus thread, read concurrently from gossip threads.
      */
@@ -44,41 +46,41 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
     private volatile long minGenNonAncient = GraphGenerations.FIRST_GENERATION;
 
     /**
-     * The minimum judge generation number from the most recent fame-decided round, if there is one.
-     * Else, this is {@link GraphGenerations#FIRST_GENERATION}.
+     * The minimum judge generation number from the most recent fame-decided round, if there is one. Else, this is
+     * {@link GraphGenerations#FIRST_GENERATION}.
      *
      * <p>Updated only on consensus thread, read concurrently from gossip threads.
      */
     private volatile long maxRoundGeneration = GraphGenerations.FIRST_GENERATION;
 
     /**
-     * maximum round number of all events stored in "storage", or -1 if none. This is the max round
-     * created of all events ever added to the hashgraph.
+     * maximum round number of all events stored in "storage", or -1 if none. This is the max round created of all
+     * events ever added to the hashgraph.
      */
     private volatile long maxRound = ConsensusConstants.ROUND_UNDEFINED;
     /**
-     * minimum round number of all events stored in "storage", or -1 if none. This may not be the min
-     * round created of all events ever added to the hashgraph, since some of the older rounds may
-     * have been decided and discarded.
+     * minimum round number of all events stored in "storage", or -1 if none. This may not be the min round created of
+     * all events ever added to the hashgraph, since some of the older rounds may have been decided and discarded.
      */
     private volatile long minRound = ConsensusConstants.ROUND_UNDEFINED;
     /** fame has been decided for all rounds less than this, but not for this round. */
     private volatile long fameDecidedBelow = ConsensusConstants.ROUND_FIRST;
 
     /**
-     * @param config consensus configuration
-     * @param storage round storage
+     * @param platformContext platform context
      */
-    public ThreadSafeConsensusInfo(
-            @NonNull final ConsensusConfig config, @NonNull final SequentialRingBuffer<MinGenInfo> storage) {
-        this.config = config;
-        this.storage = storage;
+    public ThreadSafeConsensusInfo(@NonNull final PlatformContext platformContext) {
+        final Configuration config = platformContext.getConfiguration();
+        this.config = config.getConfigData(ConsensusConfig.class);
+        this.storage = new SequentialRingBuffer<>(
+                ConsensusConstants.ROUND_FIRST,
+                config.getConfigData(ConsensusConfig.class).roundsExpired() * 2);
     }
 
     /**
      * @return the instance that stores all round and generation information
      */
-    protected @NonNull SequentialRingBuffer<MinGenInfo> getStorage() {
+    protected @NonNull SequentialRingBuffer<MinimumJudgeInfo> getStorage() {
         return storage;
     }
 
@@ -111,7 +113,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
      * <p>Executed only on consensus thread.
      */
     private void updateMaxRoundGeneration() {
-        final MinGenInfo info = storage.get(getLastRoundDecided());
+        final MinimumJudgeInfo info = storage.get(getLastRoundDecided());
         if (info == null) {
             // this should never happen
             LOG.error(
@@ -120,7 +122,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
                     getLastRoundDecided());
             return;
         }
-        long newMaxRoundGeneration = info.minimumGeneration();
+        long newMaxRoundGeneration = info.minimumJudgeAncientThreshold();
 
         // Guarantee that the round generation is non-decreasing.
         // Once we remove support for states with events, this can be removed
@@ -137,7 +139,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
     private void updateMinGenNonAncient() {
         final long nonAncientRound =
                 RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getLastRoundDecided());
-        final MinGenInfo info = storage.get(nonAncientRound);
+        final MinimumJudgeInfo info = storage.get(nonAncientRound);
         if (info == null) {
             // should never happen
             LOG.error(
@@ -146,12 +148,12 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
                     nonAncientRound);
             return;
         }
-        minGenNonAncient = info.minimumGeneration();
+        minGenNonAncient = info.minimumJudgeAncientThreshold();
     }
 
     /** Update the min round judge generation. Executed only on consensus thread. */
     private void updateMinRoundGeneration() {
-        final MinGenInfo info = storage.get(getMinRound());
+        final MinimumJudgeInfo info = storage.get(getMinRound());
         if (info == null) {
             // this should never happen
             LOG.error(
@@ -161,7 +163,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
             return;
         }
 
-        long newMinRoundGeneration = info.minimumGeneration();
+        long newMinRoundGeneration = info.minimumJudgeAncientThreshold();
 
         // Guarantee that the round generation is non-decreasing.
         // Once we remove support for states with events, this can be removed
