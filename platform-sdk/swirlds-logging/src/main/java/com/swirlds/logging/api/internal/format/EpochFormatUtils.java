@@ -24,7 +24,7 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * Utility class to help formatting epoc milliseconds like those coming from ({@link System#currentTimeMillis()}) to a
- * String representation matching  {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME}
+ * String representation matching  {@code "yyyy-MM-dd HH:mm:ss.SSS"}
  */
 public class EpochFormatUtils {
 
@@ -56,19 +56,12 @@ public class EpochFormatUtils {
         try {
             final StringBuilder sb = new StringBuilder(DATE_FIELD_MAX_SIZE);
             sb.append(FORMATTER.format(timestamp));
-            sb.append(paddingSpaces(DATE_FIELD_MAX_SIZE - sb.length()));
+            sb.append(PADDING_VALUES[DATE_FIELD_MAX_SIZE - sb.length()]);
             return sb.toString();
         } catch (final Throwable e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
             return BROKEN_TIMESTAMP;
         }
-    }
-
-    private static @NonNull String paddingSpaces(final int length) {
-        if (length < 0 || length > DATE_FIELD_MAX_SIZE) {
-            throw new IllegalArgumentException("Unsupported length: " + length);
-        }
-        return PADDING_VALUES[length];
     }
 
     /**

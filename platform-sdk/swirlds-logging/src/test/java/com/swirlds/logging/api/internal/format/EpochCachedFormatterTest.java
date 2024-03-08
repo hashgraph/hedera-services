@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 class EpochCachedFormatterTest {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS").withZone(UTC);
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(UTC);
     private static final int A_SECOND = 1000;
     private static final int A_MINUTE = 60 * A_SECOND;
     private static final int AN_HOUR = 60 * A_MINUTE;
@@ -40,7 +40,7 @@ class EpochCachedFormatterTest {
     @Test
     void testExactCache() {
         EpochCachedFormatter formatter = new EpochCachedFormatter();
-        final String expectedDate = "2020-08-26T12:34:56.789";
+        final String expectedDate = "2020-08-26 12:34:56.789";
         long epochMillis = getEpochMillis(expectedDate);
         String cached = formatter.format(epochMillis);
         assertEquals(expectedDate, cached);
@@ -49,33 +49,33 @@ class EpochCachedFormatterTest {
     @Test
     void testCaches() {
         EpochCachedFormatter formatter = new EpochCachedFormatter();
-        final String date = "2020-08-26T12:00:00.000";
+        final String date = "2020-08-26 12:00:00.000";
         final long dateEpoch = getEpochMillis(date);
         formatter.format(dateEpoch); // Just so it caches the date
 
         assertEquals(date, formatter.format(dateEpoch)); // Exact match comes from exact cache
         assertEquals(
-                "2020-08-26T12:00:01.000",
+                "2020-08-26 12:00:01.000",
                 formatter.format(dateEpoch + A_SECOND)); // one second after, uses the minutes cache
         assertEquals(
-                "2020-08-26T12:00:01.000",
+                "2020-08-26 12:00:01.000",
                 formatter.format(dateEpoch + A_SECOND)); // this one should come from exact cache
         assertEquals(
-                "2020-08-26T12:01:00.000",
+                "2020-08-26 12:01:00.000",
                 formatter.format(dateEpoch + A_MINUTE)); // one minute after, uses the hours cache
         assertEquals(
-                "2020-08-26T12:01:00.000",
+                "2020-08-26 12:01:00.000",
                 formatter.format(dateEpoch + A_MINUTE)); // this one should come from exact cache
         assertEquals(
-                "2020-08-26T13:00:00.000", formatter.format(dateEpoch + AN_HOUR)); // one hour after, uses the day cache
+                "2020-08-26 13:00:00.000", formatter.format(dateEpoch + AN_HOUR)); // one hour after, uses the day cache
         assertEquals(
-                "2020-08-26T13:00:00.000",
+                "2020-08-26 13:00:00.000",
                 formatter.format(dateEpoch + AN_HOUR)); // this one should come from exact cache
         assertEquals(
-                "2020-08-26T20:12:34.312",
+                "2020-08-26 20:12:34.312",
                 formatter.format(dateEpoch + 8 * AN_HOUR + 12 * A_MINUTE + 34 * A_SECOND + 312));
         assertEquals(
-                "2020-08-26T20:12:34.312",
+                "2020-08-26 20:12:34.312",
                 formatter.format(dateEpoch
                         + 8 * AN_HOUR
                         + 12 * A_MINUTE

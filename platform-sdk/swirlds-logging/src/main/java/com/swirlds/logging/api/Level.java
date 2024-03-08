@@ -19,7 +19,6 @@ package com.swirlds.logging.api;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * The level of a log message
@@ -63,26 +62,6 @@ public enum Level {
             return true;
         }
         return this.levelOrdinal >= level.levelOrdinal;
-    }
-
-    /**
-     * Returns the level for the given name or the given default level if no level can be found for the given name.
-     *
-     * @param value        the name of the level
-     * @param defaultLevel the default level
-     * @return the level for the given name
-     */
-    public static Level valueOfOrElse(@Nullable final String value, @NonNull final Level defaultLevel) {
-        if (defaultLevel == null) {
-            EMERGENCY_LOGGER.logNPE("defaultLevel");
-            return valueOfOrElse(value, INFO);
-        }
-        try {
-            return valueOf(value);
-        } catch (IllegalArgumentException e) {
-            EMERGENCY_LOGGER.log(ERROR, "Invalid log level: " + value, e);
-            return defaultLevel;
-        }
     }
 
     /**
