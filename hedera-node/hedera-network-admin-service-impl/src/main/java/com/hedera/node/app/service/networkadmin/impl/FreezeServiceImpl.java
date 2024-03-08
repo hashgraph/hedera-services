@@ -26,7 +26,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class FreezeServiceImpl implements FreezeService {
     public static final String UPGRADE_FILE_HASH_KEY = "UPGRADE_FILE_HASH";
     public static final String FREEZE_TIME_KEY = "FREEZE_TIME";
-    public static final String LAST_FROZEN_TIME_KEY = "LAST_FROZEN_TIME";
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
