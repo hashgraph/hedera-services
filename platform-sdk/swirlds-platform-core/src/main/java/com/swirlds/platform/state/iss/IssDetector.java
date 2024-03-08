@@ -28,7 +28,7 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.components.transaction.system.SystemTransactionExtractor;
+import com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -293,7 +293,7 @@ public class IssDetector {
      */
     private @NonNull List<IssNotification> handlePostconsensusSignatures(@NonNull final ConsensusRound round) {
         final List<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions =
-                new SystemTransactionExtractor<>(StateSignatureTransaction.class).handleRound(round);
+                SystemTransactionExtractionUtils.extractFromRound(round, StateSignatureTransaction.class);
 
         if (stateSignatureTransactions == null) {
             return List.of();

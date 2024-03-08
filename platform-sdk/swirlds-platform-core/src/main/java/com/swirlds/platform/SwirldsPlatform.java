@@ -70,7 +70,6 @@ import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.TransactionConfig;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -738,11 +737,7 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter,
                 () -> emergencyState.getState("emergency reconnect")) {};
 
-        consensusRef.set(new ConsensusImpl(
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                consensusMetrics,
-                getAddressBook(),
-                ancientMode));
+        consensusRef.set(new ConsensusImpl(platformContext, consensusMetrics, getAddressBook()));
 
         if (startedFromGenesis) {
             initialAncientThreshold = 0;
