@@ -69,7 +69,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
     /**
      * Previously created transformers/splitters/filters.
      */
-    final Map<Method, OutputWire<?>> alternateOutputs = new HashMap<>();
+    private final Map<Method, OutputWire<?>> alternateOutputs = new HashMap<>();
 
     /**
      * Transformers that need to be bound.
