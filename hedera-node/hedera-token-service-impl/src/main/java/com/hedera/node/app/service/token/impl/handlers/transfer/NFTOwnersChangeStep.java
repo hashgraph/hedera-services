@@ -124,7 +124,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
             @NonNull final AccountID spender,
             @NonNull final TokenID tokenId,
             @Nullable final Nft nft) {
-        if (owner != null || nft != null) {
+        if (owner != null && nft != null) {
             validateSpenderHasAllowance(owner, spender, tokenId, nft);
         }
     }
