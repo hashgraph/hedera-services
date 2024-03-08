@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.common.test.fixtures.WeightGenerators.RANDOM;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.RANDOM_WEIGHT_DESC;
 
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
@@ -253,7 +254,7 @@ class ConsensusTests {
     void syntheticSnapshotTest() {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::syntheticSnapshot)
-                .setParams(new ConsensusTestParams(4, RANDOM, RANDOM_WEIGHT_DESC))
+                .setParams(new ConsensusTestParams(DEFAULT_PLATFORM_CONTEXT, 4, RANDOM, RANDOM_WEIGHT_DESC))
                 .setIterations(NUM_ITER)
                 .run();
     }
