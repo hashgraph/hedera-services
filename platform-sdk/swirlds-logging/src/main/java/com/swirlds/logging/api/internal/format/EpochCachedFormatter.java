@@ -62,10 +62,10 @@ public class EpochCachedFormatter {
             .toFormatter()
             .withZone(UTC);
 
-    private final Map<Long, String> exactCache = new LimitedSizeCache<>(LimitedSizeCache.MAX_ENTRIES);
-    private final Map<Instant, String> dateCache = new LimitedSizeCache<>(10);
-    private final Map<Instant, String> dateHourCache = new LimitedSizeCache<>(10 * 24);
-    private final Map<Instant, String> dateHourMinutesCache = new LimitedSizeCache<>(10 * 1440);
+    private final Map<Long, String> exactCache = new LimitedSizeCache<>();
+    private final Map<Instant, String> dateCache = new LimitedSizeCache<>();
+    private final Map<Instant, String> dateHourCache = new LimitedSizeCache<>();
+    private final Map<Instant, String> dateHourMinutesCache = new LimitedSizeCache<>();
 
     /**
      * Creates a parser and preloads the caches with {@link System#currentTimeMillis()}
@@ -148,13 +148,13 @@ public class EpochCachedFormatter {
      * e.g:
      * Given an {@code instant} representing date: {@code "2020-08-26 12:34:56.789"}
      * <ul>
-     * <li>{@code stringFrom(instant, ChronoUnit.MICROS)} --> adds to the buffer {@code ""} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.NANOS)} --> adds to the buffer {@code ""} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.MILLIS)} --> adds to the buffer {@code "789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.SECONDS)} --> adds to the buffer {@code "56.789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.MINUTES)} --> adds to the buffer {@code "34:56.789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> adds to the buffer {@code " 12:34:56.789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.*)} --> adds to the buffer {@code " 12:34:56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.MICROS)} --> a buffer with {@code ""} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.NANOS)} --> a buffer with  {@code ""} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.MILLIS)} --> a buffer with {@code "789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.SECONDS)} --> a buffer with {@code "56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.MINUTES)} --> a buffer with {@code "34:56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> a buffer with {@code " 12:34:56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.*)} --> a buffer with {@code " 12:34:56.789"} </li>
      * </ul>
      *
      * @param instant The Instant to represent as a string.
@@ -230,6 +230,10 @@ public class EpochCachedFormatter {
      */
     private static class LimitedSizeCache<K, V> extends LinkedHashMap<K, V> {
         private static final int MAX_ENTRIES = 10000;
+
+        public LimitedSizeCache() {
+            this(MAX_ENTRIES);
+        }
 
         public LimitedSizeCache(int entries) {
             super(entries + 1, 1.0f, true);
