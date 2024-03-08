@@ -36,6 +36,8 @@ public class StackTracePrinter {
      */
     private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
+    private static final int MAX_STACK_TRACE_DEPTH = -1;
+
     /**
      * Prints the stack trace of a throwable to a provided Appendable writer.
      * Avoids printing circular references and handles already printed traces.
@@ -52,7 +54,80 @@ public class StackTracePrinter {
             @NonNull final Set<Throwable> alreadyPrinted,
             @NonNull final StackTraceElement[] enclosingTrace)
             throws IOException {
-        // Method implementation
+        if (writer == null) {
+            EMERGENCY_LOGGER.logNPE("printWriter");
+            return;
+        }
+        if (throwable == null) {
+            EMERGENCY_LOGGER.logNPE("throwable");
+            writer.append("[NULL REFERENCE]");
+            return;
+        }
+        if (alreadyPrinted == null) {
+            EMERGENCY_LOGGER.logNPE("alreadyPrinted");
+            writer.append("[INVALID REFERENCE]");
+            return;
+        }
+        if (enclosingTrace == null) {
+            EMERGENCY_LOGGER.logNPE("enclosingTrace");
+            writer.append("[INVALID REFERENCE]");
+            return;
+        }
+        if (alreadyPrinted.contains(throwable)) {
+            writer.append("[CIRCULAR REFERENCE: " + throwable + "]");
+            return;
+        }
+        alreadyPrinted.add(throwable);
+        if (alreadyPrinted.size() > 1) {
+            writer.append("Cause: ");
+        }
+        writer.append(throwable.getClass().getName());
+        writer.append(": ");
+        writer.append(throwable.getMessage());
+        writer.append(System.lineSeparator());
+
+        final StackTraceElement[] stackTrace = throwable.getStackTrace();
+        int m = stackTrace.length - 1;
+        int n = enclosingTrace.length - 1;
+        while (m >= 0 && n >= 0 && stackTrace[m].equals(enclosingTrace[n])) {
+            m--;
+            n--;
+        }
+        if (MAX_STACK_TRACE_DEPTH >= 0) {
+            m = Math.min(m, MAX_STACK_TRACE_DEPTH);
+        }
+        final int skippedFrames = stackTrace.length - 1 - m;
+        for (int i = 0; i <= m; i++) {
+            final StackTraceElement stackTraceElement = stackTrace[i];
+            final String moduleName = stackTraceElement.getModuleName();
+            final String className = stackTraceElement.getClassName();
+            final String methodName = stackTraceElement.getMethodName();
+            final String fileName = stackTraceElement.getFileName();
+            final int line = stackTraceElement.getLineNumber();
+            writer.append("\tat ");
+            if (moduleName != null) {
+                writer.append(moduleName);
+                writer.append("/");
+            }
+            writer.append(className);
+            writer.append(".");
+            writer.append(methodName);
+            writer.append("(");
+            writer.append(fileName);
+            writer.append(Integer.toString(line));
+            writer.append(")");
+            writer.append(System.lineSeparator());
+        }
+        if (skippedFrames != 0) {
+            writer.append("\t... ");
+            writer.append(Integer.toString(skippedFrames));
+            writer.append(" more");
+            writer.append(System.lineSeparator());
+        }
+        final Throwable cause = throwable.getCause();
+        if (cause != null) {
+            print(writer, cause, alreadyPrinted, stackTrace);
+        }
     }
 
     /**

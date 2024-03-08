@@ -28,7 +28,7 @@ mainModuleInfo {
 
 jmhModuleInfo {
     requires("com.swirlds.base")
-    requires("com.swirlds.config.api")
+    requires("com.swirlds.common")
     requires("com.swirlds.platform.core")
     requires("com.swirlds.platform.test")
     requires("com.swirlds.common.test.fixtures")
