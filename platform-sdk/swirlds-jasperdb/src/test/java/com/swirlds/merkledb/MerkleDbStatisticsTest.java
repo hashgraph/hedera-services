@@ -32,6 +32,7 @@ import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,6 +40,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class MerkleDbStatisticsTest {
+
+    private Configuration configuration;
 
     private static final String LABEL = "LaBeL";
 
@@ -49,7 +52,7 @@ class MerkleDbStatisticsTest {
 
     @BeforeEach
     void setupService() {
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        configuration = new TestConfigBuilder().getOrCreateConfig();
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
@@ -60,7 +63,7 @@ class MerkleDbStatisticsTest {
                 mock(ScheduledExecutorService.class),
                 new DefaultMetricsFactory(metricsConfig),
                 metricsConfig);
-        statistics = new MerkleDbStatistics(LABEL);
+        statistics = new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), LABEL);
         statistics.registerMetrics(metrics);
         compactionLevel = randomCompactionLevel();
     }
@@ -72,7 +75,8 @@ class MerkleDbStatisticsTest {
 
     @Test
     public void testMetricsDoesntThrowBeforeRegister() {
-        MerkleDbStatistics notRegisteredStatistics = new MerkleDbStatistics(LABEL);
+        MerkleDbStatistics notRegisteredStatistics =
+                new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), LABEL);
         verifyMetricsDoesntThrow(notRegisteredStatistics);
     }
 
@@ -106,13 +110,16 @@ class MerkleDbStatisticsTest {
 
     @Test
     void testConstructorWithNullParameter() {
-        assertThrows(NullPointerException.class, () -> new MerkleDbStatistics(null));
+        assertThrows(
+                NullPointerException.class,
+                () -> new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), null));
     }
 
     @Test
     void testRegisterWithNullParameter() {
         // given
-        final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL);
+        final MerkleDbStatistics statistics =
+                new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), LABEL);
 
         // then
         assertThrows(NullPointerException.class, () -> statistics.registerMetrics(null));
@@ -203,7 +210,7 @@ class MerkleDbStatisticsTest {
     @Test
     void testSetLeafKeysStoreFileCount() {
         // given
-        statistics = new MerkleDbStatistics(LABEL);
+        statistics = new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), LABEL);
         statistics.registerMetrics(metrics);
         final Metric metric = getMetric("files_", "leafKeysStoreFileCount_" + LABEL);
         // when
@@ -215,7 +222,7 @@ class MerkleDbStatisticsTest {
     @Test
     void testSetLeafKeysStoreTotalFileSizeMb() {
         // given
-        statistics = new MerkleDbStatistics(LABEL);
+        statistics = new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), LABEL);
         statistics.registerMetrics(metrics);
         final Metric metric = getMetric("files_", "leafKeysStoreFileSizeMb_" + LABEL);
         // when
@@ -265,7 +272,8 @@ class MerkleDbStatisticsTest {
                 mock(ScheduledExecutorService.class),
                 new DefaultMetricsFactory(metricsConfig),
                 metricsConfig);
-        final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL);
+        final MerkleDbStatistics statistics =
+                new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), LABEL);
         statistics.registerMetrics(metrics);
         final Metric metric = getMetric(metrics, "compactions_level_" + compactionLevel, "_leafKeysTimeMs_" + LABEL);
         // when

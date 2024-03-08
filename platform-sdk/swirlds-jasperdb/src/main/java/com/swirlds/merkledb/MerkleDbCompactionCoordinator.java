@@ -38,6 +38,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,30 +56,33 @@ class MerkleDbCompactionCoordinator {
     private static final Logger logger = LogManager.getLogger(MerkleDbCompactionCoordinator.class);
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-    /**
      * An executor service to run compaction tasks.
      */
-    private static final ExecutorService compactionExecutor;
+    private static final AtomicReference<ExecutorService> compactionExecutor = new AtomicReference<>();
 
-    static {
-        compactionExecutor = new ThreadPoolExecutor(
-                config.compactionThreads(),
-                config.compactionThreads(),
-                50L,
-                TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(),
-                new ThreadConfiguration(getStaticThreadManager())
-                        .setThreadGroup(new ThreadGroup("Compaction"))
-                        .setComponent(MERKLEDB_COMPONENT)
-                        .setThreadName("Compacting")
-                        .setExceptionHandler(
-                                (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during merging", ex))
-                        .buildFactory());
+    static ExecutorService getCompactionExecutor() {
+        ExecutorService exec = compactionExecutor.get();
+        if (exec == null) {
+            final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+            exec = new ThreadPoolExecutor(
+                    config.compactionThreads(),
+                    config.compactionThreads(),
+                    50L,
+                    TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>(),
+                    new ThreadConfiguration(getStaticThreadManager())
+                            .setThreadGroup(new ThreadGroup("Compaction"))
+                            .setComponent(MERKLEDB_COMPONENT)
+                            .setThreadName("Compacting")
+                            .setExceptionHandler((t, ex) ->
+                                    logger.error(EXCEPTION.getMarker(), "Uncaught exception during merging", ex))
+                            .buildFactory());
+            if (!compactionExecutor.compareAndSet(null, exec)) {
+                exec.shutdownNow();
+                exec = compactionExecutor.get();
+            }
+        }
+        return exec;
     }
 
     public static final String HASH_STORE_DISK_SUFFIX = "HashStoreDisk";
@@ -216,7 +220,7 @@ class MerkleDbCompactionCoordinator {
             return;
         }
 
-        final ExecutorService executor = getCompactingExecutor();
+        final ExecutorService executor = getCompactionExecutor();
 
         synchronized (compactionFuturesByName) {
             if (compactionFuturesByName.containsKey(task.id)) {
@@ -231,13 +235,6 @@ class MerkleDbCompactionCoordinator {
 
             compactionFuturesByName.put(task.id, executor.submit(task));
         }
-    }
-
-    /**
-     * @return a thread pool for compaction tasks
-     */
-    ExecutorService getCompactingExecutor() {
-        return compactionExecutor;
     }
 
     boolean isCompactionEnabled() {

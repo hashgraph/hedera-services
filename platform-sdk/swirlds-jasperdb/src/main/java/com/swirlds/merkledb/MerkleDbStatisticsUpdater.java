@@ -51,7 +51,7 @@ public class MerkleDbStatisticsUpdater {
     private final MerkleDbDataSource<?, ?> dataSource;
 
     public MerkleDbStatisticsUpdater(@NonNull MerkleDbDataSource<?, ?> dataSource) {
-        statistics = new MerkleDbStatistics(dataSource.getTableName());
+        statistics = new MerkleDbStatistics(dataSource.getDatabase().getConfig(), dataSource.getTableName());
         this.dataSource = dataSource;
     }
 

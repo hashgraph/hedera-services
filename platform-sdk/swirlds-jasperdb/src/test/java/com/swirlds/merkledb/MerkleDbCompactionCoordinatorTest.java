@@ -76,14 +76,14 @@ class MerkleDbCompactionCoordinatorTest {
     void cleanUp() {
         coordinator.stopAndDisableBackgroundCompaction();
         assertEventuallyTrue(
-                () -> ((ThreadPoolExecutor) coordinator.getCompactingExecutor())
+                () -> ((ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor())
                         .getQueue()
                         .isEmpty(),
                 Duration.ofSeconds(1),
                 "Queue is not empty");
         assertEventuallyEquals(
                 0,
-                () -> ((ThreadPoolExecutor) coordinator.getCompactingExecutor()).getActiveCount(),
+                () -> ((ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor()).getActiveCount(),
                 Duration.ofSeconds(1),
                 "Active task count is not 0");
     }

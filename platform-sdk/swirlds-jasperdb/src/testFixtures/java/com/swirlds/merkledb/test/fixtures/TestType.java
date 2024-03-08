@@ -31,6 +31,7 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSource;
 import com.swirlds.merkledb.MerkleDbStatistics;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.metrics.api.Metrics;
@@ -202,7 +203,8 @@ public enum TestType {
                     mock(ScheduledExecutorService.class),
                     new DefaultMetricsFactory(metricsConfig),
                     metricsConfig);
-            MerkleDbStatistics statistics = new MerkleDbStatistics("test");
+            MerkleDbStatistics statistics =
+                    new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), "test");
             statistics.registerMetrics(metrics);
             return metrics;
         }

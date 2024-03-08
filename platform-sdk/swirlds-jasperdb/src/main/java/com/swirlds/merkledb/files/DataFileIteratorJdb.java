@@ -17,7 +17,6 @@
 package com.swirlds.merkledb.files;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
@@ -41,12 +40,6 @@ import java.util.Objects;
  * @see DataFileWriter for definition of file structure
  */
 public final class DataFileIteratorJdb<D> implements DataFileIterator<D> {
-    /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
     /** Input stream this iterator is reading from */
     private final BufferedInputStream inputStream;
@@ -77,6 +70,7 @@ public final class DataFileIteratorJdb<D> implements DataFileIterator<D> {
     /**
      * Create a new DataFileIterator on an existing file.
      *
+     * @param dbConfig MerkleDb config
      * @param path
      * 		The path to the file to read.
      * @param metadata
@@ -85,14 +79,17 @@ public final class DataFileIteratorJdb<D> implements DataFileIterator<D> {
      * 		if there was a problem creating a new InputStream on the file at path
      */
     public DataFileIteratorJdb(
-            final Path path, final DataFileMetadata metadata, final DataItemSerializer<D> dataItemSerializer)
+            final MerkleDbConfig dbConfig,
+            final Path path,
+            final DataFileMetadata metadata,
+            final DataItemSerializer<D> dataItemSerializer)
             throws IOException {
         this.path = path;
         this.metadata = metadata;
         this.dataItemSerializer = dataItemSerializer;
         this.headerSize = dataItemSerializer.getHeaderSize();
         this.inputStream = new BufferedInputStream(
-                Files.newInputStream(path, StandardOpenOption.READ), config.iteratorInputBufferBytes());
+                Files.newInputStream(path, StandardOpenOption.READ), dbConfig.iteratorInputBufferBytes());
     }
 
     /** {@inheritDoc} */

@@ -175,16 +175,12 @@ class MemoryIndexDiskKeyValueStoreTest {
         final AtomicLong timeSpent = new AtomicLong(0);
         final AtomicDouble savedSpace = new AtomicDouble(0.0);
         String storeName = "MemoryIndexDiskKeyValueStoreTest";
+        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         final MemoryIndexDiskKeyValueStore<long[]> store = new MemoryIndexDiskKeyValueStore<>(
-                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
-                tempDir,
-                storeName,
-                null,
-                testType.dataItemSerializer,
-                null,
-                index);
+                dbConfig, tempDir, storeName, null, testType.dataItemSerializer, null, index);
         final DataFileCompactor<long[]> dataFileCompactor =
                 new DataFileCompactor<>(
+                        dbConfig,
                         storeName,
                         store.fileCollection,
                         index,

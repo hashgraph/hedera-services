@@ -24,7 +24,6 @@ import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
 import static com.swirlds.merkledb.files.DataFileCommon.logCompactStats;
 
 import com.swirlds.base.units.UnitConstants;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -58,16 +57,12 @@ public class DataFileCompactor<D> {
     private static final Logger logger = LogManager.getLogger(DataFileCompactor.class);
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-
-    /**
      * This is the compaction level that non-compacted files have.
      */
     public static final int INITIAL_COMPACTION_LEVEL = 0;
+
+    private final MerkleDbConfig dbConfig;
+
     /**
      * Name of the file store to compact.
      */
@@ -151,6 +146,7 @@ public class DataFileCompactor<D> {
     private final AtomicInteger compactionLevelInProgress = new AtomicInteger(0);
 
     /**
+     * @param dbConfig                       MerkleDb config
      * @param storeName                      name of the store to compact
      * @param dataFileCollection             data file collection to compact
      * @param index                          index to update during compaction
@@ -160,13 +156,15 @@ public class DataFileCompactor<D> {
      * @param updateTotalStatsFunction       A function that updates statistics of total usage of disk space and off-heap space
      */
     public DataFileCompactor(
-            String storeName,
+            final MerkleDbConfig dbConfig,
+            final String storeName,
             final DataFileCollection<D> dataFileCollection,
             CASableLongIndex index,
             @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
             @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
             @Nullable final BiConsumer<Integer, Double> reportFileSizeByLevelMetricFunction,
             @Nullable Runnable updateTotalStatsFunction) {
+        this.dbConfig = dbConfig;
         this.storeName = storeName;
         this.dataFileCollection = dataFileCollection;
         this.index = index;
@@ -193,7 +191,7 @@ public class DataFileCompactor<D> {
             final List<? extends DataFileReader<D>> filesToCompact,
             final int targetCompactionLevel)
             throws IOException, InterruptedException {
-        return compactFiles(index, filesToCompact, targetCompactionLevel, config.usePbj());
+        return compactFiles(index, filesToCompact, targetCompactionLevel, dbConfig.usePbj());
     }
 
     // visible for testing
@@ -319,7 +317,7 @@ public class DataFileCompactor<D> {
 
     // visible for testing
     int getMinNumberOfFilesToCompact() {
-        return config.minNumberOfFilesInCompaction();
+        return dbConfig.minNumberOfFilesInCompaction();
     }
 
     /**
@@ -433,7 +431,7 @@ public class DataFileCompactor<D> {
         final List<DataFileReader<D>> completedFiles = dataFileCollection.getAllCompletedFiles();
         reportFileSizeByLevel(completedFiles);
         final List<DataFileReader<D>> filesToCompact =
-                compactionPlan(completedFiles, getMinNumberOfFilesToCompact(), config.maxCompactionLevel());
+                compactionPlan(completedFiles, getMinNumberOfFilesToCompact(), dbConfig.maxCompactionLevel());
         if (filesToCompact.isEmpty()) {
             logger.debug(MERKLE_DB.getMarker(), "[{}] No need to compact, as the compaction plan is empty", storeName);
             return false;
@@ -513,11 +511,11 @@ public class DataFileCompactor<D> {
      *  - To ensure a reasonably predictable frequency for full compactions, even for data that changes infrequently.
      *  - We maintain metrics for each level, and there should be a cap on the number of these metrics.
      */
-    private static int getTargetCompactionLevel(List<? extends DataFileReader<?>> filesToCompact, int filesCount) {
+    private int getTargetCompactionLevel(List<? extends DataFileReader<?>> filesToCompact, int filesCount) {
         int highestExistingCompactionLevel =
                 filesToCompact.get(filesCount - 1).getMetadata().getCompactionLevel();
 
-        return Math.min(highestExistingCompactionLevel + 1, config.maxCompactionLevel());
+        return Math.min(highestExistingCompactionLevel + 1, dbConfig.maxCompactionLevel());
     }
 
     /**

@@ -20,7 +20,9 @@ import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LE
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
@@ -66,10 +68,11 @@ public class DataFileReaderHammerTest {
 
         final ExecutorService exec = Executors.newFixedThreadPool(readerThreads);
         final Random rand = new Random();
+        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         final DataFileMetadata metadata =
                 new DataFileMetadata(itemCount, 0, Instant.now(), 0, INITIAL_COMPACTION_LEVEL);
         final DataFileReader<byte[]> dataReader =
-                new DataFileReaderPbj<>(tempFile, new TestDataItemSerializer(itemSize), metadata);
+                new DataFileReaderPbj<>(dbConfig, tempFile, new TestDataItemSerializer(itemSize), metadata);
         final AtomicInteger activeReaders = new AtomicInteger(readerThreads);
         final AtomicReferenceArray<Thread> threads = new AtomicReferenceArray<>(readerThreads);
         final Future<?>[] jobs = new Future[readerThreads];

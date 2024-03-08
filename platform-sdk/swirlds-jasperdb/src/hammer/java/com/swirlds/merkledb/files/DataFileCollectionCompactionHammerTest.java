@@ -72,13 +72,10 @@ class DataFileCollectionCompactionHammerTest {
             final LongListHeap index = new LongListHeap();
             final var serializer = new ExampleFixedSizeDataSerializer();
             String storeName = "benchmark";
+            final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
             final var coll = new DataFileCollection<>(
-                    ConfigurationHolder.getConfigData(MerkleDbConfig.class),
-                    tempFileDir.resolve(storeName),
-                    storeName,
-                    serializer,
-                    (dataLocation, dataValue) -> {});
-            final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null, null);
+                    dbConfig, tempFileDir.resolve(storeName), storeName, serializer, (dataLocation, dataValue) -> {});
+            final var compactor = new DataFileCompactor<>(dbConfig, storeName, coll, index, null, null, null, null);
 
             final Random rand = new Random(777);
             for (int i = 0; i < numFiles; i++) {
@@ -132,13 +129,10 @@ class DataFileCollectionCompactionHammerTest {
         final LongListHeap index = new LongListHeap();
         final var serializer = new ExampleFixedSizeDataSerializer();
         String storeName = "hammer";
+        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         final var coll = new DataFileCollection<>(
-                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
-                tempFileDir.resolve(storeName),
-                storeName,
-                serializer,
-                (dataLocation, dataValue) -> {});
-        final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null, null);
+                dbConfig, tempFileDir.resolve(storeName), storeName, serializer, (dataLocation, dataValue) -> {});
+        final var compactor = new DataFileCompactor<>(dbConfig, storeName, coll, index, null, null, null, null);
 
         final Random rand = new Random(777);
         final AtomicBoolean stop = new AtomicBoolean(false);

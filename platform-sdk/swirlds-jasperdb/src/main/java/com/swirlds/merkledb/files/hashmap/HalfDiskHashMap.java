@@ -48,6 +48,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
@@ -127,18 +128,28 @@ public class HalfDiskHashMap<K extends VirtualKey>
      */
     private Thread writingThread;
 
-    /** MerkleDb settings */
-    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-
     /** Executor for parallel bucket reads/updates in {@link #endWriting()} */
-    private static final ExecutorService flushExecutor = Executors.newFixedThreadPool(
-            config.getNumHalfDiskHashMapFlushThreads(),
-            new ThreadConfiguration(getStaticThreadManager())
-                    .setComponent(MERKLEDB_COMPONENT)
-                    .setThreadName("HalfDiskHashMap Flushing")
-                    .setExceptionHandler((t, ex) ->
-                            logger.error(EXCEPTION.getMarker(), "Uncaught exception during HDHM flushing", ex))
-                    .buildFactory());
+    private static final AtomicReference<ExecutorService> flushExecutor = new AtomicReference<>();
+
+    private static ExecutorService getFlushExecutor() {
+        ExecutorService exec = flushExecutor.get();
+        if (exec == null) {
+            final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+            exec = Executors.newFixedThreadPool(
+                    config.getNumHalfDiskHashMapFlushThreads(),
+                    new ThreadConfiguration(getStaticThreadManager())
+                            .setComponent(MERKLEDB_COMPONENT)
+                            .setThreadName("HalfDiskHashMap Flushing")
+                            .setExceptionHandler((t, ex) ->
+                                    logger.error(EXCEPTION.getMarker(), "Uncaught exception during HDHM flushing", ex))
+                            .buildFactory());
+            if (!flushExecutor.compareAndSet(null, exec)) {
+                exec.shutdownNow();
+                exec = flushExecutor.get();
+            }
+        }
+        return exec;
+    }
 
     /**
      * Construct a new HalfDiskHashMap
@@ -430,7 +441,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
                     IntObjectPair<BucketMutation<K>> keyValue = iterator.next();
                     final int bucketIndex = keyValue.getOne();
                     final BucketMutation<K> bucketMap = keyValue.getTwo();
-                    flushExecutor.execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
+                    getFlushExecutor().execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
                     ++inFlight;
                 }
 
