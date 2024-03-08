@@ -54,6 +54,9 @@ import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
  */
 public final class InitialModServiceScheduleSchema extends Schema {
     private static final Logger log = LogManager.getLogger(InitialModServiceScheduleSchema.class);
+    private static final long MAX_SCHEDULES_BY_ID_KEY = 50_000_000L;
+    private static final long MAX_SCHEDULES_BY_EXPIRY_SEC_KEY = 50_000_000L;
+    private static final long MAX_SCHEDULES_BY_EQUALITY = 50_000_000L;
     private MerkleScheduledTransactions fs;
 
     public InitialModServiceScheduleSchema(@NonNull final SemanticVersion version) {
@@ -165,14 +168,20 @@ public final class InitialModServiceScheduleSchema extends Schema {
     }
 
     private static StateDefinition<ScheduleID, Schedule> schedulesByIdDef() {
-        return StateDefinition.inMemory(SCHEDULES_BY_ID_KEY, ScheduleID.PROTOBUF, Schedule.PROTOBUF);
+        return StateDefinition.onDisk(
+                SCHEDULES_BY_ID_KEY, ScheduleID.PROTOBUF, Schedule.PROTOBUF, MAX_SCHEDULES_BY_ID_KEY);
     }
 
     private static StateDefinition<ProtoLong, ScheduleList> schedulesByExpirySec() {
-        return StateDefinition.inMemory(SCHEDULES_BY_EXPIRY_SEC_KEY, ProtoLong.PROTOBUF, ScheduleList.PROTOBUF);
+        return StateDefinition.onDisk(
+                SCHEDULES_BY_EXPIRY_SEC_KEY,
+                ProtoLong.PROTOBUF,
+                ScheduleList.PROTOBUF,
+                MAX_SCHEDULES_BY_EXPIRY_SEC_KEY);
     }
 
     private static StateDefinition<ProtoBytes, ScheduleList> schedulesByEquality() {
-        return StateDefinition.inMemory(SCHEDULES_BY_EQUALITY_KEY, ProtoBytes.PROTOBUF, ScheduleList.PROTOBUF);
+        return StateDefinition.onDisk(
+                SCHEDULES_BY_EQUALITY_KEY, ProtoBytes.PROTOBUF, ScheduleList.PROTOBUF, MAX_SCHEDULES_BY_EQUALITY);
     }
 }
