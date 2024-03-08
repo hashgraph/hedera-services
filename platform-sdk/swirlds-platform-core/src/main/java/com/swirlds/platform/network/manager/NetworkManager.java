@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Establishes, maintains, and manages network connections with current peers.
  */
-public interface NetworkManager {
+public interface NetworkManager { // in diagram called "ConnectivityManager"
 
     /**
      * Specify which peers we should currently be connected to. Will attempt to initiate connections with new peers, and

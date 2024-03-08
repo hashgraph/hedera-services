@@ -7,7 +7,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A connection with a peer. A network connection has a lifespan over the entire time we wish to be connected with a
  * peer. If sockets are broken, this object persists and will attempt to re-establish that connection.
  */
-public interface NetworkConnection {
+public interface NetworkConnection { // "ConnectionManager" in the diagram
 
     /**
      * Get the ID of the peer that this connection is with.
