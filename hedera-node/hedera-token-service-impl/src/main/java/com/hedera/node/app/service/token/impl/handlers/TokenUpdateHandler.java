@@ -116,9 +116,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.hasAdminKey()) {
             context.requireKey(op.adminKeyOrThrow());
         }
-        if (op.hasMetadataKey()) {
-            context.requireKey(op.metadataKeyOrThrow());
-        }
     }
 
     @Override
@@ -303,7 +300,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // If these keys did not exist on the token already, they can't be changed on update
         updateKeys(op, token, copyToken);
         updateExpiryFields(op, resolvedExpiry, copyToken);
-        updateNameSymbolMetadataMemoAndTreasury(op, copyToken, token);
+        updateTokenAttributes(op, copyToken, token);
         return copyToken;
     }
 
@@ -314,7 +311,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * @param builder token builder
      * @param originalToken original token
      */
-    private void updateNameSymbolMetadataMemoAndTreasury(
+    private void updateTokenAttributes(
             final TokenUpdateTransactionBody op, final Token.Builder builder, final Token originalToken) {
         if (op.symbol() != null && op.symbol().length() > 0) {
             builder.symbol(op.symbol());

@@ -90,9 +90,4 @@ public class TokenGetInfoUsage extends QueryUsage {
         addRb(metadata.length());
         return this;
     }
-
-    public TokenGetInfoUsage givenCurrentMetadataKey(final Optional<Key> metadataKey) {
-        metadataKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::addRb);
-        return this;
-    }
 }

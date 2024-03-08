@@ -771,6 +771,7 @@ public final class PbjConverter {
             case INVALID_METADATA_KEY -> ResponseCodeEnum.INVALID_METADATA_KEY;
             case MISSING_TOKEN_METADATA -> ResponseCodeEnum.MISSING_TOKEN_METADATA;
             case TOKEN_HAS_NO_METADATA_KEY -> ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
+            case MISSING_SERIAL_NUMBERS -> ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
@@ -1305,6 +1306,7 @@ public final class PbjConverter {
             case TOKEN_HAS_NO_METADATA_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .TOKEN_HAS_NO_METADATA_KEY;
             case MISSING_TOKEN_METADATA -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_METADATA;
+            case MISSING_SERIAL_NUMBERS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }

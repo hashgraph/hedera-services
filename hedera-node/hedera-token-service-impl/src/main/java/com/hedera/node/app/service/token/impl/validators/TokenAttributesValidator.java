@@ -80,7 +80,9 @@ public class TokenAttributesValidator {
      * @param metadata the token metadata to validate
      */
     public void validateTokenMetadata(@Nullable final Bytes metadata, @NonNull final TokensConfig tokensConfig) {
-        tokenByteArrayCheck(metadata, tokensConfig.tokensMaxMetadataBytes(), METADATA_TOO_LONG);
+        if (metadata != null && metadata.length() > 0) {
+            validateTrue(metadata.length() <= tokensConfig.tokensMaxMetadataBytes(), METADATA_TOO_LONG);
+        }
     }
 
     /**
@@ -101,22 +103,6 @@ public class TokenAttributesValidator {
         validateTrue(numUtf8Bytes != 0, onMissing);
         validateTrue(numUtf8Bytes <= maxLen, onTooLong);
         validateTrue(!s.contains("\u0000"), INVALID_ZERO_BYTE_IN_STRING);
-    }
-
-    /**
-     * Given a token byte array, validates that it is not too long and does not contain a zero byte.
-     * @param bytes the byte array to validate
-     * @param maxLen the maximum number of UTF-8 bytes allowed
-     * @param onTooLong the response code to use if the bytes array is too long
-     */
-    private void tokenByteArrayCheck(
-            @Nullable final Bytes bytes, final int maxLen, @NonNull final ResponseCodeEnum onTooLong) {
-        if (bytes != null && bytes.length() > 0) {
-            final long length = bytes.length();
-            validateTrue(length <= maxLen, onTooLong);
-            // Remove this restriction once Mirror Node gets fixed to handle zero bytes correctly.
-            validateTrue(!containsZeroByte(bytes), INVALID_ZERO_BYTE_IN_STRING);
-        }
     }
 
     /**
@@ -190,19 +176,5 @@ public class TokenAttributesValidator {
     public static boolean isKeyRemoval(@NonNull final Key source) {
         requireNonNull(source);
         return IMMUTABILITY_SENTINEL_KEY.equals(source);
-    }
-    /**
-     * Checks if the given Bytes contains a zero
-     * @param bytes the Bytes to check
-     * @return true Bytes contains zero, false otherwise
-     */
-    public boolean containsZeroByte(@NonNull final Bytes bytes) {
-        byte[] byteArray = bytes.toByteArray();
-        for (byte b : byteArray) {
-            if (b == 0) {
-                return true;
-            }
-        }
-        return false;
     }
 }
