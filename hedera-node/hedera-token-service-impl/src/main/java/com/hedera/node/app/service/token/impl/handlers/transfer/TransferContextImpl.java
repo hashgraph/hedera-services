@@ -17,25 +17,15 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep.maybeValidateSpenderHasAllowance;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenAssociation;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
-import com.hedera.node.app.service.token.ReadableNftStore;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -43,8 +33,6 @@ import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -128,78 +116,6 @@ public class TransferContextImpl implements TransferContext {
             throw e;
         }
         resolutions.put(alias, createdAccount);
-    }
-
-    @Override
-    public void validateTopLevelAllowances() {
-        final var op = context.body().cryptoTransferOrThrow();
-        final var topLevelPayer = context.payer();
-        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
-            if (aa.isApproval() && aa.amount() < 0L) {
-                maybeValidateFungibleAllowance(
-                        accountStore.get(aa.accountIDOrElse(AccountID.DEFAULT)), topLevelPayer, null, aa.amount());
-            }
-        }
-        for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
-            if (!xfers.hasToken()) {
-                continue;
-            }
-            final var tokenId = xfers.tokenOrThrow();
-            final var token = context.readableStore(ReadableTokenStore.class).get(tokenId);
-            if (token == null) {
-                continue;
-            }
-            for (final var aa : xfers.transfersOrElse(emptyList())) {
-                if (aa.isApproval() && aa.amount() < 0L) {
-                    maybeValidateFungibleAllowance(
-                            accountStore.get(aa.accountIDOrElse(AccountID.DEFAULT)),
-                            topLevelPayer,
-                            tokenId,
-                            aa.amount());
-                }
-            }
-            for (final var oc : xfers.nftTransfersOrElse(emptyList())) {
-                if (oc.isApproval()) {
-                    final var nftId = new NftID(tokenId, oc.serialNumber());
-                    maybeValidateSpenderHasAllowance(
-                            accountStore.get(oc.senderAccountIDOrElse(AccountID.DEFAULT)),
-                            topLevelPayer,
-                            tokenId,
-                            context.readableStore(ReadableNftStore.class).get(nftId));
-                }
-            }
-        }
-    }
-
-    private void maybeValidateFungibleAllowance(
-            @Nullable final Account account,
-            @NonNull final AccountID topLevelPayer,
-            @Nullable final TokenID tokenId,
-            final long amount) {
-        if (account == null) {
-            return;
-        }
-        if (tokenId != null) {
-            final var tokenAllowances = account.tokenAllowancesOrElse(emptyList());
-            for (final var allowance : tokenAllowances) {
-                if (topLevelPayer.equals(allowance.spenderId()) && tokenId.equals(allowance.tokenId())) {
-                    final var newAllowanceAmount = allowance.amount() + amount;
-                    validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
-                    return;
-                }
-            }
-            throw new HandleException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-        } else {
-            final var cryptoAllowances = account.cryptoAllowancesOrElse(emptyList());
-            for (final var allowance : cryptoAllowances) {
-                if (topLevelPayer.equals(allowance.spenderId())) {
-                    final var newAllowanceAmount = allowance.amount() + amount;
-                    validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
-                    return;
-                }
-            }
-            throw new HandleException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-        }
     }
 
     @Override

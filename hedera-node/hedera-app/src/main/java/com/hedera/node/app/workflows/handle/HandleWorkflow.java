@@ -422,7 +422,8 @@ public class HandleWorkflow {
                     childRecordFinalizer,
                     transactionFinalizer,
                     networkUtilizationManager,
-                    synchronizedThrottleAccumulator);
+                    synchronizedThrottleAccumulator,
+                    platformState);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);

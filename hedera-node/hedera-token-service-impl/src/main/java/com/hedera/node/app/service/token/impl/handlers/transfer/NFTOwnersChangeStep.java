@@ -37,7 +37,6 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferStep {
     private final CryptoTransferTransactionBody op;
@@ -107,25 +106,6 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                         tokenRelStore,
                         nftStore);
             }
-        }
-    }
-
-    /**
-     * Validate if the spender has allowance to transfer the nft, if the account and
-     * nft are not null.
-     *
-     * @param owner maybe the owner of the nft
-     * @param spender spender of the nft
-     * @param tokenId token id of the nft
-     * @param nft maybe the nft to be transferred
-     */
-    static void maybeValidateSpenderHasAllowance(
-            @Nullable final Account owner,
-            @NonNull final AccountID spender,
-            @NonNull final TokenID tokenId,
-            @Nullable final Nft nft) {
-        if (owner != null && nft != null) {
-            validateSpenderHasAllowance(owner, spender, tokenId, nft);
         }
     }
 
