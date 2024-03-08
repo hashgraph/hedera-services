@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
@@ -209,7 +209,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(INVALID_TRANSACTION_BODY));
+                .has(responseCode(INVALID_NFT_ID));
     }
 
     @Test
