@@ -148,10 +148,13 @@ public class EpochCachedFormatter {
      * e.g:
      * Given an {@code instant} representing date: {@code "2020-08-26 12:34:56.789"}
      * <ul>
-     * <li>{@code stringFrom(instant, ChronoUnit.MILLIS)} --> returns a buffer containing {@code "789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.SECONDS)} --> returns a buffer containing {@code "56.789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.MINUTES)} --> returns a buffer containing {@code "34:56.789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> returns a buffer containing {@code " 12:34:56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.MICROS)} --> adds to the buffer {@code ""} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.NANOS)} --> adds to the buffer {@code ""} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.MILLIS)} --> adds to the buffer {@code "789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.SECONDS)} --> adds to the buffer {@code "56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.MINUTES)} --> adds to the buffer {@code "34:56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> adds to the buffer {@code " 12:34:56.789"} </li>
+     * <li>{@code stringFrom(instant, ChronoUnit.*)} --> adds to the buffer {@code " 12:34:56.789"} </li>
      * </ul>
      *
      * @param instant The Instant to represent as a string.
