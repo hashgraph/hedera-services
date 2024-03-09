@@ -28,6 +28,7 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -35,11 +36,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -120,14 +119,15 @@ public class ReadableFreezeUpgradeActions {
         writeMarker(file, now);
     }
 
-    public void catchUpOnMissedSideEffects(final Instant freezeTime) {
-        catchUpOnMissedFreezeScheduling(freezeTime);
+    public void catchUpOnMissedSideEffects(final PlatformState platformState) {
+        catchUpOnMissedFreezeScheduling(platformState);
         catchUpOnMissedUpgradePrep();
     }
 
-    private void catchUpOnMissedFreezeScheduling(final Instant freezeTime) {
+    private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {
         final var isUpgradePrepared = freezeStore.updateFileHash() != null;
-        if (isFreezeScheduled() && isUpgradePrepared) {
+        if (isFreezeScheduled(platformState) && isUpgradePrepared) {
+            final var freezeTime = platformState.getFreezeTime();
             writeMarker(
                     FREEZE_SCHEDULED_MARKER,
                     Timestamp.newBuilder()
@@ -181,12 +181,10 @@ public class ReadableFreezeUpgradeActions {
         return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
     }
 
-    public boolean isFreezeScheduled() {
-        final var ans = new AtomicBoolean();
-        requireNonNull(freezeStore, "Cannot check freeze schedule without access to the dual state");
-        final var freezeTime = freezeStore.freezeTime();
-        ans.set(freezeTime != null && !freezeTime.equals(freezeStore.lastFrozenTime()));
-        return ans.get();
+    public boolean isFreezeScheduled(final PlatformState platformState) {
+        requireNonNull(platformState, "Cannot check freeze schedule without access to the dual state");
+        final var freezeTime = platformState.getFreezeTime();
+        return freezeTime != null && !freezeTime.equals(platformState.getLastFrozenTime());
     }
 
     /* -------- Internal Methods */
