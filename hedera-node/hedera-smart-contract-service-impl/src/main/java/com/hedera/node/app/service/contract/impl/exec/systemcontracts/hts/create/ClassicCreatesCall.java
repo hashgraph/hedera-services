@@ -176,8 +176,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         if (op.symbol().isEmpty()) {
             return MISSING_TOKEN_SYMBOL;
         }
-        final var treasuryAccount =
-                nativeOperations().getAccount(op.treasuryOrThrow().accountNumOrThrow());
+        final var treasuryAccount = nativeOperations().getAccount(op.treasuryOrThrow());
         if (treasuryAccount == null) {
             return INVALID_ACCOUNT_ID;
         }

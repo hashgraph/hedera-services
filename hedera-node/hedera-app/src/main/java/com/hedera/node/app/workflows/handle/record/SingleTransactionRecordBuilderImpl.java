@@ -150,7 +150,7 @@ public class SingleTransactionRecordBuilderImpl
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
 
-    public List<AccountAmount> paidStakingRewards = new LinkedList<>();
+    private List<AccountAmount> paidStakingRewards = new LinkedList<>();
     private final TransactionRecord.Builder transactionRecordBuilder = TransactionRecord.newBuilder();
     private TransferList transferList = TransferList.DEFAULT;
 
