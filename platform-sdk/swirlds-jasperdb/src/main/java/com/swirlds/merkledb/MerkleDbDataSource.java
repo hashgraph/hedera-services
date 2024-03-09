@@ -1206,7 +1206,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             final long path = leafRecord.getPath();
             if (tableName.toLowerCase().contains("accounts")) {
                 try {
-                    logger.info(
+                    logger.info(MERKLE_DB.getMarker(),
                             "MERKLEDB delete leaf: path=" + path + " key=" + leafRecord.getKey() + "oldPath="
                                     + objectKeyToPath.get(
                                     leafRecord.getKey(), -2) + " isReconnect=" + isReconnect);
