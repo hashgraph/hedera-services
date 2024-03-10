@@ -133,13 +133,6 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         }
     }
 
-    @Override
-    protected void revert(final MessageFrame frame) {
-        super.revert(frame);
-        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
-        ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
-    }
-
     private void halt(
             @NonNull final MessageFrame frame,
             @NonNull final OperationTracer tracer,

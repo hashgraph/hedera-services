@@ -791,7 +791,7 @@ public class HandleWorkflow {
         try {
             payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
         } catch (PreCheckException e) {
-            throw new IllegalStateException("Payer must be a due diligence failure", e);
+            throw new IllegalStateException("Missing payer should be a due diligence failure", e);
         }
         isPayerHollow = isHollow(payer);
         // Check all signature verifications. This will also wait, if validation is still ongoing.

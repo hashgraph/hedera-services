@@ -39,7 +39,6 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.swirlds.config.api.Configuration;
@@ -296,12 +295,5 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
                         frame, new Operation.OperationResult(frame.getRemainingGas(), reason));
             }
         }
-    }
-
-    @Override
-    protected void revert(final MessageFrame frame) {
-        super.revert(frame);
-        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
-        ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
     }
 }

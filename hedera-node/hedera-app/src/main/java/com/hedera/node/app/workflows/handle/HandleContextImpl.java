@@ -760,7 +760,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 }
             }
             childRecordBuilder.status(e.getStatus());
-            recordListBuilder.revertChildrenOf(recordBuilder);
+            recordListBuilder.revertChildrenOf(childRecordBuilder);
         }
         // For mono-service fidelity, we need to attach staking rewards for a
         // triggered transaction to the record of the child here, and not the

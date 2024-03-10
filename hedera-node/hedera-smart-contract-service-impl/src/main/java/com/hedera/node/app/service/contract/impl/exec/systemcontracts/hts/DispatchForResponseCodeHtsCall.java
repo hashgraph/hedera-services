@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
@@ -215,6 +216,9 @@ public class DispatchForResponseCodeHtsCall extends AbstractHtsCall {
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
         var status = recordBuilder.status();
+        if (status == INVALID_TOKEN_ID) {
+            System.out.println("OK");
+        }
         if (status != SUCCESS) {
             status = failureCustomizer.customize(syntheticBody, status, enhancement);
             recordBuilder.status(status);
