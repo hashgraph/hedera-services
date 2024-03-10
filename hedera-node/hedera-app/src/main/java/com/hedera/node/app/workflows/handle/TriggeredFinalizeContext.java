@@ -26,6 +26,11 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * A tiny extension of {@link ChildFinalizeContextImpl} that allows us to re-use the
+ * {@link com.hedera.node.app.service.token.records.ParentRecordFinalizer} for the
+ * records of dispatched scheduled transactions.
+ */
 public class TriggeredFinalizeContext extends ChildFinalizeContextImpl implements FinalizeContext {
     private final Instant consensusNow;
     private final Configuration configuration;

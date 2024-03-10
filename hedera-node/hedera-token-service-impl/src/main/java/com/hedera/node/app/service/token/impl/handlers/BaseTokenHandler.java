@@ -309,8 +309,8 @@ public class BaseTokenHandler {
         final var tokensConfig = config.getConfigData(TokensConfig.class);
         final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
-        final var accountId = account.accountId();
-        final var tokenId = token.tokenId();
+        final var accountId = account.accountIdOrThrow();
+        final var tokenId = token.tokenIdOrThrow();
         // If token is already associated, no need to associate again
         validateTrue(tokenRelStore.get(accountId, tokenId) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         validateTrue(

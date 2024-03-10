@@ -437,7 +437,8 @@ public class HandleWorkflow {
                     childRecordFinalizer,
                     transactionFinalizer,
                     networkUtilizationManager,
-                    synchronizedThrottleAccumulator);
+                    synchronizedThrottleAccumulator,
+                    platformState);
 
             if (logStuff) {
                 System.out.println("Getting fees");

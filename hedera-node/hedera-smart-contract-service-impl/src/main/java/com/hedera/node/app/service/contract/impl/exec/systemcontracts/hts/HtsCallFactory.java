@@ -71,6 +71,13 @@ public class HtsCallFactory {
         return new HtsCallAttempt(
                 input,
                 frame.getSenderAddress(),
+                // We only need to distinguish between the EVM sender id and the
+                // "authorizing id" for qualified delegate calls; and even then, only
+                // for classic transfers. In that specific case, the qualified delegate
+                // contracts need to use their own address as the authorizing id in order
+                // to have signatures waived correctly during preHandle() for the
+                // dispatched CryptoTransfer. (FUTURE - add here a link to a HashScan
+                // transaction that demonstrates this.)
                 callType == QUALIFIED_DELEGATE ? frame.getRecipientAddress() : frame.getSenderAddress(),
                 addressChecks.hasParentDelegateCall(frame),
                 enhancement,

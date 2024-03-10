@@ -30,6 +30,7 @@ import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +43,7 @@ public class CongestionThrottleService implements Service {
     public static final String NAME = "CongestionThrottleService";
     public static final String THROTTLE_USAGE_SNAPSHOTS_STATE_KEY = "THROTTLE_USAGE_SNAPSHOTS";
     public static final String CONGESTION_LEVEL_STARTS_STATE_KEY = "CONGESTION_LEVEL_STARTS";
+    private MerkleNetworkContext mnc;
 
     public static MerkleNetworkContext monoNetworkCtx;
 
@@ -66,25 +68,28 @@ public class CongestionThrottleService implements Service {
             /** {@inheritDoc} */
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
-                if (monoNetworkCtx != null) {
+                if (mnc != null) {
                     log.info("Migrating throttle usage snapshots");
+                    // For diff testing we need to initialize the throttle snapshots from the saved state
                     final var throttleSnapshots = ctx.newStates().getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
                     throttleSnapshots.put(new ThrottleUsageSnapshots(
                             Arrays.stream(monoNetworkCtx.getUsageSnapshots())
                                     .map(PbjConverter::toPbj)
                                     .toList(),
                             toPbj(monoNetworkCtx.getGasThrottleUsageSnapshot())));
+
+                    // Unless we find diff testing requires, for now don't bother migrating congestion level starts
                     final var congestionLevelStarts = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
-                    // Unless diff testing requires, don't bother migrating congestion level starts
                     congestionLevelStarts.put(CongestionLevelStarts.DEFAULT);
-                    monoNetworkCtx = null;
+
+                    mnc = null;
+                    log.info("BBM: finished migrating congestion throttle service");
                     return;
-                }
-                if (ctx.previousStates().isEmpty()) {
+                } else if (ctx.previousVersion() == null) {
+                    log.info("Creating genesis throttle snapshots and congestion level starts");
                     // At genesis we put empty throttle usage snapshots and
                     // congestion level starts into their respective singleton
                     // states just to ensure they exist
-                    log.info("Creating genesis throttle snapshots and congestion level starts");
                     final var throttleSnapshots = ctx.newStates().getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
                     throttleSnapshots.put(ThrottleUsageSnapshots.DEFAULT);
                     final var congestionLevelStarts = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
@@ -92,5 +97,9 @@ public class CongestionThrottleService implements Service {
                 }
             }
         });
+    }
+
+    public void setFs(@Nullable final MerkleNetworkContext mnc) {
+        this.mnc = mnc;
     }
 }

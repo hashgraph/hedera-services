@@ -78,9 +78,10 @@ public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
         }
         var spenderAddress = asHeadlongAddress(new byte[20]);
         if (nft.spenderId() != null) {
-            final var spenderNum = nft.spenderId().accountNumOrThrow();
-            final var spender = nativeOperations().getAccount(spenderNum);
-            spenderAddress = headlongAddressOf(spender);
+            final var spender = nativeOperations().getAccount(nft.spenderIdOrThrow());
+            if (spender != null) {
+                spenderAddress = headlongAddressOf(spender);
+            }
         }
         return isErcCall
                 ? gasOnly(
