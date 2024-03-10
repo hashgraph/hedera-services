@@ -86,6 +86,7 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -945,7 +946,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
         given(context.readableStore(ReadableNetworkStakingRewardsStore.class)).willReturn(readableRewardsStore);
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(writableRewardsStore);
-        given(context.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
+        given(context.dispatchComputeFees(any(), any(), ComputeDispatchFeesAsTopLevel.NO))
+                .willReturn(new Fees(1l, 2l, 3l));
     }
 
     protected void givenStoresAndConfig(final FinalizeContext context) {

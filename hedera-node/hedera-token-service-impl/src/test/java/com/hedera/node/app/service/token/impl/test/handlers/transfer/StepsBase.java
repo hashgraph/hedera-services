@@ -55,6 +55,7 @@ import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
@@ -204,7 +205,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         eq(payerId),
                         any(ExternalizedRecordCustomizer.class)))
                 .willReturn(cryptoCreateRecordBuilder);
-        given(handleContext.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
+        given(handleContext.dispatchComputeFees(any(), any(), ComputeDispatchFeesAsTopLevel.NO))
+                .willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
         //        given(handleContext.feeCalculator()).willReturn(fees);

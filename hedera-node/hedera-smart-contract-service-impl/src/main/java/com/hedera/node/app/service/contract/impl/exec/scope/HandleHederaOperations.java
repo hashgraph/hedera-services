@@ -56,7 +56,6 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.UncheckedParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -403,7 +402,6 @@ public class HandleHederaOperations implements HederaOperations {
                 isTopLevelCreation
                         ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
                         : contractBodyCustomizerFor(number, bodyToExternalize));
-        System.out.println("Dispatched " + bodyToDispatch + " with " + recordBuilder.status());
         if (recordBuilder.status() != SUCCESS) {
             // The only plausible failure mode (MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED) should
             // have been pre-validated in ProxyWorldUpdater.createAccount() so this is an invariant failure
@@ -417,9 +415,6 @@ public class HandleHederaOperations implements HederaOperations {
                 isTopLevelCreation ? context.recordBuilder(ContractOperationRecordBuilder.class) : recordBuilder,
                 externalizeInitcodeOnSuccess == ExternalizeInitcodeOnSuccess.YES);
         final var contractId = ContractID.newBuilder().contractNum(number).build();
-        System.out.println("Setting creation metadata for 0.0."
-                + contractId.contractNumOrThrow()
-                + " (" + (evmAddress == null ? "<LONG_ZERO>" : CommonUtils.hex(evmAddress.toByteArray())) + ")");
         pendingCreationMetadataRef.set(contractId, pendingCreationMetadata);
         recordBuilder
                 .contractID(contractId)
@@ -444,9 +439,10 @@ public class HandleHederaOperations implements HederaOperations {
                 if (!dispatchedBody.hasCryptoCreateAccount()) {
                     throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
                 }
+                final var standardizedOp = standardized(createdNumber, op);
                 return transactionWith(dispatchedBody
                         .copyBuilder()
-                        .contractCreateInstance(standardized(createdNumber, op))
+                        .contractCreateInstance(standardizedOp)
                         .build());
             } catch (ParseException e) {
                 // Should be impossible

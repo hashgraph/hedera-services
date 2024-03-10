@@ -108,12 +108,11 @@ class NetworkUtilizationManagerImplTest {
     @Test
     void verifyTrackFeePayments() {
         // given
-        final var payer = AccountID.newBuilder().accountNum(1234L).build();
         final var expectedTxnToBeChargedFor = new TransactionInfo(
                 Transaction.DEFAULT,
                 TransactionBody.DEFAULT,
                 TransactionID.DEFAULT,
-                payer,
+                AccountID.DEFAULT,
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
                 CRYPTO_TRANSFER);

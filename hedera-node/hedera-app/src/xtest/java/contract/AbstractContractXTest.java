@@ -65,6 +65,7 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.ContractsConfig;
@@ -260,7 +261,8 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         final var systemContractGasCalculator = new SystemContractGasCalculator(
                 tinybarValues,
                 new CanonicalDispatchPrices(new AssetsLoader()),
-                (body, payerId) -> context.dispatchComputeFees(body, payerId).totalFee());
+                (body, payerId) -> context.dispatchComputeFees(body, payerId, ComputeDispatchFeesAsTopLevel.NO)
+                        .totalFee());
         final var enhancement = new HederaWorldUpdater.Enhancement(
                 new HandleHederaOperations(
                         component.config().getConfigData(LedgerConfig.class),
