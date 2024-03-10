@@ -19,11 +19,11 @@ package com.hedera.node.app.workflows.handle.record;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -170,15 +170,15 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
                 recordBuilder.memo(recordMemo);
             }
 
-            var txnBody = newCryptoCreate(account);
+            final var op = newCryptoCreate(account);
             if (overrideAutoRenewPeriod != null) {
-                txnBody.autoRenewPeriod(Duration.newBuilder().seconds(overrideAutoRenewPeriod));
+                op.autoRenewPeriod(Duration.newBuilder().seconds(overrideAutoRenewPeriod));
             }
-            var txnBuilder =
-                    Transaction.newBuilder().body(TransactionBody.newBuilder().cryptoCreateAccount(txnBody));
-            recordBuilder.transaction(txnBuilder.build());
+            final var body =
+                    TransactionBody.newBuilder().cryptoCreateAccount(op).build();
+            recordBuilder.transaction(transactionWith(body));
 
-            var balance = account.tinybarBalance();
+            final var balance = account.tinybarBalance();
             if (balance != 0) {
                 var accountID = AccountID.newBuilder()
                         .accountNum(account.accountId().accountNumOrElse(0L))
