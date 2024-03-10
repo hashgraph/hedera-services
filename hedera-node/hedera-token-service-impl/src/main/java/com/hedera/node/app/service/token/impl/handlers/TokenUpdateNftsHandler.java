@@ -42,7 +42,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -96,16 +95,15 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
             @NonNull final WritableNftStore nftStore,
             @NonNull final TokenID tokenNftId,
             @NonNull final TokenUpdateNftsTransactionBody op) {
-        final var hasMetadata = op.hasMetadata();
-        final var metadata = hasMetadata ? op.metadata() : Bytes.EMPTY;
         // Validate that the list of NFTs provided in txnBody exist in state
         // and update the metadata for each NFT
         for (final Long nftSerialNumber : nftSerialNums) {
             validateTrue(nftSerialNumber > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
             final Nft nft = nftStore.get(tokenNftId, nftSerialNumber);
             validateTrue(nft != null, INVALID_NFT_ID);
-            if (hasMetadata) {
-                var updatedNft = nft.copyBuilder().metadata(metadata).build();
+            if (op.hasMetadata()) {
+                var updatedNft =
+                        nft.copyBuilder().metadata(op.metadataOrThrow()).build();
                 nftStore.put(updatedNft);
             }
         }
