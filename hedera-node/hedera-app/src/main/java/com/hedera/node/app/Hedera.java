@@ -498,7 +498,6 @@ public final class Hedera implements SwirldMain {
             // Here we assign the network context, but don't migrate it by itself. These properties have been split out
             // to various services in the modular code, and will each be migrated in its appropriate service.
             final MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
-            CongestionThrottleService.monoNetworkCtx = fromNetworkContext;
             // ??? the translator is using firstConsTimeOfLastBlock instead of CURRENTBlock...is that ok???
             // firstConsTimeOfCurrentBlock – needed in blockInfo
 

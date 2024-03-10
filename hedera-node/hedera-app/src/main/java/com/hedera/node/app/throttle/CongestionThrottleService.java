@@ -45,8 +45,6 @@ public class CongestionThrottleService implements Service {
     public static final String CONGESTION_LEVEL_STARTS_STATE_KEY = "CONGESTION_LEVEL_STARTS";
     private MerkleNetworkContext mnc;
 
-    public static MerkleNetworkContext monoNetworkCtx;
-
     @NonNull
     @Override
     public String getServiceName() {
@@ -73,10 +71,10 @@ public class CongestionThrottleService implements Service {
                     // For diff testing we need to initialize the throttle snapshots from the saved state
                     final var throttleSnapshots = ctx.newStates().getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
                     throttleSnapshots.put(new ThrottleUsageSnapshots(
-                            Arrays.stream(monoNetworkCtx.getUsageSnapshots())
+                            Arrays.stream(mnc.getUsageSnapshots())
                                     .map(PbjConverter::toPbj)
                                     .toList(),
-                            toPbj(monoNetworkCtx.getGasThrottleUsageSnapshot())));
+                            toPbj(mnc.getGasThrottleUsageSnapshot())));
 
                     // Unless we find diff testing requires, for now don't bother migrating congestion level starts
                     final var congestionLevelStarts = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
@@ -84,7 +82,6 @@ public class CongestionThrottleService implements Service {
 
                     mnc = null;
                     log.info("BBM: finished migrating congestion throttle service");
-                    return;
                 } else if (ctx.previousVersion() == null) {
                     log.info("Creating genesis throttle snapshots and congestion level starts");
                     // At genesis we put empty throttle usage snapshots and

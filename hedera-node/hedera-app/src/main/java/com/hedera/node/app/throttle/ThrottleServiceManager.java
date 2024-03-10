@@ -199,14 +199,10 @@ public class ThrottleServiceManager {
     }
 
     private void resetThrottlesFromUsageSnapshots(@NonNull final ReadableStates serviceStates) {
-        System.out.println("ThrottleServiceManager.resetThrottlesFromUsageSnapshots");
         final var usageSnapshots = UsageSnapshots.from(serviceStates.getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY));
-        System.out.println("ThrottleServiceManager.resetThrottlesFromUsageSnapshots usageSnapshots: " + usageSnapshots);
         safeResetThrottles(backendThrottle.allActiveThrottles(), usageSnapshots.hapiUsageSnapshots());
         if (usageSnapshots.gasUsageSnapshot() != null) {
             backendThrottle.gasLimitThrottle().resetUsageTo(usageSnapshots.gasUsageSnapshot());
-            System.out.println("ThrottleServiceManager.resetThrottlesFromUsageSnapshots gasUsageSnapshot: "
-                    + usageSnapshots.gasUsageSnapshot());
         }
     }
 

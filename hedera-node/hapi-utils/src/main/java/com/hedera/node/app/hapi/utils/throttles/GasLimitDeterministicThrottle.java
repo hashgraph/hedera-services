@@ -53,8 +53,6 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
     public boolean allow(Instant now, long txGasLimit) {
         final var elapsedNanos = DeterministicThrottle.elapsedNanosBetween(lastDecisionTime, now);
         var decision = delegate.allow(txGasLimit, elapsedNanos);
-        System.out.println("GasLimitDeterministicThrottle.allow of " + txGasLimit + " @ " + now + " -> " + decision
-                + " (capacityFree=" + delegate.bucket().capacityFree() + ")");
         lastDecisionTime = now;
         return decision;
     }
