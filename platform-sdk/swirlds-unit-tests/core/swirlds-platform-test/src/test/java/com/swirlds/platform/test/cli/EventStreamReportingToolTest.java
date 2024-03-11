@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.cli;
 
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
+
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -75,8 +77,8 @@ class EventStreamReportingToolTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         // generate consensus events
-        final Deque<ConsensusRound> rounds =
-                GenerateConsensus.generateConsensusRounds(numNodes, numEvents, random.nextLong());
+        final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
+                DEFAULT_PLATFORM_CONTEXT, numNodes, numEvents, random.nextLong());
         if (rounds.isEmpty()) {
             Assertions.fail("events are excepted to reach consensus");
         }
@@ -120,8 +122,8 @@ class EventStreamReportingToolTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         // generate consensus events
-        final Deque<ConsensusRound> rounds =
-                GenerateConsensus.generateConsensusRounds(numNodes, numEvents, random.nextLong());
+        final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
+                DEFAULT_PLATFORM_CONTEXT, numNodes, numEvents, random.nextLong());
         if (rounds.isEmpty()) {
             Assertions.fail("events are excepted to reach consensus");
         }
