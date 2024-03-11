@@ -17,36 +17,20 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.platform-maven-publish")
-    id("com.hedera.hashgraph.benchmark-conventions")
-    id("com.hedera.hashgraph.java-test-fixtures")
 }
 
 mainModuleInfo {
-    annotationProcessor("com.swirlds.config.processor")
-    runtimeOnly("com.swirlds.config.impl")
-    runtimeOnly("com.swirlds.logging.log4j.appender")
-}
-
-jmhModuleInfo {
-    requires("com.swirlds.base")
-    requires("com.swirlds.common")
-    requires("com.swirlds.platform.core")
-    requires("com.swirlds.platform.test")
-    requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.platform.core.test.fixtures")
-    requires("jmh.core")
+    annotationProcessor("com.google.auto.service.processor")
+    annotationProcessor("org.apache.logging.log4j.core")
 }
 
 testModuleInfo {
-    requires("com.hedera.pbj.runtime")
-    requires("com.swirlds.base.test.fixtures")
-    requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.config.api.test.fixtures")
-    requires("com.swirlds.platform.core")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
-    requires("org.mockito")
+
+    runtimeOnly("com.swirlds.config.api")
+    runtimeOnly("com.swirlds.config.impl")
     requiresStatic("com.github.spotbugs.annotations")
 }
