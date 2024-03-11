@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class SwirldTransaction extends ConsensusTransactionImpl implements Comparable<SwirldTransaction> {
     /** class identifier for the purposes of serialization */
-    private static final long CLASS_ID = 0x9ff79186f4c4db97L;
+    public static final long CLASS_ID = 0x9ff79186f4c4db97L;
     /** current class version */
     private static final int CLASS_VERSION = 1;
 

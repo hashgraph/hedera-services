@@ -763,4 +763,11 @@ public interface HandleContext {
             throw new IllegalArgumentException("Transaction id must be set if dispatching without an explicit payer");
         }
     }
+
+    /**
+     * Returns the freeze time from state, if it is set.
+     * @return the freeze time, if it is set
+     */
+    @Nullable
+    Instant freezeTime();
 }

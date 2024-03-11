@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -61,25 +62,16 @@ class WritableFreezeStoreTest {
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FreezeServiceImpl.FREEZE_TIME_KEY, freezeTimeBackingStore::get, freezeTimeBackingStore::set));
         final AtomicReference<ProtoBytes> lastFrozenBackingStore = new AtomicReference<>(null);
-        when(writableStates.getSingleton(FreezeServiceImpl.LAST_FROZEN_TIME_KEY))
-                .then(invocation -> new WritableSingletonStateBase<>(
-                        FreezeServiceImpl.LAST_FROZEN_TIME_KEY,
-                        lastFrozenBackingStore::get,
-                        lastFrozenBackingStore::set));
         final WritableFreezeStore store = new WritableFreezeStore(writableStates);
 
         // test with no freeze time set
         assertNull(store.freezeTime());
-        assertNull(store.lastFrozenTime());
 
         // test with freeze time set
         final Timestamp freezeTime =
                 Timestamp.newBuilder().seconds(1_234_567L).nanos(890).build();
         store.freezeTime(freezeTime);
         assertEquals(freezeTime, store.freezeTime());
-
-        // test last frozen time
-        assertEquals(freezeTime, store.lastFrozenTime());
     }
 
     @Test
@@ -97,7 +89,8 @@ class WritableFreezeStoreTest {
         store.updateFileHash(Bytes.wrap("test hash"));
         assertEquals(Bytes.wrap("test hash"), store.updateFileHash());
 
-        store.updateFileHash(null);
-        assertNull(store.updateFileHash());
+        // test with file hash set
+        assertThatThrownBy(() -> store.updateFileHash(null)).isInstanceOf(NullPointerException.class);
+        assertEquals(Bytes.wrap("test hash"), store.updateFileHash());
     }
 }
