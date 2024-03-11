@@ -128,6 +128,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.EmergencyStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LockFreeStateNexus;
@@ -463,7 +464,7 @@ public class SwirldsPlatform implements Platform {
 
         transactionPool = new TransactionPool(platformContext);
         final LatestCompleteStateNexus latestCompleteState =
-                new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
+                new DefaultLatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
         platformWiring = thingsToStart.add(new PlatformWiring(platformContext));
 
