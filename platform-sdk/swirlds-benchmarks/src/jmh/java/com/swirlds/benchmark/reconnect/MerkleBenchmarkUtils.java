@@ -78,7 +78,8 @@ public class MerkleBenchmarkUtils {
             final Configuration configuration,
             final ReconnectConfig reconnectConfig)
             throws Exception {
-        try (PairedStreams streams = new PairedStreams(configuration.getConfigData(SocketConfig.class))) {
+        PairedStreams streams = new PairedStreams(configuration.getConfigData(SocketConfig.class));
+        try {
             final LearningSynchronizer learner;
             final TeachingSynchronizer teacher;
 
@@ -137,6 +138,13 @@ public class MerkleBenchmarkUtils {
 
             final MerkleNode generatedTree = learner.getRoot();
             return (T) generatedTree;
+        } finally {
+            try {
+                streams.close();
+            } catch (IOException e) {
+                // test code, no danger
+                e.printStackTrace();
+            }
         }
     }
 
