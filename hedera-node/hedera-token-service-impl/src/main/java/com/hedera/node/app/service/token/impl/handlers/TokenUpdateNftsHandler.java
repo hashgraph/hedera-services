@@ -69,9 +69,13 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.tokenUpdateNftsOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
+        validateTruePreCheck(op.hasMetadata(), MISSING_TOKEN_METADATA);
         validateTrue(!op.serialNumbers().isEmpty(), MISSING_SERIAL_NUMBERS);
         if (op.hasMetadata()) {
-            validateFalsePreCheck(Objects.equals(op.metadata(), Bytes.EMPTY), MISSING_TOKEN_METADATA);
+            validateFalsePreCheck(
+                    (Objects.equals(op.metadata(), Bytes.EMPTY)
+                            || requireNonNull(op.metadata()).length() == 0),
+                    MISSING_TOKEN_METADATA);
         }
     }
 

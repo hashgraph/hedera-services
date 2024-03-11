@@ -100,6 +100,14 @@ class TokenAttributesValidatorTest {
     }
 
     @Test
+    void failsMetadataWithZeroBytes() {
+        byte[] zeroLengthBytes = Bytes.wrap(new byte[0]).toByteArray();
+        assertThatCode(() -> subject.validateTokenMetadata(Bytes.wrap(zeroLengthBytes), tokensConfig))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(MISSING_TOKEN_METADATA));
+    }
+
+    @Test
     void failsMetadataForVeryLongValue() {
         byte[] randomLongBytes = TxnUtils.randomUtf8Bytes(101);
         assertThatThrownBy(() -> subject.validateTokenMetadata(Bytes.wrap(randomLongBytes), tokensConfig))
