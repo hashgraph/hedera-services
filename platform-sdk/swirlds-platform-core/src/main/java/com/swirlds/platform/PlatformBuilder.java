@@ -54,8 +54,8 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
@@ -63,6 +63,7 @@ import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -119,6 +120,8 @@ public final class PlatformBuilder {
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.genesisStateBuilder = Objects.requireNonNull(genesisStateBuilder);
         this.selfId = Objects.requireNonNull(selfId);
+
+        StaticSoftwareVersion.setSoftwareVersion(softwareVersion);
     }
 
     /**
@@ -158,6 +161,21 @@ public final class PlatformBuilder {
     public PlatformBuilder withConfigPath(@NonNull final Path path) {
         Objects.requireNonNull(path);
         this.configPath = getAbsolutePath(path);
+        return this;
+    }
+
+    /**
+     * Provide the platform with the class ID of the previous software version. Needed at migration boundaries if the
+     * class ID of the software version has changed.
+     *
+     * @param previousSoftwareVersionClassId the class ID of the previous software version
+     * @return this
+     */
+    public PlatformBuilder withPreviousSoftwareVersionClassId(final long previousSoftwareVersionClassId) {
+        final Set<Long> softwareVersions = new HashSet<>();
+        softwareVersions.add(softwareVersion.getClassId());
+        softwareVersions.add(previousSoftwareVersionClassId);
+        StaticSoftwareVersion.setSoftwareVersion(softwareVersions);
         return this;
     }
 
@@ -229,8 +247,8 @@ public final class PlatformBuilder {
         // time this class is used.
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                stateConfig, new Shutdown()::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
+        final EmergencyRecoveryManager emergencyRecoveryManager =
+                new EmergencyRecoveryManager(stateConfig, basicConfig.getEmergencyRecoveryFileLoadDir());
 
         try (final ReservedSignedState initialState = getInitialState(
                 platformContext,

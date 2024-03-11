@@ -24,15 +24,12 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.ConsensusEngine;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
@@ -76,21 +73,16 @@ public class TestIntake implements LoadableFromSignedState {
     private final WiringModel model;
 
     /**
+     * @param platformContext the platform context used to configure this intake.
      * @param addressBook the address book used by this intake
      */
-    public TestIntake(@NonNull final AddressBook addressBook, @NonNull final ConsensusConfig consensusConfig) {
+    public TestIntake(@NonNull PlatformContext platformContext, @NonNull final AddressBook addressBook) {
         final NodeId selfId = new NodeId(0);
 
         final Time time = Time.getCurrent();
         output = new ConsensusOutput(time);
 
-        // FUTURE WORK: Broaden this test sweet to include testing ancient threshold via birth round.
-        consensus = new ConsensusImpl(
-                consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook, GENERATION_THRESHOLD);
-
-        final PlatformContext platformContext = TestPlatformContextBuilder.create()
-                .withConfiguration(new TestConfigBuilder().getOrCreateConfig())
-                .build();
+        consensus = new ConsensusImpl(platformContext, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook);
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
 

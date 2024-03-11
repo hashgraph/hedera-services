@@ -18,6 +18,7 @@ package com.swirlds.platform.test.cli;
 
 import static com.swirlds.platform.recovery.internal.EventStreamSingleFileRepairer.DAMAGED_SUFFIX;
 import static com.swirlds.platform.recovery.internal.EventStreamSingleFileRepairer.REPAIRED_SUFFIX;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,6 +31,8 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileRepairer;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
 import com.swirlds.platform.test.fixtures.stream.StreamUtils;
 import com.swirlds.platform.test.simulated.RandomSigner;
@@ -43,7 +46,9 @@ import java.time.Duration;
 import java.util.Deque;
 import java.util.Random;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -57,6 +62,16 @@ class EventStreamSingleFileRepairTest {
      */
     @TempDir
     Path tmpDir;
+
+    @BeforeAll
+    static void beforeAll() {
+        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        StaticSoftwareVersion.reset();
+    }
 
     /**
      * Generates events, feeds them to consensus, then writes these consensus events to stream files. Once the files are
@@ -106,8 +121,8 @@ class EventStreamSingleFileRepairTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         // generate consensus events
-        final Deque<ConsensusRound> rounds =
-                GenerateConsensus.generateConsensusRounds(numNodes, numEvents, random.nextLong());
+        final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
+                DEFAULT_PLATFORM_CONTEXT, numNodes, numEvents, random.nextLong());
         if (rounds.isEmpty()) {
             Assertions.fail("events are excepted to reach consensus");
         }

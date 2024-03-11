@@ -20,18 +20,18 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * This class is responsible for handling the response to an ISS event.
  */
 public class IssHandler {
     private final StateConfig stateConfig;
-    private final HaltRequestedConsumer haltRequestedConsumer;
+    private final Consumer<String> haltRequestedConsumer;
     private final FatalErrorConsumer fatalErrorConsumer;
     private final Scratchpad<IssScratchpad> issScratchpad;
 
@@ -47,7 +47,7 @@ public class IssHandler {
      */
     public IssHandler(
             @NonNull final StateConfig stateConfig,
-            @NonNull final HaltRequestedConsumer haltRequestedConsumer,
+            @NonNull final Consumer<String> haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final Scratchpad<IssScratchpad> issScratchpad) {
         this.haltRequestedConsumer =
@@ -79,7 +79,7 @@ public class IssHandler {
             return;
         }
         if (stateConfig.haltOnAnyIss()) {
-            haltRequestedConsumer.haltRequested("other node observed with ISS");
+            haltRequestedConsumer.accept("other node observed with ISS");
             halted = true;
         }
     }
@@ -120,7 +120,7 @@ public class IssHandler {
         updateIssRoundInScratchpad(round);
 
         if (stateConfig.haltOnAnyIss()) {
-            haltRequestedConsumer.haltRequested("self ISS observed");
+            haltRequestedConsumer.accept("self ISS observed");
             halted = true;
         } else if (stateConfig.automatedSelfIssRecovery()) {
             // Automated recovery is a fancy way of saying "turn it off and on again".
@@ -195,7 +195,7 @@ public class IssHandler {
         updateIssRoundInScratchpad(round);
 
         if (stateConfig.haltOnAnyIss() || stateConfig.haltOnCatastrophicIss()) {
-            haltRequestedConsumer.haltRequested("catastrophic ISS observed");
+            haltRequestedConsumer.accept("catastrophic ISS observed");
             halted = true;
         }
     }

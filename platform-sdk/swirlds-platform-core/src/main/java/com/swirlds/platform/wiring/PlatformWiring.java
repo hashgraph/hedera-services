@@ -27,6 +27,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -38,6 +39,7 @@ import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -53,6 +55,7 @@ import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -66,12 +69,14 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
+import com.swirlds.platform.wiring.components.BirthRoundMigrationShimWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
@@ -92,8 +97,10 @@ import com.swirlds.platform.wiring.components.RunningHashUpdaterWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.LongSupplier;
@@ -112,7 +119,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventHasherWiring eventHasherWiring;
     private final PostHashCollectorWiring postHashCollectorWiring;
     private final InternalEventValidatorWiring internalEventValidatorWiring;
-    private final EventDeduplicatorWiring eventDeduplicatorWiring;
+    private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
@@ -137,8 +144,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final IssHandlerWiring issHandlerWiring;
     private final HashLoggerWiring hashLoggerWiring;
     private final LatestCompleteStateNotifierWiring latestCompleteStateNotifierWiring;
-
     private final PlatformCoordinator platformCoordinator;
+    private final BirthRoundMigrationShimWiring birthRoundMigrationShimWiring;
 
     /**
      * Constructor.
@@ -171,11 +178,22 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model, hashingObjectCounter);
 
+        final AncientMode ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
+        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+            birthRoundMigrationShimWiring = BirthRoundMigrationShimWiring.create(model);
+        } else {
+            birthRoundMigrationShimWiring = null;
+        }
+
         eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
         postHashCollectorWiring = PostHashCollectorWiring.create(schedulers.postHashCollectorScheduler());
         internalEventValidatorWiring =
                 InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
-        eventDeduplicatorWiring = EventDeduplicatorWiring.create(schedulers.eventDeduplicatorScheduler());
+        eventDeduplicatorWiring =
+                new ComponentWiring<>(EventDeduplicator.class, schedulers.eventDeduplicatorScheduler());
         eventSignatureValidatorWiring =
                 EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
         orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
@@ -246,7 +264,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         final OutputWire<NonAncientEventWindow> nonAncientEventWindowOutputWire =
                 eventWindowManagerWiring.nonAncientEventWindowOutput();
 
-        nonAncientEventWindowOutputWire.solderTo(eventDeduplicatorWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(
+                eventDeduplicatorWiring.getInputWire(EventDeduplicator::setNonAncientEventWindow), INJECT);
         nonAncientEventWindowOutputWire.solderTo(eventSignatureValidatorWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
@@ -260,11 +279,21 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Wire the components together.
      */
     private void wire() {
-        gossipWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
+        final InputWire<GossipEvent> pipelineInputWire;
+        if (birthRoundMigrationShimWiring != null) {
+            birthRoundMigrationShimWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
+            pipelineInputWire = birthRoundMigrationShimWiring.eventInput();
+        } else {
+            pipelineInputWire = eventHasherWiring.eventInput();
+        }
+
+        gossipWiring.eventOutput().solderTo(pipelineInputWire);
         eventHasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
         postHashCollectorWiring.eventOutput().solderTo(internalEventValidatorWiring.eventInput());
-        internalEventValidatorWiring.eventOutput().solderTo(eventDeduplicatorWiring.eventInput());
-        eventDeduplicatorWiring.eventOutput().solderTo(eventSignatureValidatorWiring.eventInput());
+        internalEventValidatorWiring
+                .eventOutput()
+                .solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::handleEvent));
+        eventDeduplicatorWiring.getOutputWire().solderTo(eventSignatureValidatorWiring.eventInput());
         eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(pcesSequencerWiring.eventInput());
         pcesSequencerWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
@@ -283,7 +312,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         solderNonAncientEventWindow();
 
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
-        pcesReplayerWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
+        pcesReplayerWiring.eventOutput().solderTo(pipelineInputWire);
 
         // Create the transformer that extracts keystone event sequence number from consensus rounds.
         // This is done here instead of in ConsensusEngineWiring, since the transformer needs to be soldered with
@@ -398,6 +427,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param issDetector             the ISS detector to bind
      * @param issHandler              the ISS handler to bind
      * @param hashLogger              the hash logger to bind
+     * @param birthRoundMigrationShim the birth round migration shim to bind, ignored if birth round migration has not
+     *                                yet happened, must not be null if birth round migration has happened
      * @param completeStateNotifier   the latest complete state notifier to bind
      */
     public void bind(
@@ -424,6 +455,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final IssDetector issDetector,
             @NonNull final IssHandler issHandler,
             @NonNull final HashLogger hashLogger,
+            @Nullable final BirthRoundMigrationShim birthRoundMigrationShim,
             @NonNull final LatestCompleteStateNotifier completeStateNotifier) {
 
         eventHasherWiring.bind(eventHasher);
@@ -449,6 +481,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         issDetectorWiring.bind(issDetector);
         issHandlerWiring.bind(issHandler);
         hashLoggerWiring.bind(hashLogger);
+        if (birthRoundMigrationShimWiring != null) {
+            birthRoundMigrationShimWiring.bind(Objects.requireNonNull(birthRoundMigrationShim));
+        }
         latestCompleteStateNotifierWiring.bind(completeStateNotifier);
     }
 
