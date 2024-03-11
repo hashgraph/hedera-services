@@ -19,12 +19,14 @@ package com.hedera.node.app.throttle;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -37,6 +39,7 @@ public class CongestionThrottleService implements Service {
     public static final String NAME = "CongestionThrottleService";
     public static final String THROTTLE_USAGE_SNAPSHOTS_STATE_KEY = "THROTTLE_USAGE_SNAPSHOTS";
     public static final String CONGESTION_LEVEL_STARTS_STATE_KEY = "CONGESTION_LEVEL_STARTS";
+    private MerkleNetworkContext mnc;
 
     @NonNull
     @Override
@@ -59,17 +62,24 @@ public class CongestionThrottleService implements Service {
             /** {@inheritDoc} */
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
-                if (ctx.previousVersion() == null) {
+                log.info("BBM: migrating congestion throttle service");
+                final var throttleSnapshots = ctx.newStates().getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
+                final var congestionLevelStarts = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
+                if (ctx.previousVersion() == null || mnc != null) {
                     // At genesis we put empty throttle usage snapshots and
                     // congestion level starts into their respective singleton
                     // states just to ensure they exist
                     log.info("Creating genesis throttle snapshots and congestion level starts");
-                    final var throttleSnapshots = ctx.newStates().getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
                     throttleSnapshots.put(ThrottleUsageSnapshots.DEFAULT);
-                    final var congestionLevelStarts = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
                     congestionLevelStarts.put(CongestionLevelStarts.DEFAULT);
                 }
+                mnc = null;
+                log.info("BBM: finished migrating congestion throttle service");
             }
         });
+    }
+
+    public void setFs(@Nullable final MerkleNetworkContext mnc) {
+        this.mnc = mnc;
     }
 }

@@ -27,6 +27,7 @@ import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -48,6 +49,8 @@ public class TestingEventBuilder {
     private Instant timeCreated;
     /** the number of transactions an event should contain */
     private int numberOfTransactions;
+    /** the number of system transactions an event should contain */
+    private int numberOfSystemTransactions;
     /** the transaction size */
     private int transactionSize;
     /** the transactions of an event */
@@ -80,6 +83,7 @@ public class TestingEventBuilder {
         creatorId = new NodeId(0);
         timeCreated = null;
         numberOfTransactions = 2;
+        numberOfSystemTransactions = 0;
         transactionSize = 4;
         transactions = null;
         selfParent = null;
@@ -161,6 +165,18 @@ public class TestingEventBuilder {
      */
     public @NonNull TestingEventBuilder setNumberOfTransactions(final int numberOfTransactions) {
         this.numberOfTransactions = numberOfTransactions;
+        return this;
+    }
+
+    /**
+     * Set the number of system transactions an event should contain. If {@link #setTransactions(ConsensusTransactionImpl[])}
+     * is called with a non-null value, this setting will be ignored.
+     *
+     * @param numberOfSystemTransactions the number of system transactions
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setNumberOfSystemTransactions(final int numberOfSystemTransactions) {
+        this.numberOfSystemTransactions = numberOfSystemTransactions;
         return this;
     }
 
@@ -299,11 +315,17 @@ public class TestingEventBuilder {
     public @NonNull GossipEvent buildGossipEvent() {
         final ConsensusTransactionImpl[] tr;
         if (transactions == null) {
-            tr = new ConsensusTransactionImpl[numberOfTransactions];
-            for (int i = 0; i < tr.length; ++i) {
+            tr = new ConsensusTransactionImpl[numberOfTransactions + numberOfSystemTransactions];
+            for (int i = 0; i < numberOfTransactions; ++i) {
                 final byte[] bytes = new byte[transactionSize];
                 random.nextBytes(bytes);
                 tr[i] = new SwirldTransaction(bytes);
+            }
+            for (int i = numberOfTransactions; i < numberOfTransactions + numberOfSystemTransactions; ++i) {
+                tr[i] = new StateSignatureTransaction(
+                        random.nextLong(0, Long.MAX_VALUE),
+                        RandomUtils.randomSignature(random),
+                        RandomUtils.randomHash(random));
             }
         } else {
             tr = transactions;

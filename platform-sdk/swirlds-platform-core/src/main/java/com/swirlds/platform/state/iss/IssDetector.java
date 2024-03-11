@@ -19,8 +19,6 @@ package com.swirlds.platform.state.iss;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
-import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.toList;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -30,8 +28,10 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
@@ -42,6 +42,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -66,9 +67,13 @@ public class IssDetector {
      * The address book of this network.
      */
     private final AddressBook addressBook;
-    /** The current epoch hash */
+    /**
+     * The current epoch hash
+     */
     private final Hash currentEpochHash;
-    /** The current software version */
+    /**
+     * The current software version
+     */
     private final SoftwareVersion currentSoftwareVersion;
 
     /**
@@ -105,7 +110,9 @@ public class IssDetector {
      * A round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if all rounds should be validated.
      */
     private final long ignoredRound;
-    /** ISS related metrics */
+    /**
+     * ISS related metrics
+     */
     private final IssMetrics issMetrics;
 
     /**
@@ -165,26 +172,39 @@ public class IssDetector {
     }
 
     /**
-     * Called when a round has been completed.
+     * Create an ISS notification if the round shouldn't be ignored
      *
-     * @param round the round that was just completed
-     * @return a list of ISS notifications, or null if no ISS occurred
+     * @param roundNumber the round number of the ISS
+     * @param issType     the type of the ISS
+     * @return an ISS notification, or null if the round of the ISS should be ignored
      */
-    public @Nullable List<IssNotification> roundCompleted(final long round) {
-        if (round <= previousRound) {
-            throw new IllegalArgumentException(
-                    "previous round was " + previousRound + ", can't decrease round to " + round);
-        }
-
-        if (round == ignoredRound) {
-            // This round is intentionally ignored.
+    private @Nullable IssNotification maybeCreateIssNotification(
+            final long roundNumber, @NonNull final IssType issType) {
+        if (roundNumber == ignoredRound) {
             return null;
         }
+        return new IssNotification(roundNumber, issType);
+    }
 
-        final long oldestRoundToValidate = round - roundData.getSequenceNumberCapacity() + 1;
+    /**
+     * Shift the round data window when a new round is completed.
+     * <p>
+     * If any round that is removed by shifting the window hasn't already had its hash decided, then this method will
+     * force a decision on the hash, and handle any ISS events that result.
+     *
+     * @param roundNumber the round that was just completed
+     * @return a list of ISS notifications, which may be empty, but will not contain null
+     */
+    private @NonNull List<IssNotification> shiftRoundDataWindow(final long roundNumber) {
+        if (roundNumber <= previousRound) {
+            throw new IllegalArgumentException(
+                    "previous round was " + previousRound + ", can't decrease round to " + roundNumber);
+        }
+
+        final long oldestRoundToValidate = roundNumber - roundData.getSequenceNumberCapacity() + 1;
 
         final List<RoundHashValidator> removedRounds = new ArrayList<>();
-        if (round != previousRound + 1) {
+        if (roundNumber != previousRound + 1) {
             // We are either loading the first state at boot time, or we had a reconnect that caused us to skip some
             // rounds. Rounds that have not yet been validated at this point in time should not be considered
             // evidence of a catastrophic ISS.
@@ -193,11 +213,41 @@ public class IssDetector {
             roundData.shiftWindow(oldestRoundToValidate, (k, v) -> removedRounds.add(v));
         }
 
-        final long roundWeight = addressBook.getTotalWeight();
-        previousRound = round;
+        previousRound = roundNumber;
 
-        roundData.put(round, new RoundHashValidator(round, roundWeight, issMetrics));
-        return listOrNull(removedRounds.stream().map(this::handleRemovedRound).toList());
+        roundData.put(roundNumber, new RoundHashValidator(roundNumber, addressBook.getTotalWeight(), issMetrics));
+
+        return removedRounds.stream()
+                .map(this::handleRemovedRound)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * Called when a round has been completed.
+     * <p>
+     * Expects the contained state to have been reserved by the caller for this method. This method will release the
+     * state reservation when it is done with it.
+     *
+     * @param stateAndRound the round and state to be handled
+     * @return a list of ISS notifications, or null if no ISS occurred
+     */
+    public @Nullable List<IssNotification> handleStateAndRound(@NonNull final StateAndRound stateAndRound) {
+        try (final ReservedSignedState state = stateAndRound.reservedSignedState()) {
+            final long roundNumber = stateAndRound.round().getRoundNum();
+
+            final List<IssNotification> issNotifications = new ArrayList<>(shiftRoundDataWindow(roundNumber));
+
+            final IssNotification selfHashCheckResult =
+                    checkSelfStateHash(roundNumber, state.get().getState().getHash());
+            if (selfHashCheckResult != null) {
+                issNotifications.add(selfHashCheckResult);
+            }
+
+            issNotifications.addAll(handlePostconsensusSignatures(stateAndRound.round()));
+
+            return issNotifications.isEmpty() ? null : issNotifications;
+        }
     }
 
     /**
@@ -217,8 +267,14 @@ public class IssDetector {
             final HashValidityStatus status = roundHashValidator.getStatus();
             if (status == HashValidityStatus.CATASTROPHIC_ISS
                     || status == HashValidityStatus.CATASTROPHIC_LACK_OF_DATA) {
-                handleCatastrophic(roundHashValidator);
-                return new IssNotification(roundHashValidator.getRound(), IssType.CATASTROPHIC_ISS);
+
+                final IssNotification notification =
+                        maybeCreateIssNotification(roundHashValidator.getRound(), IssType.CATASTROPHIC_ISS);
+                if (notification != null) {
+                    handleCatastrophic(roundHashValidator);
+                }
+
+                return notification;
             } else if (status == HashValidityStatus.LACK_OF_DATA) {
                 handleLackOfData(roundHashValidator);
             } else {
@@ -232,13 +288,21 @@ public class IssDetector {
     /**
      * Handle postconsensus state signatures.
      *
-     * @param transactions the signature transactions to handle
-     * @return a list of ISS notifications, or null if no ISS occurred
+     * @param round the round that may contain state signatures
+     * @return a list of ISS notifications, which may be empty, but will not contain null
      */
-    public @Nullable List<IssNotification> handlePostconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        return listOrNull(
-                transactions.stream().map(this::handlePostconsensusSignature).toList());
+    private @NonNull List<IssNotification> handlePostconsensusSignatures(@NonNull final ConsensusRound round) {
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions =
+                SystemTransactionExtractionUtils.extractFromRound(round, StateSignatureTransaction.class);
+
+        if (stateSignatureTransactions == null) {
+            return List.of();
+        }
+
+        return stateSignatureTransactions.stream()
+                .map(this::handlePostconsensusSignature)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     /**
@@ -266,7 +330,7 @@ public class IssDetector {
         }
 
         if (ignorePreconsensusSignatures && replayingPreconsensusStream) {
-            // We are still replaying preconsensus events and we are configured to ignore signatures during replay
+            // We are still replaying preconsensus events, and we are configured to ignore signatures during replay
             return null;
         }
 
@@ -308,31 +372,13 @@ public class IssDetector {
     }
 
     /**
-     * Called when this node finishes hashing a state.
-     *
-     * @param state the state that was hashed
-     * @return a list of ISS notifications, or null if no ISS occurred
-     */
-    public @Nullable List<IssNotification> newStateHashed(@NonNull final ReservedSignedState state) {
-        try (state) {
-            return listOrNull(newStateHashed(
-                    state.get().getRound(), state.get().getState().getHash()));
-        }
-    }
-
-    /**
-     * Called when this node finishes hashing a state.
+     * Checks the validity of the self state hash for a round.
      *
      * @param round the round of the state
      * @param hash  the hash of the state
      * @return an ISS notification, or null if no ISS occurred
      */
-    private @Nullable IssNotification newStateHashed(final long round, @NonNull final Hash hash) {
-        if (round == ignoredRound) {
-            // This round is intentionally ignored.
-            return null;
-        }
-
+    private @Nullable IssNotification checkSelfStateHash(final long round, @NonNull final Hash hash) {
         final RoundHashValidator roundHashValidator = roundData.get(round);
         if (roundHashValidator == null) {
             throw new IllegalStateException(
@@ -348,19 +394,25 @@ public class IssDetector {
 
     /**
      * Called when an overriding state is obtained, i.e. via reconnect or state loading.
+     * <p>
+     * Expects the input state to have been reserved by the caller for this method. This method will release the state
+     * reservation when it is done with it.
      *
      * @param state the state that was loaded
      * @return a list of ISS notifications, or null if no ISS occurred
      */
     public @Nullable List<IssNotification> overridingState(@NonNull final ReservedSignedState state) {
         try (state) {
-            final long round = state.get().getRound();
-            final Hash stateHash = state.get().getState().getHash();
+            final long roundNumber = state.get().getRound();
             // this is not practically possible for this to happen. Even if it were to happen, on a reconnect,
             // we are receiving a new state that is fully signed, so any ISSs in the past should be ignored.
             // so we will ignore any ISSs from removed rounds
-            roundCompleted(round);
-            return listOrNull(newStateHashed(round, stateHash));
+            shiftRoundDataWindow(roundNumber);
+
+            final Hash stateHash = state.get().getState().getHash();
+            final IssNotification issNotification = checkSelfStateHash(roundNumber, stateHash);
+
+            return issNotification == null ? null : List.of(issNotification);
         }
     }
 
@@ -376,17 +428,23 @@ public class IssDetector {
         return switch (roundValidator.getStatus()) {
             case VALID -> {
                 if (roundValidator.hasDisagreement()) {
-                    yield new IssNotification(round, IssType.OTHER_ISS);
+                    yield maybeCreateIssNotification(round, IssType.OTHER_ISS);
                 }
                 yield null;
             }
             case SELF_ISS -> {
-                handleSelfIss(roundValidator);
-                yield new IssNotification(round, IssType.SELF_ISS);
+                final IssNotification notification = maybeCreateIssNotification(round, IssType.SELF_ISS);
+                if (notification != null) {
+                    handleSelfIss(roundValidator);
+                }
+                yield notification;
             }
             case CATASTROPHIC_ISS -> {
-                handleCatastrophic(roundValidator);
-                yield new IssNotification(round, IssType.CATASTROPHIC_ISS);
+                final IssNotification notification = maybeCreateIssNotification(round, IssType.CATASTROPHIC_ISS);
+                if (notification != null) {
+                    handleCatastrophic(roundValidator);
+                }
+                yield notification;
             }
             case UNDECIDED -> throw new IllegalStateException(
                     "status is undecided, but method reported a decision, round = " + round);
@@ -489,25 +547,5 @@ public class IssDetector {
                     .append(Duration.ofMinutes(1).toSeconds())
                     .append("seconds.");
         }
-    }
-
-    /**
-     * @param n the notification to wrap
-     * @return a list containing the notification, or null if the notification is null
-     */
-    private static List<IssNotification> listOrNull(@Nullable final IssNotification n) {
-        return n == null ? null : List.of(n);
-    }
-
-    /**
-     * @param list the list to filter
-     * @return the list, or null if the list is null or empty
-     */
-    private static List<IssNotification> listOrNull(@Nullable final List<IssNotification> list) {
-        return list == null
-                ? null
-                : list.stream()
-                        .filter(Objects::nonNull)
-                        .collect(collectingAndThen(toList(), l -> l.isEmpty() ? null : l));
     }
 }
