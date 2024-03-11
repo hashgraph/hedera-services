@@ -16,23 +16,6 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
-import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Tag;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.OptionalLong;
-
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
@@ -55,6 +38,22 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.OptionalLong;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
 @Tag(CRYPTO)
@@ -726,27 +725,54 @@ public class TransferWithCustomFees extends HapiSuite {
         final String fungibleToken20 = "fungibleWithCustomFees20";
         final var specificTokenTotal = 2 * tokenTotal;
 
-        List<String> firstLayerCustomFees = List.of(fungibleToken2, fungibleToken3, fungibleToken4, fungibleToken5, fungibleToken6, fungibleToken7, fungibleToken8, fungibleToken9, fungibleToken10);
-        List<String> secondLayerCustomFees = List.of(fungibleToken11, fungibleToken12, fungibleToken13, fungibleToken14, fungibleToken15, fungibleToken16, fungibleToken17, fungibleToken18, fungibleToken19, fungibleToken20);
+        List<String> firstLayerCustomFees = List.of(
+                fungibleToken2,
+                fungibleToken3,
+                fungibleToken4,
+                fungibleToken5,
+                fungibleToken6,
+                fungibleToken7,
+                fungibleToken8,
+                fungibleToken9,
+                fungibleToken10);
+        List<String> secondLayerCustomFees = List.of(
+                fungibleToken11,
+                fungibleToken12,
+                fungibleToken13,
+                fungibleToken14,
+                fungibleToken15,
+                fungibleToken16,
+                fungibleToken17,
+                fungibleToken18,
+                fungibleToken19,
+                fungibleToken20);
 
         return defaultHapiSpec("transferMaxFungibleTokenWith10FixedHtsCustomFees2Layers")
                 .given(withOpContext((spec, log) -> {
-                        ArrayList<HapiSpecOperation> ops = new ArrayList<>();
-                        var collectorCreate = cryptoCreate(htsCollector);
-                        var collector2Create = cryptoCreate(htsCollector2);
-                        var tokenOwnerCreate = cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS);
-                        var tokenReceiverCreate = cryptoCreate(tokenReceiver);
-                        var tokenTreasuryCreate = cryptoCreate(tokenTreasury);
-                        allRunFor(spec, collectorCreate, collector2Create, tokenOwnerCreate, tokenReceiverCreate, tokenTreasuryCreate);
+                    ArrayList<HapiSpecOperation> ops = new ArrayList<>();
+                    var collectorCreate = cryptoCreate(htsCollector);
+                    var collector2Create = cryptoCreate(htsCollector2);
+                    var tokenOwnerCreate = cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS);
+                    var tokenReceiverCreate = cryptoCreate(tokenReceiver);
+                    var tokenTreasuryCreate = cryptoCreate(tokenTreasury);
+                    allRunFor(
+                            spec,
+                            collectorCreate,
+                            collector2Create,
+                            tokenOwnerCreate,
+                            tokenReceiverCreate,
+                            tokenTreasuryCreate);
 
-                        // create all second layer custom fee hts tokens
-                        for (String secondLayerCustomFee : secondLayerCustomFees) {
-                            ops.add(tokenCreate(secondLayerCustomFee).treasury(tokenOwner).initialSupply(specificTokenTotal));
-                            ops.add(tokenAssociate(htsCollector, secondLayerCustomFee));
-                        }
-                        // create all first layer custom fee hts tokens
-                        for (String firstLayerCustomFee : firstLayerCustomFees) {
-                            ops.add(tokenCreate(firstLayerCustomFee)
+                    // create all second layer custom fee hts tokens
+                    for (String secondLayerCustomFee : secondLayerCustomFees) {
+                        ops.add(tokenCreate(secondLayerCustomFee)
+                                .treasury(tokenOwner)
+                                .initialSupply(specificTokenTotal));
+                        ops.add(tokenAssociate(htsCollector, secondLayerCustomFee));
+                    }
+                    // create all first layer custom fee hts tokens
+                    for (String firstLayerCustomFee : firstLayerCustomFees) {
+                        ops.add(tokenCreate(firstLayerCustomFee)
                                 .treasury(tokenOwner)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(specificTokenTotal)
@@ -761,28 +787,28 @@ public class TransferWithCustomFees extends HapiSuite {
                                 .withCustom(fixedHtsFee(htsFee, fungibleToken19, htsCollector))
                                 .withCustom(fixedHtsFee(htsFee, fungibleToken20, htsCollector)));
 
-                            ops.add(tokenAssociate(htsCollector2, firstLayerCustomFee));
-                        }
-                        allRunFor(spec, ops);
+                        ops.add(tokenAssociate(htsCollector2, firstLayerCustomFee));
+                    }
+                    allRunFor(spec, ops);
 
-                        var fungibleToTransfer = tokenCreate(fungibleToken)
-                                .treasury(tokenTreasury)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(9223372036854775807L)
-                                .withCustom(fixedHtsFee(htsFee, fungibleToken2, htsCollector2))
-                                .withCustom(fixedHtsFee(htsFee, fungibleToken3, htsCollector2))
-                                .withCustom(fixedHtsFee(htsFee, fungibleToken4, htsCollector2))
-                                .withCustom(fixedHtsFee(htsFee, fungibleToken5, htsCollector2))
-                                .withCustom(fixedHtsFee(htsFee, fungibleToken6, htsCollector2))
-                                .withCustom(fixedHtsFee(htsFee, fungibleToken7, htsCollector2))
-                                .withCustom(fixedHtsFee(htsFee, fungibleToken8, htsCollector2))
-                                .withCustom(fixedHtsFee(htsFee, fungibleToken9, htsCollector2))
-                                .withCustom(fixedHtsFee(htsFee, fungibleToken10, htsCollector2));
-                        var ownerAssociate = tokenAssociate(tokenOwner, fungibleToken);
-                        var receiverAssociate = tokenAssociate(tokenReceiver, fungibleToken);
-                        var transferToOwner = cryptoTransfer(
-                                moving(9223372036854775807L, fungibleToken).between(tokenTreasury, tokenOwner));
-                        allRunFor(spec, fungibleToTransfer, ownerAssociate, receiverAssociate, transferToOwner);
+                    var fungibleToTransfer = tokenCreate(fungibleToken)
+                            .treasury(tokenTreasury)
+                            .tokenType(TokenType.FUNGIBLE_COMMON)
+                            .initialSupply(9223372036854775807L)
+                            .withCustom(fixedHtsFee(htsFee, fungibleToken2, htsCollector2))
+                            .withCustom(fixedHtsFee(htsFee, fungibleToken3, htsCollector2))
+                            .withCustom(fixedHtsFee(htsFee, fungibleToken4, htsCollector2))
+                            .withCustom(fixedHtsFee(htsFee, fungibleToken5, htsCollector2))
+                            .withCustom(fixedHtsFee(htsFee, fungibleToken6, htsCollector2))
+                            .withCustom(fixedHtsFee(htsFee, fungibleToken7, htsCollector2))
+                            .withCustom(fixedHtsFee(htsFee, fungibleToken8, htsCollector2))
+                            .withCustom(fixedHtsFee(htsFee, fungibleToken9, htsCollector2))
+                            .withCustom(fixedHtsFee(htsFee, fungibleToken10, htsCollector2));
+                    var ownerAssociate = tokenAssociate(tokenOwner, fungibleToken);
+                    var receiverAssociate = tokenAssociate(tokenReceiver, fungibleToken);
+                    var transferToOwner = cryptoTransfer(
+                            moving(9223372036854775807L, fungibleToken).between(tokenTreasury, tokenOwner));
+                    allRunFor(spec, fungibleToTransfer, ownerAssociate, receiverAssociate, transferToOwner);
                 }))
                 .when(cryptoTransfer(moving(1, fungibleToken).between(tokenOwner, tokenReceiver))
                         .fee(ONE_HUNDRED_HBARS)
@@ -801,15 +827,15 @@ public class TransferWithCustomFees extends HapiSuite {
                                 .hasTokenBalance(fungibleToken10, specificTokenTotal - htsFee),
                         getAccountBalance(tokenReceiver).hasTokenBalance(fungibleToken, 1),
                         getAccountBalance(htsCollector2)
-                                .hasTokenBalance(fungibleToken2,htsFee)
-                                .hasTokenBalance(fungibleToken3,htsFee)
-                                .hasTokenBalance(fungibleToken4,htsFee)
-                                .hasTokenBalance(fungibleToken5,htsFee)
-                                .hasTokenBalance(fungibleToken6,htsFee)
-                                .hasTokenBalance(fungibleToken7,htsFee)
-                                .hasTokenBalance(fungibleToken8,htsFee)
-                                .hasTokenBalance(fungibleToken9,htsFee)
-                                .hasTokenBalance(fungibleToken10,htsFee));
+                                .hasTokenBalance(fungibleToken2, htsFee)
+                                .hasTokenBalance(fungibleToken3, htsFee)
+                                .hasTokenBalance(fungibleToken4, htsFee)
+                                .hasTokenBalance(fungibleToken5, htsFee)
+                                .hasTokenBalance(fungibleToken6, htsFee)
+                                .hasTokenBalance(fungibleToken7, htsFee)
+                                .hasTokenBalance(fungibleToken8, htsFee)
+                                .hasTokenBalance(fungibleToken9, htsFee)
+                                .hasTokenBalance(fungibleToken10, htsFee));
     }
 
     @HapiTest
