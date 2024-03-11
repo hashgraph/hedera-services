@@ -191,7 +191,7 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
      */
     @Override
     public V remove(final Object key) {
-        throw new UnsupportedOperationException("Unsupported opperation");
+        throw new UnsupportedOperationException("Unsupported operation");
     }
 
     /**
@@ -201,7 +201,7 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
      */
     @Override
     public void putAll(final Map<? extends K, ? extends V> m) {
-        throw new UnsupportedOperationException("Unsupported opperation");
+        throw new UnsupportedOperationException("Unsupported operation");
     }
 
     /**
@@ -211,7 +211,7 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
      */
     @Override
     public void clear() {
-        throw new UnsupportedOperationException("Unsupported opperation");
+        throw new UnsupportedOperationException("Unsupported operation");
     }
 
     /**
