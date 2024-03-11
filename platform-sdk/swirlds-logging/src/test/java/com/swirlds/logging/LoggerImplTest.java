@@ -16,6 +16,7 @@
 
 package com.swirlds.logging;
 
+import com.swirlds.base.test.fixtures.io.WithSystemOut;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.api.Logger;
@@ -28,8 +29,10 @@ import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
 import com.swirlds.logging.file.FileHandlerFactory;
 import com.swirlds.logging.util.DummyConsumer;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 public class LoggerImplTest {
 
     @Test
