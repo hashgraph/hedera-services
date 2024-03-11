@@ -235,8 +235,9 @@ public final class PcesBirthRoundMigration {
                 migrationRound,
                 migrationRound,
                 PcesUtilities.getDatabaseDirectory(platformContext, selfId));
+        Files.createDirectories(file.getPath().getParent());
         Files.move(temporaryFile, file.getPath(), ATOMIC_MOVE);
-        logger.info(STARTUP.getMarker(), "Events written to file {}.", file.getFileName());
+        logger.info(STARTUP.getMarker(), "Events written to file {}.", file.getPath());
     }
 
     /**
@@ -245,7 +246,7 @@ public final class PcesBirthRoundMigration {
      * @param databaseDirectory the database directory (i.e. where PCES files are stored)
      */
     private static void cleanUpOldFiles(@NonNull final Path databaseDirectory) throws IOException {
-        final List<PcesFile> filesToDelete = findPcesFiles(databaseDirectory, BIRTH_ROUND_THRESHOLD);
+        final List<PcesFile> filesToDelete = findPcesFiles(databaseDirectory, GENERATION_THRESHOLD);
 
         logger.info(STARTUP.getMarker(), "Cleaning up old {} legacy formatted PCES files.", filesToDelete.size());
 

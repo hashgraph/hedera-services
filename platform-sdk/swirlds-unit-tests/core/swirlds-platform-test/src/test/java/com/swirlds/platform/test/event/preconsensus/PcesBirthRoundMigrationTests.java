@@ -19,6 +19,8 @@ package com.swirlds.platform.test.event.preconsensus;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.io.utility.FileUtils;
@@ -36,6 +38,8 @@ import com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,6 +52,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -64,16 +69,25 @@ class PcesBirthRoundMigrationTests {
     private Path pcesPath;
     private Path temporaryFilePath;
 
+    @BeforeAll
+    static void beforeAll() throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+    }
+
     @BeforeEach
-    void beforeEach() throws IOException {
+    void beforeEach() throws IOException, ConstructableRegistryException {
         if (Files.exists(testDirectory)) {
             FileUtils.deleteDirectory(testDirectory);
         }
 
         Files.createDirectories(testDirectory);
         recycleBinPath = testDirectory.resolve("recycle-bin");
-        pcesPath = testDirectory.resolve("pces").resolve("0"); // simulate node 0
+        pcesPath = testDirectory.resolve("pces");
         temporaryFilePath = testDirectory.resolve("tmp");
+
+        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(0));
+
+        System.out.println(testDirectory); // TODO remove
     }
 
     @AfterEach
@@ -81,6 +95,8 @@ class PcesBirthRoundMigrationTests {
         if (Files.exists(testDirectory)) {
             FileUtils.deleteDirectory(testDirectory);
         }
+
+        StaticSoftwareVersion.reset();
     }
 
     private record PcesFilesWritten(@NonNull List<PcesFile> files, @NonNull List<GossipEvent> events) {}
@@ -112,6 +128,8 @@ class PcesBirthRoundMigrationTests {
         }
         events.sort(Comparator.comparingLong(GossipEvent::getGeneration));
 
+        final Path fullPcesPath = pcesPath.resolve("0");
+
         final List<PcesFile> files = new ArrayList<>();
         for (int fileIndex = 0; fileIndex < fileCount; fileIndex++) {
 
@@ -128,7 +146,7 @@ class PcesBirthRoundMigrationTests {
                     lowerGenerationBound,
                     upperGenerationBound,
                     0,
-                    pcesPath);
+                    fullPcesPath);
             files.add(file);
 
             final PcesMutableFile mutableFile = file.getMutableFile();
@@ -175,6 +193,8 @@ class PcesBirthRoundMigrationTests {
 
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
                 platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+
+        System.out.println("Migration completed"); // TODO
 
         // TODO create PCES files
         // TODO migrate
