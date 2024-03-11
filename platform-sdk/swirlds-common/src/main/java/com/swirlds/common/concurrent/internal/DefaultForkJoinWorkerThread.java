@@ -26,12 +26,13 @@ public class DefaultForkJoinWorkerThread extends ForkJoinWorkerThread {
 
     private final Runnable onStartup;
 
-    protected DefaultForkJoinWorkerThread(
+    public DefaultForkJoinWorkerThread(
             @NonNull final String name,
             @NonNull final ThreadGroup group,
             @NonNull final ForkJoinPool pool,
+            final boolean preserveThreadLocals,
             @Nullable final Runnable onStartup) {
-        super(group, pool, true);
+        super(group, pool, preserveThreadLocals);
         Objects.requireNonNull(name, "name must not be null");
         Objects.requireNonNull(group, "group must not be null");
         Objects.requireNonNull(pool, "pool must not be null");
@@ -41,9 +42,9 @@ public class DefaultForkJoinWorkerThread extends ForkJoinWorkerThread {
 
     @Override
     protected void onStart() {
+        super.onStart();
         if (onStartup != null) {
             onStartup.run();
         }
-        super.onStart();
     }
 }

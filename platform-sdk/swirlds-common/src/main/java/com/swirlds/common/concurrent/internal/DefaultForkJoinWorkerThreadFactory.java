@@ -43,7 +43,7 @@ public class DefaultForkJoinWorkerThreadFactory implements ForkJoinWorkerThreadF
 
     @Override
     public ForkJoinWorkerThread newThread(@NonNull final ForkJoinPool pool) {
-        return new DefaultForkJoinWorkerThread(threadNameFactory.get(), threadGroup, pool, onStartup);
+        return new DefaultForkJoinWorkerThread(threadNameFactory.get(), threadGroup, pool, true, onStartup);
     }
 
     @NonNull
