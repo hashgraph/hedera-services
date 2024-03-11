@@ -16,7 +16,6 @@
 
 package com.swirlds.logging;
 
-import com.swirlds.base.test.fixtures.io.WithSystemOut;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.api.Logger;
