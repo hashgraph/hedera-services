@@ -50,7 +50,10 @@ public class WiringComponentTests {
         @InputWireLabel("data to be transformed")
         @SchedulerLabel("transformer")
         @NonNull
-        String transformer(@NonNull Long baseOutput);
+        default String transformer(@NonNull final Long baseOutput) {
+            handleBar(true);
+            return "" + baseOutput;
+        }
     }
 
     private static class FooBarBazImpl implements FooBarBaz {
@@ -71,12 +74,6 @@ public class WiringComponentTests {
         @Override
         public void handleBaz(@NonNull final String baz) {
             runningValue *= baz.hashCode();
-        }
-
-        @Override
-        @NonNull
-        public String transformer(@NonNull final Long baseOutput) {
-            return "" + baseOutput;
         }
 
         public long getRunningValue() {

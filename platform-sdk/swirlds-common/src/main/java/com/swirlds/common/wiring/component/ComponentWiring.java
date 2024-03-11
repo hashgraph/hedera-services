@@ -176,6 +176,9 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         }
 
         final Method method = proxy.getMostRecentlyInvokedMethod();
+        if (!method.isDefault()) {
+            throw new IllegalArgumentException("Method " + method.getName() + " does not have a default.");
+        }
 
         if (alternateOutputs.containsKey(method)) {
             // We've already created this transformer.
