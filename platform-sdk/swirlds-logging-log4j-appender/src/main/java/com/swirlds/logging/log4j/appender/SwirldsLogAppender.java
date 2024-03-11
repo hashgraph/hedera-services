@@ -57,8 +57,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginFactory;
  *             </Loggers>
  *         </Configuration>
  *        }
- *        </pre>
- * </p>
+ *     </pre>
  */
 @Plugin(name = SwirldsLogAppender.APPENDER_NAME, category = "Core", elementType = "appender", printObject = true)
 public class SwirldsLogAppender extends AbstractAppender implements LogProvider {
