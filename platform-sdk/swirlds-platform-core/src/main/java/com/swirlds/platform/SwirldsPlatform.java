@@ -565,8 +565,8 @@ public class SwirldsPlatform implements Platform {
             // FUTURE WORK: this is where the state is currently being hashed. State hashing will be moved into a
             // separate component. At that time, all subsequent method calls in this lambda will be wired to receive
             // data from the hasher, since they require a strong guarantee that the state has been hashed.
-            stateManagementComponent.newSignedStateFromTransactions(
-                    state.getAndReserve("stateManagementComponent.newSignedStateFromTransactions"));
+            stateManagementComponent.newSignedStateFromTransactions(stateAndRound.makeAdditionalReservation(
+                    ("stateManagementComponent.newSignedStateFromTransactions")));
 
             platformWiring
                     .getIssDetectorWiring()
