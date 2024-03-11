@@ -16,73 +16,7 @@
 
 package com.hedera.node.config.data;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_DELETE_TOPIC;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_GET_TOPIC_INFO;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_UPDATE_TOPIC;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL_LOCAL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_DELETE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_GET_BYTECODE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_GET_INFO;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_GET_RECORDS;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_UPDATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_APPROVE_ALLOWANCE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_DELETE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_DELETE_ALLOWANCE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_GET_ACCOUNT_BALANCE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_GET_ACCOUNT_RECORDS;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_GET_INFO;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
-import static com.hedera.hapi.node.base.HederaFunctionality.FILE_APPEND;
-import static com.hedera.hapi.node.base.HederaFunctionality.FILE_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.FILE_DELETE;
-import static com.hedera.hapi.node.base.HederaFunctionality.FILE_GET_CONTENTS;
-import static com.hedera.hapi.node.base.HederaFunctionality.FILE_GET_INFO;
-import static com.hedera.hapi.node.base.HederaFunctionality.FILE_UPDATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
-import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
-import static com.hedera.hapi.node.base.HederaFunctionality.GET_VERSION_INFO;
-import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
-import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_DELETE;
-import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_GET_INFO;
-import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
-import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
-import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ACCOUNT_WIPE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_BURN;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE_PARTITION;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DELETE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DELETE_PARTITION;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_FREEZE_ACCOUNT;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_INFO;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFO;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFOS;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_LOCK_USER_ASSETS;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_PAUSE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNLOCK_USER_ASSETS;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNPAUSE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE_PARTITION;
-import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
-import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECEIPT;
-import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECORD;
-import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
+import static com.hedera.hapi.node.base.HederaFunctionality.*;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
@@ -178,8 +112,8 @@ import java.util.function.Function;
  * @param partitionCreation          the permission for {@link HederaFunctionality#TOKEN_CREATE_PARTITION} functionality
  * @param partitionUpdate            the permission for {@link HederaFunctionality#TOKEN_UPDATE_PARTITION} functionality
  * @param partitionDeletion          the permission for {@link HederaFunctionality#TOKEN_DELETE_PARTITION} functionality
- * @param tokenLock                  the permission for {@link HederaFunctionality#TOKEN_LOCK_USER_ASSETS} functionality
- * @param tokenUnlock                the permission for {@link HederaFunctionality#TOKEN_UNLOCK_USER_ASSETS} functionality
+ * @param tokenLock                  the permission for {@link HederaFunctionality#TOKEN_LOCK} functionality
+ * @param tokenUnlock                the permission for {@link HederaFunctionality#TOKEN_UNLOCK} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -298,8 +232,8 @@ public record ApiPermissionConfig(
         permissionKeys.put(TOKEN_CREATE_PARTITION, c -> c.partitionCreation);
         permissionKeys.put(TOKEN_DELETE_PARTITION, c -> c.partitionDeletion);
         permissionKeys.put(TOKEN_UPDATE_PARTITION, c -> c.partitionUpdate);
-        permissionKeys.put(TOKEN_LOCK_USER_ASSETS, c -> c.tokenLock);
-        permissionKeys.put(TOKEN_UNLOCK_USER_ASSETS, c -> c.tokenUnlock);
+        permissionKeys.put(TOKEN_LOCK, c -> c.tokenLock);
+        permissionKeys.put(TOKEN_UNLOCK, c -> c.tokenUnlock);
 
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);

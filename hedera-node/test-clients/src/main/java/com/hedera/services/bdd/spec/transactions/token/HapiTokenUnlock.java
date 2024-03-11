@@ -46,7 +46,7 @@ public class HapiTokenUnlock extends HapiTxnOp<HapiTokenUnlock> {
 
     @Override
     public HederaFunctionality type() {
-        return HederaFunctionality.TokenUnlockUserAssets;
+        return HederaFunctionality.TokenUnlock;
     }
 
     public HapiTokenUnlock(final String token, final String account, final long amount) {

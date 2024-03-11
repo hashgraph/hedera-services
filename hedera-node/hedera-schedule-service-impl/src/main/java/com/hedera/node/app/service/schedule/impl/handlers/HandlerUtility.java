@@ -155,8 +155,8 @@ public final class HandlerUtility {
             case PARTITION_CREATION -> HederaFunctionality.TOKEN_CREATE_PARTITION;
             case PARTITION_UPDATE -> HederaFunctionality.TOKEN_UPDATE_PARTITION;
             case PARTITION_DELETION -> HederaFunctionality.TOKEN_DELETE_PARTITION;
-            case TOKEN_LOCK -> HederaFunctionality.TOKEN_LOCK_USER_ASSETS;
-            case TOKEN_UNLOCK -> HederaFunctionality.TOKEN_UNLOCK_USER_ASSETS;
+            case TOKEN_LOCK -> HederaFunctionality.TOKEN_LOCK;
+            case TOKEN_UNLOCK -> HederaFunctionality.TOKEN_UNLOCK;
         };
     }
 
