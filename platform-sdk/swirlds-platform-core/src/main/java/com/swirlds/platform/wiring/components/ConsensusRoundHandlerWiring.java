@@ -25,6 +25,7 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.StateAndRoundReserver;
+import com.swirlds.platform.wiring.StateAndRoundToStateReserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -59,18 +60,20 @@ public record ConsensusRoundHandlerWiring(
     public static ConsensusRoundHandlerWiring create(@NonNull final TaskScheduler<StateAndRound> taskScheduler) {
         final OutputWire<StateAndRound> stateAndRoundOutput = taskScheduler
                 .getOutputWire()
-                .buildAdvancedTransformer(new StateAndRoundReserver("postHandler_reserver"));
+                .buildAdvancedTransformer(new StateAndRoundReserver("postHandler_stateAndRoundReserver"));
+        final OutputWire<ReservedSignedState> stateOutput = stateAndRoundOutput.buildAdvancedTransformer(
+                new StateAndRoundToStateReserver("postHandler_stateReserver"));
 
         return new ConsensusRoundHandlerWiring(
                 taskScheduler.buildInputWire("rounds"),
                 taskScheduler.buildInputWire("running hash update"),
                 stateAndRoundOutput,
-                stateAndRoundOutput.buildTransformer(
-                        "postHandler_getState", "stateAndRound", StateAndRound::reservedSignedState),
-                stateAndRoundOutput.buildTransformer(
-                        "postHandler_getRoundNumber",
-                        "stateAndRound",
-                        stateAndRound -> stateAndRound.round().getRoundNum()),
+                stateOutput,
+                taskScheduler
+                        .getOutputWire()
+                        .buildTransformer("postHandler_getRoundNumber", "stateAndRound", stateAndRound -> stateAndRound
+                                .round()
+                                .getRoundNum()),
                 taskScheduler::flush,
                 taskScheduler::startSquelching,
                 taskScheduler::stopSquelching);
@@ -82,8 +85,9 @@ public record ConsensusRoundHandlerWiring(
      * @param consensusRoundHandler the consensus round handler to bind
      */
     public void bind(@NonNull final ConsensusRoundHandler consensusRoundHandler) {
-        ((BindableInputWire<ConsensusRound, Void>) roundInput).bind(consensusRoundHandler::handleConsensusRound);
-        ((BindableInputWire<RunningEventHashUpdate, Void>) runningHashUpdateInput)
+        ((BindableInputWire<ConsensusRound, StateAndRound>) roundInput)
+                .bind(consensusRoundHandler::handleConsensusRound);
+        ((BindableInputWire<RunningEventHashUpdate, StateAndRound>) runningHashUpdateInput)
                 .bind(consensusRoundHandler::updateRunningHash);
     }
 }

@@ -24,6 +24,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.wiring.StateAndRoundReserver;
+import com.swirlds.platform.wiring.StateAndRoundToStateReserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -51,15 +52,17 @@ public record StateHasherWiring(
     public static StateHasherWiring create(@NonNull final TaskScheduler<StateAndRound> taskScheduler) {
         final OutputWire<StateAndRound> stateAndRoundOutput = taskScheduler
                 .getOutputWire()
-                .buildAdvancedTransformer(new StateAndRoundReserver("postHasher_reserver"));
+                .buildAdvancedTransformer(new StateAndRoundReserver("postHasher_stateAndRoundReserver"));
+        final OutputWire<ReservedSignedState> stateOutput = stateAndRoundOutput.buildAdvancedTransformer(
+                new StateAndRoundToStateReserver("postHasher_stateReserver"));
 
         return new StateHasherWiring(
                 taskScheduler.buildInputWire("state and round"),
                 stateAndRoundOutput,
-                stateAndRoundOutput.buildTransformer(
-                        "postHasher_getState", "stateAndRound", StateAndRound::reservedSignedState),
-                stateAndRoundOutput.buildTransformer(
-                        "postHasher_getConsensusRound", "stateAndRound", StateAndRound::round),
+                stateOutput,
+                taskScheduler
+                        .getOutputWire()
+                        .buildTransformer("postHasher_getConsensusRound", "stateAndRound", StateAndRound::round),
                 taskScheduler::flush);
     }
 

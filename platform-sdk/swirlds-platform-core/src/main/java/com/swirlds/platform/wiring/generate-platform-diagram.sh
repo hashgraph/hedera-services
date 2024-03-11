@@ -30,8 +30,8 @@ pcli diagram \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Transaction Prehandling:applicationTransactionPrehandler,🔮' \
     -g 'Signature Management:State Signature Collection,stateSigner,ISS Detector,latestCompleteStateNotification' \
-    -g 'Consensus Round Handler:consensusRoundHandler,postHandler_reserver,postHandler_getState,postHandler_getRoundNumber' \
-    -g 'State Hasher:stateHasher,postHasher_reserver,postHasher_getState,postHasher_getConsensusRound' \
+    -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,postHandler_getRoundNumber,postHandler_stateReserver' \
+    -g 'State Hasher:stateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'State Modification:Consensus Round Handler,runningHashUpdate' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \

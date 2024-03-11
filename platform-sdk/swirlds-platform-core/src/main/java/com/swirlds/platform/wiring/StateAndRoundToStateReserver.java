@@ -17,12 +17,13 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Manages reservations of a signed state contained in a {@link StateAndRound} object, when it needs to be passed to one
- * or more input wires.
+ * Manages reservations of a signed state contained in a {@link StateAndRound} object, when the StateAndRound needs to
+ * be reduced to just the state.
  * <p>
  * The contract for managing reservations across vertexes in the wiring is as follows:
  * <ul>
@@ -38,16 +39,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param name the name of the reserver
  */
-public record StateAndRoundReserver(@NonNull String name)
-        implements AdvancedTransformation<StateAndRound, StateAndRound> {
+public record StateAndRoundToStateReserver(@NonNull String name)
+        implements AdvancedTransformation<StateAndRound, ReservedSignedState> {
 
     /**
      * {@inheritDoc}
      */
     @NonNull
     @Override
-    public StateAndRound transform(@NonNull final StateAndRound stateAndRound) {
-        return stateAndRound.makeAdditionalReservation(name);
+    public ReservedSignedState transform(@NonNull final StateAndRound stateAndRound) {
+        return stateAndRound.makeAdditionalReservation(name).reservedSignedState();
     }
 
     /**
@@ -62,8 +63,8 @@ public record StateAndRoundReserver(@NonNull String name)
      * {@inheritDoc}
      */
     @Override
-    public void outputCleanup(@NonNull final StateAndRound stateAndRound) {
-        stateAndRound.reservedSignedState().close();
+    public void outputCleanup(@NonNull final ReservedSignedState reservedSignedState) {
+        reservedSignedState.close();
     }
 
     /**

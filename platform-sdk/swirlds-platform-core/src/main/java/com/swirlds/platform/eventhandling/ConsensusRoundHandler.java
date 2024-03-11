@@ -42,6 +42,7 @@ import com.swirlds.platform.metrics.RoundHandlingMetrics;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -282,8 +283,11 @@ public class ConsensusRoundHandler {
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
         final SignedState signedState = new SignedState(
                 platformContext, immutableStateCons, "ConsensusRoundHandler.createSignedState()", freezeRoundReceived);
+
+        final ReservedSignedState reservedSignedState = signedState.reserve("round handler output");
+        // make sure to create the first reservation before setting the garbage collector
         signedState.setGarbageCollector(signedStateGarbageCollector);
 
-        return new StateAndRound(signedState.reserve("round handler output"), consensusRound);
+        return new StateAndRound(reservedSignedState, consensusRound);
     }
 }
