@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -316,18 +315,17 @@ public class TestingEventBuilder {
     public @NonNull GossipEvent buildGossipEvent() {
         final ConsensusTransactionImpl[] tr;
         if (transactions == null) {
-            tr = new ConsensusTransactionImpl[numberOfTransactions+numberOfSystemTransactions];
+            tr = new ConsensusTransactionImpl[numberOfTransactions + numberOfSystemTransactions];
             for (int i = 0; i < numberOfTransactions; ++i) {
                 final byte[] bytes = new byte[transactionSize];
                 random.nextBytes(bytes);
                 tr[i] = new SwirldTransaction(bytes);
             }
-            for (int i = numberOfTransactions; i < numberOfTransactions+numberOfSystemTransactions; ++i) {
+            for (int i = numberOfTransactions; i < numberOfTransactions + numberOfSystemTransactions; ++i) {
                 tr[i] = new StateSignatureTransaction(
                         random.nextLong(0, Long.MAX_VALUE),
                         RandomUtils.randomSignature(random),
-                        RandomUtils.randomHash(random)
-                );
+                        RandomUtils.randomHash(random));
             }
         } else {
             tr = transactions;
