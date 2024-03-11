@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.networkadmin.impl;
 
 import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.FREEZE_TIME_KEY;
-import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.LAST_FROZEN_TIME_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
 import static java.util.Objects.requireNonNull;
 
@@ -37,8 +36,6 @@ public class ReadableFreezeStoreImpl implements ReadableFreezeStore {
     /** The underlying data storage classes that hold the freeze state data. */
     private final ReadableSingletonState<Timestamp> freezeTime;
 
-    private final ReadableSingletonState<Timestamp> lastFrozenTime;
-
     /** The underlying data storage class that holds the prepared update file hash.
      * May be null if no prepared update file has been set. */
     private final ReadableSingletonState<ProtoBytes> updateFileHash;
@@ -50,7 +47,6 @@ public class ReadableFreezeStoreImpl implements ReadableFreezeStore {
     public ReadableFreezeStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
         this.freezeTime = states.getSingleton(FREEZE_TIME_KEY);
-        this.lastFrozenTime = states.getSingleton(LAST_FROZEN_TIME_KEY);
         this.updateFileHash = states.getSingleton(UPGRADE_FILE_HASH_KEY);
     }
 
@@ -58,12 +54,6 @@ public class ReadableFreezeStoreImpl implements ReadableFreezeStore {
     @Nullable
     public Timestamp freezeTime() {
         return freezeTime.get();
-    }
-
-    @Override
-    @Nullable
-    public Timestamp lastFrozenTime() {
-        return lastFrozenTime.get();
     }
 
     @Override
