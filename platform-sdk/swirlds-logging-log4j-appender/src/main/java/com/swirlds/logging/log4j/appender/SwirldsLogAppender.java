@@ -119,14 +119,14 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
     public void append(final LogEvent event) {
         if (logEventFactory != null && logEventConsumer != null) {
             logEventConsumer.accept(logEventFactory.createLogEvent(
-                            translateLevel(event.getLevel()),
-                            event.getLoggerName(),
-                            event.getThreadName(),
-                            event.getTimeMillis(),
-                            event.getMessage().getFormattedMessage(),
-                            event.getThrown(),
-                            translateMarker(event.getMarker()),
-                            event.getContextData().toMap()));
+                    translateLevel(event.getLevel()),
+                    event.getLoggerName(),
+                    event.getThreadName(),
+                    event.getTimeMillis(),
+                    event.getMessage().getFormattedMessage(),
+                    event.getThrown(),
+                    translateMarker(event.getMarker()),
+                    event.getContextData().toMap()));
         }
     }
 
@@ -135,7 +135,7 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
             return null;
         }
         if (marker.hasParents()) {
-            if(marker.getParents().length == 1) {
+            if (marker.getParents().length == 1) {
                 return new Marker(marker.getName(), translateMarker(marker.getParents()[0]));
             }
             final Marker parent = translateMarker(marker.getParents()[marker.getParents().length - 1]);
