@@ -1217,7 +1217,11 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     longKeyToPath.put(key, INVALID_PATH);
                 }
             } else {
-                objectKeyToPath.deleteIfEqual(leafRecord.getKey(), path);
+                if (isReconnect) {
+                    objectKeyToPath.deleteIfEqual(leafRecord.getKey(), path);
+                } else {
+                    objectKeyToPath.delete(leafRecord.getKey());
+                }
             }
             statisticsUpdater.countFlushLeavesDeleted();
 
