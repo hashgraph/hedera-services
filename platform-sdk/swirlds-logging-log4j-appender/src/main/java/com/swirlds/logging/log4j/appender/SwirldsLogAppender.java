@@ -130,22 +130,29 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
         }
     }
 
+    /**
+     * Translates Log4j2 markers to swirlds-logging API markers.
+     *
+     * @param marker The Log4j2 marker to translate.
+     *
+     * @return The corresponding swirlds-logging marker.
+     */
     private Marker translateMarker(@Nullable final org.apache.logging.log4j.Marker marker) {
         if (marker == null) {
             return null;
         }
-        if (marker.hasParents()) {
-            if (marker.getParents().length == 1) {
-                return new Marker(marker.getName(), translateMarker(marker.getParents()[0]));
-            }
-            final Marker parent = translateMarker(marker.getParents()[marker.getParents().length - 1]);
-            return new Marker(marker.getName(), parent);
+
+        final int parentsLength = marker.getParents().length;
+        if (parentsLength == 0) {
+            return new Marker(marker.getName());
         }
-        return new Marker(marker.getName());
+
+        final Marker parent = translateMarker(marker.getParents()[parentsLength - 1]);
+        return new Marker(marker.getName(), parent);
     }
 
     /**
-     * Translates Log4j2 log levels to Hedera Hashgraph logging API levels.
+     * Translates Log4j2 log levels to swrirlds-logging API levels.
      *
      * @param level The Log4j2 level to translate.
      *
