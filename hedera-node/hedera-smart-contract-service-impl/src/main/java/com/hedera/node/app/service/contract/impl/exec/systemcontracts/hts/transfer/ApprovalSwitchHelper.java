@@ -107,11 +107,11 @@ public class ApprovalSwitchHelper {
             @NonNull final HederaNativeOperations nativeOperations,
             @NonNull final AccountID senderId) {
         if (original.amount() < 0) {
-            final var debitedAccount = original.accountIDOrThrow();
-            if (senderId.equals(debitedAccount)) {
+            final var debitedAccountId = original.accountIDOrThrow();
+            if (senderId.equals(debitedAccountId)) {
                 return original;
             }
-            final var key = nativeOperations.getAccountKey(debitedAccount.accountNumOrElse(0L));
+            final var key = nativeOperations.getAccountKey(debitedAccountId);
             if (key != null && !signatureTest.test(key)) {
                 return original.copyBuilder().isApproval(true).build();
             }
@@ -140,7 +140,7 @@ public class ApprovalSwitchHelper {
         if (senderId.equals(transferAccountId)) {
             return original;
         }
-        final var key = nativeOperations.getAccountKey(transferAccountId.accountNumOrElse(0L));
+        final var key = nativeOperations.getAccountKey(transferAccountId);
         if (key != null && !signatureTest.test(key)) {
             return original.copyBuilder().isApproval(true).build();
         }

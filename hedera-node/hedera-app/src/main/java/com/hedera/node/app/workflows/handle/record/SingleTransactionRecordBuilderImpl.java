@@ -149,6 +149,7 @@ public class SingleTransactionRecordBuilderImpl
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
+
     private List<AccountAmount> paidStakingRewards = new LinkedList<>();
     private final TransactionRecord.Builder transactionRecordBuilder = TransactionRecord.newBuilder();
     private TransferList transferList = TransferList.DEFAULT;
@@ -168,8 +169,11 @@ public class SingleTransactionRecordBuilderImpl
     // These are not persisted to the record file
     private final Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
 
+    // A set of ids that should be explicitly considered as in a "reward situation",
+    // despite the canonical definition of a reward situation; needed for mono-service
+    // fidelity only
     @Nullable
-    private Set<AccountID> calledContractIds;
+    private Set<AccountID> explicitRewardReceiverIds;
 
     // While the fee is sent to the underlying builder all the time, it is also cached here because, as of today,
     // there is no way to get the transaction fee from the PBJ object.
@@ -495,16 +499,16 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     @Override
-    public void trackExplicitRewardSituation(@NonNull final AccountID contractId) {
-        if (calledContractIds == null) {
-            calledContractIds = new LinkedHashSet<>();
+    public void trackExplicitRewardSituation(@NonNull final AccountID accountId) {
+        if (explicitRewardReceiverIds == null) {
+            explicitRewardReceiverIds = new LinkedHashSet<>();
         }
-        calledContractIds.add(contractId);
+        explicitRewardReceiverIds.add(accountId);
     }
 
     @Override
     public Set<AccountID> explicitRewardSituationIds() {
-        return calledContractIds != null ? calledContractIds : emptySet();
+        return explicitRewardReceiverIds != null ? explicitRewardReceiverIds : emptySet();
     }
 
     /**
@@ -1188,5 +1192,14 @@ public class SingleTransactionRecordBuilderImpl
     public EthereumTransactionRecordBuilder feeChargedToPayer(@NonNull long amount) {
         transactionRecordBuilder.transactionFee(transactionFee + amount);
         return this;
+    }
+
+    /**
+     * Returns the staking rewards paid in this transaction.
+     *
+     * @return the staking rewards paid in this transaction
+     */
+    public List<AccountAmount> getPaidStakingRewards() {
+        return paidStakingRewards;
     }
 }

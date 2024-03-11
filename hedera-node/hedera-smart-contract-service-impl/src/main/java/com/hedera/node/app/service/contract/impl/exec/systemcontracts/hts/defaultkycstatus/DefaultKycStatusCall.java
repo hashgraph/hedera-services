@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defau
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultkycstatus.DefaultKycStatusTranslator.DEFAULT_KYC_STATUS;
 import static java.util.Objects.requireNonNull;
 
@@ -47,9 +48,12 @@ public class DefaultKycStatusCall extends AbstractNonRevertibleTokenViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull FullResult resultOfViewingToken(@Nullable final Token token) {
+    protected @NonNull PricedResult resultOfViewingToken(@Nullable final Token token) {
         requireNonNull(token);
-        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token.accountsKycGrantedByDefault());
+        return gasOnly(
+                fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token.accountsKycGrantedByDefault()),
+                SUCCESS,
+                true);
     }
 
     @Override

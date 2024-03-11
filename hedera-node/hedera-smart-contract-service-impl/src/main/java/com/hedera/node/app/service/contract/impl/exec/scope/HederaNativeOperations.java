@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
@@ -112,12 +114,13 @@ public interface HederaNativeOperations {
     /**
      * Returns the {@link Key} of the account with the given number.
      *
-     * @param number the account number
+     * @param accountId the account number
      * @return the account, or {@code null} if no such account exists
      */
     @Nullable
-    default Key getAccountKey(final long number) {
-        final var maybeAccount = getAccount(number);
+    default Key getAccountKey(@NonNull final AccountID accountId) {
+        requireNonNull(accountId);
+        final var maybeAccount = getAccount(accountId);
         return maybeAccount == null ? null : maybeAccount.keyOrThrow();
     }
 

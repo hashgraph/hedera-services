@@ -69,6 +69,14 @@ public record FullResult(
         }
     }
 
+    public static FullResult ordinalRevertResult(@NonNull final ResponseCodeEnum reason, final long gasRequirement) {
+        requireNonNull(reason);
+        return new FullResult(
+                PrecompiledContract.PrecompileContractResult.revert(Bytes.wrap(UInt256.valueOf(reason.protoOrdinal()))),
+                gasRequirement,
+                null);
+    }
+
     public static FullResult revertResult(@NonNull final ResponseCodeEnum reason, final long gasRequirement) {
         requireNonNull(reason);
         return new FullResult(

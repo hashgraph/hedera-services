@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -30,7 +31,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -48,7 +48,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -127,13 +126,14 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
             final var tokenRel = dissociation.tokenRel();
             final var tokenRelBalance = tokenRel.balance();
             final var token = dissociation.token();
-            final var tokenIsExpired = tokenIsExpired(token, context.consensusNow());
 
-            // Handle removed, deleted, or expired tokens
-            if (token == null || token.deleted() || tokenIsExpired) {
-                if (token != null && (token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE)) {
-                    // Confusing, but we're _adding_ the number of NFTs to _subtract_ from the account. The total
-                    // subtraction will be done outside the dissociation loop
+            // Handle dissociation from an inactive (deleted or removed) token
+            if (token == null || token.deleted()) {
+                // Nothing to do here for a fungible token, downstream code already
+                // "burns" our held units
+                if (token != null && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
+                    // Downstream code already takes care of decrementing the number of
+                    // positive balances in the case we owned serial numbers of this type
                     numNftsToSubtract += tokenRelBalance;
                 }
             } else {
@@ -145,26 +145,21 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
                 if (tokenRelBalance > 0) {
-                    validateFalse(token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
+                    validateFalse(token.tokenType() == NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
 
-                    // Remove when token expiry is implemented
-                    throw new HandleException(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-                }
+                    final var tokenIsExpired = tokenIsExpired(token, context.consensusNow());
+                    validateTrue(tokenIsExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 
-                // If the fungible token is NOT expired, then we throw an exception because we
-                // can only dissociate tokens with a zero balance by this time in the code
-                // @future('6864'): uncomment when token expiry is implemented
-                // validateTrue(tokenIsExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-
-                // If the fungible common token is expired, we automatically transfer the
-                // dissociating account's balance back to the token's treasury
-                final var treasuryTokenRel = dissociation.treasuryTokenRel();
-                if (treasuryTokenRel != null) {
-                    final var updatedTreasuryBalanceTokenRel = treasuryTokenRel.balance() + tokenRelBalance;
-                    treasuryBalancesToUpdate.add(treasuryTokenRel
-                            .copyBuilder()
-                            .balance(updatedTreasuryBalanceTokenRel)
-                            .build());
+                    // If the fungible common token is expired, we automatically transfer the
+                    // dissociating account's balance back to the token's treasury
+                    final var treasuryTokenRel = dissociation.treasuryTokenRel();
+                    if (treasuryTokenRel != null) {
+                        final var updatedTreasuryBalanceTokenRel = treasuryTokenRel.balance() + tokenRelBalance;
+                        treasuryBalancesToUpdate.add(treasuryTokenRel
+                                .copyBuilder()
+                                .balance(updatedTreasuryBalanceTokenRel)
+                                .build());
+                    }
                 }
             }
 
@@ -241,7 +236,9 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
             final TokenRelation dissociatedTokenTreasuryRel;
             if (possiblyUnusableToken != null) {
                 validateFalse(possiblyUnusableToken.paused(), TOKEN_IS_PAUSED);
-                if (possiblyUnusableToken.treasuryAccountId() != null) {
+                // If there is no treasury, or the token is deleted, we don't return
+                // the dissociated balance to the treasury
+                if (!possiblyUnusableToken.deleted() && possiblyUnusableToken.treasuryAccountId() != null) {
                     final var tokenTreasuryAcct = possiblyUnusableToken.treasuryAccountId();
                     dissociatedTokenTreasuryRel = tokenRelStore.get(tokenTreasuryAcct, tokenId);
                 } else {
@@ -260,13 +257,8 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         return new ValidatedResult(acct, dissociations);
     }
 
-    // NOSONAR
-    @SuppressWarnings("java:S1172") // FUTURE: remove when the method is implemented
     private boolean tokenIsExpired(final Token token, final Instant consensusNow) {
-        // @future('6864'): identify expired tokens
-        // This method will need to identify a token that is expired or a token that is "detached", i.e. expired but
-        // still within its grace period
-        return false;
+        return token.expirationSecond() <= consensusNow.getEpochSecond();
     }
 
     private record ValidatedResult(@NonNull Account account, @NonNull List<Dissociation> dissociations) {}

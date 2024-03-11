@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.HTS_PRECOMPILE_MIRROR_ID;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOfZeroValueTraceable;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -28,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy.Decision;
@@ -140,11 +140,13 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
 
             final var senderId = ((ProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
-            var contractResult = contractFunctionResultFailedFor(gasRequirement, responseCode.toString(), contractID);
-            contractResult = contractResult
-                    .copyBuilder()
+
+            final var contractResult = ContractFunctionResult.newBuilder()
+                    .gasUsed(gasRequirement)
                     .functionParameters(tuweniToPbjBytes(frame.getInputData()))
                     .errorMessage(null)
+                    // (FUTURE) Replace with PRNG contract address, c.f. issue
+                    // https://github.com/hashgraph/hedera-services/issues/10552
                     .contractID(HTS_PRECOMPILE_MIRROR_ID)
                     .senderId(senderId)
                     .gas(frame.getRemainingGas())
