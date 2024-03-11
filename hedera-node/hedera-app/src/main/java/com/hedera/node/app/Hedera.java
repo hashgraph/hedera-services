@@ -24,6 +24,7 @@ import static com.hedera.node.app.bbm.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.bbm.StateDumper.dumpMonoChildrenFrom;
 import static com.hedera.node.app.records.impl.BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.CONTRACT_STORAGE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
@@ -62,6 +63,7 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
@@ -83,6 +85,7 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
+import com.hedera.node.app.service.networkadmin.impl.schemas.InitialModServiceAdminSchema;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
@@ -225,6 +228,7 @@ public final class Hedera implements SwirldMain {
     private static RecordCacheService RECORD_SERVICE;
     private static BlockRecordService BLOCK_SERVICE;
     private static FeeService FEE_SERVICE;
+    private static CongestionThrottleService CONGESTION_THROTTLE_SERVICE;
 
     /*==================================================================================================================
     *
@@ -288,6 +292,7 @@ public final class Hedera implements SwirldMain {
         RECORD_SERVICE = new RecordCacheService();
         BLOCK_SERVICE = new BlockRecordService();
         FEE_SERVICE = new FeeService();
+        CONGESTION_THROTTLE_SERVICE = new CongestionThrottleService();
 
         // FUTURE: Use the service loader framework to load these services!
         this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder);
@@ -303,7 +308,7 @@ public final class Hedera implements SwirldMain {
                         RECORD_SERVICE,
                         BLOCK_SERVICE,
                         FEE_SERVICE,
-                        new CongestionThrottleService(),
+                        CONGESTION_THROTTLE_SERVICE,
                         new NetworkServiceImpl())
                 .forEach(service -> servicesRegistry.register(service, version));
 
@@ -545,6 +550,12 @@ public final class Hedera implements SwirldMain {
                 ENTITY_SERVICE.setFs(fromNetworkContext.seqNo().current());
             }
 
+            // --------------------- CONGESTION THROTTLE SERVICE (14)
+            if (fromNetworkContext != null) {
+                CONGESTION_THROTTLE_SERVICE.setFs(fromNetworkContext);
+                InitialModServiceAdminSchema.setFs(fromNetworkContext);
+            }
+
             // Here we release all mono children so that we don't have a bunch of null routes in state
             state.addDeserializedChildren(List.of(), 0);
 
@@ -577,6 +588,10 @@ public final class Hedera implements SwirldMain {
                         version);
                 System.exit(1);
             }
+        } else if (previousVersion instanceof SerializableSemVers) {
+            deserializedVersion = new HederaSoftwareVersion(
+                    toPbj(((SerializableSemVers) previousVersion).getProto()),
+                    toPbj(((SerializableSemVers) previousVersion).getServices()));
         } else {
             deserializedVersion = new HederaSoftwareVersion(SemanticVersion.DEFAULT, SemanticVersion.DEFAULT);
         }
