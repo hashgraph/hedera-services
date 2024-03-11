@@ -25,9 +25,11 @@ import org.junit.jupiter.api.Test;
 @WithTestExecutor
 class ShrinkableSizeCacheTest {
 
+    private static final int SHRINK_PERIOD_IN_MS = 10;
+
     @Test
     void testCacheSize() throws InterruptedException {
-        ShrinkableSizeCache<Integer, String> cache = new ShrinkableSizeCache<>(3, 10);
+        ShrinkableSizeCache<Integer, String> cache = new ShrinkableSizeCache<>(3, SHRINK_PERIOD_IN_MS);
 
         cache.put(1, "One");
         cache.put(2, "Two");
@@ -43,7 +45,7 @@ class ShrinkableSizeCacheTest {
 
     @Test
     void testEldestEntriesRemoval() throws InterruptedException {
-        ShrinkableSizeCache<Integer, String> cache = new ShrinkableSizeCache<>(3, 10);
+        ShrinkableSizeCache<Integer, String> cache = new ShrinkableSizeCache<>(3, SHRINK_PERIOD_IN_MS);
 
         cache.put(1, "One");
         cache.put(2, "Two");
@@ -68,7 +70,7 @@ class ShrinkableSizeCacheTest {
 
     @Test
     void testConcurrency(TestExecutor executor) throws InterruptedException {
-        ShrinkableSizeCache<Integer, String> cache = new ShrinkableSizeCache<>(50);
+        ShrinkableSizeCache<Integer, String> cache = new ShrinkableSizeCache<>(50, SHRINK_PERIOD_IN_MS);
 
         Runnable task = () -> {
             for (int i = 0; i < 100; i++) {
@@ -79,7 +81,7 @@ class ShrinkableSizeCacheTest {
 
         executor.executeAndWait(task, task);
         // No exception should occur during concurrent access
-        Thread.sleep(1010);
+        Thread.sleep(11);
         assertEquals(50, cache.size());
     }
 }

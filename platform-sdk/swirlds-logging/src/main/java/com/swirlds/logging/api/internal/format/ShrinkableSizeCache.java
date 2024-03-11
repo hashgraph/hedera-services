@@ -57,17 +57,8 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
         TimerTask cleanUpTask = new TimerTask() {
             @Override
             public void run() {
-                if (maxSize > insertionOrderList.size()) {
-                    return;
-                }
-
-                final Set<K> deletions = new HashSet<>(insertionOrderList.size() - maxSize);
-
                 while (insertionOrderList.size() > maxSize) {
-                    deletions.add(insertionOrderList.pop());
-                }
-                for (K k : deletions) {
-                    delegatedMap.remove(k);
+                    delegatedMap.remove(insertionOrderList.pop());
                 }
             }
         };
