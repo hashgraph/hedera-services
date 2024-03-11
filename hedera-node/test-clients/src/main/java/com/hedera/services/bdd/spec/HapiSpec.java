@@ -368,7 +368,6 @@ public class HapiSpec implements Runnable {
             if (!isEthereumAccountCreatedForSpec(this)) {
                 initializeEthereumAccountForSpec(this);
             }
-            // TODO: how to get the existing one - if exists?
             final var adminKey = this.registry().getKey(DEFAULT_CONTRACT_SENDER);
             ops = UtilVerbs.convertHapiCallsToEthereumCalls(
                     Stream.of(given, when, then).flatMap(Arrays::stream).toList(), SECP_256K1_SOURCE_KEY, adminKey);
