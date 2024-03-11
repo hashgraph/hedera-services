@@ -131,13 +131,8 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.stakedAccountId = contractCreate.stakedAccountId;
         this.stakedNodeId = contractCreate.stakedNodeId;
         this.isDeclinedReward = contractCreate.isDeclinedReward;
-
         final var gas = contractCreate.gas.isPresent() ? contractCreate.gas.getAsLong() : defaultGas;
         this.gas(gas);
-
-        // TODO: see how it's set in the EthereumCall
-        this.maxGasAllowance = Optional.of(220 * ONE_HBAR);
-
     }
 
     public HapiEthereumContractCreate(
