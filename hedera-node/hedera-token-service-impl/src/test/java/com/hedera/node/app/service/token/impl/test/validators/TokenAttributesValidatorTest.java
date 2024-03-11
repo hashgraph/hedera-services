@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_METADATA;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -91,10 +92,11 @@ class TokenAttributesValidatorTest {
     }
 
     @Test
-    void validatesMetadataWithEmptyBytes() {
+    void failsMetadataWithEmptyBytes() {
         byte[] emptyBytes = new byte[0];
         assertThatCode(() -> subject.validateTokenMetadata(Bytes.wrap(emptyBytes), tokensConfig))
-                .doesNotThrowAnyException();
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(MISSING_TOKEN_METADATA));
     }
 
     @Test

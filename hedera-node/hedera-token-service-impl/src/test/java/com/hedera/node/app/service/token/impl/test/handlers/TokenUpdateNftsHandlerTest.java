@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_METADATA;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
@@ -58,6 +59,7 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.config.ConfigProvider;
@@ -129,10 +131,9 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     private HandleContext keyMockContext(TransactionBody txn) {
-        final var context = mock(HandleContext.class);
-        given(context.body()).willReturn(txn);
-        given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-        return context;
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+        return handleContext;
     }
 
     @Test
@@ -153,6 +154,32 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
             assertThat(modifiedToken.hasNftId()).isTrue();
             assertThat(modifiedToken.nftId().serialNumber()).isEqualTo(2);
         }
+    }
+
+    @Test
+    void failsWhenMetadataIsEmpty() {
+        final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L));
+
+        final var totalFungibleSupply = 2;
+        writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                .tokenId(TOKEN_123)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .treasuryAccountId(ACCOUNT_1339)
+                .supplyKey((Key) null) // Intentionally missing supply key
+                .totalSupply(totalFungibleSupply)
+                .build());
+        writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                .accountId(ACCOUNT_1339)
+                .tokenId(TOKEN_123)
+                .balance(totalFungibleSupply)
+                .build());
+        final var txn = new TokenUpdateNftBuilder()
+                .newNftUpdateTransactionBody(TOKEN_123, Bytes.EMPTY, serialNumbers.toArray(new Long[0]));
+        final var context = keyMockContext(txn);
+
+        assertThatThrownBy(() -> subject.pureChecks(context.body()))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(MISSING_TOKEN_METADATA));
     }
 
     @Test

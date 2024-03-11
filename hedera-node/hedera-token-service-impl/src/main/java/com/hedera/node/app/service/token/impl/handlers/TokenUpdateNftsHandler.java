@@ -21,8 +21,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_METADATA;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -42,8 +44,10 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -66,6 +70,9 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var op = txn.tokenUpdateNftsOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
         validateTrue(!op.serialNumbers().isEmpty(), MISSING_SERIAL_NUMBERS);
+        if (op.hasMetadata()) {
+            validateFalsePreCheck(Objects.equals(op.metadata(), Bytes.EMPTY), MISSING_TOKEN_METADATA);
+        }
     }
 
     @Override

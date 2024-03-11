@@ -26,12 +26,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_METADATA;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -44,6 +46,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -76,12 +79,15 @@ public class TokenAttributesValidator {
     }
 
     /**
-     * Validates the token metadata, if it exists and is not too long.
+     * Validates the token metadata, if it exists and is not too long. Since nft.metadata is required we should throw if empty.
      * @param metadata the token metadata to validate
      */
     public void validateTokenMetadata(@Nullable final Bytes metadata, @NonNull final TokensConfig tokensConfig) {
-        if (metadata != null && metadata.length() > 0) {
-            validateTrue(metadata.length() <= tokensConfig.tokensMaxMetadataBytes(), METADATA_TOO_LONG);
+        if (metadata != null) {
+            validateFalse(Objects.equals(metadata, Bytes.EMPTY), MISSING_TOKEN_METADATA);
+            if (metadata.length() > 0) {
+                validateTrue(metadata.length() <= tokensConfig.tokensMaxMetadataBytes(), METADATA_TOO_LONG);
+            }
         }
     }
 
