@@ -370,7 +370,8 @@ public class HapiSpec implements Runnable {
             }
             final var adminKey = this.registry().getKey(DEFAULT_CONTRACT_SENDER);
             ops = UtilVerbs.convertHapiCallsToEthereumCalls(
-                    Stream.of(given, when, then).flatMap(Arrays::stream).toList(), SECP_256K1_SOURCE_KEY, adminKey);
+                Stream.of(given, when, then).flatMap(Arrays::stream).toList(), SECP_256K1_SOURCE_KEY, adminKey,
+                hapiSetup.defaultCreateGas());
         }
 
         try {

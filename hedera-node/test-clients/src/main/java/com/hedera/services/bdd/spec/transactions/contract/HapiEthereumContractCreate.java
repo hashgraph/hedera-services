@@ -98,17 +98,21 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         super.omitAdminKey = true;
     }
 
-    public HapiEthereumContractCreate(HapiContractCreate contractCreate, String privateKeyRef, Key adminKey) {
+    public HapiEthereumContractCreate(
+        HapiContractCreate contractCreate,
+        String privateKeyRef,
+        Key adminKey,
+        long defaultGas) {
         super(contractCreate.contract);
-        this.type = EthTransactionType.EIP1559;
+        this.adminKey = adminKey;
         this.privateKeyRef = privateKeyRef;
+        this.type = EthTransactionType.EIP1559;
         this.omitAdminKey = contractCreate.omitAdminKey;
         this.makeImmutable = contractCreate.makeImmutable;
         this.advertiseCreation = contractCreate.advertiseCreation;
         this.shouldAlsoRegisterAsAccount = contractCreate.shouldAlsoRegisterAsAccount;
         this.useDeprecatedAdminKey = contractCreate.useDeprecatedAdminKey;
         this.contract = contractCreate.contract;
-        this.gas = contractCreate.gas;
         this.key = contractCreate.key;
         this.autoRenewPeriodSecs = contractCreate.autoRenewPeriodSecs;
         this.balance = contractCreate.balance;
@@ -128,11 +132,12 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.stakedNodeId = contractCreate.stakedNodeId;
         this.isDeclinedReward = contractCreate.isDeclinedReward;
 
-        this.adminKey = adminKey;
+        final var gas = contractCreate.gas.isPresent() ? contractCreate.gas.getAsLong() : defaultGas;
+        this.gas(gas);
 
         // TODO: see how it's set in the EthereumCall
         this.maxGasAllowance = Optional.of(220 * ONE_HBAR);
-        this.gas(1000000002);
+
     }
 
     public HapiEthereumContractCreate(

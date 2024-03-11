@@ -1616,13 +1616,13 @@ public class UtilVerbs {
     }
 
     public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(
-            final List<HapiSpecOperation> ops, final String privateKeyRef, final Key adminKey) {
+        final List<HapiSpecOperation> ops, final String privateKeyRef, final Key adminKey, final long defaultGas) {
         final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
         for (final var op : ops) {
             if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall()) {
                 convertedOps.add(new HapiEthereumCall(callOp));
             } else if (op instanceof HapiContractCreate callOp && callOp.isConvertableToEthCreate()) {
-                convertedOps.add(new HapiEthereumContractCreate(callOp, privateKeyRef, adminKey));
+                convertedOps.add(new HapiEthereumContractCreate(callOp, privateKeyRef, adminKey, defaultGas));
             } else {
                 convertedOps.add(op);
             }
