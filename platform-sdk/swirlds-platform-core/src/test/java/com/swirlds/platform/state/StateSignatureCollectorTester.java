@@ -23,6 +23,7 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
+import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
@@ -37,14 +38,14 @@ import java.util.Optional;
  * integration tests that test multiple components, this class should be removed once we have achieved that.
  */
 public class StateSignatureCollectorTester extends StateSignatureCollector {
-    private final DefaultLatestCompleteStateNexus latestSignedState;
+    private final LatestCompleteStateNexus latestSignedState;
     private final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer;
     private final StateLacksSignaturesConsumer stateLacksSignaturesConsumer;
 
     private StateSignatureCollectorTester(
             @NonNull final StateConfig stateConfig,
             @NonNull final SignedStateMetrics signedStateMetrics,
-            @NonNull final DefaultLatestCompleteStateNexus latestSignedState,
+            @NonNull final LatestCompleteStateNexus latestSignedState,
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
         super(stateConfig, signedStateMetrics);
@@ -58,7 +59,7 @@ public class StateSignatureCollectorTester extends StateSignatureCollector {
             @NonNull final SignedStateMetrics signedStateMetrics,
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
-        final DefaultLatestCompleteStateNexus latestSignedState =
+        final LatestCompleteStateNexus latestSignedState =
                 new DefaultLatestCompleteStateNexus(stateConfig, new NoOpMetrics());
         return new StateSignatureCollectorTester(
                 stateConfig,
