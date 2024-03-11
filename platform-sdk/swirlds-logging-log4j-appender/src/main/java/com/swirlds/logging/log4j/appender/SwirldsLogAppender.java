@@ -17,10 +17,12 @@
 package com.swirlds.logging.log4j.appender;
 
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import com.swirlds.logging.api.extensions.provider.LogProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Serializable;
 import java.util.Objects;
 import org.apache.logging.log4j.core.Filter;
@@ -117,11 +119,29 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
     public void append(final LogEvent event) {
         if (logEventFactory != null && logEventConsumer != null) {
             logEventConsumer.accept(logEventFactory.createLogEvent(
-                    translateLevel(event.getLevel()),
-                    event.getLoggerName(),
-                    event.getMessage().getFormattedMessage(),
-                    event.getThrown()));
+                            translateLevel(event.getLevel()),
+                            event.getLoggerName(),
+                            event.getThreadName(),
+                            event.getTimeMillis(),
+                            event.getMessage().getFormattedMessage(),
+                            event.getThrown(),
+                            translateMarker(event.getMarker()),
+                            event.getContextData().toMap()));
         }
+    }
+
+    private Marker translateMarker(@Nullable final org.apache.logging.log4j.Marker marker) {
+        if (marker == null) {
+            return null;
+        }
+        if (marker.hasParents()) {
+            if(marker.getParents().length == 1) {
+                return new Marker(marker.getName(), translateMarker(marker.getParents()[0]));
+            }
+            final Marker parent = translateMarker(marker.getParents()[marker.getParents().length - 1]);
+            return new Marker(marker.getName(), parent);
+        }
+        return new Marker(marker.getName());
     }
 
     /**

@@ -21,14 +21,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.internal.LoggingSystem;
+import com.swirlds.logging.legacy.LogMarker;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -57,7 +60,7 @@ public class SwirldsLogAppenderTest {
 
     @ParameterizedTest
     @MethodSource("levelsAndSizes")
-    public void testLoggingLevels(final Level level, final int expectedSize) throws Exception {
+    public void loggingLevels(final Level level, final int expectedSize) throws Exception {
         // given
         final Path filePath = Path.of("%s_test.log".formatted(level));
         try {
@@ -85,6 +88,95 @@ public class SwirldsLogAppenderTest {
             assertThat(logLines).hasSize(expectedSize);
         } finally {
             Files.delete(filePath);
+        }
+    }
+
+    @Test
+    public void loggingSimpleMarker() throws Exception {
+        // given
+        final Path filePath = Path.of("marker_test.log");
+        try {
+            final var configuration = new TestConfigBuilder()
+                    .withValue("logging.level", "DEBUG")
+                    .withValue("logging.handler.DEFAULT.enabled", true)
+                    .withValue("logging.handler.DEFAULT.type", "file")
+                    .withValue("logging.handler.DEFAULT.file", filePath)
+                    .getOrCreateConfig();
+
+            final LoggingSystem loggingSystem = setup(configuration);
+            final Logger testLogger = LogManager.getLogger(LOGGER_NAME);
+
+            // when
+            testLogger.warn(LogMarker.CONFIG.getMarker(), "This is a warn message");
+
+            // then
+            loggingSystem.stopAndFinalize();
+            final List<String> logLines = Files.lines(filePath).toList();
+
+            assertThat(logLines).hasSize(1);
+            assertThat(logLines.getFirst()).contains(LogMarker.CONFIG.name());
+        } finally {
+            Files.delete(filePath);
+        }
+    }
+
+    @Test
+    public void loggingChainedMarkers() throws Exception {
+        // given
+        final Path filePath = Path.of("marker_test.log");
+        try {
+            final var configuration = new TestConfigBuilder()
+                    .withValue("logging.level", "DEBUG")
+                    .withValue("logging.handler.DEFAULT.enabled", true)
+                    .withValue("logging.handler.DEFAULT.type", "file")
+                    .withValue("logging.handler.DEFAULT.file", filePath)
+                    .getOrCreateConfig();
+
+            final LoggingSystem loggingSystem = setup(configuration);
+            final Logger testLogger = LogManager.getLogger(LOGGER_NAME);
+
+            // when
+            testLogger.warn(TestMarkers.childMarker, "This is a warn message");
+
+            // then
+            loggingSystem.stopAndFinalize();
+            final List<String> logLines = Files.lines(filePath).toList();
+
+            assertThat(logLines).hasSize(1);
+            assertThat(logLines.getFirst()).contains(TestMarkers.CHILD, TestMarkers.PARENT, TestMarkers.GRANT);
+        } finally {
+            Files.delete(filePath);
+        }
+    }
+
+    @Test
+    public void loggingContext() throws Exception {
+        // given
+        final Path filePath = Path.of("context_test.log");
+        try {
+            final var configuration = new TestConfigBuilder()
+                    .withValue("logging.level", "DEBUG")
+                    .withValue("logging.handler.DEFAULT.enabled", true)
+                    .withValue("logging.handler.DEFAULT.type", "file")
+                    .withValue("logging.handler.DEFAULT.file", filePath)
+                    .getOrCreateConfig();
+
+            final LoggingSystem loggingSystem = setup(configuration);
+            final Logger testLogger = LogManager.getLogger(LOGGER_NAME);
+
+            // when
+            ThreadContext.put("key1", "value1");
+            testLogger.warn("This is a warn message");
+
+            // then
+            loggingSystem.stopAndFinalize();
+            final List<String> logLines = Files.lines(filePath).toList();
+
+            assertThat(logLines).hasSize(1);
+            assertThat(logLines.getFirst()).contains("key1=value1");
+        } finally {
+            Files.delete(filePath);
+            ThreadContext.clearAll();
         }
     }
 
