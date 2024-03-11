@@ -66,10 +66,8 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
         when(nativeOperations.getNft(FUNGIBLE_EVERYTHING_TOKEN.tokenId().tokenNum(), 2L))
                 .thenReturn(CIVILIAN_OWNED_NFT);
 
-        when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.ownerIdOrThrow().accountNumOrThrow()))
-                .thenReturn(SOMEBODY);
-        when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.spenderIdOrThrow().accountNumOrThrow()))
-                .thenReturn(OPERATOR);
+        when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.ownerIdOrThrow())).thenReturn(SOMEBODY);
+        when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.spenderIdOrThrow())).thenReturn(OPERATOR);
 
         final var subject =
                 new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);

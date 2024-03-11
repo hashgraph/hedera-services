@@ -809,6 +809,10 @@ public class TestHelpers {
         return org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
     }
 
+    public static org.apache.tuweni.bytes.Bytes ordinalRevertOutputFor(final ResponseCodeEnum status) {
+        return org.apache.tuweni.bytes.Bytes.wrap(UInt256.valueOf(status.protoOrdinal()));
+    }
+
     public static org.apache.tuweni.bytes.Bytes bytesForRedirect(
             final ByteBuffer encodedErcCall, final TokenID tokenId) {
         return bytesForRedirect(encodedErcCall.array(), asLongZeroAddress(tokenId.tokenNum()));

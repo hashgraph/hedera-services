@@ -69,7 +69,9 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     /** {@inheritDoc} */
     @Override
     public Map<AccountID, Long> applyStakingRewards(
-            final FinalizeContext context, @NonNull final Set<AccountID> explicitRewardReceivers) {
+            @NonNull final FinalizeContext context,
+            @NonNull final Set<AccountID> explicitRewardReceivers,
+            @NonNull final Set<AccountID> prePaidRewardReceivers) {
         requireNonNull(context);
         requireNonNull(explicitRewardReceivers);
         final var writableStore = context.writableStore(WritableAccountStore.class);
@@ -85,6 +87,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         // get list of possible reward receivers which are staked to node
         final var rewardReceivers =
                 getAllRewardReceivers(writableStore, stakedToMeRewardReceivers, explicitRewardReceivers);
+        rewardReceivers.removeAll(prePaidRewardReceivers);
         // Pay rewards to all possible reward receivers, returns all rewards paid
         final var recordBuilder = context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class);
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(

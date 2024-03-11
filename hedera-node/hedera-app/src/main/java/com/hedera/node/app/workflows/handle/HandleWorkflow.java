@@ -92,6 +92,7 @@ import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeBuffer;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
@@ -348,6 +349,7 @@ public class HandleWorkflow {
         AccountID payer = null;
         Fees fees = null;
         TransactionInfo transactionInfo = null;
+        Set<AccountID> prePaidRewardReceivers = emptySet();
         try {
             final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
 
@@ -418,6 +420,7 @@ public class HandleWorkflow {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
+                    transactionFinalizer,
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
                     platformState);
@@ -473,7 +476,6 @@ public class HandleWorkflow {
                             validationResult.responseCodeEnum,
                             ex);
                 }
-
             } else {
                 try {
                     // Any hollow accounts that must sign to have all needed signatures, need to be finalized
@@ -545,6 +547,9 @@ public class HandleWorkflow {
                         }
                     }
                     recordBuilder.status(SUCCESS);
+                    // Only ScheduleCreate and ScheduleSign can trigger paid staking rewards via
+                    // dispatch; and only if this top-level transaction was successful
+                    prePaidRewardReceivers = context.dispatchPaidStakerIds();
 
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
@@ -601,7 +606,11 @@ public class HandleWorkflow {
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
         final var function = transactionInfo.functionality();
         transactionFinalizer.finalizeParentRecord(
-                payer, tokenServiceContext, function, extraRewardReceivers(transactionInfo, recordBuilder));
+                payer,
+                tokenServiceContext,
+                function,
+                extraRewardReceivers(transactionInfo, recordBuilder),
+                prePaidRewardReceivers);
 
         // Commit all state changes
         stack.commitFullStack();
@@ -638,16 +647,21 @@ public class HandleWorkflow {
      * @param recordBuilder the record builder
      * @return the set of extra account ids
      */
-    private Set<AccountID> extraRewardReceivers(
+    static Set<AccountID> extraRewardReceivers(
             @NonNull final TransactionInfo transactionInfo,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+        return extraRewardReceivers(transactionInfo.txBody(), transactionInfo.functionality(), recordBuilder);
+    }
+
+    static Set<AccountID> extraRewardReceivers(
+            @NonNull final TransactionBody body,
+            @NonNull final HederaFunctionality function,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         if (recordBuilder.status() != SUCCESS) {
             return emptySet();
         }
-        return switch (transactionInfo.functionality()) {
-            case CRYPTO_TRANSFER -> zeroAdjustIdsFrom(transactionInfo
-                    .txBody()
-                    .cryptoTransferOrThrow()
+        return switch (function) {
+            case CRYPTO_TRANSFER -> zeroAdjustIdsFrom(body.cryptoTransferOrThrow()
                     .transfersOrElse(TransferList.DEFAULT)
                     .accountAmountsOrElse(emptyList()));
             case ETHEREUM_TRANSACTION, CONTRACT_CALL, CONTRACT_CREATE -> recordBuilder.explicitRewardSituationIds();
@@ -661,7 +675,8 @@ public class HandleWorkflow {
      * @param explicitHbarAdjustments the list of explicit hbar adjustments
      * @return the set of account ids that have a zero amount
      */
-    private @NonNull Set<AccountID> zeroAdjustIdsFrom(@NonNull final List<AccountAmount> explicitHbarAdjustments) {
+    private static @NonNull Set<AccountID> zeroAdjustIdsFrom(
+            @NonNull final List<AccountAmount> explicitHbarAdjustments) {
         Set<AccountID> zeroAdjustmentAccounts = null;
         for (final var aa : explicitHbarAdjustments) {
             if (aa.amount() == 0) {
@@ -813,7 +828,7 @@ public class HandleWorkflow {
 
         // Check the time box of the transaction
         try {
-            checker.checkTimeBox(txBody, consensusNow);
+            checker.checkTimeBox(txBody, consensusNow, RequireMinValidLifetimeBuffer.NO);
         } catch (final PreCheckException e) {
             return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
         }

@@ -57,7 +57,6 @@ import static com.hedera.services.bdd.suites.utils.contracts.ErrorMessageResult.
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -177,7 +176,7 @@ public class Evm46ValidationSuite extends HapiSuite {
 
                 // Internal sends:
                 // EOA -calls-> InternalCaller -send-> NonExistingMirror, expect revert
-                internalSendToNonExistingMirrorAddressResultsInInvalidAliasKey(),
+                internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt(),
                 // EOA -calls-> InternalCaller -send-> ExistingMirror, expect success
                 internalSendToExistingMirrorAddressResultsInSuccess(),
                 // EOA -calls-> InternalCaller -send-> NonExistingNonMirror, expect revert
@@ -677,7 +676,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey() {
+    HapiSpec internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey() {
         return defaultHapiSpec("internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -687,9 +686,10 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 TRANSFER_TO_FUNCTION,
                                 mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 3))
                         .gas(GAS_LIMIT_FOR_CALL * 4)
-                        .via(INNER_TXN)
-                        .hasKnownStatus(INVALID_ALIAS_KEY))
-                .then(getTxnRecord(INNER_TXN).hasPriority(recordWith().status(INVALID_ALIAS_KEY)));
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then(getAccountBalance("0.0." + (FIRST_NONEXISTENT_CONTRACT_NUM + 3))
+                        .nodePayment(ONE_HBAR)
+                        .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
     @HapiTest
@@ -769,8 +769,8 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalSendToNonExistingMirrorAddressResultsInInvalidAliasKey() {
-        return defaultHapiSpec("internalSendToNonExistingMirrorAddressResultsInInvalidAliasKey")
+    HapiSpec internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt() {
+        return defaultHapiSpec("internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
                         contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
@@ -779,9 +779,10 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 SEND_TO_FUNCTION,
                                 mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 5))
                         .gas(GAS_LIMIT_FOR_CALL * 4)
-                        .via(INNER_TXN)
-                        .hasKnownStatus(INVALID_ALIAS_KEY))
-                .then(getTxnRecord(INNER_TXN).hasPriority(recordWith().status(INVALID_ALIAS_KEY)));
+                        .via(INNER_TXN))
+                .then(getAccountBalance("0.0." + (FIRST_NONEXISTENT_CONTRACT_NUM + 5))
+                        .nodePayment(ONE_HBAR)
+                        .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
     @HapiTest
@@ -885,10 +886,10 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 INTERNAL_CALLER_CONTRACT,
                                 CALL_WITH_VALUE_TO_FUNCTION,
                                 mirrorAddrWith(FIRST_NONEXISTENT_CONTRACT_NUM + 6))
-                        .gas(ENOUGH_GAS_LIMIT_FOR_CREATION)
-                        .via(INNER_TXN)
-                        .hasKnownStatus(INVALID_ALIAS_KEY))
-                .then(getTxnRecord(INNER_TXN).hasPriority(recordWith().status(INVALID_ALIAS_KEY)));
+                        .gas(ENOUGH_GAS_LIMIT_FOR_CREATION))
+                .then(getAccountBalance("0.0." + (FIRST_NONEXISTENT_CONTRACT_NUM + 6))
+                        .nodePayment(ONE_HBAR)
+                        .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
     @HapiTest
@@ -1399,9 +1400,10 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey() {
+    final HapiSpec internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
-        targetId.set(AccountID.newBuilder().setAccountNum(852L).build());
+        final var systemAccountNum = 852L;
+        targetId.set(AccountID.newBuilder().setAccountNum(systemAccountNum).build());
 
         return defaultHapiSpec("internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey")
                 .given(
@@ -1415,13 +1417,11 @@ public class Evm46ValidationSuite extends HapiSuite {
                                                 INTERNAL_CALLER_CONTRACT,
                                                 CALL_WITH_VALUE_TO_FUNCTION,
                                                 mirrorAddrWith(targetId.get().getAccountNum()))
-                                        .gas(GAS_LIMIT_FOR_CALL * 4)
-                                        .via(INNER_TXN)
-                                        .hasKnownStatus(INVALID_ALIAS_KEY))))
+                                        .gas(GAS_LIMIT_FOR_CALL * 4))))
                 .then(
-                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(INVALID_ALIAS_KEY)),
                         getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)),
+                        getAccountBalance("0.0." + systemAccountNum).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
     @HapiTest

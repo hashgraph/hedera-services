@@ -22,11 +22,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasPlus;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.RC_AND_ADDRESS_ENCODER;
@@ -36,18 +37,15 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.stackIncludesActiveAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -55,7 +53,6 @@ import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerifi
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.EitherOrVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -133,7 +130,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
 
         final var validity = validityOfSynthOp();
         if (validity != OK) {
-            return externalizeUnsuccessfulResult(validity, gasCalculator.viewGasRequirement());
+            return gasOnly(revertResult(validity, FIXED_GAS_COST), validity, true);
         }
 
         // Choose a dispatch verification strategy based on whether the legacy activation address is active
@@ -143,39 +140,31 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         recordBuilder.status(standardized(recordBuilder.status()));
 
         final var status = recordBuilder.status();
-        if (status != ResponseCodeEnum.SUCCESS) {
+        if (status != SUCCESS) {
             return gasPlus(revertResult(recordBuilder, FIXED_GAS_COST), status, false, nonGasCost);
         } else {
             ByteBuffer encodedOutput;
             final var op = syntheticCreate.tokenCreationOrThrow();
             final var customFees = op.customFeesOrElse(Collections.emptyList());
-            if (op.tokenType() == TokenType.FUNGIBLE_COMMON) {
+            if (op.tokenType() == FUNGIBLE_COMMON) {
                 if (customFees.isEmpty()) {
                     encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                             .getOutputs()
-                            .encodeElements(
-                                    (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
-                                    headlongAddressOf(recordBuilder.tokenID()));
+                            .encodeElements((long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID()));
                 } else {
                     encodedOutput = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
                             .getOutputs()
-                            .encodeElements(
-                                    (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
-                                    headlongAddressOf(recordBuilder.tokenID()));
+                            .encodeElements((long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID()));
                 }
             } else {
                 if (customFees.isEmpty()) {
                     encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                             .getOutputs()
-                            .encodeElements(
-                                    (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
-                                    headlongAddressOf(recordBuilder.tokenID()));
+                            .encodeElements((long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID()));
                 } else {
                     encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
                             .getOutputs()
-                            .encodeElements(
-                                    (long) ResponseCodeEnum.SUCCESS.protoOrdinal(),
-                                    headlongAddressOf(recordBuilder.tokenID()));
+                            .encodeElements((long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.tokenID()));
                 }
             }
             return gasPlus(successResult(encodedOutput, FIXED_GAS_COST, recordBuilder), status, false, nonGasCost);
@@ -187,8 +176,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         if (op.symbol().isEmpty()) {
             return MISSING_TOKEN_SYMBOL;
         }
-        final var treasuryAccount =
-                nativeOperations().getAccount(op.treasuryOrThrow().accountNumOrThrow());
+        final var treasuryAccount = nativeOperations().getAccount(op.treasuryOrThrow());
         if (treasuryAccount == null) {
             return INVALID_ACCOUNT_ID;
         }
@@ -221,16 +209,5 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         final var contractNum = Long.parseLong(literal.substring(literal.indexOf("[") + 1, literal.indexOf("]")));
         final var pbjAddress = com.hedera.pbj.runtime.io.buffer.Bytes.wrap(asEvmAddress(contractNum));
         return new LegacyActivation(contractNum, pbjAddress, pbjToBesuAddress(pbjAddress));
-    }
-
-    private PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
-        final var result = gasOnly(FullResult.revertResult(responseCode, gasRequirement), responseCode, false);
-        final var contractID = asEvmContractId(Address.fromHexString(HTS_EVM_ADDRESS));
-        enhancement
-                .systemOperations()
-                .externalizeResult(
-                        contractFunctionResultFailedFor(FIXED_GAS_COST, responseCode.toString(), contractID),
-                        responseCode);
-        return result;
     }
 }

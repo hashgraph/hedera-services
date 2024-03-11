@@ -18,50 +18,47 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.istok
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.istoken.IsTokenTranslator.IS_TOKEN;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNonRevertibleTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
-public class IsTokenCall extends AbstractNonRevertibleTokenViewCall {
+public class IsTokenCall extends AbstractHtsCall {
     private final boolean isStaticCall;
+
+    @Nullable
+    private final Token token;
 
     public IsTokenCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token) {
-        super(gasCalculator, enhancement, token);
+        super(gasCalculator, enhancement, true);
         this.isStaticCall = isStaticCall;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected @NonNull FullResult resultOfViewingToken(final Token token) {
-        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token != null);
+        this.token = token;
     }
 
     @Override
-    protected @NonNull FullResult viewCallResultWith(
-            @NonNull final ResponseCodeEnum status, final long gasRequirement) {
-        return fullResultsFor(SUCCESS, gasRequirement, false);
+    public boolean allowsStaticFrame() {
+        return true;
+    }
+
+    @Override
+    public @NonNull PricedResult execute(MessageFrame frame) {
+        return gasOnly(fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token != null), SUCCESS, true);
     }
 
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, final boolean isToken) {
         return successResult(IS_TOKEN.getOutputs().encodeElements(status.protoOrdinal(), isToken), gasRequirement);
-    }
-
-    @Override
-    public @NonNull PricedResult execute() {
-        return externalizeSuccessfulResult();
     }
 }

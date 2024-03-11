@@ -16,12 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_NOT_PROVIDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.keyTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey.TokenKeyTranslator.TOKEN_KEY;
 import static java.util.Objects.requireNonNull;
@@ -55,12 +54,15 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
+    protected @NonNull PricedResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         if (key == null) {
-            return fullResultsFor(CONTRACT_REVERT_EXECUTED, gasCalculator.viewGasRequirement(), Key.DEFAULT);
+            return gasOnly(
+                    fullResultsFor(KEY_NOT_PROVIDED, gasCalculator.viewGasRequirement(), Key.DEFAULT),
+                    KEY_NOT_PROVIDED,
+                    true);
         }
-        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), key);
+        return gasOnly(fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), key), SUCCESS, true);
     }
 
     @Override
@@ -77,16 +79,5 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
         }
         return successResult(
                 TOKEN_KEY.getOutputs().encodeElements(status.protoOrdinal(), keyTupleFor(key)), gasRequirement);
-    }
-
-    @Override
-    public @NonNull PricedResult execute() {
-        if (token == null) {
-            return externalizeUnsuccessfulResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
-        } else if (key == null) {
-            return externalizeUnsuccessfulResult(KEY_NOT_PROVIDED, gasCalculator.viewGasRequirement());
-        } else {
-            return externalizeSuccessfulResult();
-        }
     }
 }

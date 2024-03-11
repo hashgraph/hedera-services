@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -114,7 +113,7 @@ class EvmAutoCreationLogicTest {
     void tracksAliasThrowsWhenAliasIsMirror() {
         final var alias = ByteStringUtils.wrapUnsafely(mirrorAddress.toArray());
         final var entityNum = EntityIdUtils.accountIdFromEvmAddress(mirrorAddress);
-        assertThrows(InvalidTransactionException.class, () -> subject.trackAlias(alias, entityNum));
+        assertThrows(IllegalArgumentException.class, () -> subject.trackAlias(alias, entityNum));
     }
 
     @Test

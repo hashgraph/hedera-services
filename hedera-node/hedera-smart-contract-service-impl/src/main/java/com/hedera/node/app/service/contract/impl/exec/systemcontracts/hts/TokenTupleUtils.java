@@ -259,7 +259,7 @@ public class TokenTupleUtils {
         requireNonNull(accountId);
         return (ZERO_ACCOUNT_ID == accountId)
                 ? ZERO_ADDRESS
-                : headlongAddressOf(requireNonNull(nativeOperations.getAccount(accountId.accountNumOrThrow())));
+                : headlongAddressOf(requireNonNull(nativeOperations.getAccount(accountId)));
     }
 
     /**

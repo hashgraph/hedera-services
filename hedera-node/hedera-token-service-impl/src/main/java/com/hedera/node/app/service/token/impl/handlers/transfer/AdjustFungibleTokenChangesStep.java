@@ -38,6 +38,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -81,7 +82,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         // Also, put any transfers happening with allowances in allowanceTransfers map.
         for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
             final var tokenId = transfers.tokenOrThrow();
-            final var token = getIfUsable(tokenId, tokenStore);
+            final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
             if (transfers.hasExpectedDecimals()) {
                 validateTrue(token.decimals() == transfers.expectedDecimalsOrThrow(), UNEXPECTED_TOKEN_DECIMALS);

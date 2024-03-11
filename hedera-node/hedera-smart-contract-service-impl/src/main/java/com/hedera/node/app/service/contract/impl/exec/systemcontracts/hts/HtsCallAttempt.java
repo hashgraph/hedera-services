@@ -54,6 +54,17 @@ public class HtsCallAttempt {
     private final byte[] selector;
     private final Bytes input;
     private final boolean isRedirect;
+
+    // The id address of the account authorizing the call, in the sense
+    // that (1) a dispatch should omit the key of this account from the
+    // set of required signing keys; and (2) the verification strategy
+    // for this call should use this authorizing address. We only need
+    // this because we will still have two contracts on the qualified
+    // delegates list, so it is possible the authorizing account can be
+    // different from the EVM sender address
+    private final AccountID authorizingId;
+    private final Address authorizingAddress;
+    // The id of the sender in the EVM frame
     private final AccountID senderId;
     private final Address senderAddress;
     private final boolean onlyDelegatableContractKeysActive;
@@ -73,7 +84,8 @@ public class HtsCallAttempt {
     public HtsCallAttempt(
             @NonNull final Bytes input,
             @NonNull final Address senderAddress,
-            boolean onlyDelegatableContractKeysActive,
+            @NonNull final Address authorizingAddress,
+            final boolean onlyDelegatableContractKeysActive,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final Configuration configuration,
             @NonNull final AddressIdConverter addressIdConverter,
@@ -85,6 +97,7 @@ public class HtsCallAttempt {
         this.callTranslators = requireNonNull(callTranslators);
         this.gasCalculator = requireNonNull(gasCalculator);
         this.senderAddress = requireNonNull(senderAddress);
+        this.authorizingAddress = requireNonNull(authorizingAddress);
         this.configuration = requireNonNull(configuration);
         this.addressIdConverter = requireNonNull(addressIdConverter);
         this.enhancement = requireNonNull(enhancement);
@@ -115,6 +128,8 @@ public class HtsCallAttempt {
         }
         this.selector = this.input.slice(0, 4).toArrayUnsafe();
         this.senderId = addressIdConverter.convertSender(senderAddress);
+        this.authorizingId =
+                (authorizingAddress != senderAddress) ? addressIdConverter.convertSender(authorizingAddress) : senderId;
         this.isStaticCall = isStaticCall;
     }
 
@@ -126,7 +141,7 @@ public class HtsCallAttempt {
      */
     public @NonNull VerificationStrategy defaultVerificationStrategy() {
         return verificationStrategies.activatingOnlyContractKeysFor(
-                senderAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations());
+                authorizingAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations());
     }
 
     /**
@@ -190,15 +205,6 @@ public class HtsCallAttempt {
     }
 
     /**
-     * Returns whether only delegatable contract keys are active for this call.
-     *
-     * @return whether only delegatable contract keys are active for this call
-     */
-    public boolean onlyDelegatableContractKeysActive() {
-        return onlyDelegatableContractKeysActive;
-    }
-
-    /**
      * Returns the address ID converter for this call.
      *
      * @return the address ID converter for this call
@@ -214,15 +220,6 @@ public class HtsCallAttempt {
      */
     public Configuration configuration() {
         return configuration;
-    }
-
-    /**
-     * Returns the verification strategies for this call.
-     *
-     * @return the verification strategies for this call
-     */
-    public VerificationStrategies verificationStrategies() {
-        return verificationStrategies;
     }
 
     /**
@@ -336,6 +333,15 @@ public class HtsCallAttempt {
      */
     public boolean isStaticCall() {
         return isStaticCall;
+    }
+
+    /**
+     * Returns the ID of the sender of this call in the EVM frame.
+     *
+     * @return the ID of the sender of this call in the EVM frame
+     */
+    public AccountID authorizingId() {
+        return authorizingId;
     }
 
     private boolean isRedirect(final byte[] input) {

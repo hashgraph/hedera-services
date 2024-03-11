@@ -109,4 +109,11 @@ public interface TransferContext {
      * @return whether certain restrictions on custom fees are enforced
      */
     boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments();
+
+    /**
+     * Validates hbar allowances for the top-level operation in this transfer context.
+     *
+     * <p> (FUTURE) Remove this, only needed for diff testing and has no logical priority.
+     */
+    void validateHbarAllowances();
 }
