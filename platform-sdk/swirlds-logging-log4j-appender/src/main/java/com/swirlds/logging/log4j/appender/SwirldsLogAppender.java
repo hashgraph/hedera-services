@@ -142,11 +142,11 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
             return null;
         }
 
-        final int parentsLength = marker.getParents().length;
-        if (parentsLength == 0) {
+        if (marker.getParents() == null || marker.getParents().length == 0) {
             return new Marker(marker.getName());
         }
 
+        final int parentsLength = marker.getParents().length;
         final Marker parent = translateMarker(marker.getParents()[parentsLength - 1]);
         return new Marker(marker.getName(), parent);
     }

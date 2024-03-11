@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.junit.jupiter.api.AfterEach;
@@ -184,5 +186,23 @@ public class SwirldsLogAppenderTest {
     public void tearDown() throws Exception {
         final LoggerContext loggerContext = (LoggerContext) LogManager.getContext(false);
         loggerContext.reconfigure();
+    }
+
+    private static class TestMarkers {
+        public static final Marker grantMarker;
+        public static final Marker parentMarker;
+        public static final Marker childMarker;
+
+        public static final String GRANT = "GRANT";
+
+        public static final String PARENT = "PARENT";
+
+        public static final String CHILD = "CHILD";
+
+        static {
+            grantMarker = MarkerManager.getMarker(GRANT);
+            parentMarker = MarkerManager.getMarker(PARENT).addParents(grantMarker);
+            childMarker = MarkerManager.getMarker(CHILD).addParents(parentMarker);
+        }
     }
 }
