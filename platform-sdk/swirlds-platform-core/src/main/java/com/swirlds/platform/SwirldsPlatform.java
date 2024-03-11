@@ -165,7 +165,6 @@ import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.util.ThingsToStart;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformWiring;
-import com.swirlds.platform.wiring.components.IssDetectorWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -568,12 +567,10 @@ public class SwirldsPlatform implements Platform {
             stateManagementComponent.newSignedStateFromTransactions(
                     state.getAndReserve("stateManagementComponent.newSignedStateFromTransactions"));
 
-            final IssDetectorWiring issDetectorWiring = platformWiring.getIssDetectorWiring();
-            // FUTURE WORK: these three method calls will be combined into a single method call
-            issDetectorWiring.roundCompletedInput().put(roundNumber);
-            issDetectorWiring.newStateHashed().put(state.getAndReserve("issDetector"));
-            issDetectorWiring.handleConsensusRound().put(consensusRound);
-
+            platformWiring
+                    .getIssDetectorWiring()
+                    .stateAndRoundInput()
+                    .put(stateAndRound.makeAdditionalReservation("issDetector"));
             platformWiring.getSignatureCollectorConsensusInput().put(consensusRound);
 
             stateAndRound.reservedSignedState().close();
