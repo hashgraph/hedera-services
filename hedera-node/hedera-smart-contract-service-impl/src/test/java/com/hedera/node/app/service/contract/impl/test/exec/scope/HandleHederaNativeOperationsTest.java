@@ -136,13 +136,13 @@ class HandleHederaNativeOperationsTest {
     void getAccountKeyUsesContextReadableStore() {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(SOMEBODY);
-        assertSame(SOMEBODY.keyOrThrow(), subject.getAccountKey(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow()));
+        assertSame(SOMEBODY.keyOrThrow(), subject.getAccountKey(NON_SYSTEM_ACCOUNT_ID));
     }
 
     @Test
     void getAccountKeyReturnsNullForMissing() {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-        assertNull(subject.getAccountKey(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow()));
+        assertNull(subject.getAccountKey(NON_SYSTEM_ACCOUNT_ID));
     }
 
     @Test

@@ -113,7 +113,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     @Override
     public void start(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final var codeAddress = frame.getContractAddress();
-
         // This must be done first as the system contract address range overlaps with system
         // accounts. Note that unlike EVM precompiles, we do allow sending value "to" Hedera
         // system contracts because they sometimes require fees greater than be reasonably

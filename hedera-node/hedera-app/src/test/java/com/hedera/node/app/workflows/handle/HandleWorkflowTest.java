@@ -1303,7 +1303,10 @@ class HandleWorkflowTest extends AppTestBase {
             // given
             doThrow(new PreCheckException(responseCode))
                     .when(checker)
-                    .checkTimeBox(OK_RESULT.txInfo().txBody(), TX_CONSENSUS_NOW);
+                    .checkTimeBox(
+                            OK_RESULT.txInfo().txBody(),
+                            TX_CONSENSUS_NOW,
+                            TransactionChecker.RequireMinValidLifetimeBuffer.NO);
 
             // when
             workflow.handleRound(state, platformState, round);

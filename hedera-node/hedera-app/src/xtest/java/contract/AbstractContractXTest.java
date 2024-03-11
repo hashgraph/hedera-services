@@ -18,6 +18,7 @@ package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
@@ -285,7 +286,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(requiresDelegatePermission);
         Mockito.lenient().when(frame.getValue()).thenReturn(Wei.MAX_WEI);
 
-        final var attempt = callAttemptFactory.createCallAttemptFrom(input, frame);
+        final var attempt = callAttemptFactory.createCallAttemptFrom(input, DIRECT_OR_TOKEN_REDIRECT, frame);
         final var call = attempt.asExecutableCall();
 
         final var pricedResult = requireNonNull(call).execute(frame);
