@@ -34,6 +34,7 @@ import java.time.format.SignStyle;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 /**
  * An epoc millis parser to human-readable String based on pattern: {@code "yyyy-MM-dd HH:mm:ss.SSS"}
@@ -63,8 +64,12 @@ public class EpochCachedFormatter {
 
     private final Map<Instant, String> exactCache = new ShrinkableSizeCache<>();
     private final Map<Instant, String> dateCache = new ShrinkableSizeCache<>();
-    private final Map<Instant, String> dateHourCache = new ShrinkableSizeCache<>();
-    private final Map<Instant, String> dateHourMinutesCache = new ShrinkableSizeCache<>();
+    private static final String[] HOURS_SECONDS_AND_MINUTES_CACHE =
+            IntStream.range(0, 60).boxed().map(i -> toPaddedDigitsString(i, 2)).toArray(String[]::new);
+    private static final String[] MILLIS_CACHE = IntStream.range(0, 1000)
+            .boxed()
+            .map(i -> toPaddedDigitsString(i, 3))
+            .toArray(String[]::new);
 
     /**
      * Creates a parser and preloads the caches with {@link System#currentTimeMillis()}
@@ -81,57 +86,29 @@ public class EpochCachedFormatter {
      * it preloads the information for the current time.
      *
      * @param epochMillis epoch millis to convert such as those obtained form {@link System#currentTimeMillis()}
-     * @return the human-readable representation of the string based on  {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME}
+     * @return the human-readable representation of the string based on pattern: {@code "yyyy-MM-dd HH:mm:ss.SSS"}
      */
     public @NonNull String format(final long epochMillis) {
 
         String stringDate;
         Instant instant = Instant.ofEpochMilli(epochMillis);
-        if ((stringDate = exactCache.get(instant)) != null) {
-            return stringDate;
-        }
-        if ((stringDate = getFromMinutes(instant)) != null) {
+        stringDate = exactCache.get(instant);
+        if (stringDate == null) {
+            stringDate = getFromDate(instant);
             exactCache.put(instant, stringDate);
-            return stringDate;
         }
-        if ((stringDate = getFromHours(instant)) != null) {
+        if (stringDate == null) {
+            stringDate = FORMATTER.format(instant);
             exactCache.put(instant, stringDate);
-            return stringDate;
+            dateCache.put(instant.truncatedTo(ChronoUnit.DAYS), stringDate.substring(0, 11));
         }
-        if ((stringDate = getFromDate(instant)) != null) {
-            exactCache.put(instant, stringDate);
-            return stringDate;
-        }
-
-        stringDate = FORMATTER.format(instant);
-        exactCache.put(instant, stringDate);
-        final StringBuilder buffer = new StringBuilder(stringDate);
-        final int length = stringDate.length();
-        buffer.setLength(length - 6);
-        dateHourMinutesCache.put(instant.truncatedTo(ChronoUnit.MINUTES), buffer.toString());
-        buffer.setLength(length - 9);
-        dateHourCache.put(instant.truncatedTo(ChronoUnit.HOURS), buffer.toString());
-        buffer.setLength(length - 12);
-        dateCache.put(instant.truncatedTo(ChronoUnit.DAYS), buffer.toString());
         return stringDate;
     }
 
-    private @Nullable String getFromMinutes(final @NonNull Instant instant) {
-        final String format = dateHourMinutesCache.get(instant.truncatedTo(ChronoUnit.MINUTES));
-        if (format == null) {
-            return null;
-        }
-        return format + stringFrom(instant, ChronoUnit.SECONDS);
-    }
-
-    private @Nullable String getFromHours(final @NonNull Instant instant) {
-        final String format = dateHourCache.get(instant.truncatedTo(ChronoUnit.HOURS));
-        if (format == null) {
-            return null;
-        }
-        return format + stringFrom(instant, ChronoUnit.MINUTES);
-    }
-
+    /**
+     * Tries to create a String representation of the instant using previously cached info in {@code dateCache}.
+     * Returns null if not information for the day is cached.
+     */
     private @Nullable String getFromDate(final @NonNull Instant instant) {
         final String format = dateCache.get(instant.truncatedTo(ChronoUnit.DAYS));
 
@@ -139,77 +116,56 @@ public class EpochCachedFormatter {
             return null;
         }
 
-        return format + stringFrom(instant, ChronoUnit.HOURS);
+        return format + infoFromHours(instant);
     }
 
     /**
-     * Constructs a string representation of the given {@link Instant} starting from the specified {@link ChronoUnit}.
-     * <p>
-     * <p>
-     * The method constructs a string representation of the {@link Instant} from the specified {@link ChronoUnit},
-     * including hours, minutes, seconds, and milliseconds.
+     * Constructs a string representation of the given {@link Instant} starting from the hour field.
      * <p>
      * e.g: Given an {@code instant} representing date: {@code "2020-08-26 12:34:56.789"}
      * <ul>
-     * <li>{@code stringFrom(instant, ChronoUnit.MICROS)} --> a buffer with {@code ""} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.NANOS)} --> a buffer with  {@code ""} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.MILLIS)} --> a buffer with {@code "789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.SECONDS)} --> a buffer with {@code "56.789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.MINUTES)} --> a buffer with {@code "34:56.789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.HOURS)} --> a buffer with {@code "12:34:56.789"} </li>
-     * <li>{@code stringFrom(instant, ChronoUnit.*)} --> a buffer with {@code "12:34:56.789"} </li>
+     * <li>{@code infoFromHours(instant)} --> {@code "12:34:56.789"} </li>
      * </ul>
      *
      * @param instant The Instant to represent as a string.
-     * @param unit    The {@link ChronoUnit} from which the string representation should be formatted.
-     * @return A {@link StringBuilder} containing the string representation of the Instant up to the specified
-     * {@link ChronoUnit}.
+     * @return the string representation of the {@code instant} starting from the hour field
      */
-    private static @NonNull StringBuilder stringFrom(final @NonNull Instant instant, final @NonNull ChronoUnit unit) {
+    private static @NonNull String infoFromHours(final @NonNull Instant instant) {
 
-        final StringBuilder stringBuilder = new StringBuilder();
-        if (unit.ordinal() >= ChronoUnit.MILLIS.ordinal()) {
-            final int milliseconds = instant.getNano() / 1_000_000;
-            appendDigitsReverse(milliseconds, stringBuilder, 3);
-        }
+        final StringBuilder buffer = new StringBuilder();
         long totalSeconds = instant.getEpochSecond();
-        if (unit.ordinal() >= ChronoUnit.SECONDS.ordinal()) {
-            stringBuilder.append(".");
-            final int second = (int) (totalSeconds % 60);
-            appendDigitsReverse(second, stringBuilder, 2);
-        }
-        if (unit.ordinal() >= ChronoUnit.MINUTES.ordinal()) {
-            final int minute = (int) ((totalSeconds / 60) % 60);
-            stringBuilder.append(":");
-            appendDigitsReverse(minute, stringBuilder, 2);
-        }
-        if (unit.ordinal() >= ChronoUnit.HOURS.ordinal()) {
-            final int hour = (int) ((totalSeconds / 3600) % 24);
-            stringBuilder.append(":");
-            appendDigitsReverse(hour, stringBuilder, 2);
-        }
+        final int hour = (int) ((totalSeconds / 3600) % 24);
+        buffer.append(HOURS_SECONDS_AND_MINUTES_CACHE[hour]);
+        buffer.append(":");
+        final int minute = (int) ((totalSeconds / 60) % 60);
+        buffer.append(HOURS_SECONDS_AND_MINUTES_CACHE[minute]);
+        buffer.append(":");
+        final int second = (int) (totalSeconds % 60);
+        buffer.append(HOURS_SECONDS_AND_MINUTES_CACHE[second]);
+        buffer.append(".");
+        final int milliseconds = instant.getNano() / 1_000_000;
+        buffer.append(MILLIS_CACHE[milliseconds]);
 
-        return stringBuilder.reverse();
+        return buffer.toString();
     }
 
     /**
-     * Appends the digits of the number into the buffer in reverse order and pads to the right with 0. Examples:
+     * Creates a String of digits of the number and pads to the left with 0. Examples:
      * <ul>
-     * <li>{@code appendDigitsReverse(1, buffer, 1)} --> 1</li>
-     * <li>{@code appendDigitsReverse(1, buffer, 2)} --> 10</li>
-     * <li>{@code appendDigitsReverse(12, buffer, 1)} --> 2</li>
-     * <li>{@code appendDigitsReverse(12, buffer, 2)} --> 21</li>
-     * <li>{@code appendDigitsReverse(12, buffer, 3)} --> 210</li>
-     * <li>{@code appendDigitsReverse(123, buffer, 3)} --> 321</li>
-     * <li>{@code appendDigitsReverse(758, buffer, 4)} --> 8570</li>
+     * <li>{@code toPaddedDigitsString(1, 1)} --> 1</li>
+     * <li>{@code toPaddedDigitsString(1, 2)} --> 01</li>
+     * <li>{@code toPaddedDigitsString(12, 1)} --> 2</li>
+     * <li>{@code toPaddedDigitsString(12, 2)} --> 12</li>
+     * <li>{@code toPaddedDigitsString(12, 3)} --> 012</li>
+     * <li>{@code toPaddedDigitsString(123, 3)} --> 123</li>
+     * <li>{@code toPaddedDigitsString(758, 4)} --> 0758</li>
      * </ul>
      *
      * @param number        The number to append in reverse order.
-     * @param buffer        The buffer to append to.
      * @param desiredLength The maximum length of the number to append.
      */
-    private static void appendDigitsReverse(
-            final int number, final @NonNull StringBuilder buffer, final int desiredLength) {
+    private static String toPaddedDigitsString(final int number, final int desiredLength) {
+        StringBuilder buffer = new StringBuilder();
         int actualLength = 0;
         int num = number;
         while ((num > 0) && actualLength < desiredLength) {
@@ -222,5 +178,6 @@ public class EpochCachedFormatter {
             buffer.append(0);
             actualLength++;
         }
+        return buffer.reverse().toString();
     }
 }

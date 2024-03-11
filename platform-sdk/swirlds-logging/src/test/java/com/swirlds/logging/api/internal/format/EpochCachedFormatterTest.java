@@ -17,7 +17,6 @@
 package com.swirlds.logging.api.internal.format;
 
 import static java.time.ZoneOffset.UTC;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Instant;
@@ -41,7 +40,7 @@ class EpochCachedFormatterTest {
     void testExactCache() {
         EpochCachedFormatter formatter = new EpochCachedFormatter();
         final String expectedDate = "2020-08-26 12:34:56.789";
-        long epochMillis = getEpochMillis(expectedDate);
+        long epochMillis = epochFromString(expectedDate);
         String cached = formatter.format(epochMillis);
         assertEquals(expectedDate, cached);
     }
@@ -50,7 +49,7 @@ class EpochCachedFormatterTest {
     void testCaches() {
         EpochCachedFormatter formatter = new EpochCachedFormatter();
         final String date = "2020-08-26 12:00:00.000";
-        final long dateEpoch = getEpochMillis(date);
+        final long dateEpoch = epochFromString(date);
         formatter.format(dateEpoch); // Just so it caches the date
 
         assertEquals(date, formatter.format(dateEpoch)); // Exact match comes from exact cache
@@ -84,14 +83,25 @@ class EpochCachedFormatterTest {
     }
 
     @Test
-    void testCacheEviction() {
+    void testRandomlyParsesData() {
         EpochCachedFormatter formatter = new EpochCachedFormatter();
         for (int i = 0; i < 2000000; i++) {
-            assertDoesNotThrow(() -> formatter.format(generateRandomEpoch()));
+            final long epochMillis = generateRandomEpoch();
+            final String expected = stringFromEpoch(epochMillis);
+            final String formatted = formatter.format(epochMillis);
+            assertEquals(
+                    expected,
+                    formatted,
+                    "parsing random epoch %d did not match expected value %s: %s"
+                            .formatted(epochMillis, expected, formatted));
         }
     }
 
-    private static long getEpochMillis(final String expectedDate) {
+    private static String stringFromEpoch(final long epochMillis) {
+        return DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(epochMillis));
+    }
+
+    private static long epochFromString(final String expectedDate) {
         final TemporalAccessor parse = DATE_TIME_FORMATTER.parse(expectedDate);
         return Instant.from(parse).toEpochMilli();
     }
