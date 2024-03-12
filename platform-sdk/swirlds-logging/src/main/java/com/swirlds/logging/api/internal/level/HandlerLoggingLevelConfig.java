@@ -109,8 +109,9 @@ public class HandlerLoggingLevelConfig {
      * @param handlerName The name of the handler.
      * @param configuration The configuration.
      */
+    @NonNull
     public static ExtractedLoggingConfig extractConfig(
-            @NonNull final String handlerName, @NonNull final Configuration configuration) {
+            @Nullable final String handlerName, @NonNull final Configuration configuration) {
         Objects.requireNonNull(configuration, "configuration must not be null");
 
         final ConfigLevel defaultLevel =
@@ -128,7 +129,6 @@ public class HandlerLoggingLevelConfig {
         } else {
             defaultHandlerLevel = ConfigLevel.UNDEFINED;
         }
-
         if (defaultLevel == ConfigLevel.UNDEFINED && defaultHandlerLevel == ConfigLevel.UNDEFINED) {
             levelConfigProperties.put("", DEFAULT_LEVEL);
         } else if (defaultHandlerLevel != ConfigLevel.UNDEFINED) {
@@ -140,24 +140,23 @@ public class HandlerLoggingLevelConfig {
                 levelConfigProperties.put("", DEFAULT_LEVEL);
             }
         }
-
         if (Boolean.TRUE.equals(inheritLevels)) {
             levelConfigProperties.putAll(readLevels(PROPERTY_LOGGING_LEVEL, configuration));
             markerConfigStore.putAll(readMarkers(PROPERTY_LOGGING_MARKER, configuration));
         }
-
         if (handlerName != null) {
             levelConfigProperties.putAll(readLevels(propertyHandler, configuration));
             markerConfigStore.putAll(
                     readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(handlerName), configuration));
         }
-
         return new ExtractedLoggingConfig(levelConfigProperties, markerConfigStore);
     }
 
-    private record ExtractedLoggingConfig(
-            Map<String, ConfigLevel> levelConfigProperties, Map<String, MarkerState> markerConfigStore) {}
-
+    /**
+     * Updates the handler config based on the given configuration.
+     *
+     * @param configuration The configuration.
+     */
     public void update(@NonNull Configuration configuration) {
         ExtractedLoggingConfig extractedLoggingConfig = extractConfig(handlerName, configuration);
         levelCache.clear();
@@ -267,4 +266,14 @@ public class HandlerLoggingLevelConfig {
                 .map(stringConfigLevelMap::get)
                 .orElseThrow();
     }
+
+    /**
+     * Helper record to store the extracted logging configuration.
+     *
+     * @param levelConfigProperties The level configuration properties
+     * @param markerConfigStore     The marker configuration store
+     */
+    private record ExtractedLoggingConfig(
+            @NonNull Map<String, ConfigLevel> levelConfigProperties,
+            @NonNull Map<String, MarkerState> markerConfigStore) {}
 }
