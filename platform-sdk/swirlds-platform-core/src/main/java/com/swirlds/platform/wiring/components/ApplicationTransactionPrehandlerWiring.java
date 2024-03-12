@@ -53,6 +53,6 @@ public record ApplicationTransactionPrehandlerWiring(
      */
     public void bind(@NonNull final SwirldStateManager swirldStateManager) {
         ((BindableInputWire<GossipEvent, Void>) appTransactionsToPrehandleInput)
-                .bindConsumer(swirldStateManager::prehandleApplicationTransactions);
+                .bindConsumer((GossipEvent e) -> swirldStateManager.prehandleApplicationTransactions(e));
     }
 }

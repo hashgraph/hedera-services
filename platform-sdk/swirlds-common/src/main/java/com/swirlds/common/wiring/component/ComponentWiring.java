@@ -315,7 +315,9 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             } else {
                 final BiConsumer<COMPONENT_TYPE, Object> handlerWithoutReturn =
                         (BiConsumer<COMPONENT_TYPE, Object>) Objects.requireNonNull(wireToBind.handlerWithoutReturn());
-                wireToBind.inputWire().bindConsumer(x -> handlerWithoutReturn.accept(component, x));
+                wireToBind.inputWire().bindConsumer(x -> {
+                    handlerWithoutReturn.accept(component, x);
+                });
             }
         }
 
