@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStaki
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.computeNextStake;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.readableNonZeroHistory;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Fraction;
@@ -32,6 +33,7 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.transaction.NodeStake;
 import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
@@ -40,6 +42,7 @@ import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.config.data.StakingConfig;
+import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -68,12 +71,16 @@ public class EndOfStakingPeriodUpdater {
     private final HederaAccountNumbers accountNumbers;
     private final StakingRewardsHelper stakeRewardsHelper;
 
+    private PlatformStateAccessor platformStateAccessor;
+
     @Inject
     public EndOfStakingPeriodUpdater(
             @NonNull final HederaAccountNumbers accountNumbers,
-            @NonNull final StakingRewardsHelper stakeRewardsHelper) {
+            @NonNull final StakingRewardsHelper stakeRewardsHelper,
+            @NonNull final PlatformStateAccessor platformStateAccessor) {
         this.accountNumbers = accountNumbers;
         this.stakeRewardsHelper = stakeRewardsHelper;
+        this.platformStateAccessor = platformStateAccessor;
     }
 
     /**
@@ -111,6 +118,19 @@ public class EndOfStakingPeriodUpdater {
                 rewardRate,
                 perHbarRate,
                 totalStakedRewardStart);
+
+        // Mark deleted nodes as deleted checking address book. If a node is deleted from address book
+        // during upgrade, it should be marked as deleted in stakingInfoStore
+        final var addressBookNodeIds =
+                platformStateAccessor.getPlatformState().getAddressBook().getNodeIdSet();
+        for (final var nodeId : nodeIds) {
+            final var stakingInfo = requireNonNull(stakingInfoStore.get(nodeId));
+            if (!addressBookNodeIds.contains(new NodeId(nodeId))) {
+                stakingInfoStore.put(
+                        nodeId, stakingInfo.copyBuilder().deleted(true).build());
+                log.info("Node {} is marked deleted since it is deleted from addressBook " + "during upgrade", nodeId);
+            }
+        }
 
         // Calculate the updated stake and reward sum history for each node
         long newTotalStakedStart = 0L;
