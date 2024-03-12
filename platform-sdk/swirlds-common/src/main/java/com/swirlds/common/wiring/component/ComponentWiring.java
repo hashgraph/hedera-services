@@ -77,6 +77,11 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
     private final List<TransformerToBind<COMPONENT_TYPE, OUTPUT_TYPE, ?>> transformersToBind = new ArrayList<>();
 
     /**
+     * A splitter (if one has been constructed).
+     */
+    private OutputWire<Object> splitterOutput;
+
+    /**
      * Create a new component wiring.
      *
      * @param model     the wiring model that will contain the component
@@ -215,6 +220,31 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         }
 
         return transformer.getOutputWire();
+    }
+
+    /**
+     * Create a splitter for the output of this component. A splitter converts an output wire that produces lists of
+     * items into an output wire that produces individual items. Note that calling this method on a component that does
+     * not produce lists will result in a runtime exception.
+     *
+     * @param <ELEMENT> the type of the elements in the list, the base type of this component's output is expected to be
+     *                  a list of this type
+     * @return the output wire
+     */
+    @SuppressWarnings("unchecked")
+    @NonNull
+    public <ELEMENT> OutputWire<ELEMENT> getSplitOutput() {
+        if (splitterOutput == null) {
+
+            // Future work: there is not a clean way to specify the "splitterInputName" label, so as a short
+            // term work around we can just call it "data". This is ugly but ok as a temporary place holder.
+            // The proper way to fix this is to change the way we assign labels to wires in the diagram.
+            // Instead of defining names for input wires, we should instead define names for output wires,
+            // and require that any scheduler that has output define the label for its output data.
+
+            splitterOutput = getOutputWire().buildSplitter(scheduler.getName() + "Splitter", "data");
+        }
+        return (OutputWire<ELEMENT>) splitterOutput;
     }
 
     /**
