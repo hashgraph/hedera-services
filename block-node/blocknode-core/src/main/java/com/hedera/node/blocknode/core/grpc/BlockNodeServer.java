@@ -18,10 +18,9 @@ package com.hedera.node.blocknode.core.grpc;
 
 import com.hedera.node.blocknode.config.ConfigProvider;
 import com.hedera.node.blocknode.config.data.BlockNodeGrpcConfig;
-import java.io.IOException;
-
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

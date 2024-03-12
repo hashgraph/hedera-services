@@ -16,10 +16,10 @@
 
 package com.hedera.node.blocknode.core.test;
 
- import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
- import com.hedera.node.blocknode.core.grpc.BlockNodeServer;
- import org.junit.jupiter.api.Test;
+import com.hedera.node.blocknode.core.grpc.BlockNodeServer;
+import org.junit.jupiter.api.Test;
 
 class BlockNodeTest {
 
