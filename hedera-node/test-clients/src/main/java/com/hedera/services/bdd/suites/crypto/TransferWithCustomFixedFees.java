@@ -16,23 +16,6 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
-import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Tag;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.OptionalLong;
-
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
@@ -57,10 +40,26 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.OptionalLong;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Tag;
+
 @HapiTestSuite
 @Tag(CRYPTO)
-public class TransferWithCustomFees extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(TransferWithCustomFees.class);
+public class TransferWithCustomFixedFees extends HapiSuite {
+    private static final Logger log = LogManager.getLogger(TransferWithCustomFixedFees.class);
     private static final long hbarFee = 1_000L;
     private static final long htsFee = 100L;
     private static final long tokenTotal = 1_000L;
@@ -90,7 +89,7 @@ public class TransferWithCustomFees extends HapiSuite {
     private static final long carolFee = 300L;
 
     public static void main(String... args) {
-        new TransferWithCustomFees().runSuiteAsync();
+        new TransferWithCustomFixedFees().runSuiteAsync();
     }
 
     @Override
@@ -190,7 +189,7 @@ public class TransferWithCustomFees extends HapiSuite {
                         getAccountBalance(tokenReceiver).hasTokenBalance(fungibleToken, 0),
                         getAccountBalance(hbarCollector).hasTinyBars(0));
     }
-    
+
     @HapiTest
     public HapiSpec transferFungibleWithFixedHtsCustomFee() {
         return defaultHapiSpec("transferFungibleWithFixedHtsCustomFee")
@@ -249,7 +248,7 @@ public class TransferWithCustomFees extends HapiSuite {
                         getAccountBalance(tokenReceiver).hasTokenBalance(fungibleToken, 0),
                         getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 0));
     }
-    
+
     @HapiTest
     public HapiSpec transferNonFungibleWithFixedHbarCustomFee() {
         return defaultHapiSpec("transferNonFungibleWithFixedHbarCustomFee")
@@ -377,11 +376,13 @@ public class TransferWithCustomFees extends HapiSuite {
                         .fee(ONE_HUNDRED_HBARS)
                         .hasKnownStatus(ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
                 .then(
-                        getAccountBalance(tokenOwner).hasTokenBalance(nonFungibleToken, 1).hasTokenBalance(feeDenom, 1),
+                        getAccountBalance(tokenOwner)
+                                .hasTokenBalance(nonFungibleToken, 1)
+                                .hasTokenBalance(feeDenom, 1),
                         getAccountBalance(tokenReceiver).hasTokenBalance(nonFungibleToken, 0),
                         getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 0));
     }
-    
+
     @HapiTest
     public HapiSpec transferApprovedFungibleWithFixedHbarCustomFee() {
         return defaultHapiSpec("transferApprovedFungibleWithFixedHbarCustomFee")
@@ -580,7 +581,9 @@ public class TransferWithCustomFees extends HapiSuite {
                         getAccountBalance(tokenOwner)
                                 .hasTokenBalance(fungibleToken, tokenTotal)
                                 .hasTokenBalance(feeDenom, tokenTotal),
-                        getAccountBalance(spender).hasTokenBalance(fungibleToken, 0).hasTokenBalance(feeDenom, 0),
+                        getAccountBalance(spender)
+                                .hasTokenBalance(fungibleToken, 0)
+                                .hasTokenBalance(feeDenom, 0),
                         getAccountBalance(tokenReceiver).hasTokenBalance(fungibleToken, 0),
                         getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 0));
     }
@@ -654,7 +657,8 @@ public class TransferWithCustomFees extends HapiSuite {
                         tokenAssociate(tokenOwner, nonFungibleToken),
                         tokenAssociate(spender, nonFungibleToken),
                         cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)))
-                .when(cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
+                .when(cryptoTransfer(
+                                movingUniqueWithAllowance(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
                         .fee(ONE_HUNDRED_HBARS)
                         .payingWith(spender)
                         .signedBy(spender)
@@ -665,7 +669,7 @@ public class TransferWithCustomFees extends HapiSuite {
                         getAccountBalance(tokenReceiver).hasTokenBalance(nonFungibleToken, 0),
                         getAccountBalance(hbarCollector).hasTinyBars(0));
     }
-    
+
     @HapiTest
     public HapiSpec transferApprovedNonFungibleWithFixedHtsCustomFeeAsOwner() {
         return defaultHapiSpec("transferApprovedNonFungibleWithFixedHtsCustomFeeAsOwner")
@@ -784,14 +788,19 @@ public class TransferWithCustomFees extends HapiSuite {
                         tokenAssociate(tokenOwner, nonFungibleToken),
                         tokenAssociate(spender, nonFungibleToken),
                         cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)))
-                .when(cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
+                .when(cryptoTransfer(
+                                movingUniqueWithAllowance(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
                         .fee(ONE_HUNDRED_HBARS)
                         .payingWith(spender)
                         .signedBy(spender)
                         .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE))
                 .then(
-                        getAccountBalance(tokenOwner).hasTokenBalance(nonFungibleToken, 1).hasTokenBalance(feeDenom, tokenTotal),
-                        getAccountBalance(spender).hasTokenBalance(nonFungibleToken, 0).hasTokenBalance(feeDenom, 0),
+                        getAccountBalance(tokenOwner)
+                                .hasTokenBalance(nonFungibleToken, 1)
+                                .hasTokenBalance(feeDenom, tokenTotal),
+                        getAccountBalance(spender)
+                                .hasTokenBalance(nonFungibleToken, 0)
+                                .hasTokenBalance(feeDenom, 0),
                         getAccountBalance(tokenReceiver).hasTokenBalance(nonFungibleToken, 0),
                         getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 0));
     }

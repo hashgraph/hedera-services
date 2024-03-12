@@ -71,7 +71,7 @@ import com.hedera.services.bdd.suites.crypto.HelloWorldSpec;
 import com.hedera.services.bdd.suites.crypto.MiscCryptoSuite;
 import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
 import com.hedera.services.bdd.suites.crypto.RandomOps;
-import com.hedera.services.bdd.suites.crypto.TransferWithCustomFees;
+import com.hedera.services.bdd.suites.crypto.TransferWithCustomFixedFees;
 import com.hedera.services.bdd.suites.crypto.TxnReceiptRegression;
 import com.hedera.services.bdd.suites.crypto.TxnRecordRegression;
 import com.hedera.services.bdd.suites.crypto.UnsupportedQueriesRegression;
@@ -400,7 +400,7 @@ class EndToEndPackageRunner extends TestBase {
                 extractSpecsFromSuite(MiscCryptoSuite::new),
                 extractSpecsFromSuite(QueryPaymentSuite::new),
                 extractSpecsFromSuite(RandomOps::new),
-                extractSpecsFromSuite(TransferWithCustomFees::new),
+                extractSpecsFromSuite(TransferWithCustomFixedFees::new),
                 extractSpecsFromSuite(TxnReceiptRegression::new),
                 extractSpecsFromSuite(TxnRecordRegression::new),
                 extractSpecsFromSuite(UnsupportedQueriesRegression::new));
