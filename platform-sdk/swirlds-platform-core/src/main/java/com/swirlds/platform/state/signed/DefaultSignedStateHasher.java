@@ -73,9 +73,9 @@ public class DefaultSignedStateHasher implements SignedStateHasher {
     @Nullable
     public StateAndRound hashState(@NonNull final StateAndRound stateAndRound) {
         final Instant start = Instant.now();
-        try {
+        try (final ReservedSignedState reservedSignedState = stateAndRound.reservedSignedState()) {
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(stateAndRound.reservedSignedState().get().getState())
+                    .digestTreeAsync(reservedSignedState.get().getState())
                     .get();
 
             if (signedStateMetrics != null) {
