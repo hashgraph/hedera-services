@@ -38,7 +38,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,15 +55,14 @@ class MerkleDbCompactionCoordinator {
     private static final Logger logger = LogManager.getLogger(MerkleDbCompactionCoordinator.class);
 
     /**
-     * An executor service to run compaction tasks.
+     * An executor service to run compaction tasks. Accessed using {@link #getCompactionExecutor()}.
      */
-    private static final AtomicReference<ExecutorService> compactionExecutor = new AtomicReference<>();
+    private static ExecutorService compactionExecutor = null;
 
-    static ExecutorService getCompactionExecutor() {
-        ExecutorService exec = compactionExecutor.get();
-        if (exec == null) {
+    static synchronized ExecutorService getCompactionExecutor() {
+        if (compactionExecutor == null) {
             final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-            exec = new ThreadPoolExecutor(
+            compactionExecutor = new ThreadPoolExecutor(
                     config.compactionThreads(),
                     config.compactionThreads(),
                     50L,
@@ -77,12 +75,8 @@ class MerkleDbCompactionCoordinator {
                             .setExceptionHandler((t, ex) ->
                                     logger.error(EXCEPTION.getMarker(), "Uncaught exception during merging", ex))
                             .buildFactory());
-            if (!compactionExecutor.compareAndSet(null, exec)) {
-                exec.shutdownNow();
-                exec = compactionExecutor.get();
-            }
         }
-        return exec;
+        return compactionExecutor;
     }
 
     public static final String HASH_STORE_DISK_SUFFIX = "HashStoreDisk";

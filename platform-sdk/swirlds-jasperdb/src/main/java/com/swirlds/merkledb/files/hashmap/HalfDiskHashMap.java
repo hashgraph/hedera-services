@@ -48,7 +48,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
@@ -129,23 +128,25 @@ public class HalfDiskHashMap<K extends VirtualKey>
     private Thread writingThread;
 
     /** Executor for parallel bucket reads/updates in {@link #endWriting()} */
-    private static final AtomicReference<ExecutorService> flushExecutor = new AtomicReference<>();
+    private static volatile ExecutorService flushExecutor = null;
 
     private static ExecutorService getFlushExecutor() {
-        ExecutorService exec = flushExecutor.get();
+        ExecutorService exec = flushExecutor;
         if (exec == null) {
-            final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-            exec = Executors.newFixedThreadPool(
-                    config.getNumHalfDiskHashMapFlushThreads(),
-                    new ThreadConfiguration(getStaticThreadManager())
-                            .setComponent(MERKLEDB_COMPONENT)
-                            .setThreadName("HalfDiskHashMap Flushing")
-                            .setExceptionHandler((t, ex) ->
-                                    logger.error(EXCEPTION.getMarker(), "Uncaught exception during HDHM flushing", ex))
-                            .buildFactory());
-            if (!flushExecutor.compareAndSet(null, exec)) {
-                exec.shutdownNow();
-                exec = flushExecutor.get();
+            synchronized (HalfDiskHashMap.class) {
+                exec = flushExecutor;
+                if (exec == null) {
+                    final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+                    exec = Executors.newFixedThreadPool(
+                            config.getNumHalfDiskHashMapFlushThreads(),
+                            new ThreadConfiguration(getStaticThreadManager())
+                                    .setComponent(MERKLEDB_COMPONENT)
+                                    .setThreadName("HalfDiskHashMap Flushing")
+                                    .setExceptionHandler((t, ex) -> logger.error(
+                                            EXCEPTION.getMarker(), "Uncaught exception during HDHM flushing", ex))
+                                    .buildFactory());
+                    flushExecutor = exec;
+                }
             }
         }
         return exec;

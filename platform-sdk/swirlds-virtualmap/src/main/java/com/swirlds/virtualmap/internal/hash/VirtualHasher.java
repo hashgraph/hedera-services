@@ -40,7 +40,6 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,8 +67,6 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      */
     private static final ThreadLocal<HashBuilder> HASH_BUILDER_THREAD_LOCAL =
             ThreadLocal.withInitial(() -> new HashBuilder(Cryptography.DEFAULT_DIGEST_TYPE));
-
-    private final VirtualMapConfig vmConfig = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
 
     /**
      * A function to look up clean hashes by path during hashing. This function is stored in
@@ -100,17 +97,19 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      */
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
-    private static final AtomicReference<ForkJoinPool> hashingPool = new AtomicReference<ForkJoinPool>();
+    private static volatile ForkJoinPool hashingPool = null;
 
     private static ForkJoinPool getHashingPool() {
-        ForkJoinPool pool = hashingPool.get();
+        ForkJoinPool pool = hashingPool;
         if (pool == null) {
-            final VirtualMapConfig vmConfig = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
-            final int hashingThreadCount = vmConfig.getNumHashThreads();
-            pool = new ForkJoinPool(hashingThreadCount);
-            if (!hashingPool.compareAndSet(null, pool)) {
-                pool.close();
-                pool = hashingPool.get();
+            synchronized (VirtualHasher.class) {
+                pool = hashingPool;
+                if (pool == null) {
+                    final VirtualMapConfig vmConfig = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
+                    final int hashingThreadCount = vmConfig.getNumHashThreads();
+                    pool = new ForkJoinPool(hashingThreadCount);
+                    hashingPool = pool;
+                }
             }
         }
         return pool;
@@ -331,6 +330,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         // may not be null.
 
         // Default chunk height, from config
+        final VirtualMapConfig vmConfig = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
         final int chunkHeight = vmConfig.virtualHasherChunkHeight();
         int firstLeafRank = Path.getRank(firstLeafPath);
         int lastLeafRank = Path.getRank(lastLeafPath);
@@ -344,9 +344,6 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         // the root task below. When the root task is done executing, that is it produced
         // a root hash, this hash is set as an input dependency for this result task, where
         // it's read and returned in the end of this method
-        /**
-         * A task holding the resulting hash. Used to synchronize all parallel computations.
-         */
         final HashHoldingTask resultTask = new HashHoldingTask(getHashingPool(), 1, 1);
         final int rootTaskHeight = Math.min(firstLeafRank, chunkHeight);
         final ChunkHashTask rootTask = new ChunkHashTask(getHashingPool(), ROOT_PATH, rootTaskHeight);

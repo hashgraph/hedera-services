@@ -148,13 +148,12 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     public static final Hash NULL_HASH = new Hash();
 
-    private static final AtomicReference<Executor> cleaningPool = new AtomicReference<>();
+    private static Executor cleaningPool = null;
 
-    private static Executor getCleaningPool() {
-        Executor exec = cleaningPool.get();
-        if (exec == null) {
+    private static synchronized Executor getCleaningPool() {
+        if (cleaningPool == null) {
             final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
-            exec = Boolean.getBoolean("syncCleaningPool")
+            cleaningPool = Boolean.getBoolean("syncCleaningPool")
                     ? Runnable::run
                     : new ThreadPoolExecutor(
                             config.getNumCleanerThreads(),
@@ -171,14 +170,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                                             "Failed to purge unneeded key/mutationList pairs",
                                             ex))
                                     .buildFactory());
-            if (!cleaningPool.compareAndSet(null, exec)) {
-                if (exec instanceof ThreadPoolExecutor p) {
-                    p.shutdownNow();
-                }
-                exec = cleaningPool.get();
-            }
         }
-        return exec;
+        return cleaningPool;
     }
 
     /**
