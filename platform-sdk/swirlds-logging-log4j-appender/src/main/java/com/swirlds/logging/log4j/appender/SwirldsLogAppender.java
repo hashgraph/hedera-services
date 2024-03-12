@@ -66,23 +66,27 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
     public static final String APPENDER_NAME = "SwirldsLoggingAppender";
 
     /**
-     * The log event factory to create log events. This is set by the swirlds-logging API.
+     * The log event factory to create log events.
+     * This is set by the swirlds-logging API.
      */
-    private static LogEventFactory logEventFactory = null;
+    private static LogEventFactory logEventFactory;
     /**
-     * The log event consumer to consume log events. This is set by the swirlds-logging API.
+     * The log event consumer to consume log events.
+     * This is set by the swirlds-logging API.
      */
-    private static LogEventConsumer logEventConsumer = null;
+    private static LogEventConsumer logEventConsumer;
 
     /**
-     * Constructs a new SwirldsLogAppender instance with default values. This constructor is used by the swirlds-logging API.
+     * Constructs a new SwirldsLogAppender instance with default values.
+     * This constructor is used by the swirlds-logging API.
      */
     public SwirldsLogAppender() {
         super(APPENDER_NAME, null, null, false, Property.EMPTY_ARRAY);
     }
 
     /**
-     * Constructs a new SwirldsLogAppender instance. This constructor is used by the Log4j2 framework.
+     * Constructs a new SwirldsLogAppender instance.
+     * This constructor is used by the Log4j2 framework.
      *
      * @param name   The name of the appender.
      * @param filter The filter to apply.
@@ -93,7 +97,8 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
     }
 
     /**
-     * Factory method to create a SwirldsLogAppender instance. This method is used by the Log4j2 framework.
+     * Factory method to create a SwirldsLogAppender instance.
+     * This method is used by the Log4j2 framework.
      *
      * @param name   The name of the appender.
      * @param layout The layout of log messages.
@@ -103,14 +108,15 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
      */
     @PluginFactory
     public static SwirldsLogAppender createAppender(
-            @PluginAttribute("name") String name,
-            @PluginElement("Layout") Layout<? extends Serializable> layout,
-            @PluginElement("Filters") Filter filter) {
+            @PluginAttribute("name") final String name,
+            @PluginElement("Layout") final Layout<? extends Serializable> layout,
+            @PluginElement("Filters") final Filter filter) {
         return new SwirldsLogAppender(name, filter, layout);
     }
 
     /**
-     * Forwards {@code event} to the swirlds-logging API. If the log provider was installed from the swirlds-logging API,
+     * If the log provider was installed from the swirlds-logging API,
+     * {@code event} will be forwarded to the swirlds-logging API.
      *
      * @param event The log event to append.
      * @see SwirldsLogAppender#install(LogEventFactory, LogEventConsumer)
@@ -142,12 +148,12 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
             return null;
         }
 
-        if (marker.getParents() == null || marker.getParents().length == 0) {
+        final var parents = marker.getParents();
+        if (parents == null || parents.length == 0) {
             return new Marker(marker.getName());
         }
 
-        final int parentsLength = marker.getParents().length;
-        final Marker parent = translateMarker(marker.getParents()[parentsLength - 1]);
+        final Marker parent = translateMarker(parents[parents.length - 1]);
         return new Marker(marker.getName(), parent);
     }
 

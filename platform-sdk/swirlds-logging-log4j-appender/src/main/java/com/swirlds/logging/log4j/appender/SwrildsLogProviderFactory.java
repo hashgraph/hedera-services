@@ -32,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class SwrildsLogProviderFactory implements LogProviderFactory {
     @NonNull
     @Override
-    public LogProvider create(@NonNull Configuration configuration) {
+    public LogProvider create(@NonNull final Configuration ignored) {
         return new SwirldsLogAppender();
     }
 }
