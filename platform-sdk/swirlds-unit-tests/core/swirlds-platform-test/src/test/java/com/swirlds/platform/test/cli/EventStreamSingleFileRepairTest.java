@@ -18,6 +18,7 @@ package com.swirlds.platform.test.cli;
 
 import static com.swirlds.platform.recovery.internal.EventStreamSingleFileRepairer.DAMAGED_SUFFIX;
 import static com.swirlds.platform.recovery.internal.EventStreamSingleFileRepairer.REPAIRED_SUFFIX;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -120,8 +121,8 @@ class EventStreamSingleFileRepairTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         // generate consensus events
-        final Deque<ConsensusRound> rounds =
-                GenerateConsensus.generateConsensusRounds(numNodes, numEvents, random.nextLong());
+        final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
+                DEFAULT_PLATFORM_CONTEXT, numNodes, numEvents, random.nextLong());
         if (rounds.isEmpty()) {
             Assertions.fail("events are excepted to reach consensus");
         }

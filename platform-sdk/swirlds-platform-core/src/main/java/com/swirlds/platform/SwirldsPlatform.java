@@ -70,7 +70,6 @@ import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.TransactionConfig;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -166,7 +165,6 @@ import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.util.ThingsToStart;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformWiring;
-import com.swirlds.platform.wiring.components.IssDetectorWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -569,12 +567,10 @@ public class SwirldsPlatform implements Platform {
             stateManagementComponent.newSignedStateFromTransactions(
                     state.getAndReserve("stateManagementComponent.newSignedStateFromTransactions"));
 
-            final IssDetectorWiring issDetectorWiring = platformWiring.getIssDetectorWiring();
-            // FUTURE WORK: these three method calls will be combined into a single method call
-            issDetectorWiring.roundCompletedInput().put(roundNumber);
-            issDetectorWiring.newStateHashed().put(state.getAndReserve("issDetector"));
-            issDetectorWiring.handleConsensusRound().put(consensusRound);
-
+            platformWiring
+                    .getIssDetectorWiring()
+                    .stateAndRoundInput()
+                    .put(stateAndRound.makeAdditionalReservation("issDetector"));
             platformWiring.getSignatureCollectorConsensusInput().put(consensusRound);
 
             stateAndRound.reservedSignedState().close();
@@ -741,11 +737,7 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter,
                 () -> emergencyState.getState("emergency reconnect")) {};
 
-        consensusRef.set(new ConsensusImpl(
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                consensusMetrics,
-                getAddressBook(),
-                ancientMode));
+        consensusRef.set(new ConsensusImpl(platformContext, consensusMetrics, getAddressBook()));
 
         if (startedFromGenesis) {
             initialAncientThreshold = 0;

@@ -38,10 +38,4 @@ public interface ReadableFreezeStore {
      */
     @Nullable
     Timestamp freezeTime();
-
-    /**
-     * Returns the last time a freeze was successfully completed
-     */
-    @Nullable
-    Timestamp lastFrozenTime();
 }
