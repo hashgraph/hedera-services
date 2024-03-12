@@ -28,12 +28,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class Log4JProvider extends AbstractLogProvider {
 
     /**
+     * Name for the config key for the log provider.
+     * The handler will be called with {@code logging.provider.log4j} prefix.
+     */
+    private static final String CONFIG_KEY = "log4j";
+
+    /**
      * Creates a new log provider.
      *
      * @param configuration the configuration
      */
-    public Log4JProvider(@NonNull Configuration configuration) {
-        super("log4j", configuration);
+    public Log4JProvider(@NonNull final Configuration configuration) {
+        super(CONFIG_KEY, configuration);
     }
 
     /**

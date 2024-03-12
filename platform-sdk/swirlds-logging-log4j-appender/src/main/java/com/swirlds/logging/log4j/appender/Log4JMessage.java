@@ -25,7 +25,7 @@ import org.apache.logging.log4j.message.Message;
  *
  * @param message the Log4J message
  */
-public record Log4JMessage(Message message) implements LogMessage {
+public record Log4JMessage(@NonNull Message message) implements LogMessage {
     /**
      * Formats the message if the message is used by the swirlds-logging API.
      *
