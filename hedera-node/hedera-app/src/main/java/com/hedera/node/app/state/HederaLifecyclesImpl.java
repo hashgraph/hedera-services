@@ -92,9 +92,11 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
                 // nodes given in config.txt. This is needed to recognize newly added nodes
                 // It is possible that some nodes are deleted in configAddressBook compared to state
                 // We will set those node sas deleted in EndOfStakingPeriodCalculator
-                if(configNodeIds.contains(id)) {
+                if (configNodeIds.contains(id)) {
                     configAddressBook.updateWeight(id, stakingInfo.weight());
                     configNodeIds.remove(id);
+                } else {
+                    logger.info("Node {} is deleted from configAddressBook during upgrade ", id);
                 }
             }
             // for any newly added nodes that doesn't exist in state, weight should be set to 0
