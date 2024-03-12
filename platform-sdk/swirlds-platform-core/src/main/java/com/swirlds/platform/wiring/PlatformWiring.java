@@ -224,6 +224,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventStreamManagerWiring = EventStreamManagerWiring.create(schedulers.eventStreamManagerScheduler());
         runningHashUpdaterWiring = RunningHashUpdaterWiring.create(schedulers.runningHashUpdateScheduler());
 
+        signedStateHasherWiring = StateHasherWiring.create(schedulers.stateHasherScheduler());
+
         platformCoordinator = new PlatformCoordinator(
                 hashingObjectCounter,
                 internalEventValidatorWiring,
@@ -236,7 +238,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 eventCreationManagerWiring,
                 applicationTransactionPrehandlerWiring,
                 stateSignatureCollectorWiring,
-                consensusRoundHandlerWiring);
+                consensusRoundHandlerWiring,
+                signedStateHasherWiring);
 
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
@@ -271,8 +274,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                         .build()
                         .cast());
-
-        signedStateHasherWiring = StateHasherWiring.create(schedulers.stateHasherScheduler());
 
         wire();
     }

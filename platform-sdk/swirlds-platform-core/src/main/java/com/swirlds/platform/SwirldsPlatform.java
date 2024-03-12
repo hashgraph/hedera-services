@@ -278,6 +278,8 @@ public class SwirldsPlatform implements Platform {
     /** Controls which states are saved to disk */
     private final SavedStateController savedStateController;
 
+    private final SignedStateGarbageCollector signedStateGarbageCollector;
+
     /**
      * Encapsulated wiring for the platform.
      */
@@ -537,7 +539,7 @@ public class SwirldsPlatform implements Platform {
                 initialState.getState(),
                 appVersion);
 
-        final SignedStateGarbageCollector signedStateGarbageCollector =
+        signedStateGarbageCollector =
                 thingsToStart.add(new SignedStateGarbageCollector(threadManager, signedStateMetrics));
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
@@ -709,7 +711,12 @@ public class SwirldsPlatform implements Platform {
 
             latestImmutableStateNexus.setState(initialState.reserve("set latest immutable to initial state"));
 
-            logHashAndCollectSignatures(initialState);
+            initialState.setGarbageCollector(signedStateGarbageCollector);
+            logSignedStateHash(initialState);
+            platformWiring
+                    .getSignatureCollectorStateInput()
+                    .put(initialState.reserve("loading initial state into sig collector"));
+
             savedStateController.registerSignedStateFromDisk(initialState);
 
             platformWiring.updateRunningHash(new RunningEventHashUpdate(initialState.getHashEventsCons(), false));
@@ -913,10 +920,14 @@ public class SwirldsPlatform implements Platform {
             savedStateController.reconnectStateReceived(
                     signedState.reserve("savedStateController.reconnectStateReceived"));
 
+            signedState.setGarbageCollector(signedStateGarbageCollector);
+            logSignedStateHash(signedState);
             // this will send the state to the signature collector which will send it to be written to disk.
             // in the future, we might not send it to the collector because it already has all the signatures
             // if this is the case, we must make sure to send it to the writer directly
-            logHashAndCollectSignatures(signedState);
+            platformWiring
+                    .getSignatureCollectorStateInput()
+                    .put(signedState.reserve("loading reconnect state into sig collector"));
             loadStateIntoConsensus(signedState);
 
             platformWiring
@@ -1008,21 +1019,19 @@ public class SwirldsPlatform implements Platform {
     }
 
     /**
-     * Called for initial and reconnect states. Passes the state to the hash logger, and the signature collector.
+     * Offers the given state to the hash logger
      *
-     * @param signedState the state to load
+     * @param signedState the state to log
      */
-    private void logHashAndCollectSignatures(@NonNull final SignedState signedState) {
+    private void logSignedStateHash(@NonNull final SignedState signedState) {
         if (signedState.getState().getHash() != null) {
-            final ReservedSignedState stateReservedForHasher = signedState.reserve("logging hash state");
+            final ReservedSignedState stateReservedForHasher = signedState.reserve("logging state hash");
 
             final boolean offerResult = platformWiring.getHashLoggerInput().offer(stateReservedForHasher);
             if (!offerResult) {
                 stateReservedForHasher.close();
             }
         }
-
-        platformWiring.getSignatureCollectorStateInput().put(signedState.reserve("loading state into sig collector"));
     }
 
     /**
@@ -1050,8 +1059,7 @@ public class SwirldsPlatform implements Platform {
         // We have to wait for all the PCES transactions to reach the ISS detector before telling it that PCES replay is
         // done. The PCES replay will flush the intake pipeline, but we have to flush the hasher
 
-        // FUTURE WORK: once the state hasher is moved to the platform wiring, this flush can be done by the PCES
-        // replayer. the same goes for the flush of the state hasher
+        // FUTURE WORK: These flushes can be done by the PCES replayer.
         platformWiring.flushStateHasher();
         platformWiring.getIssDetectorWiring().endOfPcesReplay().put(NoInput.getInstance());
 
