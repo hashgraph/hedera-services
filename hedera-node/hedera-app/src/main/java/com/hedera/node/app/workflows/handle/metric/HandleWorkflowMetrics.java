@@ -81,8 +81,7 @@ public class HandleWorkflowMetrics {
         }
 
         final StatsConfig statsConfig = configProvider.getConfiguration().getConfigData(StatsConfig.class);
-        gasPerConsSec = metrics.getOrCreate(
-                GAS_PER_CONS_SEC_CONFIG.withHalfLife(statsConfig.runningAvgHalfLifeSecs()));
+        gasPerConsSec = metrics.getOrCreate(GAS_PER_CONS_SEC_CONFIG.withHalfLife(statsConfig.runningAvgHalfLifeSecs()));
     }
 
     /**

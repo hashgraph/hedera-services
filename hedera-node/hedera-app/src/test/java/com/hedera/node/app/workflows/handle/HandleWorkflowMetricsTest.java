@@ -44,7 +44,8 @@ class HandleWorkflowMetricsTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(() -> new HandleWorkflowMetrics(null, configProvider)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflowMetrics(null, configProvider))
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflowMetrics(metrics, null)).isInstanceOf(NullPointerException.class);
     }
 
@@ -77,7 +78,8 @@ class HandleWorkflowMetricsTest {
         final var handleWorkflowMetrics = new HandleWorkflowMetrics(metrics, configProvider);
 
         // when
-        assertThatThrownBy(() -> handleWorkflowMetrics.updateTransactionDuration(null, 0)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> handleWorkflowMetrics.updateTransactionDuration(null, 0))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
