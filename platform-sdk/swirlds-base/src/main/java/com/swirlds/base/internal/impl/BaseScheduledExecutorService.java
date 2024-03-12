@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.internal;
+package com.swirlds.base.internal.impl;
 
 import java.util.Collection;
 import java.util.List;
@@ -39,6 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class BaseScheduledExecutorService implements ScheduledExecutorService {
 
+    public static final int CORE_POOL_SIZE = 1;
     private static BaseScheduledExecutorService instance;
 
     private static final Lock instanceLock = new ReentrantLock();
@@ -47,7 +48,7 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
 
     private BaseScheduledExecutorService() {
         final ThreadFactory threadFactory = BaseExecutorThreadFactory.getInstance();
-        this.innerService = Executors.newScheduledThreadPool(1, threadFactory);
+        this.innerService = Executors.newScheduledThreadPool(CORE_POOL_SIZE, threadFactory);
     }
 
     /**

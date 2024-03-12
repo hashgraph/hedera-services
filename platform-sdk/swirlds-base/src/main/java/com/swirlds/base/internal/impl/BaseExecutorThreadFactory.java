@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.internal;
+package com.swirlds.base.internal.impl;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
