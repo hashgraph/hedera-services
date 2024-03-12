@@ -21,6 +21,11 @@ plugins {
 
 application { mainClass = "com.hedera.node.blocknode.core.BlockNode" }
 
+mainModuleInfo {
+    runtimeOnly("com.swirlds.config.impl")
+    runtimeOnly("grpc.netty")
+}
+
 tasks.withType<JavaExec>().configureEach {
     if (name.endsWith("main()")) {
         notCompatibleWithConfigurationCache("JavaExec created by IntelliJ")
