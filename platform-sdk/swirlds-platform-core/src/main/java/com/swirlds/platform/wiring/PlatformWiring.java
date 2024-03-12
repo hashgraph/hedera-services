@@ -193,7 +193,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         internalEventValidatorWiring =
                 InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
         eventDeduplicatorWiring =
-                new ComponentWiring<>(EventDeduplicator.class, schedulers.eventDeduplicatorScheduler());
+                new ComponentWiring<>(model, EventDeduplicator.class, schedulers.eventDeduplicatorScheduler());
         eventSignatureValidatorWiring =
                 EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
         orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
@@ -237,7 +237,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         gossipWiring = GossipWiring.create(model);
         eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
-        issDetectorWiring = IssDetectorWiring.create(model, schedulers.issDetectorScheduler());
+        issDetectorWiring = IssDetectorWiring.create(schedulers.issDetectorScheduler());
         issHandlerWiring = IssHandlerWiring.create(schedulers.issHandlerScheduler());
         hashLoggerWiring = HashLoggerWiring.create(schedulers.hashLoggerScheduler());
 

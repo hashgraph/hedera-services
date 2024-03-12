@@ -40,15 +40,20 @@ public class WiringComponentProxy implements InvocationHandler {
     }
 
     /**
-     * Get the most recently invoked method.
+     * Get the most recently invoked method. Calling this method resets the most recently invoked method to null
+     * as a safety measure.
      *
      * @return the most recently invoked method
      */
     @NonNull
     public Method getMostRecentlyInvokedMethod() {
         if (mostRecentlyInvokedMethod == null) {
-            throw new IllegalStateException("No method has been invoked yet");
+            throw new IllegalArgumentException("Provided lambda is not a method on the component interface.");
         }
-        return mostRecentlyInvokedMethod;
+        try {
+            return mostRecentlyInvokedMethod;
+        } finally {
+            mostRecentlyInvokedMethod = null;
+        }
     }
 }

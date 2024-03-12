@@ -27,14 +27,9 @@ import java.io.IOException;
 public class EntityNumCodec implements Codec<EntityNum> {
     @NonNull
     @Override
-    public EntityNum parse(final @NonNull ReadableSequentialData input) throws ParseException {
+    public EntityNum parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+            throws ParseException {
         return new EntityNum(input.readInt());
-    }
-
-    @NonNull
-    @Override
-    public EntityNum parseStrict(@NonNull ReadableSequentialData dataInput) throws ParseException {
-        return parse(dataInput);
     }
 
     @Override
