@@ -36,6 +36,7 @@ public interface BaseExecutorFactory {
      * Calling the method several times will always return the same instance.
      * @return the executor
      */
+    @NonNull
     ScheduledExecutorService getScheduledExecutor();
 
     /**
@@ -45,6 +46,7 @@ public interface BaseExecutorFactory {
      * @return a Future representing pending completion of the task
      * @see java.util.concurrent.ExecutorService#submit(Runnable)
      */
+    @NonNull
     default Future<Void> submit(@NonNull final Runnable task) {
         return getScheduledExecutor().submit(task, null);
     }
@@ -57,6 +59,7 @@ public interface BaseExecutorFactory {
      * @return a Future representing pending completion of the task
      * @see java.util.concurrent.ExecutorService#submit(Callable)
      */
+    @NonNull
     default <V> Future<V> submit(@NonNull final Callable<V> task) {
         return getScheduledExecutor().submit(task);
     }
@@ -72,6 +75,7 @@ public interface BaseExecutorFactory {
      * @return a ScheduledFuture representing pending completion of the series of repeated tasks.
      * @see java.util.concurrent.ScheduledExecutorService#scheduleAtFixedRate(Runnable, long, long, TimeUnit)
      */
+    @NonNull
     default ScheduledFuture<?> scheduleAtFixedRate(
             @NonNull final Runnable task, long initialDelay, long period, @NonNull final TimeUnit unit) {
         return getScheduledExecutor().scheduleAtFixedRate(task, initialDelay, period, unit);
@@ -85,6 +89,7 @@ public interface BaseExecutorFactory {
      * @param unit    the time unit of the delay parameter
      * @return a ScheduledFuture representing pending completion of the task.
      */
+    @NonNull
     default ScheduledFuture<?> schedule(@NonNull final Runnable command, long delay, @NonNull final TimeUnit unit) {
         return getScheduledExecutor().schedule(command, delay, unit);
     }
@@ -94,6 +99,7 @@ public interface BaseExecutorFactory {
      *
      * @return the instance
      */
+    @NonNull
     static BaseExecutorFactory getInstance() {
         return BaseExecutorFactoryImpl.getInstance();
     }
