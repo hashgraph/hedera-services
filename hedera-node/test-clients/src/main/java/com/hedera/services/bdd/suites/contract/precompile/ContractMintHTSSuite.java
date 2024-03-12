@@ -121,7 +121,10 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     List<HapiSpec> negativeSpecs() {
-        return List.of(rollbackOnFailedMintAfterFungibleTransfer(), mintTokensWithExtremeValues(), mintTokensWithInvalidValues());
+        return List.of(
+                rollbackOnFailedMintAfterFungibleTransfer(),
+                mintTokensWithExtremeValues(),
+                mintTokensWithInvalidValues());
     }
 
     List<HapiSpec> positiveSpecs() {
@@ -223,6 +226,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                         getTxnRecord(invalidTokenTest).andAllChildRecords().logged(),
                         getTxnRecord(invalidTokenNFTTest).andAllChildRecords().logged())))
                 .then(
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 1_000),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
                         childRecordsCheck(
                                 invalidTokenTest, SUCCESS, recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
@@ -252,7 +257,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .supplyType(TokenSupplyType.INFINITE)
-                                .initialSupply(1000)
+                                .initialSupply(0)
                                 .treasury(TOKEN_TREASURY)
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
@@ -271,8 +276,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
                                         1L)
                                 .payingWith(GENESIS)
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .via(fungibleMintWithMetadata)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER),
                         contractCall(
                                         NEGATIVE_MINT_CONTRACT,
@@ -282,8 +287,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                 .setAccountNum(0L)
                                                 .build()))
                                 .payingWith(GENESIS)
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .via(mintWithZeroedAddress)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER),
                         contractCall(
                                         NEGATIVE_MINT_CONTRACT,
@@ -293,8 +298,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                 .setAccountNum(0L)
                                                 .build()))
                                 .payingWith(GENESIS)
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .via(mintWithZeroedAddressAndMetadata)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER),
                         getTxnRecord(fungibleMintWithMetadata)
                                 .andAllChildRecords()
@@ -304,6 +309,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .andAllChildRecords()
                                 .logged())))
                 .then(
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 1_000),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
                         childRecordsCheck(
                                 fungibleMintWithMetadata, SUCCESS, recordWith().status(INVALID_TRANSACTION_BODY)),
                         childRecordsCheck(

@@ -6,8 +6,6 @@ import "./HederaTokenService.sol";
 
 contract NegativeMintContract is HederaTokenService {
 
-    address constant HTS_SYSTEM_CONTRACT = address(0x167);
-
     int128 constant TOO_BIG_VALUE = 78900000000000000000;
     int128 constant TOO_BIG_NEGATIVE_VALUE = -78900000000000000000;
     int32 constant INVALID_ADDRESS = 12300;
