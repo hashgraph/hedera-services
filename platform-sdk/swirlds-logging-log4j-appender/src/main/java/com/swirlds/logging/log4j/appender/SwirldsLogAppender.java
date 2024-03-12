@@ -63,6 +63,9 @@ import org.apache.logging.log4j.core.config.plugins.PluginFactory;
  */
 @Plugin(name = SwirldsLogAppender.APPENDER_NAME, category = "Core", elementType = "appender", printObject = true)
 public class SwirldsLogAppender extends AbstractAppender implements LogProvider {
+    /**
+     * The name of the appender for Log4j2 configuration.
+     */
     public static final String APPENDER_NAME = "SwirldsLoggingAppender";
 
     /**
