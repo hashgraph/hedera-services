@@ -217,7 +217,7 @@ public class LoggingSystem implements LogEventConsumer {
                 .filter(LogProvider::isActive)
                 .toList();
         providers.forEach(p -> p.install(getLogEventFactory(), this));
-        EMERGENCY_LOGGER.log(Level.DEBUG, providers.size() + " logging providers installed: " + providers);
+        EMERGENCY_LOGGER.log(Level.TRACE, providers.size() + " logging providers installed: " + providers);
     }
 
     /**
@@ -262,7 +262,8 @@ public class LoggingSystem implements LogEventConsumer {
                 .toList();
 
         handlers.forEach(this::addHandler);
-        EMERGENCY_LOGGER.log(Level.DEBUG, handlers.size() + " logging handlers installed: " + handlers);
+
+        EMERGENCY_LOGGER.log(Level.TRACE, handlers.size() + " logging handlers installed: " + handlers);
     }
 
     /**
