@@ -18,7 +18,9 @@ package com.hedera.node.app.state;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static com.hedera.node.app.state.merkle.AddresBookUtils.createPretendBookFrom;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
@@ -39,6 +41,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.Event;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -164,6 +167,78 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
         // new nodes gets weight of 0
         assertEquals(500, pretendAddressBook.getAddress(node0).getWeight());
         assertEquals(0L, pretendAddressBook.getAddress(node1).getWeight());
+    }
+
+    @Test
+    void doesntUpdateAddressBookIfNodeIdFromStateDoesntExist() {
+        setupForOnUpdateWeight();
+
+        final var node0 = new NodeId(0);
+        final var node1 = new NodeId(1);
+        final var node2 = new NodeId(2);
+        given(platform.getSelfId()).willReturn(node0);
+        given(platform.getContext()).willReturn(platformContext);
+
+        final var pretendAddressBook = createPretendBookFrom(platform, true);
+        final var readableStakingNodes = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
+                .value(
+                        EntityNumber.newBuilder().number(0L).build(),
+                        StakingNodeInfo.newBuilder()
+                                .nodeNumber(0L)
+                                .stake(1000L)
+                                .weight(100)
+                                .build())
+                .value(
+                        EntityNumber.newBuilder().number(1L).build(),
+                        StakingNodeInfo.newBuilder()
+                                .nodeNumber(1L)
+                                .stake(1000L)
+                                .weight(200)
+                                .build())
+                .value(
+                        EntityNumber.newBuilder().number(2L).build(),
+                        StakingNodeInfo.newBuilder()
+                                .nodeNumber(3L)
+                                .stake(1000L)
+                                .weight(200)
+                                .build())
+                .build();
+        given(readableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY))
+                .willReturn(readableStakingNodes);
+
+        assertEquals(
+                1000L,
+                readableStakingNodes
+                        .get(EntityNumber.newBuilder().number(0L).build())
+                        .stake());
+        // there is no node2 in the addressBook
+        assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+        assertThrows(NoSuchElementException.class, () -> pretendAddressBook.getAddress(node2));
+        // But state has node 2
+        assertEquals(
+                100L,
+                readableStakingNodes
+                        .get(EntityNumber.newBuilder().number(0L).build())
+                        .weight());
+        assertEquals(
+                200L,
+                readableStakingNodes
+                        .get(EntityNumber.newBuilder().number(1L).build())
+                        .weight());
+        assertEquals(
+                200L,
+                readableStakingNodes
+                        .get(EntityNumber.newBuilder().number(2L).build())
+                        .weight());
+
+        assertDoesNotThrow(() -> subject.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext()));
+
+        // if staking info map has node with 0 weight and a new node is added,
+        // new nodes gets weight of 0
+        assertEquals(100, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(200, pretendAddressBook.getAddress(node1).getWeight());
+        assertThrows(NoSuchElementException.class, () -> pretendAddressBook.getAddress(node2));
     }
 
     @Test
