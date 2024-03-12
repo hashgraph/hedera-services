@@ -50,7 +50,7 @@ public interface Bindable<IN, OUT> {
     @Deprecated
     default void bindConsumer(@NonNull final Function<IN, OUT> handler) {
         throw new UnsupportedOperationException(
-                "Do not call bindConsumer() with a function that returns a value. " + "Call bind() instead.");
+                "Do not call bindConsumer() with a function that returns a value. Call bind() instead.");
     }
 
     /**
