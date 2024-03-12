@@ -15,3 +15,7 @@
  */
 
 plugins { id("com.hedera.hashgraph.blocknode.conventions") }
+
+mainModuleInfo {
+    runtimeOnly("com.swirlds.config.impl")
+}
