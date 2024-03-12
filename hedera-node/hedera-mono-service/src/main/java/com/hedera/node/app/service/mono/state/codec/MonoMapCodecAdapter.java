@@ -58,7 +58,8 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull ReadableSequentialData input) throws ParseException {
+            public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+                    throws ParseException {
                 final var buffer = new byte[input.readInt()];
                 input.readBytes(buffer);
                 final var bais = new ByteArrayInputStream(buffer);
@@ -69,12 +70,6 @@ public class MonoMapCodecAdapter {
                     throw new ParseException(e);
                 }
                 return item;
-            }
-
-            @NonNull
-            @Override
-            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws ParseException {
-                return parse(dataInput);
             }
 
             @Override
@@ -110,7 +105,8 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull ReadableSequentialData input) throws ParseException {
+            public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+                    throws ParseException {
                 try {
                     if (input instanceof ReadableStreamingData in) {
                         final var item = factory.get();
@@ -134,12 +130,6 @@ public class MonoMapCodecAdapter {
                 } catch (final IOException e) {
                     throw new ParseException(e);
                 }
-            }
-
-            @NonNull
-            @Override
-            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws ParseException {
-                return parse(dataInput);
             }
 
             @Override
@@ -186,7 +176,8 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull ReadableSequentialData input) throws ParseException {
+            public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+                    throws ParseException {
                 try {
                     if (input instanceof ReadableStreamingData in) {
                         final var item = factory.get();
@@ -210,12 +201,6 @@ public class MonoMapCodecAdapter {
                 } catch (final IOException e) {
                     throw new ParseException(e);
                 }
-            }
-
-            @NonNull
-            @Override
-            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws ParseException {
-                return parse(dataInput);
             }
 
             @Override

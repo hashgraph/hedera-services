@@ -31,7 +31,9 @@ import java.io.IOException;
 public class MonoRunningHashesAdapterCodec implements Codec<RecordsRunningHashLeaf> {
     @NonNull
     @Override
-    public RecordsRunningHashLeaf parse(final @NonNull ReadableSequentialData input) throws ParseException {
+    public RecordsRunningHashLeaf parse(
+            final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+            throws ParseException {
         try {
             final var length = input.readInt();
             final var javaIn = new byte[length];

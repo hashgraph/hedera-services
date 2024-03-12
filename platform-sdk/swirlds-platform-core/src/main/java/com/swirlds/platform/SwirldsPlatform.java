@@ -128,6 +128,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.EmergencyStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LockFreeStateNexus;
@@ -165,7 +166,6 @@ import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.util.ThingsToStart;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformWiring;
-import com.swirlds.platform.wiring.components.IssDetectorWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -464,7 +464,7 @@ public class SwirldsPlatform implements Platform {
 
         transactionPool = new TransactionPool(platformContext);
         final LatestCompleteStateNexus latestCompleteState =
-                new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
+                new DefaultLatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
         platformWiring = thingsToStart.add(new PlatformWiring(platformContext));
 
@@ -568,12 +568,10 @@ public class SwirldsPlatform implements Platform {
             stateManagementComponent.newSignedStateFromTransactions(
                     state.getAndReserve("stateManagementComponent.newSignedStateFromTransactions"));
 
-            final IssDetectorWiring issDetectorWiring = platformWiring.getIssDetectorWiring();
-            // FUTURE WORK: these three method calls will be combined into a single method call
-            issDetectorWiring.roundCompletedInput().put(roundNumber);
-            issDetectorWiring.newStateHashed().put(state.getAndReserve("issDetector"));
-            issDetectorWiring.handleConsensusRound().put(consensusRound);
-
+            platformWiring
+                    .getIssDetectorWiring()
+                    .stateAndRoundInput()
+                    .put(stateAndRound.makeAdditionalReservation("issDetector"));
             platformWiring.getSignatureCollectorConsensusInput().put(consensusRound);
 
             stateAndRound.reservedSignedState().close();

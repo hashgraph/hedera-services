@@ -158,15 +158,6 @@ class ReadableFreezeUpgradeActionsTest {
         assertMarkerCreated(NOW_FROZEN_MARKER, null);
     }
 
-    @Test
-    void determinesIfFreezeIsScheduled() {
-        assertThat(subject.isFreezeScheduled()).isFalse();
-
-        given(freezeStore.freezeTime()).willReturn(then);
-
-        assertThat(subject.isFreezeScheduled()).isTrue();
-    }
-
     private void rmIfPresent(final String file) {
         rmIfPresent(zipOutputDir.toPath(), file);
     }
