@@ -8,6 +8,6 @@ open module com.swirlds.base.test.fixtures {
     requires transitive com.swirlds.base;
     requires transitive org.junit.jupiter.api;
     requires static com.github.spotbugs.annotations;
-    requires org.assertj.core;
     requires jakarta.inject;
+    requires org.assertj.core;
 }
