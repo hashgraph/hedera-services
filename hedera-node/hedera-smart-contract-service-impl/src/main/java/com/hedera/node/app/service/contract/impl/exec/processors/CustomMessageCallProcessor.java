@@ -198,7 +198,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         tracer.tracePrecompileCall(frame, gasRequirement, fullResult.output());
         if (frame.getRemainingGas() < gasRequirement) {
             doHalt(frame, INSUFFICIENT_GAS);
-            fullResult.recordInsufficientGas();
         } else {
             if (!fullResult.isRefundGas()) {
                 frame.decrementRemainingGas(gasRequirement);

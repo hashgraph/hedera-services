@@ -901,7 +901,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         } catch (final InvalidTransactionException e) {
             final var status = e.getResponseCode();
             childRecord = creator.createUnsuccessfulSyntheticRecord(status);
-            result = precompile.getFailureResultFor(status);
+            result = status == INSUFFICIENT_GAS ? null : precompile.getFailureResultFor(status);
             addContractCallResultToRecord(childRecord, result, Optional.of(status), frame);
             if (e.isReverting()) {
                 frame.setState(MessageFrame.State.REVERT);

@@ -20,4 +20,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 public record RecordListCheckPoint(
         @Nullable SingleTransactionRecordBuilder firstPrecedingRecord,
-        @Nullable SingleTransactionRecordBuilder lastFollowingRecord) {}
+        @Nullable SingleTransactionRecordBuilder lastFollowingRecord) {
+    public static final RecordListCheckPoint EMPTY_CHECKPOINT = new RecordListCheckPoint(null, null);
+}

@@ -63,10 +63,10 @@ public class OrderedComparison {
             throws IOException {
         final Predicate<String> inclusionTest = maybeInclusionTest == null ? f -> true : maybeInclusionTest;
         final String inclusionDescription = maybeInclusionDescription == null ? "all" : maybeInclusionDescription;
-        System.out.println("Parsing stream @ " + firstStreamDir + "(including " + inclusionDescription + ")");
+        System.out.println("Parsing stream @ " + firstStreamDir + " (including " + inclusionDescription + ")");
         final var firstEntries = parseV6RecordStreamEntriesIn(firstStreamDir, inclusionTest);
         System.out.println(" ➡️  Read " + firstEntries.size() + " entries");
-        System.out.println("Parsing stream @ " + secondStreamDir + "(including " + inclusionDescription + ")");
+        System.out.println("Parsing stream @ " + secondStreamDir + " (including " + inclusionDescription + ")");
         final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, inclusionTest);
         System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
         final var compareList = getCompareList(firstEntries, secondEntries);

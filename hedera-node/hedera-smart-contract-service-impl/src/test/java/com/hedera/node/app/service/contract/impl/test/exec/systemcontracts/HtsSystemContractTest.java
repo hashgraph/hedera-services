@@ -102,8 +102,6 @@ class HtsSystemContractTest {
         final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS, true);
         given(call.execute(frame)).willReturn(pricedResult);
         given(attempt.senderId()).willReturn(SENDER_ID);
-        given(frame.getValue()).willReturn(Wei.ZERO);
-        given(frame.getInputData()).willReturn(Bytes.EMPTY);
 
         assertSame(pricedResult.fullResult(), subject.computeFully(validInput, frame));
     }
