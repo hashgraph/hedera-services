@@ -30,18 +30,5 @@ public interface ProtocolFactory {
      * @return a network protocol for connectivity over the bidirectional network
      */
     @Nullable
-    default Protocol build(@NonNull final NodeId peerId) {
-        return null;
-    }
-
-    /**
-     * Constructs an instance of a network protocol handshake between peers
-     * @param throwOnMismatch if set to true, the protocol will throw an exception on a mismatch.
-     *                        if set to false, protocol will log an error and continue
-     * @return a protocol handshake between two peers
-     */
-    @NonNull
-    default ProtocolRunnable build(final boolean throwOnMismatch) {
-        return connection -> {};
-    }
+    Protocol build(@NonNull final NodeId peerId);
 }
