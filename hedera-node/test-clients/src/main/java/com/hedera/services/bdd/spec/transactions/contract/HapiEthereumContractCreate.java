@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
@@ -99,10 +98,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     public HapiEthereumContractCreate(
-        HapiContractCreate contractCreate,
-        String privateKeyRef,
-        Key adminKey,
-        long defaultGas) {
+            HapiContractCreate contractCreate, String privateKeyRef, Key adminKey, long defaultGas) {
         super(contractCreate.contract);
         this.adminKey = adminKey;
         this.privateKeyRef = privateKeyRef;
