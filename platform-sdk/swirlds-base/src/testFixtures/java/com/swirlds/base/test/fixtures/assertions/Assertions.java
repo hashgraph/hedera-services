@@ -54,6 +54,7 @@ public class Assertions {
      *
      * @return the factory
      */
+    @NonNull
     private static InstanceOfAssertFactory<String, AbstractStringAssert<?>> asString() {
         return as(InstanceOfAssertFactories.STRING);
     }
