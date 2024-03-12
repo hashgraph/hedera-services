@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.calculateRewardSumHistory;
@@ -116,6 +117,7 @@ public class EndOfStakingPeriodUpdater {
         long newTotalStakedRewardStart = 0L;
         long maxStakeOfAllNodes = 0L;
         final Map<Long, StakingNodeInfo> updatedNodeInfos = new HashMap<>();
+        final Map<Long, Long> newPendingRewardRates = new HashMap<>();
         for (final var nodeNum : nodeIds.stream().sorted().toList()) {
             var currStakingInfo = stakingInfoStore.getForModify(nodeNum);
 
@@ -128,6 +130,7 @@ public class EndOfStakingPeriodUpdater {
                     stakingConfig.perHbarRewardRate(),
                     stakingConfig.requireMinStakeToReward());
             final var newPendingRewardRate = newRewardSumHistory.pendingRewardRate();
+            newPendingRewardRates.put(nodeNum, newPendingRewardRate);
             currStakingInfo = currStakingInfo
                     .copyBuilder()
                     .rewardSumHistory(newRewardSumHistory.rewardSumHistory())
@@ -206,6 +209,7 @@ public class EndOfStakingPeriodUpdater {
                     newTotalStakedStart,
                     sumOfConsensusWeights);
             finalNodeStakes.add(fromStakingInfo(
+                    newPendingRewardRates.get(nodeNum),
                     entry.getValue().copyBuilder().stake(scaledWeightToStake).build()));
 
             // Persist the updated staking info
@@ -246,7 +250,8 @@ public class EndOfStakingPeriodUpdater {
                 context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
         nodeStakeUpdateBuilder
                 .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
-                .memo("End of staking period calculation record");
+                .memo("End of staking period calculation record")
+                .status(SUCCESS);
     }
 
     /**
@@ -422,10 +427,11 @@ public class EndOfStakingPeriodUpdater {
                 .totalStakedStart(networkRewardsStore.totalStakedStart());
     }
 
-    private static NodeStake fromStakingInfo(StakingNodeInfo stakingNodeInfo) {
+    private static NodeStake fromStakingInfo(final long rewardRate, StakingNodeInfo stakingNodeInfo) {
         return NodeStake.newBuilder()
                 .nodeId(stakingNodeInfo.nodeNumber())
                 .stake(stakingNodeInfo.stake())
+                .rewardRate(rewardRate)
                 .minStake(stakingNodeInfo.minStake())
                 .maxStake(stakingNodeInfo.maxStake())
                 .stakeRewarded(stakingNodeInfo.stakeToReward())

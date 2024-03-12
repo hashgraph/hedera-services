@@ -20,6 +20,7 @@ import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
@@ -32,6 +33,7 @@ import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.hedera.node.app.services.ServicesInjectionModule;
@@ -42,18 +44,18 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.LedgerValidator;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
-import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
-import com.hedera.node.app.throttle.ThrottleManager;
+import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
-import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.listeners.ReconnectCompleteListener;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import dagger.BindsInstance;
@@ -80,7 +82,8 @@ import javax.inject.Singleton;
             AuthorizerInjectionModule.class,
             InfoInjectionModule.class,
             BlockRecordInjectionModule.class,
-            PlatformModule.class
+            PlatformModule.class,
+            ThrottleServiceModule.class
         })
 public interface HederaInjectionComponent {
     /* Needed by ServicesState */
@@ -116,13 +119,19 @@ public interface HederaInjectionComponent {
 
     ExchangeRateManager exchangeRateManager();
 
-    ThrottleManager throttleManager();
-
     PlatformStateUpdateFacility platformStateUpdateFacility();
 
     GenesisRecordsConsensusHook genesisRecordsConsensusHook();
 
     InitTrigger initTrigger();
+
+    ThrottleServiceManager throttleServiceManager();
+
+    ReconnectCompleteListener reconnectListener();
+
+    StateWriteToDiskCompleteListener stateWriteToDiskListener();
+
+    PlatformStateAccessor platformStateAccessor();
 
     @Component.Builder
     interface Builder {
@@ -146,16 +155,10 @@ public interface HederaInjectionComponent {
         Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);
 
         @BindsInstance
-        Builder configuration(ConfigProvider configProvider);
+        Builder configProvider(ConfigProvider configProvider);
 
         @BindsInstance
-        Builder systemFileUpdateFacility(SystemFileUpdateFacility systemFileUpdateFacility);
-
-        @BindsInstance
-        Builder exchangeRateManager(ExchangeRateManager exchangeRateManager);
-
-        @BindsInstance
-        Builder feeManager(FeeManager feeManager);
+        Builder configProviderImpl(ConfigProviderImpl configProviderImpl);
 
         @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
@@ -167,16 +170,7 @@ public interface HederaInjectionComponent {
         Builder instantSource(InstantSource instantSource);
 
         @BindsInstance
-        Builder throttleManager(ThrottleManager throttleManager);
-
-        @BindsInstance
-        Builder networkUtilizationManager(NetworkUtilizationManager networkUtilizationManager);
-
-        @BindsInstance
         Builder genesisRecordsConsensusHook(GenesisRecordsConsensusHook genesisRecordsBuilder);
-
-        @BindsInstance
-        Builder synchronizedThrottleAccumulator(SynchronizedThrottleAccumulator synchronizedThrottleAccumulator);
 
         HederaInjectionComponent build();
     }

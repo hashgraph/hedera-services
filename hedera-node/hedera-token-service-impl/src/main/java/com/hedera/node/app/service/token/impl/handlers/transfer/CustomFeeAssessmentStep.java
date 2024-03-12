@@ -125,8 +125,13 @@ public class CustomFeeAssessmentStep {
         final var tokenRelStore = handleContext.readableStore(ReadableTokenRelationStore.class);
         final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
         final var config = handleContext.configuration();
-        final var autoCreatedIds = transferContext.resolutions().values();
-        final var result = assessFees(tokenStore, tokenRelStore, config, accountStore, autoCreatedIds::contains);
+        final Predicate<AccountID> autoCreationTest;
+        if (transferContext.isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments()) {
+            autoCreationTest = transferContext.resolutions().values()::contains;
+        } else {
+            autoCreationTest = accountId -> false;
+        }
+        final var result = assessFees(tokenStore, tokenRelStore, config, accountStore, autoCreationTest);
 
         result.assessedCustomFees().forEach(transferContext::addToAssessedCustomFee);
         customFeeAssessor.resetInitialNftChanges();

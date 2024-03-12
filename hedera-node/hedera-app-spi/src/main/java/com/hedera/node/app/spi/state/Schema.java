@@ -75,9 +75,10 @@ public abstract class Schema implements Comparable<Schema> {
 
     /**
      * Called after all new states have been created (as per {@link #statesToCreate()}), this method
-     * is used to perform all <b>synchronous</b> migrations of state. This method will always be
-     * called with the {@link ReadableStates} of the previous version of the {@link Schema}. If
-     * there was no previous version, then {@code previousStates} will be empty, but not null.
+     * is used to perform all <b>synchronous</b> migrations of state. Only called at network genesis
+     * or when restarting from a state whose version is strictly earlier than this schema's. The
+     * {@link MigrationContext} will contain the {@link ReadableStates} from the saved state; or
+     * there was no previous version, a non-null empty {@link ReadableStates}.
      *
      * @param ctx {@link MigrationContext} for this schema migration
      */
@@ -97,10 +98,10 @@ public abstract class Schema implements Comparable<Schema> {
     }
 
     /**
-     * Called on this schema if, and only if, this schema is the most recent schema that is not newer than the
-     * version of software in use, and if the node is being restarted. Most services have nothing to do in this
-     * case, but some services may need to re-read configuration, or files on disk, or something similar. They
-     * are free to modify the state as needed in the same way that {@link #migrate(MigrationContext)} does.
+     * Called on this schema if and only if it is the most recent schema that is not newer
+     * than the version of software in use when the node is restarted. A service might override
+     * this if it uses views of state that need to be rebuilt on restart. This is not common,
+     * but is provided for completeness.
      *
      * @param ctx {@link MigrationContext} for this schema restart operation
      */

@@ -18,9 +18,11 @@ package com.swirlds.platform.test.consensus.framework;
 
 import static com.swirlds.common.test.fixtures.WeightGenerators.BALANCED;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.ResettableRandom;
 import com.swirlds.common.test.fixtures.WeightGenerator;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitterGenerator;
 import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
@@ -30,6 +32,7 @@ import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -41,14 +44,14 @@ public class OrchestratorBuilder {
     private int totalEventNum = 10_000;
     private Function<List<Long>, List<EventSource<?>>> eventSourceBuilder = EventSourceFactory::newStandardEventSources;
     private Consumer<EventSource<?>> eventSourceConfigurator = es -> {};
+    private PlatformContext platformContext =
+            TestPlatformContextBuilder.create().build();
     /**
-     * A function that creates an event emitter based on a graph generator and a seed. They should
-     * produce emitters that will emit events in different orders. For example, nothing would be
-     * tested if both returned a {@link
-     * com.swirlds.platform.test.event.emitter.StandardEventEmitter}. It is for both to return
-     * {@link ShuffledEventEmitter} because they will be seeded with different values and therefore
-     * emit events in different orders. Each instance of consensus should receive the same events,
-     * but in a different order.
+     * A function that creates an event emitter based on a graph generator and a seed. They should produce emitters that
+     * will emit events in different orders. For example, nothing would be tested if both returned a
+     * {@link com.swirlds.platform.test.event.emitter.StandardEventEmitter}. It is for both to return
+     * {@link ShuffledEventEmitter} because they will be seeded with different values and therefore emit events in
+     * different orders. Each instance of consensus should receive the same events, but in a different order.
      */
     private EventEmitterGenerator node1EventEmitterGenerator = ShuffledEventEmitter::new;
 
@@ -64,11 +67,23 @@ public class OrchestratorBuilder {
         return this;
     }
 
+    /**
+     * Set the {@link PlatformContext} to use. If not set, uses a default context.
+     *
+     * @param platformContext
+     * @return this OrchestratorBuilder
+     */
+    public @NonNull OrchestratorBuilder setPlatformContext(@NonNull final PlatformContext platformContext) {
+        this.platformContext = Objects.requireNonNull(platformContext);
+        return this;
+    }
+
     public @NonNull OrchestratorBuilder setTestInput(@NonNull final TestInput testInput) {
         numberOfNodes = testInput.numberOfNodes();
         weightGenerator = testInput.weightGenerator();
         seed = testInput.seed();
         totalEventNum = testInput.eventsToGenerate();
+        platformContext = testInput.platformContext();
         return this;
     }
 
@@ -113,10 +128,9 @@ public class OrchestratorBuilder {
 
         final List<ConsensusTestNode> nodes = new ArrayList<>();
         // Create two instances to run consensus on. Each instance reseeds the emitter so that they
-        // emit
-        // events in different orders.
-        nodes.add(ConsensusTestNode.genesisContext(node1Emitter));
-        nodes.add(ConsensusTestNode.genesisContext(node2Emitter));
+        // emit events in different orders.
+        nodes.add(ConsensusTestNode.genesisContext(platformContext, node1Emitter));
+        nodes.add(ConsensusTestNode.genesisContext(platformContext, node2Emitter));
 
         return new ConsensusTestOrchestrator(nodes, weights, totalEventNum);
     }

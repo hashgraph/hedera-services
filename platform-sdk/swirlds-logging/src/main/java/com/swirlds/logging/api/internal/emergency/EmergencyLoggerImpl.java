@@ -21,7 +21,7 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
-import com.swirlds.logging.api.internal.format.LineBasedFormat;
+import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.PrintStream;
@@ -42,16 +42,17 @@ import java.util.function.Supplier;
  * The logger is defined as a singleton.
  */
 public class EmergencyLoggerImpl implements EmergencyLogger {
+    private static class InstanceHolder {
+        /**
+         * The singleton instance of the logger.
+         */
+        private static final EmergencyLoggerImpl INSTANCE = new EmergencyLoggerImpl();
+    }
 
     /**
      * The name of the emergency logger.
      */
     private static final String EMERGENCY_LOGGER_NAME = "EMERGENCY-LOGGER";
-
-    /**
-     * The message that is used when the message is undefined.
-     */
-    private static final String UNDEFINED_MESSAGE = "UNDEFINED-MESSAGE";
 
     /**
      * The size of the queue that is used to store the log events.
@@ -62,11 +63,6 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
      * The name of the system property that defines the level of the logger.
      */
     private static final String LEVEL_PROPERTY_NAME = "com.swirlds.logging.emergency.level";
-
-    /**
-     * The singleton instance of the logger.
-     */
-    private static final EmergencyLoggerImpl INSTANCE = new EmergencyLoggerImpl();
 
     public static final Level DEFAULT_LEVEL = Level.DEBUG;
 
@@ -97,6 +93,8 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
     private final LogEventFactory logEventFactory;
 
     private final Lock handleLock;
+
+    private final AtomicReference<FormattedLinePrinter> lineBasedFormat = new AtomicReference<>();
 
     /**
      * Creates the singleton instance of the logger.
@@ -251,7 +249,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         if (printStream != null) {
             handleLock.lock();
             try {
-                LineBasedFormat.print(printStream, logEvent);
+                getLineBasedFormat().print(printStream, logEvent);
             } finally {
                 handleLock.unlock();
             }
@@ -273,6 +271,13 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         }
     }
 
+    private FormattedLinePrinter getLineBasedFormat() {
+        if (lineBasedFormat.get() == null) {
+            lineBasedFormat.compareAndSet(null, new FormattedLinePrinter(false));
+        }
+        return lineBasedFormat.get();
+    }
+
     /**
      * Returns the list of logged events and clears the list.
      *
@@ -292,6 +297,6 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
      */
     @NonNull
     public static EmergencyLoggerImpl getInstance() {
-        return INSTANCE;
+        return InstanceHolder.INSTANCE;
     }
 }
