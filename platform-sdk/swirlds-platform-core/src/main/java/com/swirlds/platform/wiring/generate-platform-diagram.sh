@@ -13,7 +13,7 @@ pcli diagram \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'eventCreationManager:non-validated events:🍎' \
-    -s 'postHasher_getState:state to sign:🖋️' \
+    -s 'postHasher_stateReserver:state to sign:🖋️' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
