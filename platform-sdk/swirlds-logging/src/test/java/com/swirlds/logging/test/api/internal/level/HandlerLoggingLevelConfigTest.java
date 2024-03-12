@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging;
+package com.swirlds.logging.test.api.internal.level;
+
+import static com.swirlds.base.test.fixtures.assertions.Assertions.assertThrowsNPE;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -24,8 +26,7 @@ import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.logging.api.internal.level.MarkerState;
-import com.swirlds.logging.util.HandlerLoggingLevelConfigTestOrchestrator;
-import com.swirlds.logging.util.HandlerLoggingLevelConfigTestOrchestrator.TestScenario;
+import com.swirlds.logging.test.api.internal.level.HandlerLoggingLevelConfigTestOrchestrator.TestScenario;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -388,5 +389,32 @@ public class HandlerLoggingLevelConfigTest {
                 .assertThat("com.sample" + subPackage, Level.WARN, true)
                 .assertThat("com.sample" + subpackageSubClazz, Level.INFO, true)
                 .build();
+    }
+
+    @Test
+    void testConfigUpdate2() {
+        // given
+        final Configuration initialConfiguration =
+                getConfigBuilder().withValue("logging.level", Level.ERROR).getOrCreateConfig();
+        final Configuration updatedConfiguration =
+                getConfigBuilder().withValue("logging.level", Level.TRACE).getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(initialConfiguration);
+
+        // when
+        config.update(updatedConfiguration);
+
+        // then
+        checkEnabledForLevel(config, "com.sample.Foo", Level.TRACE);
+    }
+
+    @Test
+    void testConfigUpdateWithNullConfig() {
+        // given
+        final Configuration initialConfiguration = getConfigBuilder().getOrCreateConfig();
+        final Configuration updatedConfiguration = null;
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(initialConfiguration);
+
+        // then
+        assertThrowsNPE(() -> config.update(updatedConfiguration));
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.util;
+package com.swirlds.logging.test.api.internal.level;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
