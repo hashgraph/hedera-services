@@ -19,8 +19,10 @@ package com.hedera.services.bdd.suites.contract.hapi;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -77,6 +79,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -88,6 +92,7 @@ public class ContractDeleteSuite extends HapiSuite {
     private static final String PAYABLE_CONSTRUCTOR = "PayableConstructor";
     private static final String CONTRACT_DESTROY = "destroy";
     private static final String RECEIVER_CONTRACT_NAME = "receiver";
+    private static final String SIMPLE_STORAGE_CONTRACT = "SimpleStorage";
 
     public static void main(final String... args) {
         new ContractDeleteSuite().runSuiteSync();
@@ -343,6 +348,20 @@ public class ContractDeleteSuite extends HapiSuite {
                         contractCustomCreate(PAYABLE_CONSTRUCTOR, suffix).balance(1L))
                 .when(contractDelete(PAYABLE_CONSTRUCTOR).transferContract(PAYABLE_CONSTRUCTOR + suffix))
                 .then(getAccountBalance(PAYABLE_CONSTRUCTOR + suffix).hasTinyBars(1L));
+    }
+
+    @HapiTest
+    HapiSpec localCallToDeletedContract() {
+        return defaultHapiSpec("LocalCallToDeletedContract")
+                .given(uploadInitCode(SIMPLE_STORAGE_CONTRACT), contractCreate(SIMPLE_STORAGE_CONTRACT))
+                .when(
+                        contractCallLocal(SIMPLE_STORAGE_CONTRACT, "get")
+                                .hasCostAnswerPrecheck(OK)
+                                .has(resultWith().contractCallResult(() -> Bytes32.fromHexString("0x0F"))),
+                        contractDelete(SIMPLE_STORAGE_CONTRACT))
+                .then(contractCallLocal(SIMPLE_STORAGE_CONTRACT, "get")
+                        .hasCostAnswerPrecheck(OK)
+                        .has(resultWith().contractCallResult(() -> Bytes.EMPTY)));
     }
 
     @Override

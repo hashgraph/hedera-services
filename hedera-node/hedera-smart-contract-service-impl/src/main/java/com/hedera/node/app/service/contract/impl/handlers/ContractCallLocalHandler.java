@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL_LOCAL;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
@@ -89,11 +88,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         // nothing
         // to call)
         final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
-        if (contract != null) {
-            if (contract.deleted()) {
-                throw new PreCheckException(CONTRACT_DELETED);
-            }
-        } else {
+        if (contract == null) {
             final var tokenID =
                     TokenID.newBuilder().tokenNum(contractID.contractNum()).build();
             final var tokenContract =
