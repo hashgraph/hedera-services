@@ -489,6 +489,8 @@ public class SwirldsPlatform implements Platform {
                 platformContext.getConfiguration().getConfigData(StateConfig.class), signedStateMetrics);
 
         thingsToStart.add(new SignedStateSentinel(platformContext, threadManager, Time.getCurrent()));
+        signedStateGarbageCollector =
+                thingsToStart.add(new SignedStateGarbageCollector(threadManager, signedStateMetrics));
 
         final LatestCompleteStateNotifier latestCompleteStateNotifier =
                 new LatestCompleteStateNotifier(notificationEngine);
@@ -538,9 +540,6 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager,
                 initialState.getState(),
                 appVersion);
-
-        signedStateGarbageCollector =
-                thingsToStart.add(new SignedStateGarbageCollector(threadManager, signedStateMetrics));
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
