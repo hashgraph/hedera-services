@@ -101,7 +101,7 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
 
     /**
      * Build an input wire for passing data to this task scheduler. In order to use this wire, a handler must be bound
-     * via {@link BindableInputWire#bind(Consumer)}.
+     * via {@link BindableInputWire#bindConsumer(Consumer)}.
      *
      * @param name the name of the input wire
      * @param <I>  the type of data that is inserted via this input wire
@@ -229,7 +229,7 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
 
     /**
      * Get the number of unprocessed tasks. A task is considered to be unprocessed until the data has been passed to the
-     * handler method (i.e. the one given to {@link BindableInputWire#bind(Consumer)}) and that handler method has
+     * handler method (i.e. the one given to {@link BindableInputWire#bindConsumer(Consumer)}) and that handler method has
      * returned.
      * <p>
      * Returns {@link ObjectCounter#COUNT_UNDEFINED} if this task scheduler is not monitoring the number of unprocessed

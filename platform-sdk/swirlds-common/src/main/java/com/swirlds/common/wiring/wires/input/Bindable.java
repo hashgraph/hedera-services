@@ -30,12 +30,12 @@ import java.util.function.Function;
 public interface Bindable<IN, OUT> {
 
     /**
-     * Bind this object to a handler.
+     * Bind this object to a handler. For things that don't send data to the output wire.
      *
      * @param handler the handler to bind to this input wire
      * @throws IllegalStateException if a handler is already bound and this method is called a second time
      */
-    void bind(@NonNull Consumer<IN> handler);
+    void bindConsumer(@NonNull Consumer<IN> handler);
 
     /**
      * Bind this object to a handler.
