@@ -50,6 +50,11 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
         this.innerService = Executors.newScheduledThreadPool(1, threadFactory);
     }
 
+    /**
+     * Returns the singleton instance of this executor.
+     *
+     * @return the instance
+     */
     public static BaseScheduledExecutorService getInstance() {
         if (instance == null) {
             instanceLock.lock();
