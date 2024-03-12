@@ -24,7 +24,6 @@ plugins {
 mainModuleInfo {
     annotationProcessor("com.swirlds.config.processor")
     runtimeOnly("com.swirlds.config.impl")
-    runtimeOnly("com.swirlds.logging.log4j.appender")
 }
 
 jmhModuleInfo {

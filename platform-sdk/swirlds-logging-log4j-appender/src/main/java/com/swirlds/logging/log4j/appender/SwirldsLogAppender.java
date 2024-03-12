@@ -18,13 +18,14 @@ package com.swirlds.logging.log4j.appender;
 
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
+import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
+import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
-import com.swirlds.logging.api.extensions.provider.LogProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Serializable;
-import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
@@ -37,7 +38,8 @@ import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 
 /**
  * SwirldsLogAppender is a custom log appender for the Log4j2 logging framework that integrates
- * with the swirlds-logging API. It allows Log4j2 log events to be consumed by the swirlds-logging API.
+ * with the swirlds-logging API as a provider.
+ * It allows Log4j2 log events to be consumed by the swirlds-logging API.
  * This appender is specifically designed convert Log4j2 logging events to swirlds-logging events.
  * <p>
  * It supports dynamic installation of {@link LogEventFactory} and {@link LogEventConsumer} to
@@ -60,9 +62,11 @@ import org.apache.logging.log4j.core.config.plugins.PluginFactory;
  *         </Configuration>
  *        }
  *     </pre>
+ *
+ * @see com.swirlds.logging.api.extensions.provider.LogProvider
  */
 @Plugin(name = SwirldsLogAppender.APPENDER_NAME, category = "Core", elementType = "appender", printObject = true)
-public class SwirldsLogAppender extends AbstractAppender implements LogProvider {
+public class SwirldsLogAppender extends AbstractAppender {
     /**
      * The name of the appender for Log4j2 configuration.
      */
@@ -72,20 +76,22 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
      * The log event factory to create log events.
      * This is set by the swirlds-logging API.
      */
-    private static LogEventFactory logEventFactory;
+    private static volatile LogEventFactory logEventFactory;
     /**
      * The log event consumer to consume log events.
      * This is set by the swirlds-logging API.
      */
-    private static LogEventConsumer logEventConsumer;
+    private static volatile LogEventConsumer logEventConsumer;
 
     /**
-     * Constructs a new SwirldsLogAppender instance with default values.
-     * This constructor is used by the swirlds-logging API.
+     * The swirlds emergency logger.
      */
-    public SwirldsLogAppender() {
-        super(APPENDER_NAME, null, null, false, Property.EMPTY_ARRAY);
-    }
+    private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
+
+    /**
+     * A flag to ensure that the initialisation error is only printed once.
+     */
+    private final AtomicBoolean initialisationErrorPrinted = new AtomicBoolean(false);
 
     /**
      * Constructs a new SwirldsLogAppender instance.
@@ -95,7 +101,10 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
      * @param filter The filter to apply.
      * @param layout The layout of log messages.
      */
-    protected SwirldsLogAppender(final String name, final Filter filter, final Layout<? extends Serializable> layout) {
+    private SwirldsLogAppender(
+            @NonNull final String name,
+            @Nullable final Filter filter,
+            @Nullable final Layout<? extends Serializable> layout) {
         super(name, filter, layout, false, Property.EMPTY_ARRAY);
     }
 
@@ -111,10 +120,36 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
      */
     @PluginFactory
     public static SwirldsLogAppender createAppender(
-            @PluginAttribute("name") final String name,
-            @PluginElement("Layout") final Layout<? extends Serializable> layout,
-            @PluginElement("Filters") final Filter filter) {
+            @PluginAttribute("name") @NonNull final String name,
+            @PluginElement("Layout") @Nullable final Layout<? extends Serializable> layout,
+            @PluginElement("Filters") @Nullable final Filter filter) {
         return new SwirldsLogAppender(name, filter, layout);
+    }
+
+    /**
+     * Sets the log event consumer to consume log events.
+     *
+     * @param logEventConsumer the log event consumer from the swirlds-logging API.
+     */
+    public static void setLogEventConsumer(@NonNull final LogEventConsumer logEventConsumer) {
+        if (logEventConsumer == null) {
+            EMERGENCY_LOGGER.logNPE("logEventConsumer");
+            return;
+        }
+        SwirldsLogAppender.logEventConsumer = logEventConsumer;
+    }
+
+    /**
+     * Sets the log event factory to create log events.
+     *
+     * @param logEventFactory the log event factory from the swirlds-logging API.
+     */
+    public static void setLogEventFactory(@NonNull final LogEventFactory logEventFactory) {
+        if (logEventFactory == null) {
+            EMERGENCY_LOGGER.logNPE("logEventFactory");
+            return;
+        }
+        SwirldsLogAppender.logEventFactory = logEventFactory;
     }
 
     /**
@@ -122,20 +157,30 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
      * {@code event} will be forwarded to the swirlds-logging API.
      *
      * @param event The log event to append.
-     * @see SwirldsLogAppender#install(LogEventFactory, LogEventConsumer)
      */
     @Override
-    public void append(final LogEvent event) {
+    public void append(@NonNull final LogEvent event) {
+        if (event == null) {
+            EMERGENCY_LOGGER.logNPE("event");
+            return;
+        }
         if (logEventFactory != null && logEventConsumer != null) {
             logEventConsumer.accept(logEventFactory.createLogEvent(
                     translateLevel(event.getLevel()),
                     event.getLoggerName(),
                     event.getThreadName(),
                     event.getTimeMillis(),
-                    event.getMessage().getFormattedMessage(),
+                    new Log4JMessage(event.getMessage()),
                     event.getThrown(),
                     translateMarker(event.getMarker()),
                     event.getContextData().toMap()));
+        } else {
+            if (!initialisationErrorPrinted.getAndSet(true)) {
+                EMERGENCY_LOGGER.log(
+                        Level.ERROR,
+                        "LogEventFactory and LogEventConsumer are not installed. "
+                                + "Log events will not be forwarded to the swirlds-logging API.");
+            }
         }
     }
 
@@ -146,6 +191,7 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
      *
      * @return The corresponding swirlds-logging marker.
      */
+    @Nullable
     private Marker translateMarker(@Nullable final org.apache.logging.log4j.Marker marker) {
         if (marker == null) {
             return null;
@@ -167,8 +213,13 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
      *
      * @return The corresponding swirlds-logging level.
      */
+    @NonNull
     private static Level translateLevel(@NonNull final org.apache.logging.log4j.Level level) {
-        Objects.requireNonNull(level, "level is required");
+        if (level == null) {
+            EMERGENCY_LOGGER.logNPE("level");
+            return Level.INFO;
+        }
+
         return switch (level.getStandardLevel()) {
             case FATAL, ERROR -> Level.ERROR;
             case WARN -> Level.WARN;
@@ -176,23 +227,5 @@ public class SwirldsLogAppender extends AbstractAppender implements LogProvider 
             case TRACE -> Level.TRACE;
             default -> Level.INFO;
         };
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isActive() {
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void install(
-            @NonNull final LogEventFactory logEventFactory, @NonNull final LogEventConsumer logEventConsumer) {
-        SwirldsLogAppender.logEventFactory = logEventFactory;
-        SwirldsLogAppender.logEventConsumer = logEventConsumer;
     }
 }

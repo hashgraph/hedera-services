@@ -16,23 +16,24 @@
 
 package com.swirlds.logging.log4j.appender;
 
-import com.google.auto.service.AutoService;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.logging.api.extensions.provider.LogProvider;
-import com.swirlds.logging.api.extensions.provider.LogProviderFactory;
+import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.message.Message;
 
 /**
- * This class is a factory for creating a SwirldsLogAppender.
- * <p>
- * Please note that the {@code SwirldsLogAppender} only works if the log4j2 configuration is set to use the
- * {@code SwirldsLogAppender} as the appender for the root logger.
+ * Wraps a Log4J message to be used as a LogMessage in swirlds-logging.
+ *
+ * @param message the Log4J message
  */
-@AutoService(LogProviderFactory.class)
-public class SwrildsLogProviderFactory implements LogProviderFactory {
+public record Log4JMessage(Message message) implements LogMessage {
+    /**
+     * Formats the message if the message is used by the swirlds-logging API.
+     *
+     * @return formatted message
+     */
     @NonNull
     @Override
-    public LogProvider create(@NonNull final Configuration ignored) {
-        return new SwirldsLogAppender();
+    public String getMessage() {
+        return message.getFormattedMessage();
     }
 }

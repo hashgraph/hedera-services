@@ -35,7 +35,9 @@ import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -43,14 +45,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class SwirldsLogAppenderTest {
     private static final String LOGGER_NAME = "testLogger";
 
-    public LoggingSystem setup(final com.swirlds.config.api.Configuration configuration) {
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-
-        loggingSystem.installHandlers();
-        loggingSystem.installProviders();
-
-        return loggingSystem;
-    }
+    private Map<String, String> oldContext;
 
     static Stream<Arguments> levelsAndSizes() {
         return Stream.of(
@@ -62,114 +57,129 @@ class SwirldsLogAppenderTest {
                 Arguments.of(Level.OFF, 0));
     }
 
+    @BeforeEach
+    void setUp() {
+        oldContext = ThreadContext.getImmutableContext();
+    }
+
     @ParameterizedTest
     @MethodSource("levelsAndSizes")
-    void loggingLevels(final Level level, final int expectedSize) throws Exception {
+    void loggingLevels(final Level level, final int expectedSize, @TempDir final Path tempDir) throws Exception {
         // given
-        final Path filePath = Path.of("%s_test.log".formatted(level));
-        try {
-            final LoggingSystem loggingSystem = setup(createConfig(level, filePath));
-            final Logger testLogger = LogManager.getLogger(LOGGER_NAME);
+        final Path filePath = tempDir.resolve("%s_test.log".formatted(level));
+        final LoggingSystem loggingSystem = createLoggingSystem(createConfig(level, filePath, true));
+        final Logger log4jLogger = LogManager.getLogger(LOGGER_NAME);
 
-            // when
-            testLogger.error("This is an error message");
-            testLogger.warn("This is a warn message");
-            testLogger.info("This is an info message");
-            testLogger.debug("This is a debug message");
-            testLogger.trace("This is a trace message");
+        // when
+        log4jLogger.error("This is an error message");
+        log4jLogger.warn("This is a warn message");
+        log4jLogger.info("This is an info message");
+        log4jLogger.debug("This is a debug message");
+        log4jLogger.trace("This is a trace message");
+        loggingSystem.stopAndFinalize();
 
-            // then
-            loggingSystem.stopAndFinalize();
-            final List<String> logLines = Files.lines(filePath).toList();
+        // then
+        final List<String> logLines = Files.lines(filePath).toList();
 
-            assertThat(logLines).hasSize(expectedSize);
-        } finally {
-            Files.delete(filePath);
-        }
+        assertThat(logLines).hasSize(expectedSize);
     }
 
     @Test
-    void loggingSimpleMarker() throws Exception {
+    void loggingSimpleMarker(@TempDir final Path tempDir) throws Exception {
         // given
-        final Path filePath = Path.of("marker_test.log");
-        try {
-            final LoggingSystem loggingSystem = setup(createConfig(Level.DEBUG, filePath));
-            final Logger testLogger = LogManager.getLogger(LOGGER_NAME);
+        final Path filePath = tempDir.resolve("marker_test.log");
+        final LoggingSystem loggingSystem = createLoggingSystem(createConfig(Level.DEBUG, filePath, true));
+        final Logger log4jLogger = LogManager.getLogger(LOGGER_NAME);
 
-            // when
-            testLogger.warn(LogMarker.CONFIG.getMarker(), "This is a warn message");
+        // when
+        log4jLogger.warn(LogMarker.CONFIG.getMarker(), "This is a warn message");
+        loggingSystem.stopAndFinalize();
 
-            // then
-            loggingSystem.stopAndFinalize();
-            final List<String> logLines = Files.lines(filePath).toList();
+        // then
+        final List<String> logLines = Files.lines(filePath).toList();
 
-            assertThat(logLines).hasSize(1);
-            assertThat(logLines.getFirst()).contains(LogMarker.CONFIG.name());
-        } finally {
-            Files.delete(filePath);
-        }
+        assertThat(logLines).hasSize(1);
+        assertThat(logLines.getFirst()).contains(LogMarker.CONFIG.name());
     }
 
     @Test
-    void loggingChainedMarkers() throws Exception {
+    void loggingChainedMarkers(@TempDir final Path tempDir) throws Exception {
         // given
-        final Path filePath = Path.of("marker_test.log");
-        try {
-            final LoggingSystem loggingSystem = setup(createConfig(Level.DEBUG, filePath));
-            final Logger testLogger = LogManager.getLogger(LOGGER_NAME);
+        final Path filePath = tempDir.resolve("marker_test.log");
+        final LoggingSystem loggingSystem = createLoggingSystem(createConfig(Level.DEBUG, filePath, true));
+        final Logger log4jLogger = LogManager.getLogger(LOGGER_NAME);
 
-            // when
-            testLogger.warn(TestMarkers.CHILD_MARKER, "This is a warn message");
+        // when
+        log4jLogger.warn(TestMarkers.CHILD_MARKER, "This is a warn message");
+        loggingSystem.stopAndFinalize();
 
-            // then
-            loggingSystem.stopAndFinalize();
-            final List<String> logLines = Files.lines(filePath).toList();
+        // then
+        final List<String> logLines = Files.lines(filePath).toList();
 
-            assertThat(logLines).hasSize(1);
-            assertThat(logLines.getFirst()).contains(TestMarkers.CHILD, TestMarkers.PARENT, TestMarkers.GRANT);
-        } finally {
-            Files.delete(filePath);
-        }
+        assertThat(logLines).hasSize(1);
+        assertThat(logLines.getFirst()).contains(TestMarkers.CHILD, TestMarkers.PARENT, TestMarkers.GRANT);
     }
 
     @Test
-    void loggingContext() throws Exception {
+    void loggingContext(@TempDir final Path tempDir) throws Exception {
         // given
-        final Path filePath = Path.of("context_test.log");
-        final Map<String, String> oldContext = ThreadContext.getImmutableContext();
-        try {
-            final LoggingSystem loggingSystem = setup(createConfig(Level.DEBUG, filePath));
-            final Logger testLogger = LogManager.getLogger(LOGGER_NAME);
+        final Path filePath = tempDir.resolve("context_test.log");
+        final LoggingSystem loggingSystem = createLoggingSystem(createConfig(Level.DEBUG, filePath, true));
+        final Logger log4jLogger = LogManager.getLogger(LOGGER_NAME);
 
-            // when
-            ThreadContext.put("key1", "value1");
-            testLogger.warn("This is a warn message");
+        // when
+        ThreadContext.put("key1", "value1");
+        log4jLogger.warn("This is a warn message");
+        loggingSystem.stopAndFinalize();
 
-            // then
-            loggingSystem.stopAndFinalize();
-            final List<String> logLines = Files.lines(filePath).toList();
+        // then
+        final List<String> logLines = Files.lines(filePath).toList();
 
-            assertThat(logLines).hasSize(1);
-            assertThat(logLines.getFirst()).contains("key1=value1");
-        } finally {
-            Files.delete(filePath);
-            ThreadContext.clearAll();
-            ThreadContext.putAll(oldContext);
-        }
+        assertThat(logLines).hasSize(1);
+        assertThat(logLines.getFirst()).contains("key1=value1");
+    }
+
+    @Test
+    void nothingGetsLoggedIfProviderIsDisabled(@TempDir final Path tempDir) throws Exception {
+        // given
+        final Path filePath = tempDir.resolve("disabled_provider_test.log");
+        final LoggingSystem loggingSystem = createLoggingSystem(createConfig(Level.DEBUG, filePath, false));
+        final Logger log4jLogger = LogManager.getLogger(LOGGER_NAME);
+
+        // when
+        log4jLogger.warn("This is a warn message");
+        loggingSystem.stopAndFinalize();
+
+        // then
+        final List<String> logLines = Files.lines(filePath).toList();
+        assertThat(logLines).isEmpty();
     }
 
     @AfterEach
     void tearDown() throws Exception {
         final LoggerContext loggerContext = (LoggerContext) LogManager.getContext(false);
         loggerContext.reconfigure();
+
+        ThreadContext.clearAll();
+        ThreadContext.putAll(oldContext);
     }
 
-    private static Configuration createConfig(final Level level, final Path filePath) {
+    private static LoggingSystem createLoggingSystem(final Configuration configuration) {
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+
+        loggingSystem.installHandlers();
+        loggingSystem.installProviders();
+
+        return loggingSystem;
+    }
+
+    private static Configuration createConfig(final Level level, final Path filePath, boolean handlerEnabled) {
         return new TestConfigBuilder()
                 .withValue("logging.level", level)
                 .withValue("logging.handler.DEFAULT.enabled", true)
                 .withValue("logging.handler.DEFAULT.type", "file")
                 .withValue("logging.handler.DEFAULT.file", filePath)
+                .withValue("logging.provider.log4j.enabled", handlerEnabled)
                 .getOrCreateConfig();
     }
 
