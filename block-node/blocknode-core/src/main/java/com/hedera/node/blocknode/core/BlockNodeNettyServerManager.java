@@ -224,8 +224,8 @@ public class BlockNodeNettyServerManager implements GrpcBlockNodeServerManager{
             return;
         }
 
-        final var nettyConfig = configProvider.getConfiguration().getConfigData(NettyConfig.class);
-        final var terminationTimeout = nettyConfig.terminationTimeout();
+        //final var nettyConfig = configProvider.getConfiguration().getConfigData(NettyConfig.class);
+        final var terminationTimeout = 100000;
 
         try {
             server.shutdownNow();

@@ -10,4 +10,9 @@ module com.hedera.storage.blocknode.core.test {
     // Require other modules needed for the unit tests to compile.
     requires com.hedera.storage.blocknode.core;
     requires org.junit.jupiter.api;
+    requires org.junit.jupiter.engine;
+    requires org.junit.jupiter;
+    requires org.mockito;
+    requires org.mockito.junit.jupiter;
+    requires com.github.spotbugs.annotations;
 }
