@@ -52,6 +52,17 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
     }
 
     /**
+     * Creates a ShrinkableSizeCache with configurable max size and SHRINK_PERIOD_MS shrink period.
+     *
+     * @param maxSize configurable max size for the cache
+     * @deprecated Use  {@link ShrinkableSizeCache#ShrinkableSizeCache(int, int, ScheduledExecutorService)} instead
+     */
+    @Deprecated(forRemoval = true)
+    public ShrinkableSizeCache(final int maxSize) {
+        this(maxSize, SHRINK_PERIOD_MS);
+    }
+
+    /**
      * Creates a ShrinkableSizeCache with configurable max size and shrink period.
      *
      * @param maxSize          configurable max size for the cache
@@ -86,15 +97,6 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
             }
         };
         executorService.scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs, TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * Creates a ShrinkableSizeCache with configurable max size and SHRINK_PERIOD_MS shrink period.
-     *
-     * @param maxSize configurable max size for the cache
-     */
-    public ShrinkableSizeCache(final int maxSize) {
-        this(maxSize, SHRINK_PERIOD_MS);
     }
 
     /**
