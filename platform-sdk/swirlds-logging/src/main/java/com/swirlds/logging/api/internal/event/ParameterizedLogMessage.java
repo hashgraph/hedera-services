@@ -45,7 +45,7 @@ public class ParameterizedLogMessage implements LogMessage {
      * @param messagePattern the message pattern
      * @param args           the arguments
      */
-    public ParameterizedLogMessage(final @NonNull String messagePattern, final @NonNull Object... args) {
+    public ParameterizedLogMessage(final @NonNull String messagePattern, final @Nullable Object... args) {
         this.messagePattern = messagePattern;
         this.args = args;
     }

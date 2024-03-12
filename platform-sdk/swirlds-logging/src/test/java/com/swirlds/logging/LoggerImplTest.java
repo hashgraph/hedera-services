@@ -16,6 +16,8 @@
 
 package com.swirlds.logging;
 
+import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
+import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.api.Logger;
@@ -31,11 +33,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled
+@WithTestExecutor
 public class LoggerImplTest {
 
     @Test
-    void testSimpleLogger() {
+    void testLogLevelsDefaultEnablement() {
         // given
         LoggerImpl logger = new LoggerImpl("test-name", new SimpleLogEventFactory(), new DummyConsumer());
 
@@ -70,33 +72,9 @@ public class LoggerImplTest {
 
     @Test
     void testNullName() {
-        // given
-        LoggerImpl logger = new LoggerImpl(null, new SimpleLogEventFactory(), new DummyConsumer());
-
-        // when
-        final String name = logger.getName();
-        final boolean traceEnabled = logger.isTraceEnabled();
-        final boolean debugEnabled = logger.isDebugEnabled();
-        final boolean infoEnabled = logger.isInfoEnabled();
-        final boolean warnEnabled = logger.isWarnEnabled();
-        final boolean errorEnabled = logger.isErrorEnabled();
-
-        // then
-        Assertions.assertEquals("", name);
-        Assertions.assertTrue(traceEnabled);
-        Assertions.assertTrue(debugEnabled);
-        Assertions.assertTrue(infoEnabled);
-        Assertions.assertTrue(warnEnabled);
-        Assertions.assertTrue(errorEnabled);
-    }
-
-    @Test
-    void testSpecWithNullName() {
-        // given
-        LoggerImpl logger = new LoggerImpl(null, new SimpleLogEventFactory(), new DummyConsumer());
-
-        // then
-        LoggerApiSpecTest.testSpec(logger);
+        Assertions.assertThrows(
+                NullPointerException.class,
+                () -> new LoggerImpl(null, new SimpleLogEventFactory(), new DummyConsumer()));
     }
 
     @Test
@@ -130,8 +108,18 @@ public class LoggerImplTest {
     }
 
     @Test
-    void testSpecWithDifferentLoggers() {
-        LoggerApiSpecTest.testSpec(new LoggerImpl("test-name", new SimpleLogEventFactory(), new DummyConsumer()));
-        LoggerApiSpecTest.testSpec(new LoggerImpl(null, new SimpleLogEventFactory(), new DummyConsumer()));
+    void testSpecWithDifferentLoggers(TestExecutor executor) {
+        executor.executeAndWait(
+                () -> LoggerApiSpecTest.testSpec(
+                        new LoggerImpl("test-name", new SimpleLogEventFactory(), new DummyConsumer())),
+                () -> LoggerApiSpecTest.testSpec(
+                        new LoggerImpl("test-name-2", new SimpleLogEventFactory(), new DummyConsumer())));
+    }
+
+    @Test
+    @Disabled
+    void test() {
+        LoggerApiSpecTest.testNullParameters(
+                new LoggerImpl("test-name", new SimpleLogEventFactory(), new DummyConsumer()));
     }
 }

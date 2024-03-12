@@ -33,11 +33,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @WithTestExecutor
-@Disabled
 public class LoggingSystemTest {
 
     private static final String LOG_FILE = "log-files/logging.log";
