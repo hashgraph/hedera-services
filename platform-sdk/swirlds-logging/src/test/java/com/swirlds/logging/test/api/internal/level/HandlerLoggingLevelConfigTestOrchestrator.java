@@ -16,19 +16,13 @@
 
 package com.swirlds.logging.test.api.internal.level;
 
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
+import com.swirlds.logging.util.LoggingTestScenario;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.Assertions;
 
 /**
  * This class helps the test to:
@@ -39,20 +33,23 @@ import org.junit.jupiter.api.Assertions;
  *  <ol>
  */
 public final class HandlerLoggingLevelConfigTestOrchestrator {
-    private final List<TestScenario> scenarios;
+    private final List<LoggingTestScenario> scenarios;
 
     /**
      * Runs the different {@code testScenarios} in random order up to {@code durationLimit}.
      * All scenarios are run at least once.
      */
     public static void runScenarios(
-            final HandlerLoggingLevelConfig configUnderTest, Duration durationLimit, TestScenario... testScenarios) {
+            final HandlerLoggingLevelConfig configUnderTest,
+            Duration durationLimit,
+            LoggingTestScenario... loggingTestScenarios) {
 
         HandlerLoggingLevelConfigTestOrchestrator orchestrator =
-                new HandlerLoggingLevelConfigTestOrchestrator(testScenarios);
+                new HandlerLoggingLevelConfigTestOrchestrator(loggingTestScenarios);
 
-        final List<Integer> list =
-                IntStream.rangeClosed(0, testScenarios.length - 1).boxed().collect(Collectors.toList());
+        final List<Integer> list = IntStream.rangeClosed(0, loggingTestScenarios.length - 1)
+                .boxed()
+                .collect(Collectors.toList());
         Collections.shuffle(list);
         long startTime = System.currentTimeMillis();
 
@@ -67,8 +64,8 @@ public final class HandlerLoggingLevelConfigTestOrchestrator {
         }
     }
 
-    private HandlerLoggingLevelConfigTestOrchestrator(TestScenario... testScenarios) {
-        this.scenarios = List.of(testScenarios);
+    private HandlerLoggingLevelConfigTestOrchestrator(LoggingTestScenario... loggingTestScenarios) {
+        this.scenarios = List.of(loggingTestScenarios);
     }
 
     /**
@@ -80,81 +77,5 @@ public final class HandlerLoggingLevelConfigTestOrchestrator {
         config.update(this.scenarios.get(scenario).configuration());
         // Performs the check
         this.scenarios.get(scenario).verifyAssertionRules(config);
-    }
-
-    /**
-     * TestScenario is a relationship between a desired configuration and the list of assertions to verify for that
-     * config
-     */
-    public static final class TestScenario {
-        private final String scenarioName;
-        private final TestConfigBuilder scenarioConfigBuilder;
-        private final List<AssertionRule> assertionsRules;
-
-        private TestScenario(String scenarioName, TestConfigBuilder builder, List<AssertionRule> assertionsRules) {
-            this.scenarioName = scenarioName;
-            this.scenarioConfigBuilder = builder;
-            this.assertionsRules = assertionsRules;
-        }
-
-        Configuration configuration() {
-            return this.scenarioConfigBuilder.getOrCreateConfig();
-        }
-
-        public static TestScenarioBuilder builder() {
-            return new TestScenarioBuilder();
-        }
-
-        public static class TestScenarioBuilder {
-            private String name;
-            private final Map<String, Object> properties;
-            private final List<AssertionRule> assertionsRules;
-
-            private TestScenarioBuilder() {
-                this.properties = new HashMap<>();
-                this.assertionsRules = new ArrayList<>();
-            }
-
-            public TestScenarioBuilder name(String name) {
-                this.name = name;
-                return this;
-            }
-
-            public TestScenarioBuilder withConfigurationFrom(Map<String, Object> properties) {
-                this.properties.clear();
-                this.properties.putAll(properties);
-                return this;
-            }
-
-            public TestScenarioBuilder assertThat(String propertyName, Level level, Boolean expectedResult) {
-                assertionsRules.add(new AssertionRule(propertyName, level, expectedResult));
-                return this;
-            }
-
-            public TestScenario build() {
-                TestConfigBuilder testConfigBuilder = new TestConfigBuilder();
-                properties.forEach(testConfigBuilder::withValue);
-                return new TestScenario(this.name, testConfigBuilder, assertionsRules);
-            }
-        }
-
-        public void verifyAssertionRules(HandlerLoggingLevelConfig config) {
-            for (AssertionRule rule : this.assertionsRules) {
-                rule.performAssert(this.scenarioName, config);
-            }
-        }
-
-        private record AssertionRule(String propertyName, Level level, Boolean expectedResult) {
-            public void performAssert(final String scenarioName, final HandlerLoggingLevelConfig config) {
-                if (this.expectedResult() != null) {
-                    Assertions.assertEquals(
-                            this.expectedResult(),
-                            config.isEnabled(this.propertyName(), this.level(), null),
-                            String.format(
-                                    "Scenario %s: AssertionRule %s: but actual was:%s%n",
-                                    scenarioName, this, !this.expectedResult()));
-                }
-            }
-        }
     }
 }
