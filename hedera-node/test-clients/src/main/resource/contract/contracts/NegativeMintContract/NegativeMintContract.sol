@@ -30,7 +30,6 @@ contract NegativeMintContract is HederaTokenService {
     }
 
     function mintInvalidAddressType(bytes[] memory metadata, int64 amount) external {
-        int32 invalidAddress = 12300;
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.mintToken.selector,
                 INVALID_ADDRESS, amount, metadata));
