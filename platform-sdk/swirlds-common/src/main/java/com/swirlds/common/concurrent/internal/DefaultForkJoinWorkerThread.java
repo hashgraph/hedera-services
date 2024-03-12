@@ -32,10 +32,9 @@ public class DefaultForkJoinWorkerThread extends ForkJoinWorkerThread {
             @NonNull final ForkJoinPool pool,
             final boolean preserveThreadLocals,
             @Nullable final Runnable onStartup) {
-        super(group, pool, preserveThreadLocals);
+        super(group, Objects.requireNonNull(pool, "pool must not be null"), preserveThreadLocals);
         Objects.requireNonNull(name, "name must not be null");
         Objects.requireNonNull(group, "group must not be null");
-        Objects.requireNonNull(pool, "pool must not be null");
         setName(name);
         this.onStartup = onStartup;
     }
