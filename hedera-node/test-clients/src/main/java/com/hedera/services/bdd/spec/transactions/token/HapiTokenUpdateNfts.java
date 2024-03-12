@@ -30,11 +30,13 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +48,7 @@ import org.apache.logging.log4j.Logger;
 public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
     static final Logger log = LogManager.getLogger(HapiTokenUpdateNfts.class);
     private Optional<List<Long>> serialNumbers;
+    private Optional<String> metadataKey = Optional.empty();
     private String token;
     private final SubType subType;
 
@@ -76,6 +79,10 @@ public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
         return this;
     }
 
+    public HapiTokenUpdateNfts metadataKey(String name) {
+        metadataKey = Optional.of(name);
+        return this;
+    }
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         var txnId = TxnUtils.asTokenId(token, spec);
@@ -125,5 +132,24 @@ public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.TokenUpdateNfts, subType, this::usageEstimate, txn, numPayerKeys);
+    }
+    /*@Override
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getMetadataKey(token));
+    }*/
+    @Override
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        List<Function<HapiSpec, Key>> signers = new ArrayList<>();
+        signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
+        signers.add(spec -> {
+            try {
+                return spec.registry().getAdminKey(token);
+            } catch (Exception ignore) {
+                return Key.getDefaultInstance();
+            }
+        });
+        metadataKey.ifPresent(m -> signers.add((spec -> spec.registry().getKey(m))));
+        return signers;
     }
 }

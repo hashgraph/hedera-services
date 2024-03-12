@@ -84,10 +84,6 @@ public class TokenAttributesValidator {
      */
     public void validateTokenMetadata(@Nullable final Bytes metadata, @NonNull final TokensConfig tokensConfig) {
         if (metadata != null) {
-            validateFalse(Objects.equals(metadata, Bytes.EMPTY), MISSING_TOKEN_METADATA);
-            validateFalse(
-                    metadata.length() == 0 || (metadata.length() == 1 && metadata.getByte(0) == 0),
-                    MISSING_TOKEN_METADATA);
             if (metadata.length() > 0) {
                 validateTrue(metadata.length() <= tokensConfig.tokensMaxMetadataBytes(), METADATA_TOO_LONG);
             }

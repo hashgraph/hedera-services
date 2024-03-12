@@ -22,9 +22,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_METADATA;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -44,10 +44,8 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedHashSet;
-import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -69,20 +67,18 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.tokenUpdateNftsOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
-        validateTruePreCheck(op.hasMetadata(), MISSING_TOKEN_METADATA);
         validateTrue(!op.serialNumbers().isEmpty(), MISSING_SERIAL_NUMBERS);
-        if (op.hasMetadata()) {
-            validateFalsePreCheck(
-                    (Objects.equals(op.metadata(), Bytes.EMPTY)
-                            || requireNonNull(op.metadata()).length() == 0),
-                    MISSING_TOKEN_METADATA);
-        }
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        pureChecks(context.body());
+        final var txn = context.body();
+        final var op = txn.tokenUpdateNftsOrThrow();
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
+        final var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
+        if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
+        context.requireKeyOrThrow(token.metadataKey(), TOKEN_HAS_NO_METADATA_KEY);
     }
 
     @Override
@@ -91,7 +87,9 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var txnBody = context.body();
         final var op = txnBody.tokenUpdateNftsOrThrow();
         final var token = op.tokenOrThrow();
-
+        if(!op.hasMetadata()) {
+            return;
+        }
         validateSemantics(context, op);
         final var nftStore = context.writableStore(WritableNftStore.class);
 
@@ -112,11 +110,8 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
             validateTrue(nftSerialNumber > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
             final Nft nft = nftStore.get(tokenNftId, nftSerialNumber);
             validateTrue(nft != null, INVALID_NFT_ID);
-            if (op.hasMetadata()) {
-                var updatedNft =
-                        nft.copyBuilder().metadata(op.metadataOrThrow()).build();
-                nftStore.put(updatedNft);
-            }
+            var updatedNft = nft.copyBuilder().metadata(op.metadataOrThrow()).build();
+            nftStore.put(updatedNft);
         }
     }
 
@@ -141,9 +136,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var token = getIfUsable(tokenId, tokenStore);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         // validate metadata
-        if (op.hasMetadata()) {
-            validator.validateTokenMetadata(op.metadata(), tokensConfig);
-        }
+        validator.validateTokenMetadata(op.metadata(), tokensConfig);
         validateTrue(op.serialNumbers().size() <= tokensConfig.nftsMaxBatchSizeUpdate(), BATCH_SIZE_LIMIT_EXCEEDED);
     }
 }

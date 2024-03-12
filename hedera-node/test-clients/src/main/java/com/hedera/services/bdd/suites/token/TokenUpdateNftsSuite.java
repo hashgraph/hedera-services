@@ -50,6 +50,8 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     private static String TOKEN_TREASURY = "treasury";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungible";
     private static final String SUPPLY_KEY = "supplyKey";
+    private static final String METADATA_KEY = "metadataKey";
+
     private static final String WIPE_KEY = "wipeKey";
     private static final String NFT_TEST_METADATA = " test metadata";
 
@@ -73,6 +75,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
+                        newKeyNamed(METADATA_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .supplyType(TokenSupplyType.FINITE)
@@ -81,6 +84,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                                 .maxSupply(12L)
                                 .wipeKey(WIPE_KEY)
                                 .supplyKey(SUPPLY_KEY)
+                                .metadataKey(METADATA_KEY)
                                 .initialSupply(0L),
                         mintToken(
                                 NON_FUNGIBLE_TOKEN,
@@ -97,7 +101,8 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L)
                                 .hasSerialNum(7L)
                                 .hasMetadata(ByteString.copyFromUtf8("g")),
-                        tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L)),
+                        tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
+                                .signedBy(GENESIS, METADATA_KEY),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L)
                                 .hasSerialNum(7L)
                                 .hasMetadata(ByteString.copyFromUtf8(NFT_TEST_METADATA)),
@@ -114,6 +119,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
+                        newKeyNamed(METADATA_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .supplyType(TokenSupplyType.FINITE)
@@ -122,6 +128,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                                 .maxSupply(12L)
                                 .wipeKey(WIPE_KEY)
                                 .supplyKey(SUPPLY_KEY)
+                                .metadataKey(METADATA_KEY)
                                 .initialSupply(0L),
                         mintToken(
                                 NON_FUNGIBLE_TOKEN,
@@ -134,6 +141,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                                         copyFromUtf8("f"),
                                         copyFromUtf8("g"))))
                 .when(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
+                        .signedBy(GENESIS, METADATA_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
                         .via(nftUpdateTxn))
@@ -149,6 +157,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
+                        newKeyNamed(METADATA_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .supplyType(TokenSupplyType.FINITE)
@@ -157,6 +166,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                                 .maxSupply(12L)
                                 .wipeKey(WIPE_KEY)
                                 .supplyKey(SUPPLY_KEY)
+                                .metadataKey(METADATA_KEY)
                                 .initialSupply(0L),
                         mintToken(
                                 NON_FUNGIBLE_TOKEN,
@@ -169,6 +179,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                                         copyFromUtf8("f"),
                                         copyFromUtf8("g"))))
                 .when(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L, 2L, 3L, 4L, 5L))
+                        .signedBy(GENESIS, METADATA_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
                         .via(nftUpdateTxn))
