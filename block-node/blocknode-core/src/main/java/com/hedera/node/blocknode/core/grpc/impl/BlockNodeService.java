@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.blocknode.core;
+package com.hedera.node.blocknode.core.grpc.impl;
 
 // import com.hedera.block.node.api.proto.java.BlockServiceGrpc;
 // import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentRequest;
 // import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentResponse;
 // import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentResponseCode;
+import com.hedera.node.blocknode.core.grpc.BlockNodeServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

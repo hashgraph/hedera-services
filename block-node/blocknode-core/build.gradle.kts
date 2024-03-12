@@ -19,7 +19,7 @@ plugins {
     id("com.hedera.hashgraph.blocknode.conventions")
 }
 
-application { mainClass = "com.hedera.node.blocknode.core.BlockNodeServer" }
+application { mainClass = "com.hedera.node.blocknode.core.BlockNode" }
 
 tasks.withType<JavaExec>().configureEach {
     if (name.endsWith("main()")) {

@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.blocknode.core;
+package com.hedera.node.blocknode.core.grpc;
 
 import com.hedera.node.blocknode.config.ConfigProvider;
 import com.hedera.node.blocknode.config.data.BlockNodeGrpcConfig;
+import java.io.IOException;
+
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,26 +40,32 @@ public class BlockNodeServer {
                 .build();
     }
 
-    public void start() throws IOException {
-        server.start();
-        logger.info("Block app started at port: " + port);
-    }
-
-    public void blockUntilShutdown() throws InterruptedException {
-        if (server != null) {
-            server.awaitTermination();
-        }
-    }
-
-    public static void main(final String... args) {
-        logger.info("BlockNode - Main");
-        BlockNodeServer server = new BlockNodeServer();
-
+    /**
+     * Attempts to start the server.
+     */
+    public void start() {
         try {
             server.start();
-            server.blockUntilShutdown();
-        } catch (Exception e) {
-            e.printStackTrace();
+            logger.info("Block Node gRPC server starting at port: " + port);
+            server.awaitTermination();
+        } catch (IOException e) {
+            logger.error("Block Node gRPC Server couldn't be started! Error: " + e.getMessage());
+            throw new RuntimeException("Failed to start gRPC server!");
+        } catch (InterruptedException e) {
+            logger.error("Failed to configure gRPC termination specs! Error: " + e.getMessage());
+            throw new RuntimeException("Failed to configure gRPC server!");
         }
+    }
+
+    public void stop() {
+        server.shutdown();
+    }
+
+    public Server getGrpcServer() {
+        return server;
+    }
+
+    public int getPort() {
+        return port;
     }
 }
