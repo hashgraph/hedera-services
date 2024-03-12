@@ -14,22 +14,27 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.signed;
+package com.swirlds.common.wiring.component;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Hashes signed states
+ * Annotates a method parameter used to implement a transformer/filter. Use this to override the name of the task
+ * scheduler used to operate the transformer/filter.
  */
-@FunctionalInterface
-public interface SignedStateHasher {
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface SchedulerLabel {
+
     /**
-     * Hashes a SignedState.
+     * The label of the task scheduler that will operate the transformer/filter.
      *
-     * @param stateAndRound the state and round, which contains the state to hash
+     * @return the label of the task scheduler that will operate the transformer/filter
      */
-    @InputWireLabel("unhashed state and round")
-    void hashState(@NonNull StateAndRound stateAndRound);
+    @NonNull
+    String value();
 }

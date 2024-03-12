@@ -63,6 +63,7 @@ import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
@@ -128,6 +129,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.EmergencyStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LockFreeStateNexus;
@@ -165,7 +167,6 @@ import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.util.ThingsToStart;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformWiring;
-import com.swirlds.platform.wiring.components.IssDetectorWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -464,7 +465,7 @@ public class SwirldsPlatform implements Platform {
 
         transactionPool = new TransactionPool(platformContext);
         final LatestCompleteStateNexus latestCompleteState =
-                new LatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
+                new DefaultLatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
         platformWiring = thingsToStart.add(new PlatformWiring(platformContext));
 
@@ -485,7 +486,7 @@ public class SwirldsPlatform implements Platform {
             oldStyleIntakeQueue = null;
         }
 
-        savedStateController = new SavedStateController(stateConfig);
+        savedStateController = new DefaultSavedStateController(stateConfig);
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         final StateSignatureCollector stateSignatureCollector = new StateSignatureCollector(
@@ -565,15 +566,13 @@ public class SwirldsPlatform implements Platform {
             // FUTURE WORK: this is where the state is currently being hashed. State hashing will be moved into a
             // separate component. At that time, all subsequent method calls in this lambda will be wired to receive
             // data from the hasher, since they require a strong guarantee that the state has been hashed.
-            stateManagementComponent.newSignedStateFromTransactions(
-                    state.getAndReserve("stateManagementComponent.newSignedStateFromTransactions"));
+            stateManagementComponent.newSignedStateFromTransactions(stateAndRound.makeAdditionalReservation(
+                    ("stateManagementComponent.newSignedStateFromTransactions")));
 
-            final IssDetectorWiring issDetectorWiring = platformWiring.getIssDetectorWiring();
-            // FUTURE WORK: these three method calls will be combined into a single method call
-            issDetectorWiring.roundCompletedInput().put(roundNumber);
-            issDetectorWiring.newStateHashed().put(state.getAndReserve("issDetector"));
-            issDetectorWiring.handleConsensusRound().put(consensusRound);
-
+            platformWiring
+                    .getIssDetectorWiring()
+                    .stateAndRoundInput()
+                    .put(stateAndRound.makeAdditionalReservation("issDetector"));
             platformWiring.getSignatureCollectorConsensusInput().put(consensusRound);
 
             stateAndRound.reservedSignedState().close();

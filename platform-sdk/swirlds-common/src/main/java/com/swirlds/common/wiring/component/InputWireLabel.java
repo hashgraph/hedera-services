@@ -23,7 +23,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotates a method parameter to indicate that the parameter is an input wire label.
+ * Label the input wire that a method is associated with.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
