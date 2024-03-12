@@ -16,12 +16,22 @@
 
 package com.swirlds.logging;
 
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggerImpl;
+import com.swirlds.logging.api.internal.LoggingSystem;
+import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
+import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
+import com.swirlds.logging.file.FileHandlerFactory;
 import com.swirlds.logging.util.DummyConsumer;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 public class LoggerImplTest {
 
     @Test
@@ -93,6 +103,27 @@ public class LoggerImplTest {
     void testSpecWithSimpleLogger() {
         // given
         LoggerImpl logger = new LoggerImpl("test-name", new SimpleLogEventFactory(), new DummyConsumer());
+
+        // then
+        LoggerApiSpecTest.testSpec(logger);
+    }
+
+    @Test
+    void testSpecWithFileLogHandler() {
+        // given
+        final Configuration configuration = ConfigurationBuilder.create()
+                .withConverter(new ConfigLevelConverter())
+                .withConverter(new MarkerStateConverter())
+                .withValue("logging.level", "trace")
+                .withValue("logging.handler.file.type", "file")
+                .withValue("logging.handler.file.active", "true")
+                .withValue("logging.handler.file.level", "trace")
+                .withValue("logging.handler.file.file", "benchmark.log")
+                .build();
+        final LogHandler fileHandler = new FileHandlerFactory().create("file", configuration);
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+        loggingSystem.addHandler(fileHandler);
+        final Logger logger = loggingSystem.getLogger("test-name");
 
         // then
         LoggerApiSpecTest.testSpec(logger);

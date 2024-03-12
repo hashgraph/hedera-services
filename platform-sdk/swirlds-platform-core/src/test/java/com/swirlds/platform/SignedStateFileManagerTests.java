@@ -49,6 +49,7 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
+import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.StateConfig_;
@@ -273,7 +274,7 @@ class SignedStateFileManagerTests {
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context, buildMockMetrics(), new FakeTime(), MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
         final SavedStateController controller =
-                new SavedStateController(context.getConfiguration().getConfigData(StateConfig.class));
+                new DefaultSavedStateController(context.getConfiguration().getConfigData(StateConfig.class));
 
         Instant timestamp;
         final long firstRound;

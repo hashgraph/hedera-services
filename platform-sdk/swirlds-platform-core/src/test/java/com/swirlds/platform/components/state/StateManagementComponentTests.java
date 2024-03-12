@@ -32,14 +32,14 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig_;
-import com.swirlds.platform.dispatch.DispatchBuilder;
-import com.swirlds.platform.dispatch.DispatchConfiguration;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -92,7 +92,8 @@ class StateManagementComponentTests {
             final Hash hash = getHash(signedState);
             signedState.getState().setHash(null); // we expect this to trigger hashing the state.
 
-            component.newSignedStateFromTransactions(signedState.reserve("test"));
+            component.newSignedStateFromTransactions(
+                    new StateAndRound(signedState.reserve("test"), mock(ConsensusRound.class)));
             final Hash hash2 = getHash(signedState);
             assertEquals(hash, hash2, "The same hash must be computed and added to the state.");
 
@@ -213,11 +214,6 @@ class StateManagementComponentTests {
             }
         };
 
-        final DispatchConfiguration dispatchConfiguration =
-                platformContext.getConfiguration().getConfigData(DispatchConfiguration.class);
-
-        final DispatchBuilder dispatchBuilder = new DispatchBuilder(dispatchConfiguration);
-
         final DefaultStateManagementComponent stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
@@ -226,8 +222,6 @@ class StateManagementComponentTests {
                 ss -> {},
                 new SignedStateMetrics(new NoOpMetrics()),
                 x -> true);
-
-        dispatchBuilder.start();
 
         return stateManagementComponent;
     }

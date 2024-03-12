@@ -19,10 +19,26 @@ package com.swirlds.platform.network;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
+import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.gossip.shadowgraph.SyncTimeoutException;
+import com.swirlds.platform.network.connectivity.SocketFactory;
+import com.swirlds.platform.network.connectivity.TcpFactory;
+import com.swirlds.platform.network.connectivity.TlsFactory;
+import com.swirlds.platform.system.PlatformConstructionException;
+import com.swirlds.platform.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.Closeable;
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.util.Objects;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -111,5 +127,48 @@ public final class NetworkUtils {
         }
         return "Caused by exception: " + e.getClass().getSimpleName() + " Message: " + e.getMessage() + " "
                 + formatException(e.getCause());
+    }
+
+    /**
+     * Create a {@link SocketFactory} based on the configuration and the provided keys and certificates.
+     * NOTE: This method is a stepping stone to decoupling the networking from the platform.
+     *
+     * @param selfId         the ID of the node
+     * @param addressBook    the address book of the network
+     * @param keysAndCerts   the keys and certificates to use for the TLS connections
+     * @param configuration  the configuration of the network
+     * @return the created {@link SocketFactory}
+     */
+    public static @NonNull SocketFactory createSocketFactory(
+            @NonNull final NodeId selfId,
+            @NonNull final AddressBook addressBook,
+            @NonNull final KeysAndCerts keysAndCerts,
+            @NonNull final Configuration configuration) {
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(keysAndCerts);
+        Objects.requireNonNull(configuration);
+
+        final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
+        final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
+
+        if (!socketConfig.useTLS()) {
+            return new TcpFactory(socketConfig);
+        }
+        try {
+            return new TlsFactory(
+                    keysAndCerts.agrCert(),
+                    keysAndCerts.agrKeyPair().getPrivate(),
+                    Utilities.createPeerInfoList(addressBook, selfId),
+                    socketConfig,
+                    cryptoConfig);
+        } catch (final NoSuchAlgorithmException
+                | UnrecoverableKeyException
+                | KeyStoreException
+                | KeyManagementException
+                | CertificateException
+                | IOException e) {
+            throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
+        }
     }
 }

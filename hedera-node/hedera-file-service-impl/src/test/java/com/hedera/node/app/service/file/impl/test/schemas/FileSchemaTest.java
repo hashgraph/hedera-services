@@ -31,11 +31,9 @@ import com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.fixtures.throttle.FakeHandleThrottleParser;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.hedera.node.config.ConfigProvider;
@@ -49,7 +47,6 @@ final class FileSchemaTest {
     private final ReadableStates prevStates = EmptyReadableStates.INSTANCE;
     private MapWritableStates newStates;
     private final NetworkInfo networkInfo = new FakeNetworkInfo();
-    private final HandleThrottleParser handleThrottleParser = new FakeHandleThrottleParser();
 
     private ConfigProvider configProvider;
 
@@ -83,8 +80,8 @@ final class FileSchemaTest {
                 config,
                 networkInfo,
                 new GenesisRecordsConsensusHook(),
-                handleThrottleParser,
-                mock(WritableEntityIdStore.class)));
+                mock(WritableEntityIdStore.class),
+                null));
 
         // Then the new state has empty bytes for files 151-158 and proper values
         final var files = newStates.<FileID, File>get(FileServiceImpl.BLOBS_KEY);
