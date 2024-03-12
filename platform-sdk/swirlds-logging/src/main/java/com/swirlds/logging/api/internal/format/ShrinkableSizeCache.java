@@ -17,7 +17,6 @@
 package com.swirlds.logging.api.internal.format;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
@@ -58,7 +57,15 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
      * @param shrinkPeriodInMs configurable shrink period for the cache
      */
     public ShrinkableSizeCache(final int maxSize, final int shrinkPeriodInMs) {
-        this(maxSize, shrinkPeriodInMs, null);
+        TimerTask cleanUpTask = new TimerTask() {
+            @Override
+            public void run() {
+                while (insertionOrderList.size() > maxSize) {
+                    delegatedMap.remove(insertionOrderList.pop());
+                }
+            }
+        };
+        new Timer(true).scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs);
     }
 
     /**
@@ -69,20 +76,13 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
      * @param executorService  external ScheduledExecutorService to run the cleanup task
      */
     public ShrinkableSizeCache(
-            final int maxSize, final int shrinkPeriodInMs, final @Nullable ScheduledExecutorService executorService) {
-        TimerTask cleanUpTask = new TimerTask() {
-            @Override
-            public void run() {
-                while (insertionOrderList.size() > maxSize) {
-                    delegatedMap.remove(insertionOrderList.pop());
-                }
+            final int maxSize, final int shrinkPeriodInMs, final @NonNull ScheduledExecutorService executorService) {
+        Runnable cleanUpTask = () -> {
+            while (insertionOrderList.size() > maxSize) {
+                delegatedMap.remove(insertionOrderList.pop());
             }
         };
-        if (executorService != null) {
-            executorService.scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs, TimeUnit.MILLISECONDS);
-        } else {
-            new Timer(true).scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs);
-        }
+        executorService.scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs, TimeUnit.MILLISECONDS);
     }
 
     /**

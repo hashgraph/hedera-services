@@ -91,7 +91,7 @@ class ShrinkableSizeCacheTest {
 
         executor.executeAndWait(task, task);
         // when
-        Thread.sleep(11);
+        Thread.sleep(12);
         // then
         assertEquals(50, cache.size());
     }
