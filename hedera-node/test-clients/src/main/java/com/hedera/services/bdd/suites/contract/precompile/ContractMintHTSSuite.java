@@ -128,7 +128,10 @@ public class ContractMintHTSSuite extends HapiSuite {
         final var nestedTransferTxn = "nestedTransferTxn";
         final var v2SecuritySendNftAfterNestedMint = "v2SecuritySendNftAfterNestedMint";
 
-        return defaultHapiSpec("TransferNftAfterNestedMint", NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS, NONDETERMINISTIC_FUNCTION_PARAMETERS)
+        return defaultHapiSpec(
+                        "TransferNftAfterNestedMint",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
