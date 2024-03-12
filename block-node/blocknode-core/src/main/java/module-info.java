@@ -19,5 +19,6 @@ module com.hedera.storage.blocknode.core {
     requires transitive com.hedera.storage.blocknode.grpc.api;
     requires transitive com.hedera.storage.blocknode.state;
     requires transitive com.hedera.node.hapi;
+    requires transitive org.apache.commons.io;
     requires static com.github.spotbugs.annotations;
 }

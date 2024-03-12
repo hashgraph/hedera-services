@@ -30,6 +30,7 @@ public class BlockNodeServer {
     private final Server server;
 
     public BlockNodeServer() {
+        final var fileWatcher = new BlockNodeFileWatcherService();
         final var configProvider = new ConfigProvider();
         final var blockNodeConfig = configProvider.configuration.getConfigData(BlockNodeGrpcConfig.class);
 
