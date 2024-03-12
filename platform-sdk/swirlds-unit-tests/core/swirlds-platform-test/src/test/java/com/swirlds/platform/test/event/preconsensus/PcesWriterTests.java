@@ -368,13 +368,13 @@ class PcesWriterTests {
     @DisplayName("Ancient Event Test")
     void ancientEventTest(@NonNull final AncientMode ancientMode) throws IOException {
 
-        // TODO remove seed after failing test has been debugged and fixed.
-        final Random random = RandomUtils.getRandomPrintSeed(2144914209421451540L);
+        final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
         final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
-        final int stepsUntilAncient = random.nextInt(50, 100);
+        final int stepsUntilAncient =
+                ancientMode == GENERATION_THRESHOLD ? random.nextInt(50, 100) : random.nextInt(5, 10);
         final PcesSequencer sequencer = new PcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
