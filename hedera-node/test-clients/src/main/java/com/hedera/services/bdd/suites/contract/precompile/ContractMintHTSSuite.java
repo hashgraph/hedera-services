@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
@@ -172,9 +173,11 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .payingWith(GENESIS)
+                                .via("mintExtremeValue")
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck("mintExtremeValue", CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         NEGATIVE_MINT_CONTRACT,
                                         mintExtremeValue,
@@ -183,9 +186,11 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .payingWith(GENESIS)
+                                .via("mintNegativeExtremeValue")
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck("mintNegativeExtremeValue", CONTRACT_REVERT_EXECUTED),
                         contractCall(NEGATIVE_MINT_CONTRACT, mintInvalidAddressType, new byte[][] {}, 100L)
                                 .payingWith(GENESIS)
                                 .via(invalidTokenTest)
@@ -200,9 +205,11 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .payingWith(GENESIS)
+                                .via("mintExtremeValueNFT")
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck("mintExtremeValueNFT", CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         NEGATIVE_MINT_CONTRACT,
                                         mintExtremeValue,
@@ -211,9 +218,11 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .payingWith(GENESIS)
+                                .via("mintNegativeExtremeValueNFT")
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck("mintNegativeExtremeValueNFT", CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         NEGATIVE_MINT_CONTRACT,
                                         mintInvalidAddressType,
