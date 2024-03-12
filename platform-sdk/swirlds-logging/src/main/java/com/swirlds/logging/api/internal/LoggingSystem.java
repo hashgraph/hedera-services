@@ -101,6 +101,11 @@ public class LoggingSystem implements LogEventConsumer {
         this.levelConfig = new HandlerLoggingLevelConfig(configuration);
     }
 
+    public void update(@NonNull Configuration configuration) {
+        this.levelConfig.update(configuration);
+        this.handlers.forEach(handler -> handler.update(configuration));
+    }
+
     /**
      * Adds a new handler to the logging system.
      *

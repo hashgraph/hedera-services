@@ -74,6 +74,11 @@ public abstract class AbstractLogHandler implements LogHandler {
         return loggingLevelConfig.isEnabled(name, level, marker);
     }
 
+    @Override
+    public void update(@NonNull final Configuration configuration) {
+        loggingLevelConfig.update(configuration);
+    }
+
     /**
      * Returns the configuration
      *
