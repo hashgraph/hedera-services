@@ -219,8 +219,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .via(invalidTokenNFTTest)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                .gas(GAS_TO_OFFER),
                         getTxnRecord(invalidTokenTest).andAllChildRecords().logged(),
                         getTxnRecord(invalidTokenNFTTest).andAllChildRecords().logged())))
                 .then(
