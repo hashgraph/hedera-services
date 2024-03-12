@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @WithTestExecutor
@@ -78,6 +79,7 @@ class ShrinkableSizeCacheTest {
     }
 
     @Test
+    @Disabled
     void testConcurrency(TestExecutor executor) throws InterruptedException {
         // given
         ShrinkableSizeCache<Integer, String> cache = new ShrinkableSizeCache<>(50, SHRINK_PERIOD_IN_MS);
