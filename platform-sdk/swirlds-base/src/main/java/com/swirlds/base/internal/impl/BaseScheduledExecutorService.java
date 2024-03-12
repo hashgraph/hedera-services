@@ -40,6 +40,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BaseScheduledExecutorService implements ScheduledExecutorService {
 
     public static final int CORE_POOL_SIZE = 1;
+
     private static BaseScheduledExecutorService instance;
 
     private static final Lock instanceLock = new ReentrantLock();
