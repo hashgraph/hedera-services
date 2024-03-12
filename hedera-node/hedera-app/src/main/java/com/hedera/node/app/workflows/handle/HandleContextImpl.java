@@ -795,6 +795,32 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     childRecordBuilder);
             childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
         }
+        // For mono-service fidelity, we need to attach staking rewards for a
+        // triggered transaction to the record of the child here, and not the
+        // "parent" ScheduleCreate or ScheduleSign transaction
+        if (childCategory == SCHEDULED) {
+            final var finalizeContext = new TriggeredFinalizeContext(
+                    new ReadableStoreFactory(childStack),
+                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    childRecordBuilder,
+                    consensusNow(),
+                    configuration);
+            parentRecordFinalizer.finalizeParentRecord(
+                    payer, finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
+            final var paidStakingRewards = childRecordBuilder.getPaidStakingRewards();
+            if (!paidStakingRewards.isEmpty()) {
+                if (dispatchPaidStakerIds == null) {
+                    dispatchPaidStakerIds = new LinkedHashSet<>();
+                }
+                paidStakingRewards.forEach(aa -> dispatchPaidStakerIds.add(aa.accountIDOrThrow()));
+            }
+        } else {
+            final var finalizeContext = new ChildFinalizeContextImpl(
+                    new ReadableStoreFactory(childStack),
+                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    childRecordBuilder);
+            childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
+        }
         childStack.commitFullStack();
     }
 
