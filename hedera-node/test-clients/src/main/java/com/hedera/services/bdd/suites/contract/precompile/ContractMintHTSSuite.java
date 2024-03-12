@@ -139,7 +139,6 @@ public class ContractMintHTSSuite extends HapiSuite {
 
         var invalidTokenNFTTest = "invalidTokenNFTTest";
         var invalidTokenTest = "invalidTokenTest";
-
         return defaultHapiSpec("MintFungibleTokenWithInvalidAndExtremeValues")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -246,9 +245,10 @@ public class ContractMintHTSSuite extends HapiSuite {
     @HapiTest
     final HapiSpec mintTokensWithInvalidValues() {
         var mintToken = "mintToken";
-        var fungibleMintWithMetadata = "fungibleMintWithMetadata";
-        var mintWithZeroedAddress = "mintWithZeroedAddress";
-        var mintWithZeroedAddressAndMetadata = "mintWithZeroedAddressAndMetadata";
+
+        var fungibleMintWithMetadataTest = "fungibleMintWithMetadataTest";
+        var mintWithZeroedAddressTest = "mintWithZeroedAddressTest";
+        var mintWithZeroedAddressAndMetadataTest = "mintWithZeroedAddressAndMetadataTest";
 
         return defaultHapiSpec("MintFungibleTokenWithInvalidAndExtremeValues")
                 .given(
@@ -285,7 +285,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
                                         1L)
                                 .payingWith(GENESIS)
-                                .via(fungibleMintWithMetadata)
+                                .via(fungibleMintWithMetadataTest)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER),
                         contractCall(
@@ -296,7 +296,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                 .setAccountNum(0L)
                                                 .build()))
                                 .payingWith(GENESIS)
-                                .via(mintWithZeroedAddress)
+                                .via(mintWithZeroedAddressTest)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER),
                         contractCall(
@@ -307,25 +307,29 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                 .setAccountNum(0L)
                                                 .build()))
                                 .payingWith(GENESIS)
-                                .via(mintWithZeroedAddressAndMetadata)
+                                .via(mintWithZeroedAddressAndMetadataTest)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER),
-                        getTxnRecord(fungibleMintWithMetadata)
+                        getTxnRecord(fungibleMintWithMetadataTest)
                                 .andAllChildRecords()
                                 .logged(),
-                        getTxnRecord(mintWithZeroedAddress).andAllChildRecords().logged(),
-                        getTxnRecord(mintWithZeroedAddressAndMetadata)
+                        getTxnRecord(mintWithZeroedAddressTest)
+                                .andAllChildRecords()
+                                .logged(),
+                        getTxnRecord(mintWithZeroedAddressAndMetadataTest)
                                 .andAllChildRecords()
                                 .logged())))
                 .then(
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 1_000),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
                         childRecordsCheck(
-                                fungibleMintWithMetadata, SUCCESS, recordWith().status(INVALID_TRANSACTION_BODY)),
+                                fungibleMintWithMetadataTest,
+                                SUCCESS,
+                                recordWith().status(INVALID_TRANSACTION_BODY)),
                         childRecordsCheck(
-                                mintWithZeroedAddress, SUCCESS, recordWith().status(INVALID_TRANSACTION_BODY)),
+                                mintWithZeroedAddressTest, SUCCESS, recordWith().status(INVALID_TRANSACTION_BODY)),
                         childRecordsCheck(
-                                mintWithZeroedAddressAndMetadata,
+                                mintWithZeroedAddressAndMetadataTest,
                                 SUCCESS,
                                 recordWith().status(INVALID_TRANSACTION_BODY)));
     }
