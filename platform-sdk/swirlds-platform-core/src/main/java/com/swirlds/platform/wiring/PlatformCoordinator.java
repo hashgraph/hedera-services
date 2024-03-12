@@ -21,6 +21,7 @@ import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWi
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
+import com.swirlds.platform.wiring.components.FutureEventBufferWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
@@ -45,6 +46,7 @@ public class PlatformCoordinator {
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ShadowgraphWiring shadowgraphWiring;
     private final ConsensusEngineWiring consensusEngineWiring;
+    private final FutureEventBufferWiring futureEventBufferWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
@@ -61,6 +63,7 @@ public class PlatformCoordinator {
      * @param inOrderLinkerWiring                    the in order linker wiring
      * @param shadowgraphWiring                      the shadowgraph wiring
      * @param consensusEngineWiring                  the consensus engine wiring
+     * @param futureEventBufferWiring                the future event buffer wiring
      * @param eventCreationManagerWiring             the event creation manager wiring
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
@@ -75,6 +78,7 @@ public class PlatformCoordinator {
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final ShadowgraphWiring shadowgraphWiring,
             @NonNull final ConsensusEngineWiring consensusEngineWiring,
+            @NonNull final FutureEventBufferWiring futureEventBufferWiring,
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
             @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
@@ -88,6 +92,7 @@ public class PlatformCoordinator {
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
         this.shadowgraphWiring = Objects.requireNonNull(shadowgraphWiring);
         this.consensusEngineWiring = Objects.requireNonNull(consensusEngineWiring);
+        this.futureEventBufferWiring = Objects.requireNonNull(futureEventBufferWiring);
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
         this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
@@ -95,9 +100,16 @@ public class PlatformCoordinator {
     }
 
     /**
-     * Flushes the intake pipeline
+     * Flushes the intake pipeline. After this method is called, all components in the intake pipeline (i.e. components
+     * prior to the consensus engine) will have been flushed. Additionally, things will be flushed an order that
+     * guarantees that there will be no remaining work in the intake pipeline (as long as there are no additional events
+     * added to the intake pipeline, and as long as there are no events released by the orphan buffer).
      */
     public void flushIntakePipeline() {
+        // Important: the order of the lines within this function matters. Do not alter the order of these
+        // lines without understanding the implications of doing so. Consult the wiring diagram when deciding
+        // whether to change the order of these lines.
+
         // it isn't possible to flush the event hasher and the post hash collector independently, since the framework
         // currently doesn't support flushing if multiple components share the same object counter. As a workaround,
         // we just wait for the shared object counter to be empty, which is equivalent to flushing both components.
@@ -107,17 +119,24 @@ public class PlatformCoordinator {
         eventDeduplicatorWiring.flushRunnable().run();
         eventSignatureValidatorWiring.flushRunnable().run();
         orphanBufferWiring.flushRunnable().run();
-        eventCreationManagerWiring.flush();
         inOrderLinkerWiring.flushRunnable().run();
         shadowgraphWiring.flushRunnable().run();
         consensusEngineWiring.flushRunnable().run();
         applicationTransactionPrehandlerWiring.flushRunnable().run();
+        futureEventBufferWiring.flushRunnable().run();
+        eventCreationManagerWiring.flush();
     }
 
     /**
-     * Safely clears the system in preparation for reconnect
+     * Safely clears the system in preparation for reconnect. After this method is called, there should be no work
+     * sitting in any of the wiring queues, and all internal data structures within wiring components that need to be
+     * cleared to prepare for a reconnect should be cleared.
      */
     public void clear() {
+        // Important: the order of the lines within this function are important. Do not alter the order of these
+        // lines without understanding the implications of doing so. Consult the wiring diagram when deciding
+        // whether to change the order of these lines.
+
         // Phase 1: squelch
         // Break cycles in the system. Flush squelched components just in case there is a task being executed when
         // squelch is activated.
