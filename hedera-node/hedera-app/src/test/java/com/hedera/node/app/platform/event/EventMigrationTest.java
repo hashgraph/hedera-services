@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.platform.event;
 
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
@@ -47,11 +63,11 @@ public class EventMigrationTest {
 
         try (final EventStreamSingleFileIterator iterator = new EventStreamSingleFileIterator(
                 new File(this.getClass()
-                        .getClassLoader()
-                        .getResource("eventFiles/sdk0.46.3/2024-03-05T00_10_55.002129867Z.events")
-                        .toURI()).toPath(),
-                false
-        )) {
+                                .getClassLoader()
+                                .getResource("eventFiles/sdk0.46.3/2024-03-05T00_10_55.002129867Z.events")
+                                .toURI())
+                        .toPath(),
+                false)) {
             while (iterator.hasNext()) {
                 final BaseEventHashedData hashedData = iterator.next().getBaseEventHashedData();
                 numEvents++;
@@ -64,10 +80,14 @@ public class EventMigrationTest {
         }
 
         Assertions.assertEquals(2417, numEvents, "this file is expected to have 2417 events but has " + numEvents);
-        Assertions.assertEquals(2417, eventHashes.size(),
+        Assertions.assertEquals(
+                2417,
+                eventHashes.size(),
                 "we expected to have 2417 hashes (one for each event) but have " + eventHashes.size());
         eventHashes.removeAll(parentHashes);
-        Assertions.assertEquals(9, eventHashes.size(),
+        Assertions.assertEquals(
+                9,
+                eventHashes.size(),
                 "the hashes of most parents are expected to match the hashes of events."
                         + " Number of unmatched hashes: " + eventHashes.size());
     }
