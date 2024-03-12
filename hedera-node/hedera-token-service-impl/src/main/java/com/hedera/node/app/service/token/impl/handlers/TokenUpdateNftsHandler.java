@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_METADATA;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -78,7 +77,9 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
         if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        context.requireKeyOrThrow(token.metadataKey(), TOKEN_HAS_NO_METADATA_KEY);
+        if (token.hasMetadataKey()) {
+            context.requireKey(token.metadataKeyOrThrow());
+        }
     }
 
     @Override
@@ -86,8 +87,14 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         requireNonNull(context);
         final var txnBody = context.body();
         final var op = txnBody.tokenUpdateNftsOrThrow();
-        final var token = op.tokenOrThrow();
-        if(!op.hasMetadata()) {
+        final var tokenId = op.tokenOrThrow();
+
+        // Ensure that the token has metadataKey
+        final var tokenStore = context.readableStore(ReadableTokenStore.class);
+        final var token = getIfUsable(tokenId, tokenStore);
+        validateTrue(token.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
+
+        if (!op.hasMetadata()) {
             return;
         }
         validateSemantics(context, op);
@@ -96,7 +103,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         // Wrap in Set to de-duplicate serial numbers
         final var nftSerialNums = new LinkedHashSet<>(op.serialNumbers());
         validateTrue(nftSerialNums.size() <= nftStore.sizeOfState(), INVALID_NFT_ID);
-        updateNftMetadata(nftSerialNums, nftStore, token, op);
+        updateNftMetadata(nftSerialNums, nftStore, tokenId, op);
     }
 
     private void updateNftMetadata(
@@ -131,9 +138,6 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
 
     private void validateSemantics(
             @NonNull final HandleContext context, @NonNull final TokenUpdateNftsTransactionBody op) {
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        final var tokenId = op.tokenOrThrow();
-        final var token = getIfUsable(tokenId, tokenStore);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         // validate metadata
         validator.validateTokenMetadata(op.metadata(), tokensConfig);

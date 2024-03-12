@@ -29,6 +29,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdateNfts
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
@@ -66,15 +68,36 @@ public class TokenUpdateNftsSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(updateMetadataOfNftInCollection(), updateSingleNftFeeChargedAsExpected());
+        return List.of(updateMetadataOfNfts(), failsIfTokenHasNoMetadataKey(), updateSingleNftFeeChargedAsExpected());
     }
 
     @HapiTest
-    final HapiSpec updateMetadataOfNftInCollection() {
-        return defaultHapiSpec("updateMetadataOfNftInCollection")
+    private HapiSpec failsIfTokenHasNoMetadataKey() {
+        return defaultHapiSpec("failsIfTokenHasNoMetadataKey")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(WIPE_KEY),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyKey(SUPPLY_KEY)
+                                .maxSupply(12L)
+                                .initialSupply(0L),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"))))
+                .when()
+                .then(
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasMetadata(ByteString.copyFromUtf8("a")),
+                        tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                                .hasKnownStatus(TOKEN_HAS_NO_METADATA_KEY),
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasMetadata(ByteString.copyFromUtf8("a")));
+    }
+
+    @HapiTest
+    final HapiSpec updateMetadataOfNfts() {
+        return defaultHapiSpec("updateMetadataOfNfts")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(METADATA_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
@@ -82,7 +105,6 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
                                 .maxSupply(12L)
-                                .wipeKey(WIPE_KEY)
                                 .supplyKey(SUPPLY_KEY)
                                 .metadataKey(METADATA_KEY)
                                 .initialSupply(0L),
@@ -102,7 +124,9 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                                 .hasSerialNum(7L)
                                 .hasMetadata(ByteString.copyFromUtf8("g")),
                         tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
-                                .signedBy(GENESIS, METADATA_KEY),
+                                .signedBy(GENESIS)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L)),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L)
                                 .hasSerialNum(7L)
                                 .hasMetadata(ByteString.copyFromUtf8(NFT_TEST_METADATA)),
@@ -141,7 +165,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                                         copyFromUtf8("f"),
                                         copyFromUtf8("g"))))
                 .when(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
-                        .signedBy(GENESIS, METADATA_KEY)
+                        .signedBy(TOKEN_TREASURY, METADATA_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
                         .via(nftUpdateTxn))
@@ -179,7 +203,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                                         copyFromUtf8("f"),
                                         copyFromUtf8("g"))))
                 .when(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L, 2L, 3L, 4L, 5L))
-                        .signedBy(GENESIS, METADATA_KEY)
+                        .signedBy(TOKEN_TREASURY, METADATA_KEY)
                         .payingWith(TOKEN_TREASURY)
                         .fee(10 * ONE_HBAR)
                         .via(nftUpdateTxn))

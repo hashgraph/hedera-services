@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.spec.transactions.token;
 
-import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
@@ -83,6 +82,7 @@ public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
         metadataKey = Optional.of(name);
         return this;
     }
+
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         var txnId = TxnUtils.asTokenId(token, spec);
@@ -123,7 +123,7 @@ public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
         final UsageAccumulator accumulator = new UsageAccumulator();
         final var serials = txn.getTokenUpdateNfts().getSerialNumbersList().size();
-        accumulator.addSbpr((long) serials * LONG_SIZE);
+        accumulator.addBpt(serials);
         return AdapterUtils.feeDataFrom(accumulator);
     }
 
@@ -133,23 +133,14 @@ public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
                 .forActivityBasedOp(
                         HederaFunctionality.TokenUpdateNfts, subType, this::usageEstimate, txn, numPayerKeys);
     }
-    /*@Override
-    protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
-                .getMetadataKey(token));
-    }*/
+
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        List<Function<HapiSpec, Key>> signers = new ArrayList<>();
+        final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
-        signers.add(spec -> {
-            try {
-                return spec.registry().getAdminKey(token);
-            } catch (Exception ignore) {
-                return Key.getDefaultInstance();
-            }
-        });
-        metadataKey.ifPresent(m -> signers.add((spec -> spec.registry().getKey(m))));
+        if (metadataKey.isPresent()) {
+            signers.add(spec -> spec.registry().getMetadataKey(token));
+        }
         return signers;
     }
 }

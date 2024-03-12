@@ -916,7 +916,11 @@ public class HapiSpecRegistry {
     }
 
     public Key getMetadataKey(String name) {
-        return get(name, Key.class);
+        return get(name + "Metadata", Key.class);
+    }
+
+    public boolean hasMetadataKey(String name) {
+        return has(name + "Metadata", Key.class);
     }
 
     public void saveMetadata(String token, String metadata) {
