@@ -63,6 +63,7 @@ import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
@@ -485,7 +486,7 @@ public class SwirldsPlatform implements Platform {
             oldStyleIntakeQueue = null;
         }
 
-        savedStateController = new SavedStateController(stateConfig);
+        savedStateController = new DefaultSavedStateController(stateConfig);
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         final StateSignatureCollector stateSignatureCollector = new StateSignatureCollector(
