@@ -588,14 +588,19 @@ public class HandleWorkflow {
             }
         }
 
+        if (isFirstTransaction || consensusNow.getEpochSecond() > consTimeOfLastHandledTxn.getEpochSecond()) {
+            handleWorkflowMetrics.switchConsensusSecond();
+        }
+
         // After a contract operation was handled (i.e., not throttled), update the
         // gas throttle by leaking any unused gas
         if (isGasThrottled(transactionInfo.functionality())
                 && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
                 && recordBuilder.hasContractResult()) {
+            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
+            handleWorkflowMetrics.addGasUsed(gasUsed);
             final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
             if (contractsConfig.throttleThrottleByGas()) {
-                final var gasUsed = recordBuilder.getGasUsedForContractTxn();
                 final var gasLimitForContractTx =
                         getGasLimitForContractTx(transactionInfo.txBody(), transactionInfo.functionality());
                 final var excessAmount = gasLimitForContractTx - gasUsed;
@@ -622,7 +627,7 @@ public class HandleWorkflow {
         blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
 
         final int handleDuration = (int) (System.nanoTime() - handleStart);
-        handleWorkflowMetrics.update(transactionInfo.functionality(), handleDuration);
+        handleWorkflowMetrics.updateTransactionDuration(transactionInfo.functionality(), handleDuration);
     }
 
     /**
