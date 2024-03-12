@@ -126,7 +126,8 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                         tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L)),
+                        tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(7L))
+                                .signedBy(DEFAULT_PAYER, METADATA_KEY),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 7L)
                                 .hasSerialNum(7L)
                                 .hasMetadata(ByteString.copyFromUtf8(NFT_TEST_METADATA)),
