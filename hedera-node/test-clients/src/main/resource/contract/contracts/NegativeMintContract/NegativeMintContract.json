@@ -26,12 +26,17 @@
         "type": "bytes[]"
       },
       {
+        "internalType": "bool",
+        "name": "useNegative",
+        "type": "bool"
+      },
+      {
         "internalType": "address",
         "name": "tokenAddress",
         "type": "address"
       }
     ],
-    "name": "mintFungibleToken",
+    "name": "mintExtremeValue",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -39,12 +44,17 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "tokenAddress",
-        "type": "address"
+        "internalType": "bytes[]",
+        "name": "metadata",
+        "type": "bytes[]"
+      },
+      {
+        "internalType": "int64",
+        "name": "amount",
+        "type": "int64"
       }
     ],
-    "name": "mintFungibleTokenMAX",
+    "name": "mintInvalidAddressType",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -60,63 +70,14 @@
         "internalType": "address",
         "name": "tokenAddress",
         "type": "address"
-      }
-    ],
-    "name": "mintFungibleTokenMIN",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes[]",
-        "name": "metadata",
-        "type": "bytes[]"
       },
       {
-        "internalType": "address",
-        "name": "tokenAddress",
-        "type": "address"
+        "internalType": "int64",
+        "name": "amount",
+        "type": "int64"
       }
     ],
-    "name": "mintNFT",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes[]",
-        "name": "metadata",
-        "type": "bytes[]"
-      },
-      {
-        "internalType": "address",
-        "name": "tokenAddress",
-        "type": "address"
-      }
-    ],
-    "name": "mintNonFungibleTokenMAX",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes[]",
-        "name": "metadata",
-        "type": "bytes[]"
-      },
-      {
-        "internalType": "address",
-        "name": "tokenAddress",
-        "type": "address"
-      }
-    ],
-    "name": "mintNonFungibleTokenMIN",
+    "name": "mintToken",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
