@@ -40,6 +40,7 @@ public interface SavedStateController {
      *
      * @param reservedSignedState the signed state that was received from another node during reconnect
      */
+    @InputWireLabel("reconnect state")
     void reconnectStateReceived(@NonNull ReservedSignedState reservedSignedState);
 
     /**
@@ -47,5 +48,6 @@ public interface SavedStateController {
      *
      * @param signedState the signed state that was read from file at boot time
      */
+    @InputWireLabel("state from disk")
     void registerSignedStateFromDisk(@NonNull SignedState signedState);
 }
