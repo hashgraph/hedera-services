@@ -19,6 +19,7 @@ package com.swirlds.common.concurrent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * A factory for creating executors and threads.
@@ -42,6 +43,8 @@ public interface ExecutorFactory {
      */
     @NonNull
     ExecutorService createExecutorService(int threadCount);
+
+    ScheduledExecutorService createScheduledExecutorService(int threadCount);
 
     /**
      * Create a thread with the given runnable.

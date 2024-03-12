@@ -25,12 +25,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 public class DefaultExecutorFactory implements ExecutorFactory {
 
     private final ThreadFactory executorThreadFactory;
+
+    private final ThreadFactory scheduledExecutorThreadFactory;
 
     private final ThreadFactory singleThreadFactory;
 
@@ -41,11 +44,14 @@ public class DefaultExecutorFactory implements ExecutorFactory {
     public DefaultExecutorFactory(
             @NonNull final ThreadFactory singleThreadFactory,
             @NonNull final ThreadFactory executorThreadFactory,
+            @NonNull final ThreadFactory scheduledExecutorThreadFactory,
             @NonNull final ForkJoinWorkerThreadFactory forkJoinWorkerThreadFactory,
             @NonNull final UncaughtExceptionHandler handler) {
         this.singleThreadFactory = Objects.requireNonNull(singleThreadFactory, "singleThreadFactory must not be null");
         this.executorThreadFactory =
                 Objects.requireNonNull(executorThreadFactory, "executorThreadFactory must not be null");
+        this.scheduledExecutorThreadFactory = Objects.requireNonNull(
+                scheduledExecutorThreadFactory, "scheduledExecutorThreadFactory must not be null");
         this.forkJoinWorkerThreadFactory =
                 Objects.requireNonNull(forkJoinWorkerThreadFactory, "forkJoinWorkerThreadFactory must not be null");
         this.handler = Objects.requireNonNull(handler, "handler must not be null");
@@ -65,6 +71,11 @@ public class DefaultExecutorFactory implements ExecutorFactory {
             throw new IllegalArgumentException("threadCount must be greater than 0");
         }
         return Executors.newFixedThreadPool(threadCount, executorThreadFactory);
+    }
+
+    @Override
+    public ScheduledExecutorService createScheduledExecutorService(int threadCount) {
+        return Executors.newScheduledThreadPool(threadCount, scheduledExecutorThreadFactory);
     }
 
     @NonNull
@@ -91,11 +102,20 @@ public class DefaultExecutorFactory implements ExecutorFactory {
         final ThreadFactory executorThreadFactory =
                 new DefaultThreadFactory(group, executorThreadNameFactory, exceptionHandler, onStartup);
 
+        final Supplier<String> scheduledExecutorThreadNameFactory =
+                DefaultThreadFactory.createThreadNameFactory(groupName + "ScheduledPoolThread");
+        final ThreadFactory scheduledExecutorThreadFactory =
+                new DefaultThreadFactory(group, scheduledExecutorThreadNameFactory, exceptionHandler, onStartup);
+
         final Supplier<String> forkJoinThreadNameFactory =
                 DefaultForkJoinWorkerThreadFactory.createThreadNameFactory(groupName + "ForkJoinThread");
         final ForkJoinWorkerThreadFactory forkJoinThreadFactory =
                 new DefaultForkJoinWorkerThreadFactory(group, forkJoinThreadNameFactory, onStartup);
         return new DefaultExecutorFactory(
-                singleThreadFactory, executorThreadFactory, forkJoinThreadFactory, exceptionHandler);
+                singleThreadFactory,
+                executorThreadFactory,
+                scheduledExecutorThreadFactory,
+                forkJoinThreadFactory,
+                exceptionHandler);
     }
 }
