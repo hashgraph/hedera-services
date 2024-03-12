@@ -212,7 +212,13 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
      */
     @Override
     public IndexedEvent generateEvent(
-            final Random random, final long eventIndex, final EventSource<?> otherParent, final Instant timestamp) {
+            @NonNull final Random random,
+            final long eventIndex,
+            @NonNull final EventSource<?> otherParent,
+            @NonNull final Instant timestamp,
+            final long birthRound) {
+        Objects.requireNonNull(random);
+        Objects.requireNonNull(timestamp);
         final IndexedEvent event;
 
         // The higher the index, the older the event. Use the oldest parent between the provided and requested value.
@@ -223,18 +229,11 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
                 otherParent.getProvidedOtherParentAge(random, eventIndex));
 
         final IndexedEvent otherParentEvent = otherParent.getRecentEvent(random, otherParentIndex);
-
-        // Temporary hack: use the generation as the birth round. This should be sufficient for many use cases
-        // that don't use the birth round for anything other than deciding if the event is ancient. This won't
-        // work for consensus, and we will have to upgrade our simulation framework prior to converting
-        // consensus to use the birth round.
         final IndexedEvent latestSelfEvent = getLatestEvent(random);
         final long generation = Math.max(
                         otherParentEvent == null ? (FIRST_GENERATION - 1) : otherParentEvent.getGeneration(),
                         latestSelfEvent == null ? (FIRST_GENERATION - 1) : latestSelfEvent.getGeneration())
                 + 1;
-        // First generation is 0, but first birth round is 1.
-        final long birthRound = generation + 1;
 
         event = RandomEventUtils.randomEventWithTimestamp(
                 random,

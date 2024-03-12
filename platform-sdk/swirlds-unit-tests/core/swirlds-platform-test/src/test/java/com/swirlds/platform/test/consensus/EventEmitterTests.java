@@ -17,6 +17,8 @@
 package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.BIRTH_ROUND_PLATFORM_CONTEXT;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.areEventListsEquivalent;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.areGenerationNumbersValid;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.isEventOrderValid;
@@ -25,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.platform.test.event.emitter.CollectingEventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
@@ -37,7 +40,8 @@ import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Sanity checks for the event generator utilities.
@@ -227,12 +231,16 @@ public class EventEmitterTests {
         assertNotEquals(list1, list2);
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Test Standard Emitter")
-    public void testStandardEmitter() {
+    public void testStandardEmitter(final boolean birthRoundAsAncientThreshold) {
+        final PlatformContext platformContext =
+                birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -242,12 +250,16 @@ public class EventEmitterTests {
         emitterSanityChecks(emitter);
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Test Shuffled Emitter")
-    public void testShuffledEmitter() {
+    public void testShuffledEmitter(final boolean birthRoundAsAncientThreshold) {
+        final PlatformContext platformContext =
+                birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -268,12 +280,16 @@ public class EventEmitterTests {
         assertOrderIsDifferent(shuffledEmitter.cleanCopy(), standardEmitter, numberOfEvents);
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Test Priority Emitter")
-    public void testPriorityEmitter() {
+    public void testPriorityEmitter(final boolean birthRoundAsAncientThreshold) {
+        final PlatformContext platformContext =
+                birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -296,16 +312,20 @@ public class EventEmitterTests {
         assertOrderIsDifferent(priorityEmitter.cleanCopy(), standardEmitter, numberOfEvents);
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @Tag(TIME_CONSUMING)
     @DisplayName("Shuffled Emitter Equivalence")
-    public void shuffledEmitterEquivalence() {
+    public void shuffledEmitterEquivalence(final boolean birthRoundAsAncientThreshold) {
         final int numberOfEvents = 100;
         //		int maxSequenceNumber = (int) (numberOfEvents / 8 * 0.9);
 
+        final PlatformContext platformContext =
+                birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -335,14 +355,18 @@ public class EventEmitterTests {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Collecting Emitter Equivalence")
-    public void collectingEmitterTest() {
+    public void collectingEmitterTest(final boolean birthRoundAsAncientThreshold) {
         System.out.println("Validate Collected Events");
 
+        final PlatformContext platformContext =
+                birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource(),
                 new StandardEventSource(),

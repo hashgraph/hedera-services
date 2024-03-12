@@ -661,8 +661,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
         // Future work: prior to enabling a birth round based ancient mode, we need to use real values for
         // previousRoundNonAncient and previousRoundNonExpired. This is currently a place holder.
-        final long previousRoundNonAncient = 0;
-        final long previousRoundNonExpired = 0;
+        final long previousRoundNonAncient = ConsensusConstants.ROUND_FIRST;
+        final long previousRoundNonExpired = ConsensusConstants.ROUND_FIRST;
 
         final long nonAncientThreshold = ancientMode.selectIndicator(
                 getMinGenerationNonAncient(),

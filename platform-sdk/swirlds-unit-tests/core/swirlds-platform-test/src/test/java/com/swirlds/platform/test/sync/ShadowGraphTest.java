@@ -96,12 +96,12 @@ class ShadowgraphTest {
 
     private void initShadowgraph(final Random random, final int numEvents, final int numNodes) {
         addressBook = new RandomAddressBookGenerator(random).setSize(numNodes).build();
-        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
-        emitter = factory.newStandardEmitter();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
+        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
+        emitter = factory.newStandardEmitter();
         shadowgraph = new Shadowgraph(platformContext, mock(AddressBook.class));
 
         for (int i = 0; i < numEvents; i++) {
@@ -725,7 +725,7 @@ class ShadowgraphTest {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
+        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
         emitter = factory.newStandardEmitter();
         shadowgraph = new Shadowgraph(platformContext, mock(AddressBook.class));
         for (int i = 0; i < numEvents; i++) {

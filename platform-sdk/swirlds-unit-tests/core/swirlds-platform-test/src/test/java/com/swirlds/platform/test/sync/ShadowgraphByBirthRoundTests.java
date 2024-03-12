@@ -97,8 +97,6 @@ class ShadowgraphByBirthRoundTests {
 
     private void initShadowGraph(final Random random, final int numEvents, final int numNodes) {
         addressBook = new RandomAddressBookGenerator(random).setSize(numNodes).build();
-        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
-        emitter = factory.newStandardEmitter();
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -107,6 +105,9 @@ class ShadowgraphByBirthRoundTests {
         platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
                 .build();
+
+        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
+        emitter = factory.newStandardEmitter();
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
 

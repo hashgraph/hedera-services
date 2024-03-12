@@ -89,6 +89,8 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
                     next = candidate;
                 }
             } catch (final EOFException e) {
+                //TODO remove print of stack trace
+                e.printStackTrace();
                 if (counter.getCount() > initialCount) {
                     // We started parsing an event but couldn't find enough bytes to finish it.
                     // This is possible (if not likely) when a node is shut down abruptly.
