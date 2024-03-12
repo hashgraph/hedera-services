@@ -29,40 +29,49 @@ class ShrinkableSizeCacheTest {
 
     @Test
     void testCacheSize() throws InterruptedException {
+        // given
         ShrinkableSizeCache<Integer, String> cache = new ShrinkableSizeCache<>(3, SHRINK_PERIOD_IN_MS);
 
+        // when
         cache.put(1, "One");
         cache.put(2, "Two");
         cache.put(3, "Three");
-
+        // then
         assertEquals(3, cache.size());
 
+        // and when
         cache.put(4, "Four");
         Thread.sleep(11);
 
+        // then
         assertEquals(3, cache.size());
     }
 
     @Test
     void testEldestEntriesRemoval() throws InterruptedException {
+        // given
         ShrinkableSizeCache<Integer, String> cache = new ShrinkableSizeCache<>(3, SHRINK_PERIOD_IN_MS);
-
         cache.put(1, "One");
         cache.put(2, "Two");
         cache.put(3, "Three");
         cache.put(4, "Four");
+        // when
         Thread.sleep(11);
+        // then
         assertNull(cache.get(1)); // The eldest entry should be removed
     }
 
     @Test
     void testBasicOperations() {
+        // given
         ShrinkableSizeCache<Integer, String> cache = new ShrinkableSizeCache<>(3);
 
+        // when
         cache.put(1, "One");
         cache.put(2, "Two");
         cache.put(3, "Three");
 
+        // then
         assertTrue(cache.containsKey(1));
         assertTrue(cache.containsValue("Two"));
         assertEquals("Three", cache.get(3));
@@ -70,6 +79,7 @@ class ShrinkableSizeCacheTest {
 
     @Test
     void testConcurrency(TestExecutor executor) throws InterruptedException {
+        // given
         ShrinkableSizeCache<Integer, String> cache = new ShrinkableSizeCache<>(50, SHRINK_PERIOD_IN_MS);
 
         Runnable task = () -> {
@@ -80,8 +90,9 @@ class ShrinkableSizeCacheTest {
         };
 
         executor.executeAndWait(task, task);
-        // No exception should occur during concurrent access
+        // when
         Thread.sleep(11);
+        // then
         assertEquals(50, cache.size());
     }
 }

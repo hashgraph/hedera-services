@@ -17,6 +17,7 @@
 package com.swirlds.logging.api.internal.format;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
@@ -27,6 +28,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A concurrent map that at given frequency shrinks back to a max size by removing the eldest entries. This map size is
@@ -50,10 +53,23 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
 
     /**
      * Creates a ShrinkableSizeCache with configurable max size and shrink period.
-     * @param maxSize configurable max size for the cache
+     *
+     * @param maxSize          configurable max size for the cache
      * @param shrinkPeriodInMs configurable shrink period for the cache
      */
     public ShrinkableSizeCache(final int maxSize, final int shrinkPeriodInMs) {
+        this(maxSize, shrinkPeriodInMs, null);
+    }
+
+    /**
+     * Creates a ShrinkableSizeCache with configurable max size and shrink period.
+     *
+     * @param maxSize          configurable max size for the cache
+     * @param shrinkPeriodInMs configurable shrink period for the cache
+     * @param executorService  external ScheduledExecutorService to run the cleanup task
+     */
+    public ShrinkableSizeCache(
+            final int maxSize, final int shrinkPeriodInMs, final @Nullable ScheduledExecutorService executorService) {
         TimerTask cleanUpTask = new TimerTask() {
             @Override
             public void run() {
@@ -62,11 +78,16 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
                 }
             }
         };
-        new Timer(true).scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs);
+        if (executorService != null) {
+            executorService.scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs, TimeUnit.MILLISECONDS);
+        } else {
+            new Timer(true).scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs);
+        }
     }
 
     /**
      * Creates a ShrinkableSizeCache with configurable max size and SHRINK_PERIOD_MS shrink period.
+     *
      * @param maxSize configurable max size for the cache
      */
     public ShrinkableSizeCache(final int maxSize) {
