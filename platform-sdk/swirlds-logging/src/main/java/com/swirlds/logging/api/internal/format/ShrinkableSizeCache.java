@@ -45,6 +45,7 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
 
     /**
      * Creates a ShrinkableSizeCache with MAX_ENTRIES max size and SHRINK_PERIOD_MS shrink period.
+     * @deprecated Use  {@link ShrinkableSizeCache#ShrinkableSizeCache(int, int, ScheduledExecutorService)} instead
      */
     public ShrinkableSizeCache() {
         this(ShrinkableSizeCache.MAX_ENTRIES);
@@ -55,7 +56,9 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
      *
      * @param maxSize          configurable max size for the cache
      * @param shrinkPeriodInMs configurable shrink period for the cache
+     * @deprecated Use  {@link ShrinkableSizeCache#ShrinkableSizeCache(int, int, ScheduledExecutorService)} instead
      */
+    @Deprecated(forRemoval = true)
     public ShrinkableSizeCache(final int maxSize, final int shrinkPeriodInMs) {
         TimerTask cleanUpTask = new TimerTask() {
             @Override
