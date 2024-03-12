@@ -23,16 +23,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Label the input wire that a method is associated with.
+ * Annotates a method parameter used to implement a transformer/filter. Use this to override the name of the task
+ * scheduler used to operate the transformer/filter.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface InputWireLabel {
+public @interface SchedulerLabel {
 
     /**
-     * The label of the input wire.
+     * The label of the task scheduler that will operate the transformer/filter.
      *
-     * @return the label of the input wire
+     * @return the label of the task scheduler that will operate the transformer/filter
      */
     @NonNull
     String value();
