@@ -258,18 +258,21 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 LatestCompleteStateNotifierWiring.create(schedulers.latestCompleteStateNotificationScheduler());
 
         latestImmutableStateNexusWiring = new ComponentWiring<>(
+                model,
                 SignedStateNexus.class,
                 model.schedulerBuilder("latestImmutableStateNexus")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                         .build()
                         .cast());
         latestCompleteStateNexusWiring = new ComponentWiring<>(
+                model,
                 LatestCompleteStateNexus.class,
                 model.schedulerBuilder("latestCompleteStateNexus")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                         .build()
                         .cast());
         savedStateControllerWiring = new ComponentWiring<>(
+                model,
                 SavedStateController.class,
                 model.schedulerBuilder("savedStateController")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
