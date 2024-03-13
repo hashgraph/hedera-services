@@ -21,7 +21,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A class that modifies a configuration builder (e.g. adding custom config types, converters, etc.). Can be used in
- * conjunction with automatic classpath scanning done by {@link ConfigUtils}: TODO explain how
+ * conjunction with automatic classpath scanning done by
+ * {@link ConfigUtils#scanAndRegisterAllConfigExtensions(ConfigurationBuilder)} to automatically find and extend
+ * configuration as needed.
  */
 public interface ConfigurationExtension {
 
