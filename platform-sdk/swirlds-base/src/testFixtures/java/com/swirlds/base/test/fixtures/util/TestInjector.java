@@ -16,6 +16,7 @@
 
 package com.swirlds.base.test.fixtures.util;
 
+import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.inject.Inject;
 import java.lang.reflect.Modifier;
@@ -96,16 +97,14 @@ public class TestInjector {
      * @throws ParameterResolutionException If the parameter cannot be resolved.
      */
     public static <T> T resolveParameter(
-            final @NonNull ParameterContext parameterContext,
-            final @NonNull Supplier<T> instanceSupplier,
-            final Class<? super T> clazz) {
+            final @NonNull ParameterContext parameterContext, final @NonNull Supplier<T> instanceSupplier) {
         Objects.requireNonNull(parameterContext, "parameterContext must not be null");
         Objects.requireNonNull(instanceSupplier, "instanceSupplier must not be null");
 
         return Optional.of(parameterContext)
                 .map(ParameterContext::getParameter)
                 .map(Parameter::getType)
-                .filter(t -> t.equals(clazz))
+                .filter(t -> t.equals(TestExecutor.class))
                 .map(t -> instanceSupplier.get())
                 .orElseThrow(() -> new ParameterResolutionException("Could not resolve parameter"));
     }

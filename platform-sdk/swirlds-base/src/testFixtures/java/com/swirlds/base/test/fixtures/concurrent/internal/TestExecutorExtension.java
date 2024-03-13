@@ -90,6 +90,6 @@ public class TestExecutorExtension implements InvocationInterceptor, ParameterRe
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        return TestInjector.resolveParameter(parameterContext, ConcurrentTestSupport::new, TestExecutor.class);
+        return TestInjector.resolveParameter(parameterContext, ConcurrentTestSupport::new);
     }
 }
