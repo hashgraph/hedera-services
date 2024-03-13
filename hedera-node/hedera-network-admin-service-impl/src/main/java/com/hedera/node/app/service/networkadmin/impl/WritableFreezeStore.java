@@ -34,8 +34,6 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
     /** The underlying data storage classes that hold the freeze state data. */
     private final WritableSingletonState<Timestamp> freezeTimeState;
 
-    private final WritableSingletonState<Timestamp> lastFrozenTimeState;
-
     /** The underlying data storage class that holds the update file hash. */
     private final WritableSingletonState<ProtoBytes> updateFileHash;
 
@@ -48,7 +46,6 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
         super(states);
         requireNonNull(states);
         freezeTimeState = states.getSingleton(FreezeServiceImpl.FREEZE_TIME_KEY);
-        lastFrozenTimeState = states.getSingleton(FreezeServiceImpl.LAST_FROZEN_TIME_KEY);
         updateFileHash = states.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY);
     }
 
@@ -59,9 +56,6 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
      */
     public void freezeTime(@NonNull final Timestamp freezeTime) {
         freezeTimeState.put(freezeTime);
-        if (!freezeTime.equals(Timestamp.DEFAULT)) {
-            lastFrozenTimeState.put(freezeTime);
-        }
     }
 
     @Override
@@ -71,15 +65,6 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
      */
     public Timestamp freezeTime() {
         return freezeTimeState.get() == Timestamp.DEFAULT ? null : freezeTimeState.get();
-    }
-
-    @Override
-    @Nullable
-    /**
-     * Gets the last frozen time. If no freeze has occurred, returns null.
-     */
-    public Timestamp lastFrozenTime() {
-        return lastFrozenTimeState.get();
     }
 
     /**

@@ -78,14 +78,9 @@ public final class SignatureExpanderImpl implements SignatureExpander {
                 // hollow accounts it is needed, but otherwise it can typically not be the full prefix. In that case,
                 // we won't waste much work. And the payer pays for the whole thing anyway, so we're compensated for the
                 // CPU cycles in any event. Doing it in the background threads seems to be a better tradeoff.
-                final var decompressed = decompressKey(pair.pubKeyPrefix());
-                if (decompressed != null) {
-                    final var decompressedByteArray = new byte[(int) decompressed.length()];
-                    decompressed.getBytes(0, decompressedByteArray);
-                    final var hashedPrefixByteArray =
-                            MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(decompressedByteArray);
-                    final var emvAlias = Bytes.wrap(hashedPrefixByteArray);
-                    expanded.add(new ExpandedSignaturePair(asKey(pair), decompressed, emvAlias, pair));
+                final var maybeExpandedSigPair = ExpandedSignaturePair.maybeFrom(pair.pubKeyPrefix(), pair);
+                if (maybeExpandedSigPair != null) {
+                    expanded.add(maybeExpandedSigPair);
                 }
             }
         }
@@ -130,9 +125,10 @@ public final class SignatureExpanderImpl implements SignatureExpander {
             case ECDSA_SECP256K1 -> {
                 final var match = findMatch(key, originals);
                 if (match != null) {
-                    final var decompressed = decompressKey(key.ecdsaSecp256k1OrThrow());
-                    if (decompressed != null) {
-                        expanded.add(new ExpandedSignaturePair(key, decompressed, null, match));
+                    final var maybeExpandedSigPair =
+                            ExpandedSignaturePair.maybeFrom(key.ecdsaSecp256k1OrThrow(), match);
+                    if (maybeExpandedSigPair != null) {
+                        expanded.add(maybeExpandedSigPair);
                     }
                 }
             }
@@ -160,7 +156,7 @@ public final class SignatureExpanderImpl implements SignatureExpander {
      * @return The decompressed key bytes, or null if the key was not a valid compressed ECDSA_SECP256K1 key
      */
     @Nullable
-    private Bytes decompressKey(@Nullable final Bytes keyBytes) {
+    public static Bytes decompressKey(@Nullable final Bytes keyBytes) {
         if (keyBytes == null) return null;
         // If the compressed key begins with a prefix byte other than 0x02 or 0x03, decompressing will throw.
         // We don't want it to throw, because that is a waste of CPU cycles. So we'll check the first byte
@@ -236,7 +232,7 @@ public final class SignatureExpanderImpl implements SignatureExpander {
      * @return The extracted key.
      */
     @NonNull
-    private Key asKey(@NonNull final SignaturePair pair) {
+    public static Key asKey(@NonNull final SignaturePair pair) {
         return switch (pair.signature().kind()) {
             case ED25519 -> Key.newBuilder().ed25519(pair.pubKeyPrefix()).build();
             case ECDSA_SECP256K1 -> Key.newBuilder()

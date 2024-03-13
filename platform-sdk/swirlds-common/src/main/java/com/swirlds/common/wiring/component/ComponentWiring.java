@@ -16,9 +16,12 @@
 
 package com.swirlds.common.wiring.component;
 
-import com.swirlds.common.wiring.component.internal.WireBindInfo;
+import com.swirlds.common.wiring.component.internal.InputWireToBind;
+import com.swirlds.common.wiring.component.internal.TransformerToBind;
 import com.swirlds.common.wiring.component.internal.WiringComponentProxy;
+import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -26,7 +29,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -40,27 +45,53 @@ import java.util.function.BiFunction;
  */
 public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
 
+    private final WiringModel model;
     private final TaskScheduler<OUTPUT_TYPE> scheduler;
 
     private final WiringComponentProxy proxy = new WiringComponentProxy();
     private final COMPONENT_TYPE proxyComponent;
 
+    /**
+     * The component that implements the business logic. Will be null until {@link #bind(Object)} is called.
+     */
     private COMPONENT_TYPE component;
 
-    private final Map<Method, WireBindInfo> bindInfo = new HashMap<>();
+    /**
+     * Input wires that have been created for this component.
+     */
     private final Map<Method, BindableInputWire<Object, Object>> inputWires = new HashMap<>();
+
+    /**
+     * Input wires that need to be bound.
+     */
+    private final List<InputWireToBind<COMPONENT_TYPE, ?, OUTPUT_TYPE>> inputsToBind = new ArrayList<>();
+
+    /**
+     * Previously created transformers/splitters/filters.
+     */
+    private final Map<Method, OutputWire<?>> alternateOutputs = new HashMap<>();
+
+    /**
+     * Transformers that need to be bound.
+     */
+    private final List<TransformerToBind<COMPONENT_TYPE, OUTPUT_TYPE, ?>> transformersToBind = new ArrayList<>();
 
     /**
      * Create a new component wiring.
      *
+     * @param model     the wiring model that will contain the component
      * @param clazz     the interface class of the component
      * @param scheduler the task scheduler that will run the component
      */
     @SuppressWarnings("unchecked")
     public ComponentWiring(
-            @NonNull final Class<COMPONENT_TYPE> clazz, @NonNull final TaskScheduler<OUTPUT_TYPE> scheduler) {
+            @NonNull final WiringModel model,
+            @NonNull final Class<COMPONENT_TYPE> clazz,
+            @NonNull final TaskScheduler<OUTPUT_TYPE> scheduler) {
 
+        this.model = Objects.requireNonNull(model);
         this.scheduler = Objects.requireNonNull(scheduler);
+
         if (!clazz.isInterface()) {
             throw new IllegalArgumentException("Component class " + clazz.getName() + " is not an interface.");
         }
@@ -125,6 +156,68 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
     }
 
     /**
+     * Get the output wire of this component, transformed by a function.
+     *
+     * @param transformation     the function that will transform the output, must be a static method on the component
+     * @param <TRANSFORMED_TYPE> the type of the transformed output
+     * @return the transformed output wire
+     */
+    @SuppressWarnings("unchecked")
+    @NonNull
+    public <TRANSFORMED_TYPE> OutputWire<TRANSFORMED_TYPE> getTransformedOutput(
+            @NonNull final BiFunction<COMPONENT_TYPE, OUTPUT_TYPE, TRANSFORMED_TYPE> transformation) {
+
+        Objects.requireNonNull(transformation);
+        try {
+            transformation.apply(proxyComponent, null);
+        } catch (final NullPointerException e) {
+            throw new IllegalStateException("Component wiring does not support primitive input types or return types. "
+                    + "Use a boxed primitive instead.");
+        }
+
+        final Method method = proxy.getMostRecentlyInvokedMethod();
+        if (!method.isDefault()) {
+            throw new IllegalArgumentException("Method " + method.getName() + " does not have a default.");
+        }
+
+        if (alternateOutputs.containsKey(method)) {
+            // We've already created this transformer.
+            return (OutputWire<TRANSFORMED_TYPE>) alternateOutputs.get(method);
+        }
+
+        final String wireLabel;
+        final InputWireLabel inputWireLabel = method.getAnnotation(InputWireLabel.class);
+        if (inputWireLabel == null) {
+            wireLabel = "data to transform";
+        } else {
+            wireLabel = inputWireLabel.value();
+        }
+
+        final String schedulerLabel;
+        final SchedulerLabel schedulerLabelAnnotation = method.getAnnotation(SchedulerLabel.class);
+        if (schedulerLabelAnnotation == null) {
+            schedulerLabel = method.getName();
+        } else {
+            schedulerLabel = schedulerLabelAnnotation.value();
+        }
+
+        final WireTransformer<OUTPUT_TYPE, TRANSFORMED_TYPE> transformer =
+                new WireTransformer<>(model, schedulerLabel, wireLabel);
+        getOutputWire().solderTo(transformer.getInputWire());
+        alternateOutputs.put(method, transformer.getOutputWire());
+
+        if (component == null) {
+            // we will bind this later
+            transformersToBind.add(new TransformerToBind<>(transformer, transformation));
+        } else {
+            // bind this now
+            transformer.bind(x -> transformation.apply(component, x));
+        }
+
+        return transformer.getOutputWire();
+    }
+
+    /**
      * Get the input wire for a specified method.
      *
      * @param method               the method that will handle data on the input wire
@@ -157,9 +250,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
 
         if (component == null) {
             // we will bind this later
-            bindInfo.put(method, new WireBindInfo((BiFunction<Object, Object, Object>) handlerWithReturn, (BiConsumer<
-                            Object, Object>)
-                    handlerWithoutReturn));
+            inputsToBind.add(new InputWireToBind<>(inputWire, handlerWithReturn, handlerWithoutReturn));
         } else {
             // bind this now
             if (handlerWithReturn != null) {
@@ -211,29 +302,36 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
      *
      * @param component the component to bind
      */
+    @SuppressWarnings("unchecked")
     public void bind(@NonNull final COMPONENT_TYPE component) {
         Objects.requireNonNull(component);
 
         this.component = component;
 
-        for (final Map.Entry<Method, WireBindInfo> entry : bindInfo.entrySet()) {
-
-            final Method method = entry.getKey();
-            final WireBindInfo wireBindInfo = entry.getValue();
-            final BindableInputWire<Object, Object> wire = inputWires.get(method);
-
-            if (wireBindInfo.handlerWithReturn() != null) {
-                final BiFunction<Object, Object, Object> handlerWithReturn = wireBindInfo.handlerWithReturn();
-                wire.bind(x -> {
+        // Bind input wires
+        for (final InputWireToBind<COMPONENT_TYPE, ?, OUTPUT_TYPE> wireToBind : inputsToBind) {
+            if (wireToBind.handlerWithReturn() != null) {
+                final BiFunction<COMPONENT_TYPE, Object, OUTPUT_TYPE> handlerWithReturn =
+                        (BiFunction<COMPONENT_TYPE, Object, OUTPUT_TYPE>) wireToBind.handlerWithReturn();
+                wireToBind.inputWire().bind(x -> {
                     return handlerWithReturn.apply(component, x);
                 });
             } else {
-                final BiConsumer<Object, Object> handlerWithoutReturn =
-                        Objects.requireNonNull(wireBindInfo.handlerWithoutReturn());
-                wire.bind(x -> {
+                final BiConsumer<COMPONENT_TYPE, Object> handlerWithoutReturn =
+                        (BiConsumer<COMPONENT_TYPE, Object>) Objects.requireNonNull(wireToBind.handlerWithoutReturn());
+                wireToBind.inputWire().bind(x -> {
                     handlerWithoutReturn.accept(component, x);
                 });
             }
+        }
+
+        // Bind transformers
+        for (final TransformerToBind<COMPONENT_TYPE, OUTPUT_TYPE, ?> transformerToBind : transformersToBind) {
+            final WireTransformer<OUTPUT_TYPE, Object> transformer =
+                    (WireTransformer<OUTPUT_TYPE, Object>) transformerToBind.transformer();
+            final BiFunction<COMPONENT_TYPE, OUTPUT_TYPE, Object> transformation =
+                    (BiFunction<COMPONENT_TYPE, OUTPUT_TYPE, Object>) transformerToBind.transformation();
+            transformer.bind(x -> transformation.apply(component, x));
         }
     }
 }
