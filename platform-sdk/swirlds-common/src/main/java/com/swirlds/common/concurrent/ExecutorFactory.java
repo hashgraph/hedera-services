@@ -47,10 +47,10 @@ public interface ExecutorFactory {
     ScheduledExecutorService createScheduledExecutorService(int threadCount);
 
     /**
-     * Create a thread with the given runnable.
+     * Create a not started thread with the given runnable.
      *
      * @param runnable the runnable
-     * @return the thread
+     * @return the not started thread
      * @deprecated all useage should be migrated to {@link #createExecutorService(int)}
      */
     @Deprecated
