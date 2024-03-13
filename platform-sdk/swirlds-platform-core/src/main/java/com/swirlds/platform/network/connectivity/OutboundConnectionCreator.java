@@ -182,6 +182,7 @@ public class OutboundConnectionCreator {
             return to.getHostnameExternal();
         }
     }
+
     /**
      * Check if the address is local to the machine.
      *
