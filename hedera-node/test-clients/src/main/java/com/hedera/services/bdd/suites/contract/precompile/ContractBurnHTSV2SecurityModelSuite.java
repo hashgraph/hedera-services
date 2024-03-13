@@ -123,7 +123,6 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         // sync
         return defaultHapiSpec("V2Security004FungibleTokenBurnPositive")
-                // .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         //  overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                         // CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
