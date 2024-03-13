@@ -284,11 +284,9 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         } else {
             // bind this now
             if (handlerWithReturn != null) {
-                inputWire.bind(x -> {
-                    return handlerWithReturn.apply(component, x);
-                });
+                inputWire.bind(x -> handlerWithReturn.apply(component, x));
             } else {
-                inputWire.bind(x -> {
+                inputWire.bindConsumer(x -> {
                     assert handlerWithoutReturn != null;
                     handlerWithoutReturn.accept(component, x);
                 });
@@ -343,13 +341,11 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             if (wireToBind.handlerWithReturn() != null) {
                 final BiFunction<COMPONENT_TYPE, Object, OUTPUT_TYPE> handlerWithReturn =
                         (BiFunction<COMPONENT_TYPE, Object, OUTPUT_TYPE>) wireToBind.handlerWithReturn();
-                wireToBind.inputWire().bind(x -> {
-                    return handlerWithReturn.apply(component, x);
-                });
+                wireToBind.inputWire().bind(x -> handlerWithReturn.apply(component, x));
             } else {
                 final BiConsumer<COMPONENT_TYPE, Object> handlerWithoutReturn =
                         (BiConsumer<COMPONENT_TYPE, Object>) Objects.requireNonNull(wireToBind.handlerWithoutReturn());
-                wireToBind.inputWire().bind(x -> {
+                wireToBind.inputWire().bindConsumer(x -> {
                     handlerWithoutReturn.accept(component, x);
                 });
             }

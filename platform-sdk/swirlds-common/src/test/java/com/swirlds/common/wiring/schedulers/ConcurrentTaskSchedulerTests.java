@@ -66,7 +66,7 @@ class ConcurrentTaskSchedulerTests {
                 .build()
                 .cast();
         final BindableInputWire<Integer, Void> channel = taskScheduler.buildInputWire("channel");
-        channel.bind(handler);
+        channel.bindConsumer(handler);
 
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
 
@@ -115,7 +115,7 @@ class ConcurrentTaskSchedulerTests {
                 .build()
                 .cast();
         final BindableInputWire<Operation, Void> channel = taskScheduler.buildInputWire("channel");
-        channel.bind(handler);
+        channel.bindConsumer(handler);
 
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
 
@@ -171,7 +171,7 @@ class ConcurrentTaskSchedulerTests {
                 .build()
                 .cast();
         final BindableInputWire<Integer, Void> inputWire = taskScheduler.buildInputWire("channel");
-        inputWire.bind(handler);
+        inputWire.bindConsumer(handler);
 
         model.start();
 

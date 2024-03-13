@@ -91,6 +91,7 @@ public record SignedStateFileManagerWiring(
      */
     public void bind(@NonNull final SignedStateFileManager signedStateFileManager) {
         saveStateToDisk.bind(signedStateFileManager::saveStateTask);
-        ((BindableInputWire<StateDumpRequest, Void>) dumpStateToDisk).bind(signedStateFileManager::dumpStateTask);
+        ((BindableInputWire<StateDumpRequest, Void>) dumpStateToDisk)
+                .bindConsumer(signedStateFileManager::dumpStateTask);
     }
 }

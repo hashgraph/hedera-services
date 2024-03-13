@@ -66,6 +66,6 @@ public record OrphanBufferWiring(
         ((BindableInputWire<GossipEvent, List<GossipEvent>>) eventInput).bind(orphanBuffer::handleEvent);
         ((BindableInputWire<NonAncientEventWindow, List<GossipEvent>>) nonAncientEventWindowInput)
                 .bind(orphanBuffer::setNonAncientEventWindow);
-        ((BindableInputWire<ClearTrigger, List<GossipEvent>>) clearInput).bind(orphanBuffer::clear);
+        ((BindableInputWire<ClearTrigger, List<GossipEvent>>) clearInput).bindConsumer(orphanBuffer::clear);
     }
 }
