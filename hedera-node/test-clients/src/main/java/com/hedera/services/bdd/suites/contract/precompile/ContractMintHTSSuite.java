@@ -324,13 +324,15 @@ public class ContractMintHTSSuite extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
                         childRecordsCheck(
                                 fungibleMintWithMetadataTest,
-                                SUCCESS,
+                                CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_TRANSACTION_BODY)),
                         childRecordsCheck(
-                                mintWithZeroedAddressTest, SUCCESS, recordWith().status(INVALID_TRANSACTION_BODY)),
+                                mintWithZeroedAddressTest,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TRANSACTION_BODY)),
                         childRecordsCheck(
                                 mintWithZeroedAddressAndMetadataTest,
-                                SUCCESS,
+                                CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_TRANSACTION_BODY)));
     }
 
