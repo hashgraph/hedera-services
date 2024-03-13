@@ -11,4 +11,6 @@ module com.swirlds.logging.log4j.appender {
 
     provides LogProviderFactory with
             Log4JProviderFactory;
+
+    exports com.swirlds.logging.log4j.appender;
 }

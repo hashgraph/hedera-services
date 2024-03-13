@@ -20,6 +20,7 @@ import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.util.ConfigManagement;
 import com.swirlds.logging.benchmark.util.LogFiles;
+import com.swirlds.logging.log4j.appender.SwirldsLogAppender;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -42,8 +43,11 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
                     + " %-5level [%t] %c - %msg - [%marker] %X %n%throwable";
     public static final String CONSOLE_APPENDER_NAME = "console";
     public static final String FILE_APPENDER_NAME = "file";
+    public static final String BRIDGE_APPENDER_NAME = "SwirldsAppender";
 
-    public @NonNull LoggerContext configureConsoleLogging() {
+    @NonNull
+    @Override
+    public LoggerContext configureConsoleLogging() {
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
@@ -53,7 +57,9 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
         return create(builder);
     }
 
-    public @NonNull LoggerContext configureFileLogging() {
+    @NonNull
+    @Override
+    public LoggerContext configureFileLogging() {
         final String logFile = LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.FILE_TYPE);
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
@@ -64,7 +70,9 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
         return create(builder);
     }
 
-    public @NonNull LoggerContext configureFileAndConsoleLogging() {
+    @NonNull
+    @Override
+    public LoggerContext configureFileAndConsoleLogging() {
         final String logFile = LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.CONSOLE_AND_FILE_TYPE);
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
@@ -76,6 +84,30 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
                 .add(builder.newAppenderRef(FILE_APPENDER_NAME))
                 .add(builder.newAppenderRef(CONSOLE_APPENDER_NAME)));
         return create(builder);
+    }
+
+    @NonNull
+    @Override
+    public LoggerContext configureBridgedLogging() {
+        System.clearProperty("log4j2.contextSelector");
+        final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
+        builder.setStatusLevel(Level.DEBUG);
+        builder.setConfigurationName("bridgeLoggingConfig");
+        final AppenderComponentBuilder appenderBuilder = builder.newAppender(Log4JConfiguration.BRIDGE_APPENDER_NAME, SwirldsLogAppender.APPENDER_NAME);
+        builder.add(appenderBuilder);
+        builder.add(builder.newRootLogger(Level.ALL).add(builder.newAppenderRef(Log4JConfiguration.BRIDGE_APPENDER_NAME)));
+        return create(builder);
+    }
+
+    @Override
+    public void tierDown() {
+        if (ConfigManagement.deleteOutputFiles()) {
+            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE));
+            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE));
+        }
+        if (ConfigManagement.deleteOutputFolder()) {
+            LogFiles.tryForceDeleteDir();
+        }
     }
 
     private static @NonNull LoggerContext create(final @NonNull ConfigurationBuilder<BuiltConfiguration> builder) {
@@ -102,16 +134,5 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
                 .addAttribute("fileName", path)
                 .addAttribute("append", true)
                 .add(layoutBuilder);
-    }
-
-    @Override
-    public void tierDown() {
-        if (ConfigManagement.deleteOutputFiles()) {
-            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE));
-            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE));
-        }
-        if (ConfigManagement.deleteOutputFolder()) {
-            LogFiles.tryForceDeleteDir();
-        }
     }
 }

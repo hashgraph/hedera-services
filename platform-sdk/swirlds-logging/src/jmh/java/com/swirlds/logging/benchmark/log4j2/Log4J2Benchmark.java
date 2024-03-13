@@ -16,6 +16,9 @@
 
 package com.swirlds.logging.benchmark.log4j2;
 
+import static com.swirlds.logging.benchmark.config.Constants.BRIDGED_CONSOLE_AND_FILE_TYPE;
+import static com.swirlds.logging.benchmark.config.Constants.BRIDGED_CONSOLE_TYPE;
+import static com.swirlds.logging.benchmark.config.Constants.BRIDGED_FILE_TYPE;
 import static com.swirlds.logging.benchmark.config.Constants.CONSOLE_AND_FILE_TYPE;
 import static com.swirlds.logging.benchmark.config.Constants.CONSOLE_TYPE;
 import static com.swirlds.logging.benchmark.config.Constants.FILE_TYPE;
@@ -26,8 +29,10 @@ import static com.swirlds.logging.benchmark.config.Constants.PARALLEL_THREAD_COU
 import static com.swirlds.logging.benchmark.config.Constants.WARMUP_ITERATIONS;
 import static com.swirlds.logging.benchmark.config.Constants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
 
+import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
+import com.swirlds.logging.benchmark.swirldslog.SwirldsLogConfiguration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -52,24 +57,39 @@ import org.openjdk.jmh.annotations.Warmup;
 public class Log4J2Benchmark {
     private static final String LOGGER_NAME = Constants.LOG4J2 + "Benchmark";
 
-    @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
+    @Param({BRIDGED_FILE_TYPE})
     public String loggingType;
 
     private Logger logger;
     private Log4JRunner logRunner;
 
     private Configuration<LoggerContext> config;
-    ;
-
+    private Configuration<LoggingSystem> swirldsConfig;
     @Setup(Level.Trial)
     public void init() {
         config = new Log4JConfiguration();
+
         if (Objects.equals(loggingType, FILE_TYPE)) {
             logger = config.configureFileLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
             logger = config.configureConsoleLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
             logger = config.configureFileAndConsoleLogging().getLogger(LOGGER_NAME);
+        } else if (Objects.equals(loggingType, BRIDGED_CONSOLE_TYPE)) {
+            swirldsConfig = new SwirldsLogConfiguration();
+            swirldsConfig.configureConsoleLogging();
+            logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
+        } else if (Objects.equals(loggingType, BRIDGED_FILE_TYPE)) {
+            swirldsConfig = new SwirldsLogConfiguration();
+            swirldsConfig.configureFileLogging();
+            logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
+            config.tierDown();
+            config = new Log4JConfiguration();
+            logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
+        } else if (Objects.equals(loggingType, BRIDGED_CONSOLE_AND_FILE_TYPE)) {
+            swirldsConfig = new SwirldsLogConfiguration();
+            swirldsConfig.configureFileAndConsoleLogging();
+            logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         }
         logRunner = new Log4JRunner(logger);
     }
@@ -91,9 +111,12 @@ public class Log4J2Benchmark {
         logRunner.run();
     }
 
-    @TearDown(Level.Iteration)
+    @TearDown(Level.Trial)
     public void tearDown() {
         LogManager.shutdown();
         config.tierDown();
+        if(swirldsConfig != null) {
+            swirldsConfig.tierDown();
+        }
     }
 }

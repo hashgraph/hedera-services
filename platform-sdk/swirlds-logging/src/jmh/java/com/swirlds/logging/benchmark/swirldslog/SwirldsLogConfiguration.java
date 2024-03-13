@@ -17,7 +17,6 @@
 package com.swirlds.logging.benchmark.swirldslog;
 
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
@@ -34,6 +33,13 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
     private static final FileHandlerFactory FILE_HANDLER_FACTORY = new FileHandlerFactory();
     private static final ConsoleHandlerFactory CONSOLE_HANDLER_FACTORY = new ConsoleHandlerFactory();
 
+    private @NonNull LoggingSystem configure(@NonNull final com.swirlds.config.api.Configuration configuration) {
+        LoggingSystem loggingSystem = new LoggingSystem(configuration);
+        loggingSystem.installHandlers();
+        loggingSystem.installProviders();
+        return loggingSystem;
+    }
+
     public @NonNull LoggingSystem configureFileLogging() {
         final String logFile = LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE);
         final com.swirlds.config.api.Configuration configuration = ConfigurationBuilder.create()
@@ -41,15 +47,14 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
                 .withConverter(new MarkerStateConverter())
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.file.type", "file")
-                .withValue("logging.handler.file.active", "true")
+                .withValue("logging.handler.file.enabled", "true")
                 .withValue("logging.handler.file.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", logFile)
+                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
-        final LogHandler fileHandler = FILE_HANDLER_FACTORY.create("file", configuration);
-        LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        loggingSystem.addHandler(fileHandler);
-        return loggingSystem;
+
+        return configure(configuration);
     }
 
     public @NonNull LoggingSystem configureConsoleLogging() {
@@ -58,14 +63,13 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
                 .withConverter(new MarkerStateConverter())
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.console.type", "console")
-                .withValue("logging.handler.console.active", "true")
+                .withValue("logging.handler.console.enabled", "true")
                 .withValue("logging.handler.console.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.console.level", "trace")
+                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
-        final LogHandler consoleHandler = CONSOLE_HANDLER_FACTORY.create("console", configuration);
-        LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        loggingSystem.addHandler(consoleHandler);
-        return loggingSystem;
+
+        return configure(configuration);
     }
 
     public @NonNull LoggingSystem configureFileAndConsoleLogging() {
@@ -75,21 +79,18 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
                 .withConverter(new MarkerStateConverter())
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.file.type", "file")
-                .withValue("logging.handler.file.active", "true")
+                .withValue("logging.handler.file.enabled", "true")
                 .withValue("logging.handler.file.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", logFile)
                 .withValue("logging.handler.console.type", "console")
-                .withValue("logging.handler.console.active", "true")
+                .withValue("logging.handler.console.enabled", "true")
                 .withValue("logging.handler.console.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.console.level", "trace")
+                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
-        final LogHandler fileHandler = FILE_HANDLER_FACTORY.create("file", configuration);
-        final LogHandler consoleHandler = CONSOLE_HANDLER_FACTORY.create("console", configuration);
-        LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        loggingSystem.addHandler(fileHandler);
-        loggingSystem.addHandler(consoleHandler);
-        return loggingSystem;
+
+        return configure(configuration);
     }
 
     @Override
@@ -102,5 +103,11 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
         if (ConfigManagement.deleteOutputFolder()) {
             LogFiles.tryForceDeleteDir();
         }
+    }
+
+    @NonNull
+    @Override
+    public LoggingSystem configureBridgedLogging() {
+        throw new IllegalStateException("Not implemented");
     }
 }
