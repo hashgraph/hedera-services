@@ -25,7 +25,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
-import com.swirlds.platform.event.FutureEventBuffer;
+import com.swirlds.platform.event.DefaultFutureEventBuffer;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
@@ -81,7 +81,7 @@ class PlatformWiringTests {
                 mock(StateSignatureCollector.class),
                 mock(ConsensusRoundHandler.class),
                 mock(EventStreamManager.class),
-                mock(FutureEventBuffer.class),
+                mock(DefaultFutureEventBuffer.class),
                 mock(IssDetector.class),
                 mock(IssHandler.class),
                 mock(HashLogger.class),

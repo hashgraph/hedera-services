@@ -87,7 +87,7 @@ class FutureEventBufferTests {
                 .withConfiguration(configuration)
                 .build();
 
-        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
+        final FutureEventBuffer futureEventBuffer = new DefaultFutureEventBuffer(platformContext);
 
         final long nonAncientBirthRound = 100;
         final long pendingConsensusRound = nonAncientBirthRound * 2;
@@ -168,7 +168,7 @@ class FutureEventBufferTests {
                 .withConfiguration(configuration)
                 .build();
 
-        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
+        final FutureEventBuffer futureEventBuffer = new DefaultFutureEventBuffer(platformContext);
 
         final long nonAncientBirthRound = 100;
         final long pendingConsensusRound = nonAncientBirthRound * 2;
@@ -226,7 +226,7 @@ class FutureEventBufferTests {
                 .withConfiguration(configuration)
                 .build();
 
-        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
+        final FutureEventBuffer futureEventBuffer = new DefaultFutureEventBuffer(platformContext);
 
         final long pendingConsensusRound = random.nextLong(100, 1_000);
         final long nonAncientBirthRound = pendingConsensusRound / 2;
