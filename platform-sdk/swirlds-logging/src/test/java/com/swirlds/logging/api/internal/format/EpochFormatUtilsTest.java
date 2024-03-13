@@ -19,10 +19,12 @@ package com.swirlds.logging.api.internal.format;
 import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.swirlds.base.test.fixtures.io.WithSystemError;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import org.junit.jupiter.api.Test;
 
+@WithSystemError
 public class EpochFormatUtilsTest {
 
     @Test
