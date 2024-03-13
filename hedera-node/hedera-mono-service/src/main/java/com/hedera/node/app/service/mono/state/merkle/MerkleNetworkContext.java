@@ -819,7 +819,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return consensusTime == null ? NOT_AVAILABLE : consensusTime.toString();
     }
 
-    private String stringifiedBlockHashes() {
+    @VisibleForTesting
+    public String stringifiedBlockHashes() {
         final var jsonSb = new StringBuilder("[");
         final var firstAvailable = blockNo - blockHashes.size();
         final var hashIter = blockHashes.iterator();
@@ -991,7 +992,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return consensusTimeOfLastHandledTxn;
     }
 
-    DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
+    @VisibleForTesting
+    public DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
         return usageSnapshots;
     }
 
@@ -1008,7 +1010,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     @Nullable
-    MultiplierSources getMultiplierSources() {
+    @VisibleForTesting
+    public MultiplierSources getMultiplierSources() {
         return multiplierSources;
     }
 
@@ -1016,6 +1019,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return throttling;
     }
 
+    @VisibleForTesting
     public DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
         return gasThrottleUsageSnapshot;
     }
