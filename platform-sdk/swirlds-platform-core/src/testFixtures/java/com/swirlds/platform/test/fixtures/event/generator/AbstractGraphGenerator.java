@@ -137,7 +137,7 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
         maxGenerationPerCreator.merge(event.getCreatorId(), event.getGeneration(), Math::max);
     }
 
-    private void updateMaxBirthRound(final IndexedEvent event) {
+    private void updateMaxBirthRound(@NonNull final IndexedEvent event) {
         maxBirthRoundPerCreator.merge(event.getCreatorId(), event.getBirthRound(), Math::max);
     }
 
