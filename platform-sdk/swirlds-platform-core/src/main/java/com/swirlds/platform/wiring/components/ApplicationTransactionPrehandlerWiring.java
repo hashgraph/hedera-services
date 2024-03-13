@@ -52,6 +52,6 @@ public record ApplicationTransactionPrehandlerWiring(
      */
     public void bind(@NonNull final TransactionPrehandler transactionPrehandler) {
         ((BindableInputWire<GossipEvent, Void>) appTransactionsToPrehandleInput)
-                .bind(transactionPrehandler::prehandleApplicationTransactions);
+                .bindConsumer(transactionPrehandler::prehandleApplicationTransactions);
     }
 }

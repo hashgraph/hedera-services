@@ -82,12 +82,12 @@ public class OutputWireTests {
         final AtomicInteger firstCompErrorCount = new AtomicInteger();
         final AtomicInteger secondCompErrorCount = new AtomicInteger();
 
-        firstComponentInput.bind(i -> {
+        firstComponentInput.bindConsumer(i -> {
             if (firstCompRecNum.incrementAndGet() <= secondCompRecNum.get()) {
                 firstCompErrorCount.incrementAndGet();
             }
         });
-        secondComponentInput.bind(i -> {
+        secondComponentInput.bindConsumer(i -> {
             if (firstCompRecNum.get() != secondCompRecNum.incrementAndGet()) {
                 secondCompErrorCount.incrementAndGet();
             }

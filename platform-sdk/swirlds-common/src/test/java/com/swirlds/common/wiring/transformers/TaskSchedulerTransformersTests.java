@@ -75,22 +75,20 @@ class TaskSchedulerTransformersTests {
         splitter.solderTo(wireCIn);
         taskSchedulerA.getOutputWire().solderTo(wireDIn);
 
-        wireAIn.bind(x -> {
-            return List.of(x, x, x);
-        });
+        wireAIn.bind(x -> List.of(x, x, x));
 
         final AtomicInteger countB = new AtomicInteger(0);
-        wireBIn.bind(x -> {
+        wireBIn.bindConsumer(x -> {
             countB.set(hash32(countB.get(), x));
         });
 
         final AtomicInteger countC = new AtomicInteger(0);
-        wireCIn.bind(x -> {
+        wireCIn.bindConsumer(x -> {
             countC.set(hash32(countC.get(), -x));
         });
 
         final AtomicInteger countD = new AtomicInteger(0);
-        wireDIn.bind(x -> {
+        wireDIn.bindConsumer(x -> {
             int product = 1;
             for (final int i : x) {
                 product *= i;
@@ -153,11 +151,11 @@ class TaskSchedulerTransformersTests {
             return x;
         });
 
-        inB.bind(x -> {
+        inB.bindConsumer(x -> {
             countB.set(hash32(countB.get(), x));
         });
 
-        inC.bind(x -> {
+        inC.bindConsumer(x -> {
             countC.set(hash32(countC.get(), x));
         });
 
@@ -222,18 +220,18 @@ class TaskSchedulerTransformersTests {
         });
 
         final AtomicInteger countB = new AtomicInteger(0);
-        inB.bind(x -> {
+        inB.bindConsumer(x -> {
             final int invert = x.invert() ? -1 : 1;
             countB.set(hash32(countB.get(), x.value() * invert));
         });
 
         final AtomicInteger countC = new AtomicInteger(0);
-        inC.bind(x -> {
+        inC.bindConsumer(x -> {
             countC.set(hash32(countC.get(), x));
         });
 
         final AtomicInteger countD = new AtomicInteger(0);
-        inD.bind(x -> {
+        inD.bindConsumer(x -> {
             countD.set(hash32(countD.get(), x ? 1 : 0));
         });
 
@@ -301,18 +299,18 @@ class TaskSchedulerTransformersTests {
         });
 
         final AtomicInteger countB = new AtomicInteger(0);
-        inB.bind(x -> {
+        inB.bindConsumer(x -> {
             final int invert = x.invert() ? -1 : 1;
             countB.set(hash32(countB.get(), x.value() * invert));
         });
 
         final AtomicInteger countC = new AtomicInteger(0);
-        inC.bind(x -> {
+        inC.bindConsumer(x -> {
             countC.set(hash32(countC.get(), x));
         });
 
         final AtomicInteger countD = new AtomicInteger(0);
-        inD.bind(x -> {
+        inD.bindConsumer(x -> {
             countD.set(hash32(countD.get(), x ? 1 : 0));
         });
 
@@ -443,27 +441,27 @@ class TaskSchedulerTransformersTests {
         });
 
         final AtomicInteger countB = new AtomicInteger();
-        inB.bind(x -> {
+        inB.bindConsumer(x -> {
             assertTrue(x.getReferenceCount() > 0);
             countB.getAndIncrement();
             x.release();
         });
 
         final AtomicInteger countC = new AtomicInteger();
-        inC.bind(x -> {
+        inC.bindConsumer(x -> {
             assertTrue(x.getReferenceCount() > 0);
             countC.getAndIncrement();
             x.release();
         });
 
         final AtomicInteger countD = new AtomicInteger();
-        inD.bind(x -> {
+        inD.bindConsumer(x -> {
             assertTrue(x.getReferenceCount() > 0);
             countD.getAndIncrement();
             x.release();
         });
         final AtomicInteger countE = new AtomicInteger();
-        inE.bind(x -> {
+        inE.bindConsumer(x -> {
             assertTrue(x.getReferenceCount() > 0);
             countE.getAndIncrement();
             x.release();
