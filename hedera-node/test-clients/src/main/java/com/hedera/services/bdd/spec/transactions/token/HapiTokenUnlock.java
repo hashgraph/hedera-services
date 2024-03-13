@@ -32,8 +32,8 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HapiTokenLock extends HapiTxnOp<HapiTokenLock> {
-    static final Logger log = LogManager.getLogger(HapiTokenLock.class);
+public class HapiTokenUnlock extends HapiTxnOp<HapiTokenUnlock> {
+    static final Logger log = LogManager.getLogger(HapiTokenUnlock.class);
 
     private final String account;
     private final String token;
@@ -46,10 +46,10 @@ public class HapiTokenLock extends HapiTxnOp<HapiTokenLock> {
 
     @Override
     public HederaFunctionality type() {
-        return HederaFunctionality.TokenLock;
+        return HederaFunctionality.TokenUnlock;
     }
 
-    public HapiTokenLock(final String token, final String account, final long amount) {
+    public HapiTokenUnlock(final String token, final String account, final long amount) {
         this.token = token;
         this.account = account;
         this.amount = amount;
@@ -57,20 +57,20 @@ public class HapiTokenLock extends HapiTxnOp<HapiTokenLock> {
         this.subType = SubType.TOKEN_FUNGIBLE_COMMON;
     }
 
-    public HapiTokenLock(final String token, final String account, final List<Long> serialNumbers) {
+    public HapiTokenUnlock(final String token, final String account, final List<Long> serialNumbers) {
         this.token = token;
         this.account = account;
         this.serialNumbers = serialNumbers;
         this.subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
     }
 
-    public HapiTokenLock rememberingNothing() {
+    public HapiTokenUnlock rememberingNothing() {
         rememberingNothing = true;
         return this;
     }
 
     @Override
-    protected HapiTokenLock self() {
+    protected HapiTokenUnlock self() {
         return this;
     }
 
@@ -89,14 +89,15 @@ public class HapiTokenLock extends HapiTxnOp<HapiTokenLock> {
         } else {
             aId = TxnUtils.asId(account, spec);
         }
-        final TokenLockTransactionBody opBody = spec.txns()
-                .<TokenLockTransactionBody, TokenLockTransactionBody.Builder>body(TokenLockTransactionBody.class, b -> {
-                    b.setToken(tId);
-                    b.setAccount(aId);
-                    b.setAmount(amount);
-                    b.addAllSerialNumbers(serialNumbers);
-                });
-        return b -> b.setTokenLock(opBody);
+        final TokenUnlockTransactionBody opBody = spec.txns()
+                .<TokenUnlockTransactionBody, TokenUnlockTransactionBody.Builder>body(
+                        TokenUnlockTransactionBody.class, b -> {
+                            b.setToken(tId);
+                            b.setAccount(aId);
+                            b.setAmount(amount);
+                            b.addAllSerialNumbers(serialNumbers);
+                        });
+        return b -> b.setTokenUnlock(opBody);
     }
 
     protected List<Function<HapiSpec, Key>> defaultSigners(final Function<HapiSpec, String> effectivePayer) {
@@ -114,7 +115,7 @@ public class HapiTokenLock extends HapiTxnOp<HapiTokenLock> {
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::lockToken;
+        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::unlockToken;
     }
 
     @Override

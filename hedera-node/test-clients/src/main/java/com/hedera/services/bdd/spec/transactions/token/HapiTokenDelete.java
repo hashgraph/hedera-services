@@ -126,6 +126,15 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
         if (registry.hasPauseKey(token)) {
             registry.forgetPauseKey(token);
         }
+        if (registry.hasLockKey(token)) {
+            registry.forgetLockKey(token);
+        }
+        if (registry.hasPartitionKey(token)) {
+            registry.forgetPartitionKey(token);
+        }
+        if (registry.hasPartitionMoveKey(token)) {
+            registry.forgetPartitionMoveKey(token);
+        }
     }
 
     @Override

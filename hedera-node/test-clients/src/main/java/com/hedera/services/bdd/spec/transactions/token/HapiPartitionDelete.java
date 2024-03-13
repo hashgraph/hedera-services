@@ -19,7 +19,6 @@ package com.hedera.services.bdd.spec.transactions.token;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -32,45 +31,21 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HapiTokenLock extends HapiTxnOp<HapiTokenLock> {
-    static final Logger log = LogManager.getLogger(HapiTokenLock.class);
+public class HapiPartitionDelete extends HapiTxnOp<HapiPartitionDelete> {
+    static final Logger log = LogManager.getLogger(HapiPartitionDelete.class);
 
-    private final String account;
     private final String token;
-    private long amount;
-    private final List<Long> serialNumbers;
-    private final SubType subType;
-    private ByteString alias = ByteString.EMPTY;
-
-    private boolean rememberingNothing = false;
 
     @Override
     public HederaFunctionality type() {
-        return HederaFunctionality.TokenLock;
+        return HederaFunctionality.TokenDeletePartition;
     }
 
-    public HapiTokenLock(final String token, final String account, final long amount) {
+    public HapiPartitionDelete(final String token) {
         this.token = token;
-        this.account = account;
-        this.amount = amount;
-        this.serialNumbers = new ArrayList<>();
-        this.subType = SubType.TOKEN_FUNGIBLE_COMMON;
     }
 
-    public HapiTokenLock(final String token, final String account, final List<Long> serialNumbers) {
-        this.token = token;
-        this.account = account;
-        this.serialNumbers = serialNumbers;
-        this.subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-    }
-
-    public HapiTokenLock rememberingNothing() {
-        rememberingNothing = true;
-        return this;
-    }
-
-    @Override
-    protected HapiTokenLock self() {
+    protected HapiPartitionDelete self() {
         return this;
     }
 
@@ -83,20 +58,10 @@ public class HapiTokenLock extends HapiTxnOp<HapiTokenLock> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var tId = TxnUtils.asTokenId(token, spec);
-        final AccountID aId;
-        if (!alias.isEmpty()) {
-            aId = AccountID.newBuilder().setAlias(alias).build();
-        } else {
-            aId = TxnUtils.asId(account, spec);
-        }
-        final TokenLockTransactionBody opBody = spec.txns()
-                .<TokenLockTransactionBody, TokenLockTransactionBody.Builder>body(TokenLockTransactionBody.class, b -> {
-                    b.setToken(tId);
-                    b.setAccount(aId);
-                    b.setAmount(amount);
-                    b.addAllSerialNumbers(serialNumbers);
-                });
-        return b -> b.setTokenLock(opBody);
+        final TokenDeletePartitionDefinitionTransactionBody opBody = spec.txns()
+                .<TokenDeletePartitionDefinitionTransactionBody, TokenDeletePartitionDefinitionTransactionBody.Builder>
+                        body(TokenDeletePartitionDefinitionTransactionBody.class, b -> b.setToken(tId));
+        return b -> b.setTokenDeletePartition(opBody);
     }
 
     protected List<Function<HapiSpec, Key>> defaultSigners(final Function<HapiSpec, String> effectivePayer) {
@@ -104,7 +69,7 @@ public class HapiTokenLock extends HapiTxnOp<HapiTokenLock> {
         signers.add(spec -> spec.registry().getKey(effectivePayer.apply(spec)));
         signers.add(spec -> {
             try {
-                return spec.registry().getLockKey(token);
+                return spec.registry().getPartitionKey(token);
             } catch (Exception ignore) {
                 return Key.getDefaultInstance();
             }
@@ -114,24 +79,21 @@ public class HapiTokenLock extends HapiTxnOp<HapiTokenLock> {
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::lockToken;
+        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::deleteTokenPartitionDefinition;
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) throws Throwable {
-        if (rememberingNothing || actualStatus != SUCCESS) {
+    protected void updateStateOf(final HapiSpec spec) {
+        if (actualStatus != SUCCESS) {
             return;
         }
-        lookupSubmissionRecord(spec);
-        spec.registry().saveCreationTime(token, recordOfSubmission.getConsensusTimestamp());
+        final var registry = spec.registry();
+        registry.forgetTokenId(token);
     }
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        return super.toStringHelper()
-                .add("token", token)
-                .add("account", account)
-                .add("amount", amount)
-                .add("serialNumbers", serialNumbers);
+        final MoreObjects.ToStringHelper helper = super.toStringHelper().add("token", token);
+        return helper;
     }
 }
