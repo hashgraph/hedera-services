@@ -414,7 +414,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     private BlockInfo infoOfJustFinished(
             @NonNull final BlockInfo lastBlockInfo,
-            final long justFinishedBlockNumber,
+            @NonNull final long justFinishedBlockNumber,
             @NonNull final Bytes hashOfJustFinishedBlock,
             @NonNull final Instant currentBlockFirstTransactionTime) {
         // compute new block hashes bytes
