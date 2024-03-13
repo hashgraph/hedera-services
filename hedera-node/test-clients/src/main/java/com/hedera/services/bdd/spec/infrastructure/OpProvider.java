@@ -52,7 +52,7 @@ public interface OpProvider {
     };
 
     ResponseCodeEnum[] STANDARD_PERMISSIBLE_OUTCOMES = {
-        SUCCESS, LIVE_HASH_NOT_FOUND, INVALID_SIGNATURE, INSUFFICIENT_PAYER_BALANCE, UNKNOWN
+        SUCCESS, LIVE_HASH_NOT_FOUND, INSUFFICIENT_PAYER_BALANCE, UNKNOWN
     };
 
     default List<HapiSpecOperation> suggestedInitializers() {

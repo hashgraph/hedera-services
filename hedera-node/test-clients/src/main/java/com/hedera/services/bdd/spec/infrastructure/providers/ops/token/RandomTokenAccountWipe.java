@@ -38,6 +38,7 @@ public class RandomTokenAccountWipe implements OpProvider {
         this.tokenRels = tokenRels;
     }
 
+    private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(TOKEN_HAS_NO_WIPE_KEY);
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
             TOKEN_WAS_DELETED,
             TOKEN_HAS_NO_WIPE_KEY,
@@ -56,7 +57,8 @@ public class RandomTokenAccountWipe implements OpProvider {
         var rel = explicit(implicitRel);
         var amount = BASE_RANDOM.nextLong(1, RandomToken.DEFAULT_MAX_SUPPLY);
         var op = wipeTokenAccount(rel.getRight(), rel.getLeft(), amount)
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .signedBy(rel.getLeft())
+                .hasPrecheckFrom(permissiblePrechecks)
                 .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }

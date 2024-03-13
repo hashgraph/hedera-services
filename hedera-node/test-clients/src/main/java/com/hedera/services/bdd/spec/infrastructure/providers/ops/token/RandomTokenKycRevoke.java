@@ -49,6 +49,7 @@ public class RandomTokenKycRevoke implements OpProvider {
         var implicitRel = relToRevoke.get();
         var rel = explicit(implicitRel);
         var op = revokeTokenKyc(rel.getRight(), rel.getLeft())
+                .signedBy(rel.getLeft())
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);

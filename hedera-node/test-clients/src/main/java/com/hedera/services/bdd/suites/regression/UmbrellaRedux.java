@@ -28,7 +28,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.factoryFrom;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -50,13 +50,13 @@ public class UmbrellaRedux extends HapiSuite {
 
     public static final String DEFAULT_PROPERTIES = "regression-mixed_ops.properties";
 
-    private AtomicLong duration = new AtomicLong(1);
+    private AtomicLong duration = new AtomicLong(10);
     private AtomicInteger maxOpsPerSec = new AtomicInteger(Integer.MAX_VALUE);
     private AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
     private AtomicInteger backoffSleepSecs = new AtomicInteger(1);
     private AtomicInteger statusTimeoutSecs = new AtomicInteger(5);
     private AtomicReference<String> props = new AtomicReference<>(DEFAULT_PROPERTIES);
-    private AtomicReference<TimeUnit> unit = new AtomicReference<>(MILLISECONDS);
+    private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
 
     public static void main(String... args) {
         UmbrellaRedux umbrellaRedux = new UmbrellaRedux();

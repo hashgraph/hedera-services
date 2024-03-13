@@ -49,6 +49,7 @@ public class RandomTokenKycGrant implements OpProvider {
         var implicitRel = relToGrant.get();
         var rel = explicit(implicitRel);
         var op = grantTokenKyc(rel.getRight(), rel.getLeft())
+                .signedBy(rel.getLeft())
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
