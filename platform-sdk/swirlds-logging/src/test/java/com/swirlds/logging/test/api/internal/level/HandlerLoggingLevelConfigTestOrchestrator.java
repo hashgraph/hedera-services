@@ -27,7 +27,7 @@ import java.util.stream.IntStream;
 /**
  * This class helps the test to:
  *  <ol>
- * <li>Store all {@code TestScenario}s
+ * <li>Store all {@code LoggingTestScenario}
  * <li>reload the configuration
  * <li>verify the scenario when the configuration is loaded
  *  <ol>
