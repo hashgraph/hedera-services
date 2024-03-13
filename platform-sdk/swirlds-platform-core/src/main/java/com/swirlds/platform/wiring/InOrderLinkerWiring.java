@@ -65,7 +65,7 @@ public record InOrderLinkerWiring(
     public void bind(@NonNull final InOrderLinker inOrderLinker) {
         ((BindableInputWire<GossipEvent, EventImpl>) eventInput).bind(inOrderLinker::linkEvent);
         ((BindableInputWire<NonAncientEventWindow, EventImpl>) nonAncientEventWindowInput)
-                .bind(inOrderLinker::setNonAncientEventWindow);
-        ((BindableInputWire<ClearTrigger, EventImpl>) clearInput).bind(inOrderLinker::clear);
+                .bindConsumer(inOrderLinker::setNonAncientEventWindow);
+        ((BindableInputWire<ClearTrigger, EventImpl>) clearInput).bindConsumer(inOrderLinker::clear);
     }
 }
