@@ -61,8 +61,9 @@ public record ConsensusRoundHandlerWiring(
      * @param consensusRoundHandler the consensus round handler to bind
      */
     public void bind(@NonNull final ConsensusRoundHandler consensusRoundHandler) {
-        ((BindableInputWire<ConsensusRound, Void>) roundInput).bind(consensusRoundHandler::handleConsensusRound);
+        ((BindableInputWire<ConsensusRound, Void>) roundInput)
+                .bindConsumer(consensusRoundHandler::handleConsensusRound);
         ((BindableInputWire<RunningEventHashUpdate, Void>) runningHashUpdateInput)
-                .bind(consensusRoundHandler::updateRunningHash);
+                .bindConsumer(consensusRoundHandler::updateRunningHash);
     }
 }

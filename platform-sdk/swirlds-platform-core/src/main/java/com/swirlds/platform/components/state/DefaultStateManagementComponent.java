@@ -20,6 +20,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
+import com.swirlds.platform.state.signed.DefaultSignedStateHasher;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
@@ -27,6 +28,7 @@ import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -91,7 +93,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         this.sigCollector = Objects.requireNonNull(sigCollector);
         this.offerToHashLogger = Objects.requireNonNull(offerToHashLogger);
 
-        signedStateHasher = new SignedStateHasher(signedStateMetrics, fatalErrorConsumer);
+        signedStateHasher = new DefaultSignedStateHasher(signedStateMetrics, fatalErrorConsumer);
     }
 
     private void logHashes(@NonNull final SignedState signedState) {
@@ -105,10 +107,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     }
 
     @Override
-    public void newSignedStateFromTransactions(@NonNull final ReservedSignedState signedState) {
-        try (signedState) {
+    public void newSignedStateFromTransactions(@NonNull final StateAndRound stateAndRound) {
+        try (final ReservedSignedState signedState = stateAndRound.reservedSignedState()) {
             signedState.get().setGarbageCollector(signedStateGarbageCollector);
-            signedStateHasher.hashState(signedState.get());
+            signedStateHasher.hashState(stateAndRound);
 
             logHashes(signedState.get());
 

@@ -44,6 +44,7 @@ import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSV2SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DefaultTokenStatusSuite;
@@ -170,6 +171,7 @@ public class ConcurrentSuites {
             TokenInfoHTSSuite::new,
             TokenUpdatePrecompileSuite::new,
             WipeTokenAccountPrecompileSuite::new,
+            ContractMintHTSV2SecurityModelSuite::new,
             AssociatePrecompileV2SecurityModelSuite::new,
             // contract.records
             LogsSuite::new,
@@ -253,7 +255,9 @@ public class ConcurrentSuites {
             //  contract.records
             RecordsSuite::new,
             LogsSuite::new,
-            Evm46ValidationSuite::new
+            Evm46ValidationSuite::new,
+            ContractMintHTSV2SecurityModelSuite::new,
+            AssociatePrecompileV2SecurityModelSuite::new
         };
     }
 }

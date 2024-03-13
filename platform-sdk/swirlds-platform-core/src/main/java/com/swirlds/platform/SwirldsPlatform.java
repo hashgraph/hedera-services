@@ -63,6 +63,7 @@ import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
@@ -485,7 +486,7 @@ public class SwirldsPlatform implements Platform {
             oldStyleIntakeQueue = null;
         }
 
-        savedStateController = new SavedStateController(stateConfig);
+        savedStateController = new DefaultSavedStateController(stateConfig);
 
         final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         final StateSignatureCollector stateSignatureCollector = new StateSignatureCollector(
@@ -565,8 +566,8 @@ public class SwirldsPlatform implements Platform {
             // FUTURE WORK: this is where the state is currently being hashed. State hashing will be moved into a
             // separate component. At that time, all subsequent method calls in this lambda will be wired to receive
             // data from the hasher, since they require a strong guarantee that the state has been hashed.
-            stateManagementComponent.newSignedStateFromTransactions(
-                    state.getAndReserve("stateManagementComponent.newSignedStateFromTransactions"));
+            stateManagementComponent.newSignedStateFromTransactions(stateAndRound.makeAdditionalReservation(
+                    ("stateManagementComponent.newSignedStateFromTransactions")));
 
             platformWiring
                     .getIssDetectorWiring()
