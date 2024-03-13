@@ -26,18 +26,22 @@ import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpModFiles;
 import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpMonoFiles;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpModUniqueTokens;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpMonoUniqueTokens;
+import static com.hedera.node.app.bbm.scheduledtransactions.ScheduledTransactionsDumpUtils.dumpModScheduledTransactions;
+import static com.hedera.node.app.bbm.scheduledtransactions.ScheduledTransactionsDumpUtils.dumpMonoScheduledTransactions;
 import static com.hedera.node.app.bbm.singleton.BlockInfoDumpUtils.dumpModBlockInfo;
 import static com.hedera.node.app.bbm.singleton.BlockInfoDumpUtils.dumpMonoBlockInfo;
 import static com.hedera.node.app.bbm.singleton.CongestionDumpUtils.dumpModCongestion;
 import static com.hedera.node.app.bbm.singleton.CongestionDumpUtils.dumpMonoCongestion;
+import static com.hedera.node.app.bbm.singleton.PayerRecordsDumpUtils.dumpModTxnRecordQueue;
+import static com.hedera.node.app.bbm.singleton.PayerRecordsDumpUtils.dumpMonoPayerRecords;
 import static com.hedera.node.app.bbm.singleton.StakingInfoDumpUtils.dumpModStakingInfo;
 import static com.hedera.node.app.bbm.singleton.StakingInfoDumpUtils.dumpMonoStakingInfo;
 import static com.hedera.node.app.bbm.singleton.StakingRewardsDumpUtils.dumpModStakingRewards;
 import static com.hedera.node.app.bbm.singleton.StakingRewardsDumpUtils.dumpMonoStakingRewards;
-import static com.hedera.node.app.bbm.singleton.TxnRecordQueueDumpUtils.dumpModTxnRecordQueue;
-import static com.hedera.node.app.bbm.singleton.TxnRecordQueueDumpUtils.dumpMonoPayerRecords;
 import static com.hedera.node.app.bbm.tokentypes.TokenTypesDumpUtils.dumpModTokenType;
 import static com.hedera.node.app.bbm.tokentypes.TokenTypesDumpUtils.dumpMonoTokenType;
+import static com.hedera.node.app.bbm.topics.TopicDumpUtils.dumpModTopics;
+import static com.hedera.node.app.bbm.topics.TopicDumpUtils.dumpMonoTopics;
 import static com.hedera.node.app.ids.EntityIdService.ENTITY_ID_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
@@ -143,7 +147,7 @@ public class StateDumper {
         dumpMonoTokenRelations(
                 Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(TOKEN_ASSOCIATIONS), checkpoint);
         dumpMonoFiles(Paths.get(dumpLoc, SEMANTIC_FILES), state.getChild(STORAGE), checkpoint);
-        dumpMonoAccounts(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(ACCOUNTS), checkpoint);
+        dumpMonoAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), state.getChild(ACCOUNTS), checkpoint);
         dumpMonoContractBytecodes(
                 Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
                 state.getChild(ACCOUNTS),
