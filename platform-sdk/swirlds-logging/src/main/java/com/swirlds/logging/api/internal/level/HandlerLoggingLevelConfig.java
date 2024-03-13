@@ -110,7 +110,7 @@ public class HandlerLoggingLevelConfig {
      * @param configuration The configuration.
      */
     @NonNull
-    public static ExtractedLoggingConfig extractConfig(
+    private static ExtractedLoggingConfig extractConfig(
             @Nullable final String handlerName, @NonNull final Configuration configuration) {
         Objects.requireNonNull(configuration, "configuration must not be null");
 
