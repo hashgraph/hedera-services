@@ -17,6 +17,7 @@
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,17 +40,8 @@ class TestLongCodec implements Codec<Long> {
 
     @NonNull
     @Override
-    public Long parse(@NonNull ReadableSequentialData input) {
-        Objects.requireNonNull(input);
-        return Long.valueOf(input.readLong());
-    }
-
-    @NonNull
-    @Override
-    // Suppressing the warning that this method is the same as requiresNodePayment.
-    // To be removed if that changes
-    @SuppressWarnings("java:S4144")
-    public Long parseStrict(@NonNull ReadableSequentialData input) {
+    public Long parse(@NonNull final ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+            throws ParseException {
         Objects.requireNonNull(input);
         return Long.valueOf(input.readLong());
     }
@@ -72,7 +64,8 @@ class TestLongCodec implements Codec<Long> {
     }
 
     @Override
-    public boolean fastEquals(@NonNull Long value, @NonNull ReadableSequentialData input) {
+    public boolean fastEquals(@NonNull final Long value, @NonNull final ReadableSequentialData input)
+            throws ParseException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(input);
         return value.equals(parse(input));

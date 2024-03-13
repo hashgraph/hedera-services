@@ -59,7 +59,7 @@ class WiringComponentPerformanceTests {
                 .build();
 
         final BindableInputWire<Long, Void> inputWire = scheduler.buildInputWire("input");
-        inputWire.bind(component::handleInput);
+        inputWire.bindConsumer(component::handleInput);
 
         return inputWire;
     }
@@ -76,7 +76,7 @@ class WiringComponentPerformanceTests {
                 .cast();
 
         final ComponentWiring<SimpleComponent, Void> componentWiring =
-                new ComponentWiring<>(SimpleComponent.class, scheduler);
+                new ComponentWiring<>(model, SimpleComponent.class, scheduler);
         final InputWire<Long> inputWire = componentWiring.getInputWire(SimpleComponent::handleInput);
         componentWiring.bind(component);
 

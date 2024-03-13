@@ -56,7 +56,8 @@ public record ShadowgraphWiring(
      * @param shadowgraph the shadow graph to bind
      */
     public void bind(@NonNull final Shadowgraph shadowgraph) {
-        ((BindableInputWire<EventImpl, Void>) eventInput).bind(shadowgraph::addEvent);
-        ((BindableInputWire<NonAncientEventWindow, Void>) eventWindowInput).bind(shadowgraph::updateEventWindow);
+        ((BindableInputWire<EventImpl, Void>) eventInput).bindConsumer(shadowgraph::addEvent);
+        ((BindableInputWire<NonAncientEventWindow, Void>) eventWindowInput)
+                .bindConsumer(shadowgraph::updateEventWindow);
     }
 }

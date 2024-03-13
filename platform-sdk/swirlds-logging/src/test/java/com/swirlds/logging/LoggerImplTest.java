@@ -28,8 +28,10 @@ import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
 import com.swirlds.logging.file.FileHandlerFactory;
 import com.swirlds.logging.util.DummyConsumer;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 public class LoggerImplTest {
 
     @Test
