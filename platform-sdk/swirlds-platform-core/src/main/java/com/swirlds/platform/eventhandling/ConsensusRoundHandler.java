@@ -17,6 +17,7 @@
 package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.CREATING_SIGNED_STATE;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.GETTING_STATE_TO_SIGN;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.HANDLING_CONSENSUS_ROUND;
@@ -173,11 +174,16 @@ public class ConsensusRoundHandler {
             // Future work: the long term goal is for empty rounds to not be ignored here. For now, the way that the
             // running hash of consensus events is calculated by the EventStreamManager prevents that from being
             // possible.
+            logger.info(STARTUP.getMarker(), "Ignoring empty consensus round {}", consensusRound.getRoundNum());
             return null;
         }
 
         // Once there is a saved state created in a freeze period, we will never apply any more rounds to the state.
         if (freezeRoundReceived) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Round {} reached consensus after freeze. Round will not be processed until after network restarts.",
+                    consensusRound.getRoundNum());
             return null;
         }
 
