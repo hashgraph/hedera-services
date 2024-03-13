@@ -40,8 +40,8 @@ public class CryptoArgsProvider {
     static Stream<Arguments> basicTestArgs() throws Exception {
         Instant start = Instant.now();
         final AddressBook loadedAB = createAddressBook();
-        final Map<NodeId, KeysAndCerts> loadedC =
-                CryptoStatic.loadKeysAndCerts(loadedAB, ResourceLoader.getFile("preGeneratedKeysAndCerts/"), PASSWORD);
+        final Map<NodeId, KeysAndCerts> loadedC = CryptoStatic.loadKeysAndCerts(
+                loadedAB, ResourceLoader.getFile("preGeneratedKeysAndCerts/"), PASSWORD, loadedAB.getNodeIdSet());
         System.out.println(
                 "Key loading took " + Duration.between(start, Instant.now()).toMillis());
 

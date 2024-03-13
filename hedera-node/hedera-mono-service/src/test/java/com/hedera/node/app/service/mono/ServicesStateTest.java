@@ -1043,7 +1043,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .initialHash(new Hash())
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
-                .consoleCreator((ignore, winNum, visible) -> null)
+                .consoleCreator((ignore, winNum, visible, nodesToStart) -> null)
                 .selfId(platform.getSelfId())
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())

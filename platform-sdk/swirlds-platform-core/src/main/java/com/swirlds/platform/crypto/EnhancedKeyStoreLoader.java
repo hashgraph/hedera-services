@@ -22,7 +22,6 @@ import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 import static com.swirlds.platform.crypto.CryptoStatic.copyPublicKeys;
 import static com.swirlds.platform.crypto.CryptoStatic.createEmptyTrustStore;
 import static com.swirlds.platform.crypto.CryptoStatic.loadKeys;
-import static com.swirlds.platform.state.address.AddressBookNetworkUtils.isLocal;
 
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
@@ -79,7 +78,7 @@ import org.bouncycastle.util.encoders.DecoderException;
  *
  * <p>
  * The {@link EnhancedKeyStoreLoader} class is a replacement for the now deprecated
- * {@link CryptoStatic#loadKeysAndCerts(AddressBook, Path, char[])} method. This new implementation adds support
+ * {@link CryptoStatic#loadKeysAndCerts(AddressBook, Path, char[], Set<NodeId>)} method. This new implementation adds support
  * for loading industry standard PEM formatted PKCS #8 private keys and X.509 certificates. The legacy key stores are
  * still supported, but are no longer the preferred format.
  *
@@ -265,10 +264,13 @@ public class EnhancedKeyStoreLoader {
      * Scan the directory specified by {@code paths.keyDirPath} configuration element for key stores. This method will
      * process and load keys found in both the legacy or enhanced formats.
      *
+     * @param nodesToStart the set of nodes to scan key stores for
+     *
      * @return this {@link EnhancedKeyStoreLoader} instance.
      */
     @NonNull
-    public EnhancedKeyStoreLoader scan() throws KeyLoadingException, KeyStoreException {
+    public EnhancedKeyStoreLoader scan(@NonNull final Set<NodeId> nodesToStart)
+            throws KeyLoadingException, KeyStoreException {
         logger.debug(STARTUP.getMarker(), "Starting key store enumeration");
         final KeyStore legacyPublicStore = resolveLegacyPublicStore();
 
@@ -280,7 +282,7 @@ public class EnhancedKeyStoreLoader {
                     nodeId,
                     nodeAlias);
 
-            if (isLocal(address)) {
+            if (nodesToStart.contains(address.getNodeId())) {
                 localNodes.add(nodeId);
                 sigPrivateKeys.compute(
                         nodeId, (k, v) -> resolveNodePrivateKey(nodeId, nodeAlias, KeyCertPurpose.SIGNING));
@@ -303,16 +305,22 @@ public class EnhancedKeyStoreLoader {
     /**
      * Verifies the presence of all required keys based on the address book provided during initialization.
      *
+     * @param nodesToStart the set of nodes to verify the presence of all keys for
+     *
      * @return this {@link EnhancedKeyStoreLoader} instance.
      * @throws KeyLoadingException if one or more of the required keys were not loaded.
      */
     @NonNull
-    public EnhancedKeyStoreLoader verify() throws KeyLoadingException, KeyStoreException {
-        return verify(addressBook);
+    public EnhancedKeyStoreLoader verify(@NonNull final Set<NodeId> nodesToStart)
+            throws KeyLoadingException, KeyStoreException {
+        return verify(addressBook, nodesToStart);
     }
 
     /**
-     * Verifies the presence of all required keys based on the supplied address book.
+     * Verifies the presence of all required keys for the nodes being started based on the supplied address book.
+     *
+     * @param validatingBook the address book to use for validation
+     * @param nodesToStart the set of nodes being started
      *
      * @return this {@link EnhancedKeyStoreLoader} instance.
      * @throws KeyLoadingException  if one or more of the required keys were not loaded.
@@ -320,9 +328,11 @@ public class EnhancedKeyStoreLoader {
      * @throws NullPointerException if {@code validatingBook} is {@code null}.
      */
     @NonNull
-    public EnhancedKeyStoreLoader verify(@NonNull final AddressBook validatingBook)
+    public EnhancedKeyStoreLoader verify(
+            @NonNull final AddressBook validatingBook, @NonNull final Set<NodeId> nodesToStart)
             throws KeyLoadingException, KeyStoreException {
         Objects.requireNonNull(validatingBook, "validatingBook must not be null");
+        Objects.requireNonNull(nodesToStart, "nodesToStart must not be null");
 
         if (addressBook.getSize() != validatingBook.getSize()) {
             throw new KeyLoadingException(
@@ -331,7 +341,7 @@ public class EnhancedKeyStoreLoader {
         }
 
         iterateAddressBook(validatingBook, (i, nodeId, address, nodeAlias) -> {
-            if (isLocal(address)) {
+            if (nodesToStart.contains(address.getNodeId())) {
                 if (!localNodes.contains(nodeId)) {
                     throw new KeyLoadingException(
                             "No private key found for local node %s [ alias = %s ]".formatted(nodeId, nodeAlias));

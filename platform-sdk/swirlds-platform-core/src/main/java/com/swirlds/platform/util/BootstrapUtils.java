@@ -69,7 +69,6 @@ import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.network.SocketConfig;
-import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
@@ -166,7 +165,7 @@ public final class BootstrapUtils {
     /**
      * Perform health all health checks
      *
-     * @param configPath     the path to the config.txt file
+     * @param configPath    the path to the config.txt file
      * @param configuration the configuration
      */
     public static void performHealthChecks(@NonNull final Path configPath, @NonNull final Configuration configuration) {
@@ -379,21 +378,26 @@ public final class BootstrapUtils {
     /**
      * Determine which nodes should be run locally
      *
-     * @param addressBook       the address book
-     * @param localNodesToStart local nodes specified to start by the user
+     * @param addressBook  the address book
+     * @param nodesToStart nodes specified to start by the user
      * @return the nodes to run locally
      */
     public static @NonNull List<NodeId> getNodesToRun(
-            @NonNull final AddressBook addressBook, @NonNull final Set<NodeId> localNodesToStart) {
+            @NonNull final AddressBook addressBook, @NonNull final Set<NodeId> nodesToStart) {
         Objects.requireNonNull(addressBook);
-        Objects.requireNonNull(localNodesToStart);
+        Objects.requireNonNull(nodesToStart);
         final List<NodeId> nodesToRun = new ArrayList<>();
-        for (final Address address : addressBook) {
-            // if the local nodes to start are not specified, start all local nodes. Otherwise, start specified.
-            if (AddressBookNetworkUtils.isLocal(address)
-                    && (localNodesToStart.isEmpty() || localNodesToStart.contains(address.getNodeId()))) {
-                nodesToRun.add(address.getNodeId());
+        // if the nodes to start are not specified, start all nodes. Otherwise, start specified.
+        if (nodesToStart.isEmpty()) {
+            nodesToRun.addAll(addressBook.getNodeIdSet());
+        } else {
+            for (NodeId nodeId : nodesToStart) {
+                if (!addressBook.contains(nodeId)) {
+                    // all nodes to start must exist in the address book.
+                    throw new IllegalArgumentException("Node " + nodeId + " is not in the address book");
+                }
             }
+            nodesToRun.addAll(nodesToStart);
         }
 
         return nodesToRun;

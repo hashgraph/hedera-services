@@ -28,20 +28,22 @@ import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
+import com.swirlds.platform.network.Network;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
-import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -170,14 +172,32 @@ public class OutboundConnectionCreator {
      * @return the IP address to connect to
      */
     private String getConnectHostname(final Address from, final Address to) {
-        final boolean fromIsLocal = AddressBookNetworkUtils.isLocal(from);
-        final boolean toIsLocal = AddressBookNetworkUtils.isLocal(to);
+        final boolean fromIsLocal = isLocal(from);
+        final boolean toIsLocal = isLocal(to);
         if (fromIsLocal && toIsLocal && socketConfig.useLoopbackIp()) {
             return LOCALHOST;
         } else if (to.isLocalTo(from)) {
             return to.getHostnameInternal();
         } else {
             return to.getHostnameExternal();
+        }
+    }
+    /**
+     * Check if the address is local to the machine.
+     *
+     * @param address the address to check
+     * @return true if the address is local to the machine, false otherwise
+     * @throws IllegalStateException if the locality of the address cannot be determined.
+     */
+    public static boolean isLocal(@NonNull final Address address) {
+        Objects.requireNonNull(address, "The address must not be null.");
+        try {
+            return Network.isOwn(InetAddress.getByName(address.getHostnameInternal()));
+        } catch (final UnknownHostException e) {
+            throw new IllegalStateException(
+                    "Not able to determine locality of address [%s] for node [%s]"
+                            .formatted(address.getHostnameInternal(), address.getNodeId()),
+                    e);
         }
     }
 }

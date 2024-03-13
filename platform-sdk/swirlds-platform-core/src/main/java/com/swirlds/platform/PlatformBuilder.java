@@ -63,6 +63,7 @@ import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -233,7 +234,8 @@ public final class PlatformBuilder {
 
         checkNodesToRun(List.of(selfId));
 
-        final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
+        final Map<NodeId, KeysAndCerts> keysAndCerts =
+                initNodeSecurity(configAddressBook, configuration, Collections.singleton(selfId));
         final PlatformContext platformContext = new DefaultPlatformContext(
                 configuration, getMetricsProvider().createPlatformMetrics(selfId), cryptography, Time.getCurrent());
 

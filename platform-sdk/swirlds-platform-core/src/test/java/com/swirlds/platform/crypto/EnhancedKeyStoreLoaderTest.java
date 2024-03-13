@@ -17,7 +17,6 @@
 package com.swirlds.platform.crypto;
 
 import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
-import static com.swirlds.platform.state.address.AddressBookNetworkUtils.isLocal;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -111,9 +110,11 @@ class EnhancedKeyStoreLoaderTest {
 
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
+        Set<NodeId> nodesToStart = addressBook.getNodeIdSet();
+
         assertThat(loader).isNotNull();
-        assertThatCode(loader::scan).doesNotThrowAnyException();
-        assertThatCode(loader::verify).doesNotThrowAnyException();
+        assertThatCode(() -> loader.scan(nodesToStart)).doesNotThrowAnyException();
+        assertThatCode(() -> loader.verify(nodesToStart)).doesNotThrowAnyException();
         assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
 
         final Map<NodeId, KeysAndCerts> kc = loader.keysAndCerts();
@@ -121,7 +122,7 @@ class EnhancedKeyStoreLoaderTest {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address addr = addressBook.getAddress(nodeId);
 
-            if (!isLocal(addr)) {
+            if (!nodesToStart.contains(addr.getNodeId())) {
                 assertThat(kc).doesNotContainKey(nodeId);
             } else {
                 assertThat(kc).containsKey(nodeId);
@@ -157,8 +158,8 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
-        assertThatCode(loader::scan).doesNotThrowAnyException();
-        assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
+        assertThatCode(() -> loader.scan(addressBook.getNodeIdSet())).doesNotThrowAnyException();
+        assertThatCode(() -> loader.verify(addressBook.getNodeIdSet())).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
     }
@@ -181,8 +182,8 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
-        assertThatCode(loader::scan).doesNotThrowAnyException();
-        assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
+        assertThatCode(() -> loader.scan(addressBook.getNodeIdSet())).doesNotThrowAnyException();
+        assertThatCode(() -> loader.verify(addressBook.getNodeIdSet())).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
     }

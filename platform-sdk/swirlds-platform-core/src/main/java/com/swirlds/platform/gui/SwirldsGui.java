@@ -22,13 +22,14 @@ import static com.swirlds.platform.gui.GuiUtils.winRect;
 import com.swirlds.common.Console;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gui.internal.SwirldMenu;
-import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.Color;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
+import java.util.Set;
 import javax.swing.JFrame;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,15 +48,20 @@ public final class SwirldsGui {
      *
      * @param platform the platform to create the console with
      * @param visible  should the window be initially visible? If not, call setVisible(true) later.
+     * @param nodesToStart the set of nodes to start windows for
      * @return the new window
      */
-    public static Console createConsole(final Platform platform, final int winNum, final boolean visible) {
+    public static Console createConsole(
+            @NonNull final Platform platform,
+            final int winNum,
+            final boolean visible,
+            @NonNull final Set<NodeId> nodesToStart) {
         if (GraphicsEnvironment.isHeadless()) {
             return null;
         }
         final NodeId selfId = platform.getSelfId();
         final AddressBook addressBook = platform.getAddressBook();
-        final int winCount = AddressBookNetworkUtils.getLocalAddressCount(addressBook);
+        final int winCount = nodesToStart.size();
         final Rectangle winRect = winRect(winCount, winNum);
         // if SwirldMain calls createConsole, this remembers the window created
         final Console console =

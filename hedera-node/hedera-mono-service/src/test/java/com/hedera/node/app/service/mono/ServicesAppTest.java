@@ -137,7 +137,7 @@ class ServicesAppTest {
                 .bootstrapProps(props)
                 .initialHash(EMPTY_HASH)
                 .platform(platform)
-                .consoleCreator((ignore, winNum, visible) -> null)
+                .consoleCreator((ignore, winNum, visible, nodesToStart) -> null)
                 .crypto(cryptography)
                 .selfId(new NodeId(selfId))
                 .build();

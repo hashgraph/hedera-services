@@ -144,7 +144,8 @@ public class CryptocurrencyDemoMain implements SwirldMain {
         this.platform = platform;
         this.selfId = id;
         final int winNum = GuiModel.getInstance().getInstanceNumber(selfId);
-        this.console = createConsole(platform, winNum, true); // create the window, make it visible
+        this.console = createConsole(
+                platform, winNum, true, platform.getAddressBook().getNodeIdSet()); // create the window, make it visible
         GuiModel.getInstance().setAbout(platform.getSelfId(), "Cryptocurrency and stock market demo v. 1.0\n");
         this.console.addKeyListener(keyListener);
     }

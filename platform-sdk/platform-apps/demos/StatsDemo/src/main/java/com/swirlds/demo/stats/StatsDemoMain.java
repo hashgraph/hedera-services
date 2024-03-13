@@ -223,7 +223,8 @@ public class StatsDemoMain implements SwirldMain {
         }
         if (!headless) { // create the window, make it visible
             final int winNum = GuiModel.getInstance().getInstanceNumber(selfId);
-            console = createConsole(platform, winNum, true);
+            console = createConsole(
+                    platform, winNum, true, platform.getAddressBook().getNodeIdSet());
         }
         GuiModel.getInstance()
                 .setAbout(

@@ -102,6 +102,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
@@ -112,7 +113,7 @@ public interface StateModule {
     interface ConsoleCreator {
 
         @Nullable
-        Console createConsole(Platform platform, int winNum, boolean visible);
+        Console createConsole(Platform platform, int winNum, boolean visible, Set<NodeId> nodesToStart);
     }
 
     @Binds
@@ -232,7 +233,10 @@ public interface StateModule {
         return initTrigger == EVENT_STREAM_RECOVERY
                 ? Optional.empty()
                 : Optional.ofNullable(consoleCreator.createConsole(
-                                platform, (int) platform.getSelfId().id(), true))
+                                platform,
+                                (int) platform.getSelfId().id(),
+                                true,
+                                platform.getAddressBook().getNodeIdSet()))
                         .map(c -> c.out);
     }
 

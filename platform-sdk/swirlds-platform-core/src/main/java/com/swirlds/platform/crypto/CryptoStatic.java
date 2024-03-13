@@ -35,7 +35,6 @@ import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.network.PeerInfo;
-import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.Address;
@@ -68,6 +67,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -93,6 +93,7 @@ public final class CryptoStatic {
     private static final int SWIRLD_ID_MULTIPLIER = 163;
     private static final int BITS_IN_BYTE = 8;
     private static final String ADDRESS_BOOK_MUST_NOT_BE_NULL = "addressBook must not be null";
+    private static final String NODES_TO_START_MUST_NOT_BE_NULL = "nodesToStart must not be null";
 
     static {
         // used to generate certificates
@@ -316,6 +317,7 @@ public final class CryptoStatic {
      * @param addressBook the address book of the network
      * @param keysDirPath the key directory, such as /user/test/sdk/data/key/
      * @param password    the password used to protect the PKCS12 key stores containing the node RSA public/private key pairs
+     * @param nodesToStart the nodes that are going to be started
      * @return map of key stores
      * @throws KeyStoreException   if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
      * @throws KeyLoadingException in an issue occurs while loading keys and certificates
@@ -324,11 +326,15 @@ public final class CryptoStatic {
     @NonNull
     @Deprecated(since = "0.47.0", forRemoval = false)
     static Map<NodeId, KeysAndCerts> loadKeysAndCerts(
-            @NonNull final AddressBook addressBook, @NonNull final Path keysDirPath, @NonNull final char[] password)
+            @NonNull final AddressBook addressBook,
+            @NonNull final Path keysDirPath,
+            @NonNull final char[] password,
+            @NonNull Set<NodeId> nodesToStart)
             throws KeyStoreException, KeyLoadingException, UnrecoverableKeyException, NoSuchAlgorithmException {
         Objects.requireNonNull(addressBook, ADDRESS_BOOK_MUST_NOT_BE_NULL);
         Objects.requireNonNull(keysDirPath, "keysDirPath must not be null");
         Objects.requireNonNull(password, "password must not be null");
+        Objects.requireNonNull(nodesToStart, NODES_TO_START_MUST_NOT_BE_NULL);
         final int n = addressBook.getSize();
 
         final List<String> names = new ArrayList<>();
@@ -348,9 +354,9 @@ public final class CryptoStatic {
         for (int i = 0; i < n; i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address address = addressBook.getAddress(nodeId);
-            if (!AddressBookNetworkUtils.isLocal(address)) {
+            if (!nodesToStart.contains(address.getNodeId())) {
                 // in case we are not creating keys but loading them from disk, we do not need to create
-                // a KeysAndCerts object for every node, just the local ones
+                // a KeysAndCerts object for every node, just the ones that are started.
                 continue;
             }
             final String name = nameToAlias(addressBook.getAddress(nodeId).getSelfName());
@@ -506,9 +512,12 @@ public final class CryptoStatic {
      * @return a map of KeysAndCerts objects, one for each node
      */
     public static Map<NodeId, KeysAndCerts> initNodeSecurity(
-            @NonNull final AddressBook addressBook, @NonNull final Configuration configuration) {
+            @NonNull final AddressBook addressBook,
+            @NonNull final Configuration configuration,
+            @NonNull final Set<NodeId> nodesToStart) {
         Objects.requireNonNull(addressBook, ADDRESS_BOOK_MUST_NOT_BE_NULL);
         Objects.requireNonNull(configuration, "configuration must not be null");
+        Objects.requireNonNull(nodesToStart, NODES_TO_START_MUST_NOT_BE_NULL);
 
         final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
         final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
@@ -528,8 +537,8 @@ public final class CryptoStatic {
                 if (cryptoConfig.enableNewKeyStoreModel()) {
                     logger.debug(STARTUP.getMarker(), "Reading keys using the enhanced key loader");
                     keysAndCerts = EnhancedKeyStoreLoader.using(addressBook, configuration)
-                            .scan()
-                            .verify()
+                            .scan(nodesToStart)
+                            .verify(nodesToStart)
                             .injectInAddressBook()
                             .keysAndCerts();
                 } else {
@@ -537,7 +546,8 @@ public final class CryptoStatic {
                     keysAndCerts = loadKeysAndCerts(
                             addressBook,
                             pathsConfig.getKeysDirPath(),
-                            cryptoConfig.keystorePassword().toCharArray());
+                            cryptoConfig.keystorePassword().toCharArray(),
+                            nodesToStart);
                 }
                 logger.debug(STARTUP.getMarker(), "Done loading keys");
             } else {
