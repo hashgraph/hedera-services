@@ -295,7 +295,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         new byte[][] {},
                                         idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(0L)
-                                                .build()))
+                                                .build()),
+                                1L)
                                 .payingWith(GENESIS)
                                 .via(mintWithZeroedAddressTest)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
@@ -307,7 +308,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         new byte[][] {genRandomBytes(100)},
                                         idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(0L)
-                                                .build()))
+                                                .build()),
+                                0L)
                                 .payingWith(GENESIS)
                                 .via(mintWithZeroedAddressAndMetadataTest)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
