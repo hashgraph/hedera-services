@@ -46,7 +46,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -220,7 +219,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                 .when(contractDelete(CONTRACT))
                 .then(contractCallLocal(CONTRACT, "create")
                         .nodePayment(1_234_567)
-                        .hasAnswerOnlyPrecheck(CONTRACT_DELETED));
+                        .hasAnswerOnlyPrecheck(OK));
     }
 
     @HapiTest
