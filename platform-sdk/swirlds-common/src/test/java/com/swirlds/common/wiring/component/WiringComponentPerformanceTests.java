@@ -60,7 +60,7 @@ class WiringComponentPerformanceTests {
                 .build();
 
         final BindableInputWire<Long, Void> inputWire = scheduler.buildInputWire("input");
-        inputWire.bind(component::handleInput);
+        inputWire.bindConsumer(component::handleInput);
 
         return inputWire;
     }

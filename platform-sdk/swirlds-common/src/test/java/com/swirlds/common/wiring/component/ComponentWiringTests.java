@@ -28,6 +28,8 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,7 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class WiringComponentTests {
+public class ComponentWiringTests {
 
     private interface FooBarBaz {
         @NonNull
@@ -78,6 +80,31 @@ public class WiringComponentTests {
 
         public long getRunningValue() {
             return runningValue;
+        }
+    }
+
+    private interface ComponentWithListOutput {
+        @NonNull
+        List<String> handleInputA(@NonNull String s);
+
+        @NonNull
+        List<String> handleInputB(@NonNull Long l);
+    }
+
+    private static class ComponentWithListOutputImpl implements ComponentWithListOutput {
+
+        @NonNull
+        @Override
+        public List<String> handleInputA(@NonNull final String s) {
+            return List.of(s.split(""));
+        }
+
+        @NonNull
+        @Override
+        public List<String> handleInputB(@NonNull final Long l) {
+            final String s = l.toString();
+            // return a list of characters
+            return List.of(s.split(""));
         }
     }
 
@@ -246,5 +273,48 @@ public class WiringComponentTests {
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             }
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void splitterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel =
+                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+
+        final TaskScheduler<List<String>> scheduler = wiringModel
+                .schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
+
+        final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, scheduler);
+
+        if (bindLocation == 0) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        final OutputWire<String> splitOutput = componentWiring.getSplitOutput();
+        assertSame(splitOutput, componentWiring.getSplitOutput());
+
+        final List<String> outputData = new ArrayList<>();
+        splitOutput.solderTo("addToOutputData", "split data", outputData::add);
+
+        final List<String> expectedOutputData = new ArrayList<>();
+
+        if (bindLocation == 1) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputA).put("hello world");
+        expectedOutputData.addAll(List.of("h", "e", "l", "l", "o", " ", "w", "o", "r", "l", "d"));
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputB).put(123L);
+        expectedOutputData.addAll(List.of("1", "2", "3"));
+
+        assertEquals(expectedOutputData, outputData);
     }
 }

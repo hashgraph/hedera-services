@@ -104,7 +104,7 @@ class WiringBenchmark {
 
         eventsToOrphanBuffer.bind(orphanBuffer);
         eventsToBeVerified.bind(verifier);
-        eventsToInsertBackIntoEventPool.bind(eventPool::checkin);
+        eventsToInsertBackIntoEventPool.bindConsumer(eventPool::checkin);
 
         // Create a user thread for running "gossip". It will continue to generate events until explicitly stopped.
         System.out.println("Starting gossip");

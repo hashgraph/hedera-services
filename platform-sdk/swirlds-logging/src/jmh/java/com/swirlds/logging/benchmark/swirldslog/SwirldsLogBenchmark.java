@@ -28,8 +28,8 @@ import static com.swirlds.logging.benchmark.config.Constants.WARMUP_TIME_IN_SECO
 
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
-import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
+import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -58,11 +58,11 @@ public class SwirldsLogBenchmark {
     private SwirldsLogRunner logRunner;
     private LoggingSystem loggingSystem;
 
-    private Configuration<LoggingSystem> config;
+    private LoggingBenchmarkConfig<LoggingSystem> config;
 
     @Setup(Level.Trial)
     public void init() {
-        config = new SwirldsLogConfiguration();
+        config = new SwirldsLogLoggingBenchmarkConfig();
         if (Objects.equals(loggingType, FILE_TYPE)) {
             loggingSystem = config.configureFileLogging();
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
