@@ -16,17 +16,22 @@
 
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-public class RandomTransferFromHollowAccount extends RandomOperationSignedByCustom<HapiCryptoTransfer> {
+public class RandomTransferFromHollowAccount extends RandomOperationCustom<HapiCryptoTransfer> {
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_SIGNATURE);
 
     public RandomTransferFromHollowAccount(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         super(registry, accounts);
@@ -35,5 +40,15 @@ public class RandomTransferFromHollowAccount extends RandomOperationSignedByCust
     @Override
     protected HapiTxnOp<HapiCryptoTransfer> hapiTxnOp(String keyName) {
         return cryptoTransfer(tinyBarsFromTo(keyName, LAZY_CREATE_SPONSOR, 1));
+    }
+
+    protected HapiSpecOperation generateOpSignedBy(String keyName) {
+        return hapiTxnOp(keyName)
+                .signedBy(UNIQUE_PAYER_ACCOUNT)
+                .payingWith(UNIQUE_PAYER_ACCOUNT)
+                .sigMapPrefixes(uniqueWithFullPrefixesFor(UNIQUE_PAYER_ACCOUNT))
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .noLogging();
     }
 }

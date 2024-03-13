@@ -17,11 +17,9 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount.ACCOUNT_SUFFIX;
-import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
@@ -32,19 +30,16 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
 
-abstract class RandomOperationSignedByCustom<T extends HapiTxnOp<T>> implements OpProvider {
+abstract class RandomOperationCustom<T extends HapiTxnOp<T>> implements OpProvider {
+
+    protected final ResponseCodeEnum[] permissiblePrechecks =
+            standardPrechecksAnd(PAYER_ACCOUNT_NOT_FOUND, ACCOUNT_DELETED, PAYER_ACCOUNT_DELETED);
 
     private final HapiSpecRegistry registry;
 
     private final RegistrySourcedNameProvider<AccountID> accounts;
 
-    private final ResponseCodeEnum[] permissiblePrechecks =
-            standardPrechecksAnd(PAYER_ACCOUNT_NOT_FOUND, ACCOUNT_DELETED, PAYER_ACCOUNT_DELETED);
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, ACCOUNT_DELETED, PAYER_ACCOUNT_DELETED);
-
-    protected RandomOperationSignedByCustom(
-            HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
+    protected RandomOperationCustom(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         this.registry = registry;
         this.accounts = accounts;
     }
@@ -55,9 +50,7 @@ abstract class RandomOperationSignedByCustom<T extends HapiTxnOp<T>> implements 
     }
 
     private Optional<String> randomHollowAccountKey() {
-        return accounts.getQualifying()
-                .filter(a -> a.endsWith(ACCOUNT_SUFFIX + 1231))
-                .map(this::keyFromAccount);
+        return accounts.getQualifying().filter(a -> a.endsWith(ACCOUNT_SUFFIX)).map(this::keyFromAccount);
     }
 
     private String keyFromAccount(String account) {
@@ -68,15 +61,7 @@ abstract class RandomOperationSignedByCustom<T extends HapiTxnOp<T>> implements 
         return key;
     }
 
-    private HapiSpecOperation generateOpSignedBy(String keyName) {
-        return hapiTxnOp(keyName)
-                .signedBy(UNIQUE_PAYER_ACCOUNT)
-                .payingWith(UNIQUE_PAYER_ACCOUNT)
-                .sigMapPrefixes(uniqueWithFullPrefixesFor(UNIQUE_PAYER_ACCOUNT))
-                .hasPrecheckFrom(permissiblePrechecks)
-                .hasKnownStatusFrom(permissibleOutcomes)
-                .noLogging();
-    }
+    protected abstract HapiSpecOperation generateOpSignedBy(String keyName);
 
     protected abstract HapiTxnOp<T> hapiTxnOp(String keyName);
 }

@@ -16,16 +16,22 @@
 
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-public class RandomTransferToHollowAccount extends RandomOperationSignedByCustom<HapiCryptoTransfer> {
+public class RandomTransferToHollowAccount extends RandomOperationCustom<HapiCryptoTransfer> {
+
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(SUCCESS);
 
     public RandomTransferToHollowAccount(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         super(registry, accounts);
@@ -34,5 +40,15 @@ public class RandomTransferToHollowAccount extends RandomOperationSignedByCustom
     @Override
     protected HapiTxnOp<HapiCryptoTransfer> hapiTxnOp(String keyName) {
         return cryptoTransfer(tinyBarsFromTo(UNIQUE_PAYER_ACCOUNT, keyName, 1));
+    }
+
+    protected HapiSpecOperation generateOpSignedBy(String keyName) {
+        return hapiTxnOp(keyName)
+                .signedBy(UNIQUE_PAYER_ACCOUNT)
+                .payingWith(UNIQUE_PAYER_ACCOUNT)
+                .sigMapPrefixes(uniqueWithFullPrefixesFor(UNIQUE_PAYER_ACCOUNT))
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .noLogging();
     }
 }

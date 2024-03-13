@@ -18,7 +18,8 @@ package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
-import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.hollowAccountFuzzingWith;
+import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.hollowAccountFuzzingWithTokenOperations;
+import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.hollowAccountFuzzingWithTransferFailedOperations;
 import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.initOperations;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -43,10 +44,21 @@ public class HollowAccountFuzzing extends HapiSuite {
 
     @HapiTest
     final HapiSpec hollowAccountTransferFuzzing() {
-        return defaultHapiSpec("HollowAccountTransferFuzzing")
+        return defaultHapiSpec("HollowAccountTransferFuzzingTransfer")
                 .given(initOperations())
                 .when()
-                .then(runWithProvider(hollowAccountFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(hollowAccountFuzzingWithTransferFailedOperations(PROPERTIES))
+                        .lasting(10L, TimeUnit.SECONDS));
+    }
+
+    @HapiTest
+    final HapiSpec hollowAccountFuzzingWithTokenOps() {
+        // here fuzzy tests should be failing but they are passing
+        return defaultHapiSpec("HollowAccountTransferFuzzingToken")
+                .given(initOperations())
+                .when()
+                .then(runWithProvider(hollowAccountFuzzingWithTokenOperations(PROPERTIES))
+                        .lasting(10L, TimeUnit.SECONDS));
     }
 
     @Override
