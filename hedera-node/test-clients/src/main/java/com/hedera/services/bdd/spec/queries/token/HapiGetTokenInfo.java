@@ -182,8 +182,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
-    public HapiGetTokenInfo hasMetadataKey(String metadataKey) {
-        expectedMetadataKey = Optional.of(metadataKey);
+    public HapiGetTokenInfo hasMetadataKey(String name) {
+        expectedMetadataKey = Optional.of(name);
         return this;
     }
 
@@ -423,7 +423,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
                 actualInfo.getMetadataKey(),
                 expectedMetadataKey,
                 (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getMetadataKey(n),
-                "Wrong metadata key!",
+                "Wrong token metadata key!",
                 registry);
 
         expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, actualInfo.getLedgerId()));

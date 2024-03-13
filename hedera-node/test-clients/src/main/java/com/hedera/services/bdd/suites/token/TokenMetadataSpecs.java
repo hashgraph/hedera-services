@@ -200,7 +200,7 @@ public class TokenMetadataSpecs extends HapiSuite {
                                 .hasDecimals(1)
                                 .hasAdminKey(PRIMARY)
                                 .hasSupplyKey(PRIMARY)
-                                .hasMetadataKey(METADATA_KEY)
+                                .hasMetadataKey(PRIMARY)
                                 .hasMetadata(metadata)
                                 .hasMaxSupply(1000)
                                 .hasTotalSupply(500)
