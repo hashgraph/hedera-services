@@ -116,8 +116,7 @@ public class ComponentWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel wiringModel =
-                WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
 
         final TaskScheduler<Long> scheduler = wiringModel
                 .schedulerBuilder("test")
@@ -141,8 +140,7 @@ public class ComponentWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel wiringModel =
-                WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
 
         final TaskScheduler<Long> scheduler = wiringModel
                 .schedulerBuilder("test")
@@ -219,8 +217,7 @@ public class ComponentWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel wiringModel =
-                WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
 
         final TaskScheduler<Long> scheduler = wiringModel
                 .schedulerBuilder("test")
@@ -281,8 +278,7 @@ public class ComponentWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel wiringModel =
-                WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
 
         final TaskScheduler<List<String>> scheduler = wiringModel
                 .schedulerBuilder("test")
