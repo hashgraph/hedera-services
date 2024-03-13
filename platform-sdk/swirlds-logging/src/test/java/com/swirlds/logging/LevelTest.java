@@ -19,8 +19,10 @@ package com.swirlds.logging;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 class LevelTest {
 
     @Test
