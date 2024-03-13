@@ -18,6 +18,7 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.findPcesFiles;
@@ -60,11 +61,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class PcesBirthRoundMigrationTests {
 
@@ -113,11 +117,15 @@ class PcesBirthRoundMigrationTests {
     /**
      * Generate a bunch of PCES files in the legacy format.
      *
-     * @param random the random number generator
+     * @param random        the random number generator
+     * @param discontinuity whether to introduce a discontinuity in the stream. If true, discontinuity is placed at the
+     *                      event that is 1/3 of the way through the event stream (test migrates from the event at the
+     *                      1/2 point, so this should not affect the migration)
      * @return a list of events that were written to disk
      */
     @NonNull
-    private PcesFilesWritten generateLegacyPcesFiles(@NonNull final Random random) throws IOException {
+    private PcesFilesWritten generateLegacyPcesFiles(@NonNull final Random random, final boolean discontinuity)
+            throws IOException {
 
         final int eventCount = 1000;
         final int fileCount = 10;
@@ -140,7 +148,12 @@ class PcesBirthRoundMigrationTests {
         final Path fullPcesPath = pcesPath.resolve("0");
 
         final List<PcesFile> files = new ArrayList<>();
+        long origin = 0;
         for (int fileIndex = 0; fileIndex < fileCount; fileIndex++) {
+
+            if (discontinuity && fileIndex == fileCount / 3) {
+                origin = random.nextLong(10, 20);
+            }
 
             final List<GossipEvent> fileEvents =
                     events.subList(fileIndex * eventsPerFile, (fileIndex + 1) * eventsPerFile);
@@ -154,7 +167,7 @@ class PcesBirthRoundMigrationTests {
                     fileIndex,
                     lowerGenerationBound,
                     upperGenerationBound,
-                    0,
+                    origin,
                     fullPcesPath);
             files.add(file);
 
@@ -171,8 +184,9 @@ class PcesBirthRoundMigrationTests {
     /**
      * Validate the basic migration workflow.
      */
-    @Test
-    void standardMigrationTest() throws IOException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void standardMigrationTest(final boolean discontinuity) throws IOException {
         final Random random = getRandomPrintSeed();
 
         final Configuration configuration = new TestConfigBuilder()
@@ -194,14 +208,14 @@ class PcesBirthRoundMigrationTests {
                 platformContext.getTime(),
                 new NodeId(0));
 
-        final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random);
+        final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, discontinuity);
 
         // Choose the generation from the middle event as minimum judge generation prior to migration.
         // This will put roughly half of events on either side of the migration boundary.
         final long middleGeneration =
                 filesWritten.events.get(filesWritten.events.size() / 2).getGeneration();
 
-        final long migrationRound = random.nextLong(1, 1000);
+        final long migrationRound = random.nextLong(100, 1000);
 
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
                 platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
@@ -248,13 +262,163 @@ class PcesBirthRoundMigrationTests {
         assertEquals(migrationRound, birthRoundFile.getLowerBound());
         assertEquals(migrationRound, birthRoundFile.getUpperBound());
         assertEquals(migrationRound, birthRoundFile.getOrigin());
+
+        // Running migration a second time should have no side effects.
+        final Set<Path> allFiles = new HashSet<>();
+        try (final Stream<Path> stream = Files.walk(testDirectory)) {
+            stream.forEach(allFiles::add);
+        }
+
+        PcesBirthRoundMigration.migratePcesToBirthRoundMode(
+                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+
+        final Set<Path> allFilesAfterSecondMigration = new HashSet<>();
+        try (final Stream<Path> stream = Files.walk(testDirectory)) {
+            stream.forEach(allFilesAfterSecondMigration::add);
+        }
+
+        assertEquals(allFiles, allFilesAfterSecondMigration);
     }
 
-    void botchedMigrationRecoveryTest() {}
+    @Test
+    void genesisWithBirthRoundsTest() throws IOException {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleBinPath)
+                .withValue(PcesConfig_.DATABASE_DIRECTORY, pcesPath)
+                .getOrCreateConfig();
+        TemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
 
-    void genesisWithBirthRoundsTest() {}
+        final FakeTime time = new FakeTime();
 
-    void migrationAlreadyCompletedTest() {}
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withTime(time)
+                .withConfiguration(configuration)
+                .build();
+        final RecycleBin recycleBin = new RecycleBinImpl(
+                configuration,
+                platformContext.getMetrics(),
+                AdHocThreadManager.getStaticThreadManager(),
+                platformContext.getTime(),
+                new NodeId(0));
 
-    void migrationWithDiscontinuities() {}
+        // should not throw
+        PcesBirthRoundMigration.migratePcesToBirthRoundMode(
+                platformContext, recycleBin, new NodeId(0), ROUND_FIRST, -1);
+    }
+
+    @Test
+    void botchedMigrationRecoveryTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleBinPath)
+                .withValue(PcesConfig_.DATABASE_DIRECTORY, pcesPath)
+                .getOrCreateConfig();
+        TemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
+
+        final FakeTime time = new FakeTime();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withTime(time)
+                .withConfiguration(configuration)
+                .build();
+        final RecycleBin recycleBin = new RecycleBinImpl(
+                configuration,
+                platformContext.getMetrics(),
+                AdHocThreadManager.getStaticThreadManager(),
+                platformContext.getTime(),
+                new NodeId(0));
+
+        final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, false);
+
+        // Choose the generation from the middle event as minimum judge generation prior to migration.
+        // This will put roughly half of events on either side of the migration boundary.
+        final long middleGeneration =
+                filesWritten.events.get(filesWritten.events.size() / 2).getGeneration();
+
+        final long migrationRound = random.nextLong(1, 1000);
+
+        PcesBirthRoundMigration.migratePcesToBirthRoundMode(
+                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+
+        // Some funny business: copy the original files back into the PCES database directory.
+        // This simulates a crash in the middle of the migration process after we have created
+        // the migration file (this is atomic) and before we fully clean up the original files.
+        final Path destination = pcesPath.resolve("0");
+        try (final Stream<Path> stream = Files.walk(recycleBinPath)) {
+            stream.forEach(path -> {
+                if (Files.isRegularFile(path)) {
+                    try {
+                        Files.copy(path, destination.resolve(path.getFileName()));
+                    } catch (final IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        }
+
+        // Run migration again.
+        PcesBirthRoundMigration.migratePcesToBirthRoundMode(
+                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+
+        // We should not find any generation based PCES files in the database directory.
+        assertTrue(findPcesFiles(pcesPath, GENERATION_THRESHOLD).isEmpty());
+
+        // We should find exactly one birth round based PCES file in the database directory.
+        final List<PcesFile> birthRoundFiles = findPcesFiles(pcesPath, BIRTH_ROUND_THRESHOLD);
+        final PcesFile birthRoundFile = birthRoundFiles.getFirst();
+        assertEquals(1, birthRoundFiles.size());
+
+        // For every original PCES file, we should find a copy of that file in the recycle bin twice:
+        // once from the original migration, and a second from the backup made during the botched recovery cleanup.
+        final List<PcesFile> recycleBinFiles = findPcesFiles(recycleBinPath, GENERATION_THRESHOLD);
+        assertEquals(filesWritten.files().size() * 2, recycleBinFiles.size());
+        final Set<String> recycleBinFileNames = new HashSet<>();
+        for (final PcesFile file : recycleBinFiles) {
+            recycleBinFileNames.add(file.getFileName());
+        }
+        assertEquals(filesWritten.files().size(), recycleBinFileNames.size());
+        for (final PcesFile file : filesWritten.files()) {
+            assertTrue(recycleBinFileNames.contains(file.getFileName()));
+        }
+
+        // Read the events in the new file, make sure we see all events with a generation greater than
+        // or equal to the middle generation.
+        final List<GossipEvent> expectedEvents = new ArrayList<>();
+        for (final GossipEvent event : filesWritten.events) {
+            if (event.getGeneration() >= middleGeneration) {
+                expectedEvents.add(event);
+            }
+        }
+        final IOIterator<GossipEvent> iterator = new PcesFileIterator(birthRoundFile, 1, BIRTH_ROUND_THRESHOLD);
+        final List<GossipEvent> actualEvents = new ArrayList<>();
+        while (iterator.hasNext()) {
+            actualEvents.add(iterator.next());
+        }
+        assertEquals(expectedEvents, actualEvents);
+
+        // Verify that the new file's parameters are valid.
+        assertEquals(BIRTH_ROUND_THRESHOLD, birthRoundFile.getFileType());
+        assertEquals(time.now(), birthRoundFile.getTimestamp());
+        assertEquals(0, birthRoundFile.getSequenceNumber());
+        assertEquals(migrationRound, birthRoundFile.getLowerBound());
+        assertEquals(migrationRound, birthRoundFile.getUpperBound());
+        assertEquals(migrationRound, birthRoundFile.getOrigin());
+
+        // Running migration a second time should have no side effects.
+        final Set<Path> allFiles = new HashSet<>();
+        try (final Stream<Path> stream = Files.walk(testDirectory)) {
+            stream.forEach(allFiles::add);
+        }
+
+        PcesBirthRoundMigration.migratePcesToBirthRoundMode(
+                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+
+        final Set<Path> allFilesAfterSecondMigration = new HashSet<>();
+        try (final Stream<Path> stream = Files.walk(testDirectory)) {
+            stream.forEach(allFilesAfterSecondMigration::add);
+        }
+
+        assertEquals(allFiles, allFilesAfterSecondMigration);
+    }
 }

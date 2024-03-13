@@ -329,7 +329,7 @@ public class SwirldsPlatform implements Platform {
 
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             try {
-                // This method is a no-op if we have already completed birth round migration.
+                // This method is a no-op if we have already completed birth round migration or if we are at genesis.
                 migratePcesToBirthRoundMode(
                         platformContext,
                         recycleBin,

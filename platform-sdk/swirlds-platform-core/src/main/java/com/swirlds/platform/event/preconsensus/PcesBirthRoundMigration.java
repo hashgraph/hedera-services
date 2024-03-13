@@ -75,22 +75,24 @@ public final class PcesBirthRoundMigration {
 
         final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
-        System.out.println("databaseDirectory: " + databaseDirectory); // TODO
+        if (findPcesFiles(databaseDirectory, GENERATION_THRESHOLD).isEmpty()) {
+            // No migration needed if there are no PCES files in generation mode.
 
-        if (!findPcesFiles(databaseDirectory, BIRTH_ROUND_THRESHOLD).isEmpty()) {
-            // We write the migrated PCES file atomically, so if it exists,
-            // the important part of the migration has been completed.
+            logger.info(STARTUP.getMarker(), "PCES birth round migration is not necessary.");
+            return;
+        } else if (!findPcesFiles(databaseDirectory, BIRTH_ROUND_THRESHOLD).isEmpty()) {
+            // We've found PCES files in both birth round and generation mode.
+            // This is a signal that we attempted to do the migration but crashed.
+            // The migrated PCES file is written atomically, so if it exists,
+            // the important part of the migration has been completed. Remaining
+            // work is to clean up the old files.
 
-            logger.info(STARTUP.getMarker(), "PCES birth round migration has already been completed.");
-
-            if (!findPcesFiles(databaseDirectory, GENERATION_THRESHOLD).isEmpty()) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "PCES birth round migration has already been completed, but there "
-                                + "are still legacy formatted PCES files present. Cleaning up.");
-                makeBackupFiles(recycleBin, databaseDirectory);
-                cleanUpOldFiles(databaseDirectory);
-            }
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "PCES birth round migration has already been completed, but there "
+                            + "are still legacy formatted PCES files present. Cleaning up.");
+            makeBackupFiles(recycleBin, databaseDirectory);
+            cleanUpOldFiles(databaseDirectory);
 
             return;
         }
@@ -113,6 +115,7 @@ public final class PcesBirthRoundMigration {
         }
 
         migrateEvents(platformContext, selfId, eventsToMigrate, migrationRound);
+
         cleanUpOldFiles(databaseDirectory);
 
         logger.info(STARTUP.getMarker(), "PCES birth round migration complete.");
