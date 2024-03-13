@@ -20,7 +20,7 @@ import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
-import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
@@ -51,7 +51,7 @@ public class PlatformCoordinator {
     private final ConsensusEngineWiring consensusEngineWiring;
     private final FutureEventBufferWiring futureEventBufferWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
-    private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
+    private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
 
@@ -83,7 +83,7 @@ public class PlatformCoordinator {
             @NonNull final ConsensusEngineWiring consensusEngineWiring,
             @NonNull final FutureEventBufferWiring futureEventBufferWiring,
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
-            @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
+            @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring) {
 
@@ -125,7 +125,7 @@ public class PlatformCoordinator {
         inOrderLinkerWiring.flushRunnable().run();
         shadowgraphWiring.flushRunnable().run();
         consensusEngineWiring.flushRunnable().run();
-        applicationTransactionPrehandlerWiring.flushRunnable().run();
+        applicationTransactionPrehandlerWiring.flush();
         futureEventBufferWiring.flushRunnable().run();
         eventCreationManagerWiring.flush();
     }

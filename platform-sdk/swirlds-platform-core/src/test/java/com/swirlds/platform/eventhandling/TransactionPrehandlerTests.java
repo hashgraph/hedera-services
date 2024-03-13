@@ -37,7 +37,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link TransactionPrehandler}
+ * Tests for {@link DefaultTransactionPrehandler}
  */
 class TransactionPrehandlerTests {
     @Test
@@ -59,7 +59,7 @@ class TransactionPrehandlerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         final TransactionPrehandler transactionPrehandler =
-                new TransactionPrehandler(platformContext, latestImmutableStateNexus);
+                new DefaultTransactionPrehandler(platformContext, latestImmutableStateNexus);
 
         final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);

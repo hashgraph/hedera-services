@@ -97,6 +97,7 @@ import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
@@ -659,7 +660,7 @@ public class SwirldsPlatform implements Platform {
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
 
         final TransactionPrehandler transactionPrehandler =
-                new TransactionPrehandler(platformContext, latestImmutableState);
+                new DefaultTransactionPrehandler(platformContext, latestImmutableState);
 
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState);
 

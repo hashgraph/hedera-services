@@ -75,7 +75,6 @@ import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.util.HashLogger;
-import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.BirthRoundMigrationShimWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
@@ -131,7 +130,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final PcesWriterWiring pcesWriterWiring;
     private final PcesSequencerWiring pcesSequencerWiring;
     private final EventDurabilityNexusWiring eventDurabilityNexusWiring;
-    private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
+    private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
     private final FutureEventBufferWiring futureEventBufferWiring;
@@ -204,8 +203,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
         pcesSequencerWiring = PcesSequencerWiring.create(schedulers.pcesSequencerScheduler());
 
-        applicationTransactionPrehandlerWiring =
-                ApplicationTransactionPrehandlerWiring.create(schedulers.applicationTransactionPrehandlerScheduler());
+        applicationTransactionPrehandlerWiring = new ComponentWiring<>(
+                model, TransactionPrehandler.class, schedulers.applicationTransactionPrehandlerScheduler());
         stateSignatureCollectorWiring =
                 StateSignatureCollectorWiring.create(model, schedulers.stateSignatureCollectorScheduler());
         signedStateFileManagerWiring =
@@ -306,7 +305,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
         orphanBufferWiring
                 .eventOutput()
-                .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
+                .solderTo(applicationTransactionPrehandlerWiring.getInputWire(
+                        TransactionPrehandler::prehandleApplicationTransactions));
         orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preConsensusEventInput());
         stateSignatureCollectorWiring.getAllStatesOutput().solderTo(signedStateFileManagerWiring.saveToDiskFilter());
 
