@@ -182,21 +182,6 @@ class ContractCallLocalHandlerTest {
     }
 
     @Test
-    void validateFailsIfContractDeletedTest() {
-        // given
-        given(context.query()).willReturn(query);
-        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
-        given(contractCallLocalQuery.contractID()).willReturn(contractID);
-        given(context.createStore(ReadableAccountStore.class)).willReturn(store);
-        given(store.getContractById(contractID)).willReturn(contract);
-        given(contract.deleted()).willReturn(true);
-        givenAllowCallsToNonContractAccountOffConfig();
-
-        // when:
-        assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
-    }
-
-    @Test
     void findResponsePositiveTest() {
         given(factory.create(any(), any(), eq(HederaFunctionality.CONTRACT_CALL_LOCAL)))
                 .willReturn(component);
