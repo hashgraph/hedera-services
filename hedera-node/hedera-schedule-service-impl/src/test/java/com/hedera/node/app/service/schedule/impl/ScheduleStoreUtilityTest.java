@@ -21,6 +21,7 @@ import static org.assertj.core.api.BDDAssertions.assertThat;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.security.InvalidKeyException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,106 +37,96 @@ class ScheduleStoreUtilityTest extends ScheduleTestBase {
     }
 
     @Test
-    void verifyHashCalculationNormalFunction() {
-        final String hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_0_EXPIRE_SHA256);
-    }
-
-    @Test
     void verifyIncludedFieldsChangeHash() {
         Schedule.Builder testSchedule = scheduleInState.copyBuilder();
 
-        String hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_0_EXPIRE_SHA256);
+        Bytes origHashValue = ScheduleStoreUtility.calculateBytesHash(scheduleInState);
 
+        // change the expiration time and verify that hash changes
         testSchedule.providedExpirationSecond(0L);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_0_EXPIRE_SHA256);
+        Bytes hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(origHashValue);
         testSchedule.providedExpirationSecond(scheduleInState.providedExpirationSecond());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
+        // change the admin key and verify that hash changes
         testSchedule.adminKey(payerKey);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_PAYER_IS_ADMIN_SHA256);
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(origHashValue);
         testSchedule.adminKey(scheduleInState.adminKey());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
+        // change the scheduled transaction and verify that hash changes
         testSchedule.scheduledTransaction(createAlternateScheduled());
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_ALTERNATE_SCHEDULED_SHA256);
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(origHashValue);
         testSchedule.scheduledTransaction(scheduleInState.scheduledTransaction());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
+        // change the memo and verify that hash changes
         testSchedule.memo(ODD_MEMO);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_ODD_MEMO_SHA256);
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(origHashValue);
         testSchedule.memo(scheduleInState.memo());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
+        // change the wait for expiry and verify that hash changes
         testSchedule.waitForExpiry(!scheduleInState.waitForExpiry());
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_WAIT_EXPIRE_SHA256);
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(origHashValue);
         testSchedule.waitForExpiry(scheduleInState.waitForExpiry());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
     }
 
     @Test
     void verifyExcludedAttributesHaveNoEffect() {
         Schedule.Builder testSchedule = scheduleInState.copyBuilder();
 
-        String hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        Bytes origHashValue = ScheduleStoreUtility.calculateBytesHash(scheduleInState);
 
         testSchedule.scheduleId(new ScheduleID(42L, 444L, 22740229L));
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        testSchedule.scheduleId(scheduleInState.scheduleId());
+        Bytes hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
         testSchedule.calculatedExpirationSecond(18640811L);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        testSchedule.calculatedExpirationSecond(scheduleInState.calculatedExpirationSecond());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
         testSchedule.deleted(!scheduleInState.deleted());
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        testSchedule.deleted(scheduleInState.deleted());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
         testSchedule.executed(!scheduleInState.executed());
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        testSchedule.executed(scheduleInState.executed());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
         testSchedule.payerAccountId(admin);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        testSchedule.payerAccountId(scheduleInState.payerAccountId());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
         testSchedule.schedulerAccountId(payer);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        testSchedule.schedulerAccountId(scheduleInState.schedulerAccountId());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
         testSchedule.resolutionTime(modifiedResolutionTime);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        testSchedule.resolutionTime(scheduleInState.resolutionTime());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
         testSchedule.scheduleValidStart(modifiedStartTime);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        testSchedule.scheduleValidStart(scheduleInState.scheduleValidStart());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
         testSchedule.originalCreateTransaction(alternateCreateTransaction);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        testSchedule.originalCreateTransaction(scheduleInState.originalCreateTransaction());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
 
         testSchedule.signatories(alternateSignatories);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        testSchedule.signatories(scheduleInState.signatories());
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(origHashValue);
     }
 }
