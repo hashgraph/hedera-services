@@ -49,7 +49,7 @@ public final class LoggingTestScenario {
         return new TestScenarioBuilder();
     }
 
-    public static class TestScenarioBuilder {
+    public static class LoggingTestScenarioBuilder {
         private String name;
         private final Map<String, Object> properties;
         private final List<AssertionRule> assertionsRules;
