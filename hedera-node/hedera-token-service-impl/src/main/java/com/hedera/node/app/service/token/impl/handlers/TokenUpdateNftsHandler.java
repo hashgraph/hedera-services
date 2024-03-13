@@ -94,9 +94,6 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var token = getIfUsable(tokenId, tokenStore);
         validateTrue(token.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
 
-        if (!op.hasMetadata()) {
-            return;
-        }
         validateSemantics(context, op);
         final var nftStore = context.writableStore(WritableNftStore.class);
 
@@ -117,8 +114,12 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
             validateTrue(nftSerialNumber > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
             final Nft nft = nftStore.get(tokenNftId, nftSerialNumber);
             validateTrue(nft != null, INVALID_NFT_ID);
-            var updatedNft = nft.copyBuilder().metadata(op.metadataOrThrow()).build();
-            nftStore.put(updatedNft);
+            if (op.hasMetadata()) {
+                // Update the metadata for the NFT(s)
+                var updatedNft =
+                        nft.copyBuilder().metadata(op.metadataOrThrow()).build();
+                nftStore.put(updatedNft);
+            }
         }
     }
 
@@ -140,7 +141,9 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
             @NonNull final HandleContext context, @NonNull final TokenUpdateNftsTransactionBody op) {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         // validate metadata
-        validator.validateTokenMetadata(op.metadata(), tokensConfig);
+        if (op.hasMetadata()) {
+            validator.validateTokenMetadata(op.metadataOrThrow(), tokensConfig);
+        }
         validateTrue(op.serialNumbers().size() <= tokensConfig.nftsMaxBatchSizeUpdate(), BATCH_SIZE_LIMIT_EXCEEDED);
     }
 }

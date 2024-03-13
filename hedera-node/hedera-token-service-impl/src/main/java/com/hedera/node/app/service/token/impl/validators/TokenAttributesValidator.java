@@ -76,14 +76,12 @@ public class TokenAttributesValidator {
     }
 
     /**
-     * Validates the token metadata, if it exists and is not too long. Since nft.metadata is required we should throw if empty.
+     * Validates the token metadata, if it exists and is not too long.
      * @param metadata the token metadata to validate
      */
-    public void validateTokenMetadata(@Nullable final Bytes metadata, @NonNull final TokensConfig tokensConfig) {
-        if (metadata != null) {
-            if (metadata.length() > 0) {
-                validateTrue(metadata.length() <= tokensConfig.tokensMaxMetadataBytes(), METADATA_TOO_LONG);
-            }
+    public void validateTokenMetadata(@NonNull final Bytes metadata, @NonNull final TokensConfig tokensConfig) {
+        if (metadata.length() > 0) {
+            validateTrue(metadata.length() <= tokensConfig.tokensMaxMetadataBytes(), METADATA_TOO_LONG);
         }
     }
 

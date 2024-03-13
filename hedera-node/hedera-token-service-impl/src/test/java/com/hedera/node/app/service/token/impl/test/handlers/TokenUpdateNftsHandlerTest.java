@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
@@ -156,6 +157,49 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
             assertThat(modifiedToken.hasNftId()).isTrue();
             assertThat(modifiedToken.nftId().serialNumber()).isEqualTo(2);
         }
+    }
+
+    @Test
+    void happyPathForNonFungibleTokenUpdateWithNullMetadata() {
+        final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L));
+        final var existingToken = writableNftStore.get(nonFungibleTokenId, serialNumbers.get(1));
+        final var existingMetadata = existingToken.metadata();
+        // TokenUpdateNftBuilder to create mock with serialIds and test metadata
+        txn = new TokenUpdateNftBuilder()
+                .newNftUpdateTransactionBody(nonFungibleTokenId, null, serialNumbers.toArray(new Long[0]));
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
+        final var modifiedToken = writableNftStore.get(nonFungibleTokenId, serialNumbers.get(1));
+
+        if (modifiedToken != null) {
+            assertThat(modifiedToken.metadata()).isEqualTo(existingMetadata);
+            assertThat(modifiedToken.hasNftId()).isTrue();
+            assertThat(modifiedToken.nftId().serialNumber()).isEqualTo(2);
+        }
+    }
+
+    @Test
+    void validatesInvalidNftsEvenIfMetadataIsNotSet() {
+        final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(-1L));
+        // TokenUpdateNftBuilder to create mock with serialIds and test metadata
+        txn = new TokenUpdateNftBuilder()
+                .newNftUpdateTransactionBody(nonFungibleTokenId, null, serialNumbers.toArray(new Long[0]));
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext), "Invalid NFT serial number")
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_TOKEN_NFT_SERIAL_NUMBER));
+    }
+
+    @Test
+    void validatesNonExistingNftsEvenIfMetadataIsNotSet() {
+        final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(10L));
+        // TokenUpdateNftBuilder to create mock with serialIds and test metadata
+        txn = new TokenUpdateNftBuilder()
+                .newNftUpdateTransactionBody(nonFungibleTokenId, null, serialNumbers.toArray(new Long[0]));
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext), "Non-existing NFT serial number")
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_NFT_ID));
     }
 
     @Test
@@ -315,7 +359,9 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
             TokenUpdateNftsTransactionBody.Builder nftUpdateTxnBodyBuilder =
                     TokenUpdateNftsTransactionBody.newBuilder();
             if (tokenId != null) nftUpdateTxnBodyBuilder.token(tokenId);
-            nftUpdateTxnBodyBuilder.metadata(metadata);
+            if (metadata != null) {
+                nftUpdateTxnBodyBuilder.metadata(metadata);
+            }
             nftUpdateTxnBodyBuilder.serialNumbers(nftSerialNums);
             return TransactionBody.newBuilder()
                     .transactionID(transactionID)

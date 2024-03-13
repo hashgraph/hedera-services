@@ -64,7 +64,7 @@ public class TokenUpdateValidator {
         }
         // validate metadata
         if (op.hasMetadata()) {
-            validator.validateTokenMetadata(op.metadata(), tokensConfig);
+            validator.validateTokenMetadata(op.metadataOrThrow(), tokensConfig);
         }
         // validate token symbol, if being changed
         if (op.symbol() != null && !op.symbol().isEmpty()) {
