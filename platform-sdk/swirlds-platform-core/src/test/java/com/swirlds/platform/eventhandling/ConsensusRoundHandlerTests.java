@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.eventhandling;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -117,6 +118,10 @@ class ConsensusRoundHandlerTests {
 
         final StateAndRound handlerOutput = consensusRoundHandler.handleConsensusRound(consensusRound);
         assertNotEquals(null, handlerOutput, "new state should have been created");
+        assertEquals(
+                1,
+                handlerOutput.reservedSignedState().get().getReservationCount(),
+                "state should be returned with a reservation");
 
         for (final EventImpl event : events) {
             verify(event).consensusReached();
@@ -158,6 +163,10 @@ class ConsensusRoundHandlerTests {
 
         final StateAndRound handlerOutput = consensusRoundHandler.handleConsensusRound(consensusRound);
         assertNotEquals(null, handlerOutput, "new state should have been created");
+        assertEquals(
+                1,
+                handlerOutput.reservedSignedState().get().getReservationCount(),
+                "state should be returned with a reservation");
 
         for (final EventImpl event : events) {
             verify(event, times(1)).consensusReached();
