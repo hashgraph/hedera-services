@@ -45,8 +45,8 @@ public final class LoggingTestScenario {
         return this.scenarioConfigBuilder.getOrCreateConfig();
     }
 
-    public static TestScenarioBuilder builder() {
-        return new TestScenarioBuilder();
+    public static LoggingTestScenarioBuilder builder() {
+        return new LoggingTestScenarioBuilder();
     }
 
     public static class LoggingTestScenarioBuilder {
@@ -54,27 +54,27 @@ public final class LoggingTestScenario {
         private final Map<String, Object> properties;
         private final List<AssertionRule> assertionsRules;
 
-        private TestScenarioBuilder() {
+        private LoggingTestScenarioBuilder() {
             this.properties = new HashMap<>();
             this.assertionsRules = new ArrayList<>();
         }
 
-        public TestScenarioBuilder name(String name) {
+        public LoggingTestScenarioBuilder name(String name) {
             this.name = name;
             return this;
         }
 
-        public TestScenarioBuilder withConfiguration(String key, Object value) {
+        public LoggingTestScenarioBuilder withConfiguration(String key, Object value) {
             this.properties.put(key, value);
             return this;
         }
 
-        public TestScenarioBuilder assertThatLevelIsAllowed(String loggerName, Level level) {
+        public LoggingTestScenarioBuilder assertThatLevelIsAllowed(String loggerName, Level level) {
             assertionsRules.add(new AssertionRule(loggerName, level, true));
             return this;
         }
 
-        public TestScenarioBuilder assertThatLevelIsNotAllowed(String propertyName, Level level) {
+        public LoggingTestScenarioBuilder assertThatLevelIsNotAllowed(String propertyName, Level level) {
             assertionsRules.add(new AssertionRule(propertyName, level, false));
             return this;
         }

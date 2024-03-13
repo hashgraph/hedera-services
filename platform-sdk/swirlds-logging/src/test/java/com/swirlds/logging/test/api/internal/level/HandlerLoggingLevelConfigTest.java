@@ -16,7 +16,7 @@
 
 package com.swirlds.logging.test.api.internal.level;
 
-import static com.swirlds.base.test.fixtures.assertions.Assertions.assertThrowsNPE;
+import static com.swirlds.base.test.fixtures.assertions.AssertionUtils.assertThrowsNPE;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;

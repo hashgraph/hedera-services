@@ -102,8 +102,9 @@ public class LoggingSystem implements LogEventConsumer {
     }
 
     /**
-     * Updates the logging system with the given configuration. Currently only the level and marker configuration is
-     * updated. New handlers are not added and existing handlers are not removed for now.
+     * Updates the logging system with the given configuration.
+     *
+     * @implNote Currently only the level and marker configuration is updated. New handlers are not added and existing handlers are not removed for now.
      *
      * @param configuration the configuration to update the logging system with
      */

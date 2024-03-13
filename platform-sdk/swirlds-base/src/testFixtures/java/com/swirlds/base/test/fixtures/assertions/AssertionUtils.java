@@ -30,7 +30,7 @@ import org.assertj.core.api.InstanceOfAssertFactory;
 /**
  * A collection of assertion methods for use in tests.
  */
-public class Assertions {
+public class AssertionUtils {
 
     /**
      * Asserts that the {@link Throwable} of the given {@link AbstractThrowableAssert} has a non-null message.
