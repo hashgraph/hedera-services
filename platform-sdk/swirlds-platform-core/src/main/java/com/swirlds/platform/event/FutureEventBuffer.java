@@ -18,6 +18,7 @@ package com.swirlds.platform.event;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -53,4 +54,12 @@ public interface FutureEventBuffer {
     @InputWireLabel("non-ancient event window")
     @Nullable
     List<GossipEvent> updateEventWindow(@NonNull NonAncientEventWindow eventWindow);
+
+    /**
+     * Clear all data from the future event buffer.
+     *
+     * @param clearTrigger placeholder clearTrigger object
+     */
+    @InputWireLabel("clear")
+    void clear(@NonNull ClearTrigger clearTrigger);
 }

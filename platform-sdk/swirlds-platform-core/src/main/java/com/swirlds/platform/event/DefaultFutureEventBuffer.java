@@ -24,6 +24,7 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -120,9 +121,10 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
     }
 
     /**
-     * Clear all data from the future event buffer.
+     * {@inheritDoc}
      */
-    public void clear() {
+    @Override
+    public void clear(@NonNull final ClearTrigger clearTrigger) {
         futureEvents.clear();
     }
 }

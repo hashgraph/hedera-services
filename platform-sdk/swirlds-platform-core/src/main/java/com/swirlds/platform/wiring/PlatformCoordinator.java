@@ -173,6 +173,7 @@ public class PlatformCoordinator {
         orphanBufferWiring.clearInput().inject(new ClearTrigger());
         inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
         stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
+        futureEventBufferWiring.getInputWire(FutureEventBuffer::clear).inject(new ClearTrigger());
         eventCreationManagerWiring.clearInput().inject(new ClearTrigger());
     }
 }
