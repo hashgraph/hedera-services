@@ -22,6 +22,8 @@ import com.swirlds.common.io.streams.internal.SerializationOperation;
 import com.swirlds.common.io.streams.internal.SerializationStack;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.utility.ValueReference;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -29,14 +31,15 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 /**
- * A stream that performs the same role as a {@link MerkleDataInputStream} but with extra debug functionality.
- * This debuggability adds overhead, so use of this stream should be limited to test environments or production
- * environments where there is a known serialization problem (heaven forbid).
+ * A stream that performs the same role as a {@link MerkleDataInputStream} but with extra debug functionality. This
+ * debuggability adds overhead, so use of this stream should be limited to test environments or production environments
+ * where there is a known serialization problem (heaven forbid).
  */
 public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
 
@@ -65,8 +68,7 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
     /**
      * Create a new {@link MerkleDataInputStream} that has extra debug capability.
      *
-     * @param in
-     * 		the base stream
+     * @param in the base stream
      */
     public DebuggableMerkleDataInputStream(final InputStream in) {
         super(in);
@@ -97,8 +99,7 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
     /**
      * Record the start of an operation.
      *
-     * @param operation
-     * 		the operation that is starting
+     * @param operation the operation that is starting
      */
     private void startOperation(final SerializationOperation operation) {
         final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
@@ -135,8 +136,7 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
     /**
      * Record a short string that represents the object.
      *
-     * @param value
-     * 		an object to be converted into a string
+     * @param value an object to be converted into a string
      * @return the input object
      */
     private <T> T recordStringRepresentation(final T value) {
@@ -648,7 +648,7 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
      */
     @Override
     public <T extends SelfSerializable> T readSerializable(
-            final boolean readClassId, final Supplier<T> serializableConstructor) throws IOException {
+            final boolean readClassId, @NonNull final Supplier<T> serializableConstructor) throws IOException {
         startOperation(SerializationOperation.READ_SERIALIZABLE);
         try {
             return super.readSerializable(readClassId, serializableConstructor);
@@ -662,10 +662,11 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
      */
     @Override
     public <T extends SelfSerializable> void readSerializableIterableWithSize(
-            final int maxSize, final Consumer<T> callback) throws IOException {
+            final int maxSize, @NonNull final Consumer<T> callback, @Nullable final Set<Long> permissibleClassIds)
+            throws IOException {
         startOperation(SerializationOperation.READ_SERIALIZABLE_LIST);
         try {
-            super.readSerializableIterableWithSize(maxSize, callback);
+            super.readSerializableIterableWithSize(maxSize, callback, permissibleClassIds);
         } finally {
             finishOperation();
         }
@@ -678,12 +679,14 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
     public <T extends SelfSerializable> void readSerializableIterableWithSize(
             final int size,
             final boolean readClassId,
-            final Supplier<T> serializableConstructor,
-            final Consumer<T> callback)
+            @NonNull final Supplier<T> serializableConstructor,
+            @NonNull final Consumer<T> callback,
+            @Nullable final Set<Long> permissibleClassIds)
             throws IOException {
         startOperation(SerializationOperation.READ_SERIALIZABLE_LIST);
         try {
-            super.readSerializableIterableWithSize(size, readClassId, serializableConstructor, callback);
+            super.readSerializableIterableWithSize(
+                    size, readClassId, serializableConstructor, callback, permissibleClassIds);
         } finally {
             finishOperation();
         }
@@ -696,27 +699,15 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
     protected <T extends SelfSerializable> T readNextSerializableIteration(
             final boolean allSameClass,
             final boolean readClassId,
-            final ValueReference<Long> classId,
-            final ValueReference<Integer> version,
-            final CheckedFunction<Long, T, IOException> serializableConstructor)
+            @NonNull final ValueReference<Long> classId,
+            @NonNull final ValueReference<Integer> version,
+            @NonNull final CheckedFunction<Long, T, IOException> serializableConstructor,
+            @Nullable final Set<Long> permissibleClassIds)
             throws IOException {
         startOperation(SerializationOperation.READ_SERIALIZABLE);
         try {
             return super.readNextSerializableIteration(
-                    allSameClass, readClassId, classId, version, serializableConstructor);
-        } finally {
-            finishOperation();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <T extends SelfSerializable> List<T> readSerializableList(final int maxListSize) throws IOException {
-        startOperation(SerializationOperation.READ_SERIALIZABLE_LIST);
-        try {
-            return super.readSerializableList(maxListSize);
+                    allSameClass, readClassId, classId, version, serializableConstructor, permissibleClassIds);
         } finally {
             finishOperation();
         }
@@ -727,12 +718,10 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
      */
     @Override
     public <T extends SelfSerializable> List<T> readSerializableList(
-            final int maxListSize, final boolean readClassId, final Supplier<T> serializableConstructor)
-            throws IOException {
-
+            final int maxListSize, @Nullable final Set<Long> permissibleClassIds) throws IOException {
         startOperation(SerializationOperation.READ_SERIALIZABLE_LIST);
         try {
-            return super.readSerializableList(maxListSize, readClassId, serializableConstructor);
+            return super.readSerializableList(maxListSize, permissibleClassIds);
         } finally {
             finishOperation();
         }
@@ -742,32 +731,56 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
      * {@inheritDoc}
      */
     @Override
-    public <T extends SelfSerializable> T[] readSerializableArray(
-            final IntFunction<T[]> arrayConstructor, final int maxListSize, final boolean readClassId)
-            throws IOException {
-
-        startOperation(SerializationOperation.READ_SERIALIZABLE_LIST);
-        try {
-            return super.readSerializableArray(arrayConstructor, maxListSize, readClassId);
-        } finally {
-            finishOperation();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <T extends SelfSerializable> T[] readSerializableArray(
-            final IntFunction<T[]> arrayConstructor,
+    public <T extends SelfSerializable> List<T> readSerializableList(
             final int maxListSize,
             final boolean readClassId,
-            final Supplier<T> serializableConstructor)
+            @NonNull final Supplier<T> serializableConstructor,
+            @Nullable final Set<Long> permissibleClassIds)
             throws IOException {
 
         startOperation(SerializationOperation.READ_SERIALIZABLE_LIST);
         try {
-            return super.readSerializableArray(arrayConstructor, maxListSize, readClassId, serializableConstructor);
+            return super.readSerializableList(maxListSize, readClassId, serializableConstructor, permissibleClassIds);
+        } finally {
+            finishOperation();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T extends SelfSerializable> T[] readSerializableArray(
+            @NonNull final IntFunction<T[]> arrayConstructor,
+            final int maxListSize,
+            final boolean readClassId,
+            @Nullable final Set<Long> permissibleClassIds)
+            throws IOException {
+
+        startOperation(SerializationOperation.READ_SERIALIZABLE_LIST);
+        try {
+            return super.readSerializableArray(arrayConstructor, maxListSize, readClassId, permissibleClassIds);
+        } finally {
+            finishOperation();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T extends SelfSerializable> T[] readSerializableArray(
+            @NonNull final IntFunction<T[]> arrayConstructor,
+            final int maxListSize,
+            final boolean readClassId,
+            @NonNull final Supplier<T> serializableConstructor,
+            @Nullable final Set<Long> permissibleClassIds)
+            throws IOException {
+
+        startOperation(SerializationOperation.READ_SERIALIZABLE_LIST);
+        try {
+            return super.readSerializableArray(
+                    arrayConstructor, maxListSize, readClassId, serializableConstructor, permissibleClassIds);
         } finally {
             finishOperation();
         }

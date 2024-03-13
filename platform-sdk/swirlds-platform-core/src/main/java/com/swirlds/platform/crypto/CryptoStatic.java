@@ -22,6 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.CERTIFICATES;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
+import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -33,6 +34,7 @@ import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
@@ -56,6 +58,7 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -448,7 +451,7 @@ public final class CryptoStatic {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address add = addressBook.getAddress(nodeId);
             final String name = nameToAlias(add.getSelfName());
-            final X509Certificate sigCert = publicStores.getCertificate(KeyCertPurpose.SIGNING, name);
+            final X509Certificate sigCert = publicStores.getCertificate(SIGNING, name);
             final X509Certificate agrCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name);
             addressBook.add(
                     addressBook.getAddress(nodeId).copySetSigCert(sigCert).copySetAgreeCert(agrCert));
@@ -576,5 +579,23 @@ public final class CryptoStatic {
         });
 
         return keysAndCerts;
+    }
+
+    /**
+     * Create a trust store that contains the public keys of all the members in the peer list
+     *
+     * @param peers all the peers in the network
+     * @return a trust store containing the public keys of all the members
+     * @throws KeyStoreException if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
+     */
+    public static @NonNull KeyStore createPublicKeyStore(@NonNull final List<PeerInfo> peers) throws KeyStoreException {
+        Objects.requireNonNull(peers);
+        final KeyStore store = CryptoStatic.createEmptyTrustStore();
+        for (final PeerInfo peer : peers) {
+            final String name = nameToAlias(peer.nodeName());
+            final Certificate sigCert = peer.signingCertificate();
+            store.setCertificateEntry(SIGNING.storeName(name), sigCert);
+        }
+        return store;
     }
 }

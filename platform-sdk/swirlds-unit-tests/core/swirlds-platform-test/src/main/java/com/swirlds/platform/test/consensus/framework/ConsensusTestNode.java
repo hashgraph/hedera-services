@@ -18,9 +18,8 @@ package com.swirlds.platform.test.consensus.framework;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
@@ -42,7 +41,7 @@ public class ConsensusTestNode {
      * Creates a new instance.
      *
      * @param eventEmitter the emitter of events
-     * @param intake the instance to apply events to
+     * @param intake       the instance to apply events to
      */
     public ConsensusTestNode(@NonNull final EventEmitter<?> eventEmitter, @NonNull final TestIntake intake) {
         this.eventEmitter = eventEmitter;
@@ -53,14 +52,16 @@ public class ConsensusTestNode {
     /**
      * Creates a new instance with a freshly seeded {@link EventEmitter}.
      *
-     * @param eventEmitter the emitter of events
+     * @param platformContext the platform context
+     * @param eventEmitter    the emitter of events
      */
-    public static @NonNull ConsensusTestNode genesisContext(@NonNull final EventEmitter<?> eventEmitter) {
+    public static @NonNull ConsensusTestNode genesisContext(
+            @NonNull final PlatformContext platformContext, @NonNull final EventEmitter<?> eventEmitter) {
         return new ConsensusTestNode(
                 eventEmitter,
                 new TestIntake(
-                        eventEmitter.getGraphGenerator().getAddressBook(),
-                        new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class)));
+                        Objects.requireNonNull(platformContext),
+                        eventEmitter.getGraphGenerator().getAddressBook()));
     }
 
     /** Simulates a restart on a node */
@@ -75,21 +76,19 @@ public class ConsensusTestNode {
     }
 
     /**
-     * Create a new {@link ConsensusTestNode} that will be created by simulating a reconnect with
-     * this context
+     * Create a new {@link ConsensusTestNode} that will be created by simulating a reconnect with this context
      *
+     * @param platformContext the platform context
      * @return a new {@link ConsensusTestNode}
      */
-    public @NonNull ConsensusTestNode reconnect() {
+    public @NonNull ConsensusTestNode reconnect(@NonNull final PlatformContext platformContext) {
         // create a new context
         final EventEmitter<?> newEmitter = eventEmitter.cleanCopy(random.nextLong());
         newEmitter.reset();
 
         final ConsensusTestNode consensusTestNode = new ConsensusTestNode(
                 newEmitter,
-                new TestIntake(
-                        newEmitter.getGraphGenerator().getAddressBook(),
-                        new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class)));
+                new TestIntake(platformContext, newEmitter.getGraphGenerator().getAddressBook()));
         consensusTestNode.intake.loadSnapshot(
                 Objects.requireNonNull(getOutput().getConsensusRounds().peekLast())
                         .getSnapshot());

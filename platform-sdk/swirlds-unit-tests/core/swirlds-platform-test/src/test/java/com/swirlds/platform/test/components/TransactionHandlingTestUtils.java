@@ -17,17 +17,14 @@
 package com.swirlds.platform.test.components;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.DummySystemTransaction;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
@@ -42,6 +39,8 @@ import java.util.List;
  * Utility functions for testing system transaction handling
  */
 public final class TransactionHandlingTestUtils {
+    private TransactionHandlingTestUtils() {}
+
     /**
      * Generate a new bare-bones event, containing DummySystemTransactions
      *
@@ -49,7 +48,7 @@ public final class TransactionHandlingTestUtils {
      * @return the new event
      */
     public static EventImpl newDummyEvent(final int transactionCount) {
-        SystemTransaction[] transactions = new SystemTransaction[transactionCount];
+        final SystemTransaction[] transactions = new SystemTransaction[transactionCount];
 
         for (int index = 0; index < transactionCount; index++) {
             transactions[index] = new DummySystemTransaction();
@@ -73,24 +72,22 @@ public final class TransactionHandlingTestUtils {
     }
 
     /**
-     * Generates a new round, with specified number of events, containing DummySystemTransactions
+     * Generate a new bare-bones consensus round, containing DummySystemTransactions
      *
-     * @param roundContents a list of integers, where each list element results in an event being added the output
-     *                      round, and the element value specifies number of transactions to include in the event
-     * @return a new round, with specified contents
+     * @param eventCount           the number of events to include in the round
+     * @param transactionsPerEvent the number of transactions to include in each event
+     * @return a bare-bones consensus round
      */
-    public static ConsensusRound newDummyRound(final List<Integer> roundContents) {
+    public static ConsensusRound newDummyRound(final int eventCount, final int transactionsPerEvent) {
+        final ConsensusRound round = mock(ConsensusRound.class);
+
         final List<EventImpl> events = new ArrayList<>();
-        for (Integer transactionCount : roundContents) {
-            events.add(newDummyEvent(transactionCount));
+        for (int index = 0; index < eventCount; index++) {
+            events.add(newDummyEvent(transactionsPerEvent));
         }
 
-        return new ConsensusRound(
-                mock(AddressBook.class),
-                events,
-                mock(EventImpl.class),
-                mock(GraphGenerations.class),
-                mock(NonAncientEventWindow.class),
-                mock(ConsensusSnapshot.class));
+        when(round.getConsensusEvents()).thenReturn(events);
+
+        return round;
     }
 }

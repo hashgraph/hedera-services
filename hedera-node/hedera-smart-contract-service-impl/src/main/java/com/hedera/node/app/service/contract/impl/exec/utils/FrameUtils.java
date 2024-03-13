@@ -30,6 +30,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
@@ -144,6 +145,27 @@ public class FrameUtils {
      */
     public static @NonNull DeleteCapableTransactionRecordBuilder selfDestructBeneficiariesFor(
             @NonNull final MessageFrame frame) {
+        return requireNonNull(initialFrameOf(frame).getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE));
+    }
+
+    /**
+     * Returns true if the given frame has a record builder.
+     *
+     * @param frame the frame to check
+     * @return true if the frame has a record builder
+     */
+    public static boolean isTopLevelTransaction(@NonNull final MessageFrame frame) {
+        return initialFrameOf(frame).hasContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE);
+    }
+
+    /**
+     * Returns a record builder able to track the contracts called in the frame's
+     * EVM transaction.
+     *
+     * @param frame the frame whose EVM transaction we are tracking called contracts in
+     * @return the record builder
+     */
+    public static @NonNull ContractOperationRecordBuilder recordBuilderFor(@NonNull final MessageFrame frame) {
         return requireNonNull(initialFrameOf(frame).getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE));
     }
 

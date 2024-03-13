@@ -44,7 +44,7 @@ class SignedStateNexusTest {
     private static Stream<SignedStateNexus> allInstances() {
         return Stream.concat(
                 raceConditionInstances(),
-                Stream.of(new LatestCompleteStateNexus(
+                Stream.of(new DefaultLatestCompleteStateNexus(
                         ConfigurationBuilder.create()
                                 .withConfigDataType(StateConfig.class)
                                 .build()

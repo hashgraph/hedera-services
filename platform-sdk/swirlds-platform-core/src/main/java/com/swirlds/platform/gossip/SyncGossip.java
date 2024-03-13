@@ -24,7 +24,6 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
@@ -50,7 +49,7 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
-import com.swirlds.platform.network.SocketConfig;
+import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
@@ -59,8 +58,6 @@ import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.InboundConnectionHandler;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
-import com.swirlds.platform.network.connectivity.TcpFactory;
-import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
@@ -77,19 +74,12 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.PlatformConstructionException;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -196,12 +186,10 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
-        final CryptoConfig cryptoConfig = platformContext.getConfiguration().getConfigData(CryptoConfig.class);
-        final SocketConfig socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
-
         topology = new StaticTopology(addressBook, selfId, basicConfig.numConnections());
 
-        final SocketFactory socketFactory = socketFactory(keysAndCerts, cryptoConfig, socketConfig);
+        final SocketFactory socketFactory =
+                NetworkUtils.createSocketFactory(selfId, addressBook, keysAndCerts, platformContext.getConfiguration());
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 platformContext, selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
@@ -218,11 +206,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
-                threadManager,
-                address.getListenAddressIpv4(),
-                address.getListenPort(),
-                socketFactory,
-                inboundConnectionHandler::handle);
+                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(threadConfig.threadPrioritySync())
                 .setNodeId(selfId)
@@ -406,29 +390,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                                             syncMetrics,
                                             platformStatusManager)))))
                     .build());
-        }
-    }
-
-    private static SocketFactory socketFactory(
-            @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final CryptoConfig cryptoConfig,
-            @NonNull final SocketConfig socketConfig) {
-        Objects.requireNonNull(keysAndCerts);
-        Objects.requireNonNull(cryptoConfig);
-        Objects.requireNonNull(socketConfig);
-
-        if (!socketConfig.useTLS()) {
-            return new TcpFactory(socketConfig);
-        }
-        try {
-            return new TlsFactory(keysAndCerts, socketConfig, cryptoConfig);
-        } catch (final NoSuchAlgorithmException
-                | UnrecoverableKeyException
-                | KeyStoreException
-                | KeyManagementException
-                | CertificateException
-                | IOException e) {
-            throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
         }
     }
 

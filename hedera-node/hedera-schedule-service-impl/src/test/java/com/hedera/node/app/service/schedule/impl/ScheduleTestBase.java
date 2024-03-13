@@ -47,7 +47,6 @@ import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.token.Account;
@@ -132,19 +131,7 @@ public class ScheduleTestBase {
             Bytes.fromHex("9834701927540926570495640961948794713207439248567184729049081327");
     protected static final Bytes OTHER_KEY_HEX =
             Bytes.fromHex("983470192754092657adbdbeef61948794713207439248567184729049081327");
-    // A few random values for fake schedule hashes
-    protected static final String SCHEDULE_IN_STATE_SHA256 =
-            "5a89e2e2ef363aa047e2ca032cc8fbff02cf64f5536e350bc252dcbc6e76fd76";
-    protected static final String SCHEDULE_IN_STATE_0_EXPIRE_SHA256 =
-            "4a9a1bd0a6487bac0924da771d4bb62ed72391c15602eaee394991929bdde427";
-    protected static final String SCHEDULE_IN_STATE_PAYER_IS_ADMIN_SHA256 =
-            "ef76f6e13f805b9ab5ae0e6fd9fd5976aba14e1b1f7cb4ecbd07fbc298f90ee5";
-    protected static final String SCHEDULE_IN_STATE_ALTERNATE_SCHEDULED_SHA256 =
-            "1e2ec1fa33fce66166497aeffa8a0af690e257cafad02063a13191cabc2c2de3";
-    protected static final String SCHEDULE_IN_STATE_ODD_MEMO_SHA256 =
-            "7788f7de741c9ef2e7bf371095ea497a0eaed1ad9b6cba2489f34f565ee70556";
-    protected static final String SCHEDULE_IN_STATE_WAIT_EXPIRE_SHA256 =
-            "87cfae9fd8f15126af9ba8be0155c57f1cf0838c4915f4e0ea297a15d5d3a3b9";
+
     protected static final String SCHEDULED_TRANSACTION_MEMO = "Les ħ2ᛏᚺᛂ🌕 goo";
     protected static final String ODD_MEMO = "she had marvelous judgement, Don... if not particularly good taste.";
     // a few typed null values to avoid casting null
@@ -200,10 +187,10 @@ public class ScheduleTestBase {
     protected WritableKVState<ProtoBytes, AccountID> accountAliases;
     protected Map<AccountID, Account> accountsMapById;
     protected Map<ScheduleID, Schedule> scheduleMapById;
-    protected Map<ProtoString, ScheduleList> scheduleMapByEquality;
+    protected Map<ProtoBytes, ScheduleList> scheduleMapByEquality;
     protected Map<ProtoLong, ScheduleList> scheduleMapByExpiration;
     protected WritableKVState<ScheduleID, Schedule> writableById;
-    protected WritableKVState<ProtoString, ScheduleList> writableByEquality;
+    protected WritableKVState<ProtoBytes, ScheduleList> writableByEquality;
     protected WritableKVState<ProtoLong, ScheduleList> writableByExpiration;
     protected Map<String, WritableKVState<?, ?>> writableStatesMap;
     protected ReadableStates states;
@@ -252,10 +239,9 @@ public class ScheduleTestBase {
 
     // ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,CryptoApproveAllowance
     protected SchedulableTransactionBody createAlternateScheduled() {
-        final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+        return SchedulableTransactionBody.newBuilder()
                 .tokenBurn(TokenBurnTransactionBody.newBuilder())
                 .build();
-        return scheduledTxn;
     }
 
     /**
@@ -485,10 +471,9 @@ public class ScheduleTestBase {
     }
 
     private SchedulableTransactionBody createSampleScheduled() {
-        final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+        return SchedulableTransactionBody.newBuilder()
                 .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder())
                 .build();
-        return scheduledTxn;
     }
 
     private TransactionBody alternateCreateTransaction(final TransactionBody originalTransaction) {
