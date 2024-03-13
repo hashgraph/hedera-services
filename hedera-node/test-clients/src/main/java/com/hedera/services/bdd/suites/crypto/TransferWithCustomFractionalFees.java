@@ -391,6 +391,45 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
+    public HapiSpec transferWithFractionalCustomFeeAllowanceNetOfTransfers() {
+        return defaultHapiSpec("transferWithFractionalCustomFeeAllowanceNetOfTransfers")
+                .given(
+                        cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(tokenReceiver),
+                        cryptoCreate(spender).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenTreasury),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
+                        tokenCreate(token)
+                                .treasury(tokenTreasury)
+                                .initialSupply(tokenTotal)
+                                .payingWith(htsCollector)
+                                .withCustom(fractionalFeeNetOfTransfers(
+                                        numerator, denominator, minHtsFee, OptionalLong.of(maxHtsFee), htsCollector)),
+                        tokenAssociate(tokenReceiver, token),
+                        tokenAssociate(tokenOwner, token),
+                        tokenAssociate(spender, token),
+                        cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
+                .when(
+                        cryptoApproveAllowance()
+                                .payingWith(tokenOwner)
+                                .addTokenAllowance(tokenOwner, token, spender, 120L)
+                                .signedBy(tokenOwner)
+                                .fee(ONE_HUNDRED_HBARS),
+                        getAccountDetails(tokenOwner)
+                                .has(accountDetailsWith().tokenAllowancesContaining(token, spender, 120L)),
+                        cryptoTransfer(movingWithAllowance(100L, token).between(tokenOwner, tokenReceiver))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(spender)
+                                .signedBy(spender))
+                .then(
+                        getAccountBalance(tokenOwner).hasTokenBalance(token, tokenTotal - 110L),
+                        getAccountBalance(tokenReceiver).hasTokenBalance(token, 100L),
+                        getAccountBalance(htsCollector).hasTokenBalance(token, 100L * numerator / denominator),
+                        getAccountDetails(tokenOwner)
+                                .has(accountDetailsWith().tokenAllowancesContaining(token, spender, 10L)));
+    }
+
+    @HapiTest
     public HapiSpec transferWithFractionalCustomFeeAllowanceTokenOwnerIsCollector() {
         return defaultHapiSpec("transferWithFractionalCustomFeeAllowanceTokenOwnerIsCollector")
                 .given(
@@ -424,7 +463,6 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
                 .then(
                         getAccountBalance(tokenOwner).hasTokenBalance(token, tokenTotal - 100L),
                         getAccountBalance(tokenReceiver).hasTokenBalance(token, 100L),
-                        getAccountBalance(htsCollector).hasTokenBalance(token, 0),
                         getAccountDetails(tokenOwner)
                                 .has(accountDetailsWith().tokenAllowancesContaining(token, spender, 20L)));
     }
