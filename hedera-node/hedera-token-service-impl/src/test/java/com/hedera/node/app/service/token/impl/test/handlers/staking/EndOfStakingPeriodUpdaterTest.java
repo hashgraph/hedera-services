@@ -31,6 +31,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -57,6 +58,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +67,8 @@ class EndOfStakingPeriodUpdaterTest {
 
     private EndOfStakingPeriodUpdater subject;
     private NodeStakeUpdateRecordBuilder nodeStakeUpdateRecordBuilder;
+    @Mock
+    private PlatformStateAccessor platformStateAccessor;
 
     @BeforeEach
     void setup() {
@@ -72,7 +76,8 @@ class EndOfStakingPeriodUpdaterTest {
                 .accountId(asAccount(800))
                 .tinybarBalance(100_000_000_000L)
                 .build());
-        subject = new EndOfStakingPeriodUpdater(new FakeHederaNumbers(), new StakingRewardsHelper());
+        subject = new EndOfStakingPeriodUpdater(new FakeHederaNumbers(), new StakingRewardsHelper(),
+                platformStateAccessor);
         this.nodeStakeUpdateRecordBuilder = new FakeNodeStakeUpdateRecordBuilder().create();
     }
 
