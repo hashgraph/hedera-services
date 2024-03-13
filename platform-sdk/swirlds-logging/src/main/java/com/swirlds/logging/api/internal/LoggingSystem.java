@@ -107,7 +107,7 @@ public class LoggingSystem implements LogEventConsumer {
      *
      * @param configuration the configuration to update the logging system with
      */
-    public void update(@NonNull Configuration configuration) {
+    public void update(final @NonNull Configuration configuration) {
         this.levelConfig.update(configuration);
         this.handlers.forEach(handler -> handler.update(configuration));
     }
