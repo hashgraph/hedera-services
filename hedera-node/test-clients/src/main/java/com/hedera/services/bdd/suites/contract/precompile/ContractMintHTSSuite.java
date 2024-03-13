@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.assertTxnRecordHasNoTraceabilityEnrichedContractFnResult;
 import static com.hedera.services.bdd.suites.contract.Utils.expectedPrecompileGasFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
+import static com.hedera.services.bdd.suites.utils.MiscEETUtils.genRandomBytes;
 import static com.hedera.services.bdd.suites.utils.contracts.FunctionParameters.functionParameters;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -61,7 +62,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-import static org.identityconnectors.common.ByteUtil.randomBytes;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -280,7 +280,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                         contractCall(
                                         NEGATIVE_MINT_CONTRACT,
                                         mintToken,
-                                        new byte[][] {randomBytes(100)},
+                                        new byte[][] {genRandomBytes(100)},
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
                                         1L)
@@ -302,7 +302,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                         contractCall(
                                         NEGATIVE_MINT_CONTRACT,
                                         mintToken,
-                                        new byte[][] {randomBytes(100)},
+                                        new byte[][] {genRandomBytes(100)},
                                         idAsHeadlongAddress(AccountID.newBuilder()
                                                 .setAccountNum(0L)
                                                 .build()))
