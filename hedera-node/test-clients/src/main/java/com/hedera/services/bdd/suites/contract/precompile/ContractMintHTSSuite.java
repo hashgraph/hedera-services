@@ -287,7 +287,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .via(fungibleMintWithMetadataTest)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER),
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         NEGATIVE_MINT_CONTRACT,
                                         mintToken,
@@ -298,7 +299,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .via(mintWithZeroedAddressTest)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER),
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         NEGATIVE_MINT_CONTRACT,
                                         mintToken,
@@ -309,7 +311,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .via(mintWithZeroedAddressAndMetadataTest)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER),
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTxnRecord(fungibleMintWithMetadataTest)
                                 .andAllChildRecords()
                                 .logged(),
