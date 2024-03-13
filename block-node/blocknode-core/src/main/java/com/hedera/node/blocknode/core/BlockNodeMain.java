@@ -1,6 +1,7 @@
 package com.hedera.node.blocknode.core;
 
 import com.hedera.node.blocknode.config.ConfigProvider;
+import com.hedera.node.blocknode.core.grpc.impl.BlockNodeService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
