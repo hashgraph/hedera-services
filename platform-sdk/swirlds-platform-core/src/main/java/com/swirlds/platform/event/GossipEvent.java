@@ -191,7 +191,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     public void buildDescriptor() {
         if (descriptor != null) {
             // Prior implementation was to throw an IllegalStateException if the descriptor was already built.
-            // There is no harm in allowing this method to be called multiple times and no-op if the descriptor exists. 
+            // There is no harm in allowing this method to be called multiple times and no-op if the descriptor exists.
             return;
         }
 
