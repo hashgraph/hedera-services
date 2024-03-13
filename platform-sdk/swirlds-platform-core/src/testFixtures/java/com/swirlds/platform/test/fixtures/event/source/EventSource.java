@@ -23,6 +23,7 @@ import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Random;
 
@@ -114,10 +115,10 @@ public interface EventSource<T extends EventSource<T>> {
      * @return The random event that was generated.
      */
     IndexedEvent generateEvent(
-            final Random random,
+            @NonNull final Random random,
             final long eventIndex,
-            final EventSource<?> otherParent,
-            final Instant timestamp,
+            @Nullable final EventSource<?> otherParent,
+            @NonNull final Instant timestamp,
             final long birthRound);
 
     /**

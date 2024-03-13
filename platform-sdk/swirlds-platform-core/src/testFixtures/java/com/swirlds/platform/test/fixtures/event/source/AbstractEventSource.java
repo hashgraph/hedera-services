@@ -28,6 +28,7 @@ import com.swirlds.platform.test.fixtures.event.DynamicValueGenerator;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -214,7 +215,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     public IndexedEvent generateEvent(
             @NonNull final Random random,
             final long eventIndex,
-            @NonNull final EventSource<?> otherParent,
+            @Nullable final EventSource<?> otherParent,
             @NonNull final Instant timestamp,
             final long birthRound) {
         Objects.requireNonNull(random);
@@ -228,7 +229,8 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
                 // event index (event age) that the other node wants to provide as an other parent to this node
                 otherParent.getProvidedOtherParentAge(random, eventIndex));
 
-        final IndexedEvent otherParentEvent = otherParent.getRecentEvent(random, otherParentIndex);
+        final IndexedEvent otherParentEvent =
+                otherParent == null ? null : otherParent.getRecentEvent(random, otherParentIndex);
         final IndexedEvent latestSelfEvent = getLatestEvent(random);
         final long generation = Math.max(
                         otherParentEvent == null ? (FIRST_GENERATION - 1) : otherParentEvent.getGeneration(),
