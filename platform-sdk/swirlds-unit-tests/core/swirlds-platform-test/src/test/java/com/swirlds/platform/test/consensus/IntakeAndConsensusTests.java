@@ -248,7 +248,7 @@ class IntakeAndConsensusTests {
         }
 
         @Override
-        public long getMaxBirthRound(@Nullable NodeId creatorId) {
+        public long getMaxBirthRound(@Nullable final NodeId creatorId) {
             return generator.getMaxBirthRound(creatorId);
         }
 
