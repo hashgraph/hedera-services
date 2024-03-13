@@ -38,7 +38,7 @@ public class WireTransformer<A, B> {
     private final OutputWire<B> outputWire;
 
     /**
-     * Constructor.
+     * Constructor. Immediately binds the transformation function to the input wire.
      *
      * @param model                the wiring model containing this output channel
      * @param transformerName      the name of the transformer
@@ -66,6 +66,27 @@ public class WireTransformer<A, B> {
     }
 
     /**
+     * Constructor. Requires the input wire to be bound later.
+     *
+     * @param model                the wiring model containing this output channel
+     * @param transformerName      the name of the transformer
+     * @param transformerInputName the label for the input wire going into the transformer
+     */
+    public WireTransformer(
+            @NonNull final WiringModel model,
+            @NonNull final String transformerName,
+            @NonNull final String transformerInputName) {
+
+        final TaskScheduler<B> taskScheduler = model.schedulerBuilder(transformerName)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                .build()
+                .cast();
+
+        inputWire = taskScheduler.buildInputWire(transformerInputName);
+        outputWire = taskScheduler.getOutputWire();
+    }
+
+    /**
      * Get the input wire for this transformer.
      *
      * @return the input wire
@@ -83,5 +104,16 @@ public class WireTransformer<A, B> {
     @NonNull
     public OutputWire<B> getOutputWire() {
         return outputWire;
+    }
+
+    /**
+     * Bind the transformation function to the input wire. Do not call this if the transformation function was provided
+     * in the constructor. Must be called prior to use if the transformation function was not provided in the
+     * constructor.
+     *
+     * @param transformer the transformation function
+     */
+    public void bind(@NonNull final Function<A, B> transformer) {
+        inputWire.bind(transformer);
     }
 }

@@ -78,6 +78,7 @@ import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFo
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
@@ -213,6 +214,7 @@ public class EthereumSuite extends HapiSuite {
                                     .type(EthTxData.EthTransactionType.EIP1559)
                                     .signingWith(SECP_256K1_SOURCE_KEY)
                                     .payingWith(RELAYER)
+                                    .hasRetryPrecheckFrom(BUSY)
                                     .nonce(1)
                                     .gasPrice(10L)
                                     .sending(ONE_HUNDRED_HBARS)
@@ -957,6 +959,7 @@ public class EthereumSuite extends HapiSuite {
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via(TOTAL_SUPPLY_TX)
                                 .nonce(0)
                                 .gasPrice(0L)

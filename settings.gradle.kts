@@ -81,6 +81,8 @@ include(":swirlds-base", "platform-sdk/swirlds-base")
 
 include(":swirlds-logging", "platform-sdk/swirlds-logging")
 
+include(":swirlds-logging-log4j-appender", "platform-sdk/swirlds-logging-log4j-appender")
+
 include(":swirlds-common", "platform-sdk/swirlds-common")
 
 include(":swirlds-config-api", "platform-sdk/swirlds-config-api")
@@ -150,6 +152,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.1")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.3")
     }
 }

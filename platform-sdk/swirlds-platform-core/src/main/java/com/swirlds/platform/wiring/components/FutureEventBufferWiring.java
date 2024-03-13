@@ -67,7 +67,7 @@ public record FutureEventBufferWiring(
      */
     public void bind(@NonNull final FutureEventBuffer futureEventBuffer) {
         ((BindableInputWire<GossipEvent, List<GossipEvent>>) eventInput).bind(futureEventBuffer::addEvent);
-        ((BindableInputWire<NonAncientEventWindow, NonAncientEventWindow>) eventWindowInput)
+        ((BindableInputWire<NonAncientEventWindow, List<GossipEvent>>) eventWindowInput)
                 .bind(futureEventBuffer::updateEventWindow);
     }
 }

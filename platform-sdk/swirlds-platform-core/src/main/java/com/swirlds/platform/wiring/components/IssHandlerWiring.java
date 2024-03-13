@@ -46,6 +46,6 @@ public record IssHandlerWiring(@NonNull InputWire<IssNotification> issNotificati
      * @param issHandler the handler to bind to
      */
     public void bind(@NonNull final IssHandler issHandler) {
-        ((BindableInputWire<IssNotification, Void>) issNotificationInput).bind(issHandler::issObserved);
+        ((BindableInputWire<IssNotification, Void>) issNotificationInput).bindConsumer(issHandler::issObserved);
     }
 }
