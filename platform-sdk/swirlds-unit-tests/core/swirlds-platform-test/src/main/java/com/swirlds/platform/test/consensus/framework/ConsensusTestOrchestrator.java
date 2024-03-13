@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.gui.TestGuiSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -39,9 +41,13 @@ public class ConsensusTestOrchestrator {
         this.totalEventNum = totalEventNum;
     }
 
-    /** Adds a new node to the test context by simulating a reconnect */
-    public void addReconnectNode() {
-        final ConsensusTestNode node = nodes.get(0).reconnect();
+    /**
+     * Adds a new node to the test context by simulating a reconnect
+     *
+     * @param platformContext the platform context to use for the new node
+     */
+    public void addReconnectNode(@NonNull PlatformContext platformContext) {
+        final ConsensusTestNode node = nodes.get(0).reconnect(platformContext);
         node.getEventEmitter().setCheckpoint(currentSequence);
         node.addEvents(currentSequence);
         nodes.add(node);
@@ -116,8 +122,8 @@ public class ConsensusTestOrchestrator {
     }
 
     /**
-     * Restarts all nodes with events and generations stored in the signed state. This is the
-     * currently implemented restart, it discards all non-consensus events.
+     * Restarts all nodes with events and generations stored in the signed state. This is the currently implemented
+     * restart, it discards all non-consensus events.
      */
     public void restartAllNodes() {
         final long lastRoundDecided = nodes.get(0).getConsensus().getLastRoundDecided();
@@ -134,8 +140,8 @@ public class ConsensusTestOrchestrator {
     }
 
     /**
-     * Configures the graph generators of all nodes with the given configurator. This must be done
-     * for all nodes so that the generators generate the same graphs
+     * Configures the graph generators of all nodes with the given configurator. This must be done for all nodes so that
+     * the generators generate the same graphs
      */
     public ConsensusTestOrchestrator configGenerators(final Consumer<GraphGenerator<?>> configurator) {
         for (final ConsensusTestNode node : nodes) {

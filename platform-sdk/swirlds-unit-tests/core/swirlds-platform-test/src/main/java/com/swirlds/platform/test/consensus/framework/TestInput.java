@@ -16,11 +16,20 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.WeightGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public record TestInput(int numberOfNodes, @NonNull WeightGenerator weightGenerator, long seed, int eventsToGenerate) {
+/**
+ * Holds the input to a consensus test.
+ */
+public record TestInput(
+        @NonNull PlatformContext platformContext,
+        int numberOfNodes,
+        @NonNull WeightGenerator weightGenerator,
+        long seed,
+        int eventsToGenerate) {
     public @NonNull TestInput setNumberOfNodes(int numberOfNodes) {
-        return new TestInput(numberOfNodes, weightGenerator, seed, eventsToGenerate);
+        return new TestInput(platformContext, numberOfNodes, weightGenerator, seed, eventsToGenerate);
     }
 }

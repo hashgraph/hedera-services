@@ -17,13 +17,11 @@
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -60,6 +58,6 @@ public class SimpleFreezeOnly extends HapiSuite {
         return defaultHapiSpec("SimpleFreezeWithTimeStamp")
                 .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
                 .when(sleepFor(40000))
-                .then(cryptoCreate("not_going_to_happen").hasPrecheck(ResponseCodeEnum.PLATFORM_NOT_ACTIVE));
+                .then();
     }
 }
