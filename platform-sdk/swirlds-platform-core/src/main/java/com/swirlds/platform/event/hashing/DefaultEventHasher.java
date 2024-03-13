@@ -41,6 +41,7 @@ public class DefaultEventHasher implements EventHasher {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public GossipEvent hashEvent(@NonNull final GossipEvent event) {
         cryptography.digestSync(event.getHashedData());
         event.buildDescriptor();

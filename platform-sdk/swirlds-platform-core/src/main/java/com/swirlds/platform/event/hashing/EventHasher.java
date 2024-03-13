@@ -31,5 +31,6 @@ public interface EventHasher {
      * @return the hashed event
      */
     @InputWireLabel("unhashed event")
+    @NonNull
     GossipEvent hashEvent(@NonNull GossipEvent event);
 }
