@@ -75,6 +75,8 @@ public final class PcesBirthRoundMigration {
 
         final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
+        System.out.println("databaseDirectory: " + databaseDirectory); // TODO
+
         if (!findPcesFiles(databaseDirectory, BIRTH_ROUND_THRESHOLD).isEmpty()) {
             // We write the migrated PCES file atomically, so if it exists,
             // the important part of the migration has been completed.
@@ -142,7 +144,7 @@ public final class PcesBirthRoundMigration {
      * @return all PCES files beneath the given directory
      */
     @NonNull
-    private static List<PcesFile> findPcesFiles(@NonNull final Path path, @NonNull final AncientMode ancientMode) {
+    public static List<PcesFile> findPcesFiles(@NonNull final Path path, @NonNull final AncientMode ancientMode) {
         try (final Stream<Path> fileStream = Files.walk(path)) {
             return fileStream
                     .filter(f -> !Files.isDirectory(f))

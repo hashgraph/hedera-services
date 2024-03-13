@@ -18,10 +18,17 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
+import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
+import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.findPcesFiles;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
@@ -32,11 +39,11 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;
+import com.swirlds.platform.event.preconsensus.PcesFileIterator;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
@@ -49,8 +56,10 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,7 +84,7 @@ class PcesBirthRoundMigrationTests {
     }
 
     @BeforeEach
-    void beforeEach() throws IOException, ConstructableRegistryException {
+    void beforeEach() throws IOException {
         if (Files.exists(testDirectory)) {
             FileUtils.deleteDirectory(testDirectory);
         }
@@ -140,7 +149,7 @@ class PcesBirthRoundMigrationTests {
             final long upperGenerationBound = fileEvents.getLast().getGeneration();
 
             final PcesFile file = PcesFile.of(
-                    AncientMode.GENERATION_THRESHOLD,
+                    GENERATION_THRESHOLD,
                     startingTime.plusSeconds(fileIndex),
                     fileIndex,
                     lowerGenerationBound,
@@ -172,7 +181,10 @@ class PcesBirthRoundMigrationTests {
                 .getOrCreateConfig();
         TemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
 
+        final FakeTime time = new FakeTime();
+
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withTime(time)
                 .withConfiguration(configuration)
                 .build();
         final RecycleBin recycleBin = new RecycleBinImpl(
@@ -194,14 +206,48 @@ class PcesBirthRoundMigrationTests {
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
                 platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
 
-        System.out.println("Migration completed"); // TODO
+        // We should not find any generation based PCES files in the database directory.
+        assertTrue(findPcesFiles(pcesPath, GENERATION_THRESHOLD).isEmpty());
 
-        // TODO create PCES files
-        // TODO migrate
-        // TODO verify recycled files
-        // TODO verify existence of new files
-        // TODO verify there are no unexpected old files
+        // We should find exactly one birth round based PCES file in the database directory.
+        final List<PcesFile> birthRoundFiles = findPcesFiles(pcesPath, BIRTH_ROUND_THRESHOLD);
+        final PcesFile birthRoundFile = birthRoundFiles.getFirst();
+        assertEquals(1, birthRoundFiles.size());
 
+        // For every original PCES file, we should find a copy of that file in the recycle bin.
+        final List<PcesFile> recycleBinFiles = findPcesFiles(recycleBinPath, GENERATION_THRESHOLD);
+        assertEquals(filesWritten.files().size(), recycleBinFiles.size());
+        final Set<String> recycleBinFileNames = new HashSet<>();
+        for (final PcesFile file : recycleBinFiles) {
+            recycleBinFileNames.add(file.getFileName());
+        }
+        assertEquals(filesWritten.files().size(), recycleBinFileNames.size());
+        for (final PcesFile file : filesWritten.files()) {
+            assertTrue(recycleBinFileNames.contains(file.getFileName()));
+        }
+
+        // Read the events in the new file, make sure we see all events with a generation greater than
+        // or equal to the middle generation.
+        final List<GossipEvent> expectedEvents = new ArrayList<>();
+        for (final GossipEvent event : filesWritten.events) {
+            if (event.getGeneration() >= middleGeneration) {
+                expectedEvents.add(event);
+            }
+        }
+        final IOIterator<GossipEvent> iterator = new PcesFileIterator(birthRoundFile, 1, BIRTH_ROUND_THRESHOLD);
+        final List<GossipEvent> actualEvents = new ArrayList<>();
+        while (iterator.hasNext()) {
+            actualEvents.add(iterator.next());
+        }
+        assertEquals(expectedEvents, actualEvents);
+
+        // Verify that the new file's parameters are valid.
+        assertEquals(BIRTH_ROUND_THRESHOLD, birthRoundFile.getFileType());
+        assertEquals(time.now(), birthRoundFile.getTimestamp());
+        assertEquals(0, birthRoundFile.getSequenceNumber());
+        assertEquals(migrationRound, birthRoundFile.getLowerBound());
+        assertEquals(migrationRound, birthRoundFile.getUpperBound());
+        assertEquals(migrationRound, birthRoundFile.getOrigin());
     }
 
     void botchedMigrationRecoveryTest() {}
