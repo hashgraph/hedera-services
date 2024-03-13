@@ -54,7 +54,6 @@ import com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite;
 import com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.NegativeBurnContractSuite;
 import com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.PrngPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.SigningReqsSuite;
@@ -151,7 +150,6 @@ public class ConcurrentSuites {
             ApproveAllowanceSuite::new,
             AssociatePrecompileSuite::new,
             ContractBurnHTSSuite::new,
-            NegativeBurnContractSuite::new,
             ContractHTSSuite::new,
             ContractKeysHTSSuite::new,
             ContractMintHTSSuite::new,

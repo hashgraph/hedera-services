@@ -7,7 +7,7 @@ import "./HederaResponseCodes.sol";
 
 contract NegativeBurnContract is HederaTokenService{
 
-    function burnFungibleAboveMaxLong(address token) external {
+    function burnFungibleWithExtremeAmounts(address token) external {
         (int responseCode, int64 newTotalSupply) = super.burnToken(token, 9223372036854775810, new int64[](0));
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
@@ -47,7 +47,7 @@ contract NegativeBurnContract is HederaTokenService{
         }
     }
 
-    function burnNFTAboveMaxLong(address token, int64[] memory serials) external {
+    function burnNFTWithExtremeAmounts(address token, int64[] memory serials) external {
         (int responseCode, int64 newTotalSupply) = super.burnToken(token, 9223372036854775810, serials);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();

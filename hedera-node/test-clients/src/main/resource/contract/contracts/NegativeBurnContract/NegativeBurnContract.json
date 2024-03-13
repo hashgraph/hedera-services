@@ -19,19 +19,6 @@
     "type": "event"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "burnFungibleAboveMaxLong",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "burnFungibleInvalidAddress",
     "outputs": [],
@@ -59,14 +46,7 @@
         "type": "address"
       }
     ],
-    "name": "burnFungibleWithInvalidSerials",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "burnFungibleZeroAddress",
+    "name": "burnFungibleWithExtremeAmounts",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -77,14 +57,16 @@
         "internalType": "address",
         "name": "token",
         "type": "address"
-      },
-      {
-        "internalType": "int64[]",
-        "name": "serials",
-        "type": "int64[]"
       }
     ],
-    "name": "burnNFTAboveMaxLong",
+    "name": "burnFungibleWithInvalidSerials",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "burnFungibleZeroAddress",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -116,6 +98,24 @@
       }
     ],
     "name": "burnNFTNegativeLong",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "int64[]",
+        "name": "serials",
+        "type": "int64[]"
+      }
+    ],
+    "name": "burnNFTWithExtremeAmounts",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
