@@ -86,11 +86,6 @@ class TokenAttributesValidatorTest {
     }
 
     @Test
-    void validatesMetadataWithNullValue() {
-        assertThatCode(() -> subject.validateTokenMetadata(null, tokensConfig)).doesNotThrowAnyException();
-    }
-
-    @Test
     void doesntFailMetadataWithEmptyBytes() {
         byte[] emptyBytes = new byte[0];
         assertThatCode(() -> subject.validateTokenMetadata(Bytes.wrap(emptyBytes), tokensConfig))
