@@ -52,8 +52,7 @@ public record ApplicationTransactionPrehandlerWiring(
      *                           immutable states why not
      */
     public void bind(@NonNull final SwirldStateManager swirldStateManager) {
-        ((BindableInputWire<GossipEvent, Void>) appTransactionsToPrehandleInput).bind(event -> {
-            swirldStateManager.prehandleApplicationTransactions(event);
-        });
+        ((BindableInputWire<GossipEvent, Void>) appTransactionsToPrehandleInput)
+                .bindConsumer((GossipEvent e) -> swirldStateManager.prehandleApplicationTransactions(e));
     }
 }

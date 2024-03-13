@@ -62,7 +62,7 @@ public record IssDetectorWiring(
      * @param issDetector the ISS detector
      */
     public void bind(@NonNull final IssDetector issDetector) {
-        ((BindableInputWire<NoInput, Void>) endOfPcesReplay).bind(issDetector::signalEndOfPreconsensusReplay);
+        ((BindableInputWire<NoInput, Void>) endOfPcesReplay).bindConsumer(issDetector::signalEndOfPreconsensusReplay);
         ((BindableInputWire<StateAndRound, List<IssNotification>>) stateAndRoundInput)
                 .bind(issDetector::handleStateAndRound);
         ((BindableInputWire<ReservedSignedState, List<IssNotification>>) overridingState)

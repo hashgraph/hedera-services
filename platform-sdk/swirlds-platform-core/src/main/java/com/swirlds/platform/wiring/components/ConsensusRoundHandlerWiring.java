@@ -88,6 +88,6 @@ public record ConsensusRoundHandlerWiring(
         ((BindableInputWire<ConsensusRound, StateAndRound>) roundInput)
                 .bind(consensusRoundHandler::handleConsensusRound);
         ((BindableInputWire<RunningEventHashUpdate, StateAndRound>) runningHashUpdateInput)
-                .bind(consensusRoundHandler::updateRunningHash);
+                .bindConsumer(consensusRoundHandler::updateRunningHash);
     }
 }

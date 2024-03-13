@@ -85,12 +85,10 @@ public class EventCreationManagerWiring {
      * @param eventCreationManager the event creation manager to bind
      */
     public void bind(@NonNull final EventCreationManager eventCreationManager) {
-        eventInput.bind(eventCreationManager::registerEvent);
-        nonAncientEventWindowInput.bind(eventCreationManager::setNonAncientEventWindow);
-        clearInput.bind(eventCreationManager::clear);
-        heartbeatBindable.bind(now -> {
-            return eventCreationManager.maybeCreateEvent();
-        });
+        eventInput.bindConsumer(eventCreationManager::registerEvent);
+        nonAncientEventWindowInput.bindConsumer(eventCreationManager::setNonAncientEventWindow);
+        clearInput.bindConsumer(eventCreationManager::clear);
+        heartbeatBindable.bind(now -> eventCreationManager.maybeCreateEvent());
     }
 
     /**
