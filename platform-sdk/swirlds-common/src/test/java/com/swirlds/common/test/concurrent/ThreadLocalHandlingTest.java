@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.common.test.concurrent;
@@ -49,44 +48,44 @@ public class ThreadLocalHandlingTest {
     @ParameterizedTest
     @CsvSource({"100,1", "1,1", "100,10", "100,100"})
     void testExecutorService(final int taskCount, final int threadCount) {
-        //given
+        // given
         final List<String> errors = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(taskCount);
         final ThreadLocal<String> threadLocal = new ThreadLocal<>();
         final UncaughtExceptionHandler exceptionHandler = (t, e) -> e.printStackTrace();
         final Runnable onStartup = () -> threadLocal.set("test");
-        final ExecutorFactory executorFactory = DefaultExecutorFactory.create("test-group", onStartup,
-                exceptionHandler);
+        final ExecutorFactory executorFactory =
+                DefaultExecutorFactory.create("test-group", onStartup, exceptionHandler);
         final ExecutorService executorService = executorFactory.createExecutorService(threadCount);
         addShutdown(executorService);
         final Runnable task = createCheckThreadLocalTask(latch, threadLocal, errors);
 
-        //when
+        // when
         IntStream.range(0, taskCount).forEach(i -> executorService.execute(task));
         waitForLatch(latch);
 
-        //then
+        // then
         Assertions.assertThat(errors).isEmpty();
     }
 
     @ParameterizedTest
     @CsvSource({"100,1", "1,1", "100,10", "100,100"})
     void testScheduledExecutorService(final int taskCount, final int threadCount) {
-        //given
+        // given
         final List<String> errors = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(taskCount * 2);
         final ThreadLocal<String> threadLocal = new ThreadLocal<>();
         final UncaughtExceptionHandler exceptionHandler = (t, e) -> e.printStackTrace();
         final Runnable onStartup = () -> threadLocal.set("test");
-        final ExecutorFactory executorFactory = DefaultExecutorFactory.create("test-group", onStartup,
-                exceptionHandler);
+        final ExecutorFactory executorFactory =
+                DefaultExecutorFactory.create("test-group", onStartup, exceptionHandler);
         final ScheduledExecutorService executorService = executorFactory.createScheduledExecutorService(threadCount);
         addShutdown(executorService);
         final Runnable task = createCheckThreadLocalTask(latch, threadLocal, errors);
         final CountDownLatch latchForFixedRate = new CountDownLatch(taskCount);
         final Runnable taskForFixedRate = createCheckThreadLocalTask(latchForFixedRate, threadLocal, errors);
 
-        //when
+        // when
         IntStream.range(0, taskCount).forEach(i -> {
             executorService.execute(task);
             executorService.schedule(task, 50, TimeUnit.MILLISECONDS);
@@ -95,52 +94,52 @@ public class ThreadLocalHandlingTest {
         waitForLatch(latchForFixedRate);
         waitForLatch(latch);
 
-        //then
+        // then
         Assertions.assertThat(errors).isEmpty();
     }
 
     @ParameterizedTest
     @CsvSource({"100,1", "1,1", "100,10", "100,100"})
     void testForkJoinPool(final int taskCount, final int threadCount) {
-        //given
+        // given
         final List<String> errors = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(taskCount);
         final ThreadLocal<String> threadLocal = new ThreadLocal<>();
         final UncaughtExceptionHandler exceptionHandler = (t, e) -> e.printStackTrace();
         final Runnable onStartup = () -> threadLocal.set("test");
-        final ExecutorFactory executorFactory = DefaultExecutorFactory.create("test-group", onStartup,
-                exceptionHandler);
+        final ExecutorFactory executorFactory =
+                DefaultExecutorFactory.create("test-group", onStartup, exceptionHandler);
         final ForkJoinPool forkJoinPool = executorFactory.createForkJoinPool(threadCount);
         addShutdown(forkJoinPool);
         final Runnable task = createCheckThreadLocalTask(latch, threadLocal, errors);
 
-        //when
+        // when
         IntStream.range(0, taskCount).forEach(i -> forkJoinPool.execute(task));
         waitForLatch(latch);
 
-        //then
+        // then
         Assertions.assertThat(errors).isEmpty();
     }
 
     @Test
     void testThread() {
-        //given
+        // given
         final List<String> errors = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(1);
         final ThreadLocal<String> threadLocal = new ThreadLocal<>();
         final UncaughtExceptionHandler exceptionHandler = (t, e) -> e.printStackTrace();
         final Runnable onStartup = () -> threadLocal.set("test");
-        final ExecutorFactory executorFactory = DefaultExecutorFactory.create("test-group", onStartup,
-                exceptionHandler);
+        final ExecutorFactory executorFactory =
+                DefaultExecutorFactory.create("test-group", onStartup, exceptionHandler);
         final Runnable task = createCheckThreadLocalTask(latch, threadLocal, errors);
         final Thread thread = executorFactory.createThread(task);
         addShutdown(thread);
 
-        //when
+        // when
         thread.start();
         waitForLatch(latch);
 
-        //then
+        // then
         Assertions.assertThat(errors).isEmpty();
     }
 
@@ -167,15 +166,15 @@ public class ThreadLocalHandlingTest {
         shutdownCalls.add(shutdown);
     }
 
-    private Runnable createCheckThreadLocalTask(@NonNull final CountDownLatch latch,
+    private Runnable createCheckThreadLocalTask(
+            @NonNull final CountDownLatch latch,
             @NonNull final ThreadLocal<String> threadLocal,
             @NonNull final List<String> errors) {
         return () -> {
             final String value = threadLocal.get();
             if (value == null) {
                 errors.add("ThreadLocal value is null");
-            }
-            if (!value.equals("test")) {
+            } else if (!value.equals("test")) {
                 errors.add("ThreadLocal value is not 'test'");
             }
             latch.countDown();
