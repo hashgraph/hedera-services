@@ -158,7 +158,7 @@ public class HandlerLoggingLevelConfig {
      * @param configuration The configuration.
      */
     public void update(@NonNull Configuration configuration) {
-        ExtractedLoggingConfig extractedLoggingConfig = extractConfig(handlerName, configuration);
+        final ExtractedLoggingConfig extractedLoggingConfig = extractConfig(handlerName, configuration);
         levelCache.clear();
         this.levelConfigProperties.set(Collections.unmodifiableMap(extractedLoggingConfig.levelConfigProperties()));
         this.markerConfigCache.set(extractedLoggingConfig.markerConfigStore());
