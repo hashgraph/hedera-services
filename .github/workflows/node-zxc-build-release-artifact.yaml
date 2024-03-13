@@ -334,7 +334,7 @@ jobs:
           mkdir -p "${ARTIFACT_BASE_DIR}"
 
           if [[ "${POLICY}" == "branch-commit"  ]]; then
-            ARTIFACT_NAME="build-${{ needs.validate.outputs.branch-name-lower }}-${{ needs.validate.outputs.commit-id-short }}"
+            ARTIFACT_NAME="build-${{ needs.validate.outputs.branch-name-safe }}-${{ needs.validate.outputs.commit-id-short }}"
           else
             ARTIFACT_NAME="build-v${{ needs.validate.outputs.version }}"
           fi
