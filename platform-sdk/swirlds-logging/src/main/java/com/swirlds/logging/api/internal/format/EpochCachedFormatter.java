@@ -64,12 +64,10 @@ public class EpochCachedFormatter {
 
     private final Map<Instant, String> exactCache = new ShrinkableSizeCache<>();
     private final Map<Instant, String> dateCache = new ShrinkableSizeCache<>();
-    private static final String[] HOURS_SECONDS_AND_MINUTES_CACHE =
-            IntStream.range(0, 60).boxed().map(i -> toPaddedDigitsString(i, 2)).toArray(String[]::new);
-    private static final String[] MILLIS_CACHE = IntStream.range(0, 1000)
-            .boxed()
-            .map(i -> toPaddedDigitsString(i, 3))
-            .toArray(String[]::new);
+    private static final String[] TWO_SPACE_DIGITS_CACHE =
+            IntStream.range(0, 60).mapToObj(i -> toPaddedDigitsString(i, 2)).toArray(String[]::new);
+    private static final String[] THREE_SPACE_DIGITS_CACHE =
+            IntStream.range(0, 1000).mapToObj(i -> toPaddedDigitsString(i, 3)).toArray(String[]::new);
 
     /**
      * Creates a parser and preloads the caches with {@link System#currentTimeMillis()}
@@ -89,19 +87,25 @@ public class EpochCachedFormatter {
      * @return the human-readable representation of the string based on pattern: {@code "yyyy-MM-dd HH:mm:ss.SSS"}
      */
     public @NonNull String format(final long epochMillis) {
-
-        String stringDate;
         Instant instant = Instant.ofEpochMilli(epochMillis);
-        stringDate = exactCache.get(instant);
+        String stringDate = exactCache.get(instant);
         if (stringDate == null) {
             stringDate = getFromDate(instant);
-            exactCache.put(instant, stringDate);
         }
         if (stringDate == null) {
-            stringDate = FORMATTER.format(instant);
-            exactCache.put(instant, stringDate);
-            dateCache.put(instant.truncatedTo(ChronoUnit.DAYS), stringDate.substring(0, 11));
+            stringDate = getFromFormatter(instant);
         }
+        return stringDate;
+    }
+
+    /**
+     * Creates a String representation of the instant using {@code FORMATTER}.
+     */
+    @NonNull
+    private String getFromFormatter(final @NonNull Instant instant) {
+        String stringDate = FORMATTER.format(instant);
+        exactCache.put(instant, stringDate);
+        dateCache.put(instant.truncatedTo(ChronoUnit.DAYS), stringDate.substring(0, 11));
         return stringDate;
     }
 
@@ -116,37 +120,38 @@ public class EpochCachedFormatter {
             return null;
         }
 
-        return format + infoFromHours(instant);
+        final StringBuilder buffer = new StringBuilder(format);
+        infoFromHours(instant, buffer);
+        final String stringDate = buffer.toString();
+        exactCache.put(instant, stringDate);
+        return stringDate;
     }
 
     /**
-     * Constructs a string representation of the given {@link Instant} starting from the hour field.
+     * Adds a string representation into {@code buffer} of the given {@link Instant} starting from the hour field.
      * <p>
      * e.g: Given an {@code instant} representing date: {@code "2020-08-26 12:34:56.789"}
      * <ul>
-     * <li>{@code infoFromHours(instant)} --> {@code "12:34:56.789"} </li>
+     * <li>{@code infoFromHours(instant)} --> will add to the buffer: {@code "12:34:56.789"} </li>
      * </ul>
      *
      * @param instant The Instant to represent as a string.
-     * @return the string representation of the {@code instant} starting from the hour field
+     * @param buffer The buffer to add the representation to
      */
-    private static @NonNull String infoFromHours(final @NonNull Instant instant) {
+    private static void infoFromHours(final @NonNull Instant instant, final StringBuilder buffer) {
 
-        final StringBuilder buffer = new StringBuilder();
         long totalSeconds = instant.getEpochSecond();
         final int hour = (int) ((totalSeconds / 3600) % 24);
-        buffer.append(HOURS_SECONDS_AND_MINUTES_CACHE[hour]);
+        buffer.append(TWO_SPACE_DIGITS_CACHE[hour]);
         buffer.append(":");
         final int minute = (int) ((totalSeconds / 60) % 60);
-        buffer.append(HOURS_SECONDS_AND_MINUTES_CACHE[minute]);
+        buffer.append(TWO_SPACE_DIGITS_CACHE[minute]);
         buffer.append(":");
         final int second = (int) (totalSeconds % 60);
-        buffer.append(HOURS_SECONDS_AND_MINUTES_CACHE[second]);
+        buffer.append(TWO_SPACE_DIGITS_CACHE[second]);
         buffer.append(".");
         final int milliseconds = instant.getNano() / 1_000_000;
-        buffer.append(MILLIS_CACHE[milliseconds]);
-
-        return buffer.toString();
+        buffer.append(THREE_SPACE_DIGITS_CACHE[milliseconds]);
     }
 
     /**

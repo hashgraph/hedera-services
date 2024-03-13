@@ -77,6 +77,7 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
                 while (insertionOrderList.size() > maxSize) {
                     delegatedMap.remove(insertionOrderList.pop());
                 }
+                ShrinkableSizeCache.this.afterUpdate();
             }
         };
         new Timer(true).scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs);
@@ -95,9 +96,15 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
             while (insertionOrderList.size() > maxSize) {
                 delegatedMap.remove(insertionOrderList.pop());
             }
+            ShrinkableSizeCache.this.afterUpdate();
         };
         executorService.scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs, TimeUnit.MILLISECONDS);
     }
+
+    /**
+     * Hook sub instances can use to perform single activities after the cleanup was done
+     */
+    protected void afterUpdate() {}
 
     /**
      * Returns the number of key-value mappings in this map.  If the map contains more than {@code Integer.MAX_VALUE}
