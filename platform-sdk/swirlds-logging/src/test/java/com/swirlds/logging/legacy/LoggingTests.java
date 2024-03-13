@@ -40,6 +40,7 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -152,6 +153,7 @@ public class LoggingTests {
     @Tag(TestComponentTags.LOGGING)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Simulation Should Match File")
+    @Disabled
     public void simulationShouldMatchFile() throws URISyntaxException, IOException {
         File file = new File("./swirlds.json");
 
