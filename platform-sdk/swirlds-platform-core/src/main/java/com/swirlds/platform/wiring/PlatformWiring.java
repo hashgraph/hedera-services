@@ -80,7 +80,6 @@ import com.swirlds.platform.wiring.components.BirthRoundMigrationShimWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
-import com.swirlds.platform.wiring.components.EventHasherWiring;
 import com.swirlds.platform.wiring.components.EventStreamManagerWiring;
 import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
@@ -115,7 +114,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
     private final WiringModel model;
 
-    private final EventHasherWiring eventHasherWiring;
+    private final ComponentWiring<EventHasher, GossipEvent> eventHasherWiring;
     private final PostHashCollectorWiring postHashCollectorWiring;
     private final InternalEventValidatorWiring internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
@@ -187,7 +186,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             birthRoundMigrationShimWiring = null;
         }
 
-        eventHasherWiring = EventHasherWiring.create(schedulers.eventHasherScheduler());
+        eventHasherWiring = new ComponentWiring<>(model, EventHasher.class, schedulers.eventHasherScheduler());
         postHashCollectorWiring = PostHashCollectorWiring.create(schedulers.postHashCollectorScheduler());
         internalEventValidatorWiring =
                 InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
@@ -283,14 +282,16 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private void wire() {
         final InputWire<GossipEvent> pipelineInputWire;
         if (birthRoundMigrationShimWiring != null) {
-            birthRoundMigrationShimWiring.eventOutput().solderTo(eventHasherWiring.eventInput());
+            birthRoundMigrationShimWiring
+                    .eventOutput()
+                    .solderTo(eventHasherWiring.getInputWire(EventHasher::hashEvent));
             pipelineInputWire = birthRoundMigrationShimWiring.eventInput();
         } else {
-            pipelineInputWire = eventHasherWiring.eventInput();
+            pipelineInputWire = eventHasherWiring.getInputWire(EventHasher::hashEvent);
         }
 
         gossipWiring.eventOutput().solderTo(pipelineInputWire);
-        eventHasherWiring.eventOutput().solderTo(postHashCollectorWiring.eventInput());
+        eventHasherWiring.getOutputWire().solderTo(postHashCollectorWiring.eventInput());
         postHashCollectorWiring.eventOutput().solderTo(internalEventValidatorWiring.eventInput());
         internalEventValidatorWiring
                 .eventOutput()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,35 +16,21 @@
 
 package com.swirlds.platform.event.hashing;
 
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Hashes events.
  */
-public class EventHasher {
-    private final Cryptography cryptography;
-
-    /**
-     * Constructs a new event hasher.
-     *
-     * @param platformContext the platform context
-     */
-    public EventHasher(@NonNull final PlatformContext platformContext) {
-        this.cryptography = platformContext.getCryptography();
-    }
-
+public interface EventHasher {
     /**
      * Hashes the event and builds the event descriptor.
      *
      * @param event the event to hash
      * @return the hashed event
      */
-    public GossipEvent hashEvent(@NonNull final GossipEvent event) {
-        cryptography.digestSync(event.getHashedData());
-        event.buildDescriptor();
-        return event;
-    }
+    @InputWireLabel("unhashed event")
+    @NonNull
+    GossipEvent hashEvent(@NonNull GossipEvent event);
 }
