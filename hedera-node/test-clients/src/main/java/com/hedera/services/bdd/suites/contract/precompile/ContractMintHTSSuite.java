@@ -334,11 +334,11 @@ public class ContractMintHTSSuite extends HapiSuite {
                         childRecordsCheck(
                                 mintWithZeroedAddressTest,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TRANSACTION_BODY)),
+                                recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 mintWithZeroedAddressAndMetadataTest,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TRANSACTION_BODY)));
+                                recordWith().status(INVALID_TOKEN_ID)));
     }
 
     @HapiTest
