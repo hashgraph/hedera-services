@@ -18,12 +18,13 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_METADATA;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -59,7 +60,6 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.config.ConfigProvider;
@@ -92,6 +92,9 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private GlobalDynamicProperties dynamicProperties;
 
+    @Mock(strictness = LENIENT)
+    private HandleContext context;
+
     private AttributeValidator attributeValidator;
     private TokenUpdateNftsHandler subject;
     private TransactionBody txn;
@@ -122,7 +125,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     private HandleContext mockContext(TransactionBody txn) {
-        final var context = mock(HandleContext.class);
         given(context.body()).willReturn(txn);
         given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
         given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
@@ -157,7 +159,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void failsWhenMetadataIsEmpty() {
+    void doesntFailWhenMetadataIsEmpty() {
         final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L));
 
         final var totalFungibleSupply = 2;
@@ -177,9 +179,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 .newNftUpdateTransactionBody(TOKEN_123, Bytes.EMPTY, serialNumbers.toArray(new Long[0]));
         final var context = keyMockContext(txn);
 
-        assertThatThrownBy(() -> subject.pureChecks(context.body()))
-                .isInstanceOf(PreCheckException.class)
-                .has(responseCode(MISSING_TOKEN_METADATA));
+        assertThatCode(() -> subject.pureChecks(context.body())).doesNotThrowAnyException();
     }
 
     @Test
@@ -212,6 +212,37 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void nftSerialNotFound() {
         final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L));
+        readableTokenStore = newReadableStoreWithTokens(
+                Token.newBuilder().tokenId(TOKEN_123).metadataKey(metadataKey).build());
+        writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                .tokenId(TOKEN_123)
+                .metadataKey(metadataKey)
+                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                .treasuryAccountId(ACCOUNT_1339)
+                .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                .totalSupply(10)
+                .build());
+        writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                .accountId(ACCOUNT_1339)
+                .tokenId(TOKEN_123)
+                .balance(10)
+                .build());
+        writableNftStore = new WritableNftStore(new MapWritableStates(
+                Map.of("NFTS", MapWritableKVState.builder("NFTS").build())));
+
+        final var txn = new TokenUpdateNftBuilder()
+                .newNftUpdateTransactionBody(
+                        TOKEN_123, Bytes.wrap("test metadata"), serialNumbers.toArray(new Long[0]));
+        final var context = mockContext(txn);
+
+        Assertions.assertThatThrownBy(() -> subject.handle(context))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_NFT_ID));
+    }
+
+    @Test
+    void failsEhenMetadatKeyNotSet() {
+        final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L));
         readableTokenStore =
                 newReadableStoreWithTokens(Token.newBuilder().tokenId(TOKEN_123).build());
         writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
@@ -236,7 +267,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(INVALID_NFT_ID));
+                .has(responseCode(TOKEN_HAS_NO_METADATA_KEY));
     }
 
     @Test
