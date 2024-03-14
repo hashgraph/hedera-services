@@ -50,10 +50,6 @@ public class CustomFixedFeeAssessor {
             @NonNull final CustomFeeMeta feeMeta, @NonNull final AccountID sender, final AssessmentResult result) {
         for (final var fee : feeMeta.customFees()) {
             if (fee.fee().kind().equals(CustomFee.FeeOneOfType.FIXED_FEE)) {
-                final var collector = fee.feeCollectorAccountId();
-                if (sender.equals(collector)) {
-                    continue;
-                }
                 // This is a top-level fixed fee, not a fallback royalty fee
                 assessFixedFee(feeMeta, sender, fee, result);
             }
