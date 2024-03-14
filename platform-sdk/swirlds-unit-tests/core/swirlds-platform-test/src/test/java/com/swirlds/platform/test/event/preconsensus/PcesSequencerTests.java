@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,7 @@ class PcesSequencerTests {
     @Test
     @DisplayName("Standard Behavior Test")
     void standardBehaviorTest() {
-        final PcesSequencer sequencer = new PcesSequencer();
+        final PcesSequencer sequencer = new DefaultPcesSequencer();
 
         long prev = -1;
         for (int i = 0; i < 1000; i++) {
@@ -57,7 +58,7 @@ class PcesSequencerTests {
     @Test
     @DisplayName("Set Value Twice Test")
     void setValueTwiceTest() {
-        final PcesSequencer sequencer = new PcesSequencer();
+        final PcesSequencer sequencer = new DefaultPcesSequencer();
 
         final GossipEvent event = new GossipEvent();
 

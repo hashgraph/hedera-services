@@ -35,13 +35,13 @@ public class EpochFormatUtilsTest {
         // when
         String formattedTimestamp = EpochFormatUtils.timestampAsString(timestamp);
 
-        String expectedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS   ")
+        String expectedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS   ")
                 .withZone(UTC)
                 .format(Instant.ofEpochMilli(timestamp));
 
         // then
         assertThat(formattedTimestamp.length()).isEqualTo(26);
-        // assertThat(formattedTimestamp).isEqualTo(expectedTimestamp); FUTURE WORK: FIX this scenario
+        assertThat(formattedTimestamp).isEqualTo(expectedTimestamp);
     }
 
     @Test
@@ -53,7 +53,7 @@ public class EpochFormatUtilsTest {
         String formattedTimestamp = EpochFormatUtils.timestampAsString(timestamp);
 
         // then
-        assertThat(formattedTimestamp).isEqualTo("1969-12-31T23:59:59.999   ");
+        assertThat(formattedTimestamp).isEqualTo("1969-12-31 23:59:59.999   ");
     }
 
     @Test
