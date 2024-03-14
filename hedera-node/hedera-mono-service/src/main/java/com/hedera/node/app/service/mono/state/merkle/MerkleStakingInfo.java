@@ -525,7 +525,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
 
     @Nullable
     @VisibleForTesting
-    byte[] getHistoryHash() {
+    public byte[] getHistoryHash() {
         return historyHash;
     }
 

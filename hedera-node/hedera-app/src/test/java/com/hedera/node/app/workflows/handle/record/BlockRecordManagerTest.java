@@ -299,7 +299,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                                             .getNMinus3RunningHash()
                                             .toHex());
                         } else {
-                            // check nulls as well
+                            // check empty as well
                             assertThat(blockRecordManager.getNMinus3RunningHash())
                                     .isEqualTo(Bytes.EMPTY);
                         }

@@ -66,7 +66,6 @@ are already implemented and need not be repeated as XTests.
 - Successful transfer of hbars only and HTS tokens only between accounts from sender account via contract.
 - Successful transfer of hbars and HTS tokens with a custom fees (including fallback fee scenarios).
 - Successful transfer of hbars and HTS tokens with available auto token association slots on the receiver.
-- Successful transfer of hbars and HTS tokens from EOA account given approval to another EOA.
 - Successful transfer of hbars and HTS tokens from EOA account given approval to a caller contract.
 - Successful transfer of hbars and HTS tokens from owner contract via transfer contract.
 
