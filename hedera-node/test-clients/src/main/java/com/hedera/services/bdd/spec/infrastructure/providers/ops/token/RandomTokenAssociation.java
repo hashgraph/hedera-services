@@ -18,6 +18,9 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
@@ -45,6 +48,8 @@ public class RandomTokenAssociation implements OpProvider {
     private final RegistrySourcedNameProvider<TokenID> tokens;
     private final RegistrySourcedNameProvider<AccountID> accounts;
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
+    private final ResponseCodeEnum[] outcomes;
+    private final String[] signers;
 
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, TOKEN_WAS_DELETED, ACCOUNT_DELETED);
@@ -52,10 +57,14 @@ public class RandomTokenAssociation implements OpProvider {
     public RandomTokenAssociation(
             RegistrySourcedNameProvider<TokenID> tokens,
             RegistrySourcedNameProvider<AccountID> accounts,
-            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels,
+            ResponseCodeEnum[] hollowAccountOutcomes,
+            String... signers) {
         this.tokens = tokens;
         this.accounts = accounts;
         this.tokenRels = tokenRels;
+        this.outcomes = hollowAccountOutcomes;
+        this.signers = signers;
     }
 
     public RandomTokenAssociation ceiling(int n) {
@@ -84,9 +93,19 @@ public class RandomTokenAssociation implements OpProvider {
             return Optional.empty();
         }
         String[] toUse = chosen.toArray(new String[0]);
+
+       // ResponseCodeEnum[] outcomes = this.outcomes;
+       // if (outcomes == null || outcomes.length == 0) {
+       //     outcomes = permissibleOutcomes;
+       // }
+       //
+       // ResponseCodeEnum[] outcomes2 = new ResponseCodeEnum[1];
+       // outcomes2[0] = INVALID_SIGNATURE;
+
         var op = tokenAssociate(account.get(), toUse)
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasPrecheckFrom(ResponseCodeEnum.values())
+                .hasKnownStatusFrom(ResponseCodeEnum.values())
+                .signedBy(signers);
 
         return Optional.of(op);
     }

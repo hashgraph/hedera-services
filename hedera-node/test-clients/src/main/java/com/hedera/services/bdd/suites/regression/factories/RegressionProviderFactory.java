@@ -72,6 +72,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -185,9 +186,9 @@ public class RegressionProviderFactory {
                     .withOp(new RandomFileInfo(files), intPropOrElse("randomFileInfo.bias", 0, props))
                     .withOp(new RandomContents(files), intPropOrElse("randomContents.bias", 0, props))
                     /* ---- TOKEN ---- */
-                    .withOp(new RandomToken(keys, tokens, allAccounts), intPropOrElse("randomToken.bias", 0, props))
+                    .withOp(new RandomToken(keys, tokens, allAccounts, new ResponseCodeEnum[0]), intPropOrElse("randomToken.bias", 0, props))
                     .withOp(
-                            new RandomTokenAssociation(tokens, allAccounts, tokenRels)
+                            new RandomTokenAssociation(tokens, allAccounts, tokenRels, new ResponseCodeEnum[0])
                                     .ceiling(intPropOrElse(
                                             "randomTokenAssociation.ceilingNum",
                                             RandomTokenAssociation.DEFAULT_CEILING_NUM,

@@ -18,8 +18,11 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
@@ -34,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import org.identityconnectors.common.CollectionUtil;
 
 public class RandomToken implements OpProvider {
     private static final int FREEZE_KEY_INDEX = 4;
@@ -60,6 +64,8 @@ public class RandomToken implements OpProvider {
     private final EntityNameProvider<Key> keys;
     private final RegistrySourcedNameProvider<TokenID> tokens;
     private final RegistrySourcedNameProvider<AccountID> accounts;
+    private final ResponseCodeEnum[] outcomes;
+    private final String[] signers;
 
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
             /* Auto-renew account might be deleted by the time our TokenCreate reaches consensus */
@@ -75,10 +81,14 @@ public class RandomToken implements OpProvider {
     public RandomToken(
             EntityNameProvider<Key> keys,
             RegistrySourcedNameProvider<TokenID> tokens,
-            RegistrySourcedNameProvider<AccountID> accounts) {
+            RegistrySourcedNameProvider<AccountID> accounts,
+            ResponseCodeEnum[] hollowAccountOutcomes,
+            String... signers) {
         this.keys = keys;
         this.tokens = tokens;
         this.accounts = accounts;
+        this.outcomes = hollowAccountOutcomes;
+        this.signers = signers;
     }
 
     @Override
@@ -87,11 +97,19 @@ public class RandomToken implements OpProvider {
             return Optional.empty();
         }
 
+        ResponseCodeEnum[] outcomes = this.outcomes;
+        if (outcomes == null || outcomes.length == 0) {
+            outcomes = permissibleOutcomes;
+        }
+
         int id = opNo.getAndIncrement();
         HapiTokenCreate op = tokenCreate(my("token" + id))
                 .advertisingCreation()
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasPrecheckFrom(ResponseCodeEnum.values())
+                //.hasKnownStatusFrom(INVALID_SIGNATURE)
+                .hasKnownStatusFrom(ResponseCodeEnum.values())
+                .signedBy(signers);
+
 
         var prefix = randomlyConfigureKeys(op);
         op.setTokenPrefix(prefix);

@@ -43,19 +43,27 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
+import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
+import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.contract.RandomCall;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTransferFromHollowAccount;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTransferToHollowAccount;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDeletion;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUpdate;
+import com.hedera.services.bdd.spec.infrastructure.selectors.HollowAccountSelector;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.function.Function;
 
@@ -87,7 +95,7 @@ public class HollowAccountFuzzingFactory {
         };
     }
 
-    public static Function<HapiSpec, OpProvider> hollowAccountFuzzingWithTransferFailedOperations(
+    public static Function<HapiSpec, OpProvider> hollowAccountFuzzingWithTransferOperations(
             final String resource) {
         return spec -> {
             final var props = RegressionProviderFactory.propsFrom(resource);
@@ -97,7 +105,7 @@ public class HollowAccountFuzzingFactory {
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
                     .withInitialization(
-                            newKeyNamed(HOLLOW_ACCOUNT).shape(SigControl.SECP256K1_ON), generateHollowAccount())
+                            newKeyNamed(HOLLOW_ACCOUNT).shape(SigControl.SECP256K1_ON), generateHollowAccount(ACCOUNT_SUFFIX))
                     .withOp(
                             new RandomTransferFromHollowAccount(spec.registry(), accounts),
                             intPropOrElse("randomTransferFromHollowAccount.bias", 0, props))
@@ -111,33 +119,49 @@ public class HollowAccountFuzzingFactory {
         return spec -> {
             final var props = RegressionProviderFactory.propsFrom(resource);
 
-            final var accounts =
-                    new RegistrySourcedNameProvider<>(AccountID.class, spec.registry(), new RandomSelector());
+            final var accounts = new RegistrySourcedNameProvider<>(
+                    AccountID.class, spec.registry(), new HollowAccountSelector(HOLLOW_ACCOUNT));
+            final var tokens = new RegistrySourcedNameProvider<>(TokenID.class, spec.registry(), new RandomSelector());
+            tokens.getQualifying();
+            var tokenRels = new RegistrySourcedNameProvider<>(
+                    TokenAccountRegistryRel.class, spec.registry(), new RandomSelector());
+            var allSchedules =
+                    new RegistrySourcedNameProvider<>(ScheduleID.class, spec.registry(), new RandomSelector());
+            var contracts = new RegistrySourcedNameProvider<>(ContractID.class, spec.registry(), new RandomSelector());
+            var calls = new RegistrySourcedNameProvider<>(
+                    ActionableContractCall.class, spec.registry(), new RandomSelector());
+            var localCalls = new RegistrySourcedNameProvider<>(
+                    ActionableContractCallLocal.class, spec.registry(), new RandomSelector());
 
             final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
 
-            final var tokens = new RegistrySourcedNameProvider<>(TokenID.class, spec.registry(), new RandomSelector());
-            var tokenRels = new RegistrySourcedNameProvider<>(
-                    TokenAccountRegistryRel.class, spec.registry(), new RandomSelector());
+            ResponseCodeEnum[] hollowAccountPrecheck = new ResponseCodeEnum[1];
+            hollowAccountPrecheck[0] = ResponseCodeEnum.INVALID_SIGNATURE;
+
+            ResponseCodeEnum[] hollowAccountOutcomes = new ResponseCodeEnum[1];
+            hollowAccountOutcomes[0] = ResponseCodeEnum.INVALID_SIGNATURE;
 
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
                     .withInitialization(
-                            newKeyNamed(HOLLOW_ACCOUNT).shape(SigControl.SECP256K1_ON), generateHollowAccount())
-                    .withOp(new RandomToken(keys, tokens, accounts), intPropOrElse("randomToken.bias", 0, props))
+                            newKeyNamed(HOLLOW_ACCOUNT).shape(SigControl.SECP256K1_ON),
+                            generateHollowAccount(""))
+                    .withOp(new RandomToken(keys, tokens, accounts, hollowAccountOutcomes, UNIQUE_PAYER_ACCOUNT),
+                            intPropOrElse("randomToken.bias", 0, props))
                     .withOp(
-                            new RandomTokenAssociation(tokens, accounts, tokenRels)
+                            new RandomTokenAssociation(tokens, accounts, tokenRels, hollowAccountOutcomes, UNIQUE_PAYER_ACCOUNT)
                                     .ceiling(intPropOrElse(
                                             "randomTokenAssociation.ceilingNum",
                                             RandomTokenAssociation.DEFAULT_CEILING_NUM,
                                             props)),
                             intPropOrElse("randomTokenAssociation.bias", 0, props))
-                    .withOp(
-                            new RandomTokenDissociation(tokenRels),
-                            intPropOrElse("randomTokenDissociation.bias", 0, props))
+                    //.withOp(
+                    //        new RandomTokenDissociation(tokenRels),
+                    //        intPropOrElse("randomTokenDissociation.bias", 0, props))
                     //
-                    //                    .withOp(new RandomTokenDeletion(tokens),
-                    // intPropOrElse("randomTokenDeletion.bias", 0, props))
+                    .withOp(new RandomTokenDeletion(tokens, UNIQUE_PAYER_ACCOUNT),
+                     intPropOrElse("randomTokenDeletion.bias", 0, props));
+                    //.withOp(new RandomCall(calls), intPropOrElse("randomCall.bias", 0, props));
                     //                    .withOp(new RandomTokenTransfer(tokenRels),
                     // intPropOrElse("randomTokenTransfer.bias", 0, props))
                     //                    .withOp(new RandomTokenFreeze(tokenRels),
@@ -154,9 +178,9 @@ public class HollowAccountFuzzingFactory {
                     //                    // sign with the hollow
                     //                    .withOp(new RandomTokenBurn(tokens), intPropOrElse("randomTokenBurn.bias", 0,
                     // props))
-                    .withOp(
-                            new RandomTokenUpdate(keys, tokens, accounts),
-                            intPropOrElse("randomTokenUpdate.bias", 0, props));
+                    //.withOp(
+                    //        new RandomTokenUpdate(keys, tokens, accounts),
+                    //        intPropOrElse("randomTokenUpdate.bias", 0, props));
             //                    .withOp(
             //                            new RandomTokenAccountWipe(tokenRels),
             //                            intPropOrElse("randomTokenAccountWipe.bias", 0, props))
@@ -165,7 +189,7 @@ public class HollowAccountFuzzingFactory {
         };
     }
 
-    public static HapiSpecOperation generateHollowAccount() {
+    public static HapiSpecOperation generateHollowAccount(String accountSuffix) {
         return withOpContext((spec, opLog) -> {
             final var ecdsaKey =
                     spec.registry().getKey(HOLLOW_ACCOUNT).getECDSASecp256K1().toByteArray();
@@ -183,7 +207,7 @@ public class HollowAccountFuzzingFactory {
                     .getFirstNonStakingChildRecord()
                     .getReceipt()
                     .getAccountID();
-            spec.registry().saveAccountId(HOLLOW_ACCOUNT + ACCOUNT_SUFFIX, newAccountID);
+            spec.registry().saveAccountId(HOLLOW_ACCOUNT + accountSuffix, newAccountID);
         });
     }
 }
