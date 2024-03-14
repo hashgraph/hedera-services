@@ -37,6 +37,7 @@ import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC20ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC721ContractInteractions;
+import com.hedera.services.bdd.suites.contract.precompile.*;
 import com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileV2SecurityModelSuite;
@@ -151,6 +152,7 @@ public class ConcurrentSuites {
             ApproveAllowanceSuite::new,
             AssociatePrecompileSuite::new,
             ContractBurnHTSSuite::new,
+            ContractBurnHTSV2SecurityModelSuite::new,
             ContractHTSSuite::new,
             ContractKeysHTSSuite::new,
             ContractMintHTSSuite::new,
@@ -215,6 +217,7 @@ public class ConcurrentSuites {
             ApproveAllowanceSuite::new,
             AssociatePrecompileSuite::new,
             ContractBurnHTSSuite::new,
+            ContractBurnHTSV2SecurityModelSuite::new,
             ContractHTSSuite::new,
             ContractKeysHTSSuite::new,
             ContractMintHTSSuite::new,
