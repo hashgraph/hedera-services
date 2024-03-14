@@ -71,6 +71,7 @@ public class StakingPeriodTimeHook {
         final var consensusTimeOfLastHandledTxn = blockStore.getLastBlockInfo().consTimeOfLastHandledTxn();
 
         final var consensusTime = tokenContext.consensusTime();
+        logger.info("Processing staking period time hook at {}", consensusTime);
         if (consensusTimeOfLastHandledTxn == null
                 || (consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.seconds()
                         && isNextStakingPeriod(
