@@ -87,7 +87,7 @@ public class HandlerLoggingLevelConfig {
      * @param configuration The configuration.
      * @param handlerName        The name of the handler.
      */
-    public HandlerLoggingLevelConfig(@NonNull final Configuration configuration, @Nullable String handlerName) {
+    public HandlerLoggingLevelConfig(@NonNull final Configuration configuration, @Nullable final String handlerName) {
         this.handlerName = handlerName;
         this.levelCache = new ConcurrentHashMap<>();
         this.markerConfigCache = new AtomicReference<>(new ConcurrentHashMap<>());
@@ -157,7 +157,7 @@ public class HandlerLoggingLevelConfig {
      *
      * @param configuration The configuration.
      */
-    public void update(@NonNull Configuration configuration) {
+    public void update(@NonNull final Configuration configuration) {
         final ExtractedLoggingConfig extractedLoggingConfig = extractConfig(handlerName, configuration);
         levelCache.clear();
         this.levelConfigProperties.set(Collections.unmodifiableMap(extractedLoggingConfig.levelConfigProperties()));
