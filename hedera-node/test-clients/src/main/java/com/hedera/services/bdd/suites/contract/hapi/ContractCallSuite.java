@@ -1522,6 +1522,7 @@ public class ContractCallSuite extends HapiSuite {
                                         resultWith().logs(inOrder(logWith().longAtBytes(DEPOSIT_AMOUNT, 24))))));
     }
 
+    // Adding refusingEthConversion() due to fee differences
     @HapiTest
     HapiSpec callFailsWhenAmountIsNegativeButStillChargedFee() {
         final var payer = "payer";
@@ -1530,7 +1531,8 @@ public class ContractCallSuite extends HapiSuite {
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT)
                                 .adminKey(THRESHOLD)
-                                .gas(1_000_000),
+                            .gas(1_000_000)
+                            .refusingEthConversion(),
                         cryptoCreate(payer).balance(ONE_MILLION_HBARS).payingWith(GENESIS))
                 .when(ifHapiTest(withOpContext((spec, ignore) -> {
                     final var subop1 = balanceSnapshot("balanceBefore0", payer);
@@ -1538,7 +1540,8 @@ public class ContractCallSuite extends HapiSuite {
                             .via(PAY_TXN)
                             .payingWith(payer)
                             .sending(-DEPOSIT_AMOUNT)
-                            .hasKnownStatus(CONTRACT_NEGATIVE_VALUE);
+                        .hasKnownStatus(CONTRACT_NEGATIVE_VALUE)
+                        .refusingEthConversion();
                     final var subop3 = getTxnRecord(PAY_TXN).logged();
                     allRunFor(spec, subop1, subop2, subop3);
                     final var delta = subop3.getResponseRecord()
