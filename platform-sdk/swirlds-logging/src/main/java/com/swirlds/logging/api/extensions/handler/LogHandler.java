@@ -57,5 +57,10 @@ public interface LogHandler extends LogEventConsumer {
      */
     default void stopAndFinalize() {}
 
-    default void update(Configuration configuration) {}
+    /**
+     * Updates the log handler with the new configuration.
+     *
+     * @param configuration the new configuration
+     */
+    default void update(@NonNull final Configuration configuration) {}
 }
