@@ -1024,6 +1024,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return gasThrottleUsageSnapshot;
     }
 
+    public DeterministicThrottle.UsageSnapshot[] getUsageSnapshots() {
+        return usageSnapshots;
+    }
+
     public void setStakingRewardsActivated(final boolean stakingRewardsActivated) {
         this.stakingRewardsActivated = stakingRewardsActivated;
     }

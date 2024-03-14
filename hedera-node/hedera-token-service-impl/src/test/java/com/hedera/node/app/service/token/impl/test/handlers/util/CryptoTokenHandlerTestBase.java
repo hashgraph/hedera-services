@@ -945,7 +945,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
         given(context.readableStore(ReadableNetworkStakingRewardsStore.class)).willReturn(readableRewardsStore);
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(writableRewardsStore);
-        given(context.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
+        given(context.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
     }
 
     protected void givenStoresAndConfig(final FinalizeContext context) {

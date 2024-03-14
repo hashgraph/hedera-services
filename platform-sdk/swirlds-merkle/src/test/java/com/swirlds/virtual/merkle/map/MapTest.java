@@ -163,8 +163,8 @@ final class MapTest {
         map = copy;
         rootNode.waitUntilFlushed();
 
-        // During this second flush, key/value 0 must be deleted from the map despite it's
-        // path the virtual tree doesn't match the path in the data source
+        // During this second flush, key/value 0 must be deleted from the map despite its
+        // path in the virtual tree doesn't match the path in the data source
         assertFalse(map.containsKey(new TestObjectKey(0)));
         assertNull(map.get(new TestObjectKey(0)));
 

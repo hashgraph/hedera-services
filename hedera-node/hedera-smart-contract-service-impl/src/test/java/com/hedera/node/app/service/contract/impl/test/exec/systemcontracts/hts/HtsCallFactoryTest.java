@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator.BALANCE_OF;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
@@ -41,6 +42,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,9 +101,36 @@ class HtsCallFactoryTest extends HtsCallTestBase {
 
         final var input = bytesForRedirect(
                 BALANCE_OF.encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)), FUNGIBLE_TOKEN_ID);
-        final var attempt = subject.createCallAttemptFrom(input, frame);
+        final var attempt = subject.createCallAttemptFrom(input, FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT, frame);
         final var call = Objects.requireNonNull(attempt.asExecutableCall());
 
         assertInstanceOf(BalanceOfCall.class, call);
+    }
+
+    @Test
+    void instantiatesQualifiedDelegateCallWithRecipientAsSender() {
+        given(initialFrame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE))
+                .willReturn(DEFAULT_CONFIG);
+        given(initialFrame.getContextVariable(FrameUtils.SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE))
+                .willReturn(systemContractGasCalculator);
+        stack.push(initialFrame);
+        stack.addFirst(frame);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.enhancement()).willReturn(mockEnhancement());
+        given(nativeOperations.getToken(FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(FUNGIBLE_TOKEN);
+        given(frame.getSenderAddress()).willReturn(Address.ALTBN128_ADD);
+        given(idConverter.convertSender(Address.ALTBN128_ADD)).willReturn(A_NEW_ACCOUNT_ID);
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(addressChecks.hasParentDelegateCall(frame)).willReturn(true);
+        given(syntheticIds.converterFor(nativeOperations)).willReturn(idConverter);
+
+        final var input = bytesForRedirect(
+                BALANCE_OF.encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)), FUNGIBLE_TOKEN_ID);
+        final var attempt = subject.createCallAttemptFrom(input, FrameUtils.CallType.QUALIFIED_DELEGATE, frame);
+        final var call = Objects.requireNonNull(attempt.asExecutableCall());
+
+        assertInstanceOf(BalanceOfCall.class, call);
+        assertEquals(A_NEW_ACCOUNT_ID, attempt.senderId());
     }
 }

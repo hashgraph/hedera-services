@@ -62,16 +62,13 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     }
 
     @Override
-    public void trackFeePayments(
-            @NonNull AccountID payer, @NonNull final Instant consensusNow, @NonNull final HederaState state) {
-        // Used to update network utilization after
-        // a user-submitted transaction fails the signature validity screen;
-        // the stand-in is a CryptoTransfer because it best reflects the work done charging fees
+    public void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final HederaState state) {
+        // Used to update network utilization after charging fees for an invalid transaction
         final var chargingFeesCryptoTransfer = new TransactionInfo(
                 Transaction.DEFAULT,
                 TransactionBody.DEFAULT,
                 TransactionID.DEFAULT,
-                payer,
+                AccountID.DEFAULT,
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
                 CRYPTO_TRANSFER);

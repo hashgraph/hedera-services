@@ -124,8 +124,8 @@ public final class StreamFileProducerSingleThreaded implements BlockRecordStream
             throw new IllegalStateException("initRunningHash() must only be called once");
         }
 
-        if (runningHashes.runningHash().equals(Bytes.EMPTY)) {
-            throw new IllegalArgumentException("The initial running hash cannot be empty");
+        if (runningHashes.runningHash() == null || runningHashes.runningHash().equals(Bytes.EMPTY)) {
+            throw new IllegalArgumentException("The initial running hash cannot be null or empty");
         }
 
         runningHash = runningHashes.runningHash();

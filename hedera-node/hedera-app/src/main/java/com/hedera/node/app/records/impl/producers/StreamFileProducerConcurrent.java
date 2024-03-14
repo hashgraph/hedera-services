@@ -116,8 +116,9 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
                 throw new IllegalStateException("initRunningHash() can only be called once");
             }
 
-            if (runningHashes.runningHash().equals(Bytes.EMPTY)) {
-                throw new IllegalArgumentException("The initial running hash cannot be empty");
+            if (runningHashes.runningHash() == null
+                    || runningHashes.runningHash().equals(Bytes.EMPTY)) {
+                throw new IllegalArgumentException("The initial running hash cannot be null or empty");
             }
 
             lastRecordHashingResult = completedFuture(runningHashes.runningHash());
