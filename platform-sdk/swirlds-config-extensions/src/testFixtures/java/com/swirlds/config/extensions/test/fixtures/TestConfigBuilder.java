@@ -78,7 +78,7 @@ public class TestConfigBuilder {
      */
     public TestConfigBuilder(final boolean registerAllTypes) {
         if (registerAllTypes) {
-            this.builder = ConfigUtils.scanAndRegisterAllConfigTypes(
+            this.builder = ConfigUtils.scanAndRegisterAllConfigExtensions(
                     ConfigurationBuilder.create(), Set.of(SWIRLDS_PACKAGE, HEDERA_PACKAGE));
         } else {
             this.builder = ConfigurationBuilder.create();

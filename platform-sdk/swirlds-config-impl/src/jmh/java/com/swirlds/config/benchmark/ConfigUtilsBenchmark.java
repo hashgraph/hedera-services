@@ -70,8 +70,8 @@ public class ConfigUtilsBenchmark {
     @BenchmarkMode({Mode.Throughput, Mode.SampleTime})
     public void loadOnlyHederaDefault(final Blackhole blackhole) {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        final ConfigurationBuilder modified =
-                ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.hedera", "com.swirlds"));
+        final ConfigurationBuilder modified = ConfigUtils.scanAndRegisterAllConfigExtensions(
+                configurationBuilder, Set.of("com.hedera", "com.swirlds"));
         blackhole.consume(modified);
     }
 

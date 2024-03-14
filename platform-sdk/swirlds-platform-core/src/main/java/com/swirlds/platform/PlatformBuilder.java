@@ -190,7 +190,7 @@ public final class PlatformBuilder {
             configurationBuilder = ConfigurationBuilder.create();
         }
 
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
+        ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
         rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configurationBuilder, settingsPath));
 
         final Configuration configuration = configurationBuilder.build();

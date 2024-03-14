@@ -68,4 +68,6 @@ class ConfigUtilsTest {
         Assertions.assertEquals(1, configuration.getConfigDataTypes().size());
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(TestConfig.class));
     }
+
+    // TODO add test for config extensions
 }

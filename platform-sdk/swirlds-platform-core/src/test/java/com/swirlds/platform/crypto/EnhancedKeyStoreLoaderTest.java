@@ -197,7 +197,7 @@ class EnhancedKeyStoreLoaderTest {
      */
     private Configuration configure(final Path keyDirectory) throws IOException {
         ConfigurationBuilder builder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(builder, Set.of("com.swirlds"));
+        ConfigUtils.scanAndRegisterAllConfigExtensions(builder, Set.of("com.swirlds"));
         BootstrapUtils.setupConfigBuilder(builder, testDataDirectory.resolve("settings.txt"));
 
         builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());
