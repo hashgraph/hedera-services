@@ -143,6 +143,10 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         // Fungible token allowances are the same as basic crypto approvals and allowances
         for (final var allowance : op.tokenAllowancesOrElse(emptyList())) {
             final var owner = allowance.owner();
+            // (TEMPORARY) Remove after diff testing is complete
+            if (owner != null && owner.hasAlias()) {
+                throw new PreCheckException(INVALID_ALLOWANCE_OWNER_ID);
+            }
             if (owner != null && !owner.equals(payerId)) {
                 context.requireKeyOrThrow(owner, INVALID_ALLOWANCE_OWNER_ID);
             }

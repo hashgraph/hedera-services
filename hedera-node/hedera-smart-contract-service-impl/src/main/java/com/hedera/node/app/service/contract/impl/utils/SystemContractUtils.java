@@ -113,15 +113,24 @@ public final class SystemContractUtils {
      * @param contractID The contract ID.
      * @return The created contract function result when for a failed call.
      */
-    @NonNull
-    public static ContractFunctionResult contractFunctionResultFailedFor(
+    public static @NonNull ContractFunctionResult contractFunctionResultFailedFor(
             @NonNull final AccountID senderId,
             @NonNull final FullResult fullResult,
             final String errorMsg,
             final ContractID contractID) {
+        return contractFunctionResultFailedFor(
+                senderId, fullResult.result().getOutput(), fullResult.gasRequirement(), errorMsg, contractID);
+    }
+
+    public static @NonNull ContractFunctionResult contractFunctionResultFailedFor(
+            @NonNull final AccountID senderId,
+            @NonNull final Bytes result,
+            final long gasRequirement,
+            final String errorMsg,
+            final ContractID contractID) {
         return ContractFunctionResult.newBuilder()
-                .gasUsed(fullResult.gasRequirement())
-                .contractCallResult(tuweniToPbjBytes(fullResult.result().getOutput()))
+                .gasUsed(gasRequirement)
+                .contractCallResult(tuweniToPbjBytes(result))
                 .senderId(senderId)
                 .errorMessage(errorMsg)
                 .contractID(contractID)

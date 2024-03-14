@@ -72,7 +72,6 @@ public class PricedUsageCalculator {
         final var sigUsage = accessor.usageGiven(numSimpleKeys(payerKey));
 
         accessorBasedUsages.assess(sigUsage, accessor, accumulator);
-
         return calculator.fees(accumulator, resourcePrices, rate, feeMultiplierSource.currentMultiplier(accessor));
     }
 

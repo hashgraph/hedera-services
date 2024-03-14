@@ -37,6 +37,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -114,7 +115,8 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                     synthTxn, CryptoCreateRecordBuilder.class, null, context.payer());
             childRecordBuilder.memo(LAZY_CREATION_MEMO);
 
-            final var lazyCreateFees = context.dispatchComputeFees(synthTxn, context.payer());
+            final var lazyCreateFees =
+                    context.dispatchComputeFees(synthTxn, context.payer(), ComputeDispatchFeesAsTopLevel.NO);
             final var finalizationFees = getLazyCreationFinalizationFees();
             childRecordBuilder.transactionFee(lazyCreateFees.totalFee() + finalizationFees.totalFee());
 
@@ -182,6 +184,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                 CryptoUpdateTransactionBody.newBuilder().key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY));
         final var synthTxn =
                 TransactionBody.newBuilder().cryptoUpdateAccount(updateTxnBody).build();
-        return context.dispatchComputeFees(synthTxn, context.payer());
+        return context.dispatchComputeFees(synthTxn, context.payer(), ComputeDispatchFeesAsTopLevel.NO);
     }
 }

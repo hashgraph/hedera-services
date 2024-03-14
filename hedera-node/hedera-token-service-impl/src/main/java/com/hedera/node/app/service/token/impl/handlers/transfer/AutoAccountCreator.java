@@ -36,6 +36,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -123,7 +124,8 @@ public class AutoAccountCreator {
         final var topLevelPayer = handleContext.payer();
         final var payerAccount = accountStore.get(topLevelPayer);
         validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
-        final var fees = handleContext.dispatchComputeFees(syntheticCreation.build(), topLevelPayer);
+        final var fees = handleContext.dispatchComputeFees(
+                syntheticCreation.build(), topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
         return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 

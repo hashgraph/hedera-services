@@ -72,6 +72,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -496,7 +497,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     public @NonNull Fees dispatchComputeFees(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID syntheticPayerId) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel) {
         var bodyToDispatch = txBody;
         if (!txBody.hasTransactionID()) {
             // Legacy mono fee calculators frequently estimate an entity's lifetime using the epoch second of the
@@ -518,8 +521,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
 
-        return dispatcher.dispatchComputeFees(
-                new ChildFeeContextImpl(feeManager, this, bodyToDispatch, syntheticPayerId));
+        return dispatcher.dispatchComputeFees(new ChildFeeContextImpl(
+                feeManager,
+                this,
+                bodyToDispatch,
+                syntheticPayerId,
+                computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO));
     }
 
     @Override
@@ -760,7 +767,33 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 }
             }
             childRecordBuilder.status(e.getStatus());
-            recordListBuilder.revertChildrenOf(recordBuilder);
+            recordListBuilder.revertChildrenOf(childRecordBuilder);
+        }
+        // For mono-service fidelity, we need to attach staking rewards for a
+        // triggered transaction to the record of the child here, and not the
+        // "parent" ScheduleCreate or ScheduleSign transaction
+        if (childCategory == SCHEDULED) {
+            final var finalizeContext = new TriggeredFinalizeContext(
+                    new ReadableStoreFactory(childStack),
+                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    childRecordBuilder,
+                    consensusNow(),
+                    configuration);
+            parentRecordFinalizer.finalizeParentRecord(
+                    payer, finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
+            final var paidStakingRewards = childRecordBuilder.getPaidStakingRewards();
+            if (!paidStakingRewards.isEmpty()) {
+                if (dispatchPaidStakerIds == null) {
+                    dispatchPaidStakerIds = new LinkedHashSet<>();
+                }
+                paidStakingRewards.forEach(aa -> dispatchPaidStakerIds.add(aa.accountIDOrThrow()));
+            }
+        } else {
+            final var finalizeContext = new ChildFinalizeContextImpl(
+                    new ReadableStoreFactory(childStack),
+                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    childRecordBuilder);
+            childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
         }
         // For mono-service fidelity, we need to attach staking rewards for a
         // triggered transaction to the record of the child here, and not the
@@ -816,8 +849,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 throw new PreCheckException(DUPLICATE_TRANSACTION);
             }
 
-            // Check the status and solvency of the payer
-            final var serviceFee = dispatchComputeFees(transactionBody, syntheticPayerId)
+            // Check the status and solvency of the payer, using
+            // the same calculation strategy as a top-level transaction
+            // since mono-service did that for scheduled transactions
+            final var serviceFee = dispatchComputeFees(
+                            transactionBody, syntheticPayerId, ComputeDispatchFeesAsTopLevel.YES)
                     .copyBuilder()
                     .networkFee(0)
                     .nodeFee(0)

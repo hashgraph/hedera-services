@@ -85,8 +85,8 @@ public class SynthTxnUtils {
     }
 
     /**
-     * Given a validated {@link ContractCreateTransactionBody} and its pending id, returns the
-     * corresponding {@link CryptoCreateTransactionBody} to dispatch.
+     * Given the "parent" {@link Account} creating a contract and the contract's pending id,
+     * returns the corresponding {@link ContractCreateTransactionBody} to dispatch.
      *
      * @param pendingId the pending id
      * @param parent the {@link Account} creating the contract
@@ -101,7 +101,7 @@ public class SynthTxnUtils {
                 .declineReward(parent.declineReward())
                 .memo(parent.memo())
                 .autoRenewPeriod(Duration.newBuilder().seconds(parent.autoRenewSeconds()));
-        if (parent.hasAutoRenewAccountId()) {
+        if (hasNonDegenerateAutoRenewAccountId(parent)) {
             builder.autoRenewAccountId(parent.autoRenewAccountIdOrThrow());
         }
         if (parent.hasStakedNodeId()) {
@@ -117,6 +117,11 @@ public class SynthTxnUtils {
             builder.adminKey(parentAdminKey);
         }
         return builder.build();
+    }
+
+    private static boolean hasNonDegenerateAutoRenewAccountId(@NonNull final Account account) {
+        return account.hasAutoRenewAccountId()
+                && account.autoRenewAccountIdOrThrow().accountNumOrElse(0L) != 0L;
     }
 
     /**

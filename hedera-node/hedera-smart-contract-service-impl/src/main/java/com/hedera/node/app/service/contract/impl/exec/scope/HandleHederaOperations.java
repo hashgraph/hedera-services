@@ -439,9 +439,10 @@ public class HandleHederaOperations implements HederaOperations {
                 if (!dispatchedBody.hasCryptoCreateAccount()) {
                     throw new IllegalArgumentException("Dispatched transaction body was not a crypto create");
                 }
+                final var standardizedOp = standardized(createdNumber, op);
                 return transactionWith(dispatchedBody
                         .copyBuilder()
-                        .contractCreateInstance(standardized(createdNumber, op))
+                        .contractCreateInstance(standardizedOp)
                         .build());
             } catch (ParseException e) {
                 // Should be impossible
