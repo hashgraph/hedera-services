@@ -172,7 +172,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
 
         assertThat(tokenRel.balance()).isEqualTo(1000L);
-        assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
         assertThat(tokenRel.kycGranted()).isTrue();
@@ -229,7 +228,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
 
         assertThat(tokenRel.balance()).isEqualTo(1000L);
-        assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
         assertThat(tokenRel.kycGranted()).isTrue();
@@ -242,7 +240,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         final var feeCollectorRel = writableTokenRelStore.get(feeCollectorId, newTokenId);
 
         assertThat(feeCollectorRel.balance()).isZero();
-        assertThat(feeCollectorRel.deleted()).isFalse();
         assertThat(feeCollectorRel.tokenId()).isEqualTo(newTokenId);
         assertThat(feeCollectorRel.accountId()).isEqualTo(feeCollectorId);
         assertThat(feeCollectorRel.kycGranted()).isFalse();
@@ -422,7 +419,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
 
         assertThat(tokenRel.balance()).isZero();
-        assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
         assertThat(tokenRel.kycGranted()).isTrue();
