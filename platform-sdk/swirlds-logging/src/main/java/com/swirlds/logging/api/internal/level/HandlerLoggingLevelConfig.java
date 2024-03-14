@@ -157,7 +157,7 @@ public class HandlerLoggingLevelConfig {
      *
      * @param configuration The configuration.
      */
-    public void update(@NonNull Configuration configuration) {
+    public void update(@NonNull final Configuration configuration) {
         final ExtractedLoggingConfig extractedLoggingConfig = extractConfig(handlerName, configuration);
         levelCache.clear();
         this.levelConfigProperties.set(Collections.unmodifiableMap(extractedLoggingConfig.levelConfigProperties()));
