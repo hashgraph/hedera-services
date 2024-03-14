@@ -82,7 +82,6 @@ import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.EventStreamManagerWiring;
 import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
-import com.swirlds.platform.wiring.components.FutureEventBufferWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.HashLoggerWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
@@ -132,7 +131,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
-    private final FutureEventBufferWiring futureEventBufferWiring;
+    private final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring;
     private final GossipWiring gossipWiring;
     private final EventWindowManagerWiring eventWindowManagerWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
@@ -198,7 +197,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
         consensusEngineWiring =
                 new ComponentWiring<>(model, ConsensusEngine.class, schedulers.consensusEngineScheduler());
-        futureEventBufferWiring = FutureEventBufferWiring.create(schedulers.futureEventBufferScheduler());
+        futureEventBufferWiring =
+                new ComponentWiring<>(model, FutureEventBuffer.class, schedulers.futureEventBufferScheduler());
         eventCreationManagerWiring =
                 EventCreationManagerWiring.create(platformContext, schedulers.eventCreationManagerScheduler());
         pcesSequencerWiring = new ComponentWiring<>(model, PcesSequencer.class, schedulers.pcesSequencerScheduler());
@@ -272,7 +272,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         nonAncientEventWindowOutputWire.solderTo(pcesWriterWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(eventCreationManagerWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(shadowgraphWiring.eventWindowInput(), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(futureEventBufferWiring.eventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(
+                futureEventBufferWiring.getInputWire(FutureEventBuffer::updateEventWindow), INJECT);
     }
 
     /**
@@ -304,8 +305,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesSequencerWiring.getOutputWire().solderTo(pcesWriterWiring.eventInputWire());
         inOrderLinkerWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
         inOrderLinkerWiring.eventOutput().solderTo(shadowgraphWiring.eventInput());
-        orphanBufferWiring.eventOutput().solderTo(futureEventBufferWiring.eventInput());
-        futureEventBufferWiring.eventOutput().solderTo(eventCreationManagerWiring.eventInput());
+        orphanBufferWiring.eventOutput().solderTo(futureEventBufferWiring.getInputWire(FutureEventBuffer::addEvent));
+
+        final OutputWire<GossipEvent> futureEventBufferSplitOutput = futureEventBufferWiring.getSplitOutput();
+        futureEventBufferSplitOutput.solderTo(eventCreationManagerWiring.eventInput());
+
         eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
         orphanBufferWiring
                 .eventOutput()
