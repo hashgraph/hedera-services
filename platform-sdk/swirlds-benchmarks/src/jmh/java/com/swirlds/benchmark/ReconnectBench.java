@@ -24,6 +24,10 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -34,11 +38,6 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
-
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 
 @BenchmarkMode(Mode.AverageTime)
 @Fork(value = 1)
@@ -102,14 +101,16 @@ public class ReconnectBench extends VirtualMapBaseBench {
         beforeTest("reconnect");
         updateMerkleDbPath();
 
-        final AtomicReference<VirtualMap<BenchmarkKey, BenchmarkValue>> teacherRef = new AtomicReference<>(createEmptyMap("teacher"));
-        final AtomicReference<VirtualMap<BenchmarkKey, BenchmarkValue>> learnerRef = new AtomicReference<>(createEmptyMap("learner"));
+        final AtomicReference<VirtualMap<BenchmarkKey, BenchmarkValue>> teacherRef =
+                new AtomicReference<>(createEmptyMap("teacher"));
+        final AtomicReference<VirtualMap<BenchmarkKey, BenchmarkValue>> learnerRef =
+                new AtomicReference<>(createEmptyMap("learner"));
 
         final Random random = new Random(randomSeed);
         new StateBuilder<>(BenchmarkKey::new, BenchmarkValue::new)
                 .buildState(
                         random,
-                        (long)numRecords * (long)numFiles,
+                        (long) numRecords * (long) numFiles,
                         teacherAddProbability,
                         teacherRemoveProbability,
                         teacherModifyProbability,
@@ -121,13 +122,13 @@ public class ReconnectBench extends VirtualMapBaseBench {
                                 teacherRef.set(copyMap(teacherRef.get()));
                                 learnerRef.set(copyMap(learnerRef.get()));
                             }
-                        }
-                );
+                        });
 
         teacherRef.set(flushMap(teacherRef.get()));
         learnerRef.set(flushMap(learnerRef.get()));
 
-        final List<VirtualMap<BenchmarkKey, BenchmarkValue>> mapCopies = saveMaps(List.of(teacherRef.get(), learnerRef.get()));
+        final List<VirtualMap<BenchmarkKey, BenchmarkValue>> mapCopies =
+                saveMaps(List.of(teacherRef.get(), learnerRef.get()));
         mapCopies.forEach(this::releaseAndCloseMap);
     }
 

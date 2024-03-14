@@ -169,8 +169,8 @@ public abstract class VirtualMapBaseBench extends BaseBench {
                                 Files.createDirectory(savedDir);
                             }
                             virtualMap.getRight().getHash();
-                            try (final SerializableDataOutputStream out =
-                                    new SerializableDataOutputStream(Files.newOutputStream(savedDir.resolve(LABEL + SERDE_SUFFIX)))) {
+                            try (final SerializableDataOutputStream out = new SerializableDataOutputStream(
+                                    Files.newOutputStream(savedDir.resolve(LABEL + SERDE_SUFFIX)))) {
                                 virtualMap.serialize(out, savedDir);
                             }
                             virtualMap.release();
@@ -271,22 +271,28 @@ public abstract class VirtualMapBaseBench extends BaseBench {
 
             final Path finalSavedDir = savedDir;
 
-            return virtualMaps.stream().map(virtualMap -> {
-                final long start = System.currentTimeMillis();
-                final VirtualMapState state = virtualMap.getLeft();
-                final String label = state.getLabel();
-                final VirtualMap<BenchmarkKey, BenchmarkValue> curMap = virtualMap.copy();
+            return virtualMaps.stream()
+                    .map(virtualMap -> {
+                        final long start = System.currentTimeMillis();
+                        final VirtualMapState state = virtualMap.getLeft();
+                        final String label = state.getLabel();
+                        final VirtualMap<BenchmarkKey, BenchmarkValue> curMap = virtualMap.copy();
 
-                virtualMap.getRight().getHash();
-                try (final SerializableDataOutputStream out =
-                             new SerializableDataOutputStream(Files.newOutputStream(finalSavedDir.resolve(label + SERDE_SUFFIX)))) {
-                    virtualMap.serialize(out, finalSavedDir);
-                } catch (IOException ex) {
-                    logger.error("Error saving VirtualMap " + label, ex);
-                }
-                logger.info("Saved map {} to {} in {} ms", label, finalSavedDir, System.currentTimeMillis() - start);
-                return curMap;
-            }).collect(Collectors.toList());
+                        virtualMap.getRight().getHash();
+                        try (final SerializableDataOutputStream out = new SerializableDataOutputStream(
+                                Files.newOutputStream(finalSavedDir.resolve(label + SERDE_SUFFIX)))) {
+                            virtualMap.serialize(out, finalSavedDir);
+                        } catch (IOException ex) {
+                            logger.error("Error saving VirtualMap " + label, ex);
+                        }
+                        logger.info(
+                                "Saved map {} to {} in {} ms",
+                                label,
+                                finalSavedDir,
+                                System.currentTimeMillis() - start);
+                        return curMap;
+                    })
+                    .collect(Collectors.toList());
         } catch (IOException ex) {
             logger.error("Error saving VirtualMap", ex);
             throw new UncheckedIOException(ex);
@@ -322,9 +328,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
         return curMap;
     }
 
-    protected VirtualMap<BenchmarkKey, BenchmarkValue> restoreMap(
-            final String label
-    ) {
+    protected VirtualMap<BenchmarkKey, BenchmarkValue> restoreMap(final String label) {
         Path savedDir = null;
         for (int i = 0; ; i++) {
             final Path nextSavedDir = getBenchDir().resolve(SAVED + i);
