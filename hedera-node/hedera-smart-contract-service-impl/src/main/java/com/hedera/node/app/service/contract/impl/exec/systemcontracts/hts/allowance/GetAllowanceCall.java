@@ -28,7 +28,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
@@ -84,7 +83,7 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
             if (isStaticCall) {
                 return gasOnly(revertResult(INVALID_TOKEN_ID, gasRequirement), INVALID_TOKEN_ID, false);
             } else {
-                return gasOnly(successResult(encodeOutput(BigInteger.ZERO, SUCCESS), gasRequirement), SUCCESS, true);
+                return gasOnly(successResult(encodedAllowanceOutput(BigInteger.ZERO), gasRequirement), SUCCESS, true);
             }
         }
 
@@ -116,11 +115,10 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
         final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
         final var spenderID = addressIdConverter.convert(spender);
         if (!spenderID.hasAccountNum() && !isStaticCall) {
-            return successResult(encodeOutput(BigInteger.ZERO, SUCCESS), gasRequirement);
+            return successResult(encodedAllowanceOutput(BigInteger.ZERO), gasRequirement);
         }
         final var allowance = getAllowance(token, requireNonNull(ownerAccount), spenderID);
-        final var output = encodeOutput(allowance, SUCCESS);
-        return successResult(output, gasRequirement);
+        return successResult(encodedAllowanceOutput(allowance), gasRequirement);
     }
 
     @NonNull
@@ -135,15 +133,13 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
     }
 
     @NonNull
-    private ByteBuffer encodeOutput(@NonNull final BigInteger allowance, @NonNull final ResponseCodeEnum status) {
+    private ByteBuffer encodedAllowanceOutput(@NonNull final BigInteger allowance) {
         if (isERCCall) {
-            return status != SUCCESS
-                    ? GetAllowanceTranslator.ERC_GET_ALLOWANCE.getOutputs().encodeElements(BigInteger.ZERO)
-                    : GetAllowanceTranslator.ERC_GET_ALLOWANCE.getOutputs().encodeElements(allowance);
+            return GetAllowanceTranslator.ERC_GET_ALLOWANCE.getOutputs().encodeElements(allowance);
         } else {
             return GetAllowanceTranslator.GET_ALLOWANCE
                     .getOutputs()
-                    .encodeElements((long) status.protoOrdinal(), allowance);
+                    .encodeElements((long) SUCCESS.protoOrdinal(), allowance);
         }
     }
 }
