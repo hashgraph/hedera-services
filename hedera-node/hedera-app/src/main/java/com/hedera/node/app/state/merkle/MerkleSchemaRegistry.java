@@ -275,14 +275,20 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     }
 
     private SchemaApplicationType checkApplicationType(
-            @Nullable final SemanticVersion previousVersion,
-            @NonNull final SemanticVersion latestVersion,
+            @Nullable final SemanticVersion previousVersionFromState,
+            @NonNull final SemanticVersion latestRegisteredSchemaVersion,
             @NonNull final Schema schema) {
-        if (isSameVersion(previousVersion, latestVersion)) {
+        // If the previous version is the same as the latest version, then we only need to restart
+        // If this schema is the last registered schema, but is before the current version,
+        // then we only need to restart. Since we apply atleast one schema(last registered schema)
+        // if there are no schemas reported to migrate.
+        if (previousVersionFromState != null
+                && (isSameVersion(previousVersionFromState, latestRegisteredSchemaVersion)
+                        || isSoOrdered(latestRegisteredSchemaVersion, previousVersionFromState))) {
             return SchemaApplicationType.RESTART_ONLY;
-        } else if (isSameVersion(schema.getVersion(), latestVersion)) {
+        } else if (isSameVersion(schema.getVersion(), latestRegisteredSchemaVersion)) {
             return SchemaApplicationType.MIGRATE_THEN_RESTART;
-        } else if (!isSameVersion(schema.getVersion(), previousVersion)) {
+        } else if (!isSameVersion(schema.getVersion(), previousVersionFromState)) {
             return SchemaApplicationType.MIGRATE_ONLY;
         } else {
             return SchemaApplicationType.ONLY_STATE_MANAGEMENT;
