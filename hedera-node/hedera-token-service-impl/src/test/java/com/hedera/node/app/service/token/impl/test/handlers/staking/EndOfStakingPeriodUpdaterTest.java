@@ -67,6 +67,7 @@ class EndOfStakingPeriodUpdaterTest {
 
     private EndOfStakingPeriodUpdater subject;
     private NodeStakeUpdateRecordBuilder nodeStakeUpdateRecordBuilder;
+
     @Mock
     private PlatformStateAccessor platformStateAccessor;
 
@@ -76,8 +77,8 @@ class EndOfStakingPeriodUpdaterTest {
                 .accountId(asAccount(800))
                 .tinybarBalance(100_000_000_000L)
                 .build());
-        subject = new EndOfStakingPeriodUpdater(new FakeHederaNumbers(), new StakingRewardsHelper(),
-                platformStateAccessor);
+        subject = new EndOfStakingPeriodUpdater(
+                new FakeHederaNumbers(), new StakingRewardsHelper(), platformStateAccessor);
         this.nodeStakeUpdateRecordBuilder = new FakeNodeStakeUpdateRecordBuilder().create();
     }
 
