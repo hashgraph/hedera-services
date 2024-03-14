@@ -50,6 +50,9 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
     private BaseScheduledExecutorService() {
         final ThreadFactory threadFactory = BaseExecutorThreadFactory.getInstance();
         this.innerService = Executors.newScheduledThreadPool(CORE_POOL_SIZE, threadFactory);
+        Thread shutdownHook = new Thread(() -> innerService.shutdown());
+        shutdownHook.setName("BaseScheduledExecutorService-shutdownHook");
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
     /**
