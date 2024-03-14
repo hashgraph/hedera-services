@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allow
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
@@ -27,7 +28,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
@@ -36,9 +37,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -83,33 +82,24 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
 
         if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
             if (isStaticCall) {
-                return gasOnly(
-                        FullResult.revertResult(
-                                com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID, gasRequirement),
-                        INVALID_TOKEN_ID,
-                        false);
+                return gasOnly(revertResult(INVALID_TOKEN_ID, gasRequirement), INVALID_TOKEN_ID, false);
             } else {
-                return gasOnly(
-                        FullResult.successResult(
-                                ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS),
-                                gasRequirement),
-                        SUCCESS,
-                        false);
+                return gasOnly(successResult(encodeOutput(BigInteger.ZERO, SUCCESS), gasRequirement), SUCCESS, true);
             }
         }
 
-        ContractID contractID =
+        final var contractId =
                 asEvmContractId(org.hyperledger.besu.datatypes.Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
         final var ownerID = addressIdConverter.convert(owner);
         final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
         if (isStaticCall && ownerAccount == null) {
-            var responseCode = INVALID_ALLOWANCE_OWNER_ID;
             enhancement
                     .systemOperations()
                     .externalizeResult(
-                            contractFunctionResultFailedFor(gasRequirement, responseCode.toString(), contractID),
-                            responseCode);
-            return gasOnly(FullResult.revertResult(responseCode, gasRequirement), responseCode, false);
+                            contractFunctionResultFailedFor(
+                                    gasRequirement, INVALID_ALLOWANCE_OWNER_ID.toString(), contractId),
+                            INVALID_ALLOWANCE_OWNER_ID);
+            return gasOnly(revertResult(INVALID_ALLOWANCE_OWNER_ID, gasRequirement), INVALID_ALLOWANCE_OWNER_ID, false);
         } else {
             return externalizeSuccessfulResult();
         }
@@ -126,11 +116,10 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
         final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
         final var spenderID = addressIdConverter.convert(spender);
         if (!spenderID.hasAccountNum() && !isStaticCall) {
-            return FullResult.successResult(
-                    ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS), gasRequirement);
+            return successResult(encodeOutput(BigInteger.ZERO, SUCCESS), gasRequirement);
         }
         final var allowance = getAllowance(token, requireNonNull(ownerAccount), spenderID);
-        final var output = prepareOutput(allowance);
+        final var output = encodeOutput(allowance, SUCCESS);
         return successResult(output, gasRequirement);
     }
 
@@ -146,11 +135,15 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
     }
 
     @NonNull
-    private ByteBuffer prepareOutput(@NonNull final BigInteger allowance) {
-        return isERCCall
-                ? GetAllowanceTranslator.ERC_GET_ALLOWANCE.getOutputs().encodeElements(allowance)
-                : GetAllowanceTranslator.GET_ALLOWANCE
-                        .getOutputs()
-                        .encodeElements((long) ResponseCodeEnum.SUCCESS.getNumber(), allowance);
+    private ByteBuffer encodeOutput(@NonNull final BigInteger allowance, @NonNull final ResponseCodeEnum status) {
+        if (isERCCall) {
+            return status != SUCCESS
+                    ? GetAllowanceTranslator.ERC_GET_ALLOWANCE.getOutputs().encodeElements(BigInteger.ZERO)
+                    : GetAllowanceTranslator.ERC_GET_ALLOWANCE.getOutputs().encodeElements(allowance);
+        } else {
+            return GetAllowanceTranslator.GET_ALLOWANCE
+                    .getOutputs()
+                    .encodeElements((long) status.protoOrdinal(), allowance);
+        }
     }
 }
