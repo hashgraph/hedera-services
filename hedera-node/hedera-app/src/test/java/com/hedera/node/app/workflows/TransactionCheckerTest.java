@@ -813,7 +813,8 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var consensusNow = Instant.now();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
+                assertThatThrownBy(() -> checker.checkTimeBox(
+                                body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
             }
@@ -830,7 +831,8 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var consensusNow = Instant.now();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
+                assertThatThrownBy(() -> checker.checkTimeBox(
+                                body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
             }
@@ -846,7 +848,8 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var body = bodyBuilder(txId).build();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
+                assertThatThrownBy(() -> checker.checkTimeBox(
+                                body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_EXPIRED);
             }
@@ -862,7 +865,8 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var body = bodyBuilder(txId).build();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
+                assertThatThrownBy(() -> checker.checkTimeBox(
+                                body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_START);
             }

@@ -153,7 +153,6 @@ public class ServicesMain implements SwirldMain {
         logger.info("Starting node {} with version {}", selfId, version);
         final PlatformBuilder builder = new PlatformBuilder(
                         Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId)
-                .withPreviousSoftwareVersionClassId(0x6f2b1bc2df8cbd0bL /* SerializableSemVers.CLASS_ID */)
                 .withConfigurationBuilder(config);
 
         final Platform platform = builder.build();
