@@ -64,6 +64,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -214,6 +215,10 @@ public class TxnFactory {
     }
 
     public Consumer<TokenUpdateTransactionBody.Builder> defaultDefTokenUpdateTransactionBody() {
+        return builder -> {};
+    }
+
+    public Consumer<TokenUpdateNftsTransactionBody.Builder> defaultDefTokenUpdateNftsTransactionBody() {
         return builder -> {};
     }
 
