@@ -14,58 +14,30 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.builder;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.StaticPlatformBuilder.doStaticSetup;
-import static com.swirlds.platform.StaticPlatformBuilder.getGlobalMetrics;
-import static com.swirlds.platform.StaticPlatformBuilder.getMetricsProvider;
-import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
-import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
-import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
-import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConfigUtils;
-import com.swirlds.common.context.DefaultPlatformContext;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.CryptographyFactory;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.io.utility.RecycleBinImpl;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.crypto.MerkleCryptography;
-import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
-import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.internal.SignedStateLoadingException;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
-import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.address.AddressBookInitializer;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
-import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -75,12 +47,15 @@ import java.util.function.Supplier;
  */
 public final class PlatformBuilder {
 
+    private boolean used = false;
+
     private final String appName;
     private final SoftwareVersion softwareVersion;
     private final Supplier<SwirldState> genesisStateBuilder;
     private final NodeId selfId;
     private final String swirldName;
 
+    private PlatformFactory platformComponents;
     private ConfigurationBuilder configurationBuilder;
 
     private static final String SWIRLDS_PACKAGE = "com.swirlds";
@@ -125,6 +100,56 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Get the ID of this node.
+     *
+     * @return the ID of this node
+     */
+    @NonNull
+    NodeId getSelfId() {
+        return selfId;
+    }
+
+    /**
+     * Get the application's current software version.
+     *
+     * @return the software version
+     */
+    @NonNull
+    SoftwareVersion getAppVersion() {
+        return softwareVersion;
+    }
+
+    /**
+     * Get the name of the application.
+     *
+     * @return the name of the application
+     */
+    @NonNull
+    String getAppName() {
+        return appName;
+    }
+
+    /**
+     * Get the name of the swirld.
+     *
+     * @return the name of the swirld
+     */
+    @NonNull
+    String getSwirldName() {
+        return swirldName;
+    }
+
+    /**
+     * Get the supplier that will be called to create the genesis state, if necessary.
+     *
+     * @return the supplier that will be called to create the genesis state
+     */
+    @NonNull
+    Supplier<SwirldState> getGenesisStateBuilder() {
+        return genesisStateBuilder;
+    }
+
+    /**
      * Set the configuration builder to use. If not provided then one is generated when the platform is built.
      *
      * @param configurationBuilder the configuration builder to use
@@ -132,6 +157,7 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformBuilder withConfigurationBuilder(@Nullable final ConfigurationBuilder configurationBuilder) {
+        throwIfUsed();
         this.configurationBuilder = configurationBuilder;
         return this;
     }
@@ -145,6 +171,7 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformBuilder withSettingsPath(@NonNull final Path path) {
+        throwIfUsed();
         Objects.requireNonNull(path);
         this.settingsPath = getAbsolutePath(path);
         return this;
@@ -159,9 +186,21 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformBuilder withConfigPath(@NonNull final Path path) {
+        throwIfUsed();
         Objects.requireNonNull(path);
         this.configPath = getAbsolutePath(path);
         return this;
+    }
+
+    /**
+     * The path to the config file (i.e. the file with the address book. Traditionally named
+     * {@link #DEFAULT_CONFIG_FILE_NAME}.
+     *
+     * @return the path to the config file
+     */
+    @NonNull
+    Path getConfigPath() {
+        return configPath;
     }
 
     /**
@@ -171,7 +210,9 @@ public final class PlatformBuilder {
      * @param previousSoftwareVersionClassId the class ID of the previous software version
      * @return this
      */
+    @NonNull
     public PlatformBuilder withPreviousSoftwareVersionClassId(final long previousSoftwareVersionClassId) {
+        throwIfUsed();
         final Set<Long> softwareVersions = new HashSet<>();
         softwareVersions.add(softwareVersion.getClassId());
         softwareVersions.add(previousSoftwareVersionClassId);
@@ -185,7 +226,7 @@ public final class PlatformBuilder {
      * @return the configuration
      */
     @NonNull
-    private Configuration buildConfiguration() {
+    Configuration buildConfiguration() { // TODO move this to platform factory
         if (configurationBuilder == null) {
             configurationBuilder = ConfigurationBuilder.create();
         }
@@ -205,7 +246,7 @@ public final class PlatformBuilder {
      * @return the address book
      */
     @NonNull
-    private AddressBook loadConfigAddressBook() {
+    AddressBook loadConfigAddressBook() { // TODO move to factory
         final LegacyConfigProperties legacyConfig = LegacyConfigPropertiesLoader.loadConfigFile(configPath);
         legacyConfig.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
         return legacyConfig.getAddressBook();
@@ -214,106 +255,49 @@ public final class PlatformBuilder {
     /**
      * Build a platform. Platform is not started.
      *
+     * <p>
+     * Once this method has been called, all future calls to methods on this {@link PlatformBuilder} will throw an
+     * {@link IllegalStateException}. Once the platform builder has been used to build a platform, it is considered
+     * "used" and cannot be used again.
+     *
      * @return a new platform instance
      */
     @NonNull
     public Platform build() {
-        final Configuration configuration = buildConfiguration();
+        throwIfUsed();
+        return buildPlatformFactory().build();
+    }
 
-        final Cryptography cryptography = CryptographyFactory.create(configuration);
-        final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
+    /**
+     * Build a platform factory. The platform factory is responsible for building internal platform components. It is
+     * possible to configure the platform factory in a way that overrides default platform components with custom
+     * implementations.
+     *
+     * <p>
+     * Once this method has been called, all future calls to methods on this {@link PlatformBuilder} will throw an
+     * {@link IllegalStateException}. Once the platform builder has been used to assemble a component builder, it is
+     * considered "used" and cannot be used again.
+     *
+     * <p>
+     * This method is designed for use in advanced workflows where various components of the platform need to be swapped
+     * out with custom implementations. If such advanced use cases are not required, then it is recommended to ignore
+     * this method and to build the platform using the {@link #build()} method.
+     *
+     * @return the component builder
+     */
+    @NonNull
+    public PlatformFactory buildPlatformFactory() {
+        throwIfUsed();
+        used = true;
+        return new PlatformFactory(this);
+    }
 
-        // For backwards compatibility with the old static access pattern.
-        CryptographyHolder.set(cryptography);
-        MerkleCryptoFactory.set(merkleCryptography);
-
-        final boolean firstTimeSetup = doStaticSetup(configuration, configPath);
-
-        final AddressBook configAddressBook = loadConfigAddressBook();
-
-        checkNodesToRun(List.of(selfId));
-
-        final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, getMetricsProvider().createPlatformMetrics(selfId), cryptography, Time.getCurrent());
-
-        // the AddressBook is not changed after this point, so we calculate the hash now
-        platformContext.getCryptography().digestSync(configAddressBook);
-
-        final RecycleBinImpl recycleBin = rethrowIO(() -> new RecycleBinImpl(
-                configuration, platformContext.getMetrics(), getStaticThreadManager(), Time.getCurrent(), selfId));
-
-        // We can't send a "real" dispatch, since the dispatcher will not have been started by the
-        // time this class is used.
-        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final EmergencyRecoveryManager emergencyRecoveryManager =
-                new EmergencyRecoveryManager(stateConfig, basicConfig.getEmergencyRecoveryFileLoadDir());
-
-        try (final ReservedSignedState initialState = getInitialState(
-                platformContext,
-                recycleBin,
-                softwareVersion,
-                genesisStateBuilder,
-                appName,
-                swirldName,
-                selfId,
-                configAddressBook,
-                emergencyRecoveryManager)) {
-
-            final boolean softwareUpgrade = detectSoftwareUpgrade(softwareVersion, initialState.get());
-
-            // Initialize the address book from the configuration and platform saved state.
-            final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                    selfId,
-                    softwareVersion,
-                    softwareUpgrade,
-                    initialState.get(),
-                    configAddressBook.copy(),
-                    platformContext);
-
-            if (addressBookInitializer.hasAddressBookChanged()) {
-                final State state = initialState.get().getState();
-                // Update the address book with the current address book read from config.txt.
-                // Eventually we will not do this, and only transactions will be capable of
-                // modifying the address book.
-                state.getPlatformState()
-                        .setAddressBook(
-                                addressBookInitializer.getCurrentAddressBook().copy());
-
-                state.getPlatformState()
-                        .setPreviousAddressBook(
-                                addressBookInitializer.getPreviousAddressBook() == null
-                                        ? null
-                                        : addressBookInitializer
-                                                .getPreviousAddressBook()
-                                                .copy());
-            }
-
-            // At this point the initial state must have the current address book set.  If not, something is wrong.
-            if (initialState.get().getState().getPlatformState().getAddressBook() == null) {
-                throw new IllegalStateException("The current address book of the initial state is null.");
-            }
-
-            final SwirldsPlatform platform = new SwirldsPlatform(
-                    platformContext,
-                    keysAndCerts.get(selfId),
-                    recycleBin,
-                    selfId,
-                    appName,
-                    swirldName,
-                    softwareVersion,
-                    initialState.get(),
-                    emergencyRecoveryManager);
-
-            if (firstTimeSetup) {
-                MetricsDocUtils.writeMetricsDocumentToFile(getGlobalMetrics(), getPlatforms(), configuration);
-                getMetricsProvider().start();
-            }
-
-            return platform;
-        } catch (final SignedStateLoadingException e) {
-            throw new RuntimeException("unable to load state from disk", e);
+    /**
+     * Throw an exception if this builder has been used to build a platform or a platform factory.
+     */
+    private void throwIfUsed() {
+        if (used) {
+            throw new IllegalStateException("PlatformBuilder has already been used");
         }
     }
 }

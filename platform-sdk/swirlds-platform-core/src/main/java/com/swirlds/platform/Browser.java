@@ -19,8 +19,8 @@ package com.swirlds.platform;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
-import static com.swirlds.platform.StaticPlatformBuilder.LOG4J_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.StaticPlatformBuilder.LOG4J_FILE_NAME;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
@@ -36,8 +36,11 @@ import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.builder.PlatformBuilder;
+import com.swirlds.platform.builder.PlatformFactory;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
+import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.gui.internal.StateHierarchy;
 import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.gui.model.InfoApp;
@@ -184,9 +187,18 @@ public class Browser {
                     appMain.getSoftwareVersion(),
                     appMain::newState,
                     nodeId);
+            builder.withConfigurationBuilder(configBuilder);
 
-            final SwirldsPlatform platform = (SwirldsPlatform)
-                    builder.withConfigurationBuilder(configBuilder).build();
+            // TODO don't merge non-default stuff
+            final PlatformFactory factory = builder.buildPlatformFactory();
+            factory.withEventDeduplicator(
+                    new StandardEventDeduplicator(factory.getPlatformContext(), factory.getIntakeEventCounter()));
+
+            final SwirldsPlatform platform = (SwirldsPlatform) factory.build();
+
+            // TODO don't merge like this
+            //            final SwirldsPlatform platform = (SwirldsPlatform)
+            //                    builder.withConfigurationBuilder(configBuilder).build();
             platforms.put(nodeId, platform);
 
             new InfoMember(infoSwirld, platform);

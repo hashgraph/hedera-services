@@ -53,7 +53,6 @@ public final class EventCreationManagerFactory {
      * @param transactionPool        provides transactions to be added to new events
      * @param getIntakeQueueSize     provides the size of the event intake queue
      * @param platformStatusSupplier provides the current platform status
-     * @param latestReconnectRound   provides the latest reconnect round
      * @return a new event creation manager
      */
     @NonNull
@@ -65,8 +64,7 @@ public final class EventCreationManagerFactory {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final TransactionPool transactionPool,
             @NonNull final LongSupplier getIntakeQueueSize,
-            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
-            @NonNull final Supplier<Long> latestReconnectRound) {
+            @NonNull final Supplier<PlatformStatus> platformStatusSupplier) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(signer);
@@ -75,7 +73,6 @@ public final class EventCreationManagerFactory {
         Objects.requireNonNull(appVersion);
         Objects.requireNonNull(transactionPool);
         Objects.requireNonNull(platformStatusSupplier);
-        Objects.requireNonNull(latestReconnectRound);
 
         final EventCreator eventCreator = new TipsetEventCreator(
                 platformContext,
