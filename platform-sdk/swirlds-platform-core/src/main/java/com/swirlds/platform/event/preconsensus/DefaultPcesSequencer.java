@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,24 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Responsible for assigning stream sequence numbers to events. All events that are written
- * to the preconsensus event stream must be assigned a sequence number.
+ * The default implementation of the {@link PcesSequencer}.
  */
-public interface PcesSequencer {
+public class DefaultPcesSequencer implements PcesSequencer {
+
+    private long nextStreamSequenceNumber = 0;
+
     /**
-     * Set the stream sequence number of an event.
-     *
-     * @param event an event that needs a sequence number
-     * @return the event with a sequence number set
+     * {@inheritDoc}
      */
-    @InputWireLabel("unsequenced event")
+    @Override
     @NonNull
-    GossipEvent assignStreamSequenceNumber(@NonNull GossipEvent event);
+    public GossipEvent assignStreamSequenceNumber(@NonNull final GossipEvent event) {
+        event.setStreamSequenceNumber(nextStreamSequenceNumber++);
+
+        return event;
+    }
 }

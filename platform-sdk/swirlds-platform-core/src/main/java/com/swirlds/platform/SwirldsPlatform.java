@@ -86,6 +86,7 @@ import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
@@ -596,7 +597,7 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager,
                 appVersion);
 
-        final PcesSequencer sequencer = new PcesSequencer();
+        final PcesSequencer sequencer = new DefaultPcesSequencer();
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
