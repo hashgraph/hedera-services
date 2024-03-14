@@ -273,14 +273,13 @@ public final class BlockRecordWriterV6 implements BlockRecordWriter {
             if (gzipOutputStream != null) gzipOutputStream.flush();
             fileOutputStream.flush();
 
+            closeSidecarFileWriter();
             writeFooter(endRunningHash);
 
             outputStream.close();
             bufferedOutputStream.close();
             if (gzipOutputStream != null) gzipOutputStream.close();
             fileOutputStream.close();
-
-            closeSidecarFileWriter();
 
             // write signature file, this tells the uploader that this record file set is complete
             writeSignatureFile(
