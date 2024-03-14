@@ -60,7 +60,7 @@ add_to_classpath() {
 }
 
 # The location were this script can be found.
-SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit ; pwd -P )"
+SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 
 # The entrypoint into the platform CLI (i.e. where the main() method is)
 MAIN_CLASS_NAME='com.swirlds.cli.PlatformCli'
