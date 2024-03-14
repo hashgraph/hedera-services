@@ -349,6 +349,11 @@ public final class PbjConverter {
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
+            case TokenCreatePartition -> HederaFunctionality.TOKEN_CREATE_PARTITION;
+            case TokenDeletePartition -> HederaFunctionality.TOKEN_DELETE_PARTITION;
+            case TokenUpdatePartition -> HederaFunctionality.TOKEN_UPDATE_PARTITION;
+            case TokenLock -> HederaFunctionality.TOKEN_LOCK;
+            case TokenUnlock -> HederaFunctionality.TOKEN_UNLOCK;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }
@@ -448,6 +453,11 @@ public final class PbjConverter {
                     .TransactionGetFastRecord;
             case UNCHECKED_SUBMIT -> com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
             case UTIL_PRNG -> com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
+            case TOKEN_CREATE_PARTITION -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreatePartition;
+            case TOKEN_DELETE_PARTITION -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDeletePartition;
+            case TOKEN_UPDATE_PARTITION -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdatePartition;
+            case TOKEN_LOCK -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenLock;
+            case TOKEN_UNLOCK -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnlock;
         };
     }
 

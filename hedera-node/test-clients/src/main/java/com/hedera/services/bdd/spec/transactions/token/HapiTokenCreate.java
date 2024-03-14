@@ -103,6 +103,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<Consumer<String>> createdIdObs = Optional.empty();
 
+    private Optional<String> lockKey = Optional.empty();
+    private Optional<String> partitionKey = Optional.empty();
+    private Optional<String> partitionMoveKey = Optional.empty();
+
     @Nullable
     private Consumer<Address> createdAddressObs;
 
@@ -269,6 +273,21 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         return this;
     }
 
+    public HapiTokenCreate lockKey(final String name) {
+        lockKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiTokenCreate partitionKey(final String name) {
+        partitionKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiTokenCreate partitionMoveKey(final String name) {
+        partitionMoveKey = Optional.of(name);
+        return this;
+    }
+
     @Override
     protected HapiTokenCreate self() {
         return this;
@@ -357,6 +376,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                                     b.addCustomFees(supplier.apply(spec));
                                 }
                             }
+                            lockKey.ifPresent(k -> b.setLockKey(spec.registry().getKey(k)));
+                            partitionKey.ifPresent(
+                                    k -> b.setPartitionKey(spec.registry().getKey(k)));
+                            partitionMoveKey.ifPresent(
+                                    k -> b.setPartitionMoveKey(spec.registry().getKey(k)));
                             // We often want to use an existing contract to control the keys of various types (supply,
                             // freeze etc.)
                             // of a token, and in this case we need to use a Key{contractID=0.0.X} as the key; so for
@@ -438,6 +462,15 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
             }
             if (op.hasPauseKey()) {
                 registry.savePauseKey(token, op.getPauseKey());
+            }
+            if (op.hasLockKey()) {
+                registry.saveLockKey(token, op.getLockKey());
+            }
+            if (op.hasPartitionKey()) {
+                registry.savePartitionKey(token, op.getPartitionKey());
+            }
+            if (op.hasPartitionMoveKey()) {
+                registry.savePartitionMoveKey(token, op.getPartitionMoveKey());
             }
         } catch (final InvalidProtocolBufferException impossible) {
         }
