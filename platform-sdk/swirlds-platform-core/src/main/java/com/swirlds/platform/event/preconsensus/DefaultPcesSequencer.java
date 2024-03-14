@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.hashing;
+package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Hashes events.
+ * The default implementation of the {@link PcesSequencer}.
  */
-public interface EventHasher {
+public class DefaultPcesSequencer implements PcesSequencer {
+
+    private long nextStreamSequenceNumber = 0;
+
     /**
-     * Hashes the event and builds the event descriptor.
-     *
-     * @param event the event to hash
-     * @return the hashed event
+     * {@inheritDoc}
      */
-    @InputWireLabel("unhashed event")
+    @Override
     @NonNull
-    GossipEvent hashEvent(@NonNull GossipEvent event);
+    public GossipEvent assignStreamSequenceNumber(@NonNull final GossipEvent event) {
+        event.setStreamSequenceNumber(nextStreamSequenceNumber++);
+
+        return event;
+    }
 }

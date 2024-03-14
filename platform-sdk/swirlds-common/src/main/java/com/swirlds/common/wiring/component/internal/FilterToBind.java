@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.hashing;
+package com.swirlds.common.wiring.component.internal;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.common.wiring.transformers.WireFilter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.BiFunction;
 
 /**
- * Hashes events.
+ * A filter and the predicate to bind.
+ *
+ * @param filter           the filter we eventually want to bind
+ * @param predicate        the predicate method
+ * @param <COMPONENT_TYPE> the type of the component
+ * @param <OUTPUT_TYPE>    the input type
  */
-public interface EventHasher {
-    /**
-     * Hashes the event and builds the event descriptor.
-     *
-     * @param event the event to hash
-     * @return the hashed event
-     */
-    @InputWireLabel("unhashed event")
-    @NonNull
-    GossipEvent hashEvent(@NonNull GossipEvent event);
-}
+public record FilterToBind<COMPONENT_TYPE, OUTPUT_TYPE>(
+        @NonNull WireFilter<OUTPUT_TYPE> filter, @NonNull BiFunction<COMPONENT_TYPE, OUTPUT_TYPE, Boolean> predicate) {}
