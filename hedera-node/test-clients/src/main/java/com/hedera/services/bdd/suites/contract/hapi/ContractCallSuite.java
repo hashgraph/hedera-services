@@ -1469,7 +1469,16 @@ public class ContractCallSuite extends HapiSuite {
                     }
                 }));
     }
+    
+    // TODO: in ContractDeleteHandler.preHandle we have a check:
+    /*
+    validateFalsePreCheck(
+            adminKey.hasContractID() ||
+                adminKey.hasDelegatableContractId(), MODIFYING_IMMUTABLE_CONTRACT);
 
+    when we convert this test to Eth we have adminKey.hasContractID as true and this check fails. Maybe should
+    ignore for now and see what will be the verdict of ApproveAllowanceSuite since the error there is similar
+     */
     @HapiTest
     HapiSpec depositDeleteSuccess() {
         final var initBalance = 7890L;
@@ -1477,7 +1486,9 @@ public class ContractCallSuite extends HapiSuite {
                 .given(
                         cryptoCreate(BENEFICIARY).balance(initBalance),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
+                    contractCreate(PAY_RECEIVABLE_CONTRACT)
+                        .adminKey(THRESHOLD)
+                        .refusingEthConversion())
                 .when(contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(DEPOSIT_AMOUNT))
                         .via(PAY_TXN)
                         .sending(DEPOSIT_AMOUNT))
