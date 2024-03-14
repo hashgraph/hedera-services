@@ -624,7 +624,7 @@ public class VirtualPipeline {
      * @param runnable
      * 		The runnable. Cannot be null.
      */
-    private void pausePipelineAndExecute(final String label, final Runnable runnable) {
+    public void pausePipelineAndExecute(final String label, final Runnable runnable) {
         Objects.requireNonNull(runnable);
         final CountDownLatch waitForBackgroundThreadToStart = new CountDownLatch(1);
         final CountDownLatch waitForRunnableToFinish = new CountDownLatch(1);
