@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -39,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
@@ -48,6 +50,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.assertTxnRecordHasNoTraceabilityEnrichedContractFnResult;
 import static com.hedera.services.bdd.suites.contract.Utils.expectedPrecompileGasFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hedera.services.bdd.suites.utils.contracts.FunctionParameters.functionParameters;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -78,6 +82,7 @@ public class ContractMintHTSSuite extends HapiSuite {
 
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
+    private static final String CONTRACT_KEY = "ContractKey";
     private static final String TOKEN_TREASURY = "treasury";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
@@ -92,6 +97,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     private static final String TEST_METADATA_1 = "Test metadata 1";
+    private static final String TEST_METADATA_2 = "Test metadata 2";
     private static final String RECIPIENT = "recipient";
     public static final String MINT_FUNGIBLE_TOKEN_WITH_EVENT = "mintFungibleTokenWithEvent";
 
@@ -120,16 +126,18 @@ public class ContractMintHTSSuite extends HapiSuite {
     @HapiTest
     final HapiSpec transferNftAfterNestedMint() {
         final var nestedTransferTxn = "nestedTransferTxn";
+        final var v2SecuritySendNftAfterNestedMint = "v2SecuritySendNftAfterNestedMint";
 
         return defaultHapiSpec(
                         "TransferNftAfterNestedMint",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT).maxAutomaticTokenAssociations(1),
-                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .supplyType(TokenSupplyType.INFINITE)
@@ -165,7 +173,31 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .via(nestedTransferTxn)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
-                        getTxnRecord(nestedTransferTxn).andAllChildRecords().logged())))
+                        getTxnRecord(nestedTransferTxn).andAllChildRecords().logged(),
+                        // Test Case: Account paying and signing a non fungible TOKEN MINT TRANSACTION,
+                        // when the token is minted in the token treasury account
+                        // SIGNER → call → CONTRACT A → delegatecall → CONTRACT B → call → PRECOMPILE
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_CONTRACT_KEY_NAME),
+                        contractCall(
+                                        NESTED_MINT_CONTRACT,
+                                        "sendNFTAfterMint",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(TOKEN_TREASURY))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        new byte[][] {TEST_METADATA_2.getBytes()},
+                                        2L)
+                                .payingWith(TOKEN_TREASURY)
+                                .signedBy(TOKEN_TREASURY)
+                                .via(v2SecuritySendNftAfterNestedMint)
+                                .gas(3 * GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTxnRecord(v2SecuritySendNftAfterNestedMint)
+                                .andAllChildRecords()
+                                .logged(),
+                        // Token total supply should be now 2, both transferred to the RECIPIENT account
+                        getAccountBalance(RECIPIENT).hasTokenBalance(NON_FUNGIBLE_TOKEN, 2L),
+                        getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(2))))
                 .then(
                         withOpContext((spec, opLog) -> {
                             if (!spec.isUsingEthCalls()) {

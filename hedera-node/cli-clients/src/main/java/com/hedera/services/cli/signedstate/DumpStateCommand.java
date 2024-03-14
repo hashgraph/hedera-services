@@ -334,6 +334,91 @@ public class DumpStateCommand extends AbstractCommand {
         finish();
     }
 
+    @Command(name = "block-info", description = "Dump block info")
+    void blockInfo(
+            @Option(
+                            names = {"--block-info"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for block info dump")
+                    @NonNull
+                    final Path blockInfoPath) {
+        Objects.requireNonNull(blockInfoPath);
+        init();
+        System.out.println("=== Block info ===");
+        DumpBlockInfoSubcommand.doit(parent.signedState, blockInfoPath);
+        finish();
+    }
+
+    @Command(name = "staking-info", description = "Dump staking info")
+    void stakingInfo(
+            @Option(
+                            names = {"--staking-info"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for staking info dump")
+                    @NonNull
+                    final Path stakingInfoPath,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit summary information")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(stakingInfoPath);
+        init();
+        System.out.println("=== Staking info ===");
+        DumpStakingInfoSubcommand.doit(
+                parent.signedState, stakingInfoPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "staking-rewards", description = "Dump staking rewards")
+    void stakingRewards(
+            @Option(
+                            names = {"--staking-rewards"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for staking rewards dump")
+                    @NonNull
+                    final Path stakingRewardsPath) {
+        Objects.requireNonNull(stakingRewardsPath);
+        init();
+        System.out.println("=== Staking rewards ===");
+        DumpStakingRewardsSubcommand.doit(parent.signedState, stakingRewardsPath);
+        finish();
+    }
+
+    @Command(name = "payer-records", description = "Dump payer records")
+    void payerRecords(
+            @Option(
+                            names = {"--payer-records"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for payer records dump")
+                    @NonNull
+                    final Path payerRecordsPath) {
+        Objects.requireNonNull(payerRecordsPath);
+        init();
+        System.out.println("=== Payer records ===");
+        DumpPayerRecordsSubcommand.doit(parent.signedState, payerRecordsPath);
+        finish();
+    }
+
+    @Command(name = "congestion", description = "Dump congestion")
+    void congestion(
+            @Option(
+                            names = {"--congestion"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for congestion dump")
+                    @NonNull
+                    final Path congestionPath) {
+        Objects.requireNonNull(congestionPath);
+        init();
+        System.out.println("=== Congestion ===");
+        DumpCongestionSubcommand.doit(parent.signedState, congestionPath);
+        finish();
+    }
+
     @Command(name = "topics", description = "Dump topics")
     void topics(
             @Option(

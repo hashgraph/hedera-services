@@ -262,6 +262,7 @@ public class LoggingSystem implements LogEventConsumer {
                 .toList();
 
         handlers.forEach(this::addHandler);
+
         EMERGENCY_LOGGER.log(Level.DEBUG, handlers.size() + " logging handlers installed: " + handlers);
     }
 

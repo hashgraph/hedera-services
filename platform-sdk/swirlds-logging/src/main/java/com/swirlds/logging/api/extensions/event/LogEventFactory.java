@@ -50,7 +50,7 @@ public interface LogEventFactory {
             @NonNull LogMessage message,
             @Nullable Throwable throwable,
             @Nullable Marker marker,
-            @NonNull Map<String, String> context);
+            @Nullable Map<String, String> context);
 
     /**
      * Creates a new log event.

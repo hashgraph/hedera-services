@@ -24,7 +24,7 @@ pcli diagram \
     -g 'Consensus Pipeline:inOrderLinker,Consensus Engine,📬,🌀,🚽' \
     -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager,transactionPool,🍎' \
     -g 'Gossip:gossip,shadowgraph' \
-    -g 'Iss Detector:extractSignaturesForIssDetector,issDetector,issNotificationSplitter,issHandler,issNotificationEngine,statusManager_submitCatastrophicFailure' \
+    -g 'Iss Detector:issDetector,issNotificationSplitter,issHandler,issNotificationEngine,statusManager_submitCatastrophicFailure' \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Transaction Prehandling:applicationTransactionPrehandler,🔮' \
