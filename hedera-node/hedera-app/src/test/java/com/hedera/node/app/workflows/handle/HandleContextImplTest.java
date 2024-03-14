@@ -81,6 +81,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -794,7 +795,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var fees = new Fees(1L, 2L, 3L);
             given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
             final var captor = ArgumentCaptor.forClass(FeeContext.class);
-            final var result = context.dispatchComputeFees(defaultTransactionBody(), account1002);
+            final var result = context.dispatchComputeFees(
+                    defaultTransactionBody(), account1002, ComputeDispatchFeesAsTopLevel.NO);
             verify(dispatcher).dispatchComputeFees(captor.capture());
             final var feeContext = captor.getValue();
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);
@@ -808,7 +810,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var fees = new Fees(1L, 2L, 3L);
             given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
             final var captor = ArgumentCaptor.forClass(FeeContext.class);
-            final var result = context.dispatchComputeFees(transactionBodyWithoutId(), account1002);
+            final var result = context.dispatchComputeFees(
+                    transactionBodyWithoutId(), account1002, ComputeDispatchFeesAsTopLevel.NO);
             verify(dispatcher).dispatchComputeFees(captor.capture());
             final var feeContext = captor.getValue();
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);
