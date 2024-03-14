@@ -34,6 +34,6 @@ public interface ConsensusEngine {
      * @return a list of rounds that came to consensus as a result of adding the event
      */
     @NonNull
-    @InputWireLabel("event")
+    @InputWireLabel("EventImpl")
     List<ConsensusRound> addEvent(@NonNull EventImpl event);
 }
