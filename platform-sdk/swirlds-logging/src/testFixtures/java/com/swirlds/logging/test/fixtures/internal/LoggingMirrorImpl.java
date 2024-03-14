@@ -38,9 +38,7 @@ public class LoggingMirrorImpl implements LoggingMirror, LogHandler {
      * Constructs a new {@code LoggingMirrorImpl} instance. It registers itself as a log handler with the default
      * logging system to receive log events.
      */
-    public LoggingMirrorImpl() {
-        DefaultLoggingSystem.getInstance().addHandler(this);
-    }
+    public LoggingMirrorImpl() {}
 
     /**
      * {@inheritDoc}

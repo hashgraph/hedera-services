@@ -1688,7 +1688,7 @@ class ModelTests {
 
         assertTrue(model.checkForUnboundInputWires());
 
-        inputA.bind(x -> {});
+        inputA.bindConsumer(x -> {});
 
         assertFalse(model.checkForUnboundInputWires());
     }

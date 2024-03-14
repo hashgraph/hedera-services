@@ -28,6 +28,8 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,7 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class WiringComponentTests {
+public class ComponentWiringTests {
 
     private interface FooBarBaz {
         @NonNull
@@ -53,6 +55,12 @@ public class WiringComponentTests {
         default String transformer(@NonNull final Long baseOutput) {
             handleBar(true);
             return "" + baseOutput;
+        }
+
+        @InputWireLabel("data to be filtered")
+        @SchedulerLabel("filter")
+        default Boolean filter(@NonNull final Long baseOutput) {
+            return baseOutput % 2 == 0;
         }
     }
 
@@ -78,6 +86,31 @@ public class WiringComponentTests {
 
         public long getRunningValue() {
             return runningValue;
+        }
+    }
+
+    private interface ComponentWithListOutput {
+        @NonNull
+        List<String> handleInputA(@NonNull String s);
+
+        @NonNull
+        List<String> handleInputB(@NonNull Long l);
+    }
+
+    private static class ComponentWithListOutputImpl implements ComponentWithListOutput {
+
+        @NonNull
+        @Override
+        public List<String> handleInputA(@NonNull final String s) {
+            return List.of(s.split(""));
+        }
+
+        @NonNull
+        @Override
+        public List<String> handleInputB(@NonNull final Long l) {
+            final String s = l.toString();
+            // return a list of characters
+            return List.of(s.split(""));
         }
     }
 
@@ -246,5 +279,112 @@ public class WiringComponentTests {
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             }
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void filterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel =
+                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+
+        final TaskScheduler<Long> scheduler = wiringModel
+                .schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
+
+        final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
+
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+
+        if (bindLocation == 0) {
+            fooBarBazWiring.bind(fooBarBazImpl);
+        }
+
+        final InputWire<Integer> fooInput = fooBarBazWiring.getInputWire(FooBarBaz::handleFoo);
+        final InputWire<Boolean> barInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBar);
+        final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
+
+        final OutputWire<Long> output = fooBarBazWiring.getFilteredOutput(FooBarBaz::filter);
+
+        // Getting the same filter multiple times should yield the same instance
+        assertSame(output, fooBarBazWiring.getFilteredOutput(FooBarBaz::filter));
+
+        if (bindLocation == 1) {
+            fooBarBazWiring.bind(fooBarBazImpl);
+        }
+
+        final AtomicReference<Long> outputValue = new AtomicReference<>();
+        output.solderTo("outputHandler", "output", outputValue::set);
+
+        long expectedRunningValue = 0;
+        for (int i = 0; i < 1000; i++) {
+            outputValue.set(null);
+            if (i % 3 == 0) {
+                expectedRunningValue += i;
+                fooInput.put(i);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+                final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
+                assertEquals(expectedValue, outputValue.get());
+            } else if (i % 3 == 1) {
+                final boolean choice = i % 7 == 0;
+                expectedRunningValue *= choice ? 1 : -1;
+                barInput.put(choice);
+                final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
+                assertEquals(expectedValue, outputValue.get());
+            } else {
+                final String value = "value" + i;
+                expectedRunningValue *= value.hashCode();
+                bazInput.put(value);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void splitterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel =
+                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+
+        final TaskScheduler<List<String>> scheduler = wiringModel
+                .schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
+
+        final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, scheduler);
+
+        if (bindLocation == 0) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        final OutputWire<String> splitOutput = componentWiring.getSplitOutput();
+        assertSame(splitOutput, componentWiring.getSplitOutput());
+
+        final List<String> outputData = new ArrayList<>();
+        splitOutput.solderTo("addToOutputData", "split data", outputData::add);
+
+        final List<String> expectedOutputData = new ArrayList<>();
+
+        if (bindLocation == 1) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputA).put("hello world");
+        expectedOutputData.addAll(List.of("h", "e", "l", "l", "o", " ", "w", "o", "r", "l", "d"));
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputB).put(123L);
+        expectedOutputData.addAll(List.of("1", "2", "3"));
+
+        assertEquals(expectedOutputData, outputData);
     }
 }

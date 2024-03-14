@@ -16,11 +16,13 @@
 
 package com.swirlds.common.wiring.component;
 
+import com.swirlds.common.wiring.component.internal.FilterToBind;
 import com.swirlds.common.wiring.component.internal.InputWireToBind;
 import com.swirlds.common.wiring.component.internal.TransformerToBind;
 import com.swirlds.common.wiring.component.internal.WiringComponentProxy;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -75,6 +77,16 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
      * Transformers that need to be bound.
      */
     private final List<TransformerToBind<COMPONENT_TYPE, OUTPUT_TYPE, ?>> transformersToBind = new ArrayList<>();
+
+    /**
+     * Filters that need to be bound.
+     */
+    private final List<FilterToBind<COMPONENT_TYPE, OUTPUT_TYPE>> filtersToBind = new ArrayList<>();
+
+    /**
+     * A splitter (if one has been constructed).
+     */
+    private OutputWire<Object> splitterOutput;
 
     /**
      * Create a new component wiring.
@@ -218,6 +230,91 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
     }
 
     /**
+     * Create a filter for the output of this component.
+     *
+     * @param predicate the filter predicate
+     * @return the output wire of the filter
+     */
+    @SuppressWarnings("unchecked")
+    @NonNull
+    public OutputWire<OUTPUT_TYPE> getFilteredOutput(
+            @NonNull final BiFunction<COMPONENT_TYPE, OUTPUT_TYPE, Boolean> predicate) {
+
+        Objects.requireNonNull(predicate);
+        try {
+            predicate.apply(proxyComponent, null);
+        } catch (final NullPointerException e) {
+            throw new IllegalStateException("Component wiring does not support primitive input types or return types. "
+                    + "Use a boxed primitive instead.");
+        }
+
+        final Method method = proxy.getMostRecentlyInvokedMethod();
+        if (!method.isDefault()) {
+            throw new IllegalArgumentException("Method " + method.getName() + " does not have a default.");
+        }
+
+        if (alternateOutputs.containsKey(method)) {
+            // We've already created this filter.
+            return (OutputWire<OUTPUT_TYPE>) alternateOutputs.get(method);
+        }
+
+        final String wireLabel;
+        final InputWireLabel inputWireLabel = method.getAnnotation(InputWireLabel.class);
+        if (inputWireLabel == null) {
+            wireLabel = "data to filter";
+        } else {
+            wireLabel = inputWireLabel.value();
+        }
+
+        final String schedulerLabel;
+        final SchedulerLabel schedulerLabelAnnotation = method.getAnnotation(SchedulerLabel.class);
+        if (schedulerLabelAnnotation == null) {
+            schedulerLabel = method.getName();
+        } else {
+            schedulerLabel = schedulerLabelAnnotation.value();
+        }
+
+        final WireFilter<OUTPUT_TYPE> filter = new WireFilter<>(model, schedulerLabel, wireLabel);
+        getOutputWire().solderTo(filter.getInputWire());
+        alternateOutputs.put(method, filter.getOutputWire());
+
+        if (component == null) {
+            // we will bind this later
+            filtersToBind.add(new FilterToBind<>(filter, predicate));
+        } else {
+            // bind this now
+            filter.bind(x -> predicate.apply(component, x));
+        }
+
+        return filter.getOutputWire();
+    }
+
+    /**
+     * Create a splitter for the output of this component. A splitter converts an output wire that produces lists of
+     * items into an output wire that produces individual items. Note that calling this method on a component that does
+     * not produce lists will result in a runtime exception.
+     *
+     * @param <ELEMENT> the type of the elements in the list, the base type of this component's output is expected to be
+     *                  a list of this type
+     * @return the output wire
+     */
+    @SuppressWarnings("unchecked")
+    @NonNull
+    public <ELEMENT> OutputWire<ELEMENT> getSplitOutput() {
+        if (splitterOutput == null) {
+
+            // Future work: there is not a clean way to specify the "splitterInputName" label, so as a short
+            // term work around we can just call it "data". This is ugly but ok as a temporary place holder.
+            // The proper way to fix this is to change the way we assign labels to wires in the diagram.
+            // Instead of defining names for input wires, we should instead define names for output wires,
+            // and require that any scheduler that has output define the label for its output data.
+
+            splitterOutput = getOutputWire().buildSplitter(scheduler.getName() + "Splitter", "data");
+        }
+        return (OutputWire<ELEMENT>) splitterOutput;
+    }
+
+    /**
      * Get the input wire for a specified method.
      *
      * @param method               the method that will handle data on the input wire
@@ -254,11 +351,9 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         } else {
             // bind this now
             if (handlerWithReturn != null) {
-                inputWire.bind(x -> {
-                    return handlerWithReturn.apply(component, x);
-                });
+                inputWire.bind(x -> handlerWithReturn.apply(component, x));
             } else {
-                inputWire.bind(x -> {
+                inputWire.bindConsumer(x -> {
                     assert handlerWithoutReturn != null;
                     handlerWithoutReturn.accept(component, x);
                 });
@@ -313,13 +408,11 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             if (wireToBind.handlerWithReturn() != null) {
                 final BiFunction<COMPONENT_TYPE, Object, OUTPUT_TYPE> handlerWithReturn =
                         (BiFunction<COMPONENT_TYPE, Object, OUTPUT_TYPE>) wireToBind.handlerWithReturn();
-                wireToBind.inputWire().bind(x -> {
-                    return handlerWithReturn.apply(component, x);
-                });
+                wireToBind.inputWire().bind(x -> handlerWithReturn.apply(component, x));
             } else {
                 final BiConsumer<COMPONENT_TYPE, Object> handlerWithoutReturn =
                         (BiConsumer<COMPONENT_TYPE, Object>) Objects.requireNonNull(wireToBind.handlerWithoutReturn());
-                wireToBind.inputWire().bind(x -> {
+                wireToBind.inputWire().bindConsumer(x -> {
                     handlerWithoutReturn.accept(component, x);
                 });
             }
@@ -332,6 +425,11 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             final BiFunction<COMPONENT_TYPE, OUTPUT_TYPE, Object> transformation =
                     (BiFunction<COMPONENT_TYPE, OUTPUT_TYPE, Object>) transformerToBind.transformation();
             transformer.bind(x -> transformation.apply(component, x));
+        }
+
+        // Bind filters
+        for (final FilterToBind<COMPONENT_TYPE, OUTPUT_TYPE> filterToBind : filtersToBind) {
+            filterToBind.filter().bind(x -> filterToBind.predicate().apply(component, x));
         }
     }
 }
