@@ -339,7 +339,8 @@ final class BlockRecordWriterV6Test extends AppTestBase {
             writer.close(endRunningHash);
 
             // read written file and validate hashes
-            final var readRecordStreamFile = BlockRecordReaderV6.read(recordPath);
+            final var readRecordStreamFile =
+                    com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordReaderV6.read(recordPath);
             assertThat(readRecordStreamFile).isNotNull();
             assertThat(readRecordStreamFile.hapiProtoVersion()).isEqualTo(VERSION);
             assertThat(readRecordStreamFile.blockNumber()).isEqualTo(BLOCK_NUM);
@@ -353,7 +354,8 @@ final class BlockRecordWriterV6Test extends AppTestBase {
                 assertThat(recordStreamItem.record()).isEqualTo(singleTransactionRecord.transactionRecord());
             }
             assertThat(readRecordStreamFile.endObjectRunningHash()).isEqualTo(endRunningHash);
-            BlockRecordReaderV6.validateHashes(readRecordStreamFile);
+            com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordReaderV6.validateHashes(
+                    readRecordStreamFile);
 
             // Check that the signature file was created.
             assertThat(Files.exists(sigPath)).isTrue();
@@ -512,8 +514,10 @@ final class BlockRecordWriterV6Test extends AppTestBase {
 
             final var logCaptor = new LogCaptor(LogManager.getLogger(BlockRecordWriterV6.class));
             assertThatThrownBy(() -> writer.close(ENDING_RUNNING_HASH_OBJ)).isInstanceOf(UncheckedIOException.class);
-            assertThat(logCaptor.warnLogs()).hasSize(1);
-            assertThat(logCaptor.warnLogs()).allMatch(msg -> msg.contains("Error closing record file"));
+            assertThat(logCaptor.warnLogs()).hasSize(2);
+            assertThat(logCaptor.warnLogs())
+                    .matches(logs -> logs.getFirst().contains("Error closing sidecar file")
+                            && logs.getLast().contains("Error closing record file"));
         }
     }
 }
