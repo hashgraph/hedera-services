@@ -22,6 +22,9 @@ import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Verifies event signatures
+ */
 public interface EventSignatureValidator {
 
     /**

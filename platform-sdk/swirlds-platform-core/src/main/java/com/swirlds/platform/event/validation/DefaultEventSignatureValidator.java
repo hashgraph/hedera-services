@@ -41,7 +41,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Verifies event signatures
+ * Default implementation for verifying event signatures
  */
 public class DefaultEventSignatureValidator implements EventSignatureValidator {
     private static final Logger logger = LogManager.getLogger(DefaultEventSignatureValidator.class);
