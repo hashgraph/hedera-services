@@ -65,6 +65,12 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
 
     @Override
     public void notify(final StateWriteToDiskCompleteNotification notification) {
+        log.info(
+                "StateWriteToDiskCompleteNotification notification Received : " +
+                        "consensusTimestamp: {}, roundNumber: {}, sequence: {}",
+                notification.getConsensusTimestamp(),
+                notification.getRoundNumber(),
+                notification.getSequence());
         if (notification.isFreezeState()) {
             log.info(
                     "StateWriteToDiskCompleteNotification Received : Freeze State Finished. "
