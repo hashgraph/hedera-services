@@ -118,7 +118,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final PostHashCollectorWiring postHashCollectorWiring;
     private final InternalEventValidatorWiring internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
-    private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
+    private final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ConsensusEngineWiring consensusEngineWiring;
@@ -192,8 +192,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
         eventDeduplicatorWiring =
                 new ComponentWiring<>(model, EventDeduplicator.class, schedulers.eventDeduplicatorScheduler());
-        eventSignatureValidatorWiring =
-                EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
+        eventSignatureValidatorWiring = new ComponentWiring<>(
+                model, EventSignatureValidator.class, schedulers.eventSignatureValidatorScheduler());
         orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
         inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
         consensusEngineWiring = ConsensusEngineWiring.create(schedulers.consensusEngineScheduler());
@@ -265,7 +265,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         nonAncientEventWindowOutputWire.solderTo(
                 eventDeduplicatorWiring.getInputWire(EventDeduplicator::setNonAncientEventWindow), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(eventSignatureValidatorWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(
+                eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::setNonAncientEventWindow), INJECT);
         nonAncientEventWindowOutputWire.solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(pcesWriterWiring.nonAncientEventWindowInput(), INJECT);
@@ -294,8 +295,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         internalEventValidatorWiring
                 .eventOutput()
                 .solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::handleEvent));
-        eventDeduplicatorWiring.getOutputWire().solderTo(eventSignatureValidatorWiring.eventInput());
-        eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
+        eventDeduplicatorWiring
+                .getOutputWire()
+                .solderTo(eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::validateSignature));
+        eventSignatureValidatorWiring.getOutputWire().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring
                 .eventOutput()
                 .solderTo(pcesSequencerWiring.getInputWire(PcesSequencer::assignStreamSequenceNumber));
@@ -509,7 +512,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     @NonNull
     public InputWire<AddressBookUpdate> getAddressBookUpdateInput() {
-        return eventSignatureValidatorWiring.addressBookUpdateInput();
+        return eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateAddressBooks);
     }
 
     /**
