@@ -509,6 +509,7 @@ public final class CryptoStatic {
      *
      * @param addressBook   the current address book
      * @param configuration the current configuration
+     * @param nodesToStart  the nodes that are going to be started
      * @return a map of KeysAndCerts objects, one for each node
      */
     public static Map<NodeId, KeysAndCerts> initNodeSecurity(
@@ -536,9 +537,9 @@ public final class CryptoStatic {
                 logger.debug(STARTUP.getMarker(), "About to start loading keys");
                 if (cryptoConfig.enableNewKeyStoreModel()) {
                     logger.debug(STARTUP.getMarker(), "Reading keys using the enhanced key loader");
-                    keysAndCerts = EnhancedKeyStoreLoader.using(addressBook, configuration)
-                            .scan(nodesToStart)
-                            .verify(nodesToStart)
+                    keysAndCerts = EnhancedKeyStoreLoader.using(addressBook, configuration, nodesToStart)
+                            .scan()
+                            .verify()
                             .injectInAddressBook()
                             .keysAndCerts();
                 } else {

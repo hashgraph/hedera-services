@@ -106,15 +106,16 @@ class EnhancedKeyStoreLoaderTest {
             throws IOException, KeyLoadingException, KeyStoreException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
         final AddressBook addressBook = addressBook();
-        final EnhancedKeyStoreLoader loader = EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory));
+        Set<NodeId> nodesToStart = addressBook.getNodeIdSet();
+
+        final EnhancedKeyStoreLoader loader =
+                EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory), nodesToStart);
 
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
-        Set<NodeId> nodesToStart = addressBook.getNodeIdSet();
-
         assertThat(loader).isNotNull();
-        assertThatCode(() -> loader.scan(nodesToStart)).doesNotThrowAnyException();
-        assertThatCode(() -> loader.verify(nodesToStart)).doesNotThrowAnyException();
+        assertThatCode(loader::scan).doesNotThrowAnyException();
+        assertThatCode(loader::verify).doesNotThrowAnyException();
         assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
 
         final Map<NodeId, KeysAndCerts> kc = loader.keysAndCerts();
@@ -153,13 +154,14 @@ class EnhancedKeyStoreLoaderTest {
     void keyStoreLoaderNegativeCase1Test(final String directoryName) throws IOException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
         final AddressBook addressBook = addressBook();
-        final EnhancedKeyStoreLoader loader = EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory));
+        final EnhancedKeyStoreLoader loader =
+                EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory), addressBook.getNodeIdSet());
 
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
-        assertThatCode(() -> loader.scan(addressBook.getNodeIdSet())).doesNotThrowAnyException();
-        assertThatCode(() -> loader.verify(addressBook.getNodeIdSet())).isInstanceOf(KeyLoadingException.class);
+        assertThatCode(loader::scan).doesNotThrowAnyException();
+        assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
     }
@@ -177,13 +179,14 @@ class EnhancedKeyStoreLoaderTest {
     void keyStoreLoaderNegativeCase2Test(final String directoryName) throws IOException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
         final AddressBook addressBook = addressBook();
-        final EnhancedKeyStoreLoader loader = EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory));
+        final EnhancedKeyStoreLoader loader =
+                EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory), addressBook.getNodeIdSet());
 
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
-        assertThatCode(() -> loader.scan(addressBook.getNodeIdSet())).doesNotThrowAnyException();
-        assertThatCode(() -> loader.verify(addressBook.getNodeIdSet())).isInstanceOf(KeyLoadingException.class);
+        assertThatCode(loader::scan).doesNotThrowAnyException();
+        assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
     }

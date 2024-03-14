@@ -157,6 +157,11 @@ public class EnhancedKeyStoreLoader {
     private static final String MSG_KEY_STORE_PASSPHRASE_NON_NULL = "keyStorePassphrase must not be null";
 
     /**
+     * The constant message to use when the {@code nodesToStart} required parameter is {@code null}.
+     */
+    private static final String MSG_NODES_TO_START_NON_NULL = "nodesToStart must not be null";
+
+    /**
      * The Log4j2 logger instance to use for all logging.
      */
     private static final Logger logger = LogManager.getLogger(EnhancedKeyStoreLoader.class);
@@ -212,17 +217,19 @@ public class EnhancedKeyStoreLoader {
 
     /**
      * Constructs a new {@link EnhancedKeyStoreLoader} instance. Intentionally private to prevent direct instantiation.
-     * Use the {@link #using(AddressBook, Configuration)} method to create a new instance.
+     * Use the {@link #using(AddressBook, Configuration, Set<NodeId>)} method to create a new instance.
      *
      * @param addressBook        the address book to use for loading the key stores.
      * @param keyStoreDirectory  the absolute path to the key store directory.
      * @param keyStorePassphrase the passphrase used to protect the key stores.
+     * @param nodesToStart       the set of nodes to start and load key stores for
      * @throws NullPointerException if {@code addressBook} or {@code configuration} is {@code null}.
      */
     private EnhancedKeyStoreLoader(
             @NonNull final AddressBook addressBook,
             @NonNull final Path keyStoreDirectory,
-            @NonNull final char[] keyStorePassphrase) {
+            @NonNull final char[] keyStorePassphrase,
+            @NonNull final Set<NodeId> nodesToStart) {
         this.addressBook = Objects.requireNonNull(addressBook, MSG_ADDRESS_BOOK_NON_NULL);
         this.keyStoreDirectory = Objects.requireNonNull(keyStoreDirectory, MSG_KEY_STORE_DIRECTORY_NON_NULL);
         this.keyStorePassphrase = Objects.requireNonNull(keyStorePassphrase, MSG_KEY_STORE_PASSPHRASE_NON_NULL);
@@ -230,7 +237,7 @@ public class EnhancedKeyStoreLoader {
         this.sigCertificates = HashMap.newHashMap(addressBook.getSize());
         this.agrPrivateKeys = HashMap.newHashMap(addressBook.getSize());
         this.agrCertificates = HashMap.newHashMap(addressBook.getSize());
-        this.localNodes = HashSet.newHashSet(addressBook.getSize());
+        this.localNodes = new HashSet<>(Objects.requireNonNull(nodesToStart, MSG_NODES_TO_START_NON_NULL));
     }
 
     /**
@@ -238,15 +245,19 @@ public class EnhancedKeyStoreLoader {
      *
      * @param addressBook   the address book to use for loading the key stores.
      * @param configuration the configuration to use for loading the key stores.
+     * @param nodesToStart  the set of nodes to start and load key stores for.
      * @return a new {@link EnhancedKeyStoreLoader} instance.
      * @throws NullPointerException     if {@code addressBook} or {@code configuration} is {@code null}.
      * @throws IllegalArgumentException if the value from the configuration element {@code crypto.keystorePassword} is {@code null} or blank.
      */
     @NonNull
     public static EnhancedKeyStoreLoader using(
-            @NonNull final AddressBook addressBook, @NonNull final Configuration configuration) {
+            @NonNull final AddressBook addressBook,
+            @NonNull final Configuration configuration,
+            @NonNull final Set<NodeId> nodesToStart) {
         Objects.requireNonNull(addressBook, MSG_ADDRESS_BOOK_NON_NULL);
         Objects.requireNonNull(configuration, "configuration must not be null");
+        Objects.requireNonNull(nodesToStart, MSG_NODES_TO_START_NON_NULL);
 
         final String keyStorePassphrase =
                 configuration.getConfigData(CryptoConfig.class).keystorePassword();
@@ -257,20 +268,18 @@ public class EnhancedKeyStoreLoader {
             throw new IllegalArgumentException("keyStorePassphrase must not be null or blank");
         }
 
-        return new EnhancedKeyStoreLoader(addressBook, keyStoreDirectory, keyStorePassphrase.toCharArray());
+        return new EnhancedKeyStoreLoader(
+                addressBook, keyStoreDirectory, keyStorePassphrase.toCharArray(), nodesToStart);
     }
 
     /**
      * Scan the directory specified by {@code paths.keyDirPath} configuration element for key stores. This method will
      * process and load keys found in both the legacy or enhanced formats.
      *
-     * @param nodesToStart the set of nodes to scan key stores for
-     *
      * @return this {@link EnhancedKeyStoreLoader} instance.
      */
     @NonNull
-    public EnhancedKeyStoreLoader scan(@NonNull final Set<NodeId> nodesToStart)
-            throws KeyLoadingException, KeyStoreException {
+    public EnhancedKeyStoreLoader scan() throws KeyLoadingException, KeyStoreException {
         logger.debug(STARTUP.getMarker(), "Starting key store enumeration");
         final KeyStore legacyPublicStore = resolveLegacyPublicStore();
 
@@ -282,8 +291,7 @@ public class EnhancedKeyStoreLoader {
                     nodeId,
                     nodeAlias);
 
-            if (nodesToStart.contains(address.getNodeId())) {
-                localNodes.add(nodeId);
+            if (localNodes.contains(address.getNodeId())) {
                 sigPrivateKeys.compute(
                         nodeId, (k, v) -> resolveNodePrivateKey(nodeId, nodeAlias, KeyCertPurpose.SIGNING));
                 agrPrivateKeys.compute(
@@ -305,22 +313,18 @@ public class EnhancedKeyStoreLoader {
     /**
      * Verifies the presence of all required keys based on the address book provided during initialization.
      *
-     * @param nodesToStart the set of nodes to verify the presence of all keys for
-     *
      * @return this {@link EnhancedKeyStoreLoader} instance.
      * @throws KeyLoadingException if one or more of the required keys were not loaded.
      */
     @NonNull
-    public EnhancedKeyStoreLoader verify(@NonNull final Set<NodeId> nodesToStart)
-            throws KeyLoadingException, KeyStoreException {
-        return verify(addressBook, nodesToStart);
+    public EnhancedKeyStoreLoader verify() throws KeyLoadingException, KeyStoreException {
+        return verify(addressBook);
     }
 
     /**
      * Verifies the presence of all required keys for the nodes being started based on the supplied address book.
      *
      * @param validatingBook the address book to use for validation
-     * @param nodesToStart the set of nodes being started
      *
      * @return this {@link EnhancedKeyStoreLoader} instance.
      * @throws KeyLoadingException  if one or more of the required keys were not loaded.
@@ -328,11 +332,9 @@ public class EnhancedKeyStoreLoader {
      * @throws NullPointerException if {@code validatingBook} is {@code null}.
      */
     @NonNull
-    public EnhancedKeyStoreLoader verify(
-            @NonNull final AddressBook validatingBook, @NonNull final Set<NodeId> nodesToStart)
+    public EnhancedKeyStoreLoader verify(@NonNull final AddressBook validatingBook)
             throws KeyLoadingException, KeyStoreException {
         Objects.requireNonNull(validatingBook, "validatingBook must not be null");
-        Objects.requireNonNull(nodesToStart, "nodesToStart must not be null");
 
         if (addressBook.getSize() != validatingBook.getSize()) {
             throw new KeyLoadingException(
@@ -341,12 +343,7 @@ public class EnhancedKeyStoreLoader {
         }
 
         iterateAddressBook(validatingBook, (i, nodeId, address, nodeAlias) -> {
-            if (nodesToStart.contains(address.getNodeId())) {
-                if (!localNodes.contains(nodeId)) {
-                    throw new KeyLoadingException(
-                            "No private key found for local node %s [ alias = %s ]".formatted(nodeId, nodeAlias));
-                }
-
+            if (localNodes.contains(address.getNodeId())) {
                 if (!sigPrivateKeys.containsKey(nodeId)) {
                     throw new KeyLoadingException("No private key found for node %s [ alias = %s, purpose = %s ]"
                             .formatted(nodeId, nodeAlias, KeyCertPurpose.SIGNING));

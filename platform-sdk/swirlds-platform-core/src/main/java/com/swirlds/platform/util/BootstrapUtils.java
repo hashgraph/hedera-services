@@ -391,7 +391,7 @@ public final class BootstrapUtils {
         if (nodesToStart.isEmpty()) {
             nodesToRun.addAll(addressBook.getNodeIdSet());
         } else {
-            for (NodeId nodeId : nodesToStart) {
+            for (final NodeId nodeId : nodesToStart) {
                 if (!addressBook.contains(nodeId)) {
                     // all nodes to start must exist in the address book.
                     throw new IllegalArgumentException("Node " + nodeId + " is not in the address book");
