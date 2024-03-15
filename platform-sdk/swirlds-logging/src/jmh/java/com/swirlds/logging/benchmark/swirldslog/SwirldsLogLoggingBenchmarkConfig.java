@@ -16,6 +16,7 @@
 
 package com.swirlds.logging.benchmark.swirldslog;
 
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
@@ -114,7 +115,7 @@ public class SwirldsLogLoggingBenchmarkConfig implements LoggingBenchmarkConfig<
     }
 
     @NonNull
-    private LoggingSystem configure(@NonNull final com.swirlds.config.api.Configuration configuration) {
+    private LoggingSystem configure(@NonNull final Configuration configuration) {
         LoggingSystem loggingSystem = new LoggingSystem(configuration);
         loggingSystem.installHandlers();
         loggingSystem.installProviders();
