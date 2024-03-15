@@ -108,7 +108,7 @@ public class Log4JLoggingBenchmarkConfig implements LoggingBenchmarkConfig<Logge
         }
     }
 
-    private static @NonNull LoggerContext create(final @NonNull ConfigurationBuilder<BuiltConfiguration> builder) {
+    protected static @NonNull LoggerContext create(final @NonNull ConfigurationBuilder<BuiltConfiguration> builder) {
         final org.apache.logging.log4j.core.config.Configuration configuration = builder.build();
         final org.apache.logging.log4j.core.LoggerContext context = Configurator.initialize(configuration);
         LogManager.getFactory().removeContext(context);

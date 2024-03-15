@@ -27,10 +27,10 @@ import static com.swirlds.logging.benchmark.config.Constants.WARMUP_ITERATIONS;
 import static com.swirlds.logging.benchmark.config.Constants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
 
 import com.swirlds.logging.api.internal.LoggingSystem;
-import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
+import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import com.swirlds.logging.benchmark.log4j2.Log4JRunner;
-import com.swirlds.logging.benchmark.swirldslog.SwirldsLogConfiguration;
+import com.swirlds.logging.benchmark.swirldslog.SwirldsLogLoggingBenchmarkConfig;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -61,22 +61,22 @@ public class BridgedBenchmark {
     private Log4JRunner logRunner;
 
     private BridgedConfiguration config;
-    private Configuration<LoggingSystem> swirldsConfig;
+    private LoggingBenchmarkConfig<LoggingSystem> swirldsConfig;
 
     @Setup(Level.Trial)
     public void init() {
         config = new BridgedConfiguration();
 
         if (Objects.equals(loggingType, CONSOLE_TYPE)) {
-            swirldsConfig = new SwirldsLogConfiguration();
+            swirldsConfig = new SwirldsLogLoggingBenchmarkConfig();
             swirldsConfig.configureConsoleLogging();
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, FILE_TYPE)) {
-            swirldsConfig = new SwirldsLogConfiguration();
+            swirldsConfig = new SwirldsLogLoggingBenchmarkConfig();
             swirldsConfig.configureFileLogging();
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
-            swirldsConfig = new SwirldsLogConfiguration();
+            swirldsConfig = new SwirldsLogLoggingBenchmarkConfig();
             swirldsConfig.configureFileAndConsoleLogging();
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         }
