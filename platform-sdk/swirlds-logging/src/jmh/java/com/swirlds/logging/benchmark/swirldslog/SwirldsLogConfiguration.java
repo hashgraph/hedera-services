@@ -104,10 +104,4 @@ public class SwirldsLogConfiguration implements Configuration<LoggingSystem> {
             LogFiles.tryForceDeleteDir();
         }
     }
-
-    @NonNull
-    @Override
-    public LoggingSystem configureBridgedLogging() {
-        throw new IllegalStateException("Not implemented");
-    }
 }

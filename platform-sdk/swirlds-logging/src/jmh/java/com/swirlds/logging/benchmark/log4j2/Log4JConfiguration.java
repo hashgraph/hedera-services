@@ -20,7 +20,6 @@ import com.swirlds.logging.benchmark.config.Configuration;
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.util.ConfigManagement;
 import com.swirlds.logging.benchmark.util.LogFiles;
-import com.swirlds.logging.log4j.appender.SwirldsLogAppender;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -86,19 +85,6 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
         return create(builder);
     }
 
-    @NonNull
-    @Override
-    public LoggerContext configureBridgedLogging() {
-        System.clearProperty("log4j2.contextSelector");
-        final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
-        builder.setStatusLevel(Level.DEBUG);
-        builder.setConfigurationName("bridgeLoggingConfig");
-        final AppenderComponentBuilder appenderBuilder = builder.newAppender(Log4JConfiguration.BRIDGE_APPENDER_NAME, SwirldsLogAppender.APPENDER_NAME);
-        builder.add(appenderBuilder);
-        builder.add(builder.newRootLogger(Level.ALL).add(builder.newAppenderRef(Log4JConfiguration.BRIDGE_APPENDER_NAME)));
-        return create(builder);
-    }
-
     @Override
     public void tierDown() {
         if (ConfigManagement.deleteOutputFiles()) {
@@ -110,7 +96,7 @@ public class Log4JConfiguration implements Configuration<LoggerContext> {
         }
     }
 
-    private static @NonNull LoggerContext create(final @NonNull ConfigurationBuilder<BuiltConfiguration> builder) {
+    protected static @NonNull LoggerContext create(final @NonNull ConfigurationBuilder<BuiltConfiguration> builder) {
         final org.apache.logging.log4j.core.config.Configuration configuration = builder.build();
         final org.apache.logging.log4j.core.LoggerContext context = Configurator.initialize(configuration);
         LogManager.getFactory().removeContext(context);

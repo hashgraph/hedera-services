@@ -30,7 +30,4 @@ public interface Configuration<T> {
     T configureFileAndConsoleLogging();
 
     void tierDown();
-
-    @NonNull
-    T configureBridgedLogging();
 }
