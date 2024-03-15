@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.buffer;
+package com.swirlds.logging.ostream;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
