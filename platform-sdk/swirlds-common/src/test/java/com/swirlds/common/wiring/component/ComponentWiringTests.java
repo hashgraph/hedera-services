@@ -56,6 +56,12 @@ public class ComponentWiringTests {
             handleBar(true);
             return "" + baseOutput;
         }
+
+        @InputWireLabel("data to be filtered")
+        @SchedulerLabel("filter")
+        default Boolean filter(@NonNull final Long baseOutput) {
+            return baseOutput % 2 == 0;
+        }
     }
 
     private static class FooBarBazImpl implements FooBarBaz {
@@ -266,6 +272,70 @@ public class ComponentWiringTests {
                 barInput.put(choice);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals("" + expectedRunningValue, outputValue.get());
+            } else {
+                final String value = "value" + i;
+                expectedRunningValue *= value.hashCode();
+                bazInput.put(value);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void filterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel =
+                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+
+        final TaskScheduler<Long> scheduler = wiringModel
+                .schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
+
+        final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
+
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+
+        if (bindLocation == 0) {
+            fooBarBazWiring.bind(fooBarBazImpl);
+        }
+
+        final InputWire<Integer> fooInput = fooBarBazWiring.getInputWire(FooBarBaz::handleFoo);
+        final InputWire<Boolean> barInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBar);
+        final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
+
+        final OutputWire<Long> output = fooBarBazWiring.getFilteredOutput(FooBarBaz::filter);
+
+        // Getting the same filter multiple times should yield the same instance
+        assertSame(output, fooBarBazWiring.getFilteredOutput(FooBarBaz::filter));
+
+        if (bindLocation == 1) {
+            fooBarBazWiring.bind(fooBarBazImpl);
+        }
+
+        final AtomicReference<Long> outputValue = new AtomicReference<>();
+        output.solderTo("outputHandler", "output", outputValue::set);
+
+        long expectedRunningValue = 0;
+        for (int i = 0; i < 1000; i++) {
+            outputValue.set(null);
+            if (i % 3 == 0) {
+                expectedRunningValue += i;
+                fooInput.put(i);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+                final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
+                assertEquals(expectedValue, outputValue.get());
+            } else if (i % 3 == 1) {
+                final boolean choice = i % 7 == 0;
+                expectedRunningValue *= choice ? 1 : -1;
+                barInput.put(choice);
+                final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
+                assertEquals(expectedValue, outputValue.get());
             } else {
                 final String value = "value" + i;
                 expectedRunningValue *= value.hashCode();

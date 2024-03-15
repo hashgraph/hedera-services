@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.benchmark.log4j2;
+package com.swirlds.logging.benchmark.swirldslog;
 
 import static com.swirlds.logging.benchmark.config.Constants.CONSOLE_AND_FILE_TYPE;
 import static com.swirlds.logging.benchmark.config.Constants.CONSOLE_TYPE;
@@ -26,18 +26,15 @@ import static com.swirlds.logging.benchmark.config.Constants.PARALLEL_THREAD_COU
 import static com.swirlds.logging.benchmark.config.Constants.WARMUP_ITERATIONS;
 import static com.swirlds.logging.benchmark.config.Constants.WARMUP_TIME_IN_SECONDS_PER_ITERATION;
 
-import com.swirlds.logging.benchmark.config.Configuration;
+import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.config.Constants;
+import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import com.swirlds.logging.benchmark.util.Throwables;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
-import org.apache.logging.log4j.ThreadContext;
-import org.apache.logging.log4j.spi.LoggerContext;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -54,27 +51,27 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 @State(Scope.Benchmark)
-public class Log4J2FineGraneBenchmark {
-    private static final String LOGGER_NAME = Constants.LOG4J2 + "Benchmark";
+public class SwirldsLogFineGrainBenchmark {
 
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
 
+    private static final String LOGGER_NAME = Constants.SWIRLDS + "Benchmark";
     private Logger logger;
-    private Configuration<LoggerContext> config;
-
-    private static final Marker MARKER = MarkerManager.getMarker("marker");
+    private LoggingSystem loggingSystem;
+    private LoggingBenchmarkConfig<LoggingSystem> config;
 
     @Setup(Level.Trial)
     public void init() {
-        config = new Log4JConfiguration();
+        config = new SwirldsLogLoggingBenchmarkConfig();
         if (Objects.equals(loggingType, FILE_TYPE)) {
-            logger = config.configureFileLogging().getLogger(LOGGER_NAME);
+            loggingSystem = config.configureFileLogging();
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
-            logger = config.configureConsoleLogging().getLogger(LOGGER_NAME);
+            loggingSystem = config.configureConsoleLogging();
         } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
-            logger = config.configureFileAndConsoleLogging().getLogger(LOGGER_NAME);
+            loggingSystem = config.configureFileAndConsoleLogging();
         }
+        logger = loggingSystem.getLogger(LOGGER_NAME);
     }
 
     @Benchmark
@@ -91,7 +88,7 @@ public class Log4J2FineGraneBenchmark {
             time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
             timeUnit = TimeUnit.MILLISECONDS)
     public void logSimpleStatement() {
-        logger.log(org.apache.logging.log4j.Level.INFO, "logSimpleStatement, Hello world!");
+        logger.log(com.swirlds.logging.api.Level.INFO, "logSimpleStatement, Hello world!");
     }
 
     @Benchmark
@@ -108,7 +105,7 @@ public class Log4J2FineGraneBenchmark {
             time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
             timeUnit = TimeUnit.MILLISECONDS)
     public void logOffStatement() {
-        logger.log(org.apache.logging.log4j.Level.OFF, "logSimpleStatement, Hello world!");
+        logger.log(com.swirlds.logging.api.Level.OFF, "logSimpleStatement, Hello world!");
     }
 
     @Benchmark
@@ -136,7 +133,7 @@ public class Log4J2FineGraneBenchmark {
 
                 Donec faucibus laoreet ipsum ut viverra. Ut molestie, urna nec tincidunt pretium, mauris ipsum consequat velit, mollis aliquam ipsum lorem consequat nisi. Suspendisse eros orci, luctus non scelerisque sit amet, aliquam ac sem. Etiam pellentesque eleifend ligula. Phasellus elementum auctor dui, at venenatis nibh elementum in. Duis venenatis tempus ex sit amet commodo. Fusce ut erat sit amet enim convallis pellentesque quis sit amet nisi. Sed nec ligula bibendum, volutpat dolor sit amet, maximus magna. Nam fermentum volutpat metus vitae tempus. Maecenas tempus iaculis tristique. Aenean a lobortis nisl. In auctor id ex sit amet ultrices. Vivamus at ante nec ex ultricies sagittis. Praesent odio ante, ultricies vel ante sed, mollis laoreet lectus. Aenean sagittis justo eu sapien ullamcorper commodo.
         """;
-        logger.log(org.apache.logging.log4j.Level.INFO, "logLargeStatement, " + logMessage);
+        logger.log(com.swirlds.logging.api.Level.INFO, "logLargeStatement, " + logMessage);
     }
 
     @Benchmark
@@ -154,7 +151,7 @@ public class Log4J2FineGraneBenchmark {
             timeUnit = TimeUnit.MILLISECONDS)
     public void logWithPlaceholders() {
         logger.log(
-                org.apache.logging.log4j.Level.INFO,
+                com.swirlds.logging.api.Level.INFO,
                 "logWithPlaceholders, Hello {}, {}, {}, {}, {}, {}, {}, {}, {}!",
                 1,
                 2,
@@ -181,7 +178,7 @@ public class Log4J2FineGraneBenchmark {
             time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
             timeUnit = TimeUnit.MILLISECONDS)
     public void logWithMarker() {
-        logger.log(org.apache.logging.log4j.Level.INFO, MARKER, "logWithMarker, Hello world!");
+        logger.withMarker("marker").log(com.swirlds.logging.api.Level.INFO, "logWithMarker, Hello world!");
     }
 
     @Benchmark
@@ -198,9 +195,8 @@ public class Log4J2FineGraneBenchmark {
             time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
             timeUnit = TimeUnit.MILLISECONDS)
     public void logWithContext() {
-        ThreadContext.put("user-id", Throwables.USER_1);
-        logger.log(org.apache.logging.log4j.Level.INFO, "logWithContext, Hello world!");
-        ThreadContext.clearAll();
+        logger.withContext("user-id", Constants.USER_1)
+                .log(com.swirlds.logging.api.Level.INFO, "logWithContext, Hello world!");
     }
 
     @Benchmark
@@ -217,7 +213,7 @@ public class Log4J2FineGraneBenchmark {
             time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
             timeUnit = TimeUnit.MILLISECONDS)
     public void logWithThrowable() {
-        logger.log(org.apache.logging.log4j.Level.INFO, "logWithThrowable, Hello world!", Throwables.THROWABLE);
+        logger.log(com.swirlds.logging.api.Level.INFO, "logWithThrowable, Hello world!", Throwables.THROWABLE);
     }
 
     @Benchmark
@@ -234,8 +230,7 @@ public class Log4J2FineGraneBenchmark {
             time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
             timeUnit = TimeUnit.MILLISECONDS)
     public void logWithDeepThrowable() {
-        logger.log(
-                org.apache.logging.log4j.Level.INFO, "logWithDeepThrowable, Hello world!", Throwables.DEEP_THROWABLE);
+        logger.log(com.swirlds.logging.api.Level.INFO, "logWithDeepThrowable, Hello world!", Throwables.DEEP_THROWABLE);
     }
 
     @Benchmark
@@ -264,7 +259,7 @@ public class Log4J2FineGraneBenchmark {
                 Donec faucibus laoreet ipsum ut viverra. Ut molestie, urna nec tincidunt pretium, mauris ipsum {} velit, mollis aliquam ipsum lorem consequat nisi. Suspendisse eros orci, luctus non scelerisque sit amet, {} ac sem. Etiam pellentesque eleifend ligula. Phasellus elementum auctor dui, at venenatis nibh elementum in. Duis venenatis tempus ex sit amet commodo. Fusce ut erat sit amet enim convallis pellentesque quis sit amet nisi. Sed nec ligula bibendum, volutpat dolor sit amet, maximus magna. Nam fermentum volutpat metus vitae tempus. Maecenas tempus iaculis tristique. Aenean a lobortis nisl. In auctor id ex sit amet ultrices. Vivamus at ante nec ex ultricies sagittis. Praesent odio ante, ultricies vel ante sed, mollis laoreet lectus. Aenean sagittis justo eu sapien ullamcorper {}.
         """;
         logger.log(
-                org.apache.logging.log4j.Level.INFO,
+                com.swirlds.logging.api.Level.INFO,
                 "logLargeStatement, " + logMessage,
                 new Object(),
                 Collections.emptyList(),
@@ -273,7 +268,7 @@ public class Log4J2FineGraneBenchmark {
                 Throwables.DEEP_THROWABLE);
     }
 
-    @TearDown(Level.Iteration)
+    @TearDown(Level.Trial)
     public void tearDown() {
         config.tierDown();
     }

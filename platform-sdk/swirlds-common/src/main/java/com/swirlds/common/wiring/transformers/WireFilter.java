@@ -37,7 +37,7 @@ public class WireFilter<T> {
     private final OutputWire<T> outputWire;
 
     /**
-     * Constructor.
+     * Constructor. Immediately binds the transformation function to the input wire.
      *
      * @param model           the wiring model containing this output channel
      * @param filterName      the name of the filter
@@ -66,7 +66,26 @@ public class WireFilter<T> {
             }
             return null;
         });
-        this.outputWire = taskScheduler.getOutputWire();
+        outputWire = taskScheduler.getOutputWire();
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param model           the wiring model containing this output channel
+     * @param filterName      the name of the filter
+     * @param filterInputName the label for the input wire going into the filter
+     */
+    public WireFilter(
+            @NonNull final WiringModel model, @NonNull final String filterName, @NonNull final String filterInputName) {
+
+        final TaskScheduler<T> taskScheduler = model.schedulerBuilder(filterName)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                .build()
+                .cast();
+
+        inputWire = taskScheduler.buildInputWire(filterInputName);
+        outputWire = taskScheduler.getOutputWire();
     }
 
     /**
@@ -87,5 +106,21 @@ public class WireFilter<T> {
     @NonNull
     public OutputWire<T> getOutputWire() {
         return outputWire;
+    }
+
+    /**
+     * Bind a predicate to this filter. Should not be called if this object was constructed using
+     * {@link #WireFilter(WiringModel, String, String, Predicate)}. Must be called prior to use if this object was
+     * constructed using {@link #WireFilter(WiringModel, String, String)}.
+     *
+     * @param predicate the predicate to bind
+     */
+    public void bind(@NonNull final Predicate<T> predicate) {
+        inputWire.bind(t -> {
+            if (predicate.test(t)) {
+                return t;
+            }
+            return null;
+        });
     }
 }
