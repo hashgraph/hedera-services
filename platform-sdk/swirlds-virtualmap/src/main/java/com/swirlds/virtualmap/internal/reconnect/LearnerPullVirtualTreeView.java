@@ -235,8 +235,8 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public void applySendBackpressure() throws InterruptedException {
         final long t = expectedResponses.get();
-        if (t > 1024) {
-            Thread.sleep(t - 1024);
+        if (t > 4096) {
+            Thread.sleep(1);
         }
     }
 
