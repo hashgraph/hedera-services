@@ -667,7 +667,9 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
                         getAccountBalance(bob).hasTokenBalance(token, 2),
                         getAccountBalance(bob).hasTokenBalance(token2, 3),
                         getAccountBalance(carol).hasTokenBalance(token, 4),
-                        getAccountBalance(carol).hasTokenBalance(token2, 6));
+                        getAccountBalance(carol).hasTokenBalance(token2, 6),
+                        getAccountBalance(htsCollector).hasTokenBalance(token, 4),
+                        getAccountBalance(htsCollector).hasTokenBalance(token2, 4));
     }
 
     @HapiTest
@@ -721,7 +723,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
                         .fee(ONE_HUNDRED_HBARS)
                         .payingWith(tokenOwner)
                         .hasKnownStatus(ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
-                .then();
+                .then(getAccountBalance(tokenOwner).hasTokenBalance(token, tokenTotal / 2));
     }
 
     @HapiTest
@@ -749,7 +751,9 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
                         cryptoTransfer(moving(1L, token).between(htsCollector, tokenReceiver))
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(tokenOwner))
-                .then();
+                .then(
+                        getAccountBalance(htsCollector).hasTokenBalance(token, tokenTotal / 2 - 1),
+                        getAccountBalance(tokenReceiver).hasTokenBalance(token, tokenTotal / 2 + 1));
     }
 
     @HapiTest
@@ -777,7 +781,9 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
                         cryptoTransfer(moving(1L, token).between(htsCollector, tokenReceiver))
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(tokenOwner))
-                .then();
+                .then(
+                        getAccountBalance(htsCollector).hasTokenBalance(token, tokenTotal / 2 - 1),
+                        getAccountBalance(tokenReceiver).hasTokenBalance(token, tokenTotal / 2 + 1));
     }
 
     @HapiTest
