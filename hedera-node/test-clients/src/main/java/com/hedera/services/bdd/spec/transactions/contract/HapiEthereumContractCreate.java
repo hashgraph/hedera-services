@@ -129,6 +129,20 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.isDeclinedReward = contractCreate.isDeclinedReward;
         final var gas = contractCreate.gas.isPresent() ? contractCreate.gas.getAsLong() : defaultGas;
         this.gas(gas);
+        this.shouldRegisterTxn = true;
+        this.deferStatusResolution = contractCreate.getDeferStatusResolution();
+        this.txnName = contractCreate.getTxnName();
+        this.expectedStatus = Optional.of(contractCreate.getExpectedStatus());
+        this.expectedPrecheck = Optional.of(contractCreate.getExpectedPrecheck());
+        this.fiddler = contractCreate.getFiddler();
+        this.submitDelay = contractCreate.getSubmitDelay();
+        this.validDurationSecs = contractCreate.getValidDurationSecs();
+        this.customTxnId = contractCreate.getCustomTxnId();
+        this.node = contractCreate.getNode();
+        this.usdFee = contractCreate.getUsdFee();
+        this.retryLimits = contractCreate.getRetryLimits();
+        this.permissibleStatuses = contractCreate.getPermissibleStatuses();
+        this.permissiblePrechecks = contractCreate.getPermissiblePrechecks();
     }
 
     public HapiEthereumContractCreate(
