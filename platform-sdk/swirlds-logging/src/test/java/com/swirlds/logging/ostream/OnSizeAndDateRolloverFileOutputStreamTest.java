@@ -54,7 +54,7 @@ class OnSizeAndDateRolloverFileOutputStreamTest {
     @Test
     public void testSizeBaseRolling() throws IOException, InterruptedException {
         try (OutputStream rolloverOutputStream = new OnSizeAndDateRolloverFileOutputStream(
-                testFolder, FILE_BASE_NAME, MAX_FILE_SIZE, APPEND_TO_EXISTING)) {
+                testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING)) {
 
             // Write enough data to fill one file
             writeDataToFile(rolloverOutputStream, "Some data to fill one file.", MAX_FILE_SIZE);

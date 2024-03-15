@@ -18,6 +18,7 @@ package com.swirlds.logging.ostream;
 
 import static java.time.ZoneOffset.UTC;
 
+import com.swirlds.logging.utils.GeneralUtilities;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -30,18 +31,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * {@link OnSizeAndDateRolloverFileOutputStream}. This output stream puts content in a file that is rolled over every 24 hours and taking
- * into account a max size.
+ * {@link OnSizeAndDateRolloverFileOutputStream}. This output stream puts content in a file that is rolled over every 24
+ * hours and taking into account a max size.
  * <p>
  * The resulting filename will contain String "yyyy-mm-dd", which is replaced with the actual date when creating and
  * rolling over the file and an index number.
@@ -50,73 +44,48 @@ public class OnSizeAndDateRolloverFileOutputStream extends OutputStream {
     private static final long MB_PER_BYTE = 1000000; // 1 MB
     private static final long ESTIMATED_MAX_LOG_VOLUME = MB_PER_BYTE * MB_PER_BYTE * MB_PER_BYTE; // 1 TB
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE.withZone(UTC);
-    private final ExecutorService executorService = Executors.newFixedThreadPool(2);
-    private final Deque<FileMetadata> newFiles = new ConcurrentLinkedDeque<>();
-    private final LinkedBlockingDeque<FileOutputStream> dispose = new LinkedBlockingDeque<>();
-    private volatile boolean closed = false;
     private final LogFileConfig fileConfig;
     private FileMetadata current;
 
     public OnSizeAndDateRolloverFileOutputStream(
-            final Path containerFolder,
-            final String fileBaseName,
-            final long maxFileSize,
-            final boolean appendToExisting) {
-        this.fileConfig = logConfig(containerFolder, fileBaseName, maxFileSize, appendToExisting);
-        final Instant startingDate = Instant.now();
-        String formattedDate = DATE_FORMAT.format(startingDate);
+            final @NonNull Path file, final long maxFileSize, final boolean append) {
 
-        this.current = prepareFile(fileConfig, startingDate, formattedDate, -1);
-        this.executorService.submit(
-                () -> { // Async clean up thread
-                    while (!closed && !Thread.currentThread().isInterrupted()) {
-                        try {
-                            final FileOutputStream poll = dispose.take();
-                            poll.flush();
-                            poll.close();
-                        } catch (InterruptedException e) {
-                            if (Thread.currentThread().isInterrupted()) {
-                                // if dispose is not empty we drain resources
-                                return;
-                            }
-                        } catch (Exception e) {
-                            // Emergency logger
-                        }
-                    }
-                });
-    }
+        this.fileConfig = logConfig(file, maxFileSize, append);
 
-    @Override
-    public synchronized void write(@NonNull final byte[] bytes, final int offset, final int length) throws IOException {
-        // checkAndPrepare(length);
-        current.outputStream().write(bytes, offset, length);
-        current.remainingSize.addAndGet(-length);
-        if (current.remainingSizeLong() <= 0) {
-            useNextFile();
-        }
-    }
-
-    @Override
-    public synchronized void write(@NonNull final byte[] bytes) throws IOException {
-        // checkAndPrepare(bytes.length);
-        current.outputStream().write(bytes);
-        current.remainingSize().addAndGet(-bytes.length);
-        if (current.remainingSizeLong() <= 0) {
-            useNextFile();
-        }
+        this.current = prepareFile(fileConfig);
     }
 
     /**
-     * {@inheritDoc}
+     * Writes {@code length} bytes from the specified {@code bytes} array starting at {@code offset} off to this file output stream.
+     * Rolls over the file if necessary.
+     */
+    @Override
+    public synchronized void write(@NonNull final byte[] bytes, final int offset, final int length) throws IOException {
+        current.outputStream().write(bytes, offset, length);
+        current.remainingSize.addAndGet(-length);
+        rollIfNeeded();
+    }
+
+    /**
+     * Writes a byte array into the stream.
+     * Rolls over the file if necessary
+     */
+    @Override
+    public synchronized void write(@NonNull final byte[] bytes) throws IOException {
+        current.outputStream().write(bytes);
+        current.remainingSize().addAndGet(-bytes.length);
+        rollIfNeeded();
+    }
+
+    /**
+     * Writes a single byte to the stream.
+     * Rolls over the file if necessary
      */
     @Override
     public synchronized void write(final int b) throws IOException {
-        // checkAndPrepare(1);
         current.outputStream().write(b);
         current.remainingSize.decrementAndGet();
-        if (current.remainingSizeLong() <= 0) {
-            useNextFile();
-        }
+        rollIfNeeded();
     }
 
     @Override
@@ -126,172 +95,96 @@ public class OnSizeAndDateRolloverFileOutputStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
-        this.closed = true;
-        final ArrayList<FileOutputStream> fileOutputStreams = new ArrayList<>(dispose);
-        dispose.clear();
-        for (FileOutputStream os : fileOutputStreams) {
-            os.flush();
-            try {
-                os.close();
-            } catch (Exception e) {
-                // emergency logger
-            }
-        }
         current.outputStream().flush();
         current.outputStream().close();
-        executorService.shutdownNow();
-        executorService.close();
     }
 
     @NonNull
-    private static LogFileConfig logConfig(
-            final Path logPath, String fileName, final long maxFileSize, boolean append) {
+    private static LogFileConfig logConfig(final Path logPath, final long maxFileSize, boolean append) {
         final int possibleMaxFiles = Math.max((int) (ESTIMATED_MAX_LOG_VOLUME / maxFileSize), 100);
-        FileNameComponents fileNameComponents = FileNameComponents.getFileNameComponents(fileName);
+        FileNameComponents fileNameComponents = FileNameComponents.create(logPath);
         return new LogFileConfig(
-                logPath, fileNameComponents, String.valueOf(possibleMaxFiles).length(), maxFileSize, append);
+                logPath.toAbsolutePath().getParent(),
+                fileNameComponents,
+                String.valueOf(possibleMaxFiles).length(),
+                maxFileSize,
+                append);
     }
 
-    private void checkAndPrepare(final int length) {
-        final long size = current.remainingSizeLong();
-        if (size - length <= fileConfig.maxFileSize * 0.15 && newFiles.isEmpty()) {
-            final String formattedDate = current.formattedDate();
-            final int index = current.index();
-            final Instant instant = Instant.now().truncatedTo(ChronoUnit.DAYS);
-
-            executorService.submit(() -> {
-                final FileMetadata last = newFiles.peekLast();
-                if (last != null && instant.equals(last.date()) && index > last.index()) {
-                    newFiles.add(prepareFile(fileConfig, instant, formattedDate, index));
-                }
-            });
+    private synchronized void rollIfNeeded() {
+        if (current.remainingSizeLong() <= 0) {
+            this.current = roll(fileConfig, this.current);
         }
-    }
-
-    private void useNextFile() {
-        dispose.offer(current.outputStream());
-        this.current = prepareNextFile(fileConfig, current);
-    }
-
-    private FileMetadata prepareNextFile(final LogFileConfig fileConfig, final FileMetadata left) {
-        final Instant now = Instant.now().truncatedTo(ChronoUnit.DAYS);
-        String formattedDate = left.formattedDate();
-        int index = left.index;
-        if (Duration.between(left.date(), now).toDays() >= 1) {
-            formattedDate = DATE_FORMAT.format(now);
-            index = 0;
-        }
-
-        return prepareFile(fileConfig, now, formattedDate, index);
     }
 
     @NonNull
-    private static FileMetadata prepareFile(
-            final LogFileConfig fc, final Instant now, final String date, final int index) {
-        final double maxIndex = Math.pow(10, fc.indexPositions);
-        int i = index;
-        boolean nextFileFound = false;
-        long fileLeftCapacity = fc.maxFileSize;
-        FileOutputStream os = null;
-        File file;
-
-        while (!nextFileFound) {
-            // While we have room to keep increasing the i
-            // Search for the first available file of the day.
-            do {
-                i++;
-                file = fc.getPathFor(date, i).toFile();
-                fileLeftCapacity = fc.maxFileSize - file.length();
-            } while ((file.exists() && !fc.append())
-                    || (file.exists() && fc.append() && !file.canWrite())
-                    || (file.exists() && fc.append() && file.canWrite() && (fileLeftCapacity <= 0)) && i < maxIndex);
-
-            if (i > maxIndex) {
-                // this means that we tried to create a file for each possible index and was not possible.
-                // So we either miscalculate the max size or
-                // Emergency logger
-                file = createEmergencyTempFile(fc, date, file, i);
-                // Create a temporal file for this case ?
-                fileLeftCapacity = fc.maxFileSize;
-            }
-            try {
-                os = new FileOutputStream(file, fc.append());
-                nextFileFound = true;
-            } catch (FileNotFoundException e) {
-                // Emergency logger
-            }
+    private static FileMetadata prepareFile(@NonNull final LogFileConfig fc) {
+        final File file = fc.logFilePath().toFile();
+        if ((!fc.append() && file.exists()) || (file.exists() && !file.canWrite())) {
+            throw new IllegalStateException("Cannot write log file " + file);
         }
 
-        return new FileMetadata(now, date, i, new AtomicLong(fileLeftCapacity), os);
+        long remainingSize = fc.maxFileSize() - file.length();
+        FileOutputStream os;
+        try {
+            os = new FileOutputStream(file.toString(), fc.append());
+        } catch (FileNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
+
+        return new FileMetadata(Instant.now().truncatedTo(ChronoUnit.DAYS), 0, new AtomicLong(remainingSize), os);
     }
 
-    private static File createEmergencyTempFile(final LogFileConfig fc, final String date, File file, final int index) {
+    @NonNull
+    private static FileMetadata roll(@NonNull final LogFileConfig fc, @NonNull final FileMetadata metadata) {
+        final double maxIndex = Math.pow(10, fc.indexPositions);
+        final String formattedDate = DATE_FORMAT.format(metadata.instant());
+        int index = metadata.index();
+        Path newPath = fc.getPathFor(formattedDate, index);
+
+        while (Files.exists(newPath) && index < maxIndex) {
+            index++;
+            newPath = fc.getPathFor(formattedDate, index);
+        }
+
+        if (index > maxIndex) {
+            final Path pathFor = fc.getPathFor(formattedDate, metadata.index());
+            GeneralUtilities.delete(pathFor);
+        }
+
+        final Instant now = Instant.now().truncatedTo(ChronoUnit.DAYS);
+        int nextIndex = Duration.between(now, metadata.instant()).toDays() > 0 ? 0 : index + 1;
 
         try {
-            file = Files.createTempFile(fc.nameWithPrefix(date + "-" + index + "-" + UUID.randomUUID()), "")
-                    .toFile();
+            metadata.outputStream.close();
+            final File file = fc.logFilePath().toFile();
+            GeneralUtilities.renameFile(file, newPath.toFile());
+            FileOutputStream os = new FileOutputStream(file, fc.append());
+            return new FileMetadata(now, nextIndex, new AtomicLong(fc.maxFileSize()), os);
         } catch (IOException e) {
-            // Emergency logger super bad situation
+            throw new RuntimeException("Something happened while rolling over", e);
         }
-        return file;
-    }
-
-    /**
-     * Creates a String of digits of the number and pads to the left with 0. Examples:
-     * <ul>
-     * <li>{@code toPaddedDigitsString(1, 1)} --> 1</li>
-     * <li>{@code toPaddedDigitsString(1, 2)} --> 01</li>
-     * <li>{@code toPaddedDigitsString(12, 1)} --> 2</li>
-     * <li>{@code toPaddedDigitsString(12, 2)} --> 12</li>
-     * <li>{@code toPaddedDigitsString(12, 3)} --> 012</li>
-     * <li>{@code toPaddedDigitsString(123, 3)} --> 123</li>
-     * <li>{@code toPaddedDigitsString(758, 4)} --> 0758</li>
-     * </ul>
-     *
-     * @param number        The number to append in reverse order.
-     * @param desiredLength The maximum length of the number to append.
-     */
-    private static String toPaddedDigitsString(final int number, final int desiredLength) {
-        StringBuilder buffer = new StringBuilder();
-        int actualLength = 0;
-        int num = number;
-        while ((num > 0) && actualLength < desiredLength) {
-            int digit = num % 10;
-            buffer.append(digit);
-            num /= 10;
-            actualLength++;
-        }
-        while (desiredLength > actualLength) {
-            buffer.append(0);
-            actualLength++;
-        }
-        return buffer.reverse().toString();
-    }
-
-    private static void checkDirectory(String filename) throws IOException {
-        File file = new File(filename);
-        filename = file.getCanonicalPath();
-        file = new File(filename);
-        File dir = file.getParentFile();
-        if (!dir.exists()) throw new IOException("Log directory does not exist. Path=" + dir);
-        else if (!dir.isDirectory()) throw new IOException("Path for Log directory is not a directory. Path=" + dir);
-        else if (!dir.canWrite()) throw new IOException("Cannot write log directory " + dir);
     }
 
     public record LogFileConfig(
             Path logPath, FileNameComponents fileName, int indexPositions, long maxFileSize, boolean append) {
 
-        String nameWithPrefix(String middleFix) {
-            return fileName.baseName + "-" + middleFix + fileName().dotExtension();
+        String logFileName() {
+            return fileName.baseName + fileName().dotExtension();
+        }
+
+        Path logFilePath() {
+            return this.logPath.resolve(logFileName());
         }
 
         Path getPathFor(String date, int index) {
-            return this.logPath.resolve(nameWithPrefix(date + "." + toPaddedDigitsString(index, this.indexPositions)));
+            return this.logPath.resolve(fileName.baseName + "-"
+                    + (date + "." + GeneralUtilities.toPaddedDigitsString(index, this.indexPositions))
+                    + fileName.dotExtension());
         }
     }
 
-    public record FileMetadata(
-            Instant date, String formattedDate, int index, AtomicLong remainingSize, FileOutputStream outputStream) {
+    public record FileMetadata(Instant instant, int index, AtomicLong remainingSize, FileOutputStream outputStream) {
         public Long remainingSizeLong() {
             return remainingSize.get();
         }
@@ -299,8 +192,8 @@ public class OnSizeAndDateRolloverFileOutputStream extends OutputStream {
 
     public record FileNameComponents(String baseName, String extension) {
         @NonNull
-        private static FileNameComponents getFileNameComponents(final String fileBaseName) {
-            String baseFile = Path.of(fileBaseName).getFileName().toString();
+        private static FileNameComponents create(final Path fileName) {
+            String baseFile = fileName.getFileName().toString();
             final int i = baseFile.lastIndexOf(".");
             final String baseFileName = i >= 0 ? baseFile.substring(0, i) : baseFile;
             final String baseFileExtension = i >= 0 ? baseFile.substring(i + 1) : "";
