@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -47,9 +48,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -390,5 +393,53 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return Optional.ofNullable(lastReceipt)
                 .map(receipt -> receipt.getContractID().getContractNum())
                 .orElse(-1L);
+    }
+
+    public boolean getDeferStatusResolution() {
+        return deferStatusResolution;
+    }
+
+    public String getTxnName() {
+        return txnName;
+    }
+
+    public Optional<String> getAbi() {
+        return abi;
+    }
+
+    public String getContract() {
+        return contract;
+    }
+
+    public Optional<Function<Transaction, Transaction>> getFiddler() {
+        return fiddler;
+    }
+
+    public Optional<Long> getSubmitDelay() {
+        return submitDelay;
+    }
+
+    public Optional<Long> getValidDurationSecs() {
+        return validDurationSecs;
+    }
+
+    public Optional<String> getCustomTxnId() {
+        return customTxnId;
+    }
+
+    public Optional<AccountID> getNode() {
+        return node;
+    }
+
+    public OptionalDouble getUsdFee() {
+        return usdFee;
+    }
+
+    public Optional<Integer> getRetryLimits() {
+        return retryLimits;
+    }
+
+    public Optional<EnumSet<ResponseCodeEnum>> getPermissiblePrechecks() {
+        return permissiblePrechecks;
     }
 }
