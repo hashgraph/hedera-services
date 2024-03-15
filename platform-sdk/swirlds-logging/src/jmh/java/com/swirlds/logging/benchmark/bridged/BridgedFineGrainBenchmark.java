@@ -66,7 +66,6 @@ public class BridgedFineGrainBenchmark {
     private BridgedConfiguration config;
     private LoggingBenchmarkConfig<LoggingSystem> swirldsConfig;
 
-
     private static final Marker MARKER = MarkerManager.getMarker("marker");
 
     @Setup(Level.Trial)
