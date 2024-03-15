@@ -41,6 +41,7 @@ public class BlockNodeServer {
 
     /**
      * Attempts to start the server.
+     *
      */
     public void start() {
         try {

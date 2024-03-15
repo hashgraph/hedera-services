@@ -16,6 +16,7 @@
 
 package com.hedera.node.blocknode.config;
 
+import com.hedera.node.blocknode.config.data.BlockNodeConfig;
 import com.hedera.node.blocknode.config.data.BlockNodeGrpcConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -31,7 +32,9 @@ public class ConfigProvider {
     public final Configuration configuration;
 
     public ConfigProvider() {
-        final var builder = ConfigurationBuilder.create().withConfigDataType(BlockNodeGrpcConfig.class);
+        final var builder = ConfigurationBuilder.create()
+                .withConfigDataType(BlockNodeGrpcConfig.class)
+                .withConfigDataType(BlockNodeConfig.class);
         this.configuration = builder.build();
     }
 }
