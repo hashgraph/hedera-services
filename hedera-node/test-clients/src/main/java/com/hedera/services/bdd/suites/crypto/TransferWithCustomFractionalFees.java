@@ -943,6 +943,92 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
+    public HapiSpec transferMultipleTimesWithFixedFeeInHBarShouldVerifyEachTransferIsPaid() {
+        return defaultHapiSpec("transferMultipleTimesWithFixedFeeShouldVerifyEachTransferIsPaid")
+                .given(
+                        cryptoCreate(hbarCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(tokenTreasury).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(alice).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(bob).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(carol).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(ivan),
+                        tokenCreate(token)
+                                .treasury(tokenTreasury)
+                                .initialSupply(tokenTotal)
+                                .payingWith(tokenTreasury)
+                                .withCustom(fixedHbarFee(1L, hbarCollector)),
+                        tokenAssociate(alice, token),
+                        tokenAssociate(bob, token),
+                        tokenAssociate(carol, token),
+                        tokenAssociate(ivan, token),
+                        tokenAssociate(tokenOwner, token),
+                        cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
+                .when(
+                        cryptoTransfer(moving(10L, token).between(tokenOwner, alice))
+                                .fee(1L),
+                        cryptoTransfer(moving(5L, token).between(alice, bob)).fee(1L),
+                        cryptoTransfer(moving(2L, token).between(bob, carol)).fee(1L),
+                        cryptoTransfer(moving(1L, token).between(carol, ivan)).fee(1L))
+                .then(
+                        getAccountBalance(hbarCollector).hasTinyBars(ONE_HUNDRED_HBARS + 4L),
+                        getAccountBalance(alice).hasTokenBalance(token, 5L),
+                        getAccountBalance(alice).hasTinyBars(ONE_MILLION_HBARS - 1L),
+                        getAccountBalance(bob).hasTokenBalance(token, 3L),
+                        getAccountBalance(bob).hasTinyBars(ONE_MILLION_HBARS - 1L),
+                        getAccountBalance(carol).hasTokenBalance(token, 1L),
+                        getAccountBalance(carol).hasTinyBars(ONE_MILLION_HBARS - 1L));
+    }
+
+    @HapiTest
+    public HapiSpec transferMultipleTimesWithFixedFeeInCustomFTShouldVerifyEachTransferIsPaid() {
+        return defaultHapiSpec("transferMultipleTimesWithFixedFeeInCustomFTShouldVerifyEachTransferIsPaid")
+                .given(
+                        cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(tokenTreasury).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenOwner),
+                        cryptoCreate(alice),
+                        cryptoCreate(bob),
+                        cryptoCreate(carol),
+                        cryptoCreate(ivan),
+                        tokenCreate(token)
+                                .treasury(tokenTreasury)
+                                .initialSupply(tokenTotal)
+                                .payingWith(tokenTreasury),
+                        tokenAssociate(htsCollector, token),
+                        tokenCreate(token2)
+                                .treasury(tokenTreasury)
+                                .initialSupply(tokenTotal)
+                                .payingWith(tokenTreasury)
+                                .withCustom(fixedHtsFee(1L, token, htsCollector)),
+                        tokenAssociate(alice, token, token2),
+                        tokenAssociate(bob, token, token2),
+                        tokenAssociate(carol, token, token2),
+                        tokenAssociate(ivan, token, token2),
+                        tokenAssociate(tokenOwner, token, token2),
+                        cryptoTransfer(moving(50L, token).between(tokenTreasury, tokenOwner)),
+                        cryptoTransfer(moving(50L, token2).between(tokenTreasury, tokenOwner)),
+                        cryptoTransfer(moving(1L, token).between(tokenTreasury, alice)),
+                        cryptoTransfer(moving(1L, token).between(tokenTreasury, bob)),
+                        cryptoTransfer(moving(1L, token).between(tokenTreasury, carol)))
+                .when(
+                        cryptoTransfer(moving(10L, token2).between(tokenOwner, alice))
+                                .fee(1L),
+                        cryptoTransfer(moving(5L, token2).between(alice, bob)).fee(1L),
+                        cryptoTransfer(moving(2L, token2).between(bob, carol)).fee(1L),
+                        cryptoTransfer(moving(1L, token2).between(carol, ivan)).fee(1L))
+                .then(
+                        getAccountBalance(htsCollector).hasTokenBalance(token, 4L),
+                        getAccountBalance(alice).hasTokenBalance(token2, 5L),
+                        getAccountBalance(alice).hasTokenBalance(token, 0L),
+                        getAccountBalance(bob).hasTokenBalance(token2, 3L),
+                        getAccountBalance(bob).hasTokenBalance(token, 0L),
+                        getAccountBalance(carol).hasTokenBalance(token2, 1L),
+                        getAccountBalance(carol).hasTokenBalance(token, 0L),
+                        getAccountBalance(ivan).hasTokenBalance(token, 0L));
+    }
+
     @Override
     protected Logger getResultsLogger() {
         return log;
