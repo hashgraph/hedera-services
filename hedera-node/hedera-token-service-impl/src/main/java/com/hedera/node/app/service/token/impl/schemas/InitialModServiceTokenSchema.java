@@ -343,9 +343,9 @@ public class InitialModServiceTokenSchema extends Schema {
                                         aliasesState
                                                 .get()
                                                 .put(new ProtoBytes(toAcct.alias()), toAcct.accountIdOrThrow());
-                                        if (toAcct.alias().toByteArray().length > 20) {
+                                        if (toAcct.alias().length() > 20) {
                                             final var result = AliasUtils.extractEvmAddress(toAcct.alias());
-                                            if (result != null) {
+                                            if (result != null && result.length() == 20) {
                                                 aliasesState.get().put(new ProtoBytes(result), toAcct.accountId());
                                             }
                                         }
@@ -363,6 +363,10 @@ public class InitialModServiceTokenSchema extends Schema {
                 throw new RuntimeException(e);
             }
             if (acctsToState.get().isModified()) ((WritableKVStateBase) acctsToState.get()).commit();
+            if (aliasesState.get().isModified()) ((WritableKVStateBase) aliasesState.get()).commit();
+            final var key = new ProtoBytes(Bytes.fromHex("b73e5b81bba2d1e6ee2906f63fbd917b881d3eff"));
+            System.out.println("After migration, alias b73e5b81bba2d1e6ee2906f63fbd917b881d3eff maps to "
+                    + aliasesState.get().get(key));
             // Also persist the per-node pending reward information
             stakingFs.forEach((entityNum, ignore) -> {
                 final var toKey = new EntityNumber(entityNum.longValue());
