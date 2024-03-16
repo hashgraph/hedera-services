@@ -40,6 +40,15 @@ public class MockRecordsHistorian implements RecordsHistorian {
     }
 
     @Override
+    public void trackFirstFollowingChildRecord(
+            int sourceId,
+            Builder syntheticBody,
+            ExpirableTxnRecord.Builder recordSoFar,
+            List<TransactionSidecarRecord.Builder> sidecars) {
+        // No-op
+    }
+
+    @Override
     public void clearHistory() {
         // No-op
     }

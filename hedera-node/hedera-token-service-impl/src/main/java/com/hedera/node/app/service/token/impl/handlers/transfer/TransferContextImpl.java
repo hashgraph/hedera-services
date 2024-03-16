@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -183,6 +184,19 @@ public class TransferContextImpl implements TransferContext {
             if (aa.isApproval() && aa.amount() < 0L) {
                 maybeValidateHbarAllowance(
                         accountStore.get(aa.accountIDOrElse(AccountID.DEFAULT)), topLevelPayer, aa.amount());
+            }
+        }
+    }
+
+    @Override
+    public void validateAccountIds() {
+        final var op = context.body().cryptoTransferOrThrow();
+        for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
+            for (final var aa : xfers.transfersOrElse(emptyList())) {
+                if (aa.hasAccountID() && aa.accountIDOrThrow().hasAccountNum()) {
+                    final var maybeAccount = accountStore.get(aa.accountIDOrElse(AccountID.DEFAULT));
+                    validateTrue(maybeAccount != null, INVALID_ACCOUNT_ID);
+                }
             }
         }
     }

@@ -236,6 +236,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {
     @Test
+    void hmm() throws InvalidProtocolBufferException, TextFormat.InvalidEscapeSequenceException {
+        final var expected =
+                "\\n7\\n\\026\\n\\f\\b\\353\\306\\316\\256\\006\\020\\223\\274\\335\\321\\001\\022\\004\\030\\200\\342< \\001B\\035B\\005\\b\\200\\316\\332\\003j\\024lazy-created account";
+        final var actual =
+                "\\n;\\n\\026\\n\\f\\b\\353\\306\\316\\256\\006\\020\\223\\274\\335\\321\\001\\022\\004\\030\\200\\342< \\001B!B\\005\\b\\200\\316\\332\\003j\\024lazy-created accountz\\002\\030\\000";
+        System.out.println("expected: " + bodyOf(expected));
+        System.out.println("actual: " + bodyOf(actual));
+    }
+
+    @Test
     void canDecodeBody() {
         final var encodedSignedTransaction =
                 "\\n9\\n\\025\\n\\v\\b\\223\\263\\302\\255\\006\\020\\264\\351\\276.\\022\\004\\030\\231\\216\\a \\003r \\022\\036\\n\\004\\030\\325\\325,\\022\\n\\n\\004\\030\\373\\342A\\020\\375\\352J\\022\\n\\n\\004\\030\\305\\245Y\\020\\376\\352J";
