@@ -81,6 +81,14 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 try {
                     newAssociation = validateAndBuildAutoAssociation(
                             accountId, tokenId, token, accountStore, tokenRelStore, handleContext);
+                    // (FUTURE) Also remove this redundant validation after diff testing
+                    if (aa.isApproval() && aa.amount() < 0) {
+                        validateFungibleAllowance(
+                                requireNonNull(accountStore.getAccountById(aa.accountIDOrThrow())),
+                                handleContext.payer(),
+                                tokenId,
+                                aa.amount());
+                    }
                 } catch (HandleException e) {
                     // (FUTURE) Remove this catch and stop translating TOKEN_NOT_ASSOCIATED_TO_ACCOUNT
                     // into e.g. SPENDER_DOES_NOT_HAVE_ALLOWANCE; we need this only for mono-service
