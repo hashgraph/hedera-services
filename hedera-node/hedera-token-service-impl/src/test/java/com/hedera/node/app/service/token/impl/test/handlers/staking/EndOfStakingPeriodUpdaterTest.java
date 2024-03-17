@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.calculateWeightFromStake;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.scaleUpWeightToStake;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -49,10 +50,14 @@ import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.address.AddressBook;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,8 +73,14 @@ class EndOfStakingPeriodUpdaterTest {
     private EndOfStakingPeriodUpdater subject;
     private NodeStakeUpdateRecordBuilder nodeStakeUpdateRecordBuilder;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private PlatformStateAccessor platformStateAccessor;
+
+    @Mock(strictness = LENIENT)
+    private PlatformState platformState;
+
+    @Mock(strictness = LENIENT)
+    private AddressBook addressBook;
 
     @BeforeEach
     void setup() {
@@ -80,6 +91,8 @@ class EndOfStakingPeriodUpdaterTest {
         subject = new EndOfStakingPeriodUpdater(
                 new FakeHederaNumbers(), new StakingRewardsHelper(), platformStateAccessor);
         this.nodeStakeUpdateRecordBuilder = new FakeNodeStakeUpdateRecordBuilder().create();
+        given(platformStateAccessor.getPlatformState()).willReturn(platformState);
+        given(platformState.getAddressBook()).willReturn(addressBook);
     }
 
     @Test
@@ -177,7 +190,7 @@ class EndOfStakingPeriodUpdaterTest {
     }
 
     @Test
-    void deletedNodesgetsZeroPendingRewards() {
+    void deletedNodesGetsZeroPendingRewards() {
         final var context = mock(TokenContext.class);
         given(context.consensusTime()).willReturn(Instant.now());
 
@@ -187,6 +200,8 @@ class EndOfStakingPeriodUpdaterTest {
 
         // Create account store (with data)
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        // Address book
+        given(addressBook.getNodeIdSet()).willReturn(Set.of(new NodeId(2)));
 
         // Create staking info store (with data)
         final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
@@ -246,6 +261,89 @@ class EndOfStakingPeriodUpdaterTest {
     }
 
     @Test
+    void marksNonExistingnodesToDeletedInState() {
+        final var context = mock(TokenContext.class);
+        given(context.consensusTime()).willReturn(Instant.now());
+
+        // Create staking config
+        final var stakingConfig = newStakingConfig().getOrCreateConfig();
+        given(context.configuration()).willReturn(stakingConfig);
+
+        // Create account store (with data)
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        // Address book
+        given(addressBook.getNodeIdSet()).willReturn(Set.of(new NodeId(1), new NodeId(3)));
+
+        // Create staking info store (with data)
+        final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
+                .value(NODE_NUM_1, STAKING_INFO_1)
+                .value(NODE_NUM_2, STAKING_INFO_2)
+                .value(NODE_NUM_3, STAKING_INFO_3)
+                .build();
+        final var stakingInfoStore =
+                new WritableStakingInfoStore(new MapWritableStates(Map.of(STAKING_INFO_KEY, stakingInfosState)));
+        given(context.writableStore(WritableStakingInfoStore.class)).willReturn(stakingInfoStore);
+
+        // Create staking reward store (with data)
+        final var backingValue = new AtomicReference<>(new NetworkStakingRewards(true, 1_000_000_000L, 0, 0));
+        final var stakingRewardsState =
+                new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, backingValue::get, backingValue::set);
+        final var states = mock(WritableStates.class);
+        given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY))
+                .willReturn((WritableSingletonState) stakingRewardsState);
+        final var stakingRewardsStore = new WritableNetworkStakingRewardsStore(states);
+        given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
+        given(context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
+                .willReturn(nodeStakeUpdateRecordBuilder);
+
+        // Assert preconditions
+        Assertions.assertThat(STAKING_INFO_1.weight()).isZero();
+        Assertions.assertThat(STAKING_INFO_2.weight()).isZero();
+        Assertions.assertThat(STAKING_INFO_3.weight()).isZero();
+        Assertions.assertThat(STAKING_INFO_1.pendingRewards()).isZero();
+        Assertions.assertThat(STAKING_INFO_2.pendingRewards()).isZero();
+        Assertions.assertThat(STAKING_INFO_3.pendingRewards()).isZero();
+
+        subject.updateNodes(context);
+
+        Assertions.assertThat(stakingRewardsStore.totalStakeRewardStart())
+                .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
+        Assertions.assertThat(stakingRewardsStore.totalStakedStart()).isEqualTo(130000000000L);
+        final var resultStakingInfo1 = stakingInfoStore.get(NODE_NUM_1.number());
+        final var resultStakingInfo2 = stakingInfoStore.get(NODE_NUM_2.number());
+        final var resultStakingInfo3 = stakingInfoStore.get(NODE_NUM_3.number());
+        Assertions.assertThat(resultStakingInfo1.stake()).isEqualTo(80000000000L);
+        Assertions.assertThat(resultStakingInfo2.stake()).isEqualTo(50000000000L);
+        Assertions.assertThat(resultStakingInfo3.stake()).isZero();
+
+        Assertions.assertThat(resultStakingInfo1.unclaimedStakeRewardStart()).isZero();
+        Assertions.assertThat(resultStakingInfo2.unclaimedStakeRewardStart()).isZero();
+        Assertions.assertThat(resultStakingInfo3.unclaimedStakeRewardStart()).isZero();
+
+        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(86L, 6L, 5L));
+        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
+        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(11L, 3L, 1L));
+
+        Assertions.assertThat(resultStakingInfo1.weight()).isEqualTo(307);
+        // removed node should have weight 0
+        Assertions.assertThat(resultStakingInfo2.weight()).isEqualTo(0);
+        Assertions.assertThat(resultStakingInfo3.weight()).isZero();
+
+        Assertions.assertThat(resultStakingInfo1.pendingRewards()).isEqualTo(72000);
+        // removed node should have pending rewards 0
+        Assertions.assertThat(resultStakingInfo2.pendingRewards()).isEqualTo(0L);
+        Assertions.assertThat(resultStakingInfo3.pendingRewards()).isEqualTo(72000L);
+
+        Assertions.assertThat(resultStakingInfo1.deleted()).isFalse();
+        // removed node will be marked deleted
+        Assertions.assertThat(resultStakingInfo2.deleted()).isTrue();
+        Assertions.assertThat(resultStakingInfo3.deleted()).isFalse();
+
+        Assertions.assertThat(resultStakingInfo1.weight() + resultStakingInfo2.weight() + resultStakingInfo3.weight())
+                .isLessThanOrEqualTo(SUM_OF_CONSENSUS_WEIGHTS);
+    }
+
+    @Test
     void calculatesNewEndOfPeriodStakingFieldsAsExpected() {
         final var context = mock(TokenContext.class);
         given(context.consensusTime()).willReturn(Instant.now());
@@ -256,6 +354,8 @@ class EndOfStakingPeriodUpdaterTest {
 
         // Create account store (with data)
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        // Address book
+        given(addressBook.getNodeIdSet()).willReturn(Set.of(new NodeId(1), new NodeId(2), new NodeId(3)));
 
         // Create staking info store (with data)
         final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)

@@ -121,8 +121,8 @@ public class EndOfStakingPeriodUpdater {
 
         // Mark deleted nodes as deleted checking address book. If a node is deleted from address book
         // during upgrade, it should be marked as deleted in stakingInfoStore
-        final var addressBookNodeIds =
-                platformStateAccessor.getPlatformState().getAddressBook().getNodeIdSet();
+        final var addressBook = platformStateAccessor.getPlatformState().getAddressBook();
+        final var addressBookNodeIds = requireNonNull(addressBook).getNodeIdSet();
         for (final var nodeId : nodeIds) {
             final var stakingInfo = requireNonNull(stakingInfoStore.get(nodeId));
             if (!addressBookNodeIds.contains(new NodeId(nodeId))) {
