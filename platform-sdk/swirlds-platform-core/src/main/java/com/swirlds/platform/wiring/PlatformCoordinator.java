@@ -25,7 +25,6 @@ import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
-import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,7 +37,7 @@ import java.util.Objects;
 public class PlatformCoordinator {
     /**
      * The object counter which spans the {@link com.swirlds.platform.event.hashing.EventHasher EventHasher} and the
-     * {@link PostHashCollectorWiring}
+     * postHashCollector
      * <p>
      * Used to flush the pair of components together.
      */
