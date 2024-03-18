@@ -186,6 +186,25 @@ public class InitialModServiceTokenSchema extends Schema {
     }
 
     @Override
+    public void restart(@NonNull MigrationContext ctx) {
+        final var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
+        final var networkInfo = ctx.networkInfo();
+        stakingToState.keys().forEachRemaining(nodeId -> {
+            final var stakingInfo = requireNonNull(stakingToState.get(nodeId));
+            if (!networkInfo.containsNode(nodeId.number()) && !stakingInfo.deleted()) {
+                stakingToState.put(
+                        nodeId, stakingInfo.copyBuilder().deleted(true).build());
+                log.info(
+                        "Node {} is marked deleted since it is deleted from addressBook during restart.",
+                        nodeId.number());
+            }
+        });
+        if (stakingToState.isModified()) {
+            ((WritableKVStateBase) stakingToState).commit();
+        }
+    }
+
+    @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         final var isGenesis = ctx.previousVersion() == null;
         if (isGenesis) {
