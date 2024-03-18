@@ -606,7 +606,8 @@ public final class Hedera implements SwirldMain {
             switch (trigger) {
                 case GENESIS -> genesis(state, platformState);
                 case RECONNECT -> reconnect(state, deserializedVersion, platformState, metrics);
-                case RESTART, EVENT_STREAM_RECOVERY -> restart(state, deserializedVersion, trigger, platformState, metrics);
+                case RESTART, EVENT_STREAM_RECOVERY -> restart(
+                        state, deserializedVersion, trigger, platformState, metrics);
             }
         } catch (final Throwable th) {
             logger.fatal("Critical failure during initialization", th);

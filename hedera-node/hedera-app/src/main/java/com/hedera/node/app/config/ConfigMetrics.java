@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.config;
@@ -31,41 +30,33 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class ConfigMetrics {
 
-    private static final LongGauge.Config ACCOUNTS_MAX_NUMBER_CONFIG =
-            new Config("app", "accountsMaxNumber")
-                    .withDescription("The maximum number of accounts that can be created");
+    private static final LongGauge.Config ACCOUNTS_MAX_NUMBER_CONFIG = new Config("app", "accountsMaxNumber")
+            .withDescription("The maximum number of accounts that can be created");
 
-    private static final LongGauge.Config CONTRACTS_MAX_NUMBER_CONFIG =
-            new Config("app", "contractsMaxNumber")
-                    .withDescription("The maximum number of smart contracts that can be created");
+    private static final LongGauge.Config CONTRACTS_MAX_NUMBER_CONFIG = new Config("app", "contractsMaxNumber")
+            .withDescription("The maximum number of smart contracts that can be created");
 
-    private static final LongGauge.Config STORAGE_SLOTS_MAX_NUMBER_CONFIG =
-            new Config("app", "storageSlotsMaxNumber")
-                    .withDescription("The maximum number of storage slots that can be created");
+    private static final LongGauge.Config STORAGE_SLOTS_MAX_NUMBER_CONFIG = new Config("app", "storageSlotsMaxNumber")
+            .withDescription("The maximum number of storage slots that can be created");
 
     private static final LongGauge.Config FILES_MAX_NUMBER_CONFIG =
-            new Config("app", "filesMaxNumber")
-                    .withDescription("The maximum number of files that can be created");
+            new Config("app", "filesMaxNumber").withDescription("The maximum number of files that can be created");
 
-    private static final LongGauge.Config SCHEDULES_MAX_NUMBER_CONFIG =
-            new Config("app", "schedulesMaxNumber")
-                    .withDescription("The maximum number of schedules that can be created");
+    private static final LongGauge.Config SCHEDULES_MAX_NUMBER_CONFIG = new Config("app", "schedulesMaxNumber")
+            .withDescription("The maximum number of schedules that can be created");
 
     private static final LongGauge.Config TOKENS_MAX_NUMBER_CONFIG =
-            new Config("app", "tokensMaxNumber")
-                    .withDescription("The maximum number of tokens that can be created");
+            new Config("app", "tokensMaxNumber").withDescription("The maximum number of tokens that can be created");
 
     private static final LongGauge.Config NFTS_MAX_NUMBER_CONFIG =
-            new Config("app", "nftsMaxNumber")
-                    .withDescription("The maximum number of NFTs that can be created");
+            new Config("app", "nftsMaxNumber").withDescription("The maximum number of NFTs that can be created");
 
-    private static final LongGauge.Config TOKEN_ASSOCIATIONS_MAX_NUMBER_CONFIG =
-            new Config("app", "tokenAssociationsMaxNumber")
-                    .withDescription("The maximum number of token associations that can be created");
+    private static final LongGauge.Config TOKEN_ASSOCIATIONS_MAX_NUMBER_CONFIG = new Config(
+                    "app", "tokenAssociationsMaxNumber")
+            .withDescription("The maximum number of token associations that can be created");
 
     private static final LongGauge.Config TOPICS_MAX_NUMBER_CONFIG =
-            new Config("app", "topicsMaxNumber")
-                    .withDescription("The maximum number of topics that can be created");
+            new Config("app", "topicsMaxNumber").withDescription("The maximum number of topics that can be created");
 
     private final LongGauge accountMaxNumber;
     private final LongGauge contractsMaxNumber;
@@ -111,5 +102,4 @@ public class ConfigMetrics {
         final var topicsConfig = configuration.getConfigData(TopicsConfig.class);
         topicsMaxNumber.set(topicsConfig.maxNumber());
     }
-
 }
