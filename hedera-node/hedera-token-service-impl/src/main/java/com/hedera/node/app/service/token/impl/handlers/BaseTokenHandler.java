@@ -276,15 +276,7 @@ public class BaseTokenHandler {
             final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault() && !isTreasuryAccount;
             final var kycGranted = !token.hasKycKey() || isTreasuryAccount;
             final var newTokenRel = new TokenRelation(
-                    token.tokenId(),
-                    account.accountId(),
-                    0,
-                    isFrozen,
-                    kycGranted,
-                    false,
-                    false,
-                    prevTokenId,
-                    nextTokenId);
+                    token.tokenId(), account.accountId(), 0, isFrozen, kycGranted, false, prevTokenId, nextTokenId);
             newTokenRels.add(newTokenRel);
         }
         return newTokenRels;
