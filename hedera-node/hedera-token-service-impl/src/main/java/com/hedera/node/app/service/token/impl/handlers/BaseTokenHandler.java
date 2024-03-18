@@ -282,7 +282,6 @@ public class BaseTokenHandler {
                     isFrozen,
                     kycGranted,
                     false,
-                    false,
                     prevTokenId,
                     nextTokenId);
             newTokenRels.add(newTokenRel);
