@@ -110,7 +110,7 @@ public class ReconnectBench extends VirtualMapBaseBench {
         new StateBuilder<>(BenchmarkKey::new, BenchmarkValue::new)
                 .buildState(
                         random,
-                        (long) numRecords * (long) numFiles,
+                        (long) numRecords * numFiles,
                         teacherAddProbability,
                         teacherRemoveProbability,
                         teacherModifyProbability,
@@ -138,9 +138,15 @@ public class ReconnectBench extends VirtualMapBaseBench {
         updateMerkleDbPath();
 
         teacherMap = restoreMap("teacher");
+        if (teacherMap == null) {
+            throw new RuntimeException("Failed to restore the 'teacher' map.");
+        }
         teacherMap = flushMap(teacherMap);
 
         learnerMap = restoreMap("learner");
+        if (teacherMap == null) {
+            throw new RuntimeException("Failed to restore the 'learner' map.");
+        }
         learnerMap = flushMap(learnerMap);
 
         teacherTree = MerkleBenchmarkUtils.createTreeForMap(teacherMap);
