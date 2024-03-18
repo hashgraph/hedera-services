@@ -344,6 +344,7 @@ public final class PbjConverter {
             case TokenUnfreezeAccount -> HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
             case TokenUnpause -> HederaFunctionality.TOKEN_UNPAUSE;
             case TokenUpdate -> HederaFunctionality.TOKEN_UPDATE;
+            case TokenUpdateNfts -> HederaFunctionality.TOKEN_UPDATE_NFTS;
             case TransactionGetReceipt -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TransactionGetRecord -> HederaFunctionality.TRANSACTION_GET_RECORD;
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
@@ -441,6 +442,7 @@ public final class PbjConverter {
             case TOKEN_UNFREEZE_ACCOUNT -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
             case TOKEN_UNPAUSE -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
             case TOKEN_UPDATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
+            case TOKEN_UPDATE_NFTS -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdateNfts;
             case TRANSACTION_GET_RECEIPT -> com.hederahashgraph.api.proto.java.HederaFunctionality
                     .TransactionGetReceipt;
             case TRANSACTION_GET_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
@@ -766,6 +768,10 @@ public final class PbjConverter {
             case TRANSACTION_HAS_UNKNOWN_FIELDS -> ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
             case ACCOUNT_IS_IMMUTABLE -> ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
             case ALIAS_ALREADY_ASSIGNED -> ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
+            case INVALID_METADATA_KEY -> ResponseCodeEnum.INVALID_METADATA_KEY;
+            case MISSING_TOKEN_METADATA -> ResponseCodeEnum.MISSING_TOKEN_METADATA;
+            case TOKEN_HAS_NO_METADATA_KEY -> ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
+            case MISSING_SERIAL_NUMBERS -> ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
@@ -1296,6 +1302,11 @@ public final class PbjConverter {
                     .TRANSACTION_HAS_UNKNOWN_FIELDS;
             case ACCOUNT_IS_IMMUTABLE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
             case ALIAS_ALREADY_ASSIGNED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
+            case INVALID_METADATA_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_METADATA_KEY;
+            case TOKEN_HAS_NO_METADATA_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .TOKEN_HAS_NO_METADATA_KEY;
+            case MISSING_TOKEN_METADATA -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_METADATA;
+            case MISSING_SERIAL_NUMBERS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }

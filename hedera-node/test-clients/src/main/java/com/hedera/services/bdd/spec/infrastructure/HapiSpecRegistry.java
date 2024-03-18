@@ -910,4 +910,24 @@ public class HapiSpecRegistry {
                         "%s -> %s", entry.getKey(), entry.getValue().toString()))
                 .collect(toList());
     }
+
+    public void saveMetadataKey(String name, Key metadataKey) {
+        put(name + "Metadata", metadataKey, Key.class);
+    }
+
+    public Key getMetadataKey(String name) {
+        return get(name + "Metadata", Key.class);
+    }
+
+    public boolean hasMetadataKey(String name) {
+        return has(name + "Metadata", Key.class);
+    }
+
+    public void saveMetadata(String token, String metadata) {
+        put(token + "Metadata", metadata, String.class);
+    }
+
+    public String getMetadata(String entity) {
+        return get(entity + "Metadata", String.class);
+    }
 }
