@@ -366,6 +366,18 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
                 .solderTo(latestCompleteStateNotifierWiring.completeStateNotificationInputWire());
+
+        buildUnsolderedWires();
+    }
+
+    /**
+     * {@link ComponentWiring} objects build their input wires when you first request them. Normally that happens when
+     * we are soldering things together, but there are a few wires that aren't soldered and aren't used until later in
+     * the lifecycle. This method forces those wires to be built.
+     */
+    private void buildUnsolderedWires() {
+        eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear);
+        futureEventBufferWiring.getInputWire(FutureEventBuffer::clear);
     }
 
     /**

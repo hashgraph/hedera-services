@@ -91,6 +91,11 @@ public class StandardWiringModel implements WiringModel {
     private final ForkJoinPool defaultPool;
 
     /**
+     * True if start() has been called.
+     */
+    private boolean started = false;
+
+    /**
      * Constructor.
      *
      * @param metrics     provides metrics
@@ -111,6 +116,7 @@ public class StandardWiringModel implements WiringModel {
     @NonNull
     @Override
     public final <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name) {
+        throwIfStarted();
         return new TaskSchedulerBuilder<>(this, name, defaultPool);
     }
 
@@ -120,6 +126,7 @@ public class StandardWiringModel implements WiringModel {
     @NonNull
     @Override
     public final TaskSchedulerMetricsBuilder metricsBuilder() {
+        throwIfStarted();
         return new TaskSchedulerMetricsBuilder(metrics, time);
     }
 
@@ -136,6 +143,7 @@ public class StandardWiringModel implements WiringModel {
      */
     @NonNull
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
+        throwIfStarted();
         return getHeartbeatScheduler().buildHeartbeatWire(period);
     }
 
@@ -149,6 +157,7 @@ public class StandardWiringModel implements WiringModel {
      * @return the output wire
      */
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
+        throwIfStarted();
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
     }
 
@@ -195,6 +204,7 @@ public class StandardWiringModel implements WiringModel {
      * @param scheduler the task scheduler to register
      */
     public void registerScheduler(@NonNull final TaskScheduler<?> scheduler) {
+        throwIfStarted();
         registerVertex(scheduler.getName(), scheduler.getType(), scheduler.isInsertionBlocking());
         if (scheduler.getType() == SEQUENTIAL_THREAD) {
             threadSchedulers.add((SequentialThreadTaskScheduler<?>) scheduler);
@@ -212,6 +222,7 @@ public class StandardWiringModel implements WiringModel {
             @NonNull final String vertexName,
             @NonNull final TaskSchedulerType type,
             final boolean insertionIsBlocking) {
+        throwIfStarted();
         Objects.requireNonNull(vertexName);
         Objects.requireNonNull(type);
         final boolean unique =
@@ -234,6 +245,7 @@ public class StandardWiringModel implements WiringModel {
             @NonNull final String destinationVertex,
             @NonNull final String label,
             @NonNull final SolderType solderType) {
+        throwIfStarted();
 
         final boolean blockingEdge = solderType == SolderType.PUT;
 
@@ -260,6 +272,8 @@ public class StandardWiringModel implements WiringModel {
      */
     public void registerInputWireCreation(
             @NonNull final String taskSchedulerName, @NonNull final String inputWireName) {
+        throwIfStarted();
+
         final boolean unique = inputWires.add(new InputWireDescriptor(taskSchedulerName, inputWireName));
         if (!unique) {
             throw new IllegalStateException(
@@ -276,6 +290,8 @@ public class StandardWiringModel implements WiringModel {
      * @param inputWireName     the name of the input wire
      */
     public void registerInputWireBinding(@NonNull final String taskSchedulerName, @NonNull final String inputWireName) {
+        throwIfStarted();
+
         final InputWireDescriptor descriptor = new InputWireDescriptor(taskSchedulerName, inputWireName);
 
         final boolean registered = inputWires.contains(descriptor);
@@ -292,10 +308,21 @@ public class StandardWiringModel implements WiringModel {
     }
 
     /**
+     * Throw an exception if start() has already been called.
+     */
+    private void throwIfStarted() {
+        if (started) {
+            throw new IllegalStateException("start() has already been called, operation not permitted.");
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public void start() {
+        throwIfStarted();
+        started = true;
 
         // We don't have to do anything with the output of these sanity checks.
         // The methods below will log errors if they find problems.
@@ -317,6 +344,9 @@ public class StandardWiringModel implements WiringModel {
      */
     @Override
     public void stop() {
+        if (!started) {
+            throw new IllegalStateException("start() has not been called, operation not permitted.");
+        }
         if (heartbeatScheduler != null) {
             heartbeatScheduler.stop();
         }
