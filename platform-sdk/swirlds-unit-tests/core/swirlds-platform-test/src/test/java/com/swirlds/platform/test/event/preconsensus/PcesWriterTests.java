@@ -372,9 +372,8 @@ class PcesWriterTests {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformContext platformContext = buildContext(ancientMode);
-
-
         final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
+
         final int stepsUntilAncient =
                 ancientMode == GENERATION_THRESHOLD ? random.nextInt(50, 100) : random.nextInt(5, 10);
         final PcesSequencer sequencer = new DefaultPcesSequencer();

@@ -727,25 +727,20 @@ public class SyncTests {
         executor.setEventWindowDefinitions((caller, listener) -> {
             long listenerMaxIndicator =
                     SyncTestUtils.getMaxIndicator(listener.getShadowGraph().getTips(), ancientMode);
-            System.out.println(ancientMode + ": listenerMaxIndicator : " + listenerMaxIndicator);
             // make the min non-ancient indicator slightly below the max indicator
             long listenerNonAncientThreshold = listenerMaxIndicator - (listenerMaxIndicator / 10);
-            System.out.println(ancientMode + ": listenerNonAncientThreshold : " + listenerNonAncientThreshold);
             long listenerMinIndicator = SyncTestUtils.getMinIndicator(
                     listener.getShadowGraph()
                             .findAncestors(listener.getShadowGraph().getTips(), (e) -> true),
                     ancientMode);
-            System.out.println(ancientMode + ": listenerMinIndicator : " + listenerMinIndicator);
 
             // Expire everything below the listener's min non-ancient indicator on the caller
             caller.expireBelow(listenerNonAncientThreshold);
 
             long callerMaxIndicator =
                     SyncTestUtils.getMaxIndicator(caller.getShadowGraph().getTips(), ancientMode);
-            System.out.println(ancientMode + ": callerMaxIndicator : " + callerMaxIndicator);
             // make the min non-ancient indicator slightly below the max indicator
             long callerNonAncientThreshold = callerMaxIndicator - (callerMaxIndicator / 10);
-            System.out.println(ancientMode + ": callerNonAncientThreshold : " + callerNonAncientThreshold);
             // Setting the caller min indicator to listener ancient threshold - 1 ensures that the caller is not behind
             long callerMinIndicator = listenerNonAncientThreshold - 1;
 
