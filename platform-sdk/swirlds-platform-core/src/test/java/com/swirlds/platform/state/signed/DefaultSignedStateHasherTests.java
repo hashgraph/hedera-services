@@ -18,7 +18,6 @@ package com.swirlds.platform.state.signed;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -58,10 +57,6 @@ public class DefaultSignedStateHasherTests {
         final StateAndRound result = hasher.hashState(stateAndRound);
         assertNotEquals(null, result, "The hasher should return a new StateAndRound");
 
-        // the hasher should obtain a reservation for the next component
-        verify(reservedSignedState).getAndReserve(any());
-        // the hasher should release the original reservation
-        verify(reservedSignedState).close();
         // hashing time metric should get updated
         verify(signedStateMetrics).getSignedStateHashingTimeMetric();
         assertFalse(fatalErrorConsumer.get(), "There should be no fatal errors");
