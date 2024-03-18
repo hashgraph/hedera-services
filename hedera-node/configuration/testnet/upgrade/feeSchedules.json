@@ -1379,6 +1379,52 @@
             } ]
         }
     }, {
+            "transactionFeeSchedule": {
+                "hederaFunctionality": "TokenUpdateNfts",
+                "fees": [
+                    {
+                        "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
+                        "nodedata": {
+                            "constant": 0,
+                            "bpt": 7000000000,
+                            "vpt": 0,
+                            "rbh": 0,
+                            "sbh": 0,
+                            "gas": 0,
+                            "bpr": 0,
+                            "sbpr": 0,
+                            "min": 0,
+                            "max": 1000000000000000
+                        },
+                        "networkdata": {
+                            "constant": 0,
+                            "bpt": 3000000000,
+                            "vpt": 0,
+                            "rbh": 0,
+                            "sbh": 0,
+                            "gas": 0,
+                            "bpr": 0,
+                            "sbpr": 0,
+                            "min": 0,
+                            "max": 1000000000000000
+                        },
+                        "servicedata": {
+                            "constant": 0,
+                            "bpt": 0,
+                            "vpt": 0,
+                            "rbh": 0,
+                            "sbh": 0,
+                            "gas": 0,
+                            "bpr": 0,
+                            "sbpr": 0,
+                            "min": 0,
+                            "max": 1000000000000000
+                        }
+                    }
+                ]
+            }
+        },
+        {
         "transactionFeeSchedule" : {
             "hederaFunctionality" : "TokenBurn",
             "fees" : [ {
@@ -4515,6 +4561,51 @@
             } ]
         }
     }, {
+        "transactionFeeSchedule": {
+            "hederaFunctionality": "TokenUpdateNfts",
+            "fees": [
+                {
+                    "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
+                    "nodedata": {
+                        "constant": 0,
+                        "bpt": 7000000000,
+                        "vpt": 0,
+                        "rbh": 0,
+                        "sbh": 0,
+                        "gas": 0,
+                        "bpr": 0,
+                        "sbpr": 0,
+                        "min": 0,
+                        "max": 1000000000000000
+                    },
+                    "networkdata": {
+                        "constant": 0,
+                        "bpt": 3000000000,
+                        "vpt": 0,
+                        "rbh": 0,
+                        "sbh": 0,
+                        "gas": 0,
+                        "bpr": 0,
+                        "sbpr": 0,
+                        "min": 0,
+                        "max": 1000000000000000
+                    },
+                    "servicedata": {
+                        "constant": 0,
+                        "bpt": 0,
+                        "vpt": 0,
+                        "rbh": 0,
+                        "sbh": 0,
+                        "gas": 0,
+                        "bpr": 0,
+                        "sbpr": 0,
+                        "min": 0,
+                        "max": 1000000000000000
+                    }
+                }
+            ]
+        }
+    },{
         "transactionFeeSchedule" : {
             "hederaFunctionality" : "TokenBurn",
             "fees" : [ {

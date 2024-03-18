@@ -258,7 +258,9 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 false,
                 op.freezeDefault(),
                 false,
-                modifyCustomFeesWithSentinelValues(op.customFeesOrElse(emptyList()), newTokenNum));
+                modifyCustomFeesWithSentinelValues(op.customFeesOrElse(emptyList()), newTokenNum),
+                op.metadata(),
+                op.metadataKey());
     }
 
     /**
