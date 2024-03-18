@@ -16,10 +16,12 @@
 
 package com.swirlds.common.config.singleton;
 
+import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.config.api.ConfigurationBuilder;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -45,13 +47,14 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
 
     private Configuration configuration;
 
-    private ConfigurationHolder() {}
+    private ConfigurationHolder() {
+        reset();
+    }
 
-    /**
-     * Reset this object to its initial state.
-     */
     public void reset() {
-        this.configuration = null;
+        this.configuration = ConfigUtils.scanAndRegisterAllConfigTypes(
+                        ConfigurationBuilder.create(), Set.of("com.swirlds"))
+                .build();
     }
 
     /**
@@ -60,7 +63,7 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
      * @param configuration the new configuration
      * @throws NullPointerException in case {@code configuration} parameter is {@code null}
      */
-    public void setConfiguration(@NonNull final Configuration configuration) {
+    public void setConfiguration(final Configuration configuration) {
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
 
@@ -70,13 +73,7 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
      * @return the configuration
      */
     @Override
-    @NonNull
     public Configuration get() {
-        if (configuration == null) {
-            throw new IllegalStateException("No configuration set. To fix this error, either avoid use of "
-                    + "ConfigurationHolder (recommended) or make sure to call setConfiguration() "
-                    + "prior to using the ConfigurationHolder.");
-        }
         return configuration;
     }
 
@@ -85,7 +82,6 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
      *
      * @return the singleton instance
      */
-    @NonNull
     public static ConfigurationHolder getInstance() {
         return INSTANCE;
     }
@@ -97,8 +93,7 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
      * @param <T>  the type
      * @return the data instance
      */
-    @NonNull
-    public static <T extends Record> T getConfigData(@NonNull final Class<T> type) {
+    public static <T extends Record> T getConfigData(final Class<T> type) {
         return getInstance().get().getConfigData(type);
     }
 }

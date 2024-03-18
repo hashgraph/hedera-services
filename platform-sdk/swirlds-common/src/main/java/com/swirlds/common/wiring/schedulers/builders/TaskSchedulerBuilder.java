@@ -112,6 +112,7 @@ public class TaskSchedulerBuilder<O> {
      * @param configuration the configuration
      * @return this
      */
+    @NonNull
     public TaskSchedulerBuilder<O> configure(@NonNull final TaskSchedulerConfiguration configuration) {
         if (configuration.type() != null) {
             withType(configuration.type());
@@ -223,6 +224,7 @@ public class TaskSchedulerBuilder<O> {
      * @param externalBackPressure true if back pressure is being applied externally, false otherwise
      * @return this
      */
+    @NonNull
     public TaskSchedulerBuilder<O> withExternalBackPressure(final boolean externalBackPressure) {
         this.externalBackPressure = externalBackPressure;
         return this;
@@ -264,6 +266,7 @@ public class TaskSchedulerBuilder<O> {
      * @param enabled true if the busy fraction metric should be enabled, false otherwise
      * @return this
      */
+    @NonNull
     public TaskSchedulerBuilder<O> withBusyFractionMetricsEnabled(final boolean enabled) {
         this.busyFractionMetricEnabled = enabled;
         return this;
