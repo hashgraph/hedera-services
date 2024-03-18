@@ -202,6 +202,8 @@ public class ContractDeleteSuite extends HapiSuite {
                         getTxnRecord(externalViolation).hasPriority(recordWith().feeGreaterThan(0L)));
     }
 
+    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+    // since we have CONTRACT_ID key
     @HapiTest
     HapiSpec cannotDeleteOrSelfDestructTokenTreasury() {
         final var someToken = "someToken";
@@ -217,10 +219,12 @@ public class ContractDeleteSuite extends HapiSuite {
                         uploadInitCode(selfDestructCallable),
                         contractCustomCreate(selfDestructCallable, "1")
                                 .adminKey(multiKey)
-                                .balance(123),
+                                .balance(123)
+                                .refusingEthConversion(),
                         contractCustomCreate(selfDestructCallable, "2")
                                 .adminKey(multiKey)
-                                .balance(321),
+                                .balance(321)
+                                .refusingEthConversion(),
                         tokenCreate(someToken).adminKey(multiKey).treasury(selfDestructCallable + "1"))
                 .when(
                         contractDelete(selfDestructCallable + "1").hasKnownStatus(ACCOUNT_IS_TREASURY),
@@ -235,6 +239,8 @@ public class ContractDeleteSuite extends HapiSuite {
                 .then(contractCall(selfDestructCallable + "2", CONTRACT_DESTROY).payingWith(beneficiary));
     }
 
+    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+    // since we have CONTRACT_ID key
     @HapiTest
     HapiSpec cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
         final var someToken = "someToken";
@@ -250,9 +256,10 @@ public class ContractDeleteSuite extends HapiSuite {
                         uploadInitCode(selfDestructableContract),
                         contractCreate(selfDestructableContract)
                                 .adminKey(multiKey)
-                                .balance(123),
+                                .balance(123)
+                                .refusingEthConversion(),
                         uploadInitCode(otherMiscContract),
-                        contractCreate(otherMiscContract),
+                        contractCreate(otherMiscContract).refusingEthConversion(),
                         tokenCreate(someToken)
                                 .initialSupply(0L)
                                 .adminKey(multiKey)

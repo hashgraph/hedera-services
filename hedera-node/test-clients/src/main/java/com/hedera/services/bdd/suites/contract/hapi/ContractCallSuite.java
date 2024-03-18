@@ -1469,7 +1469,7 @@ public class ContractCallSuite extends HapiSuite {
                     }
                 }));
     }
-    
+
     // TODO: in ContractDeleteHandler.preHandle we have a check:
     /*
     validateFalsePreCheck(
@@ -1486,9 +1486,9 @@ public class ContractCallSuite extends HapiSuite {
                 .given(
                         cryptoCreate(BENEFICIARY).balance(initBalance),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                    contractCreate(PAY_RECEIVABLE_CONTRACT)
-                        .adminKey(THRESHOLD)
-                        .refusingEthConversion())
+                        contractCreate(PAY_RECEIVABLE_CONTRACT)
+                                .adminKey(THRESHOLD)
+                                .refusingEthConversion())
                 .when(contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(DEPOSIT_AMOUNT))
                         .via(PAY_TXN)
                         .sending(DEPOSIT_AMOUNT))
@@ -1542,8 +1542,8 @@ public class ContractCallSuite extends HapiSuite {
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT)
                                 .adminKey(THRESHOLD)
-                            .gas(1_000_000)
-                            .refusingEthConversion(),
+                                .gas(1_000_000)
+                                .refusingEthConversion(),
                         cryptoCreate(payer).balance(ONE_MILLION_HBARS).payingWith(GENESIS))
                 .when(ifHapiTest(withOpContext((spec, ignore) -> {
                     final var subop1 = balanceSnapshot("balanceBefore0", payer);
@@ -1551,8 +1551,8 @@ public class ContractCallSuite extends HapiSuite {
                             .via(PAY_TXN)
                             .payingWith(payer)
                             .sending(-DEPOSIT_AMOUNT)
-                        .hasKnownStatus(CONTRACT_NEGATIVE_VALUE)
-                        .refusingEthConversion();
+                            .hasKnownStatus(CONTRACT_NEGATIVE_VALUE)
+                            .refusingEthConversion();
                     final var subop3 = getTxnRecord(PAY_TXN).logged();
                     allRunFor(spec, subop1, subop2, subop3);
                     final var delta = subop3.getResponseRecord()

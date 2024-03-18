@@ -111,8 +111,8 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.contract = contractCreate.contract;
         this.key = contractCreate.key;
         this.autoRenewPeriodSecs = contractCreate.autoRenewPeriodSecs;
-        this.balance = contractCreate.balance.map(aLong -> WEIBARS_TO_TINYBARS.multiply(
-                BigInteger.valueOf(aLong)).longValueExact());
+        this.balance = contractCreate.balance.map(
+                aLong -> WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(aLong)).longValueExact());
         this.adminKeyControl = contractCreate.adminKeyControl;
         this.adminKeyType = contractCreate.adminKeyType;
         this.memo = contractCreate.memo;
