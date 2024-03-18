@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.workflows.record;
+package com.hedera.node.app.spi.workflows;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
-
-public record RecordListCheckPoint(
-        @Nullable SingleTransactionRecordBuilder firstPrecedingRecord,
-        @Nullable SingleTransactionRecordBuilder lastFollowingRecord) {
-    public static final RecordListCheckPoint EMPTY_CHECKPOINT = new RecordListCheckPoint(null, null);
+/**
+ * Determines whether the fees for an internal dispatch should be instead
+ * computed as a top-level transaction. Needed for exact mono-service
+ * fidelity when computing fees of scheduled transactions.
+ *
+ * <p>(FUTURE) Remove this, the effect on fees is a few tinybars at most;
+ * just enough to break differential testing.
+ */
+public enum ComputeDispatchFeesAsTopLevel {
+    YES,
+    NO
 }

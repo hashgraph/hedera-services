@@ -321,6 +321,11 @@ public class TransactionChecker {
         }
     }
 
+    public enum RequireMinValidLifetimeBuffer {
+        YES,
+        NO
+    }
+
     /**
      * Checks whether the transaction duration is valid as per the configuration for valid durations
      * for the network, and whether the current node wall-clock time falls between the transaction
@@ -328,9 +333,13 @@ public class TransactionChecker {
      *
      * @param txBody The transaction body that needs to be checked.
      * @param consensusTime The consensus time used for comparison (either exact or an approximation)
+     * @param requireMinValidLifetimeBuffer Whether to require a minimum valid lifetime buffer
      * @throws PreCheckException if the transaction duration is invalid, or if the start time is too old, or in the future.
      */
-    public void checkTimeBox(@NonNull final TransactionBody txBody, @NonNull final Instant consensusTime)
+    public void checkTimeBox(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Instant consensusTime,
+            @NonNull final RequireMinValidLifetimeBuffer requireMinValidLifetimeBuffer)
             throws PreCheckException {
         requireNonNull(txBody, "txBody must not be null");
 
@@ -342,7 +351,9 @@ public class TransactionChecker {
         final var config = props.getConfiguration().getConfigData(HederaConfig.class);
         final var min = config.transactionMinValidDuration();
         final var max = config.transactionMaxValidDuration();
-        final var minValidityBufferSecs = config.transactionMinValidityBufferSecs();
+        final var minValidityBufferSecs = requireMinValidLifetimeBuffer == RequireMinValidLifetimeBuffer.YES
+                ? config.transactionMinValidityBufferSecs()
+                : 0;
 
         // The transaction duration must not be longer than the configured maximum transaction duration
         // or less than the configured minimum transaction duration.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.workflows.record;
+package com.swirlds.platform.network.protocol;
 
+import com.swirlds.common.platform.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public record RecordListCheckPoint(
-        @Nullable SingleTransactionRecordBuilder firstPrecedingRecord,
-        @Nullable SingleTransactionRecordBuilder lastFollowingRecord) {
-    public static final RecordListCheckPoint EMPTY_CHECKPOINT = new RecordListCheckPoint(null, null);
+/**
+ * API for building network protocols
+ */
+public interface ProtocolFactory {
+
+    /**
+     * Constructs an instance of a network protocol using the provided peerId
+     * @return a network protocol for connectivity over the bidirectional network
+     */
+    @Nullable
+    Protocol build(@NonNull final NodeId peerId);
 }
