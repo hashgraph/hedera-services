@@ -115,7 +115,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
     private final ComponentWiring<EventHasher, GossipEvent> eventHasherWiring;
     private final PostHashCollectorWiring postHashCollectorWiring;
-    private final InternalEventValidatorWiring internalEventValidatorWiring;
+    private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
     private final OrphanBufferWiring orphanBufferWiring;
@@ -187,8 +187,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         eventHasherWiring = new ComponentWiring<>(model, EventHasher.class, schedulers.eventHasherScheduler());
         postHashCollectorWiring = PostHashCollectorWiring.create(schedulers.postHashCollectorScheduler());
-        internalEventValidatorWiring =
-                InternalEventValidatorWiring.create(schedulers.internalEventValidatorScheduler());
+        internalEventValidatorWiring = new ComponentWiring<>(
+                model, InternalEventValidator.class, schedulers.internalEventValidatorScheduler());
         eventDeduplicatorWiring =
                 new ComponentWiring<>(model, EventDeduplicator.class, schedulers.eventDeduplicatorScheduler());
         eventSignatureValidatorWiring =
@@ -291,9 +291,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         gossipWiring.eventOutput().solderTo(pipelineInputWire);
         eventHasherWiring.getOutputWire().solderTo(postHashCollectorWiring.eventInput());
-        postHashCollectorWiring.eventOutput().solderTo(internalEventValidatorWiring.eventInput());
-        internalEventValidatorWiring
+        postHashCollectorWiring
                 .eventOutput()
+                .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent));
+        internalEventValidatorWiring
+                .getOutputWire()
                 .solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::handleEvent));
         eventDeduplicatorWiring.getOutputWire().solderTo(eventSignatureValidatorWiring.eventInput());
         eventSignatureValidatorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
@@ -309,7 +311,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         final OutputWire<GossipEvent> futureEventBufferSplitOutput = futureEventBufferWiring.getSplitOutput();
         futureEventBufferSplitOutput.solderTo(eventCreationManagerWiring.eventInput());
 
-        eventCreationManagerWiring.newEventOutput().solderTo(internalEventValidatorWiring.eventInput(), INJECT);
+        eventCreationManagerWiring
+                .newEventOutput()
+                .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent), INJECT);
         orphanBufferWiring
                 .eventOutput()
                 .solderTo(applicationTransactionPrehandlerWiring.appTransactionsToPrehandleInput());
