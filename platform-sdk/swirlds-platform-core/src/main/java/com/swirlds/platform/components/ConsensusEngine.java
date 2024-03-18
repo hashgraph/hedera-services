@@ -18,8 +18,10 @@ package com.swirlds.platform.components;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -36,6 +38,21 @@ public interface ConsensusEngine {
     @NonNull
     @InputWireLabel("EventImpl")
     List<ConsensusRound> addEvent(@NonNull EventImpl event);
+
+    /**
+     * Clear the internal state of the consensus engine. Should be called before initiating a reconnect.
+     *
+     * @param ignored ignored trigger object
+     */
+    void clear(@NonNull final ClearTrigger ignored);
+
+    /**
+     * Set the initial event window for the consensus engine. Should be called at startup time and before continuing
+     * with a reconnect state.
+     *
+     * @param window the initial event window
+     */
+    void setInitialEventWindow(@NonNull final NonAncientEventWindow window);
 
     /**
      * Extract a list of consensus events from a consensus round

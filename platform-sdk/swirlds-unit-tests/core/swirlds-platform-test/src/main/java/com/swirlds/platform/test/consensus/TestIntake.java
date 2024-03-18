@@ -86,7 +86,7 @@ public class TestIntake implements LoadableFromSignedState {
 
         consensus = new ConsensusImpl(platformContext, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook);
 
-        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
+        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class), mock(IntakeEventCounter.class));
 
         model = WiringModel.create(platformContext, time, mock(ForkJoinPool.class));
 
@@ -106,8 +106,8 @@ public class TestIntake implements LoadableFromSignedState {
         linkerWiring = InOrderLinkerWiring.create(directScheduler("linker"));
         linkerWiring.bind(linker);
 
-        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(
-                platformContext, selfId, () -> consensus, shadowGraph, intakeEventCounter, output::staleEvent);
+        // TODO consider creating a legacy copy-paste so as to not break all this stuff
+        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, selfId, () -> consensus);
 
         consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, directScheduler("consensusEngine"));
         consensusEngineWiring.bind(consensusEngine);

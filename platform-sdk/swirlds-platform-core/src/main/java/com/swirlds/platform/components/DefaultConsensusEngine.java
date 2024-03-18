@@ -19,72 +19,52 @@ package com.swirlds.platform.components;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.linking.ConsensusEventStorage;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.AddedEventMetrics;
-import com.swirlds.platform.metrics.StaleMetrics;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
  * The default implementation of the {@link ConsensusEngine} interface
  */
 public class DefaultConsensusEngine implements ConsensusEngine {
+
+    /**
+     * Stores non-ancient events and manages linking and unlinking.
+     */
+    private final ConsensusEventStorage eventStorage;
+
     /**
      * A functor that provides access to a {@code Consensus} instance.
      */
     private final Supplier<Consensus> consensusSupplier;
 
     /**
-     * Stores events, expires them, provides event lookup methods
-     */
-    private final Shadowgraph shadowGraph;
-
-    /**
-     * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
-     */
-    private final IntakeEventCounter intakeEventCounter;
-
-    private final AddedEventMetrics eventAddedMetrics;
-
-    private final StaleMetrics staleMetrics;
-    /**
-     * Consumes stale events
-     */
-    private final Consumer<EventImpl> staleEventConsumer;
-
-    /**
      * Constructor
      *
-     * @param platformContext    the platform context
-     * @param selfId             the ID of the node
-     * @param consensusSupplier  provides the current consensus instance
-     * @param shadowGraph        tracks events in the hashgraph
-     * @param intakeEventCounter tracks the number of events from each peer that have been received, but
-     *                           aren't yet through the intake pipeline
-     * @param staleEventConsumer a consumer of stale events
+     * @param platformContext   the platform context
+     * @param selfId            the ID of the node
+     * @param consensusSupplier provides the current consensus instance
      */
     public DefaultConsensusEngine(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
-            @NonNull final Supplier<Consensus> consensusSupplier,
-            @NonNull final Shadowgraph shadowGraph,
-            @NonNull final IntakeEventCounter intakeEventCounter,
-            @NonNull final Consumer<EventImpl> staleEventConsumer) {
+            @NonNull final Supplier<Consensus> consensusSupplier) {
 
+        eventStorage = new ConsensusEventStorage(platformContext, selfId);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
-        this.shadowGraph = Objects.requireNonNull(shadowGraph);
-        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        this.staleEventConsumer = Objects.requireNonNull(staleEventConsumer);
 
-        this.eventAddedMetrics = new AddedEventMetrics(selfId, platformContext.getMetrics());
-        this.staleMetrics = new StaleMetrics(platformContext, selfId);
+        // TODO don't do it this way
+        //  Needs to be updated at genesis and at reconnect
+        eventStorage.setNonAncientEventWindow(
+                NonAncientEventWindow.getGenesisNonAncientEventWindow(AncientMode.GENERATION_THRESHOLD));
     }
 
     /**
@@ -92,63 +72,43 @@ public class DefaultConsensusEngine implements ConsensusEngine {
      */
     @Override
     @NonNull
-    public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
-        Objects.requireNonNull(event);
+    public List<ConsensusRound> addEvent(@NonNull final EventImpl eventWrapper) {
+        Objects.requireNonNull(eventWrapper);
 
-        try {
-            if (event.getGeneration() < consensusSupplier.get().getMinGenerationNonAncient()) {
-                // ancient events *may* be discarded, and stale events *must* be discarded
-                return List.of();
-            }
+        // Intentionally ignore the EventImpl wrapper passed into this method. As a follow
+        // up task, the input type of this method will be changed to GossipEvent.
+        final GossipEvent gossipEvent = eventWrapper.getBaseEvent();
+        final EventImpl event = eventStorage.linkEvent(gossipEvent);
 
-            final long minimumGenerationNonAncientBeforeAdding =
-                    consensusSupplier.get().getMinGenerationNonAncient();
-
-            // record the event in the hashgraph, which results in the events in consEvent reaching consensus
-            final List<ConsensusRound> consensusRounds = consensusSupplier.get().addEvent(event);
-
-            eventAddedMetrics.eventAdded(event);
-
-            final long minimumGenerationNonAncient = consensusSupplier.get().getMinGenerationNonAncient();
-
-            if (minimumGenerationNonAncient > minimumGenerationNonAncientBeforeAdding) {
-                // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
-                // with no consensus events, so we check the diff in generations to look for stale events
-                handleStale(minimumGenerationNonAncientBeforeAdding);
-            }
-
-            return Objects.requireNonNullElseGet(consensusRounds, List::of);
-        } finally {
-            intakeEventCounter.eventExitedIntakePipeline(event.getBaseEvent().getSenderId());
+        if (event == null) {
+            // event storage discarded an ancient event
+            return List.of();
         }
+
+        final List<ConsensusRound> consensusRounds = consensusSupplier.get().addEvent(event);
+
+        if (!consensusRounds.isEmpty()) {
+            // If multiple rounds reach consensus at the same moment there is no need to pass in
+            // each event window. The latest event window is sufficient to keep event storage clean.
+            eventStorage.setNonAncientEventWindow(consensusRounds.getLast().getNonAncientEventWindow());
+        }
+
+        return consensusRounds;
     }
 
     /**
-     * Notify observer of stale events
-     *
-     * @param previousGenerationNonAncient the previous minimum generation of non-ancient events
+     * {@inheritDoc}
      */
-    private void handleStale(final long previousGenerationNonAncient) {
-        // find all events that just became ancient and did not reach consensus, these events will be considered stale
-        final Collection<EventImpl> staleEvents = shadowGraph.findByAncientIndicator(
-                previousGenerationNonAncient,
-                consensusSupplier.get().getMinGenerationNonAncient(),
-                DefaultConsensusEngine::isNotConsensus);
-
-        for (final EventImpl staleEvent : staleEvents) {
-            staleEvent.setStale(true);
-            staleMetrics.staleEvent(staleEvent);
-            staleEventConsumer.accept(staleEvent);
-        }
-    }
+    @Override
+    public void clear(@NonNull final ClearTrigger ignored) {
+        eventStorage.clear();
+    } // TODO use this
 
     /**
-     * Returns true if the event has not reached consensus
-     *
-     * @param event the event to check
-     * @return true if the event has not reached consensus
+     * {@inheritDoc}
      */
-    private static boolean isNotConsensus(@NonNull final EventImpl event) {
-        return !event.isConsensus();
-    }
+    @Override
+    public void setInitialEventWindow(@NonNull final NonAncientEventWindow window) {
+        eventStorage.setNonAncientEventWindow(window);
+    } // TODO use this
 }

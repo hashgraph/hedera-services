@@ -67,7 +67,8 @@ public class ConsensusOutput implements Clearable {
      * @return a queue of all events that have been marked as stale
      */
     public @NonNull LinkedList<EventImpl> getStaleEvents() {
-        return staleEvents;
+        throw new UnsupportedOperationException("TODO remove this method");
+        //        return staleEvents;
     }
 
     /**
