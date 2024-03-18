@@ -16,7 +16,6 @@ module com.hedera.node.app.service.token.impl {
     requires com.google.common;
     requires com.swirlds.base;
     requires com.swirlds.common;
-    requires com.swirlds.platform.core;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires org.bouncycastle.provider;
