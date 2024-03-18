@@ -426,6 +426,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
                 size,
                 oneTransactionsData.stream().mapToLong(BucketMutation::size).sum());
 
+        final ExecutorService flushExecutor = getFlushExecutor();
         final DataFileReader<Bucket<K>> dataFileReader;
         if (size > 0) {
             final Queue<ReadBucketResult<K>> queue = new ConcurrentLinkedQueue<>();
@@ -442,7 +443,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
                     IntObjectPair<BucketMutation<K>> keyValue = iterator.next();
                     final int bucketIndex = keyValue.getOne();
                     final BucketMutation<K> bucketMap = keyValue.getTwo();
-                    getFlushExecutor().execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
+                    flushExecutor.execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
                     ++inFlight;
                 }
 

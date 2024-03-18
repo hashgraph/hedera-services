@@ -48,11 +48,10 @@ class DataFileReaderCloseTest {
 
     private static final DataItemSerializer<long[]> serializer = new TwoLongSerializer();
 
-    private static MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-
     @BeforeAll
     static void setup() throws IOException {
         final Path dir = TemporaryFileBuilder.buildTemporaryFile("readerIsOpenTest");
+        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         collection = new DataFileCollection<>(dbConfig, dir, "store", serializer, null);
     }
 
@@ -111,6 +110,7 @@ class DataFileReaderCloseTest {
     @Test
     void readWhileFinishWritingTest() throws IOException {
         final Path tmpDir = TemporaryFileBuilder.buildTemporaryDirectory("readWhileFinishWritingTest");
+        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         for (int i = 0; i < 100; i++) {
             Path filePath = null;
             try {
