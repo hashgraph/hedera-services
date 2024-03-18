@@ -76,15 +76,18 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.DefaultFutureEventBuffer;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
+import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
@@ -94,6 +97,7 @@ import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
+import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -504,7 +508,7 @@ public class SwirldsPlatform implements Platform {
         final LatestCompleteStateNotifier latestCompleteStateNotifier =
                 new LatestCompleteStateNotifier(notificationEngine);
 
-        final EventHasher eventHasher = new EventHasher(platformContext);
+        final EventHasher eventHasher = new DefaultEventHasher(platformContext);
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
         final PcesReplayer pcesReplayer = new PcesReplayer(
                 time,
@@ -595,7 +599,7 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager,
                 appVersion);
 
-        final PcesSequencer sequencer = new PcesSequencer();
+        final PcesSequencer sequencer = new DefaultPcesSequencer();
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
@@ -605,7 +609,7 @@ public class SwirldsPlatform implements Platform {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
 
-        final InternalEventValidator internalEventValidator = new InternalEventValidator(
+        final InternalEventValidator internalEventValidator = new DefaultInternalEventValidator(
                 platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
         final EventDeduplicator eventDeduplicator = new StandardEventDeduplicator(platformContext, intakeEventCounter);
         final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(
@@ -638,7 +642,7 @@ public class SwirldsPlatform implements Platform {
         platformWiring.wireExternalComponents(
                 platformStatusManager, transactionPool, latestCompleteState, notificationEngine);
 
-        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
+        final FutureEventBuffer futureEventBuffer = new DefaultFutureEventBuffer(platformContext);
 
         final IssHandler issHandler =
                 new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);

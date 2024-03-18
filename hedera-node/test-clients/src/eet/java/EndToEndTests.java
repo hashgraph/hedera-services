@@ -221,7 +221,7 @@ class EndToEndTests extends E2ETestBase {
                 //				extractSpecsFromSuite(MiscCryptoSuite::new),
                 //				extractSpecsFromSuite(QueryPaymentSuite::new),
                 //				extractSpecsFromSuite(RandomOps::new), // TODO Fails
-                //				extractSpecsFromSuite(TransferWithCustomFees::new),
+                //				extractSpecsFromSuite(TransferWithCustomFixedFees::new),
                 //				extractSpecsFromSuite(TxnReceiptRegression::new),
                 //				extractSpecsFromSuite(TxnRecordRegression::new), // TODO Fails
                 //				extractSpecsFromSuite(UnsupportedQueriesRegression::new) // TODO Fails

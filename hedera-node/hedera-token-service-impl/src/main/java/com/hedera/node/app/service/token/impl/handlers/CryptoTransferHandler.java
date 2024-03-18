@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
@@ -26,7 +25,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -38,11 +36,9 @@ import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Collections.emptyList;
@@ -57,7 +53,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
@@ -93,7 +88,6 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -227,11 +221,11 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         validator.validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
 
-        validateTopLevelAllowances(context, op, topLevelPayer);
-
         // create a new transfer context that is specific only for this transaction
         final var transferContext =
                 new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
+
+        transferContext.validateHbarAllowances();
 
         // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
@@ -644,44 +638,5 @@ public class CryptoTransferHandler implements TransactionHandler {
             return TOKEN_FUNGIBLE_COMMON;
         }
         return DEFAULT;
-    }
-
-    private void validateTopLevelAllowances(
-            @NonNull final HandleContext context,
-            @NonNull final CryptoTransferTransactionBody op,
-            @NonNull final AccountID topLevelPayer) {
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
-        TokenID tokenId;
-        AccountID accountId;
-        long amount;
-        Account account;
-        List<AccountFungibleTokenAllowance> tokenAllowances;
-
-        for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
-            tokenId = xfers.tokenOrThrow();
-
-            for (final var aa : xfers.transfersOrElse(emptyList())) {
-                accountId = aa.accountID();
-                amount = aa.amount();
-
-                if (amount < 0 && aa.isApproval()) {
-                    account = getIfUsable(accountId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
-                    tokenAllowances = account.tokenAllowancesOrElse(Collections.emptyList());
-
-                    for (int i = 0; i < tokenAllowances.size(); i++) {
-                        final var allowance = tokenAllowances.get(i);
-
-                        validateFalse(
-                                !topLevelPayer.equals(allowance.spenderId()) || allowance.amount() == 0,
-                                SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-
-                        if (topLevelPayer.equals(allowance.spenderId()) && tokenId.equals(allowance.tokenId())) {
-                            final var newAllowanceAmount = allowance.amount() + amount;
-                            validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
-                        }
-                    }
-                }
-            }
-        }
     }
 }

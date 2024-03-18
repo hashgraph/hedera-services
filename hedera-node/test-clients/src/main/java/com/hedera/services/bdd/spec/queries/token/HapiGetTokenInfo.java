@@ -76,6 +76,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
     private OptionalLong expectedMaxSupply = OptionalLong.empty();
     private Optional<String> expectedMemo = Optional.empty();
+    private Optional<String> expectedMetadata = Optional.empty();
+    private Optional<String> expectedMetadataKey = Optional.empty();
     private Optional<String> expectedId = Optional.empty();
     private Optional<String> expectedSymbol = Optional.empty();
     private Optional<String> expectedName = Optional.empty();
@@ -172,6 +174,16 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
     public HapiGetTokenInfo hasEntityMemo(String memo) {
         expectedMemo = Optional.of(memo);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasMetadata(String metadata) {
+        expectedMetadata = Optional.of(metadata);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasMetadataKey(String name) {
+        expectedMetadataKey = Optional.of(name);
         return this;
     }
 
@@ -348,6 +360,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         }
 
         expectedMemo.ifPresent(s -> Assertions.assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
+        expectedMetadata.ifPresent(
+                s -> Assertions.assertEquals(s, actualInfo.getMetadata().toStringUtf8(), "Wrong metadata!"));
 
         var registry = spec.registry();
         assertFor(actualInfo.getTokenId(), expectedId, (n, r) -> r.getTokenID(n), "Wrong token id!", registry);
@@ -403,6 +417,13 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
                 expectedPauseKey,
                 (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getPauseKey(n),
                 "Wrong token pause key!",
+                registry);
+
+        assertFor(
+                actualInfo.getMetadataKey(),
+                expectedMetadataKey,
+                (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getMetadataKey(n),
+                "Wrong token metadata key!",
                 registry);
 
         expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, actualInfo.getLedgerId()));
