@@ -13,7 +13,7 @@ pcli diagram \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'eventCreationManager:non-validated events:🍎' \
-    -s 'postHasher_stateReserver:state to sign:🖋️' \
+    -s 'stateSigner:signature transactions:🖋️' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
@@ -29,7 +29,7 @@ pcli diagram \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Transaction Prehandling:applicationTransactionPrehandler,🔮' \
-    -g 'Signature Management:State Signature Collection,stateSigner,ISS Detector,latestCompleteStateNotification' \
+    -g 'Signature Management:State Signature Collection,stateSigner,latestCompleteStateNotification,🖋️' \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,postHandler_getRoundNumber,postHandler_stateReserver' \
     -g 'State Hasher:stateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'State Modification:Consensus Round Handler,runningHashUpdate' \
