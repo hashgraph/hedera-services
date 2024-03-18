@@ -36,4 +36,14 @@ public interface ConsensusEngine {
     @NonNull
     @InputWireLabel("EventImpl")
     List<ConsensusRound> addEvent(@NonNull EventImpl event);
+
+    /**
+     * Extract a list of consensus events from a consensus round
+     *
+     * @return a list of consensus events
+     */
+    @NonNull
+    default List<EventImpl> getConsensusEvents(@NonNull final ConsensusRound round) {
+        return round.getConsensusEvents();
+    }
 }

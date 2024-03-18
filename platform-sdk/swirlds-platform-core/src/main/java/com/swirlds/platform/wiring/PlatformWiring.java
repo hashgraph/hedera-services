@@ -346,10 +346,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 keystoneEventSequenceNumberTransformer.getInputWire(), consensusRoundHandlerWiring.roundInput()));
         consensusRoundOutputWire.solderTo(eventWindowManagerWiring.consensusRoundInput());
 
-        // Future work: the framework will eventually support transforming split output.
-        // Change this manual transformer instantiation at that time.
-        consensusRoundOutputWire
-                .buildTransformer("getEvents", "rounds", ConsensusRound::getConsensusEvents)
+        consensusEngineWiring
+                .getSplitAndTransformedOutput(ConsensusEngine::getConsensusEvents)
                 .solderTo(eventStreamManagerWiring.eventsInput());
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
