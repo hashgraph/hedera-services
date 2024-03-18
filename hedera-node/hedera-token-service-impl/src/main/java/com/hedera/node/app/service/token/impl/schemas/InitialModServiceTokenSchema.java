@@ -187,6 +187,10 @@ public class InitialModServiceTokenSchema extends Schema {
 
     @Override
     public void restart(@NonNull MigrationContext ctx) {
+        // We need to validate and mark any node that are removed during upgrade as deleted.
+        // Since restart is called in the schema after an upgrade, and we don't want to depend on schema version change
+        // validate all the nodeIds from the addressBook in state and mark them as deleted if they are not yet deleted
+        // in staking info.
         final var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
         final var networkInfo = ctx.networkInfo();
         stakingToState.keys().forEachRemaining(nodeId -> {
