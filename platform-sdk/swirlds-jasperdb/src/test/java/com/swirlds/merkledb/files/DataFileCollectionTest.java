@@ -607,7 +607,7 @@ class DataFileCollectionTest {
     private static DataFileCompactor<long[]> createFileCompactor(
             String storeName, DataFileCollection<long[]> fileCollection, FilesTestType testType) {
         return new DataFileCompactor<>(
-                storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null, null) {
+                config, storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null, null) {
             @Override
             int getMinNumberOfFilesToCompact() {
                 return 2;
@@ -662,7 +662,7 @@ class DataFileCollectionTest {
         final DataFileCollection<long[]> fileCollection2 =
                 new DataFileCollection<>(config, dbDir, storeName, testType.dataItemSerializer, null);
         final DataFileCompactor<long[]> fileCompactor = new DataFileCompactor<>(
-                storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null, null);
+                config, storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null, null);
         fileCollectionMap.put(testType, fileCollection2);
         // check 10 files were opened and data is correct
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files");
@@ -733,7 +733,7 @@ class DataFileCollectionTest {
                 new DataFileCollection<>(config, dbDir, storeName, FilesTestType.fixed.dataItemSerializer, null);
         final LongListHeap storedOffsets = new LongListHeap(5000);
         final DataFileCompactor<long[]> compactor =
-                new DataFileCompactor<>(storeName, fileCollection, storedOffsets, null, null, null, null);
+                new DataFileCompactor<>(config, storeName, fileCollection, storedOffsets, null, null, null, null);
         populateDataFileCollection(FilesTestType.fixed, fileCollection, storedOffsets);
 
         // a flag to make sure that `compactFiles` th
