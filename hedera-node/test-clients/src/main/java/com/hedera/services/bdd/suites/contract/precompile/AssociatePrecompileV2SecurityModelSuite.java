@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -42,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
+import static com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSV2SecurityModelSuite.EMPTY_METADATA;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -56,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -66,8 +69,11 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite
+@Tag(SMART_CONTRACT)
 public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(AssociatePrecompileV1SecurityModelSuite.class);
@@ -91,6 +97,8 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     private static final String ADMIN_KEY = "Admin key";
     private static final String CONTRACT_KEY = "ContractKey";
     private static final String MINT_TOKEN_CONTRACT = "MixedMintToken";
+    private static final String CALLCODE_CONTRACT = "MixedMintToken";
+
 
     public static void main(String... args) {
         new AssociatePrecompileV2SecurityModelSuite().runSuiteAsync();
@@ -623,7 +631,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
         return defaultHapiSpec("V2Security041TokenAssociateFromStaticcallAndCallcode")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(TOKEN_TREASURY).balance(THOUSAND_HBAR),
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .supplyKey(TOKEN_TREASURY)
@@ -635,8 +643,9 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                 .initialSupply(0)
                                 .adminKey(TOKEN_TREASURY)
                                 .treasury(TOKEN_TREASURY),
-                        uploadInitCode(ASSOCIATE_CONTRACT, NESTED_ASSOCIATE_CONTRACT),
-                        contractCreate(ASSOCIATE_CONTRACT))
+                        uploadInitCode(ASSOCIATE_CONTRACT, NESTED_ASSOCIATE_CONTRACT, CALLCODE_CONTRACT),
+                        contractCreate(ASSOCIATE_CONTRACT),
+                        contractCreate(CALLCODE_CONTRACT))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCreate(
@@ -646,6 +655,9 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, NESTED_ASSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+                        // Test Case 1: Account paying and signing a nested fungible TOKEN ASSOCIATE TRANSACTION,
+                        // when we associate the token to the signer
+                        // via STATICCALL
                         contractCall(
                                         NESTED_ASSOCIATE_CONTRACT,
                                         "associateStaticCall",
@@ -661,9 +673,36 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTxnRecord("associateStaticcallFungibleTxn")
                                 .andAllChildRecords()
+                                .logged(),
+                        // Test Case 2: Account paying and signing a nested fungible TOKEN ASSOCIATE TRANSACTION,
+                        // when we associate the token to the signer
+                        // via CALLCODE
+                        // SIGNER → call → CONTRACT A → callcode → CONTRACT B → call → PRECOMPILE(HTS)
+                        contractCall(
+                                CALLCODE_CONTRACT,
+                                "callCodeToContractWithoutAmount",
+                                asHeadlongAddress(getNestedContractAddress(ASSOCIATE_CONTRACT, spec)),
+                                Bytes.wrap(AssociationsTranslator.ASSOCIATE_ONE
+                                                .encodeCallWithArgs(
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                                .array()).toArray())
+                                .via("associateCallcodeFungibleTxn")
+                                .gas(GAS_TO_OFFER)
+                                .sending(ONE_HUNDRED_HBARS)
+                                .signedBy(TOKEN_TREASURY)
+                                .payingWith(TOKEN_TREASURY)
+                               .hasRetryPrecheckFrom(BUSY)
+                                // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord("associateCallcodeFungibleTxn")
+                                .andAllChildRecords()
                                 .logged())))
                 .then(
                         emptyChildRecordsCheck("associateStaticcallFungibleTxn", CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck("associateCallcodeFungibleTxn", CONTRACT_REVERT_EXECUTED),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(FUNGIBLE_TOKEN));
     }
 
