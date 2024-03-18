@@ -139,6 +139,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 transferNonFungibleWithFixedHtsCustomFeeAmount0(),
                 transferFungibleWithFixedHbarCustomFeeSenderHasOnlyGasAmount(),
                 transferFungibleWithFixedHtsCustomFeeTotalSupply0(),
+                transferFungibleWithFixedHtsCustomFееNotEnoughForGasAndFee(),
                 transferFungibleWithFixedHtsCustomFees3LayersShouldFail(),
                 transferNonFungibleWithFixedHtsCustomFees3LayersShouldFail());
     }
