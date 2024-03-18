@@ -99,8 +99,6 @@ class PcesBirthRoundMigrationTests {
         temporaryFilePath = testDirectory.resolve("tmp");
 
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(0));
-
-        System.out.println(testDirectory); // TODO remove
     }
 
     @AfterEach

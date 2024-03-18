@@ -61,6 +61,8 @@ public final class PcesBirthRoundMigration {
      * been completed.
      *
      * @param platformContext                        the platform context
+     * @param recycleBin                             the recycle bin, used to make emergency backup files
+     * @param selfId                                 the ID of this node
      * @param migrationRound                         the round at which the migration is occurring, this will be equal
      *                                               to the round number of the initial state
      * @param minimumJudgeGenerationInMigrationRound the minimum judge generation in the migration round
@@ -143,6 +145,7 @@ public final class PcesBirthRoundMigration {
      * {@link PcesFileReader#readFilesFromDisk(PlatformContext, RecycleBin, Path, long, boolean, AncientMode)}, this
      * method ignores discontinuities and returns all files.
      *
+     * @param path        the directory tree to search
      * @param ancientMode only return files that conform to this ancient mode
      * @return all PCES files beneath the given directory
      */
