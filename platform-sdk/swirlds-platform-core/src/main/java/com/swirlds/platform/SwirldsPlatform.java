@@ -63,6 +63,7 @@ import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.components.DefaultConsensusEngine;
 import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
@@ -622,7 +623,7 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter);
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
-        final ConsensusEngine consensusEngine = new ConsensusEngine(
+        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(
                 platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter, e -> {});
 
         final LongSupplier intakeQueueSizeSupplier =
