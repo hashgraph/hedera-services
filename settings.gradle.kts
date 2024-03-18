@@ -81,6 +81,8 @@ include(":swirlds-base", "platform-sdk/swirlds-base")
 
 include(":swirlds-logging", "platform-sdk/swirlds-logging")
 
+include(":swirlds-logging-log4j-appender", "platform-sdk/swirlds-logging-log4j-appender")
+
 include(":swirlds-common", "platform-sdk/swirlds-common")
 
 include(":swirlds-config-api", "platform-sdk/swirlds-config-api")
@@ -141,7 +143,7 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.47.3"
+val hapiProtoVersion = "0.48.0"
 
 dependencyResolutionManagement {
     // Protobuf tool versions

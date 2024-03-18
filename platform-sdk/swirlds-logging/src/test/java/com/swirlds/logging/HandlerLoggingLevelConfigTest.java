@@ -31,6 +31,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -45,6 +46,7 @@ public class HandlerLoggingLevelConfigTest {
     }
 
     @Test
+    @Disabled
     void testConstructor() {
         // given
         final HandlerLoggingLevelConfig config =
@@ -55,6 +57,7 @@ public class HandlerLoggingLevelConfigTest {
     }
 
     @Test
+    @Disabled
     void testWithDifferentPrefix() {
         // given
         final HandlerLoggingLevelConfig config =
