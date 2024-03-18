@@ -102,7 +102,7 @@ public class DefaultConsensusEngine implements ConsensusEngine {
     @Override
     public void clear(@NonNull final ClearTrigger ignored) {
         eventStorage.clear();
-    } // TODO use this
+    }
 
     /**
      * {@inheritDoc}
