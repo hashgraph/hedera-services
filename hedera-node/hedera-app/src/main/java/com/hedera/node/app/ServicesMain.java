@@ -23,6 +23,7 @@ import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
+import static net.i2p.crypto.eddsa.Utils.bytesToHex;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.config.data.HederaConfig;
@@ -44,8 +45,18 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
-import java.util.Set;
+
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.RSAPublicKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.*;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -159,7 +170,46 @@ public class ServicesMain implements SwirldMain {
         final Platform platform = builder.build();
         hedera.init(platform, selfId);
         platform.start();
+        var nodeId = platform.getSelfId();
+
+        logger.info("Node Id " + nodeId);
+        var address = platform.getAddressBook().getAddress(nodeId);
+        var publicKey = (RSAPublicKey) address.getSigPublicKey();
+        assert publicKey != null;
+        var algorithm = publicKey.getAlgorithm();
+
+        byte[] encodedPublicKey =  publicKey.getEncoded();
+        byte[] encodedPublicKeyWTF =  publicKey.getEncoded();
+        String b64publicKey = Base64.getEncoder().encodeToString(encodedPublicKey);
+        byte[] b64toByte = Base64.getDecoder().decode(b64publicKey);
+        BigInteger exponent = publicKey.getPublicExponent();
+        BigInteger modulus = publicKey.getModulus();
+        logger.info("Algorithm" + algorithm);
+        logger.info("Public key object " + publicKey);
+        logger.info("Encoded public key " + encodedPublicKey);
+        logger.info("Hex encoded public key " + bytesToHex(encodedPublicKey));
+        logger.info("Base64 string " + b64publicKey);
+        //logger.info("Reconstruct " + reconstructPublicKey(publicKey.getEncoded()));
+        //logger.info("Reconstruct from b64 " + reconstructPublicKey(b64toByte));
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        ////X509EncodedKeySpec keySpec = new X509EncodedKeySpec(b64toByte, "RSA");
+        //PublicKey key = keyFactory.generatePublic(new X509EncodedKeySpec(b64toByte));
+
+        RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
+        KeyFactory factory = KeyFactory.getInstance("RSA");
+        PublicKey key2 = factory.generatePublic(spec);
+        //logger.info("Reconstruct " + key);
+        logger.info("Seconde key " + key2);
+        logger.info("Hex encoded public key2 " + bytesToHex(key2.getEncoded()));
         hedera.run();
+
+    }
+
+    public static PublicKey reconstructPublicKey(byte[] publicKeyBytes) throws Exception {
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicKeyBytes, "RSA");
+        RSAPublicKey key = (RSAPublicKey) keyFactory.generatePublic(keySpec);
+        return key;
     }
 
     /**
