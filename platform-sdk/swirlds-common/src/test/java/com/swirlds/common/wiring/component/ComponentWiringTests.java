@@ -95,6 +95,16 @@ public class ComponentWiringTests {
 
         @NonNull
         List<String> handleInputB(@NonNull Long l);
+
+        @NonNull
+        default Boolean filter(@NonNull final String baseOutput) {
+            return baseOutput.hashCode() % 2 == 0;
+        }
+
+        @NonNull
+        default String transformer(@NonNull final String baseOutput) {
+            return "(" + baseOutput + ")";
+        }
     }
 
     private static class ComponentWithListOutputImpl implements ComponentWithListOutput {
@@ -384,6 +394,110 @@ public class ComponentWiringTests {
 
         componentWiring.getInputWire(ComponentWithListOutput::handleInputB).put(123L);
         expectedOutputData.addAll(List.of("1", "2", "3"));
+
+        assertEquals(expectedOutputData, outputData);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void filteredSplitterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel =
+                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+
+        final TaskScheduler<List<String>> scheduler = wiringModel
+                .schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
+
+        final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, scheduler);
+
+        if (bindLocation == 0) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        final OutputWire<String> filteredOutput =
+                componentWiring.getSplitAndFilteredOutput(ComponentWithListOutput::filter);
+        assertSame(filteredOutput, componentWiring.getSplitAndFilteredOutput(ComponentWithListOutput::filter));
+
+        final List<String> outputData = new ArrayList<>();
+        filteredOutput.solderTo("addToOutputData", "split data", outputData::add);
+
+        final List<String> expectedOutputData = new ArrayList<>();
+
+        if (bindLocation == 1) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputA).put("hello world");
+        for (final String s : "hello world".split("")) {
+            if (s.hashCode() % 2 == 0) {
+                expectedOutputData.add(s);
+            }
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputB).put(123L);
+        for (final String s : "123".split("")) {
+            if (s.hashCode() % 2 == 0) {
+                expectedOutputData.add(s);
+            }
+        }
+
+        assertEquals(expectedOutputData, outputData);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void transformedSplitterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel =
+                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+
+        final TaskScheduler<List<String>> scheduler = wiringModel
+                .schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .withUncaughtExceptionHandler((t, e) -> {
+                    e.printStackTrace();
+                })
+                .build()
+                .cast();
+
+        final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, scheduler);
+
+        if (bindLocation == 0) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        final OutputWire<String> transformedOutput =
+                componentWiring.getSplitAndTransformedOutput(ComponentWithListOutput::transformer);
+        assertSame(
+                transformedOutput, componentWiring.getSplitAndTransformedOutput(ComponentWithListOutput::transformer));
+
+        final List<String> outputData = new ArrayList<>();
+        transformedOutput.solderTo("addToOutputData", "split data", outputData::add);
+
+        final List<String> expectedOutputData = new ArrayList<>();
+
+        if (bindLocation == 1) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputA).put("hello world");
+        for (final String s : "hello world".split("")) {
+            expectedOutputData.add("(" + s + ")");
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputB).put(123L);
+        for (final String s : "123".split("")) {
+            expectedOutputData.add("(" + s + ")");
+        }
 
         assertEquals(expectedOutputData, outputData);
     }
