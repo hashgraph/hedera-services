@@ -54,5 +54,6 @@ tasks.register<JMHTask>("jmhReconnect") {
 
     resultsFile.convention(layout.buildDirectory.file("results/jmh/results-reconnect.txt"))
 
-    benchmarkParameters.put("numRecords", listProperty("5000000"))
+    benchmarkParameters.put("numRecords", listProperty("100000"))
+    benchmarkParameters.put("numFiles", listProperty("500"))
 }
