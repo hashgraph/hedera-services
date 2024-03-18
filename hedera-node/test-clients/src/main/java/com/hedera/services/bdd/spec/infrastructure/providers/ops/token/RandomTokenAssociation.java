@@ -94,18 +94,18 @@ public class RandomTokenAssociation implements OpProvider {
         }
         String[] toUse = chosen.toArray(new String[0]);
 
-       // ResponseCodeEnum[] outcomes = this.outcomes;
-       // if (outcomes == null || outcomes.length == 0) {
-       //     outcomes = permissibleOutcomes;
-       // }
-       //
-       // ResponseCodeEnum[] outcomes2 = new ResponseCodeEnum[1];
-       // outcomes2[0] = INVALID_SIGNATURE;
+        ResponseCodeEnum[] outcomes = this.outcomes;
+        if (outcomes == null || outcomes.length == 0) {
+            outcomes = permissibleOutcomes;
+        }
 
         var op = tokenAssociate(account.get(), toUse)
-                .hasPrecheckFrom(ResponseCodeEnum.values())
-                .hasKnownStatusFrom(ResponseCodeEnum.values())
-                .signedBy(signers);
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(outcomes);
+
+        if (signers != null && signers.length > 0) {
+                op.signedBy(signers);
+        }
 
         return Optional.of(op);
     }

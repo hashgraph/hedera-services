@@ -20,10 +20,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-public class HollowAccountSelector implements BiFunction<Set<String>, Set<String>, Optional<String>> {
+public class CustomSelector implements BiFunction<Set<String>, Set<String>, Optional<String>> {
     private final String value;
 
-    public HollowAccountSelector(String value) {
+    public CustomSelector(String value) {
         this.value = value;
     }
 

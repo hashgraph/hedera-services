@@ -143,7 +143,7 @@ public class RegressionProviderFactory {
                                             props)),
                             intPropOrElse("randomTransfer.bias", 0, props))
                     .withOp(
-                            new RandomAccountUpdate(keys, unstableAccounts),
+                            new RandomAccountUpdate(keys, unstableAccounts, new ResponseCodeEnum[0]),
                             intPropOrElse("randomAccountUpdate.bias", 0, props))
                     .withOp(
                             new RandomAccountDeletion(unstableAccounts),
@@ -195,7 +195,7 @@ public class RegressionProviderFactory {
                                             props)),
                             intPropOrElse("randomTokenAssociation.bias", 0, props))
                     .withOp(
-                            new RandomTokenDissociation(tokenRels),
+                            new RandomTokenDissociation(tokenRels, new ResponseCodeEnum[0]),
                             intPropOrElse("randomTokenDissociation.bias", 0, props))
                     .withOp(new RandomTokenDeletion(tokens), intPropOrElse("randomTokenDeletion.bias", 0, props))
                     .withOp(new RandomTokenTransfer(tokenRels), intPropOrElse("randomTokenTransfer.bias", 0, props))

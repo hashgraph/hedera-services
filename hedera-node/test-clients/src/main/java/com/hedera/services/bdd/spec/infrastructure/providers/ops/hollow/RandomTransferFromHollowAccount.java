@@ -39,7 +39,7 @@ public class RandomTransferFromHollowAccount extends RandomOperationCustom<HapiC
 
     @Override
     protected HapiTxnOp<HapiCryptoTransfer> hapiTxnOp(String keyName) {
-        return cryptoTransfer(tinyBarsFromTo(keyName, LAZY_CREATE_SPONSOR, 1));
+        return cryptoTransfer(tinyBarsFromTo(keyName, UNIQUE_PAYER_ACCOUNT, 1));
     }
 
     protected HapiSpecOperation generateOpSignedBy(String keyName) {

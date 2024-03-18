@@ -105,11 +105,8 @@ public class RandomToken implements OpProvider {
         int id = opNo.getAndIncrement();
         HapiTokenCreate op = tokenCreate(my("token" + id))
                 .advertisingCreation()
-                .hasPrecheckFrom(ResponseCodeEnum.values())
-                //.hasKnownStatusFrom(INVALID_SIGNATURE)
-                .hasKnownStatusFrom(ResponseCodeEnum.values())
-                .signedBy(signers);
-
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(outcomes);
 
         var prefix = randomlyConfigureKeys(op);
         op.setTokenPrefix(prefix);

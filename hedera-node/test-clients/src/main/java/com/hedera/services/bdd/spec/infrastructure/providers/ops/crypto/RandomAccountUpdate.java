@@ -35,11 +35,19 @@ public class RandomAccountUpdate implements OpProvider {
     private final EntityNameProvider<Key> keys;
     private final EntityNameProvider<AccountID> accounts;
 
+    private final ResponseCodeEnum[] outcomes;
+    private final String[] signers;
+
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
 
-    public RandomAccountUpdate(EntityNameProvider<Key> keys, EntityNameProvider<AccountID> accounts) {
+    public RandomAccountUpdate(EntityNameProvider<Key> keys,
+            EntityNameProvider<AccountID> accounts,
+            ResponseCodeEnum[] outcomes,
+            String... signers) {
         this.keys = keys;
         this.accounts = accounts;
+        this.outcomes = outcomes;
+        this.signers = signers;
     }
 
     @Override
@@ -55,10 +63,20 @@ public class RandomAccountUpdate implements OpProvider {
         }
         final var newKey = keys.getQualifying();
 
+        ResponseCodeEnum[] outcomes = this.outcomes;
+        if (outcomes == null || outcomes.length == 0) {
+            outcomes = permissibleOutcomes;
+        }
+
         HapiCryptoUpdate op = cryptoUpdate(target.get())
                 .key(newKey.get())
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasKnownStatusFrom(outcomes);
+
+        if (signers != null && signers.length > 0) {
+            op.signedBy(signers);
+        }
+
         return Optional.of(op);
     }
 }

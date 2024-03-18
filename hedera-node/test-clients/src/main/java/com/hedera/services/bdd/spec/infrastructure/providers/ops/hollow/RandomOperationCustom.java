@@ -50,16 +50,9 @@ abstract class RandomOperationCustom<T extends HapiTxnOp<T>> implements OpProvid
     }
 
     private Optional<String> randomHollowAccountKey() {
-        return accounts.getQualifying().filter(a -> a.endsWith(ACCOUNT_SUFFIX)).map(this::keyFromAccount);
+        return accounts.getQualifying();
     }
 
-    private String keyFromAccount(String account) {
-        final var key = account.replaceAll(ACCOUNT_SUFFIX + "$", "");
-        final AccountID fromAccount = registry.getAccountID(account);
-        registry.saveAccountId(key, fromAccount);
-        registry.saveKey(account, registry.getKey(key)); // needed for HapiTokenAssociate.defaultSigners()
-        return key;
-    }
 
     protected abstract HapiSpecOperation generateOpSignedBy(String keyName);
 
