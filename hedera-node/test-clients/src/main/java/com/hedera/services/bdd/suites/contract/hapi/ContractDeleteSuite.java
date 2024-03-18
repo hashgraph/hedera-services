@@ -279,10 +279,12 @@ public class ContractDeleteSuite extends HapiSuite {
                                 .payingWith(beneficiary));
     }
 
+    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+    // since we have CONTRACT_ID key
     @HapiTest
     HapiSpec rejectsWithoutProperSig() {
         return defaultHapiSpec("rejectsWithoutProperSig")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
                 .when()
                 .then(contractDelete(CONTRACT).signedBy(GENESIS).hasKnownStatus(INVALID_SIGNATURE));
     }
@@ -328,17 +330,23 @@ public class ContractDeleteSuite extends HapiSuite {
                 .then(contractDelete(CONTRACT).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
+    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec deleteTransfersToAccount() {
         return defaultHapiSpec("DeleteTransfersToAccount")
                 .given(
                         cryptoCreate(RECEIVER_CONTRACT_NAME).balance(0L),
                         uploadInitCode(PAYABLE_CONSTRUCTOR),
-                        contractCreate(PAYABLE_CONSTRUCTOR).balance(1L))
+                        contractCreate(PAYABLE_CONSTRUCTOR)
+                                .refusingEthConversion()
+                                .balance(1L))
                 .when(contractDelete(PAYABLE_CONSTRUCTOR).transferAccount(RECEIVER_CONTRACT_NAME))
                 .then(getAccountBalance(RECEIVER_CONTRACT_NAME).hasTinyBars(1L));
     }
 
+    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec deleteTransfersToContract() {
         final var suffix = "Receiver";
@@ -346,7 +354,9 @@ public class ContractDeleteSuite extends HapiSuite {
         return defaultHapiSpec("DeleteTransfersToContract")
                 .given(
                         uploadInitCode(PAYABLE_CONSTRUCTOR),
-                        contractCreate(PAYABLE_CONSTRUCTOR).balance(0L),
+                        contractCreate(PAYABLE_CONSTRUCTOR)
+                                .refusingEthConversion()
+                                .balance(0L),
                         contractCustomCreate(PAYABLE_CONSTRUCTOR, suffix).balance(1L))
                 .when(contractDelete(PAYABLE_CONSTRUCTOR).transferContract(PAYABLE_CONSTRUCTOR + suffix))
                 .then(getAccountBalance(PAYABLE_CONSTRUCTOR + suffix).hasTinyBars(1L));

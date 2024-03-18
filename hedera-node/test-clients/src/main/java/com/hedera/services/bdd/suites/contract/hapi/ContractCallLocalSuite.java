@@ -213,10 +213,12 @@ public class ContractCallLocalSuite extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
     }
 
+    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec invalidDeletedContract() {
         return defaultHapiSpec("invalidDeletedContract", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
                 .when(contractDelete(CONTRACT))
                 .then(contractCallLocal(CONTRACT, "create")
                         .nodePayment(1_234_567)

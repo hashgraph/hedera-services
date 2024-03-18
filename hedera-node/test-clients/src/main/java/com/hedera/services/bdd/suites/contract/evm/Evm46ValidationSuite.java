@@ -264,6 +264,8 @@ public class Evm46ValidationSuite extends HapiSuite {
                 testBalanceOfForSystemAccounts());
     }
 
+    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+    // since we have CONTRACT_ID key
     @HapiTest
     private HapiSpec directCallToDeletedContractResultsInSuccessfulNoop() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
@@ -272,7 +274,9 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .given(
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverId::set),
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                        contractCreate(INTERNAL_CALLER_CONTRACT)
+                                .refusingEthConversion()
+                                .balance(ONE_HBAR),
                         contractDelete(INTERNAL_CALLER_CONTRACT))
                 .when(withOpContext((spec, op) -> allRunFor(
                         spec,
@@ -999,14 +1003,20 @@ public class Evm46ValidationSuite extends HapiSuite {
                                 .hasTinyBars(changeFromSnapshot("autoCreatedSnapshot", 1)));
     }
 
+    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+    // since we have CONTRACT_ID key
     @HapiTest
     private HapiSpec internalCallToDeletedContractReturnsSuccessfulNoop() {
         final AtomicLong calleeNum = new AtomicLong();
         return defaultHapiSpec("internalCallToDeletedContractReturnsSuccessfulNoop")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
-                        contractCreate(INTERNAL_CALLEE_CONTRACT).exposingNumTo(calleeNum::set),
+                        contractCreate(INTERNAL_CALLER_CONTRACT)
+                                .refusingEthConversion()
+                                .balance(ONE_HBAR),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT)
+                                .refusingEthConversion()
+                                .exposingNumTo(calleeNum::set),
                         contractDelete(INTERNAL_CALLEE_CONTRACT))
                 .when(withOpContext((spec, ignored) -> allRunFor(
                         spec,
