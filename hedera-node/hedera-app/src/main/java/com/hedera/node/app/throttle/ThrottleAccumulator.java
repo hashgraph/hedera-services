@@ -507,7 +507,7 @@ public class ThrottleAccumulator {
         final long maxThrottleExemptNum =
                 configuration.getConfigData(AccountsConfig.class).lastThrottleExempt();
         if (accountID != null) {
-            final long accountNum = accountID.accountNum().longValue();
+            final var accountNum = accountID.accountNumOrElse(0L);
             return 1L <= accountNum && accountNum <= maxThrottleExemptNum;
         }
         return false;

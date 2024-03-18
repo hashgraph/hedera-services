@@ -20,6 +20,7 @@ import static com.hedera.hapi.streams.SidecarType.CONTRACT_ACTION;
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static java.util.Objects.requireNonNull;
 
@@ -32,7 +33,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
@@ -254,36 +254,43 @@ public class FrameUtils {
         return false;
     }
 
-    public static boolean unqualifiedDelegateDetected(final MessageFrame frame) {
+    public enum CallType {
+        QUALIFIED_DELEGATE,
+        UNQUALIFIED_DELEGATE,
+        DIRECT_OR_TOKEN_REDIRECT,
+    }
+
+    public static CallType callTypeOf(final MessageFrame frame) {
         if (!isDelegateCall(frame)) {
-            return false;
+            return CallType.DIRECT_OR_TOKEN_REDIRECT;
         }
-        final Address recipient = frame.getRecipientAddress();
-
-        final var permittedDelegateCallers = contractsConfigOf(frame).permittedDelegateCallers();
-
+        final var recipient = frame.getRecipientAddress();
         // Evaluate whether the recipient is either a token or on the permitted callers list.
         // This determines if we should treat this as a delegate call.
         // We accept delegates if the token redirect contract calls us.
-        if (isToken(frame, recipient)
-                || (isLongZero(recipient)
-                        && permittedDelegateCallers.contains(ConversionUtils.numberOfLongZero(recipient)))) {
-            // make sure we have a parent calling context
-            final var stack = frame.getMessageFrameStack();
-            final var frames = stack.iterator();
-            frames.next();
-            if (!frames.hasNext()) {
-                // Impossible to get here w/o a catastrophic EVM bug
-                return false;
-            }
-            // If the token redirect contract was called via delegate, then it's a delegate
-            return isDelegateCall(frames.next());
+        final CallType viableType;
+        if (isToken(frame, recipient)) {
+            viableType = CallType.DIRECT_OR_TOKEN_REDIRECT;
+        } else if (isQualifiedDelegate(recipient, frame)) {
+            viableType = CallType.QUALIFIED_DELEGATE;
+        } else {
+            return CallType.UNQUALIFIED_DELEGATE;
         }
-        return true;
+        // make sure we have a parent calling context
+        final var stack = frame.getMessageFrameStack();
+        final var frames = stack.iterator();
+        frames.next();
+        if (!frames.hasNext()) {
+            // Impossible to get here w/o a catastrophic EVM bug
+            throw new IllegalStateException("No parent frame for delegate call");
+        }
+        // Even a qualified delegatecall must originate from a non-delegatecall
+        return isDelegateCall(frames.next()) ? CallType.UNQUALIFIED_DELEGATE : viableType;
     }
 
     /**
      * Returns true if the given frame is a call to a contract that must be present based on feature flag settings.
+     *
      * @param frame
      * @param address to check for possible grandfathering
      * @param featureFlags
@@ -327,5 +334,10 @@ public class FrameUtils {
 
     private static PendingCreationMetadataRef pendingCreationMetadataRef(@NonNull final MessageFrame frame) {
         return initialFrameOf(frame).getContextVariable(PENDING_CREATION_BUILDER_CONTEXT_VARIABLE);
+    }
+
+    private static boolean isQualifiedDelegate(@NonNull final Address recipient, @NonNull final MessageFrame frame) {
+        return isLongZero(recipient)
+                && contractsConfigOf(frame).permittedDelegateCallers().contains(numberOfLongZero(recipient));
     }
 }

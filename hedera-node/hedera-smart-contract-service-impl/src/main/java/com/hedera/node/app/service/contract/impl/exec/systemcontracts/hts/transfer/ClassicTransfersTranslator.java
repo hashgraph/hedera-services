@@ -81,7 +81,11 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 selector,
-                attempt.senderId(),
+                // This is the only place we don't use the EVM sender id, because
+                // we need to switch debits to approvals based on whether the
+                // mono-service would have activated a key; and its key activation
+                // test would use the qualified delegate id if applicable
+                attempt.authorizingId(),
                 decoder.checkForFailureStatus(attempt),
                 nominalBodyFor(attempt),
                 attempt.configuration(),

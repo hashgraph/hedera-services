@@ -42,8 +42,6 @@ import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
-import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
@@ -51,13 +49,19 @@ import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
-import com.swirlds.platform.network.communication.NegotiatorThread;
+import com.swirlds.platform.network.communication.ProtocolNegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.InboundConnectionHandler;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
+import com.swirlds.platform.network.protocol.EmergencyReconnectProtocolFactory;
+import com.swirlds.platform.network.protocol.HeartbeatProtocolFactory;
+import com.swirlds.platform.network.protocol.ProtocolFactory;
+import com.swirlds.platform.network.protocol.ProtocolRunnable;
+import com.swirlds.platform.network.protocol.ReconnectProtocolFactory;
+import com.swirlds.platform.network.protocol.SyncProtocolFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
@@ -66,9 +70,7 @@ import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
-import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
-import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
@@ -328,6 +330,47 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
             final ProtocolConfig protocolConfig,
             final ReconnectConfig reconnectConfig,
             final EventConfig eventConfig) {
+        final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
+                platformContext,
+                syncShadowgraphSynchronizer,
+                fallenBehindManager,
+                syncPermitProvider,
+                gossipHalted::get,
+                () -> intakeQueueSizeSupplier.getAsLong() >= eventConfig.eventIntakeQueueThrottleSize(),
+                Duration.ZERO,
+                syncMetrics,
+                platformStatusManager);
+        final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
+                platformContext,
+                threadManager,
+                reconnectThrottle,
+                () -> latestCompleteState.getState("SwirldsPlatform: ReconnectProtocol"),
+                reconnectConfig.asyncStreamTimeout(),
+                reconnectMetrics,
+                reconnectController,
+                new DefaultSignedStateValidator(platformContext),
+                fallenBehindManager,
+                platformStatusManager,
+                platformContext.getConfiguration());
+        final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
+                platformContext,
+                threadManager,
+                notificationEngine,
+                emergencyRecoveryManager,
+                reconnectThrottle,
+                emergencyStateSupplier,
+                reconnectConfig.asyncStreamTimeout(),
+                reconnectMetrics,
+                reconnectController,
+                platformStatusManager,
+                platformContext.getConfiguration());
+        final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(
+                Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()), networkMetrics, time);
+        final HashCompareHandshake hashCompareHandshake =
+                new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash());
+        final VersionCompareHandshake versionCompareHandshake =
+                new VersionCompareHandshake(appVersion, !protocolConfig.tolerateMismatchedEpochHash());
+        final List<ProtocolRunnable> handshakeProtocols = List.of(hashCompareHandshake, versionCompareHandshake);
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
@@ -336,59 +379,15 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                     .setOtherNodeId(otherId)
                     .setThreadName("SyncProtocolWith" + otherId)
                     .setHangingThreadPeriod(hangingThreadDuration)
-                    .setWork(new NegotiatorThread(
+                    .setWork(new ProtocolNegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
                             syncConfig.syncSleepAfterFailedNegotiation(),
-                            List.of(
-                                    new VersionCompareHandshake(
-                                            appVersion, !protocolConfig.tolerateMismatchedVersion()),
-                                    new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash())),
+                            handshakeProtocols,
                             new NegotiationProtocols(List.of(
-                                    new HeartbeatProtocol(
-                                            otherId,
-                                            Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()),
-                                            networkMetrics,
-                                            time),
-                                    new EmergencyReconnectProtocol(
-                                            platformContext,
-                                            time,
-                                            threadManager,
-                                            notificationEngine,
-                                            otherId,
-                                            emergencyRecoveryManager,
-                                            reconnectThrottle,
-                                            emergencyStateSupplier,
-                                            reconnectConfig.asyncStreamTimeout(),
-                                            reconnectMetrics,
-                                            reconnectController,
-                                            platformStatusManager,
-                                            platformContext.getConfiguration()),
-                                    new ReconnectProtocol(
-                                            platformContext,
-                                            threadManager,
-                                            otherId,
-                                            reconnectThrottle,
-                                            () -> latestCompleteState.getState("SwirldsPlatform: ReconnectProtocol"),
-                                            reconnectConfig.asyncStreamTimeout(),
-                                            reconnectMetrics,
-                                            reconnectController,
-                                            new DefaultSignedStateValidator(platformContext),
-                                            fallenBehindManager,
-                                            platformStatusManager,
-                                            platformContext.getConfiguration(),
-                                            time),
-                                    new SyncProtocol(
-                                            platformContext,
-                                            otherId,
-                                            syncShadowgraphSynchronizer,
-                                            fallenBehindManager,
-                                            syncPermitProvider,
-                                            gossipHalted::get,
-                                            () -> intakeQueueSizeSupplier.getAsLong()
-                                                    >= eventConfig.eventIntakeQueueThrottleSize(),
-                                            Duration.ZERO,
-                                            syncMetrics,
-                                            platformStatusManager)))))
+                                    heartbeatProtocolFactory.build(otherId),
+                                    emergencyReconnectProtocolFactory.build(otherId),
+                                    reconnectProtocolFactory.build(otherId),
+                                    syncProtocolFactory.build(otherId)))))
                     .build());
         }
     }

@@ -39,7 +39,6 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.swirlds.config.api.Configuration;
@@ -113,7 +112,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     @Override
     public void start(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final var codeAddress = frame.getContractAddress();
-
         // This must be done first as the system contract address range overlaps with system
         // accounts. Note that unlike EVM precompiles, we do allow sending value "to" Hedera
         // system contracts because they sometimes require fees greater than be reasonably
@@ -200,7 +198,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         tracer.tracePrecompileCall(frame, gasRequirement, fullResult.output());
         if (frame.getRemainingGas() < gasRequirement) {
             doHalt(frame, INSUFFICIENT_GAS);
-            fullResult.recordInsufficientGas();
         } else {
             if (!fullResult.isRefundGas()) {
                 frame.decrementRemainingGas(gasRequirement);
@@ -297,12 +294,5 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
                         frame, new Operation.OperationResult(frame.getRemainingGas(), reason));
             }
         }
-    }
-
-    @Override
-    protected void revert(final MessageFrame frame) {
-        super.revert(frame);
-        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
-        ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
     }
 }
