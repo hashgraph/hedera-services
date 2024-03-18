@@ -36,6 +36,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -58,6 +59,9 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
 
     @Mock
     private VerificationStrategy verificationStrategy;
+
+    @Mock
+    private SpecialRewardReceivers specialRewardReceivers;
 
     @Mock
     private ContractCallRecordBuilder recordBuilder;
@@ -123,6 +127,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
                 mockEnhancement(),
                 gasCalculator,
                 SENDER_ID,
-                addressIdConverter);
+                addressIdConverter,
+                specialRewardReceivers);
     }
 }

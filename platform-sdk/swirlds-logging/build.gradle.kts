@@ -23,11 +23,6 @@ plugins {
 
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
 
-jmhModuleInfo {
-    requires("com.swirlds.config.api")
-    runtimeOnly("com.swirlds.config.impl")
-}
-
 testModuleInfo {
     requires("org.apache.logging.log4j.core")
     requires("com.swirlds.config.extensions.test.fixtures")
@@ -37,4 +32,15 @@ testModuleInfo {
     requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.common.test.fixtures")
     requires("jakarta.inject")
+}
+
+jmhModuleInfo {
+    requires("com.swirlds.logging")
+    requires("org.apache.logging.log4j")
+    requires("com.swirlds.config.api")
+    runtimeOnly("com.swirlds.config.impl")
+    requires("com.swirlds.config.extensions")
+    requires("org.apache.logging.log4j.core")
+    requires("com.github.spotbugs.annotations")
+    requires("jmh.core")
 }

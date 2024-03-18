@@ -237,6 +237,7 @@ public class HapiUtils {
             case TOKEN_UNFREEZE -> HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
             case TOKEN_UNPAUSE -> HederaFunctionality.TOKEN_UNPAUSE;
             case TOKEN_UPDATE -> HederaFunctionality.TOKEN_UPDATE;
+            case TOKEN_UPDATE_NFTS -> HederaFunctionality.TOKEN_UPDATE_NFTS;
             case TOKEN_WIPE -> HederaFunctionality.TOKEN_ACCOUNT_WIPE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case UNCHECKED_SUBMIT -> HederaFunctionality.UNCHECKED_SUBMIT;

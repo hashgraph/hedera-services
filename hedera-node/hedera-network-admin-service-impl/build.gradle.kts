@@ -22,6 +22,7 @@ mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
     requires("com.hedera.node.app")
+    requires("com.hedera.node.app.service.file.impl")
     requires("com.hedera.node.app.service.network.admin.impl")
     requires("com.hedera.node.app.service.token.impl")
     requires("com.hedera.node.app.spi.test.fixtures")

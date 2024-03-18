@@ -81,6 +81,8 @@ include(":swirlds-base", "platform-sdk/swirlds-base")
 
 include(":swirlds-logging", "platform-sdk/swirlds-logging")
 
+include(":swirlds-logging-log4j-appender", "platform-sdk/swirlds-logging-log4j-appender")
+
 include(":swirlds-common", "platform-sdk/swirlds-common")
 
 include(":swirlds-config-api", "platform-sdk/swirlds-config-api")
@@ -141,7 +143,7 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.47.0"
+val hapiProtoVersion = "0.48.0"
 
 dependencyResolutionManagement {
     // Protobuf tool versions
@@ -150,6 +152,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.20")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.3")
     }
 }

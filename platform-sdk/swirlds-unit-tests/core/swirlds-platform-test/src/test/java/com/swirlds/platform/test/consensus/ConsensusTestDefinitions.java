@@ -529,7 +529,7 @@ public final class ConsensusTestDefinitions {
         orchestrator.generateEvents(0.5);
         orchestrator.validate(
                 Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
-        orchestrator.addReconnectNode();
+        orchestrator.addReconnectNode(input.platformContext());
 
         orchestrator.clearOutput();
         orchestrator.generateEvents(0.5);

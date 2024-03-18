@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.signature.impl;
 
+import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -410,21 +411,33 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
                                     FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]
                                             .uncompressedPublicKey()
                                             .ecdsaSecp256k1OrThrow(),
-                                    null,
+                                    Bytes.wrap(
+                                            extractEvmAddressFromDecompressedECDSAKey(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]
+                                                    .uncompressedPublicKey()
+                                                    .ecdsaSecp256k1OrThrow()
+                                                    .toByteArray())),
                                     sigList.get(5)),
                             new ExpandedSignaturePair(
                                     FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[1].publicKey(),
                                     FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[1]
                                             .uncompressedPublicKey()
                                             .ecdsaSecp256k1OrThrow(),
-                                    null,
+                                    Bytes.wrap(
+                                            extractEvmAddressFromDecompressedECDSAKey(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[1]
+                                                    .uncompressedPublicKey()
+                                                    .ecdsaSecp256k1OrThrow()
+                                                    .toByteArray())),
                                     sigList.get(6)),
                             new ExpandedSignaturePair(
                                     FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[2].publicKey(),
                                     FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[2]
                                             .uncompressedPublicKey()
                                             .ecdsaSecp256k1OrThrow(),
-                                    null,
+                                    Bytes.wrap(
+                                            extractEvmAddressFromDecompressedECDSAKey(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[2]
+                                                    .uncompressedPublicKey()
+                                                    .ecdsaSecp256k1OrThrow()
+                                                    .toByteArray())),
                                     sigList.get(7)));
         }
     }

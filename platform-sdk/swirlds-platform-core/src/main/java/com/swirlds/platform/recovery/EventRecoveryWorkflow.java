@@ -58,6 +58,7 @@ import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateFileWriter;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -148,6 +149,8 @@ public final class EventRecoveryWorkflow {
         try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
                         platformContext, signedStateFile)
                 .reservedSignedState()) {
+            StaticSoftwareVersion.setSoftwareVersion(
+                    initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
             logger.info(
                     STARTUP.getMarker(),

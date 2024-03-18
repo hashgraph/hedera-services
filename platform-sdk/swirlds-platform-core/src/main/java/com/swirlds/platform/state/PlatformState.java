@@ -47,6 +47,10 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        /**
+         * Added state to allow for birth round migration.
+         */
+        public static final int BIRTH_ROUND_MIGRATION_PATHWAY = 2;
     }
 
     /**
@@ -119,6 +123,23 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     private UptimeDataImpl uptimeData = new UptimeDataImpl();
 
+    /**
+     * Null if birth round migration has not yet happened, otherwise the software version that was first used when the
+     * birth round migration was performed.
+     */
+    private SoftwareVersion firstVersionInBirthRoundMode;
+
+    /**
+     * The last round before the birth round mode was enabled, or -1 if birth round mode has not yet been enabled.
+     */
+    private long lastRoundBeforeBirthRoundMode = -1;
+
+    /**
+     * The lowest judge generation before the birth round mode was enabled, or -1 if birth round mode has not yet been
+     * enabled.
+     */
+    private long lowestJudgeGenerationBeforeBirthRoundMode = -1;
+
     public PlatformState() {}
 
     /**
@@ -141,6 +162,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         this.freezeTime = that.freezeTime;
         this.lastFrozenTime = that.lastFrozenTime;
         this.uptimeData = that.uptimeData.copy();
+        this.firstVersionInBirthRoundMode = that.firstVersionInBirthRoundMode;
+        this.lastRoundBeforeBirthRoundMode = that.lastRoundBeforeBirthRoundMode;
+        this.lowestJudgeGenerationBeforeBirthRoundMode = that.lowestJudgeGenerationBeforeBirthRoundMode;
     }
 
     /**
@@ -184,6 +208,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeInstant(freezeTime);
         out.writeInstant(lastFrozenTime);
         out.writeSerializable(uptimeData, false);
+        out.writeSerializable(firstVersionInBirthRoundMode, true);
+        out.writeLong(lastRoundBeforeBirthRoundMode);
+        out.writeLong(lowestJudgeGenerationBeforeBirthRoundMode);
     }
 
     /**
@@ -203,6 +230,11 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         freezeTime = in.readInstant();
         lastFrozenTime = in.readInstant();
         uptimeData = in.readSerializable(false, UptimeDataImpl::new);
+        if (version >= ClassVersion.BIRTH_ROUND_MIGRATION_PATHWAY) {
+            firstVersionInBirthRoundMode = in.readSerializable();
+            lastRoundBeforeBirthRoundMode = in.readLong();
+            lowestJudgeGenerationBeforeBirthRoundMode = in.readLong();
+        }
     }
 
     /**
@@ -210,7 +242,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.BIRTH_ROUND_MIGRATION_PATHWAY;
     }
 
     /**
@@ -226,7 +258,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the creation version
      */
-    @Nullable
+    @NonNull
     public SoftwareVersion getCreationSoftwareVersion() {
         return creationSoftwareVersion;
     }
@@ -488,5 +520,63 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public void setUptimeData(@NonNull final UptimeDataImpl uptimeData) {
         this.uptimeData = Objects.requireNonNull(uptimeData);
+    }
+
+    /**
+     * Get the first software version where the birth round migration happened, or null if birth round migration has not
+     * yet happened.
+     *
+     * @return the first software version where the birth round migration happened
+     */
+    @Nullable
+    public SoftwareVersion getFirstVersionInBirthRoundMode() {
+        return firstVersionInBirthRoundMode;
+    }
+
+    /**
+     * Set the first software version where the birth round migration happened.
+     *
+     * @param firstVersionInBirthRoundMode the first software version where the birth round migration happened
+     */
+    public void setFirstVersionInBirthRoundMode(final SoftwareVersion firstVersionInBirthRoundMode) {
+        this.firstVersionInBirthRoundMode = firstVersionInBirthRoundMode;
+    }
+
+    /**
+     * Get the last round before the birth round mode was enabled, or -1 if birth round mode has not yet been enabled.
+     *
+     * @return the last round before the birth round mode was enabled
+     */
+    public long getLastRoundBeforeBirthRoundMode() {
+        return lastRoundBeforeBirthRoundMode;
+    }
+
+    /**
+     * Set the last round before the birth round mode was enabled.
+     *
+     * @param lastRoundBeforeBirthRoundMode the last round before the birth round mode was enabled
+     */
+    public void setLastRoundBeforeBirthRoundMode(final long lastRoundBeforeBirthRoundMode) {
+        this.lastRoundBeforeBirthRoundMode = lastRoundBeforeBirthRoundMode;
+    }
+
+    /**
+     * Get the lowest judge generation before the birth round mode was enabled, or -1 if birth round mode has not yet
+     * been enabled.
+     *
+     * @return the lowest judge generation before the birth round mode was enabled
+     */
+    public long getLowestJudgeGenerationBeforeBirthRoundMode() {
+        return lowestJudgeGenerationBeforeBirthRoundMode;
+    }
+
+    /**
+     * Set the lowest judge generation before the birth round mode was enabled.
+     *
+     * @param lowestJudgeGenerationBeforeBirthRoundMode the lowest judge generation before the birth round mode was
+     *                                                  enabled
+     */
+    public void setLowestJudgeGenerationBeforeBirthRoundMode(final long lowestJudgeGenerationBeforeBirthRoundMode) {
+        this.lowestJudgeGenerationBeforeBirthRoundMode = lowestJudgeGenerationBeforeBirthRoundMode;
     }
 }

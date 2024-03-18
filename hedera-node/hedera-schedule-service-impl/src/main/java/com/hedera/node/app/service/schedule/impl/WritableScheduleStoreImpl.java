@@ -20,8 +20,8 @@ import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -49,7 +49,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     private static final String SCHEDULE_MISSING_FOR_DELETE_MESSAGE =
             "Schedule to be deleted, %1$s, not found in state.";
     private final WritableKVState<ScheduleID, Schedule> schedulesByIdMutable;
-    private final WritableKVState<ProtoString, ScheduleList> schedulesByEqualityMutable;
+    private final WritableKVState<ProtoBytes, ScheduleList> schedulesByEqualityMutable;
     private final WritableKVState<ProtoLong, ScheduleList> schedulesByExpirationMutable;
 
     /**
@@ -107,7 +107,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     @Override
     public void put(@NonNull final Schedule scheduleToAdd) {
         schedulesByIdMutable.put(scheduleToAdd.scheduleIdOrThrow(), scheduleToAdd);
-        final ProtoString newHash = new ProtoString(ScheduleStoreUtility.calculateStringHash(scheduleToAdd));
+        final ProtoBytes newHash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(scheduleToAdd));
         final ScheduleList inStateEquality = schedulesByEqualityMutable.get(newHash);
         List<Schedule> byEquality =
                 inStateEquality != null ? new LinkedList<>(inStateEquality.schedulesOrElse(emptyList())) : null;
@@ -159,7 +159,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 for (final var schedule : scheduleList.schedules()) {
                     schedulesByIdMutable.remove(schedule.scheduleIdOrThrow());
 
-                    final ProtoString hash = new ProtoString(ScheduleStoreUtility.calculateStringHash(schedule));
+                    final ProtoBytes hash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
                     schedulesByEqualityMutable.remove(hash);
                     logger.info("Purging expired schedule {} from state.", schedule.scheduleIdOrThrow());
                 }

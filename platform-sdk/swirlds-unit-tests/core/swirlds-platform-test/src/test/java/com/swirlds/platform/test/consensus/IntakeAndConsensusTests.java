@@ -18,10 +18,11 @@ package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusConfig_;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
@@ -71,13 +72,15 @@ class IntakeAndConsensusTests {
                 .withValue(ConsensusConfig_.ROUNDS_EXPIRED, 25)
                 .getOrCreateConfig();
 
-        final ConsensusConfig consensusConfig = configuration.getConfigData(ConsensusConfig.class);
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         // the generated events are first fed into consensus so that round created is calculated before we start
         // using them
-        final GeneratorWithConsensus generator = new GeneratorWithConsensus(seed, numNodes, consensusConfig);
-        final TestIntake node1 = new TestIntake(generator.getAddressBook(), consensusConfig);
-        final TestIntake node2 = new TestIntake(generator.getAddressBook(), consensusConfig);
+        final GeneratorWithConsensus generator = new GeneratorWithConsensus(platformContext, seed, numNodes);
+        final TestIntake node1 = new TestIntake(platformContext, generator.getAddressBook());
+        final TestIntake node2 = new TestIntake(platformContext, generator.getAddressBook());
 
         // first we generate events regularly, until we have some ancient rounds
         final int firstBatchSize = 5000;
@@ -184,11 +187,13 @@ class IntakeAndConsensusTests {
         private final TestIntake intake;
 
         @SuppressWarnings("unchecked")
-        public GeneratorWithConsensus(final long seed, final int numNodes, final ConsensusConfig consensusConfig) {
+        public GeneratorWithConsensus(
+                @NonNull final PlatformContext platformContext, final long seed, final int numNodes) {
+            Objects.requireNonNull(platformContext);
             final List<StandardEventSource> eventSources =
                     Stream.generate(StandardEventSource::new).limit(numNodes).toList();
             generator = new StandardGraphGenerator(seed, (List<EventSource<?>>) (List<?>) eventSources);
-            intake = new TestIntake(generator.getAddressBook(), consensusConfig);
+            intake = new TestIntake(platformContext, generator.getAddressBook());
         }
 
         @Override

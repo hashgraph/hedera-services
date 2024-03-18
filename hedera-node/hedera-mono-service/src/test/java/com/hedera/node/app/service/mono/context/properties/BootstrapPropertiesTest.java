@@ -549,7 +549,7 @@ class BootstrapPropertiesTest {
             entry(SCHEDULING_MAX_NUM, 10_000_000L),
             entry(TOKENS_MAX_NUM, 1_000_000L),
             entry(TOPICS_MAX_NUM, 1_000_000L),
-            entry(TOKENS_MAX_AGGREGATE_RELS, 10_000_000L),
+            entry(TOKENS_MAX_AGGREGATE_RELS, 15_000_000L),
             entry(UTIL_PRNG_IS_ENABLED, true),
             entry(CONTRACTS_SIDECARS, EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE, SidecarType.CONTRACT_BYTECODE)),
             entry(CONTRACTS_SIDECAR_VALIDATION_ENABLED, false),

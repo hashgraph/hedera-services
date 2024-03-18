@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -57,7 +58,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -89,7 +90,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     /**
      * The ordered set of all schemas registered by the service
      */
-    private final Set<Schema> schemas = new TreeSet<>();
+    private final SortedSet<Schema> schemas = new TreeSet<>();
     /**
      * Stores system entities created during genesis until the node can build synthetic records
      */
@@ -183,6 +184,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         for (final var schema : schemasToApply) {
             final var applicationType = checkApplicationType(previousVersion, latestVersion, schema);
             logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), applicationType);
+
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
             // We get a ReadableStates for everything in the current tree, but then wrap
@@ -190,8 +192,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // available at this moment in time. This is done to make sure that even after we
             // add new states into the tree, it doesn't increase the number of states that can
             // be seen by the schema migration code
-            final var readableStates = hederaState.getReadableStates(serviceName);
-            final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
+            ReadableStates previousStatesIfNeeded = null;
+            if (applicationType != SchemaApplicationType.ONLY_STATE_MANAGEMENT) {
+                final var readableStates = hederaState.getReadableStates(serviceName);
+                previousStatesIfNeeded = new FilteredReadableStates(readableStates, readableStates.stateKeys());
+            }
 
             // Create the new states (based on the schema) which, thanks to the above, does not
             // expand the set of states that the migration code will see
@@ -245,7 +250,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 // MigrationContext API so that only changes explicitly specified in the
                 // interface can be made (instead of allowing any arbitrary state change).
                 final var migrationContext = new MigrationContextImpl(
-                        previousStates, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore);
+                        requireNonNull(previousStatesIfNeeded),
+                        newStates,
+                        config,
+                        networkInfo,
+                        genesisRecordsBuilder,
+                        entityIdStore,
+                        previousVersion);
                 if (applicationType != SchemaApplicationType.RESTART_ONLY) {
                     schema.migrate(migrationContext);
                 }
@@ -264,14 +275,20 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     }
 
     private SchemaApplicationType checkApplicationType(
-            @Nullable final SemanticVersion previousVersion,
-            @NonNull final SemanticVersion latestVersion,
+            @Nullable final SemanticVersion previousVersionFromState,
+            @NonNull final SemanticVersion latestRegisteredSchemaVersion,
             @NonNull final Schema schema) {
-        if (isSameVersion(previousVersion, latestVersion)) {
+        // If the previous version is the same as the latest version, then we only need to restart
+        // If this schema is the last registered schema, but is before the current version,
+        // then we only need to restart. Since we apply atleast one schema(last registered schema)
+        // if there are no schemas reported to migrate.
+        if (previousVersionFromState != null
+                && (isSameVersion(previousVersionFromState, latestRegisteredSchemaVersion)
+                        || isSoOrdered(latestRegisteredSchemaVersion, previousVersionFromState))) {
             return SchemaApplicationType.RESTART_ONLY;
-        } else if (isSameVersion(schema.getVersion(), latestVersion)) {
+        } else if (isSameVersion(schema.getVersion(), latestRegisteredSchemaVersion)) {
             return SchemaApplicationType.MIGRATE_THEN_RESTART;
-        } else if (!isSameVersion(schema.getVersion(), previousVersion)) {
+        } else if (!isSameVersion(schema.getVersion(), previousVersionFromState)) {
             return SchemaApplicationType.MIGRATE_ONLY;
         } else {
             return SchemaApplicationType.ONLY_STATE_MANAGEMENT;
@@ -337,7 +354,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 applicableSchemas.add(schema);
             }
         }
-        return applicableSchemas;
+        final List<Schema> registeredSchemas = schemas.isEmpty() ? List.of() : List.of(schemas.getLast());
+        return applicableSchemas.isEmpty() ? registeredSchemas : applicableSchemas;
     }
 
     /**

@@ -67,6 +67,7 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -250,7 +251,8 @@ public interface BaseScaffoldingModule {
             @NonNull final Authorizer authorizer,
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
-            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
+            @NonNull final PlatformStateAccessor platformState) {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var parentRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
@@ -290,7 +292,8 @@ public interface BaseScaffoldingModule {
                     solvencyPreCheck,
                     childRecordFinalizer,
                     networkUtilizationManager,
-                    synchronizedThrottleAccumulator);
+                    synchronizedThrottleAccumulator,
+                    platformState.getPlatformState());
         };
     }
 
