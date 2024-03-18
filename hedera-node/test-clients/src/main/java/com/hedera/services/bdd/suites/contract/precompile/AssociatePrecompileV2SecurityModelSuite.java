@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
-import static com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSV2SecurityModelSuite.EMPTY_METADATA;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -98,7 +97,6 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
     private static final String CONTRACT_KEY = "ContractKey";
     private static final String MINT_TOKEN_CONTRACT = "MixedMintToken";
     private static final String CALLCODE_CONTRACT = "MixedMintToken";
-
 
     public static void main(String... args) {
         new AssociatePrecompileV2SecurityModelSuite().runSuiteAsync();
@@ -679,22 +677,25 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         // via CALLCODE
                         // SIGNER → call → CONTRACT A → callcode → CONTRACT B → call → PRECOMPILE(HTS)
                         contractCall(
-                                CALLCODE_CONTRACT,
-                                "callCodeToContractWithoutAmount",
-                                asHeadlongAddress(getNestedContractAddress(ASSOCIATE_CONTRACT, spec)),
-                                Bytes.wrap(AssociationsTranslator.ASSOCIATE_ONE
-                                                .encodeCallWithArgs(
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
-                                                .array()).toArray())
+                                        CALLCODE_CONTRACT,
+                                        "callCodeToContractWithoutAmount",
+                                        asHeadlongAddress(getNestedContractAddress(ASSOCIATE_CONTRACT, spec)),
+                                        Bytes.wrap(AssociationsTranslator.ASSOCIATE_ONE
+                                                        .encodeCallWithArgs(
+                                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(ACCOUNT))),
+                                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(FUNGIBLE_TOKEN))))
+                                                        .array())
+                                                .toArray())
                                 .via("associateCallcodeFungibleTxn")
                                 .gas(GAS_TO_OFFER)
                                 .sending(ONE_HUNDRED_HBARS)
                                 .signedBy(TOKEN_TREASURY)
                                 .payingWith(TOKEN_TREASURY)
-                               .hasRetryPrecheckFrom(BUSY)
+                                .hasRetryPrecheckFrom(BUSY)
                                 // Verify that the top level status of the transaction is CONTRACT_REVERT_EXECUTED
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTxnRecord("associateCallcodeFungibleTxn")
