@@ -236,23 +236,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {
     @Test
-    void hmm() throws InvalidProtocolBufferException, TextFormat.InvalidEscapeSequenceException {
-        final var expected =
-                "\\n/\\n\\026\\n\\f\\b\\265\\213\\317\\256\\006\\020\\271\\250\\341\\201\\003\\022\\004\\030\\230\\363e \\001\\302\\002\\024\\n\\005\\030\\305\\233\\240\\002\\022\\004\\030\\332\\366X\\022\\005\\030\\234\\352\\372\\001";
-        final var actual =
-                "\\n/\\n\\026\\n\\f\\b\\265\\213\\317\\256\\006\\020\\271\\250\\341\\201\\003\\022\\004\\030\\230\\363e \\001\\302\\002\\024\\n\\005\\030\\304\\233\\240\\002\\022\\004\\030\\332\\366X\\022\\005\\030\\234\\352\\372\\001";
-        System.out.println("expected: " + bodyOf(expected));
-        System.out.println("actual: " + bodyOf(actual));
-    }
-
-    @Test
-    void whatIsThisAlias() throws TextFormat.InvalidEscapeSequenceException {
-        final var encoded = "\\267>[\\201\\273\\242\\321\\346\\356)\\006\\366?\\275\\221{\\210\\035>\\377";
-        final var raw = TextFormat.unescapeBytes(encoded);
-        System.out.println("alias: " + com.swirlds.common.utility.CommonUtils.hex(raw.toByteArray()));
-    }
-
-    @Test
     void canDecodeBody() {
         final var encodedSignedTransaction =
                 "\\n9\\n\\025\\n\\v\\b\\223\\263\\302\\255\\006\\020\\264\\351\\276.\\022\\004\\030\\231\\216\\a \\003r \\022\\036\\n\\004\\030\\325\\325,\\022\\n\\n\\004\\030\\373\\342A\\020\\375\\352J\\022\\n\\n\\004\\030\\305\\245Y\\020\\376\\352J";

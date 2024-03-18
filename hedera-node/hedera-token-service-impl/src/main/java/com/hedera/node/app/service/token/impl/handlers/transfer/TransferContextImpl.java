@@ -191,16 +191,6 @@ public class TransferContextImpl implements TransferContext {
     @Override
     public void validateAccountIds() {
         final var op = context.body().cryptoTransferOrThrow();
-        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
-            if (aa.hasAccountID() && aa.accountIDOrThrow().hasAlias()) {
-                final var alias = aa.accountIDOrThrow().alias();
-                final var hexedAlias = alias.toHex();
-                if (hexedAlias.equals("b73e5b81bba2d1e6ee2906f63fbd917b881d3eff")) {
-                    final var account = accountStore.get(aa.accountIDOrThrow());
-                    System.out.println("Alias maps to account: " + account);
-                }
-            }
-        }
         for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
             for (final var aa : xfers.transfersOrElse(emptyList())) {
                 if (aa.hasAccountID() && aa.accountIDOrThrow().hasAccountNum()) {
