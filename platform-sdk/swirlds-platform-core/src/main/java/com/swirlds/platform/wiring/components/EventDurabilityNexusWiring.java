@@ -45,6 +45,7 @@ public record EventDurabilityNexusWiring(@NonNull InputWire<Long> latestDurableS
      * @param nexus the event durability nexus to bind
      */
     public void bind(@NonNull final EventDurabilityNexus nexus) {
-        ((BindableInputWire<Long, Void>) latestDurableSequenceNumber).bind(nexus::setLatestDurableSequenceNumber);
+        ((BindableInputWire<Long, Void>) latestDurableSequenceNumber)
+                .bindConsumer(nexus::setLatestDurableSequenceNumber);
     }
 }

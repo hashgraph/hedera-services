@@ -53,8 +53,8 @@ public record EventStreamManagerWiring(
      * @param eventStreamManager the event stream manager to bind
      */
     public void bind(@NonNull final EventStreamManager<EventImpl> eventStreamManager) {
-        ((BindableInputWire<List<EventImpl>, Void>) eventsInput).bind(eventStreamManager::addEvents);
+        ((BindableInputWire<List<EventImpl>, Void>) eventsInput).bindConsumer(eventStreamManager::addEvents);
         ((BindableInputWire<RunningEventHashUpdate, Void>) runningHashUpdateInput)
-                .bind(eventStreamManager::updateRunningHash);
+                .bindConsumer(eventStreamManager::updateRunningHash);
     }
 }

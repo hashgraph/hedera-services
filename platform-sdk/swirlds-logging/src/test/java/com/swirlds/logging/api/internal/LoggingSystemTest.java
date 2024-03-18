@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +70,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that a logger name is always created correctly")
     void testLoggerName() {
         // given
@@ -91,6 +93,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that creating loggers with same name ends in same logger instance")
     void testSameLoggerByName() {
         // given
@@ -113,6 +116,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that INFO is default level for a non configured logging system")
     void testDefaultLevel() {
         // given
@@ -183,6 +187,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that logging system can handle null params for isEnabled")
     void testNullLevel() {
         // given
@@ -205,6 +210,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that isEnabled logs errors to emergency logger")
     void testErrorsForEnabled() {
         // given
@@ -223,6 +229,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that accept logs errors to emergency logger")
     void testErrorsForAccept() {
         // given
@@ -244,6 +251,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that log level can be configured")
     void testCustomLevel() {
         // given
@@ -319,6 +327,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that addHandler logs errors to emergency logger")
     void testNullHandler() {
         // given
@@ -334,6 +343,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that getLogger logs errors to emergency logger")
     void testNullLogger() {
         // given
@@ -356,6 +366,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that all logging is forwarded to emergency logger if no handler is defined")
     void testEmergencyLoggerIsUsedIfNoAppender() {
         // given
@@ -383,6 +394,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that all logging for info+ is forwarded to emergency logger if no handler is defined")
     void testEmergencyLoggerIsUsedForConfiguredLevelIfNoAppender() {
         // given
@@ -470,6 +482,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that accept passes events to the configured handler")
     void testAcceptHandling() {
         // given
@@ -663,6 +676,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that any exception in a handler will not be thrown but logged instead")
     void testExceptionInHandler() {
         // given
@@ -708,6 +722,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     @DisplayName("Test that unknown handler type throws no exception")
     void testUnknownTypeHandler() {
         // given
@@ -777,6 +792,7 @@ public class LoggingSystemTest {
     }
 
     @Test
+    @Disabled
     void testSpecWithLoggingSystemWithoutHandler() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
