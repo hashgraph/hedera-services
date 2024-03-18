@@ -42,4 +42,6 @@ public interface NetworkInfo {
 
     @Nullable
     NodeInfo nodeInfo(long nodeId);
+
+    boolean containsNode(long nodeId);
 }
