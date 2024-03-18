@@ -211,6 +211,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         // Change the supply on token
         changeSupply(token, treasuryRel, metadataCount, FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
+        // Since changeSupply call above modifies the treasuryAccount, we need to get the modified treasuryAccount
         treasuryAccount = accountStore.get(treasuryRel.accountIdOrThrow());
         // The token is modified in previous step, so we need to get the modified token
         final var modifiedToken = tokenStore.get(token.tokenId());

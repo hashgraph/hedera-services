@@ -266,6 +266,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var fromRelCopy = fromTreasuryRel.copyBuilder();
         final var toRelCopy = toTreasuryRel.copyBuilder();
 
+        // Update the number of positive balances and number of owned NFTs for old and new treasuries
         final var newFromPositiveBalancesCount =
                 fromRelBalance > 0 ? fromTreasury.numberPositiveBalances() - 1 : fromTreasury.numberPositiveBalances();
         final var newToPositiveBalancesCount =
