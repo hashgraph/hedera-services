@@ -76,6 +76,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.DefaultFutureEventBuffer;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
@@ -97,6 +98,7 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
+import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -608,7 +610,7 @@ public class SwirldsPlatform implements Platform {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
 
-        final InternalEventValidator internalEventValidator = new InternalEventValidator(
+        final InternalEventValidator internalEventValidator = new DefaultInternalEventValidator(
                 platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
         final EventDeduplicator eventDeduplicator = new StandardEventDeduplicator(platformContext, intakeEventCounter);
         final EventSignatureValidator eventSignatureValidator = new DefaultEventSignatureValidator(
@@ -641,7 +643,7 @@ public class SwirldsPlatform implements Platform {
         platformWiring.wireExternalComponents(
                 platformStatusManager, transactionPool, latestCompleteState, notificationEngine);
 
-        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
+        final FutureEventBuffer futureEventBuffer = new DefaultFutureEventBuffer(platformContext);
 
         final IssHandler issHandler =
                 new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
