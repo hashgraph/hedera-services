@@ -59,7 +59,7 @@ class ModelTests {
         assertEquals(illegalDirectSchedulerUseExpected, illegalDirectSchedulerUseDetected);
 
         // Should not throw.
-        final String diagram = model.generateWiringDiagram(List.of(), List.of(), List.of());
+        final String diagram = model.generateWiringDiagram(List.of(), List.of(), List.of(), false);
         if (printMermaidDiagram) {
             System.out.println(diagram);
         }

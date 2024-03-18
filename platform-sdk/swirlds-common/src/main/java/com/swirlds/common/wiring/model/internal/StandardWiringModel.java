@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.model.internal;
 
 import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
 import com.swirlds.base.time.Time;
@@ -84,6 +85,11 @@ public class StandardWiringModel implements WiringModel {
      * Input wires that have been bound to a handler.
      */
     private final Set<InputWireDescriptor> boundInputWires = new HashSet<>();
+
+    /**
+     * Input wires with at least one thing soldered to them.
+     */
+    private final Set<InputWireDescriptor> solderedInputWires = new HashSet<>();
 
     /**
      * The default fork join pool, schedulers not explicitly assigned a pool will use this one.
@@ -193,9 +199,35 @@ public class StandardWiringModel implements WiringModel {
     public String generateWiringDiagram(
             @NonNull final List<ModelGroup> groups,
             @NonNull final List<ModelEdgeSubstitution> substitutions,
-            @NonNull final List<ModelManualLink> manualLinks) {
+            @NonNull final List<ModelManualLink> manualLinks,
+            final boolean moreMystery) {
+        addVertexForUnsolderedInputWires(moreMystery);
         final WiringFlowchart flowchart = new WiringFlowchart(vertices, substitutions, groups, manualLinks);
         return flowchart.render();
+    }
+
+    /**
+     * Add a special vertex for all unsoldered input wires.
+     */
+    private void addVertexForUnsolderedInputWires(final boolean moreMystery) {
+        final Set<InputWireDescriptor> unsolderedInputWires = new HashSet<>(inputWires);
+        unsolderedInputWires.removeAll(solderedInputWires);
+
+        if (unsolderedInputWires.isEmpty()) {
+            return;
+        }
+
+        final ModelVertex unsolderedDataSource =
+                new StandardVertex("Mystery Input", DIRECT_THREADSAFE, SCHEDULER, true);
+        vertices.put(unsolderedDataSource.getName(), unsolderedDataSource);
+
+        for (final InputWireDescriptor unsolderedInputWire : unsolderedInputWires) {
+            final ModelVertex destination = getVertex(unsolderedInputWire.taskSchedulerName());
+
+            final String edgeDescription = moreMystery ? "mystery data" : unsolderedInputWire.name();
+            final ModelEdge edge = new ModelEdge(unsolderedDataSource, destination, edgeDescription, true, true);
+            unsolderedDataSource.getOutgoingEdges().add(edge);
+        }
     }
 
     /**
@@ -261,6 +293,8 @@ public class StandardWiringModel implements WiringModel {
             throw new IllegalArgumentException(
                     "Duplicate edge: " + originVertex + " -> " + destinationVertex + ", label = " + label);
         }
+
+        solderedInputWires.add(new InputWireDescriptor(destinationVertex, label));
     }
 
     /**

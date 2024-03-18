@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Add the flag "--less-mystery" to add back labels for mystery input wires (noisy diagram warning)
+
 pcli diagram \
     -l 'applicationTransactionPrehandler:futures:consensusRoundHandler' \
     -l 'eventDurabilityNexus:wait for durability:consensusRoundHandler' \
@@ -13,6 +15,7 @@ pcli diagram \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'eventCreationManager:non-validated events:🍎' \
+    -s 'Mystery Input:mystery data:X' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
