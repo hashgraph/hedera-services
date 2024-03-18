@@ -16,6 +16,12 @@
 
 package com.hedera.node.blocknode.filesystem.api;
 
-public interface DummyFileSystemApi {
+import com.hedera.services.stream.v7.proto.Block;
+
+public interface FileSystemApi {
     void doSomething();
+
+    void writeBlock(Block block);
+
+    Block readBlock(long number);
 }

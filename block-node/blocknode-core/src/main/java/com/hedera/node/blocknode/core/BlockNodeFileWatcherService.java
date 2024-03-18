@@ -52,6 +52,7 @@ public class BlockNodeFileWatcherService {
         for (BlockItem item : block.getItemsList()) {
             if (item.hasHeader()) {
                 blockNumber = item.getHeader().getNumber();
+                break;
             }
         }
 

@@ -17,9 +17,10 @@
 package com.hedera.node.blocknode.filesystem.local;
 
 import com.hedera.node.blocknode.core.spi.DummyCoreSpi;
-import com.hedera.node.blocknode.filesystem.api.DummyFileSystemApi;
+import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
+import com.hedera.services.stream.v7.proto.Block;
 
-public class LocalFileSystem implements DummyFileSystemApi {
+public class LocalFileSystem implements FileSystemApi {
     @Override
     public void doSomething() {
         final DummyCoreSpi dummyCoreSpi = () -> {
@@ -27,5 +28,15 @@ public class LocalFileSystem implements DummyFileSystemApi {
         };
 
         dummyCoreSpi.doSomething();
+    }
+
+    @Override
+    public void writeBlock(Block block) {
+        // file.write
+    }
+
+    @Override
+    public Block readBlock(long number) {
+        return null;
     }
 }
