@@ -392,6 +392,7 @@ public class BaseTokenHandler {
 
     protected void validateNotFrozenAndKycOnRelation(@NonNull final TokenRelation rel) {
         validateTrue(!rel.frozen(), ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
+
         validateTrue(rel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
     }
 
