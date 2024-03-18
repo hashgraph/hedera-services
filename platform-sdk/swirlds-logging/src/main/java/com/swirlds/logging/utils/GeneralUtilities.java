@@ -16,6 +16,7 @@
 
 package com.swirlds.logging.utils;
 
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
@@ -112,5 +113,13 @@ public class GeneralUtilities {
         } catch (IOException e) {
             throw new IllegalStateException("Cannot delete file ", e);
         }
+    }
+
+    public static <T> T configValueOrElse(
+            final @NonNull Configuration configuration,
+            final String propertyName,
+            Class<T> propertyType,
+            @NonNull final T orElseValue) {
+        return configuration.getValue(propertyName, propertyType, orElseValue);
     }
 }

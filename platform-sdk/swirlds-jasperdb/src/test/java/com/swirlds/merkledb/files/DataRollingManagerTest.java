@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
-class DataFileMetadataTest {
+class DataRollingManagerTest {
 
     @Test
     void equalsIncorporatesAllFields() {
