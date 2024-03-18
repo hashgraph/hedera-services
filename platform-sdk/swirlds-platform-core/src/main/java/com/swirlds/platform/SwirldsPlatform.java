@@ -98,6 +98,7 @@ import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
+import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -609,7 +610,7 @@ public class SwirldsPlatform implements Platform {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
 
-        final InternalEventValidator internalEventValidator = new InternalEventValidator(
+        final InternalEventValidator internalEventValidator = new DefaultInternalEventValidator(
                 platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
         final EventDeduplicator eventDeduplicator = new StandardEventDeduplicator(platformContext, intakeEventCounter);
         final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(

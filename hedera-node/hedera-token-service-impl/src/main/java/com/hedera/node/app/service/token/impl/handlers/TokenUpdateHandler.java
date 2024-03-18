@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
@@ -299,18 +300,18 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // If these keys did not exist on the token already, they can't be changed on update
         updateKeys(op, token, copyToken);
         updateExpiryFields(op, resolvedExpiry, copyToken);
-        updateNameSymbolMemoAndTreasury(op, copyToken, token);
+        updateTokenAttributes(op, copyToken, token);
         return copyToken;
     }
 
     /**
-     * Updates token name, token symbol, token memo and token treasury if they are present in the
-     * token update transaction body.
+     * Updates token name, token symbol, token metadata, token memo
+     * and token treasury if they are present in the token update transaction body.
      * @param op token update transaction body
      * @param builder token builder
      * @param originalToken original token
      */
-    private void updateNameSymbolMemoAndTreasury(
+    private void updateTokenAttributes(
             final TokenUpdateTransactionBody op, final Token.Builder builder, final Token originalToken) {
         if (op.symbol() != null && op.symbol().length() > 0) {
             builder.symbol(op.symbol());
@@ -320,6 +321,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         }
         if (op.hasMemo()) {
             builder.memo(op.memo());
+        }
+        if (op.hasMetadata()) {
+            builder.metadata(op.metadata());
         }
         if (op.hasTreasury() && !op.treasuryOrThrow().equals(originalToken.treasuryAccountId())) {
             builder.treasuryAccountId(op.treasuryOrThrow());
@@ -378,6 +382,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.hasPauseKey()) {
             validateTrue(originalToken.hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
             builder.pauseKey(op.pauseKey());
+        }
+        if (op.hasMetadataKey()) {
+            validateTrue(originalToken.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
+            builder.metadataKey(op.metadataKey());
         }
         if (!isExpiryOnlyUpdateOp(op)) {
             validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);

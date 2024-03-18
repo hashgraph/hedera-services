@@ -22,6 +22,7 @@ import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
@@ -45,7 +46,7 @@ public class PlatformCoordinator {
      */
     private final ObjectCounter hashingObjectCounter;
 
-    private final InternalEventValidatorWiring internalEventValidatorWiring;
+    private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
     private final OrphanBufferWiring orphanBufferWiring;
@@ -77,7 +78,7 @@ public class PlatformCoordinator {
      */
     public PlatformCoordinator(
             @NonNull final ObjectCounter hashingObjectCounter,
-            @NonNull final InternalEventValidatorWiring internalEventValidatorWiring,
+            @NonNull final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring,
             @NonNull final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring,
             @NonNull final EventSignatureValidatorWiring eventSignatureValidatorWiring,
             @NonNull final OrphanBufferWiring orphanBufferWiring,
@@ -121,7 +122,7 @@ public class PlatformCoordinator {
         // we just wait for the shared object counter to be empty, which is equivalent to flushing both components.
         hashingObjectCounter.waitUntilEmpty();
 
-        internalEventValidatorWiring.flushRunnable().run();
+        internalEventValidatorWiring.flush();
         eventDeduplicatorWiring.flush();
         eventSignatureValidatorWiring.flushRunnable().run();
         orphanBufferWiring.flushRunnable().run();
