@@ -43,16 +43,19 @@ public class ChildFeeContextImpl implements FeeContext {
     private final HandleContextImpl context;
     private final TransactionBody body;
     private final AccountID payerId;
+    private final boolean computeFeesAsInternalDispatch;
 
     public ChildFeeContextImpl(
             @NonNull final FeeManager feeManager,
             @NonNull final HandleContextImpl context,
             @NonNull final TransactionBody body,
-            @NonNull final AccountID payerId) {
+            @NonNull final AccountID payerId,
+            final boolean computeFeesAsInternalDispatch) {
         this.feeManager = Objects.requireNonNull(feeManager);
         this.context = Objects.requireNonNull(context);
         this.body = Objects.requireNonNull(body);
         this.payerId = Objects.requireNonNull(payerId);
+        this.computeFeesAsInternalDispatch = computeFeesAsInternalDispatch;
     }
 
     @Override
@@ -70,7 +73,15 @@ public class ChildFeeContextImpl implements FeeContext {
         try {
             var storeFactory = new ReadableStoreFactory((HederaState) context.savepointStack());
             return feeManager.createFeeCalculator(
-                    body, Key.DEFAULT, functionOf(body), 0, 0, context.consensusNow(), subType, true, storeFactory);
+                    body,
+                    Key.DEFAULT,
+                    functionOf(body),
+                    0,
+                    0,
+                    context.consensusNow(),
+                    subType,
+                    computeFeesAsInternalDispatch,
+                    storeFactory);
         } catch (UnknownHederaFunctionality e) {
             throw new IllegalStateException(
                     "Child fee context was constructed with invalid transaction body " + body, e);

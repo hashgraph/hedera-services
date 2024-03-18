@@ -429,8 +429,10 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         @Test
         void rejectsAccountWithBalance() {
             // Create the readable store with a token
-            final var tokenWithTreasury =
-                    Token.newBuilder().tokenId(TOKEN_555_ID).build();
+            final var tokenWithTreasury = Token.newBuilder()
+                    .expirationSecond(1_234_567L)
+                    .tokenId(TOKEN_555_ID)
+                    .build();
             readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
 
             // Create the frozen token rel
