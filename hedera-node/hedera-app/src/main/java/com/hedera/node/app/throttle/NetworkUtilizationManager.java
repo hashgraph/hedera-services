@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.throttle;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.state.HederaState;
@@ -50,8 +49,7 @@ public interface NetworkUtilizationManager {
      * @param consensusNow - the consensus time of the transaction.
      * @param state - the state of the node.
      */
-    void trackFeePayments(
-            @NonNull AccountID payer, @NonNull final Instant consensusNow, @NonNull final HederaState state);
+    void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final HederaState state);
 
     /*
      * Indicates whether the last transaction was throttled by gas.
