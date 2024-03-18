@@ -40,6 +40,7 @@ public interface ConsensusEngine {
     List<ConsensusRound> addEvent(@NonNull EventImpl event);
 
     /**
+     *
      * Clear the internal state of the consensus engine. Should be called before initiating a reconnect.
      *
      * @param ignored ignored trigger object

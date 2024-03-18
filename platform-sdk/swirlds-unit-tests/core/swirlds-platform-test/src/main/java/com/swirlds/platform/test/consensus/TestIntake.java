@@ -78,7 +78,7 @@ public class TestIntake implements LoadableFromSignedState {
      * @param platformContext the platform context used to configure this intake.
      * @param addressBook the address book used by this intake
      */
-    public TestIntake(@NonNull PlatformContext platformContext, @NonNull final AddressBook addressBook) {
+    public TestIntake(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
         final NodeId selfId = new NodeId(0);
 
         final Time time = Time.getCurrent();
