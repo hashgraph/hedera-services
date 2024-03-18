@@ -43,5 +43,10 @@ public interface NetworkInfo {
     @Nullable
     NodeInfo nodeInfo(long nodeId);
 
+    /**
+     * Returns true if the network contains a node with the given ID.
+     * @param nodeId the ID of the node to check for
+     * @return true if the network contains a node with the given ID
+     */
     boolean containsNode(long nodeId);
 }
