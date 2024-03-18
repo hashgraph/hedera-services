@@ -383,7 +383,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         Objects.requireNonNull(configurationPaths, "configurationPaths");
 
         final var builder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(builder, Set.of("com.swirlds"));
+        ConfigUtils.scanAndRegisterAllConfigExtensions(builder, Set.of("com.swirlds"));
 
         for (@NonNull final var path : configurationPaths) {
             Objects.requireNonNull(path, "path");

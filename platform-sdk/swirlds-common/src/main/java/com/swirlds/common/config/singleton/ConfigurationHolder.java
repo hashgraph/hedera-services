@@ -52,7 +52,7 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
     }
 
     public void reset() {
-        this.configuration = ConfigUtils.scanAndRegisterAllConfigTypes(
+        this.configuration = ConfigUtils.scanAndRegisterAllConfigExtensions(
                         ConfigurationBuilder.create(), Set.of("com.swirlds"))
                 .build();
     }

@@ -101,7 +101,8 @@ public abstract class BaseBench {
                 .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(CryptoConfig.class);
-        configurationBuilder = ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
+        configurationBuilder =
+                ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
         configuration = configurationBuilder.build();
         ConfigurationHolder.getInstance().setConfiguration(configuration);
 

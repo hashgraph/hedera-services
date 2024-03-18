@@ -83,7 +83,7 @@ public class ConfigUtilsBenchmark {
     @BenchmarkMode({Mode.Throughput, Mode.SampleTime})
     public void loadConfigurationWithAllPackages(final Blackhole blackhole) {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        final ConfigurationBuilder modified = ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder);
+        final ConfigurationBuilder modified = ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder);
         blackhole.consume(modified);
     }
 

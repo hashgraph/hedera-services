@@ -89,7 +89,7 @@ public class DefaultConfiguration {
 
         final ConfigurationBuilder configurationBuilder =
                 ConfigurationBuilder.create().withSource(mappedSettingsConfigSource);
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
+        ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder, Set.of("com.swirlds"));
 
         for (final Path configurationPath : configurationPaths) {
             logger.info(LogMarker.CONFIG.getMarker(), "Loading configuration from {}", configurationPath);

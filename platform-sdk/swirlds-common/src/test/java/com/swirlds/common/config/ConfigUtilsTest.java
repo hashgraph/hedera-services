@@ -28,7 +28,7 @@ class ConfigUtilsTest {
 
     @Test
     @DisplayName("Should scan and register all expected config records")
-    void testDefaultBehavior() {
+    void testDefaultBehaviorTypeScanning() {
         // given
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
 
@@ -42,7 +42,7 @@ class ConfigUtilsTest {
     }
 
     @Test
-    void testNotExistingPackage() {
+    void testNotExistingPackageTypeScanning() {
         // given
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
 
@@ -55,7 +55,7 @@ class ConfigUtilsTest {
     }
 
     @Test
-    void testExistingPackage() {
+    void testExistingPackageTypeScanning() {
         // given
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
 
@@ -67,5 +67,47 @@ class ConfigUtilsTest {
         Assertions.assertFalse(configuration.getConfigDataTypes().isEmpty());
         Assertions.assertEquals(1, configuration.getConfigDataTypes().size());
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(TestConfig.class));
+    }
+
+    @Test
+    void testDefaultBehaviorExtensionScanning() {
+        // given
+        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
+
+        ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder);
+        final Configuration configuration = configurationBuilder.build();
+
+        // then
+        Assertions.assertFalse(configuration.getConfigDataTypes().isEmpty());
+        Assertions.assertTrue(configuration.getConfigDataTypes().contains(BasicCommonConfig.class));
+        Assertions.assertTrue(configuration.getConfigDataTypes().contains(StateCommonConfig.class));
+    }
+
+    @Test
+    void testNotExistingPackageExtensionScanning() {
+        // given
+        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
+
+        // when
+        ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder, Set.of("not.available.package"));
+        final Configuration configuration = configurationBuilder.build();
+
+        // then
+        Assertions.assertTrue(configuration.getConfigDataTypes().isEmpty());
+    }
+
+    @Test
+    void testExistingPackageExtensionScanning() {
+        // given
+        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
+
+        // when
+        ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder, Set.of("com.swirlds.platform.config"));
+        final Configuration configuration = configurationBuilder.build();
+
+        // then
+        Assertions.assertFalse(configuration.getConfigDataTypes().isEmpty());
+        Assertions.assertTrue(!configuration.getConfigDataTypes().isEmpty());
+        Assertions.assertTrue(configuration.getConfigDataTypes().contains(BasicCommonConfig.class));
     }
 }
