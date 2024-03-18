@@ -23,7 +23,6 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.calculateWeightFromStake;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.scaleUpWeightToStake;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -32,7 +31,6 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -50,20 +48,15 @@ import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.system.address.AddressBook;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,26 +66,14 @@ public class EndOfStakingPeriodUpdaterTest {
     private EndOfStakingPeriodUpdater subject;
     private NodeStakeUpdateRecordBuilder nodeStakeUpdateRecordBuilder;
 
-    @Mock(strictness = LENIENT)
-    private PlatformStateAccessor platformStateAccessor;
-
-    @Mock(strictness = LENIENT)
-    private PlatformState platformState;
-
-    @Mock(strictness = LENIENT)
-    private AddressBook addressBook;
-
     @BeforeEach
     void setup() {
         accountStore = TestStoreFactory.newReadableStoreWithAccounts(Account.newBuilder()
                 .accountId(asAccount(800))
                 .tinybarBalance(100_000_000_000L)
                 .build());
-        subject = new EndOfStakingPeriodUpdater(
-                new FakeHederaNumbers(), new StakingRewardsHelper(), platformStateAccessor);
+        subject = new EndOfStakingPeriodUpdater(new FakeHederaNumbers(), new StakingRewardsHelper());
         this.nodeStakeUpdateRecordBuilder = new FakeNodeStakeUpdateRecordBuilder().create();
-        given(platformStateAccessor.getPlatformState()).willReturn(platformState);
-        given(platformState.getAddressBook()).willReturn(addressBook);
     }
 
     @Test
@@ -200,8 +181,6 @@ public class EndOfStakingPeriodUpdaterTest {
 
         // Create account store (with data)
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-        // Address book
-        given(addressBook.getNodeIdSet()).willReturn(Set.of(new NodeId(2)));
 
         // Create staking info store (with data)
         final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
@@ -271,8 +250,6 @@ public class EndOfStakingPeriodUpdaterTest {
 
         // Create account store (with data)
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-        // Address book
-        given(addressBook.getNodeIdSet()).willReturn(Set.of(new NodeId(1), new NodeId(2), new NodeId(3)));
 
         // Create staking info store (with data)
         final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)

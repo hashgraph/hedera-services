@@ -32,7 +32,6 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.transaction.NodeStake;
 import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
@@ -69,16 +68,12 @@ public class EndOfStakingPeriodUpdater {
     private final HederaAccountNumbers accountNumbers;
     private final StakingRewardsHelper stakeRewardsHelper;
 
-    private PlatformStateAccessor platformStateAccessor;
-
     @Inject
     public EndOfStakingPeriodUpdater(
             @NonNull final HederaAccountNumbers accountNumbers,
-            @NonNull final StakingRewardsHelper stakeRewardsHelper,
-            @NonNull final PlatformStateAccessor platformStateAccessor) {
+            @NonNull final StakingRewardsHelper stakeRewardsHelper) {
         this.accountNumbers = accountNumbers;
         this.stakeRewardsHelper = stakeRewardsHelper;
-        this.platformStateAccessor = platformStateAccessor;
     }
 
     /**
