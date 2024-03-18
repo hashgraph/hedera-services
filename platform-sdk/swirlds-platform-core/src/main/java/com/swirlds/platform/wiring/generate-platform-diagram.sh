@@ -21,7 +21,7 @@ pcli diagram \
     -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,statusManager_submitStateWritten' \
     -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
-    -g 'Consensus Event Stream:getEvents,eventStreamManager' \
+    -g 'Consensus Event Stream:eventStreamManager' \
     -g 'Consensus Pipeline:inOrderLinker,Consensus Engine,📬,🌀,🚽' \
     -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager,transactionPool,🍎' \
     -g 'Gossip:gossip,shadowgraph' \
