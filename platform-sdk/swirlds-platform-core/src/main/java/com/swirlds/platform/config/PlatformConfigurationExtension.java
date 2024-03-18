@@ -38,6 +38,7 @@ import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.uptime.UptimeConfig;
+import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -51,33 +52,37 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
      */
     @Override
     public void extendConfiguration(@NonNull final ConfigurationBuilder builder) {
+
+        // Please keep lists in this method alphabetized (enforced by unit test).
+
         // Load Configuration Definitions
-        builder.withConfigDataType(BasicConfig.class)
+        builder.withConfigDataType(AddressBookConfig.class)
                 .withConfigDataType(BasicCommonConfig.class)
-                .withConfigDataType(StateConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
-                .withConfigDataType(CryptoConfig.class)
-                .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(ReconnectConfig.class)
-                .withConfigDataType(MerkleDbConfig.class)
+                .withConfigDataType(BasicConfig.class)
                 .withConfigDataType(ChatterConfig.class)
-                .withConfigDataType(AddressBookConfig.class)
-                .withConfigDataType(VirtualMapConfig.class)
                 .withConfigDataType(ConsensusConfig.class)
-                .withConfigDataType(ThreadConfig.class)
-                .withConfigDataType(MetricsConfig.class)
-                .withConfigDataType(PrometheusConfig.class)
-                .withConfigDataType(OSHealthCheckConfig.class)
-                .withConfigDataType(PcesConfig.class)
-                .withConfigDataType(SyncConfig.class)
-                .withConfigDataType(UptimeConfig.class)
-                .withConfigDataType(RecycleBinConfig.class)
+                .withConfigDataType(CryptoConfig.class)
                 .withConfigDataType(EventConfig.class)
                 .withConfigDataType(EventCreationConfig.class)
+                .withConfigDataType(MerkleDbConfig.class)
+                .withConfigDataType(MetricsConfig.class)
+                .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(PathsConfig.class)
-                .withConfigDataType(SocketConfig.class)
+                .withConfigDataType(PcesConfig.class)
+                .withConfigDataType(PlatformSchedulersConfig.class)
                 .withConfigDataType(PlatformStatusConfig.class)
+                .withConfigDataType(PrometheusConfig.class)
+                .withConfigDataType(ProtocolConfig.class)
+                .withConfigDataType(ReconnectConfig.class)
+                .withConfigDataType(RecycleBinConfig.class)
+                .withConfigDataType(SocketConfig.class)
+                .withConfigDataType(StateCommonConfig.class)
+                .withConfigDataType(StateConfig.class)
+                .withConfigDataType(SyncConfig.class)
+                .withConfigDataType(TemporaryFileConfig.class)
+                .withConfigDataType(ThreadConfig.class)
                 .withConfigDataType(TransactionConfig.class)
-                .withConfigDataType(ProtocolConfig.class);
+                .withConfigDataType(UptimeConfig.class)
+                .withConfigDataType(VirtualMapConfig.class);
     }
 }
