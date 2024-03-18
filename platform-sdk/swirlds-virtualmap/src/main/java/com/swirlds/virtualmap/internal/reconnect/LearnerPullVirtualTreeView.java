@@ -210,9 +210,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         }
         final boolean isLeaf = isLeaf(path);
         final boolean isClean = traversalOrder.nodeReceived(path, hash);
-        if (isClean) {
-            logger.info(RECONNECT.getMarker(), "TOREMOVE clean path: {}", path);
-        }
         if (isLeaf) {
             if (firstLeaf) {
                 root.prepareForFirstLeaf();
