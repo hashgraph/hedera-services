@@ -114,6 +114,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
@@ -415,7 +416,8 @@ public final class Hedera implements SwirldMain {
         // file in state, created by the file service migration, will match what we have here, so we don't have to worry
         // about re-loading config after migration.
         logger.info("Initializing configuration with trigger {}", trigger);
-        configProvider = new ConfigProviderImpl(trigger == GENESIS);
+        final var metrics = platform.getContext().getMetrics();
+        configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         logConfiguration();
 
         // Determine if we need to create synthetic records for system entities
@@ -603,8 +605,9 @@ public final class Hedera implements SwirldMain {
         try {
             switch (trigger) {
                 case GENESIS -> genesis(state, platformState);
-                case RECONNECT -> reconnect(state, deserializedVersion, platformState);
-                case RESTART, EVENT_STREAM_RECOVERY -> restart(state, deserializedVersion, trigger, platformState);
+                case RECONNECT -> reconnect(state, deserializedVersion, platformState, metrics);
+                case RESTART, EVENT_STREAM_RECOVERY -> restart(
+                        state, deserializedVersion, trigger, platformState, metrics);
             }
         } catch (final Throwable th) {
             logger.fatal("Critical failure during initialization", th);
@@ -968,8 +971,9 @@ public final class Hedera implements SwirldMain {
             @NonNull final MerkleHederaState state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
-            @NonNull final PlatformState platformState) {
-        initializeForTrigger(state, deserializedVersion, trigger, platformState);
+            @NonNull final PlatformState platformState,
+            @NonNull final Metrics metrics) {
+        initializeForTrigger(state, deserializedVersion, trigger, platformState, metrics);
     }
 
     /*==================================================================================================================
@@ -989,15 +993,17 @@ public final class Hedera implements SwirldMain {
     private void reconnect(
             @NonNull final MerkleHederaState state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
-            @NonNull final PlatformState platformState) {
-        initializeForTrigger(state, deserializedVersion, RECONNECT, platformState);
+            @NonNull final PlatformState platformState,
+            @NonNull final Metrics metrics) {
+        initializeForTrigger(state, deserializedVersion, RECONNECT, platformState, metrics);
     }
 
     private void initializeForTrigger(
             @NonNull final MerkleHederaState state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
-            @NonNull final PlatformState platformState) {
+            @NonNull final PlatformState platformState,
+            @NonNull final Metrics metrics) {
         logger.info(trigger + " Initialization");
 
         // The deserialized version can ONLY be null if we are in genesis, otherwise something is wrong with the state
@@ -1009,7 +1015,7 @@ public final class Hedera implements SwirldMain {
         // Initialize the configuration from disk (restart case). We must do this BEFORE we run migration, because
         // the various migration methods may depend on configuration to do their work
         logger.info("Initializing Reconnect configuration");
-        this.configProvider = new ConfigProviderImpl(false);
+        this.configProvider = new ConfigProviderImpl(false, metrics);
 
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
