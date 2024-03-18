@@ -16,11 +16,11 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.files.DataFileReaderPbj.MAX_FILE_CHANNELS;
-import static com.swirlds.merkledb.files.DataFileReaderPbj.THREADS_PER_FILECHANNEL;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.MockitoAnnotations.openMocks;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class DataFileReaderPbjTest {
+
+    private final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
     @Mock
     private DataFileMetadata dataFileMetadata;
@@ -42,7 +44,7 @@ class DataFileReaderPbjTest {
         openMocks(this);
         file = File.createTempFile("file-reader", "test");
         dataFileReaderPbj =
-                new DataFileReaderPbj(file.toPath(), new ExampleFixedSizeDataSerializer(), dataFileMetadata);
+                new DataFileReaderPbj(dbConfig, file.toPath(), new ExampleFixedSizeDataSerializer(), dataFileMetadata);
     }
 
     /**
@@ -53,7 +55,7 @@ class DataFileReaderPbjTest {
      */
     @Test
     void testLeaseFileChannel() throws IOException {
-        for (int i = 0; i < THREADS_PER_FILECHANNEL; i++) {
+        for (int i = 0; i < dataFileReaderPbj.getThreadsPerFileChannel(); i++) {
             int lease = dataFileReaderPbj.leaseFileChannel();
             assertEquals(0, lease);
         }
@@ -78,7 +80,7 @@ class DataFileReaderPbjTest {
 
     @Test
     void testLeaseReleaseFileChannel() throws IOException {
-        for (int i = 0; i < THREADS_PER_FILECHANNEL; i++) {
+        for (int i = 0; i < dataFileReaderPbj.getThreadsPerFileChannel(); i++) {
             int lease = dataFileReaderPbj.leaseFileChannel();
             assertEquals(0, lease);
         }
@@ -97,23 +99,33 @@ class DataFileReaderPbjTest {
 
     @Test
     void testLeaseFileChannel_maxFileChannels() throws IOException {
-        for (int i = 0; i < THREADS_PER_FILECHANNEL * MAX_FILE_CHANNELS; i++) {
+        for (int i = 0;
+                i < dataFileReaderPbj.getThreadsPerFileChannel() * dataFileReaderPbj.getMaxFileChannels();
+                i++) {
             dataFileReaderPbj.leaseFileChannel();
         }
 
         // verifying that all channels were created
-        assertEquals(MAX_FILE_CHANNELS, dataFileReaderPbj.fileChannelsCount.get(), "File channel count is unexpected");
+        assertEquals(
+                dataFileReaderPbj.getMaxFileChannels(),
+                dataFileReaderPbj.fileChannelsCount.get(),
+                "File channel count is unexpected");
 
         assertEquals(1, dataFileReaderPbj.leaseFileChannel());
         assertEquals(2, dataFileReaderPbj.leaseFileChannel());
 
         // verifying that no additional channels were created
-        assertEquals(MAX_FILE_CHANNELS, dataFileReaderPbj.fileChannelsCount.get(), "File channel count is unexpected");
+        assertEquals(
+                dataFileReaderPbj.getMaxFileChannels(),
+                dataFileReaderPbj.fileChannelsCount.get(),
+                "File channel count is unexpected");
     }
 
     @Test
     void testLeaseFileChannel_leaseLeastUsed() throws IOException {
-        for (int i = 0; i < THREADS_PER_FILECHANNEL * MAX_FILE_CHANNELS; i++) {
+        for (int i = 0;
+                i < dataFileReaderPbj.getThreadsPerFileChannel() * dataFileReaderPbj.getMaxFileChannels();
+                i++) {
             dataFileReaderPbj.leaseFileChannel();
         }
 
