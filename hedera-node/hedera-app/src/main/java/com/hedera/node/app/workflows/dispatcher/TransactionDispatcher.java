@@ -200,6 +200,7 @@ public class TransactionDispatcher {
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler();
             case TOKEN_PAUSE -> handlers.tokenPauseHandler();
             case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler();
+            case TOKEN_UPDATE_NFTS -> handlers.tokenUpdateNftsHandler();
 
             case UTIL_PRNG -> handlers.utilPrngHandler();
 
