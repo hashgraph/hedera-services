@@ -110,20 +110,25 @@ class PcesBirthRoundMigrationTests {
         StaticSoftwareVersion.reset();
     }
 
+    /**
+     * Describes the PCES stream that was writtne by {@link #generateLegacyPcesFiles(Random, DiscontinuityType)}
+     *
+     * @param files                  a list of files that were written
+     * @param events                 a list of all events in the stream, if there is a discontinuty then only include
+     *                               events after the discontinuity
+     */
     private record PcesFilesWritten(@NonNull List<PcesFile> files, @NonNull List<GossipEvent> events) {}
 
     /**
      * Generate a bunch of PCES files in the legacy format.
      *
-     * @param random        the random number generator
-     * @param discontinuity whether to introduce a discontinuity in the stream. If true, discontinuity is placed at the
-     *                      event that is 1/3 of the way through the event stream (test migrates from the event at the
-     *                      1/2 point, so this should not affect the migration)
+     * @param random            the random number generator
+     * @param discontinuityType whether to introduce a discontinuity in the stream and the type of the discontinuity
      * @return a list of events that were written to disk
      */
     @NonNull
-    private PcesFilesWritten generateLegacyPcesFiles(@NonNull final Random random, final boolean discontinuity)
-            throws IOException {
+    private PcesFilesWritten generateLegacyPcesFiles(
+            @NonNull final Random random, final DiscontinuityType discontinuityType) throws IOException {
 
         final int eventCount = 1000;
         final int fileCount = 10;
@@ -147,10 +152,24 @@ class PcesBirthRoundMigrationTests {
 
         final List<PcesFile> files = new ArrayList<>();
         long origin = 0;
+        boolean discontinutiyIntroduced = false;
+        final List<GossipEvent> postDiscontinuityEvents = new ArrayList<>();
         for (int fileIndex = 0; fileIndex < fileCount; fileIndex++) {
 
-            if (discontinuity && fileIndex == fileCount / 3) {
+            if (discontinuityType == DiscontinuityType.IN_EVENTS_THAT_ARE_NOT_MIGRATED && fileIndex == fileCount / 3) {
+                // introduce a discontinuity in events that are not migrated.
+                // Events after the 1/2 way point are migrated, so we won't be to
+                // events that we are going to migrate yet.
                 origin = random.nextLong(10, 20);
+                discontinutiyIntroduced = true;
+            }
+
+            if (discontinuityType == DiscontinuityType.IN_EVENTS_THAT_ARE_MIGRATED && fileIndex == 2 * fileCount / 3) {
+                // introduce a discontinuity in events that are migrated.
+                // Events after the 1/2 way point are migrated, so we will be
+                // in the middle of writing migration eligible events.
+                origin = random.nextLong(10, 20);
+                discontinutiyIntroduced = true;
             }
 
             final List<GossipEvent> fileEvents =
@@ -172,20 +191,41 @@ class PcesBirthRoundMigrationTests {
             final PcesMutableFile mutableFile = file.getMutableFile();
             for (final GossipEvent event : fileEvents) {
                 mutableFile.writeEvent(event);
+                if (discontinutiyIntroduced || discontinuityType == DiscontinuityType.NONE) {
+                    postDiscontinuityEvents.add(event);
+                }
             }
             mutableFile.close();
         }
 
-        return new PcesFilesWritten(files, events);
+        return new PcesFilesWritten(files, postDiscontinuityEvents);
+    }
+
+    private enum DiscontinuityType {
+        /**
+         * Ordinal 0. No discontinuities.
+         */
+        NONE,
+        /**
+         * Ordinal 1. Discontinuity int the middle events that are not migrated. None of the migration eligible events
+         * should be effected by the discontinuity.
+         */
+        IN_EVENTS_THAT_ARE_NOT_MIGRATED,
+        /**
+         * Ordinal 2. Discontinuity in the middle of events that are migration eligible. None of the events that come
+         * before the discontinuity should be migrated.
+         */
+        IN_EVENTS_THAT_ARE_MIGRATED
     }
 
     /**
      * Validate the basic migration workflow.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void standardMigrationTest(final boolean discontinuity) throws IOException {
+    @ValueSource(ints = {0, 1, 2})
+    void standardMigrationTest(final int discontinuity) throws IOException {
         final Random random = getRandomPrintSeed();
+        final DiscontinuityType discontinuityType = DiscontinuityType.values()[discontinuity];
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleBinPath)
@@ -206,7 +246,7 @@ class PcesBirthRoundMigrationTests {
                 platformContext.getTime(),
                 new NodeId(0));
 
-        final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, discontinuity);
+        final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, discontinuityType);
 
         // Choose the generation from the middle event as minimum judge generation prior to migration.
         // This will put roughly half of events on either side of the migration boundary.
@@ -327,7 +367,7 @@ class PcesBirthRoundMigrationTests {
                 platformContext.getTime(),
                 new NodeId(0));
 
-        final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, false);
+        final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, DiscontinuityType.NONE);
 
         // Choose the generation from the middle event as minimum judge generation prior to migration.
         // This will put roughly half of events on either side of the migration boundary.
