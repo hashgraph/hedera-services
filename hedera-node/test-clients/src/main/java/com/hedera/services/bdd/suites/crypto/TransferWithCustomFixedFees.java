@@ -1481,6 +1481,30 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
+    public HapiSpec transferFungibleWithFixedHtsCustomFееNotEnoughForGasAndFee() {
+        final var gasAmount = 1669096L;
+        return defaultHapiSpec("transferFungibleWithFixedHbarCustomFeeSenderHasOnlyGasAmount")
+                .given(
+                        cryptoCreate(hbarCollector).balance(0L),
+                        cryptoCreate(tokenOwner).balance(gasAmount),
+                        cryptoCreate(tokenReceiver),
+                        cryptoCreate(tokenTreasury),
+                        tokenCreate(fungibleToken)
+                                .treasury(tokenTreasury)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(tokenTotal)
+                                .withCustom(fixedHbarFee(ONE_HBAR, hbarCollector)),
+                        tokenAssociate(tokenReceiver, fungibleToken),
+                        tokenAssociate(tokenOwner, fungibleToken),
+                        cryptoTransfer(moving(1000, fungibleToken).between(tokenTreasury, tokenOwner)))
+                .when()
+                .then(cryptoTransfer(moving(1, fungibleToken).between(tokenOwner, tokenReceiver))
+                        .fee(ONE_HUNDRED_HBARS)
+                        .payingWith(tokenOwner)
+                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE));
+    }
+
+    @HapiTest
     public HapiSpec transferWithFractionalCustomFee() {
         return defaultHapiSpec("transferWithFractionalCustomFee")
                 .given(
