@@ -138,4 +138,4 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "100") int hashLoggerUnhandledTaskCapacity,
         @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
-        @ConfigProperty(defaultValue = "1") int stateHasherUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity) {}

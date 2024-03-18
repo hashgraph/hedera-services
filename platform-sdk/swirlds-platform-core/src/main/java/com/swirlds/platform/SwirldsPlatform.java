@@ -1022,6 +1022,8 @@ public class SwirldsPlatform implements Platform {
 
     /**
      * Offers the given state to the hash logger
+     * <p>
+     * Future work: this method should be removed, since it is doing the same thing as an advanced transformer
      *
      * @param signedState the state to log
      */
