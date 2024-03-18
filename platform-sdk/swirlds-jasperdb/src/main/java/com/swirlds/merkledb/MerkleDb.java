@@ -769,7 +769,7 @@ public final class MerkleDb {
      *
      */
     @SuppressWarnings("rawtypes")
-    private static class TableMetadata {
+    public static class TableMetadata {
 
         private final int tableId;
 
