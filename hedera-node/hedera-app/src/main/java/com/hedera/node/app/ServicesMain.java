@@ -23,7 +23,6 @@ import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
-import static net.i2p.crypto.eddsa.Utils.bytesToHex;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.config.data.HederaConfig;
@@ -45,18 +44,11 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.math.BigInteger;
 import java.security.KeyFactory;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -122,6 +114,15 @@ public class ServicesMain implements SwirldMain {
         delegate.run();
     }
 
+    public static byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i + 1), 16));
+        }
+        return data;
+    }
+
     /**
      * Launches the application.
      *
@@ -175,34 +176,40 @@ public class ServicesMain implements SwirldMain {
         logger.info("Node Id " + nodeId);
         var address = platform.getAddressBook().getAddress(nodeId);
         var publicKey = (RSAPublicKey) address.getSigPublicKey();
-        assert publicKey != null;
-        var algorithm = publicKey.getAlgorithm();
+        String algo = publicKey.getAlgorithm();
 
-        byte[] encodedPublicKey =  publicKey.getEncoded();
-        byte[] encodedPublicKeyWTF =  publicKey.getEncoded();
-        String b64publicKey = Base64.getEncoder().encodeToString(encodedPublicKey);
-        byte[] b64toByte = Base64.getDecoder().decode(b64publicKey);
-        BigInteger exponent = publicKey.getPublicExponent();
-        BigInteger modulus = publicKey.getModulus();
-        logger.info("Algorithm" + algorithm);
-        logger.info("Public key object " + publicKey);
-        logger.info("Encoded public key " + encodedPublicKey);
-        logger.info("Hex encoded public key " + bytesToHex(encodedPublicKey));
-        logger.info("Base64 string " + b64publicKey);
-        //logger.info("Reconstruct " + reconstructPublicKey(publicKey.getEncoded()));
-        //logger.info("Reconstruct from b64 " + reconstructPublicKey(b64toByte));
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        ////X509EncodedKeySpec keySpec = new X509EncodedKeySpec(b64toByte, "RSA");
-        //PublicKey key = keyFactory.generatePublic(new X509EncodedKeySpec(b64toByte));
+        byte[] encodedPublicKey = publicKey.getEncoded();
+        String hexPublicKey = HexFormat.of().formatHex(encodedPublicKey);
 
-        RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
-        KeyFactory factory = KeyFactory.getInstance("RSA");
-        PublicKey key2 = factory.generatePublic(spec);
-        //logger.info("Reconstruct " + key);
-        logger.info("Seconde key " + key2);
-        logger.info("Hex encoded public key2 " + bytesToHex(key2.getEncoded()));
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(hexStringToByteArray(hexPublicKey), algo);
+        RSAPublicKey restoredPublicKey =
+                (RSAPublicKey) KeyFactory.getInstance(algo).generatePublic(keySpec);
+        byte[] restoredEncodedPublicKey = restoredPublicKey.getEncoded();
+        String restoredHexPublicKey = HexFormat.of().formatHex(restoredEncodedPublicKey);
+
+        //        byte[] encodedPublicKeyWTF =  publicKey.getEncoded();
+        //        String b64publicKey = Base64.getEncoder().encodeToString(encodedPublicKey);
+        //        byte[] b64toByte = Base64.getDecoder().decode(b64publicKey);
+        //        BigInteger exponent = publicKey.getPublicExponent();
+        //        BigInteger modulus = publicKey.getModulus();
+        //        logger.info("Algorithm" + algorithm);
+        //        logger.info("Public key object " + publicKey);
+        //        logger.info("Encoded public key " + encodedPublicKey);
+        //        logger.info("Hex encoded public key " + bytesToHex(encodedPublicKey));
+        //        logger.info("Base64 string " + b64publicKey);
+        //        //logger.info("Reconstruct " + reconstructPublicKey(publicKey.getEncoded()));
+        //        //logger.info("Reconstruct from b64 " + reconstructPublicKey(b64toByte));
+        //        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        //        ////X509EncodedKeySpec keySpec = new X509EncodedKeySpec(b64toByte, "RSA");
+        //        //PublicKey key = keyFactory.generatePublic(new X509EncodedKeySpec(b64toByte));
+        //
+        //        RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
+        //        KeyFactory factory = KeyFactory.getInstance("RSA");
+        //        PublicKey key2 = factory.generatePublic(spec);
+        //        //logger.info("Reconstruct " + key);
+        //        logger.info("Seconde key " + key2);
+        //        logger.info("Hex encoded public key2 " + bytesToHex(key2.getEncoded()));
         hedera.run();
-
     }
 
     public static PublicKey reconstructPublicKey(byte[] publicKeyBytes) throws Exception {
