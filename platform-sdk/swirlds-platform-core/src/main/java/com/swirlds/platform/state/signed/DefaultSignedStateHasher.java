@@ -56,7 +56,6 @@ public class DefaultSignedStateHasher implements SignedStateHasher {
      *
      * @param signedStateMetrics the SignedStateMetrics instance to record time spent hashing.
      * @param fatalErrorConsumer the FatalErrorConsumer to consume any fatal errors during hashing.
-     *
      * @throws NullPointerException if any of the {@code fatalErrorConsumer} parameter is {@code null}.
      */
     public DefaultSignedStateHasher(
@@ -73,9 +72,9 @@ public class DefaultSignedStateHasher implements SignedStateHasher {
     @Nullable
     public StateAndRound hashState(@NonNull final StateAndRound stateAndRound) {
         final Instant start = Instant.now();
-        try (final ReservedSignedState reservedSignedState = stateAndRound.reservedSignedState()) {
+        try {
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(reservedSignedState.get().getState())
+                    .digestTreeAsync(stateAndRound.reservedSignedState().get().getState())
                     .get();
 
             if (signedStateMetrics != null) {
@@ -84,7 +83,7 @@ public class DefaultSignedStateHasher implements SignedStateHasher {
                         .update(Duration.between(start, Instant.now()).toMillis());
             }
 
-            return stateAndRound.makeAdditionalReservation("state hasher output");
+            return stateAndRound;
         } catch (final ExecutionException e) {
             fatalErrorConsumer.fatalError("Exception occurred during SignedState hashing", e, FATAL_ERROR);
         } catch (final InterruptedException e) {
