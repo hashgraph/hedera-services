@@ -89,6 +89,14 @@ class BlocklistAccountCreatorTest {
             long nextId = FIRST_UNUSED_ID;
 
             @Override
+            public long getCurrentNum() {
+                return 0;
+            }
+
+            @Override
+            public void setCurrentNum(long num) {}
+
+            @Override
             public AccountID newAccountId() {
                 return AccountID.newBuilder().setAccountNum(newAccountNumber()).build();
             }
