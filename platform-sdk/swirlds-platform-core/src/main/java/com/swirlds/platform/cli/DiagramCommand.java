@@ -143,7 +143,14 @@ public final class DiagramCommand extends AbstractCommand {
         Files.createFile(temporaryMermaidFile);
         Files.writeString(temporaryMermaidFile, diagramString);
 
-        terminal.run("mmdc", "-i", temporaryMermaidFile.toString(), "-o", outputFilePath.toString(), "--backgroundColor", "555555");
+        terminal.run(
+                "mmdc",
+                "-i",
+                temporaryMermaidFile.toString(),
+                "-o",
+                outputFilePath.toString(),
+                "--backgroundColor",
+                "555555");
         Files.delete(temporaryMermaidFile);
 
         if (verbose) {
