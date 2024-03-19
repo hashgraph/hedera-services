@@ -553,7 +553,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                 "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
+                        cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(FEE_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -602,7 +602,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                             .forToken(token)
                                                             .withNftTransfers(nftTransfer(sender, receiver, 1L, false))
                                                             .build()))
-                                            .payingWith(GENESIS)
+                                            .payingWith(SENDER)
                                             .via(cryptoTransferTxnForNonFungible)
                                             .gas(GAS_TO_OFFER));
                         }),
