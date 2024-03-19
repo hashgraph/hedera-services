@@ -12,6 +12,7 @@ echo "network  = [$network]"
 echo "maxnodes = [$maxnodes]"
 echo "timegap  = [$timegap]"
 echo "limit    = [$limit]"
+echo "pad      = [$pad]"
 
 #. env.loki
 

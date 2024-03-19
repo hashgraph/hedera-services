@@ -116,7 +116,7 @@ jobs:
       - name: Run LogCLI to Wait for Network Active Again
         id: run-logcli-wait-network-active-again
         run: |
-          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}" engnet1 7 3 100 "${{ github.workspace }}/logcli-linux-amd64"
+          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}" engnet1 7 3 600 "${{ github.workspace }}/logcli-linux-amd64"
 
       - name: Call Test Script
         id: call-test-script
