@@ -95,7 +95,7 @@ public class StateSignatureCollectorWiring {
         postConsensusTransformer.getOutputWire().solderTo(postConsSigInput);
 
         // Create input for signed states
-        reservedStateInput = taskScheduler.buildInputWire("reserved signed states");
+        reservedStateInput = taskScheduler.buildInputWire("state");
 
         // Create clear input
         clearInput = taskScheduler.buildInputWire("clear");
