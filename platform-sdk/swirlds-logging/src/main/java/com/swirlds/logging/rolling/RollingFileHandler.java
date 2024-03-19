@@ -35,13 +35,27 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 /**
- * A file handler that writes log events to a file.
+ * A file handler that writes log events to a file with optional rolling based on size or size and date.
  * <p>
- * This handler use a {@link com.swirlds.logging.io.BufferedOutputStream} to write {@link LogEvent}s to a file. Can be
- * configured with the following properties:
+ * The rolling behavior of the underlying file is determined by the provided configuration. When enabled, rolling occurs
+ * based on size or a combination of size and date.
+ * To enable it at least {@code file-rolling.maxFileSize} property needs to be informed.
+ * <p>
+ * Rolling is implemented with a best effort strategy. Log events are initially written to the file, and rolling occurs
+ * if the file size exceeds the configured limit. This approach maintains data coherence and avoids the performance
+ * penalties associated with handling files in a highly specific manner. However, it may result in occasional
+ * file sizes exceeding the limit, depending on the volume of data being written.
+ * <p>
+ * The handler can be optionally buffered for improved performance.
+ * <p>
+ * The handler can be configured with the following properties:
  * <ul>
- *     <li>{@code file} - the {@link Path} of the file</li>
- *     <li>{@code append} - whether to append to the file or not</li>
+ *     <li>{@code file} - The {@link Path} of the log file.</li>
+ *     <li>{@code append} - Determines whether to append to an existing file or overwrite it.</li>
+ *     <li>{@code formatTimestamp} - If set to true, epoch values are formatted as human-readable strings.</li>
+ *     <li>{@code file-rolling.maxRollover} - Maximum number of files used for rolling.</li>
+ *     <li>{@code file-rolling.maxFileSize} - Maximum size of the file for size-based rolling.</li>
+ *     <li>{@code file-rolling.datePattern} - Date pattern for enabling size and date-based rolling.</li>
  * </ul>
  */
 public class RollingFileHandler extends AbstractSyncedHandler {
@@ -52,8 +66,9 @@ public class RollingFileHandler extends AbstractSyncedHandler {
     private static final String MAX_ROLLOVER = ".file-rolling.maxRollover";
     private static final String DATE_PATTERN_PROPERTY = ".file-rolling.datePattern";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
+    private static final int DEFAULT_MAX_ROLLOVER_FILES = 1;
     private static final int BUFFER_CAPACITY = 8192 * 8;
-    public static final int EVENT_LOG_PRINTER_SIZE = 4 * 1024;
+    private static final int EVENT_LOG_PRINTER_SIZE = 4 * 1024;
     private final OutputStream outputStream;
     private final FormattedLinePrinter format;
 
@@ -69,23 +84,39 @@ public class RollingFileHandler extends AbstractSyncedHandler {
             throws IOException {
         super(handlerName, configuration);
         final String propertyPrefix = PROPERTY_HANDLER.formatted(handlerName);
-        final Path filePath = configValueOrElse(
-                configuration, propertyPrefix + FILE_NAME_PROPERTY, Path.class, Path.of(DEFAULT_FILE_NAME));
-        final boolean append = configValueOrElse(configuration, propertyPrefix + APPEND_PROPERTY, Boolean.class, true);
-        final Long maxFileSize = readDataSizeInBytes(configuration, propertyPrefix + SIZE_PROPERTY);
-        final Integer maxRollingOver =
-                configValueOrElse(configuration, propertyPrefix + MAX_ROLLOVER, Integer.class, 1);
-        final String datePattern = configuration.getValue(propertyPrefix + DATE_PATTERN_PROPERTY, String.class, null);
-
         this.format = FormattedLinePrinter.createForHandler(handlerName, configuration);
         try {
-            FileUtils.checkOrCreateParentDirectory(filePath);
-            final OutputStream fileOutputStream = maxFileSize == null
-                    ? new FileOutputStream(filePath.toFile(), append)
-                    : new RolloverFileOutputStream(filePath, maxFileSize, append, maxRollingOver, datePattern);
+            final OutputStream fileOutputStream = outputStream(configuration, propertyPrefix);
             this.outputStream =
                     buffered ? new BufferedOutputStream(fileOutputStream, BUFFER_CAPACITY) : fileOutputStream;
         } catch (IOException e) {
+            throw new IOException("Could not create rolling handler", e);
+        }
+    }
+
+    @NonNull
+    private static OutputStream outputStream(
+            final @NonNull Configuration configuration, final @NonNull String propertyPrefix) throws IOException {
+
+        final Path filePath = configValueOrElse(
+                configuration, propertyPrefix + FILE_NAME_PROPERTY, Path.class, Path.of(DEFAULT_FILE_NAME));
+
+        try {
+            FileUtils.checkOrCreateParentDirectory(filePath);
+            final boolean append =
+                    configValueOrElse(configuration, propertyPrefix + APPEND_PROPERTY, Boolean.class, true);
+            final Long maxFileSize = readDataSizeInBytes(configuration, propertyPrefix + SIZE_PROPERTY);
+
+            if (maxFileSize == null) {
+                return new FileOutputStream(filePath.toFile(), append);
+            }
+
+            final Integer maxRollingOver = configValueOrElse(
+                    configuration, propertyPrefix + MAX_ROLLOVER, Integer.class, DEFAULT_MAX_ROLLOVER_FILES);
+            final String datePattern =
+                    configuration.getValue(propertyPrefix + DATE_PATTERN_PROPERTY, String.class, null);
+            return new RolloverFileOutputStream(filePath, maxFileSize, append, maxRollingOver, datePattern);
+        } catch (Exception e) {
             throw new IOException("Could not create log file " + filePath.toAbsolutePath(), e);
         }
     }

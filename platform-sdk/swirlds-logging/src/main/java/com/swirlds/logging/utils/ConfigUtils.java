@@ -96,7 +96,7 @@ public class ConfigUtils {
         Objects.requireNonNull(configuration, "configuration must not be null");
         Objects.requireNonNull(propertyName, "propertyName must not be null");
         final String propertyValue = configuration.getValue(propertyName, String.class, null);
-        if (propertyValue == null) {
+        if (propertyValue == null || propertyValue.isBlank()) {
             return null;
         }
         return DataSize.parseFrom(propertyValue).asBytes();
@@ -182,7 +182,8 @@ public class ConfigUtils {
         }
 
         public long getValueFromString(String value) {
-            return Long.parseLong(value.substring(0, value.length() - symbol.length()));
+            final String result = value.replaceAll("\\s", "");
+            return Long.parseLong(result.substring(0, result.length() - symbol.length()));
         }
     }
 }
