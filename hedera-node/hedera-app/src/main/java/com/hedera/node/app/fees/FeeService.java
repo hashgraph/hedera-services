@@ -62,7 +62,7 @@ public class FeeService implements Service {
 
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
-                final var isGenesis = ctx.previousStates().isEmpty();
+                final var isGenesis = ctx.previousVersion() == null;
                 final var midnightRatesState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
                 if (isGenesis) {
                     // Set the initial exchange rates (from the bootstrap config) as the midnight rates

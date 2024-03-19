@@ -16,8 +16,7 @@
 
 package com.swirlds.platform.test.gui;
 
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.FinalShadowgraphGuiSource;
@@ -43,13 +42,18 @@ public class TestGuiSource {
     private final HashgraphGuiSource guiSource;
     private ConsensusSnapshot savedSnapshot;
 
-    public TestGuiSource(final long seed, final int numNodes) {
+    /**
+     * Construct a {@link TestGuiSource} with the given platform context, seed, and number of nodes.
+     *
+     * @param platformContext the platform context
+     * @param seed            the seed
+     * @param numNodes        the number of nodes
+     */
+    public TestGuiSource(@NonNull final PlatformContext platformContext, final long seed, final int numNodes) {
         graphGenerator = new StandardGraphGenerator(seed, generateSources(numNodes));
         graphGenerator.reset();
 
-        intake = new TestIntake(
-                graphGenerator.getAddressBook(),
-                new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class));
+        intake = new TestIntake(platformContext, graphGenerator.getAddressBook());
 
         guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
     }

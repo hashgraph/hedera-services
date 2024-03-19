@@ -207,20 +207,20 @@ public class HandlerLoggingLevelConfig {
     }
 
     /**
-     * Returns true if the given level is enabled for the given handler.
+     * Returns true if the given level is enabled for the given name.
      *
-     * @param handler  The handler name.
+     * @param name  The name of the logger.
      * @param level The level.
      *
-     * @return True if the given level is enabled for the given handler.
+     * @return True if the given level is enabled for the given name.
      */
-    public boolean isEnabled(@NonNull final String handler, @NonNull final Level level, @Nullable final Marker marker) {
+    public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
         if (level == null) {
             EMERGENCY_LOGGER.logNPE("level");
             return true;
         }
-        if (handler == null) {
-            EMERGENCY_LOGGER.logNPE("handler");
+        if (name == null) {
+            EMERGENCY_LOGGER.logNPE("name");
             return true;
         }
         if (marker != null) {
@@ -238,7 +238,7 @@ public class HandlerLoggingLevelConfig {
             }
         }
 
-        final ConfigLevel enabledLevel = levelCache.computeIfAbsent(handler.trim(), this::getConfiguredLevel);
+        final ConfigLevel enabledLevel = levelCache.computeIfAbsent(name.trim(), this::getConfiguredLevel);
         return enabledLevel.enabledLoggingOfLevel(level);
     }
 

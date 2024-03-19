@@ -51,8 +51,8 @@ class DataFileReaderCloseTest {
     @BeforeAll
     static void setup() throws IOException {
         final Path dir = TemporaryFileBuilder.buildTemporaryFile("readerIsOpenTest");
-        collection = new DataFileCollection<>(
-                ConfigurationHolder.getConfigData(MerkleDbConfig.class), dir, "store", serializer, null);
+        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+        collection = new DataFileCollection<>(dbConfig, dir, "store", serializer, null);
     }
 
     @AfterAll
@@ -110,6 +110,7 @@ class DataFileReaderCloseTest {
     @Test
     void readWhileFinishWritingTest() throws IOException {
         final Path tmpDir = TemporaryFileBuilder.buildTemporaryDirectory("readWhileFinishWritingTest");
+        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         for (int i = 0; i < 100; i++) {
             Path filePath = null;
             try {
@@ -119,7 +120,8 @@ class DataFileReaderCloseTest {
                 final DataFileMetadata metadata = writer.getMetadata();
                 final LongList index = new LongListOffHeap();
                 index.put(0, writer.storeDataItem(new long[] {i, i * 2 + 1}));
-                final DataFileReaderPbj<long[]> reader = new DataFileReaderPbj<>(filePath, serializer, metadata);
+                final DataFileReaderPbj<long[]> reader =
+                        new DataFileReaderPbj<>(dbConfig, filePath, serializer, metadata);
                 final int fi = i;
                 // Check the item in parallel to finish writing
                 IntStream.of(0, 1).parallel().forEach(t -> {

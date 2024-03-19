@@ -39,7 +39,7 @@ public final class StateSignatureTransaction extends SystemTransaction {
     /**
      * class identifier for the purposes of serialization
      */
-    private static final long CLASS_ID = 0xaf7024c653caabf4L;
+    public static final long CLASS_ID = 0xaf7024c653caabf4L;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;

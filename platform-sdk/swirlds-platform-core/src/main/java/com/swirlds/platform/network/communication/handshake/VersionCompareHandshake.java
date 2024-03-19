@@ -25,6 +25,7 @@ import com.swirlds.platform.network.protocol.ProtocolRunnable;
 import com.swirlds.platform.system.SoftwareVersion;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,7 +64,7 @@ public class VersionCompareHandshake implements ProtocolRunnable {
             throws NetworkProtocolException, IOException, InterruptedException {
         connection.getDos().writeSerializable(version, true);
         connection.getDos().flush();
-        final SelfSerializable peerVersion = connection.getDis().readSerializable();
+        final SelfSerializable peerVersion = connection.getDis().readSerializable(Set.of(version.getClassId()));
         if (!(peerVersion instanceof SoftwareVersion sv) || version.compareTo(sv) != 0) {
             final String message = String.format(
                     "Incompatible versions. Self version is '%s', peer version is '%s'", version, peerVersion);

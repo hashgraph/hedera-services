@@ -16,16 +16,19 @@
 
 package com.hedera.node.app.service.mono.txns.crypto;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.tryAddressRecovery;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -162,7 +165,6 @@ public abstract class AbstractAutoCreationLogic {
         if (alias == null) {
             throw new IllegalStateException("Cannot auto-create an account from unaliased change " + change);
         }
-
         TransactionBody.Builder syntheticCreation;
         String memo;
         HederaAccountCustomizer customizer = new HederaAccountCustomizer();
@@ -203,6 +205,9 @@ public abstract class AbstractAutoCreationLogic {
             if (isAliasEVMAddress) {
                 fee += getLazyCreationFinalizationFee();
             }
+        }
+        if (isMirror(ByteStringUtils.unwrapUnsafelyIfPossible(alias))) {
+            return Pair.of(INVALID_ALIAS_KEY, fee);
         }
 
         final var newId = ids.newAccountId();

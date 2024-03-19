@@ -30,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.RecoveryTestUtils;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -41,6 +43,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -80,6 +83,13 @@ class EventStreamSigningUtilsTests {
 
         // the utility method being leveraged saves stream files to a directory "events_test"
         toSignDirectory = testDirectoryPath.resolve("events_test");
+
+        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        StaticSoftwareVersion.reset();
     }
 
     /**
