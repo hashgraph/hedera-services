@@ -735,8 +735,6 @@ public class SwirldsPlatform implements Platform {
             initialAncientThreshold = initialState.getState().getPlatformState().getAncientThreshold();
             startingRound = initialState.getRound();
 
-            latestImmutableStateNexus.setState(initialState.reserve("set latest immutable to initial state"));
-
             initialState.setGarbageCollector(signedStateGarbageCollector);
             logSignedStateHash(initialState);
             platformWiring

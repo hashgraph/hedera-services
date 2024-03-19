@@ -22,7 +22,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Performs the prehandling of transactions
  */
-@FunctionalInterface
 public interface TransactionPrehandler {
     /**
      * Prehandles application transactions
