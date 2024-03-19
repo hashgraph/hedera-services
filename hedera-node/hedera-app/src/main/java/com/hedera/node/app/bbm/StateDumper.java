@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.bbm;
 
+import static com.hedera.node.app.bbm.accounts.AccountDumpUtils.dumpModAccounts;
+import static com.hedera.node.app.bbm.accounts.AccountDumpUtils.dumpMonoAccounts;
 import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpModTokenRelations;
 import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpMonoTokenRelations;
 import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpModFiles;
@@ -23,18 +25,22 @@ import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpMonoFiles;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpModUniqueTokens;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpMonoUniqueTokens;
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.records.BlockRecordService;
@@ -61,6 +67,7 @@ public class StateDumper {
     private static final String SEMANTIC_UNIQUE_TOKENS = "uniqueTokens.txt";
     private static final String SEMANTIC_TOKEN_RELATIONS = "tokenRelations.txt";
     private static final String SEMANTIC_FILES = "files.txt";
+    private static final String SEMANTIC_ACCOUNTS = "accounts.txt";
 
     public static void dumpMonoChildrenFrom(
             @NonNull final MerkleHederaState state, @NonNull final DumpCheckpoint checkpoint) {
@@ -70,6 +77,7 @@ public class StateDumper {
         dumpMonoTokenRelations(
                 Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(TOKEN_ASSOCIATIONS), checkpoint);
         dumpMonoFiles(Paths.get(dumpLoc, SEMANTIC_FILES), state.getChild(STORAGE), checkpoint);
+        dumpMonoAccounts(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(ACCOUNTS), checkpoint);
     }
 
     public static void dumpModChildrenFrom(
@@ -94,6 +102,10 @@ public class StateDumper {
         final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
                 requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
         dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint);
+
+        final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts =
+                requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
+        dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
     }
 
     private static String getExtantDumpLoc(
