@@ -16,17 +16,17 @@
 
 package com.swirlds.logging.rolling;
 
-import static com.swirlds.logging.utils.GeneralUtilities.configValueOrElse;
+import static com.swirlds.logging.utils.ConfigUtils.configValueOrElse;
+import static com.swirlds.logging.utils.ConfigUtils.readDataSizeInBytes;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
-import com.swirlds.logging.ostream.BufferedOutputStream;
-import com.swirlds.logging.ostream.RolloverFileOutputStream;
-import com.swirlds.logging.utils.DataSize;
-import com.swirlds.logging.utils.GeneralUtilities;
+import com.swirlds.logging.io.BufferedOutputStream;
+import com.swirlds.logging.io.RolloverFileOutputStream;
+import com.swirlds.logging.utils.FileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,8 +37,8 @@ import java.nio.file.Path;
 /**
  * A file handler that writes log events to a file.
  * <p>
- * This handler use a {@link com.swirlds.logging.ostream.BufferedOutputStream} to write {@link LogEvent}s to a file.
- * Can be configured with the following properties:
+ * This handler use a {@link com.swirlds.logging.io.BufferedOutputStream} to write {@link LogEvent}s to a file. Can be
+ * configured with the following properties:
  * <ul>
  *     <li>{@code file} - the {@link Path} of the file</li>
  *     <li>{@code append} - whether to append to the file or not</li>
@@ -46,13 +46,14 @@ import java.nio.file.Path;
  */
 public class RollingFileHandler extends AbstractSyncedHandler {
 
-    private static final String FILE_NAME_PROPERTY = "%s.file";
-    private static final String APPEND_PROPERTY = "%s.append";
-    private static final String SIZE_PROPERTY = "%s.file.rolling.maxFileSize";
-    private static final String MAX_ROLLOVER = "%s.file.rolling.maxRollover";
-    private static final String DATE_PATTERN_PROPERTY = "%s.file.rolling.datePattern";
+    private static final String FILE_NAME_PROPERTY = ".file";
+    private static final String APPEND_PROPERTY = ".append";
+    private static final String SIZE_PROPERTY = ".file-rolling.maxFileSize";
+    private static final String MAX_ROLLOVER = ".file-rolling.maxRollover";
+    private static final String DATE_PATTERN_PROPERTY = ".file-rolling.datePattern";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
     private static final int BUFFER_CAPACITY = 8192 * 8;
+    public static final int EVENT_LOG_PRINTER_SIZE = 4 * 1024;
     private final OutputStream outputStream;
     private final FormattedLinePrinter format;
 
@@ -69,23 +70,19 @@ public class RollingFileHandler extends AbstractSyncedHandler {
         super(handlerName, configuration);
         final String propertyPrefix = PROPERTY_HANDLER.formatted(handlerName);
         final Path filePath = configValueOrElse(
-                configuration, FILE_NAME_PROPERTY.formatted(propertyPrefix), Path.class, Path.of(DEFAULT_FILE_NAME));
-        final Boolean append =
-                configValueOrElse(configuration, APPEND_PROPERTY.formatted(propertyPrefix), Boolean.class, false);
-        final String maxFileSize =
-                configValueOrElse(configuration, SIZE_PROPERTY.formatted(propertyPrefix), String.class, "500mb");
+                configuration, propertyPrefix + FILE_NAME_PROPERTY, Path.class, Path.of(DEFAULT_FILE_NAME));
+        final boolean append = configValueOrElse(configuration, propertyPrefix + APPEND_PROPERTY, Boolean.class, true);
+        final Long maxFileSize = readDataSizeInBytes(configuration, propertyPrefix + SIZE_PROPERTY);
         final Integer maxRollingOver =
-                configValueOrElse(configuration, MAX_ROLLOVER.formatted(propertyPrefix), Integer.class, 1);
-        final String datePattern =
-                configuration.getValue(DATE_PATTERN_PROPERTY.formatted(propertyPrefix), String.class, null);
+                configValueOrElse(configuration, propertyPrefix + MAX_ROLLOVER, Integer.class, 1);
+        final String datePattern = configuration.getValue(propertyPrefix + DATE_PATTERN_PROPERTY, String.class, null);
 
         this.format = FormattedLinePrinter.createForHandler(handlerName, configuration);
         try {
-            GeneralUtilities.checkOrCreateParentDirectory(filePath);
+            FileUtils.checkOrCreateParentDirectory(filePath);
             final OutputStream fileOutputStream = maxFileSize == null
                     ? new FileOutputStream(filePath.toFile(), append)
-                    : new RolloverFileOutputStream(
-                            filePath, DataSize.parseFrom(maxFileSize).asBytes(), append, maxRollingOver, datePattern);
+                    : new RolloverFileOutputStream(filePath, maxFileSize, append, maxRollingOver, datePattern);
             this.outputStream =
                     buffered ? new BufferedOutputStream(fileOutputStream, BUFFER_CAPACITY) : fileOutputStream;
         } catch (IOException e) {
@@ -100,12 +97,14 @@ public class RollingFileHandler extends AbstractSyncedHandler {
      */
     @Override
     protected void handleEvent(@NonNull final LogEvent event) {
-        final StringBuilder writer = new StringBuilder(4 * 1024);
+        final StringBuilder writer = new StringBuilder(EVENT_LOG_PRINTER_SIZE);
         format.print(writer, event);
         try {
             this.outputStream.write(writer.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to file output stream", exception);
+            // FORWARDING the event to the emergency logger
+            EMERGENCY_LOGGER.log(event);
         }
     }
 

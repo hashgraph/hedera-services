@@ -16,7 +16,7 @@
 
 package com.swirlds.logging.api.internal.format;
 
-import static com.swirlds.logging.utils.GeneralUtilities.toPaddedDigitsString;
+import static com.swirlds.logging.utils.StringUtils.toPaddedDigitsString;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;

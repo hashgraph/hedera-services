@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.ostream;
+package com.swirlds.logging.io;
 
-import static com.swirlds.logging.utils.GeneralUtilities.toPaddedDigitsString;
+import static com.swirlds.logging.utils.StringUtils.toPaddedDigitsString;
 import static java.time.ZoneOffset.UTC;
 
-import com.swirlds.logging.utils.GeneralUtilities;
+import com.swirlds.logging.utils.FileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -207,13 +207,13 @@ public class RolloverFileOutputStream extends OutputStream {
             if (currentIndex > maxIndex) {
                 currentIndex = index;
                 newPath = newPathSupplier.apply(currentIndex % maxRollover);
-                GeneralUtilities.delete(newPath);
+                FileUtils.delete(newPath);
             }
 
             final File file = logFilePath().toFile();
             try {
                 outputStream.close();
-                GeneralUtilities.renameFile(file, newPath.toFile());
+                FileUtils.renameFile(file, newPath.toFile());
                 outputStream = new FileOutputStream(file, append);
             } catch (IOException e) {
                 throw new IllegalStateException("Something happened while rolling over", e);
@@ -282,6 +282,9 @@ public class RolloverFileOutputStream extends OutputStream {
         }
 
         protected int getNextIndex(final int currentIndex) {
+            // This is simple enough but makes that the only way it works is with the pattern yyyy-MM-dd
+            // It would be nice to support extra fields like hours of minutes.
+            // FUTURE-WORK, guess if 1 unit of time happened for whatever pattern we receive.
             return Duration.between(instantSupplier.get(), instant).toDays() > 0 ? 0 : currentIndex;
         }
 
