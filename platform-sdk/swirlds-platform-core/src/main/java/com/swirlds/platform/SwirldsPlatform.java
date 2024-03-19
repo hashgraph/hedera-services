@@ -23,6 +23,7 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
+import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.migratePcesToBirthRoundMode;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateForBirthRoundMigration;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
@@ -330,6 +331,20 @@ public class SwirldsPlatform implements Platform {
 
         // This method is a no-op if we are not in birth round mode, or if we have already migrated.
         modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion);
+
+        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
+            try {
+                // This method is a no-op if we have already completed birth round migration or if we are at genesis.
+                migratePcesToBirthRoundMode(
+                        platformContext,
+                        recycleBin,
+                        id,
+                        initialState.getRound(),
+                        initialState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
+            } catch (final IOException e) {
+                throw new UncheckedIOException("Birth round migration failed during PCES migration.", e);
+            }
+        }
 
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
         final Time time = Time.getCurrent();

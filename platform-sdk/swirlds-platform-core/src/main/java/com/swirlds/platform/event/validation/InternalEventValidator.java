@@ -33,7 +33,7 @@ public interface InternalEventValidator {
      * @param event the event to validate
      * @return the event if it is valid, otherwise null
      */
-    @InputWireLabel("event")
+    @InputWireLabel("non-validated events")
     @Nullable
     GossipEvent validateEvent(@NonNull GossipEvent event);
 }
