@@ -193,6 +193,7 @@ class RolloverFileOutputStreamTest {
             writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE);
             writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE);
 
+            // Simulate the passing of time
             timeProvider.tick(Duration.of(1, ChronoUnit.DAYS));
             writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE);
             writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE);
@@ -214,7 +215,7 @@ class RolloverFileOutputStreamTest {
     }
 
     @Test
-    public void testDateSizeBaseRollingNoOverriding() throws IOException, InterruptedException {
+    public void testDateSizeBaseRollingNoOverriding() throws IOException {
         // given: a RolloverFileOutputStream configure to roll by size and date with max 2 roll file.
         // when: Writing just enough data to trigger the rolling 2
         // then: there should exist the index 0 and index 1
@@ -226,9 +227,6 @@ class RolloverFileOutputStreamTest {
             // when
             // Write enough data to fill one file
             writeDataToOutputStream(rolloverOutputStream, "Some data to fill one file.", MAX_FILE_SIZE);
-
-            // Wait for a short duration to ensure that the file creation time is different
-            Thread.sleep(1000);
 
             // Write more data to trigger rolling
             writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE * 2);
