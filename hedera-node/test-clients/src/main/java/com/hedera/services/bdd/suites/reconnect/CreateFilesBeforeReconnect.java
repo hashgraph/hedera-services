@@ -62,7 +62,7 @@ public class CreateFilesBeforeReconnect extends HapiSuite {
 
         return fileCreate("file" + file)
                 .contents("test")
-                .noLogging()
+                .logged()
                 .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
                 .deferStatusResolution();
     }

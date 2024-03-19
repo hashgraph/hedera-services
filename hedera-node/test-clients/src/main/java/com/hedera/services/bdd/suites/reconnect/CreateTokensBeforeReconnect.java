@@ -63,7 +63,7 @@ public class CreateTokensBeforeReconnect extends HapiSuite {
         }
 
         return tokenCreate("token" + token)
-                .noLogging()
+                .logged()
                 .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
                 .hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, UNKNOWN)
                 .deferStatusResolution();
