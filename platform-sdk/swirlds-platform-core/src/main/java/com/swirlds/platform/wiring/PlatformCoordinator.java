@@ -29,6 +29,7 @@ import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
+import com.swirlds.platform.wiring.components.StateHasherWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -58,6 +59,7 @@ public class PlatformCoordinator {
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
+    private final StateHasherWiring stateHasherWiring;
 
     /**
      * Constructor
@@ -75,6 +77,7 @@ public class PlatformCoordinator {
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
      * @param consensusRoundHandlerWiring            the consensus round handler wiring
+     * @param stateHasherWiring                      the state hasher wiring
      */
     public PlatformCoordinator(
             @NonNull final ObjectCounter hashingObjectCounter,
@@ -89,7 +92,8 @@ public class PlatformCoordinator {
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
             @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
-            @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring) {
+            @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
+            @NonNull final StateHasherWiring stateHasherWiring) {
 
         this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
@@ -104,6 +108,7 @@ public class PlatformCoordinator {
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
         this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
         this.consensusRoundHandlerWiring = Objects.requireNonNull(consensusRoundHandlerWiring);
+        this.stateHasherWiring = Objects.requireNonNull(stateHasherWiring);
     }
 
     /**
@@ -161,6 +166,7 @@ public class PlatformCoordinator {
         // Phase 2: flush
         // All cycles have been broken via squelching, so now it's time to flush everything out of the system.
         flushIntakePipeline();
+        stateHasherWiring.flushRunnable().run();
         stateSignatureCollectorWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
 
