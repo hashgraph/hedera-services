@@ -16,6 +16,7 @@ pcli diagram \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'eventCreationManager:non-validated events:🍎' \
     -s 'Mystery Input:mystery data:X' \
+    -s 'stateSigner:signature transactions:🖋️' \
     -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
@@ -27,14 +28,19 @@ pcli diagram \
     -g 'Consensus Pipeline:inOrderLinker,Consensus Engine,📬,🌀,🚽' \
     -g 'Event Creation:futureEventBuffer,futureEventBufferSplitter,eventCreationManager,transactionPool,🍎' \
     -g 'Gossip:gossip,shadowgraph' \
-    -g 'Iss Detector:issDetector,issNotificationSplitter,issHandler,issNotificationEngine,statusManager_submitCatastrophicFailure' \
+    -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,issNotificationEngine,statusManager_submitCatastrophicFailure' \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Transaction Prehandling:applicationTransactionPrehandler,🔮' \
-    -g 'Signature Management:State Signature Collection,stateSigner,Iss Detector,latestCompleteStateNotification,latestCompleteStateNexus' \
-    -g 'State Modification:consensusRoundHandler,runningHashUpdate' \
+    -g 'Signature Management:State Signature Collection,stateSigner,latestCompleteStateNotification,🖋️' \
+    -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,postHandler_getRoundNumber,postHandler_stateReserver' \
+    -g 'State Hasher:stateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
+    -g 'State Modification:Consensus Round Handler,runningHashUpdate' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collection' \
-    -c 'State File Management'
+    -c 'State File Management' \
+    -c 'Consensus Round Handler' \
+    -c 'State Hasher' \
+    -c 'ISS Detector'
