@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.blocknode.core.grpc.impl;
+package com.hedera.node.blocknode.core.grpc;
 
 // import com.hedera.block.node.api.proto.java.BlockServiceGrpc;
 // import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentRequest;

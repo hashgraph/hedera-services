@@ -1,6 +1,8 @@
-package com.hedera.node.blocknode.core;
+package com.hedera.node.blocknode.core.grpc.impl;
 
 import com.hedera.node.blocknode.config.data.BlockNodeGrpcConfig;
+import com.hedera.node.blocknode.core.services.BlockNodeServicesRegistryImpl;
+import com.hedera.node.blocknode.core.GrpcBlockNodeServerManager;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.node.config.types.Profile;
 import edu.umd.cs.findbugs.annotations.Nullable;

@@ -1,4 +1,4 @@
-package com.hedera.node.blocknode.core;
+package com.hedera.node.blocknode.core.services;
 
 import java.util.*;
 
