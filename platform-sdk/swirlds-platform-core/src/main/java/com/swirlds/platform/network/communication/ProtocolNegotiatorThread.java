@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * Continuously runs protocol negotiation and protocols over connections supplied by the connection manager
  */
-public class NegotiatorThread implements InterruptableRunnable {
+public class ProtocolNegotiatorThread implements InterruptableRunnable {
     /**
      * The number of milliseconds to sleep if a negotiation fails
      */
@@ -48,7 +48,7 @@ public class NegotiatorThread implements InterruptableRunnable {
      * @param protocols
      * 		the protocols to negotiate and run
      */
-    public NegotiatorThread(
+    public ProtocolNegotiatorThread(
             final ConnectionManager connectionManager,
             final int sleepMillis,
             final List<ProtocolRunnable> handshakeProtocols,
