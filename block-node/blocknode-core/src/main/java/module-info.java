@@ -4,17 +4,20 @@ module com.hedera.storage.blocknode.core {
             com.hedera.storage.blocknode.core.test;
     exports com.hedera.node.blocknode.core.grpc to
             com.hedera.storage.blocknode.core.test;
-    exports com.hedera.node.blocknode.core.grpc.impl to com.hedera.storage.blocknode.core.test;
-    exports com.hedera.node.blocknode.core.services to com.hedera.storage.blocknode.core.test;
+    exports com.hedera.node.blocknode.core.grpc.impl to
+            com.hedera.storage.blocknode.core.test;
+    exports com.hedera.node.blocknode.core.services to
+            com.hedera.storage.blocknode.core.test;
 
     // Require the modules needed for compilation.
     requires com.hedera.storage.blocknode.config;
-    requires com.swirlds.config.api;
-    requires io.grpc;
     requires com.hedera.storage.blocknode.filesystem.local;
     requires com.hedera.storage.blocknode.filesystem.s3;
+    requires com.hedera.node.config;
+    requires com.swirlds.config.api;
     requires grpc.netty;
     requires grpc.stub;
+    requires io.grpc;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
     requires org.apache.logging.log4j;
@@ -26,6 +29,4 @@ module com.hedera.storage.blocknode.core {
     requires transitive com.hedera.storage.blocknode.state;
     requires transitive com.hedera.node.hapi;
     requires static com.github.spotbugs.annotations;
-    requires com.hedera.node.config;
 }
-

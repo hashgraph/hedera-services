@@ -20,8 +20,6 @@ package com.hedera.node.blocknode.core.grpc;
 // import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentRequest;
 // import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentResponse;
 // import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentResponseCode;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class BlockNodeService // extends BlockServiceGrpc.BlockServiceImplBase
  {
