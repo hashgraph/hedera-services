@@ -225,6 +225,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var transferContext =
                 new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
 
+        transferContext.validateHbarAllowances();
+
         // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
         // Use the op with replaced aliases in further steps

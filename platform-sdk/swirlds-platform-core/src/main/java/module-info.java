@@ -20,7 +20,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.components.appcomm;
     exports com.swirlds.platform.components.common.output;
     exports com.swirlds.platform.components.common.query;
-    exports com.swirlds.platform.components.state;
     exports com.swirlds.platform.components.state.output;
     exports com.swirlds.platform.config;
     exports com.swirlds.platform.config.legacy;
@@ -89,18 +88,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.state.iss.internal to
             com.swirlds.platform.test;
     exports com.swirlds.platform.gossip.chatter.protocol.processing;
-    exports com.swirlds.platform.dispatch to
-            com.swirlds.platform.test,
-            com.swirlds.config.impl,
-            com.swirlds.common,
-            com.hedera.node.test.clients;
-    exports com.swirlds.platform.dispatch.types to
-            com.swirlds.platform.test;
-    exports com.swirlds.platform.dispatch.triggers.control to
-            com.swirlds.platform.test,
-            com.hedera.node.test.clients;
-    exports com.swirlds.platform.dispatch.triggers.error to
-            com.swirlds.platform.test;
     exports com.swirlds.platform.reconnect.emergency to
             com.swirlds.platform.test;
     exports com.swirlds.platform.recovery.internal to

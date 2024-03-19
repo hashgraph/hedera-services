@@ -40,6 +40,7 @@ import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.stats.ExecutionTimeTracker;
 import com.hedera.node.app.service.mono.txns.schedule.ScheduleProcessing;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
+import com.hedera.node.app.service.mono.txns.span.SpanMapManager;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -70,6 +71,9 @@ class StandardProcessLogicTest {
 
     @Mock
     private ExpiryManager expiries;
+
+    @Mock
+    private SpanMapManager spanMapManager;
 
     @Mock
     private InvariantChecks invariantChecks;
@@ -140,7 +144,8 @@ class StandardProcessLogicTest {
                 recordStreaming,
                 workingView,
                 recordCache,
-                InitTrigger.GENESIS);
+                InitTrigger.GENESIS,
+                spanMapManager);
     }
 
     @Test

@@ -79,7 +79,7 @@ jobs:
 
       - name: Authenticate to Google Cloud
         id: google-auth
-        uses: google-github-actions/auth@5a50e581162a13f4baa8916d01180d2acbc04363 # v2.1.0
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
         with:
           workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
           service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
@@ -119,7 +119,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@a8f75513eafdebd8141bd1cd4e30fcd194af8dfa # v2.12.0
+        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         with:
           cache-disabled: true
@@ -316,7 +316,7 @@ jobs:
 
       - name: Authenticate to Google Cloud
         id: google-auth
-        uses: google-github-actions/auth@5a50e581162a13f4baa8916d01180d2acbc04363 # v2.1.0
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
         with:
           workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
           service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
@@ -466,7 +466,7 @@ jobs:
           fi
 
       - name: Publish Manifests
-        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         if: ${{ steps.regen-manifest.conclusion == 'success' && failure() && !cancelled() }}
         with:
           name: Docker Manifests [${{ join(matrix.os, ', ') }}]

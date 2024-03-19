@@ -76,28 +76,27 @@ class FileServiceStateTranslatorTest extends FileTestBase {
         final FileMetadataAndContent convertedFile = FileServiceStateTranslator.pbjToState(fileWithNoKeysAndMemo);
 
         assertArrayEquals(
-                convertedFile.data(),
-                getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys().data());
+                getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys().data(), convertedFile.data());
         assertEquals(
-                convertedFile.metadata().getExpiry(),
                 getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys()
                         .metadata()
-                        .getExpiry());
+                        .getExpiry(),
+                convertedFile.metadata().getExpiry());
         assertEquals(
-                convertedFile.metadata().getMemo(),
                 getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys()
                         .metadata()
-                        .getMemo());
+                        .getMemo(),
+                convertedFile.metadata().getMemo());
         assertEquals(
-                MiscUtils.describe(convertedFile.metadata().getWacl()),
                 MiscUtils.describe(getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys()
                         .metadata()
-                        .getWacl()));
+                        .getWacl()),
+                MiscUtils.describe(convertedFile.metadata().getWacl()));
         assertEquals(
-                convertedFile.metadata().isDeleted(),
                 getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys()
                         .metadata()
-                        .isDeleted());
+                        .isDeleted(),
+                convertedFile.metadata().isDeleted());
     }
 
     @Test
@@ -105,23 +104,21 @@ class FileServiceStateTranslatorTest extends FileTestBase {
 
         final FileMetadataAndContent convertedFile = FileServiceStateTranslator.pbjToState(fileWithNoContent);
 
-        assertArrayEquals(
-                convertedFile.data(),
-                getExpectedMonoFileMetaAndContentEmptyContent().data());
+        assertArrayEquals(getExpectedMonoFileMetaAndContentEmptyContent().data(), convertedFile.data());
         assertEquals(
-                convertedFile.metadata().getExpiry(),
-                getExpectedMonoFileMetaAndContentEmptyContent().metadata().getExpiry());
+                getExpectedMonoFileMetaAndContentEmptyContent().metadata().getExpiry(),
+                convertedFile.metadata().getExpiry());
         assertEquals(
-                convertedFile.metadata().getMemo(),
-                getExpectedMonoFileMetaAndContentEmptyContent().metadata().getMemo());
+                getExpectedMonoFileMetaAndContentEmptyContent().metadata().getMemo(),
+                convertedFile.metadata().getMemo());
         assertEquals(
-                MiscUtils.describe(convertedFile.metadata().getWacl()),
                 MiscUtils.describe(getExpectedMonoFileMetaAndContentEmptyContent()
                         .metadata()
-                        .getWacl()));
+                        .getWacl()),
+                MiscUtils.describe(convertedFile.metadata().getWacl()));
         assertEquals(
-                convertedFile.metadata().isDeleted(),
-                getExpectedMonoFileMetaAndContentEmptyContent().metadata().isDeleted());
+                getExpectedMonoFileMetaAndContentEmptyContent().metadata().isDeleted(),
+                convertedFile.metadata().isDeleted());
     }
 
     @Test
@@ -210,7 +207,7 @@ class FileServiceStateTranslatorTest extends FileTestBase {
 
     private FileMetadataAndContent getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys() {
         com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
-                new HFileMeta(file.deleted(), null, file.expirationSecond(), null);
+                new HFileMeta(file.deleted(), null, file.expirationSecond(), "");
         return new FileMetadataAndContent(file.contents().toByteArray(), hFileMeta);
     }
 
@@ -219,6 +216,6 @@ class FileServiceStateTranslatorTest extends FileTestBase {
                 Key.newBuilder().keyList(file.keys()).build(), 1);
         com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
                 new HFileMeta(file.deleted(), keys, file.expirationSecond(), file.memo());
-        return new FileMetadataAndContent(null, hFileMeta);
+        return new FileMetadataAndContent(new byte[] {}, hFileMeta);
     }
 }

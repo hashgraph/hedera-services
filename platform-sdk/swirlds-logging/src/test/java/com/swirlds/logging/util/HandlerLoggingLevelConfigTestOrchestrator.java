@@ -75,7 +75,6 @@ public final class HandlerLoggingLevelConfigTestOrchestrator {
      * Performs the verification of scenario given by its index on the list
      */
     private void testScenario(int scenario, HandlerLoggingLevelConfig config) {
-        System.out.printf("Testing scenario %d%n", scenario);
         // Reload Configuration for desired scenario
         config.update(this.scenarios.get(scenario).configuration());
         // Performs the check

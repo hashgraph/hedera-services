@@ -65,8 +65,8 @@ public record EventSignatureValidatorWiring(
     public void bind(@NonNull final EventSignatureValidator eventSignatureValidator) {
         ((BindableInputWire<GossipEvent, GossipEvent>) eventInput).bind(eventSignatureValidator::validateSignature);
         ((BindableInputWire<NonAncientEventWindow, GossipEvent>) nonAncientEventWindowInput)
-                .bind(eventSignatureValidator::setNonAncientEventWindow);
+                .bindConsumer(eventSignatureValidator::setNonAncientEventWindow);
         ((BindableInputWire<AddressBookUpdate, GossipEvent>) addressBookUpdateInput)
-                .bind(eventSignatureValidator::updateAddressBooks);
+                .bindConsumer(eventSignatureValidator::updateAddressBooks);
     }
 }

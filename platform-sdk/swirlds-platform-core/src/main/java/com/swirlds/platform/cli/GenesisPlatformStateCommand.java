@@ -31,7 +31,6 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
-import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -82,7 +81,7 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
             final PlatformState platformState =
                     reservedSignedState.get().getState().getPlatformState();
             System.out.printf("Replacing platform data %n");
-            platformState.setRound(PlatformData.GENESIS_ROUND);
+            platformState.setRound(PlatformState.GENESIS_ROUND);
             platformState.setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
             System.out.printf("Nullifying Address Books %n");
             platformState.setAddressBook(null);

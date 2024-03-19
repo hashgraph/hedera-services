@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.fixtures;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import org.jetbrains.annotations.NotNull;
@@ -26,6 +27,11 @@ public class FakeNodeStakeUpdateRecordBuilder {
         return new NodeStakeUpdateRecordBuilder() {
             private String memo;
             private Transaction txn;
+
+            @Override
+            public NodeStakeUpdateRecordBuilder status(@NotNull ResponseCodeEnum status) {
+                return null;
+            }
 
             @NotNull
             @Override

@@ -19,12 +19,12 @@ package com.swirlds.platform.wiring;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -43,8 +43,12 @@ import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
+import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.util.HashLogger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,7 +63,7 @@ class PlatformWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final PlatformWiring wiring = new PlatformWiring(platformContext, new FakeTime());
+        final PlatformWiring wiring = new PlatformWiring(platformContext);
 
         wiring.bind(
                 mock(EventHasher.class),
@@ -85,7 +89,12 @@ class PlatformWiringTests {
                 mock(IssDetector.class),
                 mock(IssHandler.class),
                 mock(HashLogger.class),
-                mock(LatestCompleteStateNotifier.class));
+                mock(BirthRoundMigrationShim.class),
+                mock(LatestCompleteStateNotifier.class),
+                mock(SignedStateNexus.class),
+                mock(LatestCompleteStateNexus.class),
+                mock(SavedStateController.class),
+                mock(SignedStateHasher.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

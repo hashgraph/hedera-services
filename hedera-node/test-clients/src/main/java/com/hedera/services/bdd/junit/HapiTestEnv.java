@@ -168,6 +168,7 @@ public class HapiTestEnv {
 
             Files.createDirectories(workingDir);
             Files.createDirectories(workingDir.resolve("data").resolve("keys"));
+            Files.createDirectories(workingDir.resolve("data").resolve("config"));
 
             final var configTextFile = workingDir.resolve("config.txt");
             Files.writeString(configTextFile, configText);
@@ -176,7 +177,16 @@ public class HapiTestEnv {
                     Path.of("../configuration/dev").toAbsolutePath().normalize();
             Files.walk(configDir).filter(file -> !file.equals(configDir)).forEach(file -> {
                 try {
-                    Files.copy(file, workingDir.resolve(file.getFileName().toString()));
+                    if (file.getFileName().toString().contains(".properties")) {
+                        Files.copy(
+                                file,
+                                workingDir
+                                        .resolve("data")
+                                        .resolve("config")
+                                        .resolve(file.getFileName().toString()));
+                    } else {
+                        Files.copy(file, workingDir.resolve(file.getFileName().toString()));
+                    }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

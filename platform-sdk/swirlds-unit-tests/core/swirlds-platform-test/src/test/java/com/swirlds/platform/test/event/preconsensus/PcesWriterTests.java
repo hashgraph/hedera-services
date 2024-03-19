@@ -50,6 +50,7 @@ import com.swirlds.platform.config.TransactionConfig_;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;
@@ -61,6 +62,8 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesUtilities;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.EventConfig_;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
@@ -82,6 +85,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -239,6 +243,12 @@ class PcesWriterTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
+        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        StaticSoftwareVersion.reset();
     }
 
     @BeforeEach
@@ -297,7 +307,7 @@ class PcesWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
         final int stepsUntilAncient = random.nextInt(50, 100);
-        final PcesSequencer sequencer = new PcesSequencer();
+        final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
@@ -361,7 +371,7 @@ class PcesWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
         final int stepsUntilAncient = random.nextInt(50, 100);
-        final PcesSequencer sequencer = new PcesSequencer();
+        final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
@@ -448,7 +458,7 @@ class PcesWriterTests {
         final PlatformContext platformContext = buildContext(ancientMode);
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
-        final PcesSequencer sequencer = new PcesSequencer();
+        final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
@@ -492,7 +502,7 @@ class PcesWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
         final int stepsUntilAncient = random.nextInt(50, 100);
-        final PcesSequencer sequencer = new PcesSequencer();
+        final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
@@ -538,7 +548,7 @@ class PcesWriterTests {
 
             final StandardGraphGenerator generator = buildGraphGenerator(random);
             final int stepsUntilAncient = random.nextInt(50, 100);
-            final PcesSequencer sequencer = new PcesSequencer();
+            final PcesSequencer sequencer = new DefaultPcesSequencer();
             final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
             final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
@@ -655,7 +665,7 @@ class PcesWriterTests {
 
         final StandardGraphGenerator generator = buildGraphGenerator(random);
         final int stepsUntilAncient = random.nextInt(50, 100);
-        final PcesSequencer sequencer = new PcesSequencer();
+        final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);

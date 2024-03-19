@@ -100,6 +100,7 @@ xtestModuleInfo {
     requires("com.swirlds.config.api")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.metrics.api")
+    requires("com.swirlds.platform.core")
     requires("dagger")
     requires("headlong")
     requires("javax.inject")

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.trans
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper.APPROVAL_SWITCH_HELPER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.CallStatusStandardizer.CALL_STATUS_STANDARDIZER;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers.SPECIAL_REWARD_RECEIVERS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SystemAccountCreditScreen.SYSTEM_ACCOUNT_CREDIT_SCREEN;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -80,14 +81,19 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 selector,
-                attempt.senderId(),
+                // This is the only place we don't use the EVM sender id, because
+                // we need to switch debits to approvals based on whether the
+                // mono-service would have activated a key; and its key activation
+                // test would use the qualified delegate id if applicable
+                attempt.authorizingId(),
                 decoder.checkForFailureStatus(attempt),
                 nominalBodyFor(attempt),
                 attempt.configuration(),
                 isClassicCall(selector) ? APPROVAL_SWITCH_HELPER : null,
                 CALL_STATUS_STANDARDIZER,
                 attempt.defaultVerificationStrategy(),
-                SYSTEM_ACCOUNT_CREDIT_SCREEN);
+                SYSTEM_ACCOUNT_CREDIT_SCREEN,
+                SPECIAL_REWARD_RECEIVERS);
     }
 
     private @Nullable TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {

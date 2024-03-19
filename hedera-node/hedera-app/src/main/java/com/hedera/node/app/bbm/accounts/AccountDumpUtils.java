@@ -98,7 +98,7 @@ public class AccountDumpUtils {
     }
 
     @NonNull
-    private static <K extends VirtualKey, V extends VirtualValue> HederaAccount[] gatherAccounts(
+    public static <K extends VirtualKey, V extends VirtualValue> HederaAccount[] gatherAccounts(
             @NonNull VirtualMap<K, V> accounts, @NonNull Function<V, HederaAccount> mapper) {
         final var accountsToReturn = new ConcurrentLinkedQueue<HederaAccount>();
         final var threadCount = 8;

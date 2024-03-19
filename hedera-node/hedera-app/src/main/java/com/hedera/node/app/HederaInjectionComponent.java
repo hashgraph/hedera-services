@@ -33,6 +33,7 @@ import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.hedera.node.app.services.ServicesInjectionModule;
@@ -53,6 +54,8 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.listeners.ReconnectCompleteListener;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import dagger.BindsInstance;
@@ -123,6 +126,12 @@ public interface HederaInjectionComponent {
     InitTrigger initTrigger();
 
     ThrottleServiceManager throttleServiceManager();
+
+    ReconnectCompleteListener reconnectListener();
+
+    StateWriteToDiskCompleteListener stateWriteToDiskListener();
+
+    PlatformStateAccessor platformStateAccessor();
 
     @Component.Builder
     interface Builder {
