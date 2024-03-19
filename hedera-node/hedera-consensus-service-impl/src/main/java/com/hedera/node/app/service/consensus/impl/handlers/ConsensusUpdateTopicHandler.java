@@ -273,7 +273,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         if (op.hasSubmitKey()) {
             final var newSubmitKey = op.submitKeyOrThrow();
             // Backward compatibility, mono-service allowed setting an empty submit key
-            if (!isEmpty(newSubmitKey)) {
+            if (!isEmpty(newSubmitKey) || Key.DEFAULT.equals(newSubmitKey)) {
                 attributeValidator.validateKey(op.submitKeyOrThrow());
             }
         }
