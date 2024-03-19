@@ -37,7 +37,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 class RolloverFileOutputStreamTest {
 
-    private static final String TEST_FOLDER = "testFolder";
     private static final String FILE_BASE_NAME = "testFile";
     private static final long MAX_FILE_SIZE = 1000; // 1 KB
     private static final boolean APPEND_TO_EXISTING = false;
