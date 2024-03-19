@@ -69,26 +69,27 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     private List<HapiSpec> positiveTests() {
-        return List.of(new HapiSpec[] {
-            transferWithFractionalCustomFee(),
-            transferWithFractionalCustomFeeNumeratorBiggerThanDenominator(),
-            transferWithFractionalCustomFeeBellowMinimumAmount(),
-            transferWithFractionalCustomFeeAboveMaximumAmount(),
-            transferWithFractionalCustomFeeNetOfTransfers(),
-            transferWithFractionalCustomFeeNetOfTransfersBellowMinimumAmount(),
-            transferWithFractionalCustomFeeNetOfTransfersAboveMaximumAmount(),
-            transferWithFractionalCustomFeeAllowance(),
-            transferWithFractionalCustomFeeAllowanceTokenOwnerIsCollector(),
-            transferWithFractionalCustomFeesThreeCollectors(),
-            transferWithFractionalCustomFeesAllCollectorsExempt(),
-            transferWithFractionalCustomFeesDenominatorMin(),
-            transferWithFractionalCustomFeesDenominatorMax(),
-            transferWithFractionalCustomFeeEqToAmount(),
-            transferWithFractionalCustomFeeGreaterThanAmount(),
-            transferWithFractionalCustomFeeGreaterThanAmountNetOfTransfers(),
-            transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFee(),
-            transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFeeNetOfTransfers()
-        });
+        return List.of(
+                transferWithFractionalCustomFee(),
+                transferWithFractionalCustomFeeNumeratorBiggerThanDenominator(),
+                transferWithFractionalCustomFeeBellowMinimumAmount(),
+                transferWithFractionalCustomFeeAboveMaximumAmount(),
+                transferWithFractionalCustomFeeNetOfTransfers(),
+                transferWithFractionalCustomFeeNetOfTransfersBellowMinimumAmount(),
+                transferWithFractionalCustomFeeNetOfTransfersAboveMaximumAmount(),
+                transferWithFractionalCustomFeeAllowance(),
+                transferWithFractionalCustomFeeAllowanceTokenOwnerIsCollector(),
+                transferWithFractionalCustomFeesThreeCollectors(),
+                transferWithFractionalCustomFeesAllCollectorsExempt(),
+                transferWithFractionalCustomFeesDenominatorMin(),
+                transferWithFractionalCustomFeesDenominatorMax(),
+                transferWithFractionalCustomFeeEqToAmount(),
+                transferWithFractionalCustomFeeGreaterThanAmount(),
+                transferWithFractionalCustomFeeGreaterThanAmountNetOfTransfers(),
+                transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFee(),
+                transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFeeNetOfTransfers(),
+                transferMultipleTimesWithFractionalFeeTakenFromSender(),
+                transferMultipleTimesWithFractionalFeeTakenFromReceiver());
     }
 
     private List<HapiSpec> negativeTests() {
@@ -941,6 +942,94 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
                         .payingWith(tokenOwner)
                         .hasKnownStatus(ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
                 .then();
+    }
+
+    @HapiTest
+    public HapiSpec transferMultipleTimesWithFractionalFeeTakenFromSender() {
+        return defaultHapiSpec("transferMultipleTimesWithFractionalFeeTakenFromSender")
+                .given(
+                        cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(tokenTreasury),
+                        cryptoCreate(tokenOwner),
+                        cryptoCreate(alice).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(bob).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(carol).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(ivan),
+                        tokenCreate(token)
+                                .treasury(tokenTreasury)
+                                .initialSupply(tokenTotal)
+                                .payingWith(htsCollector)
+                                .withCustom(fractionalFeeNetOfTransfers(
+                                        numerator, denominator, minHtsFee, OptionalLong.of(9L), htsCollector)),
+                        tokenAssociate(alice, token),
+                        tokenAssociate(bob, token),
+                        tokenAssociate(carol, token),
+                        tokenAssociate(ivan, token),
+                        tokenAssociate(tokenOwner, token),
+                        cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
+                .when(
+                        cryptoTransfer(moving(100L, token).between(tokenOwner, alice))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(tokenOwner),
+                        cryptoTransfer(moving(50L, token).between(alice, bob))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(alice),
+                        cryptoTransfer(moving(30L, token).between(bob, carol))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(bob),
+                        cryptoTransfer(moving(10L, token).between(carol, ivan))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(carol))
+                .then(
+                        getAccountBalance(htsCollector).hasTokenBalance(token, 19L),
+                        getAccountBalance(tokenOwner).hasTokenBalance(token, 891L),
+                        getAccountBalance(alice).hasTokenBalance(token, 45L),
+                        getAccountBalance(bob).hasTokenBalance(token, 17L),
+                        getAccountBalance(carol).hasTokenBalance(token, 18L));
+    }
+
+    @HapiTest
+    public HapiSpec transferMultipleTimesWithFractionalFeeTakenFromReceiver() {
+        return defaultHapiSpec("transferMultipleTimesWithFractionalFeeTakenFromReceiver")
+                .given(
+                        cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(tokenTreasury),
+                        cryptoCreate(tokenOwner),
+                        cryptoCreate(alice).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(bob).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(carol).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(ivan).balance(ONE_MILLION_HBARS),
+                        tokenCreate(token)
+                                .treasury(tokenTreasury)
+                                .initialSupply(tokenTotal)
+                                .payingWith(htsCollector)
+                                .withCustom(fractionalFee(
+                                        numerator, denominator, minHtsFee, OptionalLong.of(9L), htsCollector)),
+                        tokenAssociate(alice, token),
+                        tokenAssociate(bob, token),
+                        tokenAssociate(carol, token),
+                        tokenAssociate(ivan, token),
+                        tokenAssociate(tokenOwner, token),
+                        cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
+                .when(
+                        cryptoTransfer(moving(100L, token).between(tokenOwner, alice))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(alice),
+                        cryptoTransfer(moving(50L, token).between(alice, bob))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(bob),
+                        cryptoTransfer(moving(30L, token).between(bob, carol))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(carol),
+                        cryptoTransfer(moving(10L, token).between(carol, ivan))
+                                .fee(ONE_HUNDRED_HBARS)
+                                .payingWith(ivan))
+                .then(
+                        getAccountBalance(htsCollector).hasTokenBalance(token, 19L),
+                        getAccountBalance(tokenOwner).hasTokenBalance(token, 900L),
+                        getAccountBalance(alice).hasTokenBalance(token, 41L),
+                        getAccountBalance(bob).hasTokenBalance(token, 15L),
+                        getAccountBalance(carol).hasTokenBalance(token, 17L));
     }
 
     @Override
