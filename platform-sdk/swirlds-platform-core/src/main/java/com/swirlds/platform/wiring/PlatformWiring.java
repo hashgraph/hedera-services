@@ -432,6 +432,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
                 .solderTo(latestCompleteStateNotifierWiring.completeStateNotificationInputWire());
+
+        // TODO this doesn't belong here, wait for other PR to merge then fix.
+        consensusEngineWiring.getInputWire(ConsensusEngine::setInitialEventWindow);
     }
 
     /**
@@ -706,12 +709,19 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Inject a new non-ancient event window into all components that need it.
+     * Inject a new non-ancient event window into all components that need it. This is expected to be called every time
+     * a node starts up (both genesis and restart from a later round), as well as after a reconnect.
      *
      * @param nonAncientEventWindow the new non-ancient event window
      */
     public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         eventWindowManagerWiring.manualWindowInput().inject(nonAncientEventWindow);
+
+        // Normally the consensus engine is the source of event windows, not a receiver.
+        // This means it is not soldered to eventWindowManagerWiring.manualWindowInput().
+        consensusEngineWiring
+                .getInputWire(ConsensusEngine::setInitialEventWindow)
+                .inject(nonAncientEventWindow);
 
         // Since there is asynchronous access to the shadowgraph, it's important to ensure that
         // it has fully ingested the new event window before continuing.

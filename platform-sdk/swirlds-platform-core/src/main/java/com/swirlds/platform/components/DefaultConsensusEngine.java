@@ -20,7 +20,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.ConsensusEventStorage;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -60,11 +59,6 @@ public class DefaultConsensusEngine implements ConsensusEngine {
 
         eventStorage = new ConsensusEventStorage(platformContext, selfId);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
-
-        // TODO don't do it this way
-        //  Needs to be updated at genesis and at reconnect
-        eventStorage.setNonAncientEventWindow(
-                NonAncientEventWindow.getGenesisNonAncientEventWindow(AncientMode.GENERATION_THRESHOLD));
     }
 
     /**
@@ -110,5 +104,5 @@ public class DefaultConsensusEngine implements ConsensusEngine {
     @Override
     public void setInitialEventWindow(@NonNull final NonAncientEventWindow window) {
         eventStorage.setNonAncientEventWindow(window);
-    } // TODO use this
+    }
 }
