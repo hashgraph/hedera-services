@@ -75,4 +75,12 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
     public void resetProvisionalIds() {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public long getCurrentNum() {
+        return 0;
+    }
+
+    @Override
+    public void setCurrentNum(long num) {}
 }

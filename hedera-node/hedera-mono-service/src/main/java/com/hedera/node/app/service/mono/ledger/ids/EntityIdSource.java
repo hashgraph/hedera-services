@@ -89,4 +89,8 @@ public interface EntityIdSource {
      * Resets the provisional ids created during one logical {@code handleTransaction} operation.
      */
     void resetProvisionalIds();
+
+    long getCurrentNum();
+
+    void setCurrentNum(long num);
 }

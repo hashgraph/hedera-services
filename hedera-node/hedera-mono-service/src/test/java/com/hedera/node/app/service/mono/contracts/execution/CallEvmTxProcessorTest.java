@@ -49,6 +49,7 @@ import com.hedera.node.app.service.mono.contracts.execution.traceability.Solidit
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
@@ -141,6 +142,9 @@ class CallEvmTxProcessorTest {
     @Mock
     private EvmConfiguration evmConfiguration;
 
+    @Mock
+    private EntityIdSource entityIdSource;
+
     private final Account sender = new Account(new Id(0, 0, 1002));
     private final Account receiver = new Account(new Id(0, 0, 1006));
     private final Account relayer = new Account(new Id(0, 0, 1007));
@@ -198,7 +202,8 @@ class CallEvmTxProcessorTest {
                 mcps,
                 ccps,
                 aliasManager,
-                blockMetaSource);
+                blockMetaSource,
+                entityIdSource);
     }
 
     @Test
@@ -670,7 +675,8 @@ class CallEvmTxProcessorTest {
                 mcps,
                 ccps,
                 aliasManager,
-                blockMetaSource);
+                blockMetaSource,
+                entityIdSource);
         given(worldState.updater()).willReturn(updater);
         given(updater.updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());

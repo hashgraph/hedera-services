@@ -31,6 +31,16 @@ import java.util.function.Supplier;
 public class SeqNoEntityIdSource implements EntityIdSource {
     private final Supplier<SequenceNumber> seqNo;
 
+    @Override
+    public long getCurrentNum() {
+        return seqNo.get().current();
+    }
+
+    @Override
+    public void setCurrentNum(long num) {
+        seqNo.get().set(num);
+    }
+
     /**
      * Tracks the newly created {@link EntityId} during the {@link TransitionLogic} of an operation
      * Utilised only in refactored Transition Logics - currently only {@link
