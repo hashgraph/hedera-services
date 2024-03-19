@@ -26,9 +26,11 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -37,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -122,6 +125,73 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .given()
                 .when()
                 .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
+    }
+
+    @HapiTest
+    public HapiSpec canDeleteNonFungibleTokenTreasuryAfterUpdate() {
+        return defaultHapiSpec("canDeleteNonFungibleTokenTreasuryAfterUpdate")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate("replacementTreasury"),
+                        tokenCreate(TBD_TOKEN)
+                                .adminKey(MULTI_KEY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyKey(MULTI_KEY),
+                        mintToken(TBD_TOKEN, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))))
+                .when(
+                        cryptoDelete(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_IS_TREASURY),
+                        tokenAssociate("replacementTreasury", TBD_TOKEN),
+                        tokenUpdate(TBD_TOKEN).treasury("replacementTreasury"))
+                .then(
+                        // Updating the treasury transfers the 2 NFTs to the new
+                        // treasury; hence the old treasury has numPositiveBalances=0
+                        cryptoDelete(TOKEN_TREASURY));
+    }
+
+    @HapiTest
+    public HapiSpec canDeleteNonFungibleTokenTreasuryBurnsAndTokenDeletion() {
+        final var firstTbdToken = "firstTbdToken";
+        final var secondTbdToken = "secondTbdToken";
+        final var treasuryWithoutAllPiecesBurned = "treasuryWithoutAllPiecesBurned";
+        final var treasuryWithAllPiecesBurned = "treasuryWithAllPiecesBurned";
+        return defaultHapiSpec("canDeleteNonFungibleTokenTreasuryBurnsAndTokenDeletion")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(treasuryWithAllPiecesBurned),
+                        cryptoCreate(treasuryWithoutAllPiecesBurned),
+                        tokenCreate(firstTbdToken)
+                                .adminKey(MULTI_KEY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .treasury(treasuryWithAllPiecesBurned)
+                                .supplyKey(MULTI_KEY),
+                        tokenCreate(secondTbdToken)
+                                .adminKey(MULTI_KEY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .treasury(treasuryWithoutAllPiecesBurned)
+                                .supplyKey(MULTI_KEY),
+                        mintToken(firstTbdToken, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))),
+                        mintToken(secondTbdToken, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))))
+                .when(
+                        // Delete both tokens, but only burn all serials for
+                        // one of them (so that the other has a treasury that
+                        // will need to explicitly dissociate from the deleted
+                        // token before it can be deleted)
+                        burnToken(firstTbdToken, List.of(1L, 2L)),
+                        tokenDelete(firstTbdToken),
+                        tokenDelete(secondTbdToken),
+                        cryptoDelete(treasuryWithAllPiecesBurned),
+                        // This treasury still has numPositiveBalances=1
+                        cryptoDelete(treasuryWithoutAllPiecesBurned)
+                                .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES))
+                .then(
+                        // Now dissociate the second treasury so that it can be deleted
+                        tokenDissociate(treasuryWithoutAllPiecesBurned, secondTbdToken),
+                        cryptoDelete(treasuryWithoutAllPiecesBurned));
     }
 
     @HapiTest
