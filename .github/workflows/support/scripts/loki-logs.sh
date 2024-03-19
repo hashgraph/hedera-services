@@ -7,6 +7,7 @@ maxnodes=${2:-7}
 timegap=${3:-3}
 limit=${4:-300}
 cmd=${5:-/usr/local/bin/logcli}
+pad=${6:-0}
 
 echo "network  = [$network]"
 echo "maxnodes = [$maxnodes]"
@@ -21,7 +22,7 @@ echo "pad      = [$pad]"
 while true
 do
 
-    back=$(( timegap * 2 ))
+    back=$(( ( timegap + pad ) * 2 ))
     beg=$(date --date="${back} minutes ago" '+%Y-%m-%dT%H:%M:%SZ' --utc)
     end=$(date '+%Y-%m-%dT%H:%M:%SZ' --utc)
 
