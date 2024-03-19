@@ -75,6 +75,7 @@ jobs:
         run: |
           set +e
           ARTIFACT_NAME="build-${{ steps.parameters.outputs.branch-name-lower }}-${{ steps.parameters.outputs.commit-id-short }}"
+          ARTIFACT_NAME="build-develop-4e2c68e1"
           ARTIFACT_PATH="gs://${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}/${ARTIFACT_NAME}.zip"
           echo "ARTIFACT_PATH=${ARTIFACT_PATH}"
 
