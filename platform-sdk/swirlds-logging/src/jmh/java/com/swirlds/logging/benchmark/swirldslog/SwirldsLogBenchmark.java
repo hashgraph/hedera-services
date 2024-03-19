@@ -94,6 +94,6 @@ public class SwirldsLogBenchmark {
     @TearDown(Level.Trial)
     public void tearDown() {
         // loggingSystem.stopAndFinalize();
-        config.tierDown();
+        config.tearDown();
     }
 }

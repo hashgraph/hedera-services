@@ -91,7 +91,7 @@ public class Log4JLoggingBenchmarkConfig implements LoggingBenchmarkConfig<Logge
      * {@inheritDoc}
      */
     @Override
-    public void tierDown() {
+    public void tearDown() {
         if (ConfigManagement.deleteOutputFiles()) {
             LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE));
             LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE));

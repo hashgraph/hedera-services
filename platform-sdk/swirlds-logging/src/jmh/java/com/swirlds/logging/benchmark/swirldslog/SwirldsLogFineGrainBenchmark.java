@@ -270,6 +270,6 @@ public class SwirldsLogFineGrainBenchmark {
 
     @TearDown(Level.Trial)
     public void tearDown() {
-        config.tierDown();
+        config.tearDown();
     }
 }

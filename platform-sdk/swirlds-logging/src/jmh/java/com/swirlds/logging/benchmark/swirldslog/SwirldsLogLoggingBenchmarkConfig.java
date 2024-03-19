@@ -108,7 +108,7 @@ public class SwirldsLogLoggingBenchmarkConfig implements LoggingBenchmarkConfig<
      * {@inheritDoc}
      */
     @Override
-    public void tierDown() {
+    public void tearDown() {
 
         if (ConfigManagement.deleteOutputFiles()) {
             LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE));

@@ -91,6 +91,6 @@ public class Log4J2Benchmark {
 
     @TearDown(Level.Trial)
     public void tearDown() {
-        config.tierDown();
+        config.tearDown();
     }
 }

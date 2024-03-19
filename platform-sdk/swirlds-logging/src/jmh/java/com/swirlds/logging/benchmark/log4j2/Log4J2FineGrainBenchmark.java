@@ -275,6 +275,6 @@ public class Log4J2FineGrainBenchmark {
 
     @TearDown(Level.Iteration)
     public void tearDown() {
-        config.tierDown();
+        config.tearDown();
     }
 }

@@ -46,5 +46,5 @@ public interface LoggingBenchmarkConfig<T> {
     /**
      * Performs the necessary operations to clean after the benchmark is done
      */
-    void tierDown();
+    void tearDown();
 }
