@@ -26,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.pbj.runtime.ProtoParserTools;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -57,6 +59,8 @@ class DataFilePbjLowLevelTest {
     @SuppressWarnings("unused")
     @TempDir
     static Path tempFileDir;
+
+    private final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
     protected static final Random RANDOM = new Random(123456);
     protected static final Instant TEST_START = Instant.now();
@@ -244,7 +248,7 @@ class DataFilePbjLowLevelTest {
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
         final var listOfDataItemLocations = listOfDataItemLocationsMap.get(testType);
         DataFileReader<long[]> dataFileReader =
-                new DataFileReaderPbj<>(dataFile, testType.dataItemSerializer, dataFileMetadata);
+                new DataFileReaderPbj<>(dbConfig, dataFile, testType.dataItemSerializer, dataFileMetadata);
         // check by locations returned by write
         for (int i = 0; i < 1000; i++) {
             long[] dataItem = dataFileReader.readDataItem(listOfDataItemLocations.get(i));
@@ -279,7 +283,7 @@ class DataFilePbjLowLevelTest {
             }
         });
         // some additional asserts to increase DataFileReader's coverage.
-        DataFileReader<long[]> secondReader = new DataFileReaderPbj<>(dataFile, testType.dataItemSerializer);
+        DataFileReader<long[]> secondReader = new DataFileReaderPbj<>(dbConfig, dataFile, testType.dataItemSerializer);
         DataFileIterator<long[]> firstIterator = dataFileReader.createIterator();
         DataFileIterator<long[]> secondIterator = secondReader.createIterator();
         assertEquals(firstIterator.getMetadata(), secondIterator.getMetadata(), "unexpected metadata");
@@ -312,7 +316,7 @@ class DataFilePbjLowLevelTest {
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
         final var listOfDataItemLocations = listOfDataItemLocationsMap.get(testType);
         DataFileIteratorPbj<long[]> fileIterator =
-                new DataFileIteratorPbj<>(dataFile, dataFileMetadata, testType.dataItemSerializer);
+                new DataFileIteratorPbj<>(dbConfig, dataFile, dataFileMetadata, testType.dataItemSerializer);
         int i = 0;
         while (fileIterator.next()) {
             assertEquals(
@@ -341,7 +345,7 @@ class DataFilePbjLowLevelTest {
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
         DataFileIteratorPbj<long[]> fileIterator =
-                new DataFileIteratorPbj<>(dataFile, dataFileMetadata, testType.dataItemSerializer);
+                new DataFileIteratorPbj<>(dbConfig, dataFile, dataFileMetadata, testType.dataItemSerializer);
         final LongArrayList newDataLocations = new LongArrayList(1000);
         while (fileIterator.next()) {
             final long[] itemData = fileIterator.getDataItemData();
@@ -350,8 +354,8 @@ class DataFilePbjLowLevelTest {
         newDataFileWriter.finishWriting();
         final var newDataFileMetadata = newDataFileWriter.getMetadata();
         // now read back and check
-        DataFileReader<long[]> dataFileReader =
-                new DataFileReaderPbj<>(newDataFileWriter.getPath(), testType.dataItemSerializer, newDataFileMetadata);
+        DataFileReader<long[]> dataFileReader = new DataFileReaderPbj<>(
+                dbConfig, newDataFileWriter.getPath(), testType.dataItemSerializer, newDataFileMetadata);
         // check by locations returned by write
         for (int i = 0; i < 1000; i++) {
             long[] dataItem = dataFileReader.readDataItem(newDataLocations.get(i));

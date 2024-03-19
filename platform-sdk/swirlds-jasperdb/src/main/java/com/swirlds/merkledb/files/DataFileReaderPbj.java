@@ -22,7 +22,6 @@ import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -77,29 +76,32 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 // https://github.com/hashgraph/hedera-services/issues/8344
 public class DataFileReaderPbj<D> implements DataFileReader<D> {
 
-    private static final MerkleDbConfig CONFIG = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-
     private static final ThreadLocal<ByteBuffer> BUFFER_CACHE = new ThreadLocal<>();
     private static final ThreadLocal<BufferedData> BUFFEREDDATA_CACHE = new ThreadLocal<>();
 
+    protected final MerkleDbConfig dbConfig;
+
     /** Max number of file channels to use for reading */
-    protected static final int MAX_FILE_CHANNELS = CONFIG.maxFileChannelsPerFileReader();
+    protected final int maxFileChannels;
+
     /**
      * When a data file reader is created, a single file channel is open to read data from the
      * file. This channel is used by all threads. Number of threads currently reading data is
      * tracked in {@link #fileChannelsInUse}. When the number of threads per opened file channel
-     * exceeds this threshold, a new file channel is open, unless there are {@link #MAX_FILE_CHANNELS}
+     * exceeds this threshold, a new file channel is open, unless there are {@link #maxFileChannels}
      * channels are already opened.
      */
-    protected static final int THREADS_PER_FILECHANNEL = CONFIG.maxThreadsPerFileChannel();
+    protected final int threadsPerFileChannel;
+
     /**
      * A single data file reader may use multiple file channels. Previously, a single file channel
      * was used, and it resulted in unnecessary locking in FileChannelImpl.readInternal(), when
      * the number of threads working with the channel in parallel was high. Now a single file
-     * channel is open in the constructor, and additioinal file channels up to {@link #MAX_FILE_CHANNELS}
+     * channel is open in the constructor, and additioinal file channels up to {@link #maxFileChannels}
      * are opened as needed
      */
-    protected final AtomicReferenceArray<FileChannel> fileChannels = new AtomicReferenceArray<>(MAX_FILE_CHANNELS);
+    protected final AtomicReferenceArray<FileChannel> fileChannels;
+
     /** Number of currently opened file channels */
     protected final AtomicInteger fileChannelsCount = new AtomicInteger(0);
     /** Number of file channels currently in use by all threads working with this data file reader */
@@ -132,23 +134,34 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     /**
      * Open an existing data file, reading the metadata from the file
      *
+     * @param dbConfig MerkleDb config
      * @param path the path to the data file
      * @param dataItemSerializer Serializer for converting raw data to/from data items
      */
-    public DataFileReaderPbj(final Path path, final DataItemSerializer<D> dataItemSerializer) throws IOException {
-        this(path, dataItemSerializer, new DataFileMetadata(path));
+    public DataFileReaderPbj(
+            final MerkleDbConfig dbConfig, final Path path, final DataItemSerializer<D> dataItemSerializer)
+            throws IOException {
+        this(dbConfig, path, dataItemSerializer, new DataFileMetadata(path));
     }
 
     /**
      * Open an existing data file, using the provided metadata
      *
+     * @param dbConfig MerkleDb config
      * @param path the path to the data file
      * @param dataItemSerializer Serializer for converting raw data to/from data items
      * @param metadata the file's metadata to save loading from file
      */
     public DataFileReaderPbj(
-            final Path path, final DataItemSerializer<D> dataItemSerializer, final DataFileMetadata metadata)
+            final MerkleDbConfig dbConfig,
+            final Path path,
+            final DataItemSerializer<D> dataItemSerializer,
+            final DataFileMetadata metadata)
             throws IOException {
+        this.dbConfig = dbConfig;
+        maxFileChannels = dbConfig.maxFileChannelsPerFileReader();
+        threadsPerFileChannel = dbConfig.maxThreadsPerFileChannel();
+        fileChannels = new AtomicReferenceArray<>(maxFileChannels);
         if (!Files.exists(path)) {
             throw new IllegalArgumentException(
                     "Tried to open a non existent data file [" + path.toAbsolutePath() + "].");
@@ -197,7 +210,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
 
     @Override
     public DataFileIterator<D> createIterator() throws IOException {
-        return new DataFileIteratorPbj<>(path, metadata, dataItemSerializer);
+        return new DataFileIteratorPbj<>(dbConfig, path, metadata, dataItemSerializer);
     }
 
     @Override
@@ -257,6 +270,15 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
         return Integer.toString(metadata.getIndex());
     }
 
+    // For testing purpose
+    int getMaxFileChannels() {
+        return maxFileChannels;
+    }
+
+    int getThreadsPerFileChannel() {
+        return threadsPerFileChannel;
+    }
+
     /**
      * Get if the DataFile is open for reading.
      *
@@ -270,7 +292,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     @Override
     public void close() throws IOException {
         open.set(false);
-        for (int i = 0; i < MAX_FILE_CHANNELS; i++) {
+        for (int i = 0; i < maxFileChannels; i++) {
             final FileChannel fileChannel = fileChannels.getAndSet(i, null);
             if (fileChannel != null) {
                 fileChannel.close();
@@ -283,15 +305,15 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
 
     /**
      * Opens a new file channel for reading the file, if the total number of channels opened is
-     * less than {@link #MAX_FILE_CHANNELS}. This method is safe to call from multiple threads.
+     * less than {@link #maxFileChannels}. This method is safe to call from multiple threads.
      *
      * @param index Index of the new file channel. If greater or equal to {@link
-     *                            #MAX_FILE_CHANNELS}, no new channel is opened
+     *                            #maxFileChannels}, no new channel is opened
      * @throws IOException
      *      If an I/O error occurs
      */
     protected void openNewFileChannel(final int index) throws IOException {
-        if (index >= MAX_FILE_CHANNELS) {
+        if (index >= maxFileChannels) {
             return;
         }
         final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ);
@@ -315,7 +337,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
      *      If an I/O error occurs
      */
     protected void reopenFileChannel(final int index, final FileChannel closedChannel) throws IOException {
-        assert index < MAX_FILE_CHANNELS;
+        assert index < maxFileChannels;
         // May be closedChannel or may be already reopened in a different thread
         assert fileChannels.get(index) != null;
         assert !closedChannel.isOpen();
@@ -328,7 +350,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
     /**
      * Returns an index of an opened file channel to read data and increments the lease count.
      * Opens a new file channel, if possible, when the lease count per channel is greater than
-     * {@link #THREADS_PER_FILECHANNEL}.
+     * {@link #threadsPerFileChannel}.
      *
      * @return An index of a file channel to read data
      * @throws IOException
@@ -340,7 +362,7 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
         // Although openNewFileChannel() is thread safe, it makes sense to check the count here.
         // Since the channels are never closed (other than when the data file reader is closed),
         // it's safe to check count against MAX_FILE_CHANNELS
-        if ((inUse / count > THREADS_PER_FILECHANNEL) && (count < MAX_FILE_CHANNELS)) {
+        if ((inUse / count > threadsPerFileChannel) && (count < maxFileChannels)) {
             openNewFileChannel(count);
             count = fileChannelsCount.get();
         }

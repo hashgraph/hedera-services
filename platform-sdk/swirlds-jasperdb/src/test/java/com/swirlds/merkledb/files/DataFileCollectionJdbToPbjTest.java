@@ -169,7 +169,7 @@ public class DataFileCollectionJdbToPbjTest {
                 dataFileCollection(testDir, testType, FILES, count, COUNT_INC, index, i -> i % 2 != 0);
 
         final DataFileCompactor<long[]> compactor =
-                new DataFileCompactor<>(STORE_NAME, fileCollection, index, null, null, null, null);
+                new DataFileCompactor<>(config, STORE_NAME, fileCollection, index, null, null, null, null);
         compactor.compactFiles(
                 index, fileCollection.getAllCompletedFiles(), DataFileCompactor.INITIAL_COMPACTION_LEVEL + 1, usePbj);
         assertEquals(1, fileCollection.getNumOfFiles());
@@ -197,7 +197,7 @@ public class DataFileCollectionJdbToPbjTest {
                 dataFileCollection(testDir, testType, FILES, count, COUNT_INC, index, i -> i % 2 != 0);
 
         final DataFileCompactor<long[]> compactor =
-                new DataFileCompactor<>(STORE_NAME, fileCollection, index, null, null, null, null);
+                new DataFileCompactor<>(config, STORE_NAME, fileCollection, index, null, null, null, null);
         compactor.compactFiles(
                 index, fileCollection.getAllCompletedFiles(), DataFileCompactor.INITIAL_COMPACTION_LEVEL + 1, usePbj);
         assertEquals(1, fileCollection.getNumOfFiles());
