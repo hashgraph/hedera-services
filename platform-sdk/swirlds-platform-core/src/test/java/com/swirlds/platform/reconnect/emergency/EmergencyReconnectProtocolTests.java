@@ -37,6 +37,9 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.network.protocol.EmergencyReconnectProtocolFactory;
+import com.swirlds.platform.network.protocol.Protocol;
+import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
@@ -102,12 +105,10 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectController reconnectController = mock(ReconnectController.class);
         when(reconnectController.acquireLearnerPermit()).thenReturn(initiateParams.getsPermit);
 
-        final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+        final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
                 platformContext,
-                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
-                PEER_ID,
                 emergencyRecoveryManager,
                 mock(ReconnectThrottle.class),
                 () -> null,
@@ -117,7 +118,10 @@ public class EmergencyReconnectProtocolTests {
                 mock(StatusActionSubmitter.class),
                 configuration);
 
-        assertEquals(initiateParams.shouldInitiate, protocol.shouldInitiate(), "unexpected initiation result");
+        assertEquals(
+                initiateParams.shouldInitiate,
+                emergencyReconnectProtocolFactory.build(PEER_ID).shouldInitiate(),
+                "unexpected initiation result");
     }
 
     @DisplayName("Test the conditions under which the protocol should accept protocol initiation")
@@ -127,12 +131,10 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
         when(teacherThrottle.initiateReconnect(any())).thenReturn(!teacherIsThrottled);
 
-        final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+        final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
                 platformContext,
-                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
-                PEER_ID,
                 mock(EmergencyRecoveryManager.class),
                 teacherThrottle,
                 () -> null,
@@ -142,7 +144,10 @@ public class EmergencyReconnectProtocolTests {
                 mock(StatusActionSubmitter.class),
                 configuration);
 
-        assertEquals(!teacherIsThrottled, protocol.shouldAccept(), "unexpected protocol acceptance");
+        assertEquals(
+                !teacherIsThrottled,
+                emergencyReconnectProtocolFactory.build(PEER_ID).shouldAccept(),
+                "unexpected protocol acceptance");
     }
 
     @DisplayName("Tests if the reconnect learner permit gets released")
@@ -160,12 +165,10 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectController reconnectController = new ReconnectController(
                 reconnectConfig, getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
 
-        final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+        final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
                 platformContext,
-                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
-                PEER_ID,
                 emergencyRecoveryManager,
                 teacherThrottle,
                 () -> null,
@@ -174,7 +177,7 @@ public class EmergencyReconnectProtocolTests {
                 reconnectController,
                 mock(StatusActionSubmitter.class),
                 configuration);
-
+        final Protocol protocol = emergencyReconnectProtocolFactory.build(PEER_ID);
         // the ReconnectController must be running in order to provide permits
         getStaticThreadManager()
                 .createThreadFactory("test", "test")
@@ -212,12 +215,10 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectThrottle teacherThrottle =
                 new ReconnectThrottle(config.getConfigData(ReconnectConfig.class), Time.getCurrent());
 
-        final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+        final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
                 platformContext,
-                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
-                PEER_ID,
                 mock(EmergencyRecoveryManager.class),
                 teacherThrottle,
                 () -> null,
@@ -226,6 +227,7 @@ public class EmergencyReconnectProtocolTests {
                 mock(ReconnectController.class),
                 mock(StatusActionSubmitter.class),
                 configuration);
+        final Protocol protocol = emergencyReconnectProtocolFactory.build(PEER_ID);
 
         assertTrue(protocol.shouldAccept(), "expected protocol to accept initiation");
 

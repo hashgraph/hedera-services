@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.DoubleAccumulator;
 import com.swirlds.metrics.api.FloatFormats;
@@ -49,12 +48,7 @@ public class MerkleDbStatistics {
     /** Prefix for all off-heap related metrics */
     private static final String OFFHEAP_PREFIX = "offheap_";
 
-    /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+    private final MerkleDbConfig dbConfig;
 
     private final String label;
 
@@ -125,10 +119,12 @@ public class MerkleDbStatistics {
     /**
      * Create a new statistics object for a MerkleDb instances.
      *
-     * @param label         the label for the virtual map
+     * @param dbConfig MerkleDb config
+     * @param label the label for the virtual map
      * @throws NullPointerException in case {@code label} parameter is {@code null}
      */
-    public MerkleDbStatistics(final String label) {
+    public MerkleDbStatistics(final MerkleDbConfig dbConfig, final String label) {
+        this.dbConfig = dbConfig;
         this.label = Objects.requireNonNull(label, "label must not be null");
         hashesStoreCompactionTimeMsList = new ArrayList<>();
         hashesStoreCompactionSavedSpaceMbList = new ArrayList<>();
@@ -239,7 +235,7 @@ public class MerkleDbStatistics {
 
         // Compaction
 
-        for (int level = 0; level <= config.maxCompactionLevel(); level++) {
+        for (int level = 0; level <= dbConfig.maxCompactionLevel(); level++) {
             // Hashes store
             hashesStoreCompactionTimeMsList.add(buildLongAccumulator(
                     metrics,
@@ -464,7 +460,7 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setHashesStoreCompactionTimeMs(final Integer compactionLevel, final long value) {
-        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= dbConfig.maxCompactionLevel();
         if (hashesStoreCompactionTimeMsList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
@@ -479,7 +475,7 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setHashesStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= dbConfig.maxCompactionLevel();
         if (hashesStoreCompactionSavedSpaceMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
@@ -494,7 +490,7 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setHashesStoreFileSizeByLevelMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= dbConfig.maxCompactionLevel();
         if (hashesStoreFileSizeByLevelMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
@@ -509,7 +505,7 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeavesStoreCompactionTimeMs(final int compactionLevel, final long value) {
-        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= dbConfig.maxCompactionLevel();
         if (leavesStoreCompactionTimeMsList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
@@ -523,7 +519,7 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeavesStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= dbConfig.maxCompactionLevel();
         if (leavesStoreCompactionSavedSpaceMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
@@ -537,7 +533,7 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeavesStoreFileSizeByLevelMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= dbConfig.maxCompactionLevel();
         if (leavesStoreFileSizeByLevelMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
@@ -552,7 +548,7 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeafKeysStoreCompactionTimeMs(final int compactionLevel, final long value) {
-        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= dbConfig.maxCompactionLevel();
         if (leafKeysStoreCompactionTimeMsList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
@@ -567,7 +563,7 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeafKeysStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= dbConfig.maxCompactionLevel();
         if (leafKeysStoreCompactionSavedSpaceMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;
@@ -582,7 +578,7 @@ public class MerkleDbStatistics {
      * @param value the value to set
      */
     public void setLeafKeysStoreFileSizeByLevelMb(final int compactionLevel, final double value) {
-        assert compactionLevel >= 0 && compactionLevel <= config.maxCompactionLevel();
+        assert compactionLevel >= 0 && compactionLevel <= dbConfig.maxCompactionLevel();
         if (leafKeysStoreFileSizeByLevelMbList.isEmpty()) {
             // if the method called before the metrics are registered, there is nothing to do
             return;

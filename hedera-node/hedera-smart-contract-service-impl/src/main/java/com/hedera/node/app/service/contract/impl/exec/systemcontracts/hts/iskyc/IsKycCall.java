@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.iskyc.IsKycTranslator.IS_KYC;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
 import static java.util.Objects.requireNonNull;
@@ -53,16 +54,19 @@ public class IsKycCall extends AbstractNonRevertibleTokenViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
+    protected @NonNull PricedResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         final var accountNum = accountNumberForEvmReference(account, nativeOperations());
         if (accountNum < 0) {
-            return fullResultsFor(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement(), false);
+            return gasOnly(
+                    fullResultsFor(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement(), false),
+                    INVALID_ACCOUNT_ID,
+                    true);
         }
         var tokenRel = nativeOperations()
                 .getTokenRelation(accountNum, token.tokenIdOrThrow().tokenNum());
         var result = tokenRel != null && tokenRel.kycGranted();
-        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), result);
+        return gasOnly(fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), result), SUCCESS, true);
     }
 
     @Override
