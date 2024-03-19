@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.throttle;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.MigrationContext;
@@ -27,6 +30,7 @@ import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Arrays;
 import java.util.Set;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -62,19 +66,32 @@ public class CongestionThrottleService implements Service {
             /** {@inheritDoc} */
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
-                log.info("BBM: migrating congestion throttle service");
-                final var throttleSnapshots = ctx.newStates().getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
-                final var congestionLevelStarts = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
-                if (ctx.previousVersion() == null || mnc != null) {
+                if (mnc != null) {
+                    log.info("Migrating throttle usage snapshots");
+                    // For diff testing we need to initialize the throttle snapshots from the saved state
+                    final var throttleSnapshots = ctx.newStates().getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
+                    throttleSnapshots.put(new ThrottleUsageSnapshots(
+                            Arrays.stream(mnc.getUsageSnapshots())
+                                    .map(PbjConverter::toPbj)
+                                    .toList(),
+                            toPbj(mnc.getGasThrottleUsageSnapshot())));
+
+                    // Unless we find diff testing requires, for now don't bother migrating congestion level starts
+                    final var congestionLevelStarts = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
+                    congestionLevelStarts.put(CongestionLevelStarts.DEFAULT);
+
+                    mnc = null;
+                    log.info("BBM: finished migrating congestion throttle service");
+                } else if (ctx.previousVersion() == null) {
+                    log.info("Creating genesis throttle snapshots and congestion level starts");
                     // At genesis we put empty throttle usage snapshots and
                     // congestion level starts into their respective singleton
                     // states just to ensure they exist
-                    log.info("Creating genesis throttle snapshots and congestion level starts");
+                    final var throttleSnapshots = ctx.newStates().getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
                     throttleSnapshots.put(ThrottleUsageSnapshots.DEFAULT);
+                    final var congestionLevelStarts = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
                     congestionLevelStarts.put(CongestionLevelStarts.DEFAULT);
                 }
-                mnc = null;
-                log.info("BBM: finished migrating congestion throttle service");
             }
         });
     }

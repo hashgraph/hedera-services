@@ -100,7 +100,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         noStakeChanges();
 
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         assertThat(rewards).isEmpty();
         final var modifiedAccount = writableAccountStore.get(payerId);
@@ -121,7 +121,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         randomStakeNodeChanges();
 
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         // earned zero rewards due to zero stake
         assertThat(rewards).hasSize(1);
@@ -170,7 +170,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(context.consensusTime()).willReturn(nextDayInstant);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        subject.applyStakingRewards(context, Collections.emptySet());
+        subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         final var payerAfter = writableAccountStore.get(payerId);
         final var node1Info = writableStakingInfoState.get(node1Id);
@@ -202,7 +202,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         given(context.consensusTime()).willReturn(nextDayInstant);
 
-        subject.applyStakingRewards(context, Collections.emptySet());
+        subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         final var node1Info = writableStakingInfoState.get(node1Id);
         // Since the node is rewarded in last period the unclaimed reward will be stakeAtStartOfLastRewardPeriod.
@@ -234,7 +234,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
 
-        subject.applyStakingRewards(context, Collections.emptySet());
+        subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         final var node1Info = writableStakingInfoState.get(node1Id);
         // Since the node is rewarded in last period and stakePeriodStart is the previous period
@@ -261,7 +261,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(context.consensusTime()).willReturn(stakePeriodStartInstant);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        subject.applyStakingRewards(context, Collections.emptySet());
+        subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
@@ -288,7 +288,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(context.consensusTime()).willReturn(originalInstant);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        subject.applyStakingRewards(context, Collections.emptySet());
+        subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
@@ -346,7 +346,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(context.consensusTime()).willReturn(stakePeriodStartInstant);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        subject.applyStakingRewards(context, Collections.emptySet());
+        subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
@@ -400,7 +400,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
         final var node0InfoAfter = writableStakingInfoState.get(node0Id);
@@ -468,7 +468,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
         assertThat(rewards).hasSize(1);
         // because the transferId is owner for the deleted payer account
         assertThat(rewards).containsEntry(ownerId, 178900L);
@@ -500,7 +500,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
 
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
@@ -543,7 +543,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
@@ -589,7 +589,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .toInstant());
 
         // No rewards rewarded
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
@@ -645,7 +645,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
 
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
@@ -710,7 +710,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
         assertThat(rewards).hasSize(1);
         // because the transferId is owner for the deleted payer account
         assertThat(rewards).containsEntry(ownerId, 178900L);
@@ -762,7 +762,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
         // because the transferId is owner and it declined reward
         assertThat(rewards).hasSize(1);
     }
@@ -820,7 +820,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(ownerId)).willReturn(spenderId);
 
-        assertThatThrownBy(() -> subject.applyStakingRewards(context, Collections.emptySet()))
+        assertThatThrownBy(() -> subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet()))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -864,7 +864,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var originalPayer = writableAccountStore.get(payerId);
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         // even though only payer account has changed, since staked to me of owner changes,
         // it will trigger reward for owner
@@ -928,7 +928,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var originalPayer = writableAccountStore.get(payerId);
 
         // This should not change anything
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         // No rewards should be paid
         assertThat(rewards).isEmpty();
@@ -985,7 +985,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var originalPayer = writableAccountStore.get(payerId);
-        final var rewards = subject.applyStakingRewards(context, Collections.emptySet());
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
 
         assertThat(rewards).hasSize(1).containsEntry(ownerId, 6600L);
 

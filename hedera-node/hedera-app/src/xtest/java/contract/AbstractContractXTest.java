@@ -18,6 +18,7 @@ package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
@@ -64,6 +65,7 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.ContractsConfig;
@@ -259,7 +261,8 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         final var systemContractGasCalculator = new SystemContractGasCalculator(
                 tinybarValues,
                 new CanonicalDispatchPrices(new AssetsLoader()),
-                (body, payerId) -> context.dispatchComputeFees(body, payerId).totalFee());
+                (body, payerId) -> context.dispatchComputeFees(body, payerId, ComputeDispatchFeesAsTopLevel.NO)
+                        .totalFee());
         final var enhancement = new HederaWorldUpdater.Enhancement(
                 new HandleHederaOperations(
                         component.config().getConfigData(LedgerConfig.class),
@@ -285,7 +288,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         given(addressChecks.hasParentDelegateCall(frame)).willReturn(requiresDelegatePermission);
         Mockito.lenient().when(frame.getValue()).thenReturn(Wei.MAX_WEI);
 
-        final var attempt = callAttemptFactory.createCallAttemptFrom(input, frame);
+        final var attempt = callAttemptFactory.createCallAttemptFrom(input, DIRECT_OR_TOKEN_REDIRECT, frame);
         final var call = attempt.asExecutableCall();
 
         final var pricedResult = requireNonNull(call).execute(frame);
