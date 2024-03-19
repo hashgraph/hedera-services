@@ -18,11 +18,13 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
@@ -50,7 +52,7 @@ public class PlatformCoordinator {
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ShadowgraphWiring shadowgraphWiring;
-    private final ConsensusEngineWiring consensusEngineWiring;
+    private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
@@ -82,7 +84,7 @@ public class PlatformCoordinator {
             @NonNull final OrphanBufferWiring orphanBufferWiring,
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final ShadowgraphWiring shadowgraphWiring,
-            @NonNull final ConsensusEngineWiring consensusEngineWiring,
+            @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
             @NonNull final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring,
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
             @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
@@ -126,7 +128,7 @@ public class PlatformCoordinator {
         orphanBufferWiring.flushRunnable().run();
         inOrderLinkerWiring.flushRunnable().run();
         shadowgraphWiring.flushRunnable().run();
-        consensusEngineWiring.flushRunnable().run();
+        consensusEngineWiring.flush();
         applicationTransactionPrehandlerWiring.flush();
         futureEventBufferWiring.flush();
         eventCreationManagerWiring.flush();
@@ -145,8 +147,8 @@ public class PlatformCoordinator {
         // Phase 1: squelch
         // Break cycles in the system. Flush squelched components just in case there is a task being executed when
         // squelch is activated.
-        consensusEngineWiring.startSquelchingRunnable().run();
-        consensusEngineWiring.flushRunnable().run();
+        consensusEngineWiring.startSquelching();
+        consensusEngineWiring.flush();
         eventCreationManagerWiring.startSquelching();
         eventCreationManagerWiring.flush();
 
@@ -164,7 +166,7 @@ public class PlatformCoordinator {
 
         // Phase 3: stop squelching
         // Once everything has been flushed out of the system, it's safe to stop squelching.
-        consensusEngineWiring.stopSquelchingRunnable().run();
+        consensusEngineWiring.stopSquelching();
         eventCreationManagerWiring.stopSquelching();
         consensusRoundHandlerWiring.stopSquelchingRunnable().run();
 

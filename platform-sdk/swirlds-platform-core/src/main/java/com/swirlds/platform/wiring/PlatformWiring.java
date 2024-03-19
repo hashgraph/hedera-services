@@ -119,7 +119,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
-    private final ConsensusEngineWiring consensusEngineWiring;
+    private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
     private final StateSignerWiring stateSignerWiring;
@@ -194,7 +194,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 EventSignatureValidatorWiring.create(schedulers.eventSignatureValidatorScheduler());
         orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
         inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
-        consensusEngineWiring = ConsensusEngineWiring.create(schedulers.consensusEngineScheduler());
+        consensusEngineWiring =
+                new ComponentWiring<>(model, ConsensusEngine.class, schedulers.consensusEngineScheduler());
         futureEventBufferWiring =
                 new ComponentWiring<>(model, FutureEventBuffer.class, schedulers.futureEventBufferScheduler());
         eventCreationManagerWiring =
@@ -303,7 +304,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo(pcesSequencerWiring.getInputWire(PcesSequencer::assignStreamSequenceNumber));
         pcesSequencerWiring.getOutputWire().solderTo(inOrderLinkerWiring.eventInput());
         pcesSequencerWiring.getOutputWire().solderTo(pcesWriterWiring.eventInputWire());
-        inOrderLinkerWiring.eventOutput().solderTo(consensusEngineWiring.eventInput());
+        inOrderLinkerWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
         inOrderLinkerWiring.eventOutput().solderTo(shadowgraphWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(futureEventBufferWiring.getInputWire(FutureEventBuffer::addEvent));
 
@@ -334,18 +335,20 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         .getStreamSequenceNumber());
         keystoneEventSequenceNumberTransformer.getOutputWire().solderTo(pcesWriterWiring.flushRequestInputWire());
 
+        final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
+
         // The request to flush the keystone event for a round must be sent to the PCES writer before the consensus
         // round is passed to the round handler. This prevents a deadlock scenario where the consensus round
         // handler has a full queue and won't accept additional rounds, and is waiting on a keystone event to be
         // durably flushed to disk. Meanwhile, the PCES writer hasn't even received the flush request yet, so the
         // necessary keystone event is *never* flushed.
+        consensusRoundOutputWire.orderedSolderTo(List.of(
+                keystoneEventSequenceNumberTransformer.getInputWire(), consensusRoundHandlerWiring.roundInput()));
+        consensusRoundOutputWire.solderTo(eventWindowManagerWiring.consensusRoundInput());
+
         consensusEngineWiring
-                .consensusRoundOutput()
-                .orderedSolderTo(List.of(
-                        keystoneEventSequenceNumberTransformer.getInputWire(),
-                        consensusRoundHandlerWiring.roundInput()));
-        consensusEngineWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
-        consensusEngineWiring.consensusEventsOutput().solderTo(eventStreamManagerWiring.eventsInput());
+                .getSplitAndTransformedOutput(ConsensusEngine::getConsensusEvents)
+                .solderTo(eventStreamManagerWiring.eventsInput());
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
                 .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());

@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -41,24 +42,31 @@ public class DataFileReaderJdb<D> extends DataFileReaderPbj<D> {
     /**
      * Open an existing data file, reading the metadata from the file
      *
+     * @param dbConfig MerkleDb config
      * @param path the path to the data file
      * @param dataItemSerializer Serializer for converting raw data to/from data items
      */
-    public DataFileReaderJdb(final Path path, final DataItemSerializer<D> dataItemSerializer) throws IOException {
-        this(path, dataItemSerializer, new DataFileMetadataJdb(path));
+    public DataFileReaderJdb(
+            final MerkleDbConfig dbConfig, final Path path, final DataItemSerializer<D> dataItemSerializer)
+            throws IOException {
+        this(dbConfig, path, dataItemSerializer, new DataFileMetadataJdb(path));
     }
 
     /**
      * Open an existing data file, using the provided metadata
      *
+     * @param dbConfig MerkleDb config
      * @param path the path to the data file
      * @param dataItemSerializer Serializer for converting raw data to/from data items
      * @param metadata the file's metadata to save loading from file
      */
     public DataFileReaderJdb(
-            final Path path, final DataItemSerializer<D> dataItemSerializer, DataFileMetadataJdb metadata)
+            final MerkleDbConfig dbConfig,
+            final Path path,
+            final DataItemSerializer<D> dataItemSerializer,
+            DataFileMetadataJdb metadata)
             throws IOException {
-        super(path, dataItemSerializer, metadata);
+        super(dbConfig, path, dataItemSerializer, metadata);
         openNewFileChannel(0);
     }
 
@@ -69,7 +77,7 @@ public class DataFileReaderJdb<D> extends DataFileReaderPbj<D> {
 
     @Override
     public DataFileIterator<D> createIterator() throws IOException {
-        return new DataFileIteratorJdb<>(path, metadata, dataItemSerializer);
+        return new DataFileIteratorJdb<>(dbConfig, path, metadata, dataItemSerializer);
     }
 
     @Override
