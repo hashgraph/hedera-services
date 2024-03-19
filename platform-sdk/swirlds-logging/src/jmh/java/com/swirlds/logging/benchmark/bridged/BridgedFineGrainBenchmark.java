@@ -35,7 +35,6 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
@@ -284,7 +283,6 @@ public class BridgedFineGrainBenchmark {
 
     @TearDown(Level.Iteration)
     public void tearDown() {
-        LogManager.shutdown();
         config.tierDown();
         swirldsConfig.tierDown();
     }
