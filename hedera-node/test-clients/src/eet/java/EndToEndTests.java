@@ -15,6 +15,7 @@
  */
 
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
+// import com.hedera.services.bdd.suites.crypto.TransferWithCustomFractionalFees;
 import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
@@ -222,6 +223,7 @@ class EndToEndTests extends E2ETestBase {
                 //				extractSpecsFromSuite(QueryPaymentSuite::new),
                 //				extractSpecsFromSuite(RandomOps::new), // TODO Fails
                 //				extractSpecsFromSuite(TransferWithCustomFixedFees::new),
+                //              extractSpecsFromSuite(TransferWithCustomFractionalFees::new),
                 //				extractSpecsFromSuite(TxnReceiptRegression::new),
                 //				extractSpecsFromSuite(TxnRecordRegression::new), // TODO Fails
                 //				extractSpecsFromSuite(UnsupportedQueriesRegression::new) // TODO Fails
