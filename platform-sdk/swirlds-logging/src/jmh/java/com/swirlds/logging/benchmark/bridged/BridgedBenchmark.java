@@ -103,7 +103,7 @@ public class BridgedBenchmark {
     @TearDown(Level.Trial)
     public void tearDown() {
         LogManager.shutdown();
-        config.tierDown();
-        swirldsConfig.tierDown();
+        config.tearDown();
+        swirldsConfig.tearDown();
     }
 }
