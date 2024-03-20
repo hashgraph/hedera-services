@@ -25,12 +25,17 @@ import com.swirlds.config.api.ConfigurationBuilder;
  * the bootstrapping phase.
  */
 public class ConfigProvider {
-    /** The bootstrap configuration. */
+    /**
+     * The bootstrap configuration.
+     */
     public final Configuration configuration;
 
     public ConfigProvider() {
         final var builder = ConfigurationBuilder.create().withConfigDataType(BlockNodeGrpcConfig.class);
-
         this.configuration = builder.build();
+    }
+
+    public Configuration getConfiguration() {
+        return configuration;
     }
 }

@@ -14,19 +14,6 @@
  * limitations under the License.
  */
 
-package com.hedera.node.blocknode.core.test;
+package com.hedera.node.blocknode.config.test.data;
 
-// import static org.junit.jupiter.api.Assertions.assertNotNull;
-//
-// import com.hedera.storage.core.BlockNodeServer;
-// import org.junit.jupiter.api.Test;
-
-class BlockNodeTest {
-
-    //    private final BlockNodeServer subject = new BlockNodeServer();
-
-    //    @Test
-    void expectBlockNodeNotNull() {
-        //        assertNotNull(subject);
-    }
-}
+public class BlockNodeGrpcConfigTest {}

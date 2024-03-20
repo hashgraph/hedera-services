@@ -16,4 +16,26 @@
 
 package com.hedera.node.blocknode.config.test;
 
-class ConfigProviderTest {}
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import com.hedera.node.blocknode.config.ConfigProvider;
+import com.hedera.node.blocknode.config.data.BlockNodeGrpcConfig;
+import org.junit.jupiter.api.Test;
+
+class ConfigProviderTest {
+
+    @Test
+    void testInitialConfig() {
+        // given
+        final var configProvider = new ConfigProvider();
+
+        // when
+        final var configuration = configProvider.configuration;
+
+        // then
+        assertNotNull(configuration);
+        assertNotEquals(configuration.getConfigData(BlockNodeGrpcConfig.class).port(), 0);
+        assertNotEquals(configuration.getConfigData(BlockNodeGrpcConfig.class).tlsPort(), 0);
+    }
+}
