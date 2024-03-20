@@ -25,13 +25,13 @@ import java.io.IOException;
 import java.util.ServiceLoader;
 
 /**
- * A factory for creating new {@link FileHandler} instances.
+ * A factory for creating new {@link RollingFileHandler} instances.
  * <p>
  * This is a {@link LogHandlerFactory} and is discovered by the {@link ServiceLoader} at runtime. The factory creates
- * new {@link FileHandler} instances with the specified {@link Configuration}.
+ * new {@link RollingFileHandler} instances with the specified {@link Configuration}.
  *
  * @see LogHandlerFactory
- * @see FileHandler
+ * @see RollingFileHandler
  * @see ServiceLoader
  * @see Configuration
  */
@@ -39,18 +39,18 @@ import java.util.ServiceLoader;
 public class FileHandlerFactory implements LogHandlerFactory {
 
     /**
-     * The type name of the {@link FileHandler} used for {@code logging.handler.NAME.type} property.
+     * The type name of the {@link RollingFileHandler} used for {@code logging.handler.NAME.type} property.
      */
     public static final String FILE_HANDLER_TYPE = "file";
 
     /**
-     * Creates a new {@link FileHandler} instance with the specified {@link Configuration}.
+     * Creates a new {@link RollingFileHandler} instance with the specified {@link Configuration}.
      *
      * @param handlerName   The name of the handler instance.
      * @param configuration The configuration for the new handler instance.
-     * @return A new {@link FileHandler} instance.
+     * @return A new {@link RollingFileHandler} instance.
      * @throws NullPointerException if the provided {@code configuration} is {@code null}.
-     * @throws RuntimeException     if there was an error trying to create the {@link FileHandler}.
+     * @throws RuntimeException     if there was an error trying to create the {@link RollingFileHandler}.
      */
     @NonNull
     @Override
