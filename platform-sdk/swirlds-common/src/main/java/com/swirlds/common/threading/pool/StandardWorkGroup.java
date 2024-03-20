@@ -78,8 +78,15 @@ public class StandardWorkGroup {
      *      listener. If the listener returns {@code true}, the exception is considered handled, and
      *      no further action is performed. If the listener returns {@code false}, it indicates the
      *      exception should be processed by the default handler, which is to log it appropriately
-     * @param logExceptionsToStdErr if true exceptions are logged to stderr which may be helpful for testing
      */
+    public StandardWorkGroup(
+            final ThreadManager threadManager,
+            final String groupName,
+            final Runnable abortAction,
+            final Function<Throwable, Boolean> exceptionListener) {
+        this(threadManager, groupName, abortAction, exceptionListener, false);
+    }
+
     public StandardWorkGroup(
             final ThreadManager threadManager,
             final String groupName,
@@ -181,10 +188,10 @@ public class StandardWorkGroup {
             }
             if (!exceptionHandled) {
                 logger.error(EXCEPTION.getMarker(), "Work Group Exception [ groupName = {} ]", groupName, ex);
-            }
-            // Log to stderr for testing purposes
-            if (logExceptionsToStdErr) {
-                ex.printStackTrace(System.err);
+                // Log to stderr for testing purposes
+                if (logExceptionsToStdErr) {
+                    ex.printStackTrace(System.err);
+                }
             }
 
             hasExceptions = true;
