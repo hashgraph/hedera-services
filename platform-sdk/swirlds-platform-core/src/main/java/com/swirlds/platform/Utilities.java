@@ -26,13 +26,17 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSocket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -383,5 +387,29 @@ public final class Utilities {
                         Objects.requireNonNull(address.getHostnameExternal()),
                         Objects.requireNonNull(address.getSigCert())))
                 .toList();
+    }
+
+    public static void validateTLSPeer(final SSLSocket sslsocket, final List<PeerInfo> peerInfoList) {
+        try {
+            final X509Certificate agreementCert = (X509Certificate) sslsocket.getSession().getPeerCertificates()[0];
+            final Optional<PeerInfo> peerOptional = peerInfoList.stream()
+                    .filter(peerInfo -> ((X509Certificate) peerInfo.signingCertificate())
+                            .getSubjectX500Principal()
+                            .equals(agreementCert.getIssuerX500Principal()))
+                    .findFirst();
+            if (peerOptional.isEmpty()) {
+                logger.warn(
+                        "Handshake with client {}:{} was successful but we couldn't find a matching peer",
+                        sslsocket.getInetAddress(),
+                        sslsocket.getPort());
+                //Peer invalid. We should close the peer's connection/throw an exception
+                //Lazar to confirm
+            }
+        } catch (final SSLPeerUnverifiedException e) {
+            logger.warn(
+                    "Handshake with client {}:{} was successful but we couldn't find a matching peer",
+                    sslsocket.getInetAddress(),
+                    sslsocket.getPort());
+        }
     }
 }

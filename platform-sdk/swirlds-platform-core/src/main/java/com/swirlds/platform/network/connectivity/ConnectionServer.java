@@ -21,18 +21,16 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.network.PeerInfo;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.security.cert.X509Certificate;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -97,7 +95,10 @@ public class ConnectionServer implements InterruptableRunnable {
             try {
                 final Socket clientSocket = serverSocket.accept(); // listen, waiting until someone connects
                 incomingConnPool.submit(() -> {
-                    validatePeer(clientSocket);
+                    if (clientSocket instanceof final SSLSocket sslsocket) {
+                        sslsocket.addHandshakeCompletedListener(
+                                event -> Utilities.validateTLSPeer(event.getSocket(), peerInfoList));
+                    }
                     newConnectionHandler.accept(clientSocket);
                 });
             } catch (final SocketTimeoutException expectedWithNonZeroSOTimeout) {
@@ -112,30 +113,4 @@ public class ConnectionServer implements InterruptableRunnable {
         }
     }
 
-    private void validatePeer(final Socket clientSocket) {
-        if (clientSocket instanceof final SSLSocket sslsocket) {
-            sslsocket.addHandshakeCompletedListener(event -> {
-                try {
-                    final X509Certificate agreementCert = (X509Certificate) sslsocket.getSession().getPeerCertificates()[0];
-                    final Optional<PeerInfo> peerOptional = peerInfoList.stream()
-                            .filter(peerInfo -> ((X509Certificate) peerInfo.signingCertificate())
-                                    .getSubjectX500Principal()
-                                    .equals(agreementCert.getIssuerX500Principal()))
-                            .findFirst();
-                    if (peerOptional.isEmpty()) {
-                        logger.warn(
-                                "Handshake with client {}:{} was successful but we couldn't find a matching peer",
-                                sslsocket.getInetAddress(),
-                                sslsocket.getPort());
-                        //Peer invalid. We should close the peer's connection.
-                    }
-                } catch (final SSLPeerUnverifiedException e) {
-                    logger.warn(
-                            "Handshake with client {}:{} was successful but we couldn't find a matching peer",
-                            sslsocket.getInetAddress(),
-                            sslsocket.getPort());
-                }
-            });
-        }
-    }
 }
