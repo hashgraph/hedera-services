@@ -40,6 +40,7 @@ import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.FutureEventBuffer;
@@ -62,6 +63,7 @@ import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
@@ -152,12 +154,23 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final PlatformCoordinator platformCoordinator;
     private final ComponentWiring<BirthRoundMigrationShim, GossipEvent> birthRoundMigrationShimWiring;
 
+    private final ComponentWiring<PlatformPublisher, Void> platformPublisherWiring;
+    private final boolean publishPreconsensusEvents;
+    private final boolean publishSnapshotOverrides;
+
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
+     * @param platformContext           the platform context
+     * @param publishPreconsensusEvents whether to publish preconsensus events (i.e. if a handler is registered). Extra
+     *                                  things need to be wired together if we are publishing preconsensus events.
+     * @param publishSnapshotOverrides  whether to publish snapshot overrides. Extra things need to be wired together if
+     *                                  we are publishing snapshot overrides.
      */
-    public PlatformWiring(@NonNull final PlatformContext platformContext) {
+    public PlatformWiring(
+            @NonNull final PlatformContext platformContext,
+            final boolean publishPreconsensusEvents,
+            final boolean publishSnapshotOverrides) {
 
         final PlatformSchedulersConfig schedulersConfig =
                 platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
@@ -282,6 +295,20 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                         .build()
                         .cast());
+
+        this.publishPreconsensusEvents = publishPreconsensusEvents;
+        this.publishSnapshotOverrides = publishSnapshotOverrides;
+        if (publishPreconsensusEvents || publishSnapshotOverrides) {
+            platformPublisherWiring = new ComponentWiring<>(
+                    model,
+                    PlatformPublisher.class,
+                    model.schedulerBuilder("platformPublisher")
+                            .withType(TaskSchedulerType.SEQUENTIAL) // TODO don't build this here
+                            .build()
+                            .cast());
+        } else {
+            platformPublisherWiring = null;
+        }
 
         wire();
     }
@@ -438,6 +465,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .getCompleteStatesOutput()
                 .solderTo(latestCompleteStateNotifierWiring.completeStateNotificationInputWire());
 
+        if (publishPreconsensusEvents) {
+            orphanBufferWiring
+                    .eventOutput()
+                    .solderTo(platformPublisherWiring.getInputWire(PlatformPublisher::publishPreconsensusEvent));
+        }
+        if (publishSnapshotOverrides) {
+            // TODO
+        }
+
         buildUnsolderedWires();
     }
 
@@ -449,6 +485,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private void buildUnsolderedWires() {
         eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear);
         futureEventBufferWiring.getInputWire(FutureEventBuffer::clear);
+        consensusEngineWiring.getInputWire(ConsensusEngine::outOfBandSnapshotUpdate);
     }
 
     /**
@@ -526,6 +563,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param latestCompleteStateNexus  the latest complete state nexus to bind
      * @param savedStateController      the saved state controller to bind
      * @param signedStateHasher         the signed state hasher to bind
+     * @param platformPublisher         the platform publisher to bind
      */
     public void bind(
             @NonNull final EventHasher eventHasher,
@@ -556,7 +594,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final SignedStateNexus latestImmutableStateNexus,
             @NonNull final LatestCompleteStateNexus latestCompleteStateNexus,
             @NonNull final SavedStateController savedStateController,
-            @NonNull final SignedStateHasher signedStateHasher) {
+            @NonNull final SignedStateHasher signedStateHasher,
+            @Nullable final PlatformPublisher platformPublisher) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -589,6 +628,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         latestCompleteStateNexusWiring.bind(latestCompleteStateNexus);
         savedStateControllerWiring.bind(savedStateController);
         signedStateHasherWiring.bind(signedStateHasher);
+
+        if (platformPublisherWiring != null) {
+            platformPublisherWiring.bind(platformPublisher);
+        }
     }
 
     /**
@@ -727,12 +770,25 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @param nonAncientEventWindow the new non-ancient event window
      */
+    // TODO can this be merged with the method that updates the consensus snapshot?
     public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         eventWindowManagerWiring.manualWindowInput().inject(nonAncientEventWindow);
 
         // Since there is asynchronous access to the shadowgraph, it's important to ensure that
         // it has fully ingested the new event window before continuing.
         shadowgraphWiring.flushRunnable().run();
+    }
+
+    /**
+     * Inject a new consensus snapshot into all components that need it. This will happen at restart and reconnect
+     * boundaries.
+     *
+     * @param consensusSnapshot the new consensus snapshot
+     */
+    public void consensusSnapshotOverride(@NonNull final ConsensusSnapshot consensusSnapshot) {
+        consensusEngineWiring
+                .getInputWire(ConsensusEngine::outOfBandSnapshotUpdate)
+                .inject(consensusSnapshot);
     }
 
     /**

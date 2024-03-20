@@ -47,7 +47,9 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
@@ -68,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -97,6 +100,9 @@ public final class PlatformBuilder {
      * The path to the settings file (i.e. the path used to instantiate {@link Configuration}).
      */
     private Path settingsPath = getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME);
+
+    private Consumer<GossipEvent> preconsensusEventConsumer;
+    private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
 
     /**
      * Create a new platform builder.
@@ -171,11 +177,59 @@ public final class PlatformBuilder {
      * @param previousSoftwareVersionClassId the class ID of the previous software version
      * @return this
      */
+    @NonNull
     public PlatformBuilder withPreviousSoftwareVersionClassId(final long previousSoftwareVersionClassId) {
         final Set<Long> softwareVersions = new HashSet<>();
         softwareVersions.add(softwareVersion.getClassId());
         softwareVersions.add(previousSoftwareVersionClassId);
         StaticSoftwareVersion.setSoftwareVersion(softwareVersions);
+        return this;
+    }
+
+    /**
+     * Registers a callback that is called for each valid non-ancient preconsensus event in topological order (i.e.
+     * after each event exits the orphan buffer). Useful for scenarios where access to this internal stream of events is
+     * useful (e.g. UI hashgraph visualizers).
+     *
+     * <p>
+     * Among all callbacks in the following list, it is guaranteed that callbacks will not be called concurrently, and
+     * that there will be a happens-before relationship between each of the callbacks.
+     *
+     * <ul>
+     *     <li>{@link #withPreconsensusEventCallback(Consumer)} (i.e. this callback)</li>
+     *     <li>{@link #withConsensusSnapshotOverrideCallback(Consumer)}</li>
+     * </ul>
+     *
+     * @param preconsensusEventConsumer the callback to register
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withPreconsensusEventCallback(
+            @NonNull final Consumer<GossipEvent> preconsensusEventConsumer) {
+        this.preconsensusEventConsumer = Objects.requireNonNull(preconsensusEventConsumer);
+        return this;
+    }
+
+    /**
+     * Registers a callback that is called when the consensus snapshot is specified by an out of band operation (i.e.
+     * restart or reconnect). Useful for scenarios where access to this internal stream of data is useful (e.g. UI
+     * hashgraph visualizers).
+     *
+     * <p>
+     * Among all callbacks in the following list, it is guaranteed that callbacks will not be called concurrently, and
+     * that there will be a happens-before relationship between each of the callbacks.
+     *
+     * <ul>
+     *     <li>{@link #withPreconsensusEventCallback(Consumer)}</li>
+     *     <li>{@link #withConsensusSnapshotOverrideCallback(Consumer)} (i.e. this callback)</li>
+     * </ul>
+     *
+     * @return
+     */
+    @NonNull
+    public PlatformBuilder withConsensusSnapshotOverrideCallback(
+            @NonNull final Consumer<ConsensusSnapshot> snapshotOverrideConsumer) {
+        this.snapshotOverrideConsumer = Objects.requireNonNull(snapshotOverrideConsumer);
         return this;
     }
 
@@ -304,7 +358,9 @@ public final class PlatformBuilder {
                     swirldName,
                     softwareVersion,
                     initialState.get(),
-                    emergencyRecoveryManager);
+                    emergencyRecoveryManager,
+                    preconsensusEventConsumer,
+                    snapshotOverrideConsumer);
 
             if (firstTimeSetup) {
                 MetricsDocUtils.writeMetricsDocumentToFile(getGlobalMetrics(), getPlatforms(), configuration);
