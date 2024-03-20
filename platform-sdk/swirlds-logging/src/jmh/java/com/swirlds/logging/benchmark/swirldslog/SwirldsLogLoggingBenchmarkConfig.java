@@ -16,8 +16,8 @@
 
 package com.swirlds.logging.benchmark.swirldslog;
 
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
@@ -47,15 +47,14 @@ public class SwirldsLogLoggingBenchmarkConfig implements LoggingBenchmarkConfig<
                 .withConverter(new MarkerStateConverter())
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.file.type", "file")
-                .withValue("logging.handler.file.active", "true")
+                .withValue("logging.handler.file.enabled", "true")
                 .withValue("logging.handler.file.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", logFile)
+                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
-        final LogHandler fileHandler = FILE_HANDLER_FACTORY.create("file", configuration);
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        loggingSystem.addHandler(fileHandler);
-        return loggingSystem;
+
+        return configure(configuration);
     }
 
     /**
@@ -67,14 +66,13 @@ public class SwirldsLogLoggingBenchmarkConfig implements LoggingBenchmarkConfig<
                 .withConverter(new MarkerStateConverter())
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.console.type", "console")
-                .withValue("logging.handler.console.active", "true")
+                .withValue("logging.handler.console.enabled", "true")
                 .withValue("logging.handler.console.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.console.level", "trace")
+                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
-        final LogHandler consoleHandler = CONSOLE_HANDLER_FACTORY.create("console", configuration);
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        loggingSystem.addHandler(consoleHandler);
-        return loggingSystem;
+
+        return configure(configuration);
     }
 
     /**
@@ -87,21 +85,18 @@ public class SwirldsLogLoggingBenchmarkConfig implements LoggingBenchmarkConfig<
                 .withConverter(new MarkerStateConverter())
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.file.type", "file")
-                .withValue("logging.handler.file.active", "true")
+                .withValue("logging.handler.file.enabled", "true")
                 .withValue("logging.handler.file.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", logFile)
                 .withValue("logging.handler.console.type", "console")
-                .withValue("logging.handler.console.active", "true")
+                .withValue("logging.handler.console.enabled", "true")
                 .withValue("logging.handler.console.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.console.level", "trace")
+                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
-        final LogHandler fileHandler = FILE_HANDLER_FACTORY.create("file", configuration);
-        final LogHandler consoleHandler = CONSOLE_HANDLER_FACTORY.create("console", configuration);
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        loggingSystem.addHandler(fileHandler);
-        loggingSystem.addHandler(consoleHandler);
-        return loggingSystem;
+
+        return configure(configuration);
     }
 
     /**
@@ -117,5 +112,13 @@ public class SwirldsLogLoggingBenchmarkConfig implements LoggingBenchmarkConfig<
         if (ConfigManagement.deleteOutputFolder()) {
             LogFiles.tryDeleteDirAndContent();
         }
+    }
+
+    @NonNull
+    private LoggingSystem configure(@NonNull final Configuration configuration) {
+        LoggingSystem loggingSystem = new LoggingSystem(configuration);
+        loggingSystem.installHandlers();
+        loggingSystem.installProviders();
+        return loggingSystem;
     }
 }

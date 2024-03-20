@@ -42,11 +42,14 @@ public class Log4JLoggingBenchmarkConfig implements LoggingBenchmarkConfig<Logge
                     + " %-5level [%t] %c - %msg - [%marker] %X %n%throwable";
     private static final String CONSOLE_APPENDER_NAME = "console";
     private static final String FILE_APPENDER_NAME = "file";
+    public static final String BRIDGE_APPENDER_NAME = "SwirldsAppender";
 
     /**
      * {@inheritDoc}
      */
-    public @NonNull LoggerContext configureConsoleLogging() {
+    @NonNull
+    @Override
+    public LoggerContext configureConsoleLogging() {
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
         builder.setStatusLevel(Level.ERROR);
@@ -59,7 +62,9 @@ public class Log4JLoggingBenchmarkConfig implements LoggingBenchmarkConfig<Logge
     /**
      * {@inheritDoc}
      */
-    public @NonNull LoggerContext configureFileLogging() {
+    @NonNull
+    @Override
+    public LoggerContext configureFileLogging() {
         final String logFile = LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.FILE_TYPE);
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
@@ -73,7 +78,9 @@ public class Log4JLoggingBenchmarkConfig implements LoggingBenchmarkConfig<Logge
     /**
      * {@inheritDoc}
      */
-    public @NonNull LoggerContext configureFileAndConsoleLogging() {
+    @NonNull
+    @Override
+    public LoggerContext configureFileAndConsoleLogging() {
         final String logFile = LogFiles.provideLogFilePath(Constants.LOG4J2, Constants.CONSOLE_AND_FILE_TYPE);
         System.clearProperty("log4j2.contextSelector");
         final ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
@@ -101,7 +108,7 @@ public class Log4JLoggingBenchmarkConfig implements LoggingBenchmarkConfig<Logge
         }
     }
 
-    private static @NonNull LoggerContext create(final @NonNull ConfigurationBuilder<BuiltConfiguration> builder) {
+    protected static @NonNull LoggerContext create(final @NonNull ConfigurationBuilder<BuiltConfiguration> builder) {
         final org.apache.logging.log4j.core.config.Configuration configuration = builder.build();
         final org.apache.logging.log4j.core.LoggerContext context = Configurator.initialize(configuration);
         LogManager.getFactory().removeContext(context);

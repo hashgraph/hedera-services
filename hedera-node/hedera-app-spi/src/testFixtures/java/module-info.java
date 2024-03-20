@@ -12,6 +12,7 @@ module com.hedera.node.app.spi.test.fixtures {
     requires transitive org.assertj.core;
     requires transitive org.junit.jupiter.api;
     requires com.hedera.node.app.hapi.utils;
+    requires com.swirlds.common;
     requires org.apache.logging.log4j.core;
 
     // Temporarily needed until FakePreHandleContext can be removed

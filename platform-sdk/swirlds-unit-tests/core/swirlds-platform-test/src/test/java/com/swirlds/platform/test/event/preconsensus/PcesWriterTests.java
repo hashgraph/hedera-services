@@ -82,6 +82,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -229,10 +230,13 @@ class PcesWriterTests {
     /**
      * Build an event generator.
      */
-    static StandardGraphGenerator buildGraphGenerator(final Random random) {
+    static StandardGraphGenerator buildGraphGenerator(
+            @NonNull final PlatformContext platformContext, @NonNull final Random random) {
+        Objects.requireNonNull(platformContext);
         final TransactionGenerator transactionGenerator = buildTransactionGenerator();
 
         return new StandardGraphGenerator(
+                platformContext,
                 random.nextLong(),
                 new StandardEventSource().setTransactionGenerator(transactionGenerator),
                 new StandardEventSource().setTransactionGenerator(transactionGenerator),
@@ -305,7 +309,7 @@ class PcesWriterTests {
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
-        final StandardGraphGenerator generator = buildGraphGenerator(random);
+        final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
         final int stepsUntilAncient = random.nextInt(50, 100);
         final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
@@ -368,9 +372,10 @@ class PcesWriterTests {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformContext platformContext = buildContext(ancientMode);
+        final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
 
-        final StandardGraphGenerator generator = buildGraphGenerator(random);
-        final int stepsUntilAncient = random.nextInt(50, 100);
+        final int stepsUntilAncient =
+                ancientMode == GENERATION_THRESHOLD ? random.nextInt(50, 100) : random.nextInt(5, 10);
         final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
@@ -457,7 +462,7 @@ class PcesWriterTests {
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
-        final StandardGraphGenerator generator = buildGraphGenerator(random);
+        final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
         final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
@@ -500,7 +505,7 @@ class PcesWriterTests {
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
-        final StandardGraphGenerator generator = buildGraphGenerator(random);
+        final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
         final int stepsUntilAncient = random.nextInt(50, 100);
         final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
@@ -546,7 +551,7 @@ class PcesWriterTests {
 
             final PlatformContext platformContext = buildContext(ancientMode);
 
-            final StandardGraphGenerator generator = buildGraphGenerator(random);
+            final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
             final int stepsUntilAncient = random.nextInt(50, 100);
             final PcesSequencer sequencer = new DefaultPcesSequencer();
             final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
@@ -663,7 +668,7 @@ class PcesWriterTests {
         final PlatformContext platformContext = buildContext(ancientMode);
         final FakeTime time = (FakeTime) platformContext.getTime();
 
-        final StandardGraphGenerator generator = buildGraphGenerator(random);
+        final StandardGraphGenerator generator = buildGraphGenerator(platformContext, random);
         final int stepsUntilAncient = random.nextInt(50, 100);
         final PcesSequencer sequencer = new DefaultPcesSequencer();
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);

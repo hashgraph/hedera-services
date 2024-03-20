@@ -95,9 +95,9 @@ jobs:
       - name: Reset Network
         id: reset-network
         run: |
-          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=performance6%20${{ steps.check-if-exist.outputs.build-version }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
-          echo "Sleep 10 minutes for network reset"
-          sleep 10m
+          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_NETWORK_RESET }}&command=/devops-reset&text=engnet1%20${{ steps.check-if-exist.outputs.build-version }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+          echo "Sleep 6 minutes for network reset"
+          sleep 6m
 
       - name: Run LogCLI to Wait for Network Active
         id: run-logcli-wait-network-active
@@ -105,20 +105,19 @@ jobs:
           curl -O -L "https://github.com/grafana/loki/releases/download/v2.9.2/logcli-linux-amd64.zip"
           unzip logcli-linux-amd64.zip
           chmod a+x logcli-linux-amd64
-          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
-          echo "Sleep 10 minutes for network reset completed"
-          sleep 10m
+          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}" engnet1 7 3 600 "${{ github.workspace }}/logcli-linux-amd64" 0
 
       - name: Restore Old Signed State
         id: restore-old-signed-state
         run: |
-          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_RESTORE_BACKUP }}&command=/devops-restore-backup&text=gs%3A%2F%2Fchillybin%2Fperformance6-state-backups%2Fperformance6-node00%2F${{ vars.GS_STATE }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
-          echo "Sleep 10 minutes for network to load"
-          sleep 10m
+          curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_RESTORE_BACKUP }}&command=/devops-restore-backup&text=gs%3A%2F%2Fchillybin%2Fengnet1-state%2Fengnet1-node00%2F${{ vars.GS_STATE }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
+          echo "Sleep 88 minutes for network to load"
+          sleep 88m
+
       - name: Run LogCLI to Wait for Network Active Again
         id: run-logcli-wait-network-active-again
         run: |
-          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}"  performance6 7 3 500 "${{ github.workspace }}/logcli-linux-amd64"
+          bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}" engnet1 7 3 3000 "${{ github.workspace }}/logcli-linux-amd64" 18
 
       - name: Call Test Script
         id: call-test-script

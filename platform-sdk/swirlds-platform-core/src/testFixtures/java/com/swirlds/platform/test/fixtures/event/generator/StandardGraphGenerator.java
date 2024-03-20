@@ -20,9 +20,16 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicV
 import static com.swirlds.platform.test.fixtures.event.EventUtils.weightedChoice;
 import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.ConsensusImpl;
+import com.swirlds.platform.event.linking.InOrderLinker;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.consensus.NoOpConsensusMetrics;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.DynamicValueGenerator;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
@@ -82,29 +89,49 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     private NodeId previousCreatorId;
 
     /**
+     * The consensus implementation for determining birth rounds of events.
+     */
+    private ConsensusImpl consensus;
+
+    /**
+     * The platform context containing configuration for the internal consensus.
+     */
+    private PlatformContext platformContext;
+
+    /**
+     * The linker for events to use with the internal consensus.
+     */
+    private InOrderLinker inOrderLinker;
+
+    /**
      * Construct a new StandardEventGenerator.
-     *
+     * <p>
      * Note: once an event source has been passed to this constructor it should not be modified by the outer context.
      *
-     * @param seed
-     * 		The random seed used to generate events.
-     * @param eventSources
-     * 		One or more event sources.
+     * @param platformContext the platform context
+     * @param seed            The random seed used to generate events.
+     * @param eventSources    One or more event sources.
      */
-    public StandardGraphGenerator(final long seed, final EventSource<?>... eventSources) {
-        this(seed, new ArrayList<>(Arrays.asList(eventSources)));
+    public StandardGraphGenerator(
+            @NonNull final PlatformContext platformContext, final long seed, final EventSource<?>... eventSources) {
+        this(platformContext, seed, new ArrayList<>(Arrays.asList(eventSources)));
     }
 
     /**
      * Construct a new StandardEventGenerator.
      *
+     * @param platformContext the platform context
      * @param seed
      * 		The random seed used to generate events.
      * @param eventSources
      * 		One or more event sources.
      */
-    public StandardGraphGenerator(final long seed, @NonNull final List<EventSource<?>> eventSources) {
+    public StandardGraphGenerator(
+            @NonNull PlatformContext platformContext,
+            final long seed,
+            @NonNull final List<EventSource<?>> eventSources) {
         super(seed);
+        this.platformContext = Objects.requireNonNull(platformContext);
         Objects.requireNonNull(eventSources);
 
         this.sources = eventSources;
@@ -114,6 +141,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
 
         buildAddressBookInitializeEventSources(eventSources);
         buildDefaultOtherParentAffinityMatrix();
+        initializeInternalConsensus();
     }
 
     /**
@@ -127,8 +155,12 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      *         The address book to use with the event sources.
      */
     public StandardGraphGenerator(
-            final long seed, @NonNull final List<EventSource<?>> eventSources, @NonNull final AddressBook addressBook) {
+            @NonNull final PlatformContext platformContext,
+            final long seed,
+            @NonNull final List<EventSource<?>> eventSources,
+            @NonNull final AddressBook addressBook) {
         super(seed);
+        this.platformContext = Objects.requireNonNull(platformContext);
         Objects.requireNonNull(eventSources);
         Objects.requireNonNull(addressBook);
 
@@ -139,6 +171,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
 
         setAddressBookInitializeEventSources(eventSources, addressBook);
         buildDefaultOtherParentAffinityMatrix();
+        initializeInternalConsensus();
     }
 
     /**
@@ -164,6 +197,13 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         this.eventPeriodMean = that.eventPeriodMean;
         this.eventPeriodStandardDeviation = that.eventPeriodStandardDeviation;
         this.simultaneousEventFraction = that.simultaneousEventFraction;
+        this.platformContext = that.platformContext;
+        initializeInternalConsensus();
+    }
+
+    private void initializeInternalConsensus() {
+        consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
+        inOrderLinker = new InOrderLinker(platformContext, Time.getCurrent(), new NoOpIntakeEventCounter());
     }
 
     /**
@@ -388,6 +428,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         }
         previousTimestamp = null;
         previousCreatorId = null;
+        initializeInternalConsensus();
     }
 
     /**
@@ -455,9 +496,24 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         final EventSource<?> source = getNextEventSource(eventIndex);
         final EventSource<?> otherParentSource = getNextOtherParentSource(eventIndex, source);
 
+        final long birthRound = consensus.getLastRoundDecided() + 1;
+
         final IndexedEvent next = source.generateEvent(
-                getRandom(), eventIndex, otherParentSource, getNextTimestamp(source, otherParentSource.getNodeId()));
+                getRandom(),
+                eventIndex,
+                otherParentSource,
+                getNextTimestamp(source, otherParentSource.getNodeId()),
+                birthRound);
         next.setGeneratorIndex(eventIndex);
+
+        // The event given to the internal consensus needs its own EventImpl for metadata to be kept separate from
+        // the event that is returned to the caller.  This InOrderLinker wraps the event in an EventImpl and links it.
+        // The event must be hashed and have a descriptor built for its use in the InOrderLinker.
+        // This may leak memory, but is fine in the current testing framework.
+        // When the test ends any memory used will be released.
+        CryptographyHolder.get().digestSync(next.getBaseEvent().getHashedData());
+        next.getBaseEvent().buildDescriptor();
+        consensus.addEvent(inOrderLinker.linkEvent(next.getBaseEvent()));
 
         return next;
     }

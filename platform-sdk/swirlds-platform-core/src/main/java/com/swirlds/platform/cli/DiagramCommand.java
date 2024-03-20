@@ -35,11 +35,13 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.util.VirtualTerminal;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import picocli.CommandLine;
@@ -47,7 +49,7 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "diagram",
         mixinStandardHelpOptions = true,
-        description = "Generate a mermaid style diagram of platform wiring.")
+        description = "Generate a mermaid style diagram of platform wiring. Requires mermaid CLI to be installed.")
 @SubcommandOf(PlatformCli.class)
 public final class DiagramCommand extends AbstractCommand {
 
@@ -55,6 +57,9 @@ public final class DiagramCommand extends AbstractCommand {
     private Set<String> collapsedGroups = Set.of();
     private List<String> substitutionStrings = List.of();
     private List<String> manualLinks = List.of();
+    private Path outputFilePath = Path.of("wiring-diagram.svg");
+    private boolean verbose = false;
+    private boolean lessMystery = false;
 
     private DiagramCommand() {}
 
@@ -88,6 +93,27 @@ public final class DiagramCommand extends AbstractCommand {
         this.manualLinks = manualLinks;
     }
 
+    @CommandLine.Option(
+            names = {"-o", "--output"},
+            description = "Specify the path to the output file. Defaults to 'wiring-diagram.svg'.")
+    private void setOutputFile(@NonNull final String outputFilePath) {
+        this.outputFilePath = Path.of(outputFilePath).normalize();
+    }
+
+    @CommandLine.Option(
+            names = {"-v", "--verbose"},
+            description = "Print the diagram to the console.")
+    private void setVerbose(final boolean verbose) {
+        this.verbose = verbose;
+    }
+
+    @CommandLine.Option(
+            names = {"-m", "--less-mystery"},
+            description = "Do not hide mystery edges. May create a noisy diagram if there are a lot of mystery edges.")
+    private void setLessMystery(final boolean lessMystery) {
+        this.lessMystery = lessMystery;
+    }
+
     /**
      * Entry point.
      */
@@ -108,14 +134,36 @@ public final class DiagramCommand extends AbstractCommand {
 
         final String diagramString = platformWiring
                 .getModel()
-                .generateWiringDiagram(parseGroups(), parseSubstitutions(), parseManualLinks());
-        final String encodedDiagramString = Base64.getEncoder().encodeToString(diagramString.getBytes());
+                .generateWiringDiagram(parseGroups(), parseSubstitutions(), parseManualLinks(), !lessMystery);
 
-        final String editorUrl = "https://mermaid.ink/svg/" + encodedDiagramString + "?bgColor=e8e8e8";
+        final VirtualTerminal terminal = new VirtualTerminal()
+                .setProgressIndicatorEnabled(false)
+                .setThrowOnError(true)
+                .setPrintStdout(true)
+                .setPrintStderr(true);
 
-        System.out.println(diagramString);
-        System.out.println();
-        System.out.println(editorUrl);
+        final Path temporaryMermaidFile = Path.of("platformWiring.mmd");
+
+        if (Files.exists(temporaryMermaidFile)) {
+            Files.delete(temporaryMermaidFile);
+        }
+
+        Files.createFile(temporaryMermaidFile);
+        Files.writeString(temporaryMermaidFile, diagramString);
+
+        terminal.run(
+                "mmdc",
+                "-i",
+                temporaryMermaidFile.toString(),
+                "-o",
+                outputFilePath.toString(),
+                "--backgroundColor",
+                "555555");
+        Files.delete(temporaryMermaidFile);
+
+        if (verbose) {
+            System.out.println(diagramString);
+        }
         return 0;
     }
 
