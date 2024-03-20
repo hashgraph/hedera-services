@@ -41,6 +41,7 @@ import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -97,7 +98,8 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
                 transferNonFungibleWithRoyaltyFallbackHbarFeeInsufficientBalance(),
                 transferNonFungibleWithRoyaltyFallbackFungibleFeeInsufficientBalance(),
                 transferNonFungibleWithRoyaltyFallbackFungibleFeeNoAssociation(),
-                transferNonFungibleWithRoyaltyFungibleFeeNoAssociation());
+                transferNonFungibleWithRoyaltyFungibleFeeNoAssociation(),
+                transferMultipleTimesWithRoyaltyWithFallbackFeeShouldVerifyEachTransferIsPaid());
     }
 
     @HapiTest
@@ -417,6 +419,45 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
                                         moving(4, feeDenom).between(tokenReceiver, tokenOwner))
                                 .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
                         getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 0));
+    }
+
+    @HapiTest
+    public HapiSpec transferMultipleTimesWithRoyaltyWithFallbackFeeShouldVerifyEachTransferIsPaid() {
+        return defaultHapiSpec("transferMultipleTimesWithRoyaltyWithFallbackFeeShouldVerifyEachTransferIsPaid")
+                .given(
+                        newKeyNamed(NFT_KEY),
+                        cryptoCreate(hbarCollector).balance(0L),
+                        cryptoCreate(tokenTreasury),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(alice).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(bob).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(carol).balance(ONE_MILLION_HBARS),
+                        tokenCreate(nonFungibleToken)
+                                .treasury(tokenTreasury)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .supplyKey(NFT_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .withCustom(royaltyFeeWithFallback(
+                                        1, 2, fixedHbarFeeInheritingRoyaltyCollector(10), hbarCollector)),
+                        tokenAssociate(tokenOwner, nonFungibleToken),
+                        tokenAssociate(alice, nonFungibleToken),
+                        tokenAssociate(bob, nonFungibleToken),
+                        tokenAssociate(carol, nonFungibleToken),
+                        mintToken(nonFungibleToken, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+                        cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)))
+                .when(cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenOwner, alice))
+                                .signedByPayerAnd(alice, tokenOwner),
+                        cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(alice, bob))
+                                .signedByPayerAnd(bob, alice),
+                        cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(bob, carol))
+                                .signedByPayerAnd(bob, carol))
+                .then(
+                        getAccountBalance(hbarCollector).hasTinyBars(30L),
+                        getAccountBalance(tokenOwner).hasTokenBalance(nonFungibleToken, 0L).hasTinyBars(ONE_MILLION_HBARS),
+                        getAccountBalance(alice).hasTokenBalance(nonFungibleToken, 0L).hasTinyBars(ONE_MILLION_HBARS - 10),
+                        getAccountBalance(bob).hasTokenBalance(nonFungibleToken, 0L).hasTinyBars(ONE_MILLION_HBARS - 10),
+                        getAccountBalance(carol).hasTokenBalance(nonFungibleToken, 1L).hasTinyBars(ONE_MILLION_HBARS - 10));
     }
 
     @Override
