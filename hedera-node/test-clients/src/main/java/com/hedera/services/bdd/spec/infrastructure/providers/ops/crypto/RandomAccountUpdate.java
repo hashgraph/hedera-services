@@ -50,13 +50,15 @@ public class RandomAccountUpdate implements OpProvider {
     @Override
     public Optional<HapiSpecOperation> get() {
         final var target = accounts.getQualifying();
-        if (target.isEmpty()) {
+        final var newKey = keys.getQualifying();
+        if (target.isEmpty() && newKey.isEmpty()) {
             return Optional.empty();
         }
-        final var newKey = keys.getQualifying();
 
         HapiCryptoUpdate op = cryptoUpdate(target.get())
                 .key(newKey.get())
+                .payingWith(newKey.get())
+                .signedBy(newKey.get())
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);

@@ -85,6 +85,8 @@ public class RandomTokenAssociation implements OpProvider {
         }
         String[] toUse = chosen.toArray(new String[0]);
         var op = tokenAssociate(account.get(), toUse)
+                .payingWith(account.get())
+                .signedBy(account.get())
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .hasKnownStatusFrom(permissibleOutcomes);
 

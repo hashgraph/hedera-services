@@ -57,7 +57,8 @@ public class RandomContractDeletion implements OpProvider {
     @Override
     public Optional<HapiSpecOperation> get() {
         final var tbd = contracts.getQualifying();
-        if (tbd.isEmpty()) {
+        final var signer = accounts.getQualifying();
+        if (tbd.isEmpty() || signer.isEmpty()) {
             return Optional.empty();
         }
 
@@ -76,6 +77,8 @@ public class RandomContractDeletion implements OpProvider {
 
         var op = contractDelete(tbd.get())
                 .purging()
+                .payingWith(signer.get())
+                .signedBy(signer.get())
                 .hasPrecheckFrom(permissiblePrechecks)
                 .hasKnownStatusFrom(permissibleOutcomes);
         if (contractThisTime) {

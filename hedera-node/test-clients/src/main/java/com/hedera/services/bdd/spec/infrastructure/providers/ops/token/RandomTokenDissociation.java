@@ -55,6 +55,8 @@ public class RandomTokenDissociation implements OpProvider {
         var implicitRel = relToDissociate.get();
         var rel = explicit(implicitRel);
         var op = tokenDissociate(rel.getLeft(), rel.getRight())
+                .payingWith(rel.getLeft())
+                .signedBy(rel.getLeft())
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);

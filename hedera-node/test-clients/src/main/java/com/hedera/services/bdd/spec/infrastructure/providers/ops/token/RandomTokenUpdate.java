@@ -110,12 +110,14 @@ public class RandomTokenUpdate implements OpProvider {
     @Override
     public Optional<HapiSpecOperation> get() {
         Optional<String> token = tokens.getQualifying();
-        if (token.isEmpty()) {
+        Optional<String> account = accounts.getQualifying();
+        if (token.isEmpty() || account.isEmpty()) {
             return Optional.empty();
         }
 
         var op = tokenUpdate(token.get())
-                .signedBy(accounts.getQualifying().get())
+                .payingWith(account.get())
+                .signedBy(account.get())
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .hasKnownStatusFrom(permissibleOutcomes);
 

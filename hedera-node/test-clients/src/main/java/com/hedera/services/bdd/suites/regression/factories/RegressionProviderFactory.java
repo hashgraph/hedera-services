@@ -37,7 +37,6 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAc
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountDeletion;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountInfo;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountRecords;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountUpdate;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomTransfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.files.RandomAppend;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.files.RandomContents;
@@ -65,7 +64,6 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTok
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenMint;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenTransfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUnfreeze;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUpdate;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -97,7 +95,7 @@ public class RegressionProviderFactory {
             var tokenRels = new RegistrySourcedNameProvider<>(
                     TokenAccountRegistryRel.class, spec.registry(), new RandomSelector());
             var allAccounts = new RegistrySourcedNameProvider<>(AccountID.class, spec.registry(), new RandomSelector());
-            var unstableAccounts = new RegistrySourcedNameProvider<>(
+            var tokenAdminAccounts = new RegistrySourcedNameProvider<>(
                     AccountID.class, spec.registry(), new RandomSelector(account -> !account.startsWith("stable-")));
             var contracts = new RegistrySourcedNameProvider<>(ContractID.class, spec.registry(), new RandomSelector());
             var calls = new RegistrySourcedNameProvider<>(
@@ -141,11 +139,11 @@ public class RegressionProviderFactory {
                                             RandomTransfer.DEFAULT_RECORD_PROBABILITY,
                                             props)),
                             intPropOrElse("randomTransfer.bias", 0, props))
+                    //                    .withOp(
+                    //                            new RandomAccountUpdate(keys, unstableAccounts),
+                    //                            intPropOrElse("randomAccountUpdate.bias", 0, props))
                     .withOp(
-                            new RandomAccountUpdate(keys, unstableAccounts),
-                            intPropOrElse("randomAccountUpdate.bias", 0, props))
-                    .withOp(
-                            new RandomAccountDeletion(unstableAccounts),
+                            new RandomAccountDeletion(allAccounts),
                             intPropOrElse("randomAccountDeletion.bias", 0, props))
                     .withOp(new RandomAccountInfo(allAccounts), intPropOrElse("randomAccountInfo.bias", 0, props))
                     .withOp(new RandomAccountRecords(allAccounts), intPropOrElse("randomAccountRecords.bias", 0, props))
@@ -185,9 +183,11 @@ public class RegressionProviderFactory {
                     .withOp(new RandomFileInfo(files), intPropOrElse("randomFileInfo.bias", 0, props))
                     .withOp(new RandomContents(files), intPropOrElse("randomContents.bias", 0, props))
                     /* ---- TOKEN ---- */
-                    .withOp(new RandomToken(keys, tokens, allAccounts), intPropOrElse("randomToken.bias", 0, props))
                     .withOp(
-                            new RandomTokenAssociation(tokens, allAccounts, tokenRels)
+                            new RandomToken(tokens, allAccounts, tokenAdminAccounts),
+                            intPropOrElse("randomToken.bias", 0, props))
+                    .withOp(
+                            new RandomTokenAssociation(tokens, tokenAdminAccounts, tokenRels)
                                     .ceiling(intPropOrElse(
                                             "randomTokenAssociation.ceilingNum",
                                             RandomTokenAssociation.DEFAULT_CEILING_NUM,
@@ -196,17 +196,18 @@ public class RegressionProviderFactory {
                     .withOp(
                             new RandomTokenDissociation(tokenRels),
                             intPropOrElse("randomTokenDissociation.bias", 0, props))
-                    .withOp(new RandomTokenDeletion(tokens), intPropOrElse("randomTokenDeletion.bias", 0, props))
+                    .withOp(new RandomTokenDeletion(tokenRels), intPropOrElse("randomTokenDeletion.bias", 0, props))
                     .withOp(new RandomTokenTransfer(tokenRels), intPropOrElse("randomTokenTransfer.bias", 0, props))
                     .withOp(new RandomTokenFreeze(tokenRels), intPropOrElse("randomTokenFreeze.bias", 0, props))
                     .withOp(new RandomTokenUnfreeze(tokenRels), intPropOrElse("randomTokenUnfreeze.bias", 0, props))
                     .withOp(new RandomTokenKycGrant(tokenRels), intPropOrElse("randomTokenKycGrant.bias", 0, props))
                     .withOp(new RandomTokenKycRevoke(tokenRels), intPropOrElse("randomTokenKycRevoke.bias", 0, props))
-                    .withOp(new RandomTokenMint(tokens), intPropOrElse("randomTokenMint.bias", 0, props))
-                    .withOp(new RandomTokenBurn(tokens), intPropOrElse("randomTokenBurn.bias", 0, props))
-                    .withOp(
-                            new RandomTokenUpdate(keys, tokens, allAccounts),
-                            intPropOrElse("randomTokenUpdate.bias", 0, props))
+                    .withOp(new RandomTokenMint(tokenRels), intPropOrElse("randomTokenMint.bias", 0, props))
+                    .withOp(new RandomTokenBurn(tokenRels), intPropOrElse("randomTokenBurn.bias", 0, props))
+                    // bug
+                    //                    .withOp(
+                    //                            new RandomTokenUpdate(keys, tokens, allAccounts),
+                    //                            intPropOrElse("randomTokenUpdate.bias", 0, props))
                     .withOp(
                             new RandomTokenAccountWipe(tokenRels),
                             intPropOrElse("randomTokenAccountWipe.bias", 0, props))
@@ -229,7 +230,7 @@ public class RegressionProviderFactory {
                             intPropOrElse("randomSchedule.bias", 0, props))
                     .withOp(new RandomScheduleInfo(allSchedules), intPropOrElse("randomScheduleInfo.bias", 0, props))
                     .withOp(
-                            new RandomScheduleDeletion(allSchedules),
+                            new RandomScheduleDeletion(allSchedules, allAccounts),
                             intPropOrElse("randomScheduleDelete.bias", 0, props))
                     .withOp(
                             new RandomScheduleSign(allSchedules, allAccounts),

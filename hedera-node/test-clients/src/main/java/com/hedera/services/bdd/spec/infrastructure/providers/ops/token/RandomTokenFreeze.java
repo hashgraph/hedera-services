@@ -48,6 +48,7 @@ public class RandomTokenFreeze implements OpProvider {
         var implicitRel = relToFreeze.get();
         var rel = explicit(implicitRel);
         var op = tokenFreeze(rel.getRight(), rel.getLeft())
+                .payingWith(rel.getLeft())
                 .signedBy(rel.getLeft())
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .hasKnownStatusFrom(permissibleOutcomes);

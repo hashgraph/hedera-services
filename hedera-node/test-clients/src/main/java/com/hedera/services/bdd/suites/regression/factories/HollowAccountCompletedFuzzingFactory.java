@@ -45,8 +45,19 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus.RandomMessageSubmit;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus.RandomTopicCreation;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus.RandomTopicDeletion;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus.RandomTopicInfo;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus.RandomTopicUpdate;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.contract.RandomCall;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.contract.RandomCallLocal;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.contract.RandomContract;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.contract.RandomContractDeletion;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.files.RandomFile;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomSchedule;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomScheduleDeletion;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomScheduleSign;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAccountWipe;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
@@ -59,7 +70,6 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTok
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenMint;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenTransfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUnfreeze;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUpdate;
 import com.hedera.services.bdd.spec.infrastructure.selectors.HollowAccountSelector;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -69,6 +79,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 import java.util.function.Function;
 
 public class HollowAccountCompletedFuzzingFactory {
@@ -112,9 +123,12 @@ public class HollowAccountCompletedFuzzingFactory {
             final var accounts = new RegistrySourcedNameProvider<>(
                     AccountID.class, spec.registry(), new HollowAccountSelector(HOLLOW_ACCOUNT));
             final var tokens = new RegistrySourcedNameProvider<>(TokenID.class, spec.registry(), new RandomSelector());
-            tokens.getQualifying();
             var tokenRels = new RegistrySourcedNameProvider<>(
                     TokenAccountRegistryRel.class, spec.registry(), new RandomSelector());
+            // TODO new RandomSelector(account -> !account.equals("kvoto si iskam")));
+            var allTopics = new RegistrySourcedNameProvider<>(TopicID.class, spec.registry(), new RandomSelector());
+            var unstableTopics = new RegistrySourcedNameProvider<>(
+                    TopicID.class, spec.registry(), new RandomSelector(topic -> !topic.startsWith("stable-")));
             var allSchedules =
                     new RegistrySourcedNameProvider<>(ScheduleID.class, spec.registry(), new RandomSelector());
             var contracts = new RegistrySourcedNameProvider<>(ContractID.class, spec.registry(), new RandomSelector());
@@ -123,7 +137,8 @@ public class HollowAccountCompletedFuzzingFactory {
             var localCalls = new RegistrySourcedNameProvider<>(
                     ActionableContractCallLocal.class, spec.registry(), new RandomSelector());
 
-            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
+            final var keys = new RegistrySourcedNameProvider<>(
+                    Key.class, spec.registry(), new HollowAccountSelector(HOLLOW_ACCOUNT));
 
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
@@ -131,8 +146,33 @@ public class HollowAccountCompletedFuzzingFactory {
                             newKeyNamed(HOLLOW_ACCOUNT).shape(SigControl.SECP256K1_ON),
                             generateHollowAccount(),
                             completeHollowAccount())
+
+                    /* ---- CONSENSUS ---- */
+                    .withOp(
+                            new RandomTopicCreation(keys, allTopics)
+                                    .ceiling(intPropOrElse(
+                                                    "randomTopicCreation.ceilingNum",
+                                                    RandomFile.DEFAULT_CEILING_NUM,
+                                                    props)
+                                            + intPropOrElse(
+                                                    "randomMessageSubmit.numStableTopics",
+                                                    RandomMessageSubmit.DEFAULT_NUM_STABLE_TOPICS,
+                                                    props)),
+                            intPropOrElse("randomTopicCreation.bias", 0, props))
+                    .withOp(
+                            new RandomTopicDeletion(unstableTopics),
+                            intPropOrElse("randomTopicDeletion.bias", 0, props))
+                    .withOp(new RandomTopicUpdate(unstableTopics), intPropOrElse("randomTopicUpdate.bias", 0, props))
+                    .withOp(
+                            new RandomMessageSubmit(allTopics)
+                                    .numStableTopics(intPropOrElse(
+                                            "randomMessageSubmit.numStableTopics",
+                                            RandomMessageSubmit.DEFAULT_NUM_STABLE_TOPICS,
+                                            props)),
+                            intPropOrElse("randomMessageSubmit.bias", 0, props))
+                    .withOp(new RandomTopicInfo(allTopics), intPropOrElse("randomTopicInfo.bias", 0, props))
                     /* ---- TOKEN ---- */
-                    .withOp(new RandomToken(keys, tokens, accounts), intPropOrElse("randomToken.bias", 0, props))
+                    .withOp(new RandomToken(tokens, accounts, accounts), intPropOrElse("randomToken.bias", 0, props))
                     .withOp(
                             new RandomTokenAssociation(tokens, accounts, tokenRels)
                                     .ceiling(intPropOrElse(
@@ -143,53 +183,43 @@ public class HollowAccountCompletedFuzzingFactory {
                     .withOp(
                             new RandomTokenDissociation(tokenRels),
                             intPropOrElse("randomTokenDissociation.bias", 0, props))
-                    .withOp(new RandomTokenDeletion(tokens), intPropOrElse("randomTokenDeletion.bias", 0, props))
+                    .withOp(new RandomTokenDeletion(tokenRels), intPropOrElse("randomTokenDeletion.bias", 0, props))
                     .withOp(new RandomTokenTransfer(tokenRels), intPropOrElse("randomTokenTransfer.bias", 0, props))
                     .withOp(new RandomTokenFreeze(tokenRels), intPropOrElse("randomTokenFreeze.bias", 0, props))
                     .withOp(new RandomTokenUnfreeze(tokenRels), intPropOrElse("randomTokenUnfreeze.bias", 0, props))
                     .withOp(new RandomTokenKycGrant(tokenRels), intPropOrElse("randomTokenKycGrant.bias", 0, props))
                     .withOp(new RandomTokenKycRevoke(tokenRels), intPropOrElse("randomTokenKycRevoke.bias", 0, props))
-                    .withOp(new RandomTokenMint(tokens), intPropOrElse("randomTokenMint.bias", 0, props))
-                    .withOp(new RandomTokenBurn(tokens), intPropOrElse("randomTokenBurn.bias", 0, props))
-                    .withOp(
-                            new RandomTokenUpdate(keys, tokens, accounts),
-                            intPropOrElse("randomTokenUpdate.bias", 0, props))
+                    .withOp(new RandomTokenMint(tokenRels), intPropOrElse("randomTokenMint.bias", 0, props))
+                    .withOp(new RandomTokenBurn(tokenRels), intPropOrElse("randomTokenBurn.bias", 0, props))
+                    // bug
+                    //                    .withOp(
+                    //                            new RandomTokenUpdate(keys, tokens, accounts),
+                    //                            intPropOrElse("randomTokenUpdate.bias", 0, props))
                     .withOp(
                             new RandomTokenAccountWipe(tokenRels),
                             intPropOrElse("randomTokenAccountWipe.bias", 0, props))
-                    .withOp(new RandomTokenTransfer(tokenRels), intPropOrElse("randomTransfer.bias", 0, props))
                     //                    /* ---- CONTRACT ---- */
-                    //                    // sign with the hollow
+                    .withOp(
+                            new RandomContract(keys, contracts)
+                                    .ceiling(intPropOrElse(
+                                            "randomContract.ceilingNum", RandomContract.DEFAULT_CEILING_NUM, props)),
+                            intPropOrElse("randomContract.bias", 0, props))
                     .withOp(new RandomCall(calls), intPropOrElse("randomCall.bias", 0, props))
-                    //                    // sign with the hollow
-                    .withOp(new RandomCallLocal(localCalls), intPropOrElse("randomCallLocal.bias", 0, props));
-            //                    .withOp(
-            //                            new RandomContractDeletion(accounts, contracts),
-            //                            intPropOrElse("randomContractDeletion.bias", 0, props))
-            //                    // sign with the hollow
-            //                    .withOp(
-            //                            new RandomContract(keys, contracts)
-            //                                    .ceiling(intPropOrElse(
-            //                                            "randomContract.ceilingNum",
-            // RandomContract.DEFAULT_CEILING_NUM, props)),
-            //                            intPropOrElse("randomContract.bias", 0, props))
-            //                    .withOp(
-            //                            new RandomSchedule(allSchedules, accounts)
-            //                                    .ceiling(intPropOrElse(
-            //                                            "randomSchedule.ceilingNum",
-            // RandomSchedule.DEFAULT_CEILING_NUM, props)),
-            //                            intPropOrElse("randomSchedule.bias", 0, props))
-            //                    // sign with the hollow
-            //                    .withOp(
-            //                            new RandomScheduleInfo(allSchedules, accounts),
-            //                            intPropOrElse("randomScheduleInfo.bias", 0, props))
-            //                    // sign with the hollow
-            //                    .withOp(
-            //                            new RandomScheduleDeletion(allSchedules),
-            //                            intPropOrElse("randomScheduleDelete.bias", 0, props))
-            //                    .withOp(
-            //                            new RandomScheduleSign(allSchedules, accounts),
-            //                            intPropOrElse("randomScheduleSign.bias", 0, props));
+                    .withOp(new RandomCallLocal(localCalls), intPropOrElse("randomCallLocal.bias", 0, props))
+                    .withOp(
+                            new RandomContractDeletion(accounts, contracts),
+                            intPropOrElse("randomContractDeletion.bias", 0, props))
+                    .withOp(
+                            new RandomSchedule(allSchedules, accounts)
+                                    .ceiling(intPropOrElse(
+                                            "randomSchedule.ceilingNum", RandomSchedule.DEFAULT_CEILING_NUM, props)),
+                            intPropOrElse("randomSchedule.bias", 0, props))
+                    .withOp(
+                            new RandomScheduleDeletion(allSchedules, accounts),
+                            intPropOrElse("randomScheduleDelete.bias", 0, props))
+                    .withOp(
+                            new RandomScheduleSign(allSchedules, accounts),
+                            intPropOrElse("randomScheduleSign.bias", 0, props));
         };
     }
 

@@ -86,8 +86,7 @@ public class RandomAccount implements OpProvider {
         }
 
         int id = opNo.getAndIncrement();
-        final var name = my("account" + id);
-        final var op = cryptoCreate(name)
+        final var op = cryptoCreate(key.get())
                 .key(key.get())
                 .fuzzingIdentifiersIfEcdsaKey(fuzzIdentifiers)
                 .memo("randomlycreated" + id)

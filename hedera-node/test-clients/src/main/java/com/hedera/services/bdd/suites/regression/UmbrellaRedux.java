@@ -87,7 +87,7 @@ public class UmbrellaRedux extends HapiSuite {
                                 .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
                                 .withRecharging()
                                 .via("createUniquePayer"),
-                        sleepFor(10000))
+                        sleepFor(2000))
                 .when(getTxnRecord("createUniquePayer").logged())
                 .then(sourcing(() -> runWithProvider(factoryFrom(props::get))
                         .lasting(duration::get, unit::get)
