@@ -24,7 +24,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface BaseTask {
 
-    public static final String DEFAULT_TYPE_AND_NAME = "unknown";
+    /**
+     * Default type and name for the task.
+     */
+    String DEFAULT_TYPE_AND_NAME = "unknown";
 
     /**
      * Get the type of the task.

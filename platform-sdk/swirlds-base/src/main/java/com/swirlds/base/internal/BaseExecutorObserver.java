@@ -17,6 +17,7 @@
 package com.swirlds.base.internal;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 
 public interface BaseExecutorObserver {
 
@@ -24,7 +25,7 @@ public interface BaseExecutorObserver {
 
     void onTaskStarted(@NonNull String type, @NonNull String name);
 
-    void onTaskDone(@NonNull String type, @NonNull String name);
+    void onTaskDone(@NonNull String type, @NonNull String name, @NonNull Duration duration);
 
-    void onTaskFailed(@NonNull String type, @NonNull String name);
+    void onTaskFailed(@NonNull String type, @NonNull String name, @NonNull Duration duration);
 }

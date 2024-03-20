@@ -19,8 +19,10 @@ package com.swirlds.base.internal.impl;
 import com.swirlds.base.internal.BaseExecutorObserver;
 import com.swirlds.base.internal.BaseTask;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -81,6 +83,16 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
         return instance;
     }
 
+    public void addObserver(@NonNull final BaseExecutorObserver observer) {
+        Objects.requireNonNull(observer, "observer must not be null");
+        observers.add(observer);
+    }
+
+    public void removeObserver(@NonNull final BaseExecutorObserver observer) {
+        Objects.requireNonNull(observer, "observer must not be null");
+        observers.add(observer);
+    }
+
     private void onTaskSubmitted(@NonNull String type, @NonNull String name) {
         observers.forEach(observer -> observer.onTaskSubmitted(type, name));
     }
@@ -89,12 +101,12 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
         observers.forEach(observer -> observer.onTaskStarted(type, name));
     }
 
-    private void onTaskDone(@NonNull final String type, @NonNull final String name) {
-        observers.forEach(observer -> observer.onTaskDone(type, name));
+    private void onTaskDone(@NonNull final String type, @NonNull final String name, @NonNull Duration duration) {
+        observers.forEach(observer -> observer.onTaskDone(type, name, duration));
     }
 
-    private void onTaskFailed(@NonNull final String type, @NonNull final String name) {
-        observers.forEach(observer -> observer.onTaskFailed(type, name));
+    private void onTaskFailed(@NonNull final String type, @NonNull final String name, @NonNull Duration duration) {
+        observers.forEach(observer -> observer.onTaskFailed(type, name, duration));
     }
 
     @NonNull
@@ -131,16 +143,18 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
 
     @NonNull
     private Runnable wrapAndCallSubmit(@NonNull final Runnable command) {
+        Objects.requireNonNull(command, "command must not be null");
         final String name = getType(command);
         final String type = getName(command);
         onTaskSubmitted(type, name);
         return () -> {
+            final long start = System.currentTimeMillis();
             onTaskStarted(type, name);
             try {
                 command.run();
-                onTaskDone(type, name);
+                onTaskDone(type, name, Duration.ofMillis(System.currentTimeMillis() - start));
             } catch (Throwable t) {
-                onTaskFailed(type, name);
+                onTaskFailed(type, name, Duration.ofMillis(System.currentTimeMillis() - start));
                 throw t;
             }
         };
@@ -148,17 +162,19 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
 
     @NonNull
     private <V> Callable<V> wrapAndCallSubmit(@NonNull final Callable<V> callable) {
+        Objects.requireNonNull(callable, "callable must not be null");
         final String name = getType(callable);
         final String type = getName(callable);
         onTaskSubmitted(type, name);
         return () -> {
+            final long start = System.currentTimeMillis();
             onTaskStarted(type, name);
             try {
                 final V result = callable.call();
-                onTaskDone(type, name);
+                onTaskDone(type, name, Duration.ofMillis(System.currentTimeMillis() - start));
                 return result;
             } catch (Throwable t) {
-                onTaskFailed(type, name);
+                onTaskFailed(type, name, Duration.ofMillis(System.currentTimeMillis() - start));
                 throw t;
             }
         };
