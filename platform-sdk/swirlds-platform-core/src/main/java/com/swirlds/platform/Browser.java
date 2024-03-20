@@ -185,6 +185,14 @@ public class Browser {
                     appMain::newState,
                     nodeId);
 
+            // TODO remove
+            //            builder.withPreconsensusEventCallback(event -> {
+            //                System.out.println("Preconsensus event: " + event);
+            //            });
+            //            builder.withConsensusSnapshotOverrideCallback(snapshot -> {
+            //                System.out.println("Consensus snapshot override: " + snapshot);
+            //            });
+
             final SwirldsPlatform platform = (SwirldsPlatform)
                     builder.withConfigurationBuilder(configBuilder).build();
             platforms.put(nodeId, platform);

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.publisher;
 
+import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,6 +32,7 @@ public interface PlatformPublisher {
      *
      * @param event the event to publish
      */
+    @InputWireLabel("GossipEvent")
     void publishPreconsensusEvent(@NonNull final GossipEvent event);
 
     /**
@@ -39,5 +41,6 @@ public interface PlatformPublisher {
      *
      * @param snapshot the snapshot to publish
      */
+    @InputWireLabel("ConsensusSnapshot")
     void publishSnapshotOverride(@NonNull final ConsensusSnapshot snapshot);
 }

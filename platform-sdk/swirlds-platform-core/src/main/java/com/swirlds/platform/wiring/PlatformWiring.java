@@ -470,9 +470,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                     .eventOutput()
                     .solderTo(platformPublisherWiring.getInputWire(PlatformPublisher::publishPreconsensusEvent));
         }
-        if (publishSnapshotOverrides) {
-            // TODO
-        }
 
         buildUnsolderedWires();
     }
@@ -486,6 +483,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear);
         futureEventBufferWiring.getInputWire(FutureEventBuffer::clear);
         consensusEngineWiring.getInputWire(ConsensusEngine::outOfBandSnapshotUpdate);
+        if (publishSnapshotOverrides) {
+            platformPublisherWiring.getInputWire(PlatformPublisher::publishSnapshotOverride);
+        }
     }
 
     /**
@@ -789,6 +789,12 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         consensusEngineWiring
                 .getInputWire(ConsensusEngine::outOfBandSnapshotUpdate)
                 .inject(consensusSnapshot);
+
+        if (publishSnapshotOverrides) {
+            platformPublisherWiring
+                    .getInputWire(PlatformPublisher::publishSnapshotOverride)
+                    .inject(consensusSnapshot);
+        }
     }
 
     /**
