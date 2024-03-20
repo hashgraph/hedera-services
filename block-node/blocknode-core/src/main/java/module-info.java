@@ -10,10 +10,11 @@ module com.hedera.storage.blocknode.core {
     // Require the modules needed for compilation.
     requires com.hedera.storage.blocknode.config;
     requires com.hedera.node.config;
+    requires com.hedera.node.hapi;
     requires com.swirlds.config.api;
     requires grpc.netty;
     requires io.grpc;
+    requires org.apache.commons.io;
     requires org.apache.logging.log4j;
-    requires transitive org.apache.commons.io;
     requires static com.github.spotbugs.annotations;
 }
