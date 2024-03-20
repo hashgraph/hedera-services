@@ -39,6 +39,7 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.GuiEventStorage;
@@ -171,14 +172,28 @@ public class Browser {
         final boolean showUi = !GraphicsEnvironment.isHeadless();
 
         final InfoSwirld infoSwirld;
-        HashgraphGuiSource guiSource = null;
+        final GuiEventStorage guiEventStorage;
+        final HashgraphGuiSource guiSource;
+        Metrics guiMetrics = null;
         if (showUi) {
             setupBrowserWindow();
             setStateHierarchy(new StateHierarchy(null));
             final InfoApp infoApp = getStateHierarchy().getInfoApp(appDefinition.getApplicationName());
             infoSwirld = new InfoSwirld(infoApp, new byte[CryptoConstants.HASH_SIZE_BYTES]);
+
+            // Duplicating config here is ugly, but Browser is test only code now.
+            // In the future we should clean it up, but it's not urgent to do so.
+            final ConfigurationBuilder guiConfigBuilder = ConfigurationBuilder.create();
+            BootstrapUtils.setupConfigBuilder(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
+            final Configuration guiConfig = guiConfigBuilder.build();
+
+            guiEventStorage = new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());
+
+            guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
         } else {
             infoSwirld = null;
+            guiSource = null;
+            guiEventStorage = null;
         }
 
         final Map<NodeId, SwirldsPlatform> platforms = new HashMap<>();
@@ -200,19 +215,8 @@ public class Browser {
                     nodeId);
 
             if (showUi && index == 0) {
-                // Duplicating config here is ugly, but Browser is test only code now.
-                // In the future we should clean it up, but it's not urgent to do so.
-
-                final ConfigurationBuilder guiConfigBuilder = ConfigurationBuilder.create();
-                BootstrapUtils.setupConfigBuilder(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
-                final Configuration guiConfig = guiConfigBuilder.build();
-
-                final GuiEventStorage guiEventStorage =
-                        new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
-
-                guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
             }
 
             final SwirldsPlatform platform = (SwirldsPlatform)
@@ -221,6 +225,10 @@ public class Browser {
 
             if (showUi) {
                 new InfoMember(infoSwirld, platform);
+
+                if (index == 0) {
+                    guiMetrics = platform.getContext().getMetrics();
+                }
             }
         }
 
@@ -237,7 +245,7 @@ public class Browser {
         startPlatforms(new ArrayList<>(platforms.values()), appMains);
 
         if (showUi) {
-            setBrowserWindow(new WinBrowser(guiSource));
+            setBrowserWindow(new WinBrowser(guiSource, guiMetrics));
             showBrowserWindow(null);
             moveBrowserWindowToFront();
         }

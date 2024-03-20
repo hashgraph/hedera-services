@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
 import com.swirlds.platform.gui.hashgraph.HashgraphGui;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -37,19 +39,24 @@ class WinTabNetwork extends PrePaintableJPanel {
     private boolean didInit = false;
 
     /**
-     * a tabbed pane of different views of the network. Should change it from JTabbedPane to something
-     * custom that looks nicer
+     * a tabbed pane of different views of the network. Should change it from JTabbedPane to something custom that looks
+     * nicer
      */
     JTabbedPane tabbed = new JTabbedPane(JTabbedPane.LEFT, JTabbedPane.WRAP_TAB_LAYOUT);
 
-    WinTab2Stats tabStats = new WinTab2Stats();
+    private final WinTab2Stats tabStats;
     HashgraphGui tabHashgraph;
     WinTab2Consensus tabConsensus = new WinTab2Consensus();
 
     /**
      * Instantiate and initialize content of this tab.
+     *
+     * @param hashgraphSource provides access to events
+     * @param guiMetrics      provides access to metrics
      */
-    public WinTabNetwork(final HashgraphGuiSource hashgraphSource) {
+    public WinTabNetwork(final HashgraphGuiSource hashgraphSource, @NonNull final Metrics guiMetrics) {
+
+        tabStats = new WinTab2Stats(guiMetrics);
         tabHashgraph = new HashgraphGui(hashgraphSource);
         Rectangle winRect = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
 
@@ -110,8 +117,7 @@ class WinTabNetwork extends PrePaintableJPanel {
     /**
      * Switch to tab number n, and bring the window forward.
      *
-     * @param n
-     * 		the index of the tab to select
+     * @param n the index of the tab to select
      */
     void goTab(int n) {
         requestFocus(true);
