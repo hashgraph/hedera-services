@@ -401,10 +401,11 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
     /**
      * Get the input wire for a specified method.
      *
-     * @param method               the method that will handle data on the input wire
-     * @param handlerWithReturn    the handler for the method if it has a return type
-     * @param handlerWithoutReturn the handler for the method if it does not have a return type
-     * @param <INPUT_TYPE>         the input type
+     * @param method                  the method that will handle data on the input wire
+     * @param handlerWithReturn       the handler for the method if it has a return type
+     * @param handlerWithoutReturn    the handler for the method if it does not have a return type
+     * @param handlerWithoutParameter the handler for the method if it does not have a parameter
+     * @param <INPUT_TYPE>            the input type
      * @return the input wire
      */
     private <INPUT_TYPE> InputWire<INPUT_TYPE> getOrBuildInputWire(
@@ -497,7 +498,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
                 wireToBind.inputWire().bind(x -> handlerWithReturn.apply(component, x));
             } else if (wireToBind.handlerWithoutReturn() != null) {
                 final BiConsumer<COMPONENT_TYPE, Object> handlerWithoutReturn =
-                        (BiConsumer<COMPONENT_TYPE, Object>) Objects.requireNonNull(wireToBind.handlerWithoutReturn());
+                        (BiConsumer<COMPONENT_TYPE, Object>) wireToBind.handlerWithoutReturn();
                 wireToBind.inputWire().bindConsumer(x -> {
                     handlerWithoutReturn.accept(component, x);
                 });

@@ -461,6 +461,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private void buildUnsolderedWires() {
         eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear);
         futureEventBufferWiring.getInputWire(FutureEventBuffer::clear);
+        eventCreationManagerWiring.getInputWire(EventCreationManager::clear);
     }
 
     /**
