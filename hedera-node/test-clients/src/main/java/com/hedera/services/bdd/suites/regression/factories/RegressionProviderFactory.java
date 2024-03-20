@@ -72,7 +72,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -143,7 +142,7 @@ public class RegressionProviderFactory {
                                             props)),
                             intPropOrElse("randomTransfer.bias", 0, props))
                     .withOp(
-                            new RandomAccountUpdate(keys, unstableAccounts, new ResponseCodeEnum[0]),
+                            new RandomAccountUpdate(keys, unstableAccounts),
                             intPropOrElse("randomAccountUpdate.bias", 0, props))
                     .withOp(
                             new RandomAccountDeletion(unstableAccounts),
@@ -188,14 +187,14 @@ public class RegressionProviderFactory {
                     /* ---- TOKEN ---- */
                     .withOp(new RandomToken(keys, tokens, allAccounts), intPropOrElse("randomToken.bias", 0, props))
                     .withOp(
-                            new RandomTokenAssociation(tokens, allAccounts, tokenRels, new ResponseCodeEnum[0])
+                            new RandomTokenAssociation(tokens, allAccounts, tokenRels)
                                     .ceiling(intPropOrElse(
                                             "randomTokenAssociation.ceilingNum",
                                             RandomTokenAssociation.DEFAULT_CEILING_NUM,
                                             props)),
                             intPropOrElse("randomTokenAssociation.bias", 0, props))
                     .withOp(
-                            new RandomTokenDissociation(tokenRels, new ResponseCodeEnum[0]),
+                            new RandomTokenDissociation(tokenRels),
                             intPropOrElse("randomTokenDissociation.bias", 0, props))
                     .withOp(new RandomTokenDeletion(tokens), intPropOrElse("randomTokenDeletion.bias", 0, props))
                     .withOp(new RandomTokenTransfer(tokenRels), intPropOrElse("randomTokenTransfer.bias", 0, props))

@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
@@ -33,11 +32,8 @@ public class RandomTokenDeletion implements OpProvider {
 
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOKEN_IS_IMMUTABLE, TOKEN_WAS_DELETED);
 
-    private final String[] signers;
-
-    public RandomTokenDeletion(RegistrySourcedNameProvider<TokenID> tokens, String... signers) {
+    public RandomTokenDeletion(RegistrySourcedNameProvider<TokenID> tokens) {
         this.tokens = tokens;
-        this.signers = signers;
     }
 
     @Override
@@ -49,9 +45,8 @@ public class RandomTokenDeletion implements OpProvider {
 
         var op = tokenDelete(target.get())
                 .purging()
-                .hasPrecheckFrom(ResponseCodeEnum.values())
-                .hasKnownStatusFrom(INVALID_SIGNATURE)
-                .signedBy(signers);
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
 }

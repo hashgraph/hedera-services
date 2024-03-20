@@ -17,26 +17,28 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenAssociation;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
 public class RandomTokenAssociationHollow extends RandomTokenAssociation {
+    private final String[] signers;
+
     public RandomTokenAssociationHollow(
             RegistrySourcedNameProvider<TokenID> tokens,
             RegistrySourcedNameProvider<AccountID> accounts,
             RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels,
-            ResponseCodeEnum[] hollowAccountOutcomes,
             String... signers) {
-        super(tokens, accounts, tokenRels, hollowAccountOutcomes, signers);
+        super(tokens, accounts, tokenRels);
+        this.signers = signers;
     }
 
     @Override
@@ -63,11 +65,8 @@ public class RandomTokenAssociationHollow extends RandomTokenAssociation {
 
         var op = tokenAssociate(account.get(), toUse)
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(ResponseCodeEnum.INVALID_SIGNATURE);
-
-        if (signers != null && signers.length > 0) {
-            op.signedBy(signers);
-        }
+                .hasKnownStatusFrom(INVALID_SIGNATURE)
+                .signedBy(signers);
 
         return Optional.of(op);
     }

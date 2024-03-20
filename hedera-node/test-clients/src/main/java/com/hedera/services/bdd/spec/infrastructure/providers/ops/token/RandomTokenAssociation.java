@@ -45,23 +45,16 @@ public class RandomTokenAssociation implements OpProvider {
     protected final RegistrySourcedNameProvider<TokenID> tokens;
     protected final RegistrySourcedNameProvider<AccountID> accounts;
     protected final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
-    protected final ResponseCodeEnum[] outcomes;
-    protected final String[] signers;
-
-    protected final ResponseCodeEnum[] permissibleOutcomes =
+    private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, TOKEN_WAS_DELETED, ACCOUNT_DELETED);
 
     public RandomTokenAssociation(
             RegistrySourcedNameProvider<TokenID> tokens,
             RegistrySourcedNameProvider<AccountID> accounts,
-            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels,
-            ResponseCodeEnum[] hollowAccountOutcomes,
-            String... signers) {
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
         this.tokens = tokens;
         this.accounts = accounts;
         this.tokenRels = tokenRels;
-        this.outcomes = hollowAccountOutcomes;
-        this.signers = signers;
     }
 
     public RandomTokenAssociation ceiling(int n) {
@@ -90,19 +83,9 @@ public class RandomTokenAssociation implements OpProvider {
             return Optional.empty();
         }
         String[] toUse = chosen.toArray(new String[0]);
-
-        ResponseCodeEnum[] outcomes = this.outcomes;
-        if (outcomes == null || outcomes.length == 0) {
-            outcomes = permissibleOutcomes;
-        }
-
         var op = tokenAssociate(account.get(), toUse)
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(outcomes);
-
-        if (signers != null && signers.length > 0) {
-            op.signedBy(signers);
-        }
+                .hasKnownStatusFrom(permissibleOutcomes);
 
         return Optional.of(op);
     }

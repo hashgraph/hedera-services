@@ -101,7 +101,6 @@ public class BiasedDelegatingProvider implements OpProvider {
                         delegates.get(randomSelection()).get();
                 if (op.isPresent()) {
                     op.ifPresent(this::configureDefaults);
-
                     return op;
                 }
             }

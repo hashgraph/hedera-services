@@ -89,7 +89,7 @@ public class RandomToken implements OpProvider {
         HapiTokenCreate op = tokenCreate(my("token" + id))
                 .advertisingCreation()
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(STANDARD_PERMISSIBLE_OUTCOMES);
+                .hasKnownStatusFrom(permissibleOutcomes);
 
         var prefix = randomlyConfigureKeys(op);
         op.setTokenPrefix(prefix);

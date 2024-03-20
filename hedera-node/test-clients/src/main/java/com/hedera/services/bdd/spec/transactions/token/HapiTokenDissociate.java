@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
@@ -101,13 +100,7 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) {
-        if (actualStatus != SUCCESS) {
-            // we fail here and so token wont exits in registry for usage
-            // override token create op and save token id in registry
-            return;
-        }
-    }
+    protected void updateStateOf(final HapiSpec spec) {}
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {

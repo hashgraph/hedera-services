@@ -47,7 +47,6 @@ import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -119,7 +118,7 @@ public class IdFuzzingProviderFactory {
                     .withOp(new TransferToRandomEVMAddress(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props))
                     .withOp(new TransferToRandomKey(keys), intPropOrElse(RANDOM_TRANSFER_BIAS, 0, props))
                     .withOp(
-                            new RandomAccountUpdate(keys, accounts, new ResponseCodeEnum[0]),
+                            new RandomAccountUpdate(keys, accounts),
                             intPropOrElse("randomAccountUpdate.bias", 0, props))
                     .withOp(
                             new EthereumTransferToRandomEVMAddress(spec.registry(), keys),
