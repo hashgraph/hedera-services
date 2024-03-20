@@ -1124,7 +1124,7 @@ public final class Hedera implements SwirldMain {
         return readableFileStore.getFileLeaf(fileId);
     }
 
-    private static boolean shouldDump(@NonNull final InitTrigger trigger, @NonNull final DumpCheckpoint checkpoint) {
+    public static boolean shouldDump(@NonNull final InitTrigger trigger, @NonNull final DumpCheckpoint checkpoint) {
         return trigger == EVENT_STREAM_RECOVERY && selectedDumpCheckpoints().contains(checkpoint);
     }
 }
