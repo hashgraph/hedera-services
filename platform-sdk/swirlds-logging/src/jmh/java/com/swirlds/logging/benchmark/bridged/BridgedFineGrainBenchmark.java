@@ -283,7 +283,7 @@ public class BridgedFineGrainBenchmark {
 
     @TearDown(Level.Iteration)
     public void tearDown() {
-        config.tierDown();
-        swirldsConfig.tierDown();
+        config.tearDown();
+        swirldsConfig.tearDown();
     }
 }
