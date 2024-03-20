@@ -1093,4 +1093,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     public void setSeqNoPostUpgrade(final long seqNoPostUpgrade) {
         this.seqNoPostUpgrade = seqNoPostUpgrade;
     }
+
+    public DeterministicThrottle.UsageSnapshot[] getUsageSnapshots() {
+        return usageSnapshots;
+    }
 }

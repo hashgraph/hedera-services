@@ -28,9 +28,11 @@ import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.components.DefaultConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
@@ -48,7 +50,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
-import com.swirlds.platform.wiring.ConsensusEngineWiring;
 import com.swirlds.platform.wiring.InOrderLinkerWiring;
 import com.swirlds.platform.wiring.OrphanBufferWiring;
 import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
@@ -70,7 +71,7 @@ public class TestIntake implements LoadableFromSignedState {
     private final ComponentWiring<EventHasher, GossipEvent> hasherWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring linkerWiring;
-    private final ConsensusEngineWiring consensusEngineWiring;
+    private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final WiringModel model;
 
     /**
@@ -105,10 +106,10 @@ public class TestIntake implements LoadableFromSignedState {
         linkerWiring = InOrderLinkerWiring.create(directScheduler("linker"));
         linkerWiring.bind(linker);
 
-        final ConsensusEngine consensusEngine = new ConsensusEngine(
+        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(
                 platformContext, selfId, () -> consensus, shadowGraph, intakeEventCounter, output::staleEvent);
 
-        consensusEngineWiring = ConsensusEngineWiring.create(directScheduler("consensusEngine"));
+        consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, directScheduler("consensusEngine"));
         consensusEngineWiring.bind(consensusEngine);
 
         final EventWindowManagerWiring eventWindowManagerWiring = EventWindowManagerWiring.create(model);
@@ -118,12 +119,11 @@ public class TestIntake implements LoadableFromSignedState {
         orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
         linkerWiring.eventOutput().solderTo("shadowgraph", "addEvent", shadowGraph::addEvent);
         linkerWiring.eventOutput().solderTo("output", "eventAdded", output::eventAdded);
-        linkerWiring.eventOutput().solderTo(consensusEngineWiring.eventInput());
+        linkerWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
 
-        consensusEngineWiring.consensusRoundOutput().solderTo(eventWindowManagerWiring.consensusRoundInput());
-        consensusEngineWiring
-                .consensusRoundOutput()
-                .solderTo("consensusOutputTestTool", "round output", output::consensusRound);
+        final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
+        consensusRoundOutputWire.solderTo(eventWindowManagerWiring.consensusRoundInput());
+        consensusRoundOutputWire.solderTo("consensusOutputTestTool", "round output", output::consensusRound);
 
         eventWindowManagerWiring
                 .nonAncientEventWindowOutput()
@@ -161,7 +161,7 @@ public class TestIntake implements LoadableFromSignedState {
         if (!consensus.isExpired(event.getBaseEvent())) {
             shadowGraph.addEvent(event);
         }
-        consensusEngineWiring.eventInput().put(event);
+        consensusEngineWiring.getInputWire(ConsensusEngine::addEvent).put(event);
     }
 
     /**
