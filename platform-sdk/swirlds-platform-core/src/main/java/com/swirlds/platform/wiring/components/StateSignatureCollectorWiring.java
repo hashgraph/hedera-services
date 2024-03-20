@@ -95,7 +95,7 @@ public class StateSignatureCollectorWiring {
         postConsensusTransformer.getOutputWire().solderTo(postConsSigInput);
 
         // Create input for signed states
-        reservedStateInput = taskScheduler.buildInputWire("reserved signed states");
+        reservedStateInput = taskScheduler.buildInputWire("state");
 
         // Create clear input
         clearInput = taskScheduler.buildInputWire("clear");
@@ -132,7 +132,7 @@ public class StateSignatureCollectorWiring {
         preConsSigInput.bind(stateSignatureCollector::handlePreconsensusSignatures);
         postConsSigInput.bind(stateSignatureCollector::handlePostconsensusSignatures);
         reservedStateInput.bind(stateSignatureCollector::addReservedState);
-        clearInput.bind(stateSignatureCollector::clear);
+        clearInput.bindConsumer(stateSignatureCollector::clear);
     }
 
     /** @return the input wire for the pre-consensus events (which contain signatures) */

@@ -36,7 +36,7 @@ public record HashLoggerWiring(@NonNull InputWire<ReservedSignedState> hashLogge
      * @return the new wiring instance
      */
     public static HashLoggerWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
-        return new HashLoggerWiring(taskScheduler.buildInputWire("signed state to log"));
+        return new HashLoggerWiring(taskScheduler.buildInputWire("state"));
     }
 
     /**
@@ -45,6 +45,6 @@ public record HashLoggerWiring(@NonNull InputWire<ReservedSignedState> hashLogge
      * @param hashLogger the hash logger to bind
      */
     public void bind(@NonNull final HashLogger hashLogger) {
-        ((BindableInputWire<ReservedSignedState, Void>) hashLoggerInputWire).bind(hashLogger::logHashes);
+        ((BindableInputWire<ReservedSignedState, Void>) hashLoggerInputWire).bindConsumer(hashLogger::logHashes);
     }
 }

@@ -51,6 +51,7 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
@@ -80,7 +81,8 @@ public interface TransactionModule {
             @NonNull final CanonicalDispatchPrices canonicalDispatchPrices,
             @NonNull final TinybarValues tinybarValues) {
         return new SystemContractGasCalculator(
-                tinybarValues, canonicalDispatchPrices, (body, payerId) -> context.dispatchComputeFees(body, payerId)
+                tinybarValues, canonicalDispatchPrices, (body, payerId) -> context.dispatchComputeFees(
+                                body, payerId, ComputeDispatchFeesAsTopLevel.NO)
                         .totalFee());
     }
 

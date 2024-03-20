@@ -402,6 +402,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         // EvmFrameState is just a convenience wrapper around the scope to let us use Besu types, and
         // ultimately the HederaOperations is the one tracking and managing all changes
         enhancement.operations().revert();
+        enhancement.operations().revertRecordsFrom(recordListCheckPoint);
         // Because of the revert-then-commit pattern that Besu uses for force deletions in
         // AbstractMessageProcessor#clearAccumulatedStateBesidesGasAndOutput(), we have
         // to take special measures here to avoid popping the savepoint stack twice for

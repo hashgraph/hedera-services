@@ -73,7 +73,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var topicStore = context.createStore(ReadableTopicStore.class);
 
         // The topic ID must be present on the transaction and the topic must exist.
-        final var topic = topicStore.getTopic(op.topicID());
+        final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
         mustExist(topic, INVALID_TOPIC_ID);
 
         // Extending the expiry is the *only* update operation permitted without an admin key. So if that is the
@@ -271,7 +271,11 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op) {
         if (op.hasSubmitKey()) {
-            attributeValidator.validateKey(op.submitKey());
+            final var newSubmitKey = op.submitKeyOrThrow();
+            // Backward compatibility, mono-service allowed setting an empty submit key
+            if (!isEmpty(newSubmitKey) || Key.DEFAULT.equals(newSubmitKey)) {
+                attributeValidator.validateKey(op.submitKeyOrThrow());
+            }
         }
     }
 

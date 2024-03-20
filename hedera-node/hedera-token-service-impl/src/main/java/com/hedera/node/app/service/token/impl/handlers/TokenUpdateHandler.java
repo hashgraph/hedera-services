@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
@@ -165,7 +166,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             }
 
             if (!newTreasury.equals(existingTreasury)) {
-                // TODO : Not sure why we are checking existing treasury account here
                 final var existingTreasuryAccount = getIfUsable(
                         existingTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
@@ -259,17 +259,26 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var toRelBalance = toTreasuryRel.balance();
 
         final var fromNftsOwned = fromTreasury.numberOwnedNfts();
-        final var toNftsWOwned = toTreasury.numberOwnedNfts();
+        final var toNftsOwned = toTreasury.numberOwnedNfts();
 
         final var fromTreasuryCopy = fromTreasury.copyBuilder();
         final var toTreasuryCopy = toTreasury.copyBuilder();
         final var fromRelCopy = fromTreasuryRel.copyBuilder();
         final var toRelCopy = toTreasuryRel.copyBuilder();
 
-        accountStore.put(
-                fromTreasuryCopy.numberOwnedNfts(fromNftsOwned - fromRelBalance).build());
-        accountStore.put(
-                toTreasuryCopy.numberOwnedNfts(toNftsWOwned + fromRelBalance).build());
+        // Update the number of positive balances and number of owned NFTs for old and new treasuries
+        final var newFromPositiveBalancesCount =
+                fromRelBalance > 0 ? fromTreasury.numberPositiveBalances() - 1 : fromTreasury.numberPositiveBalances();
+        final var newToPositiveBalancesCount =
+                toRelBalance > 0 ? toTreasury.numberPositiveBalances() + 1 : toTreasury.numberPositiveBalances();
+        accountStore.put(fromTreasuryCopy
+                .numberPositiveBalances(newFromPositiveBalancesCount)
+                .numberOwnedNfts(fromNftsOwned - fromRelBalance)
+                .build());
+        accountStore.put(toTreasuryCopy
+                .numberPositiveBalances(newToPositiveBalancesCount)
+                .numberOwnedNfts(toNftsOwned + fromRelBalance)
+                .build());
         tokenRelStore.put(fromRelCopy.balance(0).build());
         tokenRelStore.put(toRelCopy.balance(toRelBalance + fromRelBalance).build());
     }
@@ -299,18 +308,18 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // If these keys did not exist on the token already, they can't be changed on update
         updateKeys(op, token, copyToken);
         updateExpiryFields(op, resolvedExpiry, copyToken);
-        updateNameSymbolMemoAndTreasury(op, copyToken, token);
+        updateTokenAttributes(op, copyToken, token);
         return copyToken;
     }
 
     /**
-     * Updates token name, token symbol, token memo and token treasury if they are present in the
-     * token update transaction body.
+     * Updates token name, token symbol, token metadata, token memo
+     * and token treasury if they are present in the token update transaction body.
      * @param op token update transaction body
      * @param builder token builder
      * @param originalToken original token
      */
-    private void updateNameSymbolMemoAndTreasury(
+    private void updateTokenAttributes(
             final TokenUpdateTransactionBody op, final Token.Builder builder, final Token originalToken) {
         if (op.symbol() != null && op.symbol().length() > 0) {
             builder.symbol(op.symbol());
@@ -320,6 +329,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         }
         if (op.hasMemo()) {
             builder.memo(op.memo());
+        }
+        if (op.hasMetadata()) {
+            builder.metadata(op.metadata());
         }
         if (op.hasTreasury() && !op.treasuryOrThrow().equals(originalToken.treasuryAccountId())) {
             builder.treasuryAccountId(op.treasuryOrThrow());
@@ -378,6 +390,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.hasPauseKey()) {
             validateTrue(originalToken.hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
             builder.pauseKey(op.pauseKey());
+        }
+        if (op.hasMetadataKey()) {
+            validateTrue(originalToken.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
+            builder.metadataKey(op.metadataKey());
         }
         if (!isExpiryOnlyUpdateOp(op)) {
             validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);

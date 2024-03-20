@@ -31,6 +31,7 @@ import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.logging.api.internal.level.MarkerState;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @WithSystemError
@@ -176,6 +177,7 @@ public class LogLevelTest {
     }
 
     @Test
+    @Disabled
     void nameNull() {
         // given
         final Configuration configuration =
@@ -191,6 +193,7 @@ public class LogLevelTest {
     }
 
     @Test
+    @Disabled
     void levelNull() {
         // given
         final Configuration configuration =

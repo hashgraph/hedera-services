@@ -49,9 +49,13 @@ public interface StakingRewardsHandler {
      *
      * @param context the context of the transaction
      * @param explicitRewardReceivers a set of accounts that must be considered for rewards independent of the context
+     * @param prePaidRewardReceivers a set of accounts that have already been paid rewards in the current transaction
      * @return a map of account id to the amount of rewards paid out
      */
-    Map<AccountID, Long> applyStakingRewards(FinalizeContext context, @NonNull Set<AccountID> explicitRewardReceivers);
+    Map<AccountID, Long> applyStakingRewards(
+            FinalizeContext context,
+            @NonNull Set<AccountID> explicitRewardReceivers,
+            @NonNull Set<AccountID> prePaidRewardReceivers);
 
     /**
      * Checks if the account has been rewarded since the last staking metadata change.

@@ -19,11 +19,14 @@ package com.hedera.services.cli.signedstate;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
@@ -31,6 +34,7 @@ import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.AutoCloseableNonThrowing;
@@ -313,6 +317,36 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         final var scheduledTransactions = servicesState.scheduleTxs();
         assertSignedStateComponentExists(scheduledTransactions, "scheduledTransactions");
         return scheduledTransactions;
+    }
+
+    // Returns the network context store from the state
+    @NonNull
+    public MerkleNetworkContext getNetworkContext() {
+        final var networkContext = servicesState.networkCtx();
+        assertSignedStateComponentExists(networkContext, "networkContext");
+        return networkContext;
+    }
+
+    // Returns the staking info store from the state
+    @NonNull
+    public MerkleMapLike<EntityNum, MerkleStakingInfo> getStakingInfo() {
+        final var stakingInfo = servicesState.stakingInfo();
+        assertSignedStateComponentExists(stakingInfo, "stakingInfo");
+        return stakingInfo;
+    }
+
+    @NonNull
+    public RecordsRunningHashLeaf getRunningHashLeaf() {
+        final var runningHashLeaf = servicesState.runningHashLeaf();
+        assertSignedStateComponentExists(runningHashLeaf, "runningHashLeaf");
+        return runningHashLeaf;
+    }
+
+    @NonNull
+    public RecordsStorageAdapter getPayerRecords() {
+        final var payerRecords = servicesState.payerRecords();
+        assertSignedStateComponentExists(payerRecords, "payerRecords");
+        return payerRecords;
     }
 
     /** Deserialize the signed state file into an in-memory data structure. */

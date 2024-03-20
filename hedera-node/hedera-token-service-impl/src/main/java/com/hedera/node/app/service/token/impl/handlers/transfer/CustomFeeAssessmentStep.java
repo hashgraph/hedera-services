@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXC
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult.HBAR_TOKEN_ID;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.*;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -353,11 +354,11 @@ public class CustomFeeAssessmentStep {
         final var result = new AssessmentResult(tokenTransfers, hbarTransfers);
 
         for (final var xfer : tokenTransfers) {
-            final var tokenId = xfer.token();
+            final var tokenId = xfer.tokenOrElse(TokenID.DEFAULT);
             final var ftTransfers = xfer.transfersOrElse(emptyList());
             final var nftTransfers = xfer.nftTransfersOrElse(emptyList());
 
-            final var token = getIfUsable(tokenId, tokenStore);
+            final var token = getIfUsable(tokenId, tokenStore, PERMIT_PAUSED);
             final var feeMeta = customFeeMetaFrom(token);
             if (feeMeta.customFees().isEmpty()) {
                 continue;
