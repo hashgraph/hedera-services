@@ -28,7 +28,6 @@ import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 /**
  * The default implementation of the {@link ConsensusEngine} interface
@@ -40,25 +39,22 @@ public class DefaultConsensusEngine implements ConsensusEngine {
      */
     private final ConsensusEventStorage eventStorage;
 
-    /**
-     * A functor that provides access to a {@code Consensus} instance.
-     */
-    private final Supplier<Consensus> consensusSupplier;
+    private final Consensus consensus;
 
     /**
      * Constructor
      *
-     * @param platformContext   the platform context
-     * @param selfId            the ID of the node
-     * @param consensusSupplier provides the current consensus instance
+     * @param platformContext the platform context
+     * @param selfId          the ID of the node
+     * @param consensus       executes the hashgraph consensus algorithm
      */
     public DefaultConsensusEngine(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
-            @NonNull final Supplier<Consensus> consensusSupplier) {
+            @NonNull final Consensus consensus) {
 
+        this.consensus = Objects.requireNonNull(consensus);
         eventStorage = new ConsensusEventStorage(platformContext, selfId);
-        this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
     }
 
     /**
@@ -79,7 +75,7 @@ public class DefaultConsensusEngine implements ConsensusEngine {
             return List.of();
         }
 
-        final List<ConsensusRound> consensusRounds = consensusSupplier.get().addEvent(event);
+        final List<ConsensusRound> consensusRounds = consensus.addEvent(event);
 
         if (!consensusRounds.isEmpty()) {
             // If multiple rounds reach consensus at the same moment there is no need to pass in

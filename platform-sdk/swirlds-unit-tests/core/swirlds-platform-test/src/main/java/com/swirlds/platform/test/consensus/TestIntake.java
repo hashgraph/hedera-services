@@ -65,7 +65,7 @@ import java.util.concurrent.ForkJoinPool;
  */
 public class TestIntake implements LoadableFromSignedState {
     private final ConsensusImpl consensus;
-    private final Shadowgraph shadowGraph;
+    private final Shadowgraph shadowGraph; // TODO is this still needed?
     private final ConsensusOutput output;
 
     private final ComponentWiring<EventHasher, GossipEvent> hasherWiring;
@@ -74,12 +74,15 @@ public class TestIntake implements LoadableFromSignedState {
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final WiringModel model;
 
+    private final PlatformContext platformContext;
+
     /**
      * @param platformContext the platform context used to configure this intake.
      * @param addressBook the address book used by this intake
      */
     public TestIntake(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
         final NodeId selfId = new NodeId(0);
+        this.platformContext = platformContext;
 
         final Time time = Time.getCurrent();
         output = new ConsensusOutput(time);
@@ -106,8 +109,7 @@ public class TestIntake implements LoadableFromSignedState {
         linkerWiring = InOrderLinkerWiring.create(directScheduler("linker"));
         linkerWiring.bind(linker);
 
-        // TODO consider creating a legacy copy-paste so as to not break all this stuff
-        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, selfId, () -> consensus);
+        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, selfId, consensus);
 
         consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, directScheduler("consensusEngine"));
         consensusEngineWiring.bind(consensusEngine);
@@ -157,6 +159,10 @@ public class TestIntake implements LoadableFromSignedState {
      * Same as {@link #addEvent(GossipEvent)} but skips the linking and inserts this instance
      */
     public void addLinkedEvent(@NonNull final EventImpl event) {
+        // Consensus engine does its own linking now, and we need events to be hashed in order to do linking.
+        platformContext.getCryptography().digestSync(event.getBaseEvent().getHashedData());
+        event.getBaseEvent().buildDescriptor();
+
         output.eventAdded(event);
         if (!consensus.isExpired(event.getBaseEvent())) {
             shadowGraph.addEvent(event);
