@@ -80,7 +80,6 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             @NonNull final PlatformContext context) {
         final var tokenServiceState = state.getReadableStates(TokenService.NAME);
         if (!tokenServiceState.isEmpty()) {
-            logger.info("Called updateWeight by platform during Upgrade");
             final var readableStoreFactory = new ReadableStoreFactory(state);
             // Get all nodeIds added in the config.txt
             Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
@@ -95,8 +94,6 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
                 // We will set those node sas deleted in EndOfStakingPeriodCalculator
                 if (configNodeIds.contains(id)) {
                     configAddressBook.updateWeight(id, stakingInfo.weight());
-                    logger.info("Node {} in configAddressBook is updated with weight {} from " +
-                            "StakingInfo Map during upgrade", id, stakingInfo.weight());
                     configNodeIds.remove(id);
                 } else {
                     logger.info("Node {} is deleted from configAddressBook during upgrade ", id);

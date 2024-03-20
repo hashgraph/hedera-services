@@ -212,7 +212,7 @@ class AwareNodeDiligenceScreenTest {
 
         assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 
-        verify(txnCtx).setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
+        verify(txnCtx).setStatus(PAYER_ACCOUNT_NOT_FOUND);
     }
 
     @Test

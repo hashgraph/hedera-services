@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
+import static com.hedera.node.app.spi.workflows.record.RecordListCheckPoint.EMPTY_CHECKPOINT;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -32,7 +34,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -46,8 +47,8 @@ public class QueryHederaOperations implements HederaOperations {
 
     @Inject
     public QueryHederaOperations(@NonNull final QueryContext context, @NonNull final HederaConfig hederaConfig) {
-        this.context = Objects.requireNonNull(context);
-        this.hederaConfig = Objects.requireNonNull(hederaConfig);
+        this.context = requireNonNull(context);
+        this.hederaConfig = requireNonNull(hederaConfig);
     }
 
     /**
@@ -264,8 +265,7 @@ public class QueryHederaOperations implements HederaOperations {
 
     @Override
     public RecordListCheckPoint createRecordListCheckPoint() {
-        // no op
-        return null;
+        return EMPTY_CHECKPOINT;
     }
 
     public void externalizeHollowAccountMerge(

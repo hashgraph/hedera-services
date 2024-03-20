@@ -366,9 +366,12 @@ public class InitialModServiceTokenSchema extends Schema {
                                         aliasesState
                                                 .get()
                                                 .put(new ProtoBytes(toAcct.alias()), toAcct.accountIdOrThrow());
-                                        if (toAcct.alias().toByteArray().length > 20) {
+                                        if (toAcct.alias().length() > 20) {
+                                            // (FUTURE) Consider refactoring this method to return either null OR
+                                            // Bytes.EMPTY when the alias does not translate to an EVM address, but
+                                            // not both!
                                             final var result = AliasUtils.extractEvmAddress(toAcct.alias());
-                                            if (result != null) {
+                                            if (result != null && result.length() == 20) {
                                                 aliasesState.get().put(new ProtoBytes(result), toAcct.accountId());
                                             }
                                         }
@@ -386,6 +389,7 @@ public class InitialModServiceTokenSchema extends Schema {
                 throw new RuntimeException(e);
             }
             if (acctsToState.get().isModified()) ((WritableKVStateBase) acctsToState.get()).commit();
+            if (aliasesState.get().isModified()) ((WritableKVStateBase) aliasesState.get()).commit();
             // Also persist the per-node pending reward information
             stakingFs.forEach((entityNum, ignore) -> {
                 final var toKey = new EntityNumber(entityNum.longValue());

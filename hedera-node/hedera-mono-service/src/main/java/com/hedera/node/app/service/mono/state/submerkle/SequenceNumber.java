@@ -41,6 +41,10 @@ public class SequenceNumber {
         return i;
     }
 
+    public void set(long i) {
+        this.i = i;
+    }
+
     public synchronized SequenceNumber copy() {
         return new SequenceNumber(this.i);
     }

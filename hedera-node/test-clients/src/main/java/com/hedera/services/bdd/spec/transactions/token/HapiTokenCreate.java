@@ -29,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
@@ -109,6 +110,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     private Optional<Function<HapiSpec, String>> symbolFn = Optional.empty();
     private Optional<Function<HapiSpec, String>> nameFn = Optional.empty();
     private final List<Function<HapiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
+    private Optional<String> metadataKey = Optional.empty();
 
     @Override
     public HederaFunctionality type() {
@@ -269,6 +271,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         return this;
     }
 
+    public HapiTokenCreate metadataKey(final String metadataKeyName) {
+        this.metadataKey = Optional.of(metadataKeyName);
+        return this;
+    }
+
     @Override
     protected HapiTokenCreate self() {
         return this;
@@ -320,6 +327,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                             symbol.ifPresent(b::setSymbol);
                             name.ifPresent(b::setName);
                             entityMemo.ifPresent(s -> b.setMemo(s));
+                            metadata.ifPresent(s -> b.setMetadata(ByteString.copyFromUtf8(s)));
                             initialSupply.ifPresent(b::setInitialSupply);
                             maxSupply.ifPresent(b::setMaxSupply);
                             decimals.ifPresent(b::setDecimals);
@@ -334,6 +342,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                                     k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
                             pauseKey.ifPresent(
                                     k -> b.setPauseKey(spec.registry().getKey(k)));
+                            wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
+                            kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
+                            metadataKey.ifPresent(
+                                    k -> b.setMetadataKey(spec.registry().getKey(k)));
                             if (autoRenewAccount.isPresent()) {
                                 final var id = TxnUtils.asId(autoRenewAccount.get(), spec);
                                 b.setAutoRenewAccount(id);
@@ -346,8 +358,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                                 expiry.ifPresent(t -> b.setExpiry(
                                         Timestamp.newBuilder().setSeconds(t).build()));
                             }
-                            wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
-                            kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
                             treasury.ifPresent(a -> {
                                 final var treasuryId = TxnUtils.asId(a, spec);
                                 b.setTreasury(treasuryId);
@@ -375,6 +385,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                                         case PAUSE_KEY -> b.setPauseKey(contractKey);
                                         case SUPPLY_KEY -> b.setSupplyKey(contractKey);
                                         case WIPE_KEY -> b.setWipeKey(contractKey);
+                                        case METADATA_KEY -> b.setMetadataKey(contractKey);
                                         default -> throw new IllegalStateException(
                                                 "Unexpected tokenKeyType: " + tokenKeyType);
                                     }
@@ -409,6 +420,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         symbol.ifPresent(s -> registry.saveSymbol(token, s));
         name.ifPresent(s -> registry.saveName(token, s));
         registry.saveMemo(token, memo.orElse(""));
+        registry.saveMetadata(token, metadata.orElse(""));
         final TokenID tokenID = lastReceipt.getTokenID();
         registry.saveTokenId(token, tokenID);
         registry.saveTreasury(token, treasury.orElse(spec.setup().defaultPayerName()));
@@ -438,6 +450,9 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
             }
             if (op.hasPauseKey()) {
                 registry.savePauseKey(token, op.getPauseKey());
+            }
+            if (op.hasMetadataKey()) {
+                registry.saveMetadataKey(token, op.getMetadataKey());
             }
         } catch (final InvalidProtocolBufferException impossible) {
         }

@@ -212,7 +212,7 @@ public class TipsetEventCreator implements EventCreator {
      * {@inheritDoc}
      */
     @Override
-    public void setNonAncientEventWindow(@NonNull NonAncientEventWindow nonAncientEventWindow) {
+    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
         tipsetTracker.setNonAncientEventWindow(nonAncientEventWindow);
         childlessOtherEventTracker.pruneOldEvents(nonAncientEventWindow);

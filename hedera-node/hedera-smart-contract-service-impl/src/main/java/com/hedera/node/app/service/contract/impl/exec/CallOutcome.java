@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -155,7 +156,9 @@ public record CallOutcome(
     }
 
     private boolean shouldExternalizeResult(@NonNull final ExternalizeAbortResult externalizeAbortResult) {
-        return !callWasAborted() || externalizeAbortResult == ExternalizeAbortResult.YES;
+        // (FUTURE) We don't externalize a result for WRONG_NONCE for diff testing;
+        // but this seems arbitrary, and can be revisited
+        return status != WRONG_NONCE && (!callWasAborted() || externalizeAbortResult == ExternalizeAbortResult.YES);
     }
 
     private boolean callWasAborted() {

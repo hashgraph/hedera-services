@@ -17,14 +17,20 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -33,6 +39,8 @@ import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -166,5 +174,45 @@ public class TransferContextImpl implements TransferContext {
 
     public boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments() {
         return enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
+    }
+
+    @Override
+    public void validateHbarAllowances() {
+        final var topLevelPayer = context.payer();
+        final var op = context.body().cryptoTransferOrThrow();
+        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
+            if (aa.isApproval() && aa.amount() < 0L) {
+                maybeValidateHbarAllowance(
+                        accountStore.get(aa.accountIDOrElse(AccountID.DEFAULT)), topLevelPayer, aa.amount());
+            }
+        }
+    }
+
+    @Override
+    public void validateAccountIds() {
+        final var op = context.body().cryptoTransferOrThrow();
+        for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
+            for (final var aa : xfers.transfersOrElse(emptyList())) {
+                if (aa.hasAccountID() && aa.accountIDOrThrow().hasAccountNum()) {
+                    final var maybeAccount = accountStore.get(aa.accountIDOrElse(AccountID.DEFAULT));
+                    validateTrue(maybeAccount != null, INVALID_ACCOUNT_ID);
+                }
+            }
+        }
+    }
+
+    private void maybeValidateHbarAllowance(
+            @Nullable final Account account, @NonNull final AccountID topLevelPayer, final long amount) {
+        if (account != null) {
+            final var cryptoAllowances = account.cryptoAllowancesOrElse(emptyList());
+            for (final var allowance : cryptoAllowances) {
+                if (topLevelPayer.equals(allowance.spenderId())) {
+                    final var newAllowanceAmount = allowance.amount() + amount;
+                    validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
+                    return;
+                }
+            }
+            throw new HandleException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+        }
     }
 }

@@ -19,26 +19,21 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allow
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -47,14 +42,16 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
+public class GetAllowanceCall extends AbstractHtsCall {
 
-    private static final String HTS_PRECOMPILE_ADDRESS = "0x167";
     private final Address owner;
     private final Address spender;
     private final AddressIdConverter addressIdConverter;
     private final boolean isERCCall;
     private final boolean isStaticCall;
+
+    @Nullable
+    private final Token token;
 
     @Inject
     public GetAllowanceCall(
@@ -66,8 +63,9 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
             @NonNull final Address spender,
             final boolean isERCCall,
             final boolean isStaticCall) {
-        super(gasCalculator, enhancement, token);
+        super(gasCalculator, enhancement, true);
         this.addressIdConverter = requireNonNull(addressIdConverter);
+        this.token = token;
         this.owner = requireNonNull(owner);
         this.spender = requireNonNull(spender);
         this.isERCCall = isERCCall;
@@ -75,63 +73,30 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
     }
 
     @Override
-    public @NonNull PricedResult execute() {
-        var gasRequirement = gasCalculator.viewGasRequirement();
-        if (token == null) {
-            return externalizeUnsuccessfulResult(INVALID_TOKEN_ID, gasRequirement);
-        }
+    public boolean allowsStaticFrame() {
+        return true;
+    }
 
-        if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
+    @Override
+    public @NonNull PricedResult execute() {
+        final var gasRequirement = gasCalculator.viewGasRequirement();
+        if (token == null || token.tokenType() != FUNGIBLE_COMMON) {
             if (isStaticCall) {
-                return gasOnly(
-                        FullResult.revertResult(
-                                com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID, gasRequirement),
-                        INVALID_TOKEN_ID,
-                        false);
+                return gasOnly(revertResult(INVALID_TOKEN_ID, gasRequirement), INVALID_TOKEN_ID, false);
             } else {
-                return gasOnly(
-                        FullResult.successResult(
-                                ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS),
-                                gasRequirement),
-                        SUCCESS,
-                        false);
+                return gasOnly(successResult(encodedAllowanceOutput(BigInteger.ZERO), gasRequirement), SUCCESS, false);
             }
         }
 
-        ContractID contractID =
-                asEvmContractId(org.hyperledger.besu.datatypes.Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
-        final var ownerID = addressIdConverter.convert(owner);
-        final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
-        if (isStaticCall && ownerAccount == null) {
-            var responseCode = INVALID_ALLOWANCE_OWNER_ID;
-            enhancement
-                    .systemOperations()
-                    .externalizeResult(
-                            contractFunctionResultFailedFor(gasRequirement, responseCode.toString(), contractID),
-                            responseCode);
-            return gasOnly(FullResult.revertResult(responseCode, gasRequirement), responseCode, false);
+        final var ownerId = addressIdConverter.convert(owner);
+        final var ownerAccount = nativeOperations().getAccount(ownerId);
+        if (ownerAccount == null) {
+            return gasOnly(revertResult(INVALID_ALLOWANCE_OWNER_ID, gasRequirement), INVALID_ALLOWANCE_OWNER_ID, true);
         } else {
-            return externalizeSuccessfulResult();
+            final var spenderId = addressIdConverter.convert(spender);
+            final var allowance = getAllowance(token, ownerAccount, spenderId);
+            return gasOnly(successResult(encodedAllowanceOutput(allowance), gasRequirement), SUCCESS, true);
         }
-    }
-
-    @NonNull
-    @Override
-    protected FullResult resultOfViewingToken(@NonNull final Token token) {
-        requireNonNull(token);
-        requireNonNull(owner);
-        requireNonNull(spender);
-        final var gasRequirement = gasCalculator.viewGasRequirement();
-        final var ownerID = addressIdConverter.convert(owner);
-        final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
-        final var spenderID = addressIdConverter.convert(spender);
-        if (!spenderID.hasAccountNum() && !isStaticCall) {
-            return FullResult.successResult(
-                    ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS), gasRequirement);
-        }
-        final var allowance = getAllowance(token, requireNonNull(ownerAccount), spenderID);
-        final var output = prepareOutput(allowance);
-        return successResult(output, gasRequirement);
     }
 
     @NonNull
@@ -146,11 +111,13 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
     }
 
     @NonNull
-    private ByteBuffer prepareOutput(@NonNull final BigInteger allowance) {
-        return isERCCall
-                ? GetAllowanceTranslator.ERC_GET_ALLOWANCE.getOutputs().encodeElements(allowance)
-                : GetAllowanceTranslator.GET_ALLOWANCE
-                        .getOutputs()
-                        .encodeElements((long) ResponseCodeEnum.SUCCESS.getNumber(), allowance);
+    private ByteBuffer encodedAllowanceOutput(@NonNull final BigInteger allowance) {
+        if (isERCCall) {
+            return GetAllowanceTranslator.ERC_GET_ALLOWANCE.getOutputs().encodeElements(allowance);
+        } else {
+            return GetAllowanceTranslator.GET_ALLOWANCE
+                    .getOutputs()
+                    .encodeElements((long) SUCCESS.protoOrdinal(), allowance);
+        }
     }
 }

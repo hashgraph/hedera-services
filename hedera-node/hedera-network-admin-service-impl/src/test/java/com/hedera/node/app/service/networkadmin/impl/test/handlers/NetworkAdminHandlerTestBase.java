@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
@@ -112,6 +113,9 @@ public class NetworkAdminHandlerTestBase {
     protected final long autoRenewSecs = 100L;
     protected final long expirationTime = 1_234_567L;
     protected final String memo = "test memo";
+
+    protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
+    protected final Key metadataKey = null;
 
     protected MapReadableKVState<AccountID, Account> readableAccounts;
     protected MapReadableKVState<TokenID, Token> readableTokenState;
@@ -378,7 +382,9 @@ public class NetworkAdminHandlerTestBase {
                 paused,
                 accountsFrozenByDefault,
                 accountsKycGrantedByDefault,
-                Collections.emptyList());
+                Collections.emptyList(),
+                metadata,
+                metadataKey);
     }
 
     protected void givenValidAccount(
@@ -428,7 +434,6 @@ public class NetworkAdminHandlerTestBase {
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(0L))
                 .previousToken(asToken(3L))
@@ -442,7 +447,6 @@ public class NetworkAdminHandlerTestBase {
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(0L))
                 .previousToken(asToken(3L))
