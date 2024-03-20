@@ -94,7 +94,7 @@ public class TestIntake implements LoadableFromSignedState {
         hasherWiring.bind(eventHasher);
 
         final PassThroughWiring<GossipEvent> postHashCollectorWiring =
-                new PassThroughWiring(model, "GossipEvent", directScheduler("postHashCollector"));
+                new PassThroughWiring(model, "GossipEvent", "postHashCollector", TaskSchedulerType.DIRECT);
 
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
