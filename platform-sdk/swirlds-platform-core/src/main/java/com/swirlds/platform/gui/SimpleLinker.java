@@ -184,8 +184,7 @@ public class SimpleLinker {
      */
     @NonNull
     public List<EventImpl> getNonAncientEvents() {
-        // TODO
-        return List.of(); // TODO
+        return parentHashMap.values().stream().toList();
     }
 
     /**

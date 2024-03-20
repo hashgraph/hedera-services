@@ -46,7 +46,6 @@ import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.StandardGuiSource;
 import com.swirlds.platform.gui.internal.StateHierarchy;
 import com.swirlds.platform.gui.internal.WinBrowser;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
@@ -169,15 +168,20 @@ public class Browser {
         final Map<NodeId, SwirldMain> appMains = loadSwirldMains(appDefinition, nodesToRun);
         ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
 
-        setupBrowserWindow();
-        setStateHierarchy(new StateHierarchy(null));
-        appDefinition.setSwirldId(new byte[CryptoConstants.HASH_SIZE_BYTES]);
+        final boolean showUi = !GraphicsEnvironment.isHeadless();
 
-        final InfoApp infoApp = getStateHierarchy().getInfoApp(appDefinition.getApplicationName());
-        final InfoSwirld infoSwirld = new InfoSwirld(infoApp, appDefinition.getSwirldId());
+        final InfoSwirld infoSwirld;
+        HashgraphGuiSource guiSource = null;
+        if (showUi) {
+            setupBrowserWindow();
+            setStateHierarchy(new StateHierarchy(null));
+            final InfoApp infoApp = getStateHierarchy().getInfoApp(appDefinition.getApplicationName());
+            infoSwirld = new InfoSwirld(infoApp, new byte[CryptoConstants.HASH_SIZE_BYTES]);
+        } else {
+            infoSwirld = null;
+        }
 
         final Map<NodeId, SwirldsPlatform> platforms = new HashMap<>();
-        HashgraphGuiSource guiSource = null;
         for (int index = 0; index < nodesToRun.size(); index++) {
             final NodeId nodeId = nodesToRun.get(index);
             final SwirldMain appMain = appMains.get(nodeId);
@@ -195,10 +199,7 @@ public class Browser {
                     appMain::newState,
                     nodeId);
 
-            if (GraphicsEnvironment.isHeadless() || index != 0) {
-                guiSource = null;
-            } else {
-
+            if (showUi && index == 0) {
                 // Duplicating config here is ugly, but Browser is test only code now.
                 // In the future we should clean it up, but it's not urgent to do so.
 
@@ -218,11 +219,9 @@ public class Browser {
                     builder.withConfigurationBuilder(configBuilder).build();
             platforms.put(nodeId, platform);
 
-            new InfoMember(infoSwirld, platform);
-
-            GuiModel.getInstance().setPlatformName(nodeId, "Node " + nodeId.id());
-            GuiModel.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
-            GuiModel.getInstance().setInstanceNumber(nodeId, index);
+            if (showUi) {
+                new InfoMember(infoSwirld, platform);
+            }
         }
 
         addPlatforms(platforms.values());
@@ -237,7 +236,7 @@ public class Browser {
 
         startPlatforms(new ArrayList<>(platforms.values()), appMains);
 
-        if (guiSource != null) {
+        if (showUi) {
             setBrowserWindow(new WinBrowser(guiSource));
             showBrowserWindow(null);
             moveBrowserWindowToFront();
