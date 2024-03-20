@@ -177,7 +177,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     @Override
     public EventDescriptor getDescriptor() {
         if (descriptor == null) {
-            throw new IllegalStateException("Can not get descriptor until event has been hashed");
+            throw new IllegalStateException("descriptor not built");
         }
         return descriptor;
     }
@@ -185,15 +185,11 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     /**
      * Build the descriptor of this event. This cannot be done when the event is first instantiated, it needs to be
      * hashed before the descriptor can be built.
-     *
-     * @throws IllegalStateException if the descriptor has already been built
      */
     public void buildDescriptor() {
-        if (descriptor != null) {
-            throw new IllegalStateException("Descriptor has already been built");
+        if (descriptor == null) {
+            this.descriptor = hashedData.createEventDescriptor();
         }
-
-        this.descriptor = hashedData.createEventDescriptor();
     }
 
     /**

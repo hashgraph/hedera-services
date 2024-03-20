@@ -17,9 +17,15 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.sequence.map.SequenceMap;
+import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.common.sequence.set.SequenceSet;
+import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -27,8 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Stores all output of consensus used in testing. This output can be used to validate consensus
- * results.
+ * Stores all output of consensus used in testing. This output can be used to validate consensus results.
  */
 public class ConsensusOutput implements Clearable {
     private final Time time;
@@ -37,39 +42,55 @@ public class ConsensusOutput implements Clearable {
     private final LinkedList<EventImpl> staleEvents;
 
     /**
+     * Finds stale events. Consensus doesn't currently "export" these, but it's useful to have them for testing.
+     */
+    private final SequenceMap<EventDescriptor, EventImpl> nonAncientEvents;
+
+    final SequenceSet<EventDescriptor> consensusEvents;
+
+    /**
      * Creates a new instance.
+     *
      * @param time the time to use for marking events
      */
-    public ConsensusOutput(@NonNull final Time time) {
+    public ConsensusOutput(@NonNull final Time time, @NonNull final AncientMode ancientMode) {
         this.time = time;
         addedEvents = new LinkedList<>();
         consensusRounds = new LinkedList<>();
         staleEvents = new LinkedList<>();
+
+        nonAncientEvents = new StandardSequenceMap<>(0, 1024, true, e -> e.getAncientIndicator(ancientMode));
+        consensusEvents = new StandardSequenceSet<>(0, 1024, true, e -> e.getAncientIndicator(ancientMode));
     }
 
     public void eventAdded(@NonNull final EventImpl event) {
         addedEvents.add(event);
+        nonAncientEvents.put(event.getBaseEvent().getDescriptor(), event);
     }
 
     public void consensusRound(@NonNull final ConsensusRound consensusRound) {
         for (final EventImpl event : consensusRound.getConsensusEvents()) {
+            consensusEvents.add(event.getBaseEvent().getDescriptor());
             // this a workaround until Consensus starts using a clock that is provided
             event.setReachedConsTimestamp(time.now());
         }
         consensusRounds.add(consensusRound);
-    }
 
-    public void staleEvent(@NonNull final EventImpl event) {
-        staleEvents.add(event);
+        final long ancientThreshold = consensusRound.getNonAncientEventWindow().getAncientThreshold();
+        nonAncientEvents.shiftWindow(ancientThreshold, (descriptor, event) -> {
+            if (!consensusEvents.contains(descriptor)) {
+                // This event went stale before it reached consensus.
+                staleEvents.add(event);
+            }
+        });
+        consensusEvents.shiftWindow(ancientThreshold);
     }
 
     /**
      * @return a queue of all events that have been marked as stale
      */
     public @NonNull LinkedList<EventImpl> getStaleEvents() {
-        return new LinkedList<>(); // TODO
-        //        throw new UnsupportedOperationException("TODO remove this method");
-        //        return staleEvents;
+        return staleEvents;
     }
 
     /**

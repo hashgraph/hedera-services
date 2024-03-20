@@ -85,7 +85,7 @@ public class TestIntake implements LoadableFromSignedState {
         this.platformContext = platformContext;
 
         final Time time = Time.getCurrent();
-        output = new ConsensusOutput(time);
+        output = new ConsensusOutput(time, GENERATION_THRESHOLD);
 
         consensus = new ConsensusImpl(platformContext, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook);
 
@@ -164,6 +164,7 @@ public class TestIntake implements LoadableFromSignedState {
         event.getBaseEvent().buildDescriptor();
 
         output.eventAdded(event);
+
         if (!consensus.isExpired(event.getBaseEvent())) {
             shadowGraph.addEvent(event);
         }
