@@ -99,7 +99,7 @@ public class BlockNodeLocalFileWatcherImpl {
         };
     }
 
-    public BlockNodeLocalFileWatcherImpl() {
+    public BlockNodeLocalFileWatcherImpl(@NonNull final ConfigProvider configProvider) {
         if (!blocksOutputPath.toFile().exists()) {
             blocksOutputPath.toFile().mkdirs();
         }

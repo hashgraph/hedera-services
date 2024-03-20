@@ -34,14 +34,15 @@ public class BlockNodeMain {
     private static BlockNodeLocalFileWatcherImpl BLOCK_NODE_LOCAL_FILE_WATCHER;
 
     public BlockNodeMain() {
+        ConfigProvider configProvider = new ConfigProvider();
+
         // Create all the service implementations
         logger.info("Registering services");
-        BLOCK_NODE_LOCAL_FILE_WATCHER = new BlockNodeLocalFileWatcherImpl();
+        BLOCK_NODE_LOCAL_FILE_WATCHER = new BlockNodeLocalFileWatcherImpl(configProvider);
         this.servicesRegistry = new BlockNodeServicesRegistryImpl();
 
         Set.of(BLOCK_NODE_LOCAL_FILE_WATCHER)
                 .forEach(service -> servicesRegistry.registerService("Block Node", service));
-        ConfigProvider configProvider = new ConfigProvider();
         serverManager = new BlockNodeNettyServerManager(configProvider, servicesRegistry);
     }
 
