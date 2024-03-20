@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -22,13 +38,13 @@ public class RandomAccountDeletionHollowTransfer implements OpProvider {
 
     private final EntityNameProvider<AccountID> accountsToDelete;
 
-
     private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
     private final ResponseCodeEnum[] permissibleOutcomes = {
-            SUCCESS, LIVE_HASH_NOT_FOUND, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, ACCOUNT_DELETED, INVALID_ACCOUNT_ID};
+        SUCCESS, LIVE_HASH_NOT_FOUND, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, ACCOUNT_DELETED, INVALID_ACCOUNT_ID
+    };
 
-    public RandomAccountDeletionHollowTransfer(EntityNameProvider<AccountID> hollowAccounts,
-            EntityNameProvider<AccountID> accountsToDelete) {
+    public RandomAccountDeletionHollowTransfer(
+            EntityNameProvider<AccountID> hollowAccounts, EntityNameProvider<AccountID> accountsToDelete) {
         this.hollowAccounts = hollowAccounts;
         this.accountsToDelete = accountsToDelete;
     }

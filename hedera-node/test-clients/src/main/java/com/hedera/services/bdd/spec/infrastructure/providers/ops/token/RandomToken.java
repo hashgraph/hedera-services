@@ -48,21 +48,17 @@ public class RandomToken implements OpProvider {
     public static final int DEFAULT_MAX_STRING_LEN = 100;
     public static final long DEFAULT_MAX_SUPPLY = 1_000;
 
-    private int ceilingNum = DEFAULT_CEILING_NUM;
+    protected int ceilingNum = DEFAULT_CEILING_NUM;
+    protected final RegistrySourcedNameProvider<TokenID> tokens;
+    protected final RegistrySourcedNameProvider<AccountID> accounts;
+    protected final AtomicInteger opNo = new AtomicInteger();
     private double kycKeyProb = 0.5;
     private double wipeKeyProb = 0.5;
     private double adminKeyProb = 0.5;
     private double supplyKeyProb = 0.5;
     private double freezeKeyProb = 0.5;
     private double autoRenewProb = 0.5;
-
-    private final AtomicInteger opNo = new AtomicInteger();
     private final EntityNameProvider<Key> keys;
-    private final RegistrySourcedNameProvider<TokenID> tokens;
-    private final RegistrySourcedNameProvider<AccountID> accounts;
-    private final ResponseCodeEnum[] outcomes;
-    private final String[] signers;
-
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
             /* Auto-renew account might be deleted by the time our TokenCreate reaches consensus */
             INVALID_AUTORENEW_ACCOUNT,
@@ -77,14 +73,10 @@ public class RandomToken implements OpProvider {
     public RandomToken(
             EntityNameProvider<Key> keys,
             RegistrySourcedNameProvider<TokenID> tokens,
-            RegistrySourcedNameProvider<AccountID> accounts,
-            ResponseCodeEnum[] hollowAccountOutcomes,
-            String... signers) {
+            RegistrySourcedNameProvider<AccountID> accounts) {
         this.keys = keys;
         this.tokens = tokens;
         this.accounts = accounts;
-        this.outcomes = hollowAccountOutcomes;
-        this.signers = signers;
     }
 
     @Override
@@ -93,16 +85,11 @@ public class RandomToken implements OpProvider {
             return Optional.empty();
         }
 
-        ResponseCodeEnum[] outcomes = this.outcomes;
-        if (outcomes == null || outcomes.length == 0) {
-            outcomes = permissibleOutcomes;
-        }
-
         int id = opNo.getAndIncrement();
         HapiTokenCreate op = tokenCreate(my("token" + id))
                 .advertisingCreation()
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(outcomes);
+                .hasKnownStatusFrom(STANDARD_PERMISSIBLE_OUTCOMES);
 
         var prefix = randomlyConfigureKeys(op);
         op.setTokenPrefix(prefix);
@@ -114,17 +101,17 @@ public class RandomToken implements OpProvider {
         return Optional.of(op);
     }
 
-    private void randomlyConfigureStrings(HapiTokenCreate op) {
+    protected void randomlyConfigureStrings(HapiTokenCreate op) {
         op.name(randomUppercase(1 + BASE_RANDOM.nextInt(DEFAULT_MAX_STRING_LEN)));
         op.symbol(randomUppercase(1 + BASE_RANDOM.nextInt(DEFAULT_MAX_STRING_LEN)));
     }
 
-    private void randomlyConfigureSupply(HapiTokenCreate op) {
+    protected void randomlyConfigureSupply(HapiTokenCreate op) {
         op.initialSupply(BASE_RANDOM.nextLong(0, DEFAULT_MAX_SUPPLY));
         op.decimals(BASE_RANDOM.nextInt(0, Integer.MAX_VALUE));
     }
 
-    private void randomlyConfigureAutoRenew(HapiTokenCreate op) {
+    protected void randomlyConfigureAutoRenew(HapiTokenCreate op) {
         if (BASE_RANDOM.nextDouble() < autoRenewProb) {
             var account = accounts.getQualifying();
             account.ifPresent(op::autoRenewAccount);
@@ -157,7 +144,7 @@ public class RandomToken implements OpProvider {
         return token.charAt(kycFlagIndex) == 'Y';
     }
 
-    private String randomlyConfigureKeys(HapiTokenCreate op) {
+    protected String randomlyConfigureKeys(HapiTokenCreate op) {
         double[] probs = new double[] {kycKeyProb, wipeKeyProb, adminKeyProb, supplyKeyProb, freezeKeyProb};
 
         var sb = new StringBuilder("[");
@@ -180,7 +167,7 @@ public class RandomToken implements OpProvider {
         return sb.append("]").toString();
     }
 
-    private String my(String opName) {
+    protected String my(String opName) {
         return unique(opName, RandomToken.class);
     }
 }

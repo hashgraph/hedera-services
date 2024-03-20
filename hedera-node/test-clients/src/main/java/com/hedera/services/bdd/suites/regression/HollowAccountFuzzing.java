@@ -46,8 +46,7 @@ public class HollowAccountFuzzing extends HapiSuite {
         return defaultHapiSpec("HollowAccountFuzzing")
                 .given(initOperations())
                 .when()
-                .then(runWithProvider(hollowAccountFuzzingTest(PROPERTIES))
-                        .lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(hollowAccountFuzzingTest(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
     }
 
     @Override

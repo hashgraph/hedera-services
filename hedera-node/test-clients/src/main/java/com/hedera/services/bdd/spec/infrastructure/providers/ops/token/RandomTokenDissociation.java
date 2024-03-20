@@ -36,7 +36,8 @@ public class RandomTokenDissociation implements OpProvider {
     private final ResponseCodeEnum[] outcomes;
     private final String[] signers;
 
-    public RandomTokenDissociation(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels,
+    public RandomTokenDissociation(
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels,
             ResponseCodeEnum[] hollowAccountOutcomes,
             String... signers) {
         this.tokenRels = tokenRels;

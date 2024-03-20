@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 

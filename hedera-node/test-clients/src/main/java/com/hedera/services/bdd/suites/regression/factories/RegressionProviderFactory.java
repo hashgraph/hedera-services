@@ -186,9 +186,7 @@ public class RegressionProviderFactory {
                     .withOp(new RandomFileInfo(files), intPropOrElse("randomFileInfo.bias", 0, props))
                     .withOp(new RandomContents(files), intPropOrElse("randomContents.bias", 0, props))
                     /* ---- TOKEN ---- */
-                    .withOp(
-                            new RandomToken(keys, tokens, allAccounts, new ResponseCodeEnum[0]),
-                            intPropOrElse("randomToken.bias", 0, props))
+                    .withOp(new RandomToken(keys, tokens, allAccounts), intPropOrElse("randomToken.bias", 0, props))
                     .withOp(
                             new RandomTokenAssociation(tokens, allAccounts, tokenRels, new ResponseCodeEnum[0])
                                     .ceiling(intPropOrElse(
