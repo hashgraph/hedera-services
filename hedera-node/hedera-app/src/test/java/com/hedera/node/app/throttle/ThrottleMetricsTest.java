@@ -27,7 +27,6 @@ import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.metrics.api.DoubleGauge;
 import com.swirlds.metrics.api.Metrics;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -50,7 +49,7 @@ class ThrottleMetricsTest {
     }
 
     @Test
-    void setupLiveMetricShouldCreateFunctionGauge(@Mock DeterministicThrottle throttle) {
+    void setupLiveMetricShouldCreateFunctionMetric(@Mock DeterministicThrottle throttle) {
         // given
         when(throttle.name()).thenReturn("throttle1");
         final var configuration = HederaTestConfigBuilder.create()
@@ -82,7 +81,7 @@ class ThrottleMetricsTest {
     }
 
     @Test
-    void setupInertMetricShouldCreateDoubleGauge() {
+    void setupInertMetricShouldCreateMetric() {
         // given
         final var configuration = HederaTestConfigBuilder.create()
                 .withValue("stats.hapiThrottlesToSample", "throttle2")
@@ -93,7 +92,7 @@ class ThrottleMetricsTest {
         throttleMetrics.setupThrottles(List.of(), configuration);
 
         // then
-        verify(metrics).getOrCreate(any(DoubleGauge.Config.class));
+        verify(metrics).getOrCreate(any(FunctionGauge.Config.class));
     }
 
     @Test

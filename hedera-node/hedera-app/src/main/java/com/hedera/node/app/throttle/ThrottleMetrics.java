@@ -25,13 +25,13 @@ import com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType;
 import com.hedera.node.config.data.StatsConfig;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.DoubleGauge;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,6 +44,7 @@ public class ThrottleMetrics {
 
     private static final String GAS_THROTTLE_ID = "<GAS>";
     private static final String LOG_MESSAGE_TPL = "Registered {} gauge for '{}' under name '{}'";
+    private static final Supplier<Double> ZERO_SUPPLIER = () -> 0.0;
 
     private final Metrics metrics;
     private final String nameTemplate;
@@ -88,21 +89,23 @@ public class ThrottleMetrics {
     }
 
     private void setupLiveMetric(@NonNull final CongestibleThrottle throttle) {
-        final var name = String.format(nameTemplate, throttle.name());
-        final var description = String.format(descriptionTemplate, throttle.name());
-        final var config = new FunctionGauge.Config<>("app", name, Double.class, throttle::instantaneousPercentUsed)
-                .withDescription(description)
-                .withFormat("%,13.2f");
-        metrics.getOrCreate(config);
-        log.info(LOG_MESSAGE_TPL, "LIVE", description, name);
+        setupMetric(throttle.name(), throttle::instantaneousPercentUsed, "LIVE");
     }
 
     private void setupInertMetric(@NonNull final String throttleName) {
+        setupMetric(throttleName, ZERO_SUPPLIER, "INERT");
+    }
+
+    private void setupMetric(
+            @NonNull final String throttleName,
+            @NonNull final Supplier<Double> valueSupplier,
+            @NonNull final String status) {
         final var name = String.format(nameTemplate, throttleName);
         final var description = String.format(descriptionTemplate, throttleName);
-        final var config =
-                new DoubleGauge.Config("app", name).withDescription(description).withFormat("%,13.2f");
+        final var config = new FunctionGauge.Config<>("app", name, Double.class, valueSupplier)
+                .withDescription(description)
+                .withFormat("%,13.2f");
         metrics.getOrCreate(config);
-        log.info(LOG_MESSAGE_TPL, "INERT", description, name);
+        log.info(LOG_MESSAGE_TPL, status, description, name);
     }
 }
