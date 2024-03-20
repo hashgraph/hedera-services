@@ -20,6 +20,7 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.stream.Stream;
@@ -69,9 +70,11 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      *                      adjusted consensus time, not the platform assigned consensus time. Assuming the two are
      *                      different.
      * @param state         The state to read BlockInfo from and update when new blocks are created
+     * @param platformState The platform state, which contains the last freeze time
      * @return               true if a new block was created, false otherwise
      */
-    boolean startUserTransaction(@NonNull Instant consensusTime, @NonNull HederaState state);
+    boolean startUserTransaction(
+            @NonNull Instant consensusTime, @NonNull HederaState state, @NonNull PlatformState platformState);
 
     /**
      * "Advances the consensus clock" by updating the latest consensus timestamp that the node has handled. This should
