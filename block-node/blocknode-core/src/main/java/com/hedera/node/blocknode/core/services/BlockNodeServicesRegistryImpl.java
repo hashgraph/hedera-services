@@ -16,10 +16,11 @@
 
 package com.hedera.node.blocknode.core.services;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class BlockNodeServicesRegistryImpl {
-    private Map<String, Object> serviceMap = new HashMap<>();
+    private final Map<String, Object> serviceMap = new HashMap<>();
 
     public void registerService(String serviceName, Object serviceInstance) {
         serviceMap.put(serviceName, serviceInstance);

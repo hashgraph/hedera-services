@@ -17,8 +17,8 @@
 package com.hedera.node.blocknode.core;
 
 import com.hedera.node.blocknode.config.ConfigProvider;
-import com.hedera.node.blocknode.core.grpc.BlockNodeService;
 import com.hedera.node.blocknode.core.grpc.impl.BlockNodeNettyServerManager;
+import com.hedera.node.blocknode.core.services.BlockNodeLocalFileWatcherImpl;
 import com.hedera.node.blocknode.core.services.BlockNodeServicesRegistryImpl;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -31,15 +31,16 @@ public class BlockNodeMain {
 
     private static BlockNodeNettyServerManager serverManager;
 
-    private static BlockNodeService BLOCK_NODE_SERVICE;
+    private static BlockNodeLocalFileWatcherImpl BLOCK_NODE_LOCAL_FILE_WATCHER;
 
     public BlockNodeMain() {
         // Create all the service implementations
         logger.info("Registering services");
-        BLOCK_NODE_SERVICE = new BlockNodeService();
+        BLOCK_NODE_LOCAL_FILE_WATCHER = new BlockNodeLocalFileWatcherImpl();
         this.servicesRegistry = new BlockNodeServicesRegistryImpl();
 
-        Set.of(BLOCK_NODE_SERVICE).forEach(service -> servicesRegistry.registerService("Block Node", service));
+        Set.of(BLOCK_NODE_LOCAL_FILE_WATCHER)
+                .forEach(service -> servicesRegistry.registerService("Block Node", service));
         ConfigProvider configProvider = new ConfigProvider();
         serverManager = new BlockNodeNettyServerManager(configProvider, servicesRegistry);
     }

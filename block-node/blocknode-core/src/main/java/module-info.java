@@ -2,8 +2,6 @@ module com.hedera.storage.blocknode.core {
     // Selectively export non-public packages to the test module.
     exports com.hedera.node.blocknode.core to
             com.hedera.storage.blocknode.core.test;
-    exports com.hedera.node.blocknode.core.grpc to
-            com.hedera.storage.blocknode.core.test;
     exports com.hedera.node.blocknode.core.grpc.impl to
             com.hedera.storage.blocknode.core.test;
     exports com.hedera.node.blocknode.core.services to

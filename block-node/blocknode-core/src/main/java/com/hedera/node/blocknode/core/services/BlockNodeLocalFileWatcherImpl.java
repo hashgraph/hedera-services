@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.blocknode.core;
+package com.hedera.node.blocknode.core.services;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,8 +34,8 @@ import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class BlockNodeFileWatcherService {
-    private static final Logger logger = LogManager.getLogger(BlockNodeServer.class);
+public class BlockNodeLocalFileWatcherImpl {
+    private static final Logger logger = LogManager.getLogger(BlockNodeLocalFileWatcherImpl.class);
     private static final String FILE_EXTENSION = ".blk.gz";
 
     private static final Path blocksLocPath = Path.of(
@@ -99,7 +99,7 @@ public class BlockNodeFileWatcherService {
         };
     }
 
-    public BlockNodeFileWatcherService() {
+    public BlockNodeLocalFileWatcherImpl() {
         if (!blocksOutputPath.toFile().exists()) {
             blocksOutputPath.toFile().mkdirs();
         }
