@@ -21,12 +21,12 @@ import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
-import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateHasherWiring;
@@ -55,7 +55,7 @@ public class PlatformCoordinator {
     private final ShadowgraphWiring shadowgraphWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring;
-    private final EventCreationManagerWiring eventCreationManagerWiring;
+    private final ComponentWiring<EventCreationManager, GossipEvent> eventCreationManagerWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
@@ -89,7 +89,7 @@ public class PlatformCoordinator {
             @NonNull final ShadowgraphWiring shadowgraphWiring,
             @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
             @NonNull final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring,
-            @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
+            @NonNull final ComponentWiring<EventCreationManager, GossipEvent> eventCreationManagerWiring,
             @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
@@ -183,6 +183,6 @@ public class PlatformCoordinator {
         inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
         stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
         futureEventBufferWiring.getInputWire(FutureEventBuffer::clear).inject(new ClearTrigger());
-        eventCreationManagerWiring.clearInput().inject(new ClearTrigger());
+        eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(new ClearTrigger());
     }
 }

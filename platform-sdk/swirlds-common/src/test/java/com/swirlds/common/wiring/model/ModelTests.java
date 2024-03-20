@@ -1294,7 +1294,6 @@ class ModelTests {
         final TaskScheduler<Integer> taskSchedulerB =
                 model.schedulerBuilder("B").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
-        taskSchedulerB.buildHeartbeatInputWire("heartbeat", 100);
 
         final TaskScheduler<Integer> taskSchedulerC =
                 model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();

@@ -36,7 +36,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
- * A factory for creating {@link EventCreationManager} instances.
+ * A factory for creating {@link DefaultEventCreationManager} instances.
  */
 public final class EventCreationManagerFactory {
 
@@ -91,6 +91,6 @@ public final class EventCreationManagerFactory {
                 new BackpressureRule(platformContext, getIntakeQueueSize),
                 new PlatformStatusRule(platformStatusSupplier, transactionPool));
 
-        return new EventCreationManager(platformContext, eventCreator, eventCreationRules);
+        return new DefaultEventCreationManager(platformContext, eventCreator, eventCreationRules);
     }
 }
