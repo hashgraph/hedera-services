@@ -69,7 +69,9 @@ public class LoggerImplTest {
     @Test
     void testSpecWithNullName() {
         // given + then
-        Assertions.assertThrows(NullPointerException.class, () -> new LoggerImpl(null, new SimpleLogEventFactory(), new DummyConsumer()));
+        Assertions.assertThrows(
+                NullPointerException.class,
+                () -> new LoggerImpl(null, new SimpleLogEventFactory(), new DummyConsumer()));
     }
 
     @Test

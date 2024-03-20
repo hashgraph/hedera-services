@@ -68,8 +68,7 @@ public class LoggingSystemStressTest {
         testExecutor.executeAndWait(runnables);
 
         // then
-        Assertions.assertEquals(
-                EXPECTED_STATEMENTS * TOTAL_RUNNABLE, loggingMirror.getEventCount());
+        Assertions.assertEquals(EXPECTED_STATEMENTS * TOTAL_RUNNABLE, loggingMirror.getEventCount());
         IntStream.range(0, TOTAL_RUNNABLE)
                 .forEach(i -> Assertions.assertEquals(
                         EXPECTED_STATEMENTS,
@@ -87,8 +86,7 @@ public class LoggingSystemStressTest {
         doLog(testExecutor, logger, TOTAL_RUNNABLE);
 
         // then
-        Assertions.assertEquals(
-                EXPECTED_STATEMENTS * TOTAL_RUNNABLE, loggingMirror.getEventCount());
+        Assertions.assertEquals(EXPECTED_STATEMENTS * TOTAL_RUNNABLE, loggingMirror.getEventCount());
     }
 
     @Test
