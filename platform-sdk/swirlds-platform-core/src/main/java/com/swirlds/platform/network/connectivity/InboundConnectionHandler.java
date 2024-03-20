@@ -131,7 +131,7 @@ public class InboundConnectionHandler {
             socketExceptionLogger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Inbound connection from {} to {} had IOException: {}",
-                    otherId == null ? "unknown" : otherId,
+                    "unknown",
                     selfId,
                     formattedException);
             NetworkUtils.close(dataInputStream, dataOutputStream, clientSocket);

@@ -95,10 +95,7 @@ public class ConnectionServer implements InterruptableRunnable {
             try {
                 final Socket clientSocket = serverSocket.accept(); // listen, waiting until someone connects
                 incomingConnPool.submit(() -> {
-                    if (clientSocket instanceof final SSLSocket sslsocket) {
-                        sslsocket.addHandshakeCompletedListener(
-                                event -> Utilities.validateTLSPeer(event.getSocket(), peerInfoList));
-                    }
+                    addHandshakeListener(clientSocket);
                     newConnectionHandler.accept(clientSocket);
                 });
             } catch (final SocketTimeoutException expectedWithNonZeroSOTimeout) {
@@ -110,6 +107,25 @@ public class ConnectionServer implements InterruptableRunnable {
             } catch (final RuntimeException | IOException e) {
                 logger.error(EXCEPTION.getMarker(), "SyncServer serverSocket.accept() error", e);
             }
+        }
+    }
+
+    private void addHandshakeListener(final Socket clientSocket) {
+        if (clientSocket instanceof final SSLSocket sslsocket) {
+            sslsocket.addHandshakeCompletedListener(event -> {
+                final PeerInfo peer = Utilities.validateTLSPeer(event.getSocket(), peerInfoList);
+                if (peer == null) {
+                   try {
+                       event.getSocket().close();
+                   } catch (final IOException e) {
+                       logger.warn(
+                               "Attempt to close connection from {}:{} threw IO exception {}",
+                               event.getSocket().getInetAddress(),
+                               event.getSocket().getPort(),
+                               e.getMessage());
+                   }
+                }
+            });
         }
     }
 }

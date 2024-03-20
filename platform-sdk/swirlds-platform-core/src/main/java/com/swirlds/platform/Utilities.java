@@ -398,6 +398,7 @@ public final class Utilities {
      * 		the address book to create the list from
      * @param peerInfoList
      * 		List of peers to validate
+     * @return info of the corresponding peer
      * */
     public static PeerInfo validateTLSPeer(
             final @NonNull SSLSocket sslsocket, final @NonNull List<PeerInfo> peerInfoList) {
