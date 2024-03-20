@@ -101,7 +101,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                invalidDeletedContract(),
+                successOnDeletedContract(),
                 invalidContractID(),
                 impureCallFails(),
                 insufficientFeeFails(),
@@ -213,8 +213,8 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidDeletedContract() {
-        return defaultHapiSpec("invalidDeletedContract", NONDETERMINISTIC_TRANSACTION_FEES)
+    final HapiSpec successOnDeletedContract() {
+        return defaultHapiSpec("SuccessOnDeletedContract", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractDelete(CONTRACT))
                 .then(contractCallLocal(CONTRACT, "create")

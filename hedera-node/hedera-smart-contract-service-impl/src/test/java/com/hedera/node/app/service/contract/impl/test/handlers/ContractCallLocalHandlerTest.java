@@ -25,6 +25,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -179,6 +181,21 @@ class ContractCallLocalHandlerTest {
 
         // when:
         assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    void validateSucceedsIfContractDeletedTest() {
+        // given
+        given(context.query()).willReturn(query);
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(contractCallLocalQuery.contractID()).willReturn(contractID);
+        given(context.createStore(ReadableAccountStore.class)).willReturn(store);
+        given(store.getContractById(contractID)).willReturn(contract);
+        givenAllowCallsToNonContractAccountOffConfig();
+
+        // when:
+        assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();
+        verify(contract, never()).deleted();
     }
 
     @Test
