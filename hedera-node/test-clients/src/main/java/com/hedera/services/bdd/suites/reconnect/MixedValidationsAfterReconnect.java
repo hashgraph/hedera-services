@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -37,7 +38,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
     private static final String RECEIVER = "0.0.1302";
     private static final String LAST_CREATED_ACCOUNT = "0.0.3416";
     private static final String FIRST_CREATED_TOPIC = "0.0.3423";
-    private static final String LAST_CREATED_TOPIC = "0.0.5804";
+    private static final String LAST_CREATED_TOPIC = "0.0.5805";
     private static final String INVALID_TOPIC_ID = "0.0.41064";
     private static final String TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO = "0.0.5800";
 
@@ -51,7 +52,10 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(getAccountBalanceFromAllNodes(), validateTopicInfo(), validateFileInfo());
+        return List.of(
+                getAccountBalanceFromAllNodes(),
+                validateTopicInfo(),
+                validateFileInfo());
     }
 
     final HapiSpec getAccountBalanceFromAllNodes() {
@@ -60,7 +64,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
         // to protect developers from accidentally sending hbar to those addresses
         // NOTE: blacklisted accounts are NOT created for use when blacklisted accounts are disabled
         return defaultHapiSpec("GetAccountBalanceFromAllNodes")
-                .given()
+                .given(sleepFor(30000))
                 .when()
                 .then(
                         balanceSnapshot("senderBalance", SENDER), // from default node 0.0.3
@@ -99,7 +103,8 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
     final HapiSpec validateTopicInfo() {
         final byte[] emptyRunningHash = new byte[48];
         return defaultHapiSpec("ValidateTopicInfo")
-                .given(getTopicInfo(TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO).logged().saveRunningHash())
+                .given(sleepFor(30000),
+                        getTopicInfo(TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO).logged().saveRunningHash())
                 .when()
                 .then(
                         getTopicInfo(FIRST_CREATED_TOPIC)
@@ -119,7 +124,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
 
     final HapiSpec validateFileInfo() {
         return defaultHapiSpec("ValidateFileInfo")
-                .given()
+                .given(sleepFor(30000))
                 .when()
                 .then(
                         getFileInfo(FIRST_CREATED_FILE).logged().setNode("0.0.8"),
