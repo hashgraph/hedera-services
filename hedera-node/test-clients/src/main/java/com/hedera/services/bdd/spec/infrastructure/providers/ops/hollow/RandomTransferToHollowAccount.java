@@ -32,21 +32,24 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 public class RandomTransferToHollowAccount extends RandomOperationCustom<HapiCryptoTransfer> {
 
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(SUCCESS);
+    private final String signer;
 
-    public RandomTransferToHollowAccount(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
+    public RandomTransferToHollowAccount(
+            HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts, String signer) {
         super(registry, accounts);
+        this.signer = signer;
     }
 
     @Override
     protected HapiTxnOp<HapiCryptoTransfer> hapiTxnOp(String keyName) {
-        return cryptoTransfer(tinyBarsFromTo(UNIQUE_PAYER_ACCOUNT, keyName, 1));
+        return cryptoTransfer(tinyBarsFromTo(signer, keyName, 1));
     }
 
     protected HapiSpecOperation generateOpSignedBy(String keyName) {
         return hapiTxnOp(keyName)
-                .signedBy(UNIQUE_PAYER_ACCOUNT)
-                .payingWith(UNIQUE_PAYER_ACCOUNT)
-                .sigMapPrefixes(uniqueWithFullPrefixesFor(UNIQUE_PAYER_ACCOUNT))
+                .signedBy(signer)
+                .payingWith(signer)
+                .sigMapPrefixes(uniqueWithFullPrefixesFor(signer))
                 .hasPrecheckFrom(permissiblePrechecks)
                 .hasKnownStatusFrom(permissibleOutcomes)
                 .noLogging();

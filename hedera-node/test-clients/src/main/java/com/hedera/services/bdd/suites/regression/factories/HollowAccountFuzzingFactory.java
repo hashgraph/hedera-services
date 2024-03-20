@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.intPropOrElse;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
@@ -42,7 +41,7 @@ import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourc
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.contract.RandomContract;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.contract.RandomContractDeletion;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomAccountDeletionHollowTransfer;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomAccountDeletionHollow;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomAccountUpdateHollow;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTokenAssociationHollow;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTokenHollow;
@@ -57,14 +56,11 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.function.Function;
 
 public class HollowAccountFuzzingFactory {
     public static final String HOLLOW_ACCOUNT = "hollowAccount";
-
-    private static ResponseCodeEnum[] hollowAccountOutcomes = {INVALID_SIGNATURE};
 
     private HollowAccountFuzzingFactory() {
         throw new IllegalStateException("Static factory class");
@@ -105,11 +101,11 @@ public class HollowAccountFuzzingFactory {
                     /* ---- TRANSFER ---- */
                     // expects invalid signature
                     .withOp(
-                            new RandomTransferFromHollowAccount(spec.registry(), hollowAccounts),
+                            new RandomTransferFromHollowAccount(spec.registry(), hollowAccounts, UNIQUE_PAYER_ACCOUNT),
                             intPropOrElse("randomTransferFromHollowAccount.bias", 0, props))
                     // expects success
                     .withOp(
-                            new RandomTransferToHollowAccount(spec.registry(), hollowAccounts),
+                            new RandomTransferToHollowAccount(spec.registry(), hollowAccounts, UNIQUE_PAYER_ACCOUNT),
                             intPropOrElse("randomTransfer.bias", 0, props))
 
                     /* ---- TOKEN ---- */
@@ -135,7 +131,7 @@ public class HollowAccountFuzzingFactory {
                             new RandomAccountUpdateHollow(keys, hollowAccounts, UNIQUE_PAYER_ACCOUNT),
                             intPropOrElse("randomAccountUpdate.bias", 0, props))
                     .withOp(
-                            new RandomAccountDeletionHollowTransfer(hollowAccounts, accountsToDelete),
+                            new RandomAccountDeletionHollow(hollowAccounts, accountsToDelete),
                             intPropOrElse("randomAccountDeletion.bias", 0, props))
                     /* ---- CONTRACT ---- */
                     // expects success

@@ -32,7 +32,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
 
-public class RandomAccountDeletionHollowTransfer implements OpProvider {
+public class RandomAccountDeletionHollow implements OpProvider {
 
     private final EntityNameProvider<AccountID> hollowAccounts;
 
@@ -43,7 +43,7 @@ public class RandomAccountDeletionHollowTransfer implements OpProvider {
         SUCCESS, LIVE_HASH_NOT_FOUND, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, ACCOUNT_DELETED, INVALID_ACCOUNT_ID
     };
 
-    public RandomAccountDeletionHollowTransfer(
+    public RandomAccountDeletionHollow(
             EntityNameProvider<AccountID> hollowAccounts, EntityNameProvider<AccountID> accountsToDelete) {
         this.hollowAccounts = hollowAccounts;
         this.accountsToDelete = accountsToDelete;
