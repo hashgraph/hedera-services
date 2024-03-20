@@ -21,6 +21,7 @@ import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,7 +44,7 @@ public class ContractUtils {
      */
     @NonNull
     public static Contracts getMonoContracts(
-            VirtualMapLike<VirtualBlobKey, VirtualBlobValue> files, AccountStorageAdapter accountAdapter) {
+            VirtualMap<VirtualBlobKey, VirtualBlobValue> files, AccountStorageAdapter accountAdapter) {
         final var contractIds = getAllKnownContracts(accountAdapter);
         final var deletedContractIds = getAllDeletedContracts(accountAdapter);
         final var contractContents = getAllContractContents(files, contractIds, deletedContractIds);
@@ -79,7 +80,7 @@ public class ContractUtils {
     /** Returns the bytecodes for all the requested contracts */
     @NonNull
     private static Collection</*@NonNull*/ Contract> getAllContractContents(
-            @NonNull final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> fileStore,
+            @NonNull final VirtualMap<VirtualBlobKey, VirtualBlobValue> fileStore,
             @NonNull final Collection</*@NonNull*/ Integer> contractIds,
             @NonNull final Collection</*@NonNull*/ Integer> deletedContractIds) {
         Objects.requireNonNull(contractIds);

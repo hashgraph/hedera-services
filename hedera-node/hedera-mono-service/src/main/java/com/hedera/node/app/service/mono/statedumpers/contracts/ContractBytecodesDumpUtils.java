@@ -47,7 +47,7 @@ public class ContractBytecodesDumpUtils {
     public static void dumpMonoContractBytecodes(
             @NonNull final Path path,
             @NonNull final VirtualMap<EntityNumVirtualKey, OnDiskAccount> accounts,
-            @NonNull final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> files,
+            @NonNull final VirtualMap<VirtualBlobKey, VirtualBlobValue> files,
             @NonNull final DumpCheckpoint checkpoint) {
         final var accountAdapter = AccountStorageAdapter.fromOnDisk(VirtualMapLike.from(accounts));
         final var knownContracts = ContractUtils.getMonoContracts(files, accountAdapter);

@@ -47,6 +47,7 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -293,28 +294,16 @@ public class ThingsToStrings {
         return r;
     }
 
-    public static boolean toStringOfFcTokenAllowanceIdSet(
-            @NonNull final StringBuilder sb, @Nullable final Set<FcTokenAllowanceId> ids) {
-        if (ids == null || ids.isEmpty()) return false;
-
-        final var orderedIds = ids.stream().sorted().toList();
-        sb.append("(");
-        for (final var id : orderedIds) {
-            toStringOfFcTokenAllowanceId(sb, id);
-            sb.append(",");
-        }
-        sb.setLength(sb.length() - 1);
-        sb.append(")");
-        return true;
-    }
-
     public static boolean toStringOfApprovalForAllAllowances(
             @NonNull final StringBuilder sb, @Nullable List<AccountApprovalForAllAllowance> approvals) {
         if (approvals == null || approvals.isEmpty()) {
             return false;
         }
 
-        final var orderedApprovals = approvals.stream().sorted().toList();
+        final var orderedApprovals = approvals.stream().sorted(Comparator
+                .<AccountApprovalForAllAllowance>comparingLong(a -> a.tokenId().tokenNum())
+                .thenComparingLong(b -> b.spenderId().accountNum()))
+                .toList();
         sb.append("(");
         for (final var approval : orderedApprovals) {
             toStringOfApprovalForAllAllowance(sb, approval);
@@ -343,7 +332,11 @@ public class ThingsToStrings {
             return false;
         }
 
-        final var orderedAllowances = allowances.stream().sorted().toList();
+        final var orderedAllowances = allowances.stream()
+                .sorted(Comparator
+                        .<AccountCryptoAllowance>comparingLong(a -> a.spenderId().accountNum())
+                        .thenComparingLong(a -> a.amount()))
+                .toList();
         sb.append("(");
         for (final var allowance : orderedAllowances) {
             toStringOfAccountCryptoAllowance(sb, allowance);
@@ -372,7 +365,11 @@ public class ThingsToStrings {
             return false;
         }
 
-        final var orderedAllowances = allowances.stream().sorted().toList();
+        final var orderedAllowances = allowances.stream()
+                .sorted(Comparator
+                        .<AccountFungibleTokenAllowance>comparingLong(a -> a.tokenId().tokenNum())
+                        .thenComparingLong(b -> b.spenderId().accountNum()))
+                .toList();
         sb.append("(");
         for (final var allowance : orderedAllowances) {
             toStringOfAccountFungibleTokenAllowance(sb, allowance);
@@ -396,40 +393,6 @@ public class ThingsToStrings {
         sb.append(",");
         sb.append(allowance.amount());
         sb.append(")");
-    }
-
-    public static boolean toStringOfMapEnLong(
-            @NonNull final StringBuilder sb, @Nullable final Map<EntityNum, Long> map) {
-        if (map == null || map.isEmpty()) return false;
-
-        final var orderedEntries = new TreeMap<>(map);
-        sb.append("(");
-        for (final var kv : orderedEntries.entrySet()) {
-            toStringOfEntityNum(sb, kv.getKey());
-            sb.append("->");
-            sb.append(kv.getValue());
-            sb.append(",");
-        }
-        sb.setLength(sb.length() - 1);
-        sb.append(")");
-        return true;
-    }
-
-    public static boolean toStringOfMapFcLong(
-            @NonNull final StringBuilder sb, @Nullable final Map<FcTokenAllowanceId, Long> map) {
-        if (map == null || map.isEmpty()) return false;
-
-        final var orderedEntries = new TreeMap<>(map);
-        sb.append("(");
-        for (final var kv : orderedEntries.entrySet()) {
-            toStringOfFcTokenAllowanceId(sb, kv.getKey());
-            sb.append("->");
-            sb.append(kv.getValue());
-            sb.append(",");
-        }
-        sb.setLength(sb.length() - 1);
-        sb.append(")");
-        return true;
     }
 
     public enum FeeProfile {

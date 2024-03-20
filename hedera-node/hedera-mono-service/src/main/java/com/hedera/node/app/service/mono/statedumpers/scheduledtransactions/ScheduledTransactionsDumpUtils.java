@@ -24,6 +24,7 @@ import com.hedera.node.app.service.mono.statedumpers.utils.FieldBuilder;
 import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -37,7 +38,7 @@ import java.util.stream.Collectors;
 public class ScheduledTransactionsDumpUtils {
     public static void dumpMonoScheduledTransactions(
             @NonNull final Path path,
-            @NonNull final MerkleMapLike<EntityNumVirtualKey, ScheduleVirtualValue> scheduledTransactions,
+            @NonNull final MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> scheduledTransactions,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableScheduledTransactions = gatherMonoScheduledTransactions(scheduledTransactions);
@@ -50,7 +51,7 @@ public class ScheduledTransactionsDumpUtils {
 
     @NonNull
     private static Map<ScheduledTransactionId, ScheduledTransaction> gatherMonoScheduledTransactions(
-            MerkleMapLike<EntityNumVirtualKey, ScheduleVirtualValue> source) {
+            MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> source) {
         final var r = new HashMap<ScheduledTransactionId, ScheduledTransaction>();
         source.forEach((k, v) -> r.put(ScheduledTransactionId.fromMono(k), ScheduledTransaction.fromMono(v)));
         return r;
