@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.callTypeOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
@@ -38,7 +39,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -96,19 +96,19 @@ class HtsSystemContractTest {
     @Test
     void returnsResultFromImpliedCall() {
         givenValidCallAttempt();
+        frameUtils.when(() -> callTypeOf(frame)).thenReturn(FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT);
 
         final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS, true);
         given(call.execute(frame)).willReturn(pricedResult);
         given(attempt.senderId()).willReturn(SENDER_ID);
-        given(frame.getValue()).willReturn(Wei.ZERO);
-        given(frame.getInputData()).willReturn(Bytes.EMPTY);
 
         assertSame(pricedResult.fullResult(), subject.computeFully(validInput, frame));
     }
 
     @Test
     void invalidCallAttemptHaltsAndConsumesRemainingGas() {
-        given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, frame)).willThrow(RuntimeException.class);
+        given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT, frame))
+                .willThrow(RuntimeException.class);
         final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         final var result = subject.computeFully(validInput, frame);
         assertSamePrecompileResult(expected, result);
@@ -117,6 +117,7 @@ class HtsSystemContractTest {
     @Test
     void internalErrorAttemptHaltsAndConsumesRemainingGas() {
         givenValidCallAttempt();
+        frameUtils.when(() -> callTypeOf(frame)).thenReturn(FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT);
         given(call.execute(frame)).willThrow(RuntimeException.class);
 
         final var expected = haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
@@ -136,7 +137,8 @@ class HtsSystemContractTest {
         frameUtils.when(() -> proxyUpdaterFor(frame)).thenReturn(updater);
         lenient().when(updater.enhancement()).thenReturn(enhancement);
         lenient().when(enhancement.systemOperations()).thenReturn(systemOperations);
-        given(attemptFactory.createCallAttemptFrom(validInput, frame)).willReturn(attempt);
+        given(attemptFactory.createCallAttemptFrom(validInput, FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT, frame))
+                .willReturn(attempt);
         given(attempt.asExecutableCall()).willReturn(call);
     }
 }

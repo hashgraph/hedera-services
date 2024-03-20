@@ -24,7 +24,8 @@ public enum TokenKeyType {
     WIPE_KEY(8),
     SUPPLY_KEY(16),
     FEE_SCHEDULE_KEY(32),
-    PAUSE_KEY(64);
+    PAUSE_KEY(64),
+    METADATA_KEY(128);
 
     private final int value;
 

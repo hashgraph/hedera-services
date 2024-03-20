@@ -174,6 +174,7 @@ public class NonceSuite extends HapiSuite {
                         .type(EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(RELAYER)
+                        .hasRetryPrecheckFrom(BUSY)
                         .nonce(0)
                         .gasLimit(ENOUGH_GAS_LIMIT)
                         .hasPrecheck(INVALID_ACCOUNT_ID))
