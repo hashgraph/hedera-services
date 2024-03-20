@@ -43,11 +43,11 @@ import java.util.Objects;
  */
 public class WiringFlowchart {
 
-    public static final String SCHEDULER_COLOR = "ff9";
-    public static final String DIRECT_SCHEDULER_COLOR = "ccc";
+    public static final String SCHEDULER_COLOR = "135f12";
+    public static final String DIRECT_SCHEDULER_COLOR = "12305f";
     public static final String TEXT_COLOR = "000";
     public static final String GROUP_COLOR = "9cf";
-    public static final String SUBSTITUTION_COLOR = "f88";
+    public static final String SUBSTITUTION_COLOR = "5f1212";
 
     private final MermaidNameShortener nameProvider = new MermaidNameShortener();
     private final MermaidStyleManager styleManager = new MermaidStyleManager();
@@ -381,7 +381,17 @@ public class WiringFlowchart {
         final StringBuilder sb = new StringBuilder();
         sb.append(
                 """
-                %%{init: {'flowchart': {'defaultRenderer': 'elk'}}}%%
+                %%{
+                    init: {
+                        'flowchart': {'defaultRenderer': 'elk'},
+                        'theme': 'base',
+                        'themeVariables': {
+                            'primaryColor': '#454545',
+                            'primaryTextColor': '#EEEEEE',
+                            'lineColor': '#C0C0C0'
+                        }
+                    }
+                }%%
                 flowchart TD
                 """);
 
