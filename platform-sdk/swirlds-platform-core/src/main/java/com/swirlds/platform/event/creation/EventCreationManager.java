@@ -51,7 +51,7 @@ public interface EventCreationManager {
      *
      * @param nonAncientEventWindow the non-ancient event window
      */
-    @InputWireLabel("NonAncientEventWindow")
+    @InputWireLabel("non-ancient event window")
     void setNonAncientEventWindow(@NonNull NonAncientEventWindow nonAncientEventWindow);
 
     /**
