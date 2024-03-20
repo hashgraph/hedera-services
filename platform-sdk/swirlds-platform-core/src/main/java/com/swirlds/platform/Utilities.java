@@ -389,6 +389,15 @@ public final class Utilities {
                 .toList();
     }
 
+    /**
+     * Validates that there is a known peer whose signing certificate subject
+     *      matches the agreement certificate issuer
+     *
+     * @param sslsocket
+     * 		the address book to create the list from
+     * @param peerInfoList
+     * 		List of peers to validate
+     * */
     public static void validateTLSPeer(final SSLSocket sslsocket, final List<PeerInfo> peerInfoList) {
         try {
             final X509Certificate agreementCert = (X509Certificate) sslsocket.getSession().getPeerCertificates()[0];
