@@ -1,3 +1,6 @@
+import com.swirlds.config.api.ConfigurationExtension;
+import com.swirlds.platform.config.PlatformConfigurationExtension;
+
 /**
  * The Swirlds public API module used by platform applications.
  */
@@ -146,4 +149,8 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
+    requires static com.google.auto.service;
+
+    provides ConfigurationExtension with
+            PlatformConfigurationExtension;
 }

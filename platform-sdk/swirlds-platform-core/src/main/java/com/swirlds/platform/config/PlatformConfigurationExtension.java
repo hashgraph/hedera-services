@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.config;
 
+import com.google.auto.service.AutoService;
 import com.swirlds.common.config.BasicCommonConfig;
-import com.swirlds.common.config.ConfigurationExtension;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.config.RecycleBinConfig;
@@ -25,7 +25,7 @@ import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
-import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.creation.EventCreationConfig;
@@ -40,49 +40,51 @@ import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Registers configuration types for the platform.
  */
+@AutoService(ConfigurationExtension.class)
 public class PlatformConfigurationExtension implements ConfigurationExtension {
 
     /**
      * {@inheritDoc}
      */
-    @Override
-    public void extendConfiguration(@NonNull final ConfigurationBuilder builder) {
+    public Collection<Class<? extends Record>> getConfigDataTypes() {
 
         // Please keep lists in this method alphabetized (enforced by unit test).
 
         // Load Configuration Definitions
-        builder.withConfigDataType(AddressBookConfig.class)
-                .withConfigDataType(BasicCommonConfig.class)
-                .withConfigDataType(BasicConfig.class)
-                .withConfigDataType(ChatterConfig.class)
-                .withConfigDataType(ConsensusConfig.class)
-                .withConfigDataType(CryptoConfig.class)
-                .withConfigDataType(EventConfig.class)
-                .withConfigDataType(EventCreationConfig.class)
-                .withConfigDataType(MerkleDbConfig.class)
-                .withConfigDataType(MetricsConfig.class)
-                .withConfigDataType(OSHealthCheckConfig.class)
-                .withConfigDataType(PathsConfig.class)
-                .withConfigDataType(PcesConfig.class)
-                .withConfigDataType(PlatformSchedulersConfig.class)
-                .withConfigDataType(PlatformStatusConfig.class)
-                .withConfigDataType(PrometheusConfig.class)
-                .withConfigDataType(ProtocolConfig.class)
-                .withConfigDataType(ReconnectConfig.class)
-                .withConfigDataType(RecycleBinConfig.class)
-                .withConfigDataType(SocketConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
-                .withConfigDataType(StateConfig.class)
-                .withConfigDataType(SyncConfig.class)
-                .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(ThreadConfig.class)
-                .withConfigDataType(TransactionConfig.class)
-                .withConfigDataType(UptimeConfig.class)
-                .withConfigDataType(VirtualMapConfig.class);
+        return List.of(
+                AddressBookConfig.class,
+                BasicCommonConfig.class,
+                BasicConfig.class,
+                ChatterConfig.class,
+                ConsensusConfig.class,
+                CryptoConfig.class,
+                EventConfig.class,
+                EventCreationConfig.class,
+                MerkleDbConfig.class,
+                MetricsConfig.class,
+                OSHealthCheckConfig.class,
+                PathsConfig.class,
+                PcesConfig.class,
+                PlatformSchedulersConfig.class,
+                PlatformStatusConfig.class,
+                PrometheusConfig.class,
+                ProtocolConfig.class,
+                ReconnectConfig.class,
+                RecycleBinConfig.class,
+                SocketConfig.class,
+                StateCommonConfig.class,
+                StateConfig.class,
+                SyncConfig.class,
+                TemporaryFileConfig.class,
+                ThreadConfig.class,
+                TransactionConfig.class,
+                UptimeConfig.class,
+                VirtualMapConfig.class);
     }
 }

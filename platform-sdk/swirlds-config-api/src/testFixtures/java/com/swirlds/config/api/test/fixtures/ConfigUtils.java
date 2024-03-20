@@ -1,4 +1,21 @@
 /*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.swirlds.config.api.test.fixtures;
+/*
  * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,17 +31,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config;
-
 import com.swirlds.common.constructable.URLClassLoaderWithLookup;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -111,83 +124,5 @@ public final class ConfigUtils {
                     .map(clazz -> (Class<? extends Record>) clazz)
                     .collect(Collectors.toSet());
         }
-    }
-
-    /**
-     * Scan all classes on the classpath / modulepath and extend configuration with all {@link ConfigurationExtension}
-     * classes.
-     *
-     * @param configurationBuilder a configuration builder
-     * @return the configuration builder that was passed as a param (for fluent api)
-     */
-    @NonNull
-    public static ConfigurationBuilder scanAndRegisterAllConfigExtensions(
-            @NonNull final ConfigurationBuilder configurationBuilder) {
-        return scanAndRegisterAllConfigExtensions(configurationBuilder, Set.of());
-    }
-
-    /**
-     * Scan all classes on the classpath / modulepath that are under the provided {@code packagePrefixes} and extend
-     * configuration with all {@link ConfigurationExtension} clases. If the given {@code packagePrefixes} Set is empty
-     * all packages will be scanned.
-     *
-     * @param configurationBuilder a configuration builder
-     * @param packagePrefixes      the package prefixes to scan
-     * @return the configuration builder that was passed as a param (for fluent api)
-     */
-    @NonNull
-    public static ConfigurationBuilder scanAndRegisterAllConfigExtensions(
-            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Set<String> packagePrefixes) {
-        Objects.requireNonNull(packagePrefixes, "packagePrefixes must not be null");
-        return scanAndRegisterAllConfigExtensions(configurationBuilder, packagePrefixes, Collections.emptyList());
-    }
-
-    /**
-     * Scan all classes in a classpath and extend configuration with all {@link ConfigurationExtension} classes.
-     *
-     * @param configurationBuilder   a configuration builder
-     * @param packagePrefixes        the package prefixes to scan
-     * @param additionalClassLoaders additional classloaders to scan
-     * @return the configuration builder that was passed as a param (for fluent api)
-     */
-    @NonNull
-    public static ConfigurationBuilder scanAndRegisterAllConfigExtensions(
-            @NonNull final ConfigurationBuilder configurationBuilder,
-            @NonNull final Set<String> packagePrefixes,
-            @NonNull final List<URLClassLoaderWithLookup> additionalClassLoaders) {
-        Objects.requireNonNull(configurationBuilder, "configurationBuilder must not be null");
-
-        final ClassGraph classGraph = new ClassGraph().enableAnnotationInfo();
-
-        if (!packagePrefixes.isEmpty()) {
-            classGraph.whitelistPackages(packagePrefixes.toArray(new String[0]));
-        }
-
-        for (final URLClassLoaderWithLookup classloader : additionalClassLoaders) {
-            classGraph.addClassLoader(classloader);
-        }
-
-        try (final ScanResult result = classGraph.scan()) {
-            final ClassInfoList classInfos = result.getClassesImplementing(ConfigurationExtension.class.getName());
-            for (final ClassInfo classInfo : classInfos) {
-
-                final Class<?> clazz = classInfo.loadClass();
-                try {
-                    final ConfigurationExtension extension = (ConfigurationExtension)
-                            clazz.getDeclaredConstructor().newInstance();
-                    extension.extendConfiguration(configurationBuilder);
-                } catch (final InstantiationException
-                        | IllegalAccessException
-                        | NoSuchMethodException
-                        | InvocationTargetException e) {
-                    throw new RuntimeException(
-                            "Failed to instantiate ConfigurationExtension class " + clazz.getName()
-                                    + ". This may happen if the class does not have a zero-arg constructor.",
-                            e);
-                }
-            }
-        }
-
-        return configurationBuilder;
     }
 }

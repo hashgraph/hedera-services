@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config;
+package com.swirlds.config.impl;
 
-import com.swirlds.common.config.sub.TestConfig;
+import com.swirlds.common.config.BasicCommonConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.api.test.fixtures.ConfigUtils;
+import com.swirlds.config.impl.sub.TestConfig;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -60,54 +63,12 @@ class ConfigUtilsTest {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
 
         // when
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds.common.config.sub"));
+        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds.config.impl.sub"));
         final Configuration configuration = configurationBuilder.build();
 
         // then
         Assertions.assertFalse(configuration.getConfigDataTypes().isEmpty());
         Assertions.assertEquals(1, configuration.getConfigDataTypes().size());
         Assertions.assertTrue(configuration.getConfigDataTypes().contains(TestConfig.class));
-    }
-
-    @Test
-    void testDefaultBehaviorExtensionScanning() {
-        // given
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-
-        ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder);
-        final Configuration configuration = configurationBuilder.build();
-
-        // then
-        Assertions.assertFalse(configuration.getConfigDataTypes().isEmpty());
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(BasicCommonConfig.class));
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(StateCommonConfig.class));
-    }
-
-    @Test
-    void testNotExistingPackageExtensionScanning() {
-        // given
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-
-        // when
-        ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder, Set.of("not.available.package"));
-        final Configuration configuration = configurationBuilder.build();
-
-        // then
-        Assertions.assertTrue(configuration.getConfigDataTypes().isEmpty());
-    }
-
-    @Test
-    void testExistingPackageExtensionScanning() {
-        // given
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-
-        // when
-        ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder, Set.of("com.swirlds.platform.config"));
-        final Configuration configuration = configurationBuilder.build();
-
-        // then
-        Assertions.assertFalse(configuration.getConfigDataTypes().isEmpty());
-        Assertions.assertTrue(!configuration.getConfigDataTypes().isEmpty());
-        Assertions.assertTrue(configuration.getConfigDataTypes().contains(BasicCommonConfig.class));
     }
 }

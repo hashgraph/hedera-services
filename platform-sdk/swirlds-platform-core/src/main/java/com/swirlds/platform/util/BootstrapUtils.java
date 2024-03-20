@@ -39,7 +39,6 @@ import com.swirlds.platform.JVMPauseDetectorThread;
 import com.swirlds.platform.ThreadDumpGenerator;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
-import com.swirlds.platform.config.PlatformConfigurationExtension;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
@@ -109,8 +108,7 @@ public final class BootstrapUtils {
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
-        configurationBuilder.withSource(mappedSettingsConfigSource);
-        new PlatformConfigurationExtension().extendConfiguration(configurationBuilder);
+        configurationBuilder.autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
     }
 
     /**

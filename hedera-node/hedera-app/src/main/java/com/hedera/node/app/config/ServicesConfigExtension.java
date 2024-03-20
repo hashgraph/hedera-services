@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.config;
 
+import com.google.auto.service.AutoService;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
@@ -79,73 +80,77 @@ import com.hedera.node.config.types.KeyValuePair;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.config.ConfigurationExtension;
-import com.swirlds.config.api.ConfigurationBuilder;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.base.utility.Pair;
+import com.swirlds.config.api.ConfigurationExtension;
+import com.swirlds.config.api.converter.ConfigConverter;
+import com.swirlds.config.api.validation.ConfigValidator;
+import java.util.Collection;
+import java.util.Set;
 
 /**
  * Sets up configuration for services.
  */
+@AutoService(ConfigurationExtension.class)
 public class ServicesConfigExtension implements ConfigurationExtension {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void extendConfiguration(@NonNull final ConfigurationBuilder builder) {
-        // Register config data types
-        builder.withConfigDataType(AccountsConfig.class)
-                .withConfigDataType(ApiPermissionConfig.class)
-                .withConfigDataType(AutoCreationConfig.class)
-                .withConfigDataType(AutoRenew2Config.class)
-                .withConfigDataType(AutoRenewConfig.class)
-                .withConfigDataType(BalancesConfig.class)
-                .withConfigDataType(BlockRecordStreamConfig.class)
-                .withConfigDataType(BootstrapConfig.class)
-                .withConfigDataType(CacheConfig.class)
-                .withConfigDataType(ConsensusConfig.class)
-                .withConfigDataType(ContractsConfig.class)
-                .withConfigDataType(CryptoCreateWithAliasConfig.class)
-                .withConfigDataType(DevConfig.class)
-                .withConfigDataType(EntitiesConfig.class)
-                .withConfigDataType(ExpiryConfig.class)
-                .withConfigDataType(FeesConfig.class)
-                .withConfigDataType(FilesConfig.class)
-                .withConfigDataType(GrpcConfig.class)
-                .withConfigDataType(HederaConfig.class)
-                .withConfigDataType(LazyCreationConfig.class)
-                .withConfigDataType(LedgerConfig.class)
-                .withConfigDataType(NettyConfig.class)
-                .withConfigDataType(NetworkAdminConfig.class)
-                .withConfigDataType(RatesConfig.class)
-                .withConfigDataType(SchedulingConfig.class)
-                .withConfigDataType(SigsConfig.class)
-                .withConfigDataType(StakingConfig.class)
-                .withConfigDataType(StatsConfig.class)
-                .withConfigDataType(TokensConfig.class)
-                .withConfigDataType(TopicsConfig.class)
-                .withConfigDataType(TraceabilityConfig.class)
-                .withConfigDataType(UpgradeConfig.class)
-                .withConfigDataType(UtilPrngConfig.class)
-                .withConfigDataType(VersionConfig.class);
+    public Collection<Class<? extends Record>> getConfigDataTypes() {
 
-        // Register converters
-        builder.withConverter(CongestionMultipliers.class, new CongestionMultipliersConverter())
-                .withConverter(EntityScaleFactors.class, new EntityScaleFactorsConverter())
-                .withConverter(KnownBlockValues.class, new KnownBlockValuesConverter())
-                .withConverter(LegacyContractIdActivations.class, new LegacyContractIdActivationsConverter())
-                .withConverter(ScaleFactor.class, new ScaleFactorConverter())
-                .withConverter(AccountID.class, new AccountIDConverter())
-                .withConverter(ContractID.class, new ContractIDConverter())
-                .withConverter(FileID.class, new FileIDConverter())
-                .withConverter(PermissionedAccountsRange.class, new PermissionedAccountsRangeConverter())
-                .withConverter(SemanticVersion.class, new SemanticVersionConverter())
-                .withConverter(LongPair.class, new LongPairConverter())
-                .withConverter(KeyValuePair.class, new KeyValuePairConverter())
-                .withConverter(HederaFunctionalitySet.class, new FunctionalitySetConverter())
-                .withConverter(Bytes.class, new BytesConverter());
+        return Set.of(
+                AccountsConfig.class,
+                ApiPermissionConfig.class,
+                AutoCreationConfig.class,
+                AutoRenew2Config.class,
+                AutoRenewConfig.class,
+                BalancesConfig.class,
+                BlockRecordStreamConfig.class,
+                BootstrapConfig.class,
+                CacheConfig.class,
+                ConsensusConfig.class,
+                ContractsConfig.class,
+                CryptoCreateWithAliasConfig.class,
+                DevConfig.class,
+                EntitiesConfig.class,
+                ExpiryConfig.class,
+                FeesConfig.class,
+                FilesConfig.class,
+                GrpcConfig.class,
+                HederaConfig.class,
+                LazyCreationConfig.class,
+                LedgerConfig.class,
+                NettyConfig.class,
+                NetworkAdminConfig.class,
+                RatesConfig.class,
+                SchedulingConfig.class,
+                SigsConfig.class,
+                StakingConfig.class,
+                StatsConfig.class,
+                TokensConfig.class,
+                TopicsConfig.class,
+                TraceabilityConfig.class,
+                UpgradeConfig.class,
+                UtilPrngConfig.class,
+                VersionConfig.class);
+    }
 
-        // register validators
-        builder.withValidator(new EmulatesMapValidator());
+    public Collection<Pair<Class<?>, ConfigConverter<?>>> getConverters() {
+        return Set.of(
+                Pair.of(CongestionMultipliers.class, new CongestionMultipliersConverter()),
+                Pair.of(EntityScaleFactors.class, new EntityScaleFactorsConverter()),
+                Pair.of(KnownBlockValues.class, new KnownBlockValuesConverter()),
+                Pair.of(LegacyContractIdActivations.class, new LegacyContractIdActivationsConverter()),
+                Pair.of(ScaleFactor.class, new ScaleFactorConverter()),
+                Pair.of(AccountID.class, new AccountIDConverter()),
+                Pair.of(ContractID.class, new ContractIDConverter()),
+                Pair.of(FileID.class, new FileIDConverter()),
+                Pair.of(PermissionedAccountsRange.class, new PermissionedAccountsRangeConverter()),
+                Pair.of(SemanticVersion.class, new SemanticVersionConverter()),
+                Pair.of(LongPair.class, new LongPairConverter()),
+                Pair.of(KeyValuePair.class, new KeyValuePairConverter()),
+                Pair.of(HederaFunctionalitySet.class, new FunctionalitySetConverter()),
+                Pair.of(Bytes.class, new BytesConverter()));
+    }
+
+    public Collection<ConfigValidator> getValidators() {
+        return Set.of(new EmulatesMapValidator());
     }
 }
