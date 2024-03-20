@@ -146,7 +146,7 @@ public class TestGuiSource {
     public static @NonNull List<EventSource<?>> generateSources(final int numNetworkNodes) {
         final List<EventSource<?>> list = new LinkedList<>();
         for (long i = 0; i < numNetworkNodes; i++) {
-            list.add(new StandardEventSource(true));
+            list.add(new StandardEventSource());
         }
         return list;
     }

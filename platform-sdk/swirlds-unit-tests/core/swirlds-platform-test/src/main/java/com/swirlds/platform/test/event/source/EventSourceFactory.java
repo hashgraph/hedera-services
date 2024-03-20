@@ -77,11 +77,11 @@ public class EventSourceFactory {
     }
 
     public static StandardEventSource newStandardEventSource() {
-        return new StandardEventSource(false);
+        return new StandardEventSource();
     }
 
     public static StandardEventSource newStandardEventSource(final long weight) {
-        return new StandardEventSource(false, weight);
+        return new StandardEventSource(weight);
     }
 
     public static List<StandardEventSource> newStandardEventSources(final int numToCreate) {
@@ -99,11 +99,11 @@ public class EventSourceFactory {
     }
 
     public static ForkingEventSource newForkingEventSource() {
-        return new ForkingEventSource(false);
+        return new ForkingEventSource();
     }
 
     public static ForkingEventSource newForkingEventSource(final double forkProbability) {
-        final ForkingEventSource source = new ForkingEventSource(false);
+        final ForkingEventSource source = new ForkingEventSource();
         source.setForkProbability(forkProbability);
         return source;
     }

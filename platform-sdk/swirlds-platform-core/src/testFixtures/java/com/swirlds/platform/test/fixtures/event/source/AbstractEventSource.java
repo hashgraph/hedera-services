@@ -104,18 +104,13 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     /** Supplier of transactions for emitted events **/
     private TransactionGenerator transactionGenerator;
 
-    private final boolean useFakeHashes;
-
     /**
      * Creates a new instance with the supplied transaction generator and weight.
      *
-     * @param useFakeHashes        indicates if fake hashes should be used instead of real ones
      * @param transactionGenerator a transaction generator to use when creating events
      * @param weight               the weight allocated to this event source
      */
-    protected AbstractEventSource(
-            final boolean useFakeHashes, final TransactionGenerator transactionGenerator, final long weight) {
-        this.useFakeHashes = useFakeHashes;
+    protected AbstractEventSource(final TransactionGenerator transactionGenerator, final long weight) {
         this.transactionGenerator = transactionGenerator;
         this.weight = weight;
         nodeId = NodeId.UNDEFINED_NODE_ID;
@@ -133,7 +128,6 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     }
 
     protected AbstractEventSource(final AbstractEventSource<T> that) {
-        this.useFakeHashes = that.useFakeHashes;
         this.transactionGenerator = that.transactionGenerator;
         this.weight = that.weight;
         this.nodeId = that.nodeId;
@@ -244,7 +238,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
                 transactionGenerator.generate(random),
                 latestSelfEvent,
                 otherParentEvent,
-                useFakeHashes);
+                false);
 
         eventCount++;
 

@@ -830,7 +830,7 @@ public class SyncTests {
         // node 0 should not create any events after CommonEvents
         executor.setFactoryConfig((factory) -> factory.getSourceFactory()
                 .addCustomSource((index) -> index == creatorIndexToExpire, () -> {
-                    final StandardEventSource source0 = new StandardEventSource(false);
+                    final StandardEventSource source0 = new StandardEventSource();
                     source0.setNewEventWeight((r, index, prev) -> {
                         if (index <= params.getNumCommonEvents() / 2) {
                             return 1.0;

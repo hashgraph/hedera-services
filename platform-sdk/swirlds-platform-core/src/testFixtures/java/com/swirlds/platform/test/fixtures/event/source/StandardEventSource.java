@@ -28,30 +28,21 @@ public class StandardEventSource extends AbstractEventSource<StandardEventSource
 
     private LinkedList<IndexedEvent> latestEvents;
 
-    public StandardEventSource(final boolean useFakeHashes) {
-        this(useFakeHashes, DEFAULT_TRANSACTION_GENERATOR, DEFAULT_WEIGHT);
-    }
-
-    public StandardEventSource(final boolean useFakeHashes, final long weight) {
-        this(useFakeHashes, DEFAULT_TRANSACTION_GENERATOR, weight);
+    public StandardEventSource() {
+        this(DEFAULT_TRANSACTION_GENERATOR, DEFAULT_WEIGHT);
     }
 
     public StandardEventSource(final long weight) {
-        this(true, DEFAULT_TRANSACTION_GENERATOR, weight);
+        this(DEFAULT_TRANSACTION_GENERATOR, weight);
     }
 
-    public StandardEventSource(final boolean useFakeHashes, final TransactionGenerator transactionGenerator) {
-        this(useFakeHashes, transactionGenerator, DEFAULT_WEIGHT);
+    public StandardEventSource(final TransactionGenerator transactionGenerator) {
+        this(transactionGenerator, DEFAULT_WEIGHT);
     }
 
-    public StandardEventSource(
-            final boolean useFakeHashes, final TransactionGenerator transactionGenerator, final long weight) {
-        super(useFakeHashes, transactionGenerator, weight);
+    public StandardEventSource(final TransactionGenerator transactionGenerator, final long weight) {
+        super(transactionGenerator, weight);
         latestEvents = new LinkedList<>();
-    }
-
-    public StandardEventSource() {
-        this(true);
     }
 
     private StandardEventSource(final StandardEventSource that) {

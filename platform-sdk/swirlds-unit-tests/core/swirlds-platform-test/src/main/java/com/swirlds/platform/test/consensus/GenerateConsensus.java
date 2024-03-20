@@ -49,7 +49,7 @@ public final class GenerateConsensus {
             @NonNull PlatformContext platformContext, final int numNodes, final int numEvents, final long seed) {
         Objects.requireNonNull(platformContext);
         final List<EventSource<?>> eventSources = new ArrayList<>();
-        IntStream.range(0, numNodes).forEach(i -> eventSources.add(new StandardEventSource(false)));
+        IntStream.range(0, numNodes).forEach(i -> eventSources.add(new StandardEventSource()));
         final StandardGraphGenerator generator = new StandardGraphGenerator(seed, eventSources);
         final TestIntake intake = new TestIntake(platformContext, generator.getAddressBook());
 
