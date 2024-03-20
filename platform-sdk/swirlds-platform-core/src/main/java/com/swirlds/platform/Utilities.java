@@ -26,6 +26,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
@@ -390,17 +391,20 @@ public final class Utilities {
     }
 
     /**
-     * Validates that there is a known peer whose signing certificate subject
-     *      matches the agreement certificate issuer
+     * Validates that there exists a known TLS peer whose signing certificate's subject
+     *      matches the agreement certificate's issuer
      *
      * @param sslsocket
      * 		the address book to create the list from
      * @param peerInfoList
      * 		List of peers to validate
      * */
-    public static void validateTLSPeer(final SSLSocket sslsocket, final List<PeerInfo> peerInfoList) {
+    public static PeerInfo validateTLSPeer(
+            final @NonNull SSLSocket sslsocket, final @NonNull List<PeerInfo> peerInfoList) {
+        PeerInfo matchingPair = null;
         try {
-            final X509Certificate agreementCert = (X509Certificate) sslsocket.getSession().getPeerCertificates()[0];
+            final Certificate[] certs = sslsocket.getSession().getPeerCertificates();
+            final X509Certificate agreementCert = (X509Certificate) certs[0];
             final Optional<PeerInfo> peerOptional = peerInfoList.stream()
                     .filter(peerInfo -> ((X509Certificate) peerInfo.signingCertificate())
                             .getSubjectX500Principal()
@@ -408,17 +412,19 @@ public final class Utilities {
                     .findFirst();
             if (peerOptional.isEmpty()) {
                 logger.warn(
-                        "Handshake with client {}:{} was successful but we couldn't find a matching peer",
+                        "Handshake with client {}:{} was successful but we couldn't find a matching peer. Closing connection.",
                         sslsocket.getInetAddress(),
                         sslsocket.getPort());
-                //Peer invalid. We should close the peer's connection/throw an exception
-                //Lazar to confirm
+            } else {
+                matchingPair = peerOptional.get();
             }
         } catch (final SSLPeerUnverifiedException e) {
             logger.warn(
-                    "Handshake with client {}:{} was successful but we couldn't find a matching peer",
+                    "Attempt to obtain certificate from an unverified peer {}:{} threw exception {}",
                     sslsocket.getInetAddress(),
-                    sslsocket.getPort());
+                    sslsocket.getPort(),
+                    e.getMessage());
         }
+        return matchingPair;
     }
 }

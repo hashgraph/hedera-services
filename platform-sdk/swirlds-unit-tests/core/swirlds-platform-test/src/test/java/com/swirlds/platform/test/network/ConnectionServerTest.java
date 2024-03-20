@@ -55,8 +55,9 @@ class ConnectionServerTest {
         doAnswer(i -> serverSocket).when(socketFactory).createServerSocket(anyInt());
         final AtomicReference<Socket> connectionHandler = new AtomicReference<>(null);
 
-        final AddressBook addressBook =
-                new RandomAddressBookGenerator(RandomUtils.getRandomPrintSeed()).setSize(2).build();
+        final AddressBook addressBook = new RandomAddressBookGenerator(RandomUtils.getRandomPrintSeed())
+                .setSize(2)
+                .build();
         final ConnectionServer server = new ConnectionServer(
                 getStaticThreadManager(),
                 0,
