@@ -92,13 +92,16 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
                 transferNonFungibleWithRoyaltyRandomFeeDifCollectorAccount(),
                 transferNonFungibleWithRoyaltySameHTSTreasuryТоRandom(),
                 transferNonFungibleWithRoyaltyAnotherHTSTreasuryТоRandom(),
-                transferNonFungibleWithRoyaltyFallbackAllowanceNegative(),
                 transferNonFungibleWithRoyaltyAllowanceOfTheNFTGiven(),
                 transferNonFungibleWithRoyaltyAllCollectorsExempt(),
                 transferNonFungibleWith2LayersRoyaltyFungibleFee(),
                 transferNonFungibleWith2LayersRoyaltyHbarFee(),
                 transferNonFungibleWithRoyaltyFromFeeCollector(),
-                transferMultipleTimesWithRoyaltyWithFallbackFeeShouldVerifyEachTransferIsPaid());
+                transferMultipleTimesWithRoyaltyWithFallbackFeeShouldVerifyEachTransferIsPaid(),
+                transferNonFungibleWithMultipleRoyaltyFungibleFee(),
+                transferNonFungibleWithMultipleRoyaltyFungibleFeeToFeeCollector(),
+                transferNonFungibleWithRoyaltyFallbackAllowanceNegative(),
+                transferNonFungibleWithMultipleRoyaltyFungibleFeeNegative());
     }
 
     @HapiTest
@@ -168,6 +171,127 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
                                 .hasTokenBalance(nonFungibleToken, 1)
                                 .hasTokenBalance(feeDenom, 0),
                         getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 2));
+    }
+
+    @HapiTest
+    public HapiSpec transferNonFungibleWithMultipleRoyaltyFungibleFee() {
+        return defaultHapiSpec("transferNonFungibleWithMultipleRoyaltyFungibleFee")
+                .given(
+                        newKeyNamed(NFT_KEY),
+                        cryptoCreate(htsCollector),
+                        cryptoCreate(alice),
+                        cryptoCreate(tokenReceiver).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenTreasury),
+                        cryptoCreate(tokenOwner),
+                        tokenCreate(feeDenom).treasury(tokenReceiver).initialSupply(10),
+                        tokenAssociate(tokenOwner, feeDenom),
+                        tokenAssociate(htsCollector, feeDenom),
+                        tokenAssociate(alice, feeDenom),
+                        tokenCreate(nonFungibleToken)
+                                .treasury(tokenTreasury)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .supplyKey(NFT_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .withCustom(royaltyFeeNoFallback(6, 10, htsCollector))
+                                .withCustom(royaltyFeeNoFallback(7, 10, alice)),
+                        tokenAssociate(tokenReceiver, nonFungibleToken),
+                        tokenAssociate(tokenOwner, nonFungibleToken),
+                        mintToken(nonFungibleToken, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+                        cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)))
+                .when(cryptoTransfer(
+                        movingUnique(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver),
+                        moving(4, feeDenom).between(tokenReceiver, tokenOwner)))
+                .then(
+                        getAccountBalance(tokenOwner)
+                                .hasTokenBalance(nonFungibleToken, 0)
+                                .hasTokenBalance(feeDenom, 0),
+                        getAccountBalance(tokenReceiver)
+                                .hasTokenBalance(nonFungibleToken, 1)
+                                .hasTokenBalance(feeDenom, 6),
+                        getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 2),
+                        getAccountBalance(alice).hasTokenBalance(feeDenom, 2));
+    }
+
+    @HapiTest
+    public HapiSpec transferNonFungibleWithMultipleRoyaltyFungibleFeeToFeeCollector() {
+        return defaultHapiSpec("transferNonFungibleWithMultipleRoyaltyFungibleFeeToFeeCollector")
+                .given(
+                        newKeyNamed(NFT_KEY),
+                        cryptoCreate(htsCollector),
+                        cryptoCreate(alice),
+                        cryptoCreate(tokenReceiver).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenTreasury),
+                        cryptoCreate(tokenOwner),
+                        tokenCreate(feeDenom).treasury(alice).initialSupply(10),
+                        tokenAssociate(tokenOwner, feeDenom),
+                        tokenAssociate(htsCollector, feeDenom),
+                        tokenCreate(nonFungibleToken)
+                                .treasury(tokenTreasury)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .supplyKey(NFT_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .withCustom(royaltyFeeNoFallback(6, 10, htsCollector))
+                                .withCustom(royaltyFeeNoFallback(7, 10, alice)),
+                        tokenAssociate(tokenReceiver, nonFungibleToken),
+                        tokenAssociate(tokenOwner, nonFungibleToken),
+                        tokenAssociate(alice, nonFungibleToken),
+                        mintToken(nonFungibleToken, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+                        cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)))
+                .when(cryptoTransfer(
+                        movingUnique(nonFungibleToken, 1L).between(tokenOwner, alice),
+                        moving(4, feeDenom).between(alice, tokenOwner)))
+                .then(
+                        getAccountBalance(tokenOwner)
+                                .hasTokenBalance(nonFungibleToken, 0)
+                                .hasTokenBalance(feeDenom, 0),
+                        getAccountBalance(alice)
+                                .hasTokenBalance(nonFungibleToken, 1)
+                                .hasTokenBalance(feeDenom, 8),
+                        getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 2));
+    }
+
+    @HapiTest
+    public HapiSpec transferNonFungibleWithMultipleRoyaltyFungibleFeeNegative() {
+        return defaultHapiSpec("transferNonFungibleWithMultipleRoyaltyFungibleFeeNegative")
+                .given(
+                        newKeyNamed(NFT_KEY),
+                        cryptoCreate(htsCollector),
+                        cryptoCreate(alice),
+                        cryptoCreate(tokenReceiver).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenTreasury),
+                        cryptoCreate(tokenOwner),
+                        tokenCreate(feeDenom).treasury(tokenReceiver).initialSupply(10),
+                        tokenAssociate(tokenOwner, feeDenom),
+                        tokenAssociate(htsCollector, feeDenom),
+                        tokenAssociate(alice, feeDenom),
+                        tokenCreate(nonFungibleToken)
+                                .treasury(tokenTreasury)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .supplyKey(NFT_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .withCustom(royaltyFeeNoFallback(6, 10, htsCollector))
+                                .withCustom(royaltyFeeNoFallback(9, 10, alice)),
+                        tokenAssociate(tokenReceiver, nonFungibleToken),
+                        tokenAssociate(tokenOwner, nonFungibleToken),
+                        mintToken(nonFungibleToken, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+                        cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)))
+                .when(cryptoTransfer(
+                        movingUnique(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver),
+                        moving(4, feeDenom).between(tokenReceiver, tokenOwner))
+                            .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+                )
+                .then(
+                        getAccountBalance(tokenOwner)
+                                .hasTokenBalance(nonFungibleToken, 1)
+                                .hasTokenBalance(feeDenom, 0),
+                        getAccountBalance(tokenReceiver)
+                                .hasTokenBalance(nonFungibleToken, 0)
+                                .hasTokenBalance(feeDenom, 10),
+                        getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 0),
+                        getAccountBalance(alice).hasTokenBalance(feeDenom, 0));
     }
 
     @HapiTest
@@ -876,6 +1000,8 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
                         getAccountBalance(tokenOwner).hasTokenBalance(nonFungibleToken, 0),
                         getAccountBalance(tokenReceiver).hasTokenBalance(nonFungibleToken, 1),
                         getAccountBalance(tokenReceiver).hasTokenBalance(feeDenom, 10),
+                        getAccountBalance(tokenOwner).hasTokenBalance(feeDenom, 8),
+                        getAccountBalance(spender).hasTokenBalance(feeDenom, 0),
                         getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 2));
     }
 
