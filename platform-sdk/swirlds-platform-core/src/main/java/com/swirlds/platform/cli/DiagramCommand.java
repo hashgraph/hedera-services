@@ -55,6 +55,7 @@ public final class DiagramCommand extends AbstractCommand {
     private Set<String> collapsedGroups = Set.of();
     private List<String> substitutionStrings = List.of();
     private List<String> manualLinks = List.of();
+    private boolean lessMystery = false;
 
     private DiagramCommand() {}
 
@@ -88,6 +89,13 @@ public final class DiagramCommand extends AbstractCommand {
         this.manualLinks = manualLinks;
     }
 
+    @CommandLine.Option(
+            names = {"-m", "--less-mystery"},
+            description = "Do not hide mystery edges. May create a noisy diagram if there are a lot of mystery edges.")
+    private void setLessMystery(final boolean lessMystery) {
+        this.lessMystery = lessMystery;
+    }
+
     /**
      * Entry point.
      */
@@ -108,7 +116,7 @@ public final class DiagramCommand extends AbstractCommand {
 
         final String diagramString = platformWiring
                 .getModel()
-                .generateWiringDiagram(parseGroups(), parseSubstitutions(), parseManualLinks());
+                .generateWiringDiagram(parseGroups(), parseSubstitutions(), parseManualLinks(), !lessMystery);
         final String encodedDiagramString = Base64.getEncoder().encodeToString(diagramString.getBytes());
 
         final String editorUrl = "https://mermaid.ink/svg/" + encodedDiagramString + "?bgColor=e8e8e8";

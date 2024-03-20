@@ -166,7 +166,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             }
 
             if (!newTreasury.equals(existingTreasury)) {
-                // TODO : Not sure why we are checking existing treasury account here
                 final var existingTreasuryAccount = getIfUsable(
                         existingTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
@@ -260,17 +259,26 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var toRelBalance = toTreasuryRel.balance();
 
         final var fromNftsOwned = fromTreasury.numberOwnedNfts();
-        final var toNftsWOwned = toTreasury.numberOwnedNfts();
+        final var toNftsOwned = toTreasury.numberOwnedNfts();
 
         final var fromTreasuryCopy = fromTreasury.copyBuilder();
         final var toTreasuryCopy = toTreasury.copyBuilder();
         final var fromRelCopy = fromTreasuryRel.copyBuilder();
         final var toRelCopy = toTreasuryRel.copyBuilder();
 
-        accountStore.put(
-                fromTreasuryCopy.numberOwnedNfts(fromNftsOwned - fromRelBalance).build());
-        accountStore.put(
-                toTreasuryCopy.numberOwnedNfts(toNftsWOwned + fromRelBalance).build());
+        // Update the number of positive balances and number of owned NFTs for old and new treasuries
+        final var newFromPositiveBalancesCount =
+                fromRelBalance > 0 ? fromTreasury.numberPositiveBalances() - 1 : fromTreasury.numberPositiveBalances();
+        final var newToPositiveBalancesCount =
+                toRelBalance > 0 ? toTreasury.numberPositiveBalances() + 1 : toTreasury.numberPositiveBalances();
+        accountStore.put(fromTreasuryCopy
+                .numberPositiveBalances(newFromPositiveBalancesCount)
+                .numberOwnedNfts(fromNftsOwned - fromRelBalance)
+                .build());
+        accountStore.put(toTreasuryCopy
+                .numberPositiveBalances(newToPositiveBalancesCount)
+                .numberOwnedNfts(toNftsOwned + fromRelBalance)
+                .build());
         tokenRelStore.put(fromRelCopy.balance(0).build());
         tokenRelStore.put(toRelCopy.balance(toRelBalance + fromRelBalance).build());
     }

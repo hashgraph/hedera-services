@@ -72,7 +72,7 @@ final class ServicesRegistryImplTest {
                                 .stateToCreate(StateDefinition.singleton("Singleton", Timestamp.JSON))
                                 .build())
                         .build(),
-                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION));
+                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION, 0));
         //noinspection removal
         verify(cr, atLeastOnce()).registerConstructable(any());
     }
@@ -82,13 +82,13 @@ final class ServicesRegistryImplTest {
         final var registry = new ServicesRegistryImpl(cr, genesisRecords);
         registry.register(
                 TestService.newBuilder().name("B").build(),
-                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION));
+                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION, 0));
         registry.register(
                 TestService.newBuilder().name("C").build(),
-                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION));
+                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION, 0));
         registry.register(
                 TestService.newBuilder().name("A").build(),
-                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION));
+                new HederaSoftwareVersion(CURRENT_VERSION, CURRENT_VERSION, 0));
 
         final var registrations = registry.registrations();
         assertThat(registrations.stream().map(r -> r.service().getServiceName()))
