@@ -76,7 +76,7 @@ class BirthRoundMigrationShimTests {
         final long lastRoundBeforeBirthRoundMode = random.nextLong(100, 1_000);
         final long lowestJudgeGenerationBeforeBirthRoundMode = random.nextLong(100, 1_000);
 
-        final BirthRoundMigrationShim shim = new BirthRoundMigrationShim(
+        final BirthRoundMigrationShim shim = new DefaultBirthRoundMigrationShim(
                 platformContext,
                 firstVersionInBirthRoundMode,
                 lastRoundBeforeBirthRoundMode,
@@ -119,7 +119,7 @@ class BirthRoundMigrationShimTests {
         final long lastRoundBeforeBirthRoundMode = random.nextLong(100, 1_000);
         final long lowestJudgeGenerationBeforeBirthRoundMode = random.nextLong(100, 1_000);
 
-        final BirthRoundMigrationShim shim = new BirthRoundMigrationShim(
+        final BirthRoundMigrationShim shim = new DefaultBirthRoundMigrationShim(
                 platformContext,
                 firstVersionInBirthRoundMode,
                 lastRoundBeforeBirthRoundMode,
@@ -163,7 +163,7 @@ class BirthRoundMigrationShimTests {
         final long lastRoundBeforeBirthRoundMode = random.nextLong(100, 1_000);
         final long lowestJudgeGenerationBeforeBirthRoundMode = random.nextLong(100, 1_000);
 
-        final BirthRoundMigrationShim shim = new BirthRoundMigrationShim(
+        final BirthRoundMigrationShim shim = new DefaultBirthRoundMigrationShim(
                 platformContext,
                 firstVersionInBirthRoundMode,
                 lastRoundBeforeBirthRoundMode,

@@ -52,7 +52,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link InternalEventValidator}
+ * Tests for {@link DefaultInternalEventValidator}
  */
 class InternalEventValidatorTests {
     private AtomicLong exitedIntakePipelineCount;
@@ -83,8 +83,8 @@ class InternalEventValidatorTests {
 
         final Time time = new FakeTime();
 
-        multinodeValidator = new InternalEventValidator(platformContext, time, false, intakeEventCounter);
-        singleNodeValidator = new InternalEventValidator(platformContext, time, true, intakeEventCounter);
+        multinodeValidator = new DefaultInternalEventValidator(platformContext, time, false, intakeEventCounter);
+        singleNodeValidator = new DefaultInternalEventValidator(platformContext, time, true, intakeEventCounter);
     }
 
     private static GossipEvent generateEvent(

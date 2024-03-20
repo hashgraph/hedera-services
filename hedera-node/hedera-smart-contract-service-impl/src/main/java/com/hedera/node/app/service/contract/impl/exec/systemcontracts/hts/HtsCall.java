@@ -58,16 +58,29 @@ public interface HtsCall {
             return new PricedResult(result, nonGasCost, responseCode, isViewCall);
         }
 
+        public ContractFunctionResult asResultOfInsufficientGasRemaining(
+                @NonNull final AccountID senderId,
+                @NonNull final ContractID contractId,
+                @NonNull final Bytes functionParameters,
+                final long remainingGas) {
+            return ContractFunctionResult.newBuilder()
+                    .contractID(contractId)
+                    .amount(nonGasCost)
+                    .contractCallResult(Bytes.EMPTY)
+                    .errorMessage(INSUFFICIENT_GAS.protoName())
+                    .gasUsed(fullResult().gasRequirement())
+                    .gas(remainingGas)
+                    .functionParameters(functionParameters)
+                    .senderId(senderId)
+                    .build();
+        }
+
         public ContractFunctionResult asResultOfCall(
                 @NonNull final AccountID senderId,
                 @NonNull final ContractID contractId,
                 @NonNull final Bytes functionParameters,
                 final long remainingGas) {
-            var errorMessage = responseCode == SUCCESS ? null : responseCode.protoName();
-            if (remainingGas < fullResult().gasRequirement()) {
-                errorMessage = INSUFFICIENT_GAS.protoName();
-            }
-
+            final var errorMessage = responseCode == SUCCESS ? null : responseCode.protoName();
             return ContractFunctionResult.newBuilder()
                     .contractID(contractId)
                     .amount(nonGasCost)

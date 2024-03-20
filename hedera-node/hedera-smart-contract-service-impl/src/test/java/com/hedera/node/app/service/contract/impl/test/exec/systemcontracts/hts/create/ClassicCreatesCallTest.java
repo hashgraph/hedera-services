@@ -36,7 +36,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -314,7 +313,6 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     private void commonGivens(long baseCost, long value, boolean shouldBePreempted) {
         given(frame.getValue()).willReturn(Wei.of(value));
         given(gasCalculator.canonicalPriceInTinybars(any(), any())).willReturn(baseCost);
-        System.out.println(gasCalculator.canonicalPriceInTinybars(TransactionBody.DEFAULT, AccountID.DEFAULT));
         stack.push(frame);
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);
@@ -322,8 +320,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         if (!shouldBePreempted) {
             given(frame.getMessageFrameStack()).willReturn(stack);
             given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
-            given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow()))
-                    .willReturn(ALIASED_SOMEBODY);
+            given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID)).willReturn(ALIASED_SOMEBODY);
             given(systemContractOperations.dispatch(
                             any(TransactionBody.class),
                             eq(verificationStrategy),

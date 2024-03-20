@@ -96,6 +96,8 @@ public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstima
                     .givenCurrentKycKey(token.hasKycKey() ? Optional.of(fromPbj(token.kycKey())) : Optional.empty())
                     .givenCurrentPauseKey(
                             token.hasPauseKey() ? Optional.of(fromPbj(token.pauseKey())) : Optional.empty())
+                    .givenCurrentMetadataKey(
+                            token.hasMetadataKey() ? Optional.of(fromPbj(token.metadataKey())) : Optional.empty())
                     .givenCurrentName(token.name())
                     .givenCurrentMemo(token.memo())
                     .givenCurrentSymbol(token.symbol());

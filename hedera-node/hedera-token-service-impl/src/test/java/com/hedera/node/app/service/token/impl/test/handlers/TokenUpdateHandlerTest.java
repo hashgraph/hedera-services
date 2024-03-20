@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -88,6 +89,7 @@ import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidat
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -148,14 +150,18 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.supplyKey()).isEqualTo(fungibleToken.supplyKey());
         assertThat(token.kycKey()).isEqualTo(fungibleToken.kycKey());
         assertThat(token.freezeKey()).isEqualTo(fungibleToken.freezeKey());
+        assertThat(token.metadataKey()).isEqualTo(fungibleToken.metadataKey());
         assertThat(token.wipeKey()).isEqualTo(fungibleToken.wipeKey());
         assertThat(token.feeScheduleKey()).isEqualTo(fungibleToken.feeScheduleKey());
         assertThat(token.pauseKey()).isEqualTo(fungibleToken.pauseKey());
         assertThat(token.autoRenewAccountId()).isEqualTo(fungibleToken.autoRenewAccountId());
         assertThat(token.expirationSecond()).isEqualTo(fungibleToken.expirationSecond());
         assertThat(token.memo()).isEqualTo(fungibleToken.memo());
+        assertThat(token.metadata()).isEqualTo(fungibleToken.metadata());
         assertThat(token.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(FUNGIBLE_COMMON);
+        assertThat(token.metadataKey()).isEqualTo(fungibleToken.metadataKey());
+        assertThat(token.metadata()).isEqualTo(fungibleToken.metadata());
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
@@ -192,12 +198,14 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.supplyKey()).isEqualTo(nonFungibleToken.supplyKey());
         assertThat(token.kycKey()).isEqualTo(nonFungibleToken.kycKey());
         assertThat(token.freezeKey()).isEqualTo(nonFungibleToken.freezeKey());
+        assertThat(token.metadataKey()).isEqualTo(fungibleToken.metadataKey());
         assertThat(token.wipeKey()).isEqualTo(nonFungibleToken.wipeKey());
         assertThat(token.feeScheduleKey()).isEqualTo(nonFungibleToken.feeScheduleKey());
         assertThat(token.pauseKey()).isEqualTo(nonFungibleToken.pauseKey());
         assertThat(token.autoRenewAccountId()).isEqualTo(nonFungibleToken.autoRenewAccountId());
         assertThat(token.expirationSecond()).isEqualTo(nonFungibleToken.expirationSecond());
         assertThat(token.memo()).isEqualTo(nonFungibleToken.memo());
+        assertThat(token.metadata()).isEqualTo(nonFungibleToken.metadata());
         assertThat(token.autoRenewSeconds()).isEqualTo(nonFungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
 
@@ -213,12 +221,35 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.freezeKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.wipeKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.feeScheduleKey()).isEqualTo(B_COMPLEX_KEY);
+        assertThat(modifiedToken.feeScheduleKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.pauseKey()).isEqualTo(B_COMPLEX_KEY);
         assertThat(modifiedToken.autoRenewAccountId()).isEqualTo(ownerId);
         assertThat(modifiedToken.expirationSecond()).isEqualTo(1234600L);
         assertThat(modifiedToken.memo()).isEqualTo("test token1");
         assertThat(modifiedToken.autoRenewSeconds()).isEqualTo(fungibleToken.autoRenewSeconds());
         assertThat(token.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
+    }
+
+    @Test
+    void succeedsWithSupplyMetaDataAndKey() {
+        setUpTxnContext();
+        txn = new TokenUpdateBuilder()
+                .withMetadataKey(metadataKey)
+                .withMetadata(String.valueOf(metadata))
+                .build();
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+        assertThat(txn.data().value()).toString().contains("test metadata");
+        assertThat(txn.data().value()).hasNoNullFieldsOrProperties();
+    }
+
+    @Test
+    void failsForInvalidMetaDataKey() {
+        setUpTxnContext();
+        txn = new TokenUpdateBuilder().withMetadataKey(Key.DEFAULT).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_METADATA_KEY));
     }
 
     @Test
@@ -946,10 +977,12 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         private Key supplyKey = B_COMPLEX_KEY;
         private Key feeScheduleKey = B_COMPLEX_KEY;
         private Key pauseKey = B_COMPLEX_KEY;
+        private Key metadataKey = B_COMPLEX_KEY;
         private Timestamp expiry = Timestamp.newBuilder().seconds(1234600L).build();
         private AccountID autoRenewAccount = ownerId;
         private long autoRenewPeriod = autoRenewSecs;
         private String memo = "test token1";
+        private String metadata = "test metadata";
         TokenID tokenId = fungibleTokenId;
 
         private TokenUpdateBuilder() {}
@@ -967,6 +1000,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                     .kycKey(kycKey)
                     .freezeKey(freezeKey)
                     .wipeKey(wipeKey)
+                    .metadataKey(metadataKey)
+                    .metadata(Bytes.wrap(metadata))
                     .feeScheduleKey(feeScheduleKey)
                     .pauseKey(pauseKey)
                     .autoRenewAccount(autoRenewAccount)
@@ -1052,8 +1087,18 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
             return this;
         }
 
+        public TokenUpdateBuilder withMetadata(final String s) {
+            this.metadata = s;
+            return this;
+        }
+
         public TokenUpdateBuilder withPauseKey(final Key key) {
             this.pauseKey = key;
+            return this;
+        }
+
+        public TokenUpdateBuilder withMetadataKey(final Key key) {
+            this.metadataKey = key;
             return this;
         }
 

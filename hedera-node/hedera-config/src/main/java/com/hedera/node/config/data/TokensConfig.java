@@ -23,7 +23,7 @@ import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("tokens")
 public record TokensConfig(
-        @ConfigProperty(defaultValue = "10000000") @NetworkProperty long maxAggregateRels,
+        @ConfigProperty(defaultValue = "15000000") @NetworkProperty long maxAggregateRels,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean storeRelsOnDisk,
         @ConfigProperty(defaultValue = "1000000") @NetworkProperty long maxNumber,
         @ConfigProperty(defaultValue = "1000") @NetworkProperty int maxPerAccount,
@@ -49,5 +49,8 @@ public record TokensConfig(
                 boolean nftsUseVirtualMerkle,
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty
                 boolean autoCreationsIsEnabled,
+        @ConfigProperty(value = "maxMetadataBytes", defaultValue = "100") @NetworkProperty int tokensMaxMetadataBytes,
         @ConfigProperty(value = "balancesInQueries.enabled", defaultValue = "true") @NetworkProperty
-                boolean balancesInQueriesEnabled) {}
+                boolean balancesInQueriesEnabled,
+        @ConfigProperty(value = "nfts.maxBatchSizeUpdate", defaultValue = "10") @NetworkProperty
+                int nftsMaxBatchSizeUpdate) {}

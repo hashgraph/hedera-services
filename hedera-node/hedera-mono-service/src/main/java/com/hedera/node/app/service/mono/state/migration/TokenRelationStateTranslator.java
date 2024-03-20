@@ -43,7 +43,6 @@ public final class TokenRelationStateTranslator {
                 .balance(merkleTokenRelStatus.getBalance())
                 .frozen(merkleTokenRelStatus.isFrozen())
                 .kycGranted(merkleTokenRelStatus.isKycGranted())
-                .deleted(false)
                 .automaticAssociation(merkleTokenRelStatus.isAutomaticAssociation());
 
         final long prevToken = merkleTokenRelStatus.getPrev();

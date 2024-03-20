@@ -47,6 +47,6 @@ public record LatestCompleteStateNotifierWiring(
      */
     public void bind(@NonNull final LatestCompleteStateNotifier latestCompleteStateNotifier) {
         ((BindableInputWire<ReservedSignedState, Void>) completeStateNotificationInputWire)
-                .bind(latestCompleteStateNotifier::latestCompleteStateHandler);
+                .bindConsumer(latestCompleteStateNotifier::latestCompleteStateHandler);
     }
 }
