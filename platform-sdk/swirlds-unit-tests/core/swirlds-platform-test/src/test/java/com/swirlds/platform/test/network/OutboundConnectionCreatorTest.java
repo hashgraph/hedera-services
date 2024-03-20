@@ -106,13 +106,7 @@ class OutboundConnectionCreatorTest {
                 .build();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
-                platformContext,
-                thisNode,
-                mock(ConnectionTracker.class),
-                socketFactory,
-                addressBook,
-                true,
-                new BasicSoftwareVersion(1));
+                platformContext, thisNode, mock(ConnectionTracker.class), socketFactory, addressBook);
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");
@@ -204,13 +198,7 @@ class OutboundConnectionCreatorTest {
                 .build();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
-                platformContext,
-                thisNode,
-                mock(ConnectionTracker.class),
-                socketFactory,
-                addressBook,
-                true,
-                new BasicSoftwareVersion(2));
+                platformContext, thisNode, mock(ConnectionTracker.class), socketFactory, addressBook);
 
         Connection connection = occ.createConnection(otherNode);
 
@@ -264,13 +252,7 @@ class OutboundConnectionCreatorTest {
                 .build();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
-                platformContext,
-                thisNode,
-                mock(ConnectionTracker.class),
-                socketFactory,
-                addressBook,
-                false,
-                new BasicSoftwareVersion(2));
+                platformContext, thisNode, mock(ConnectionTracker.class), socketFactory, addressBook);
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");

@@ -21,8 +21,12 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.SocketFactory;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -33,6 +37,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class ConnectionServerTest {
+
     @Test
     void createConnectionTest() throws IOException, InterruptedException {
         final Socket socket = mock(Socket.class);
@@ -50,8 +55,14 @@ class ConnectionServerTest {
         doAnswer(i -> serverSocket).when(socketFactory).createServerSocket(anyInt());
         final AtomicReference<Socket> connectionHandler = new AtomicReference<>(null);
 
-        final ConnectionServer server =
-                new ConnectionServer(getStaticThreadManager(), 0, socketFactory, connectionHandler::set);
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(RandomUtils.getRandomPrintSeed()).setSize(2).build();
+        final ConnectionServer server = new ConnectionServer(
+                getStaticThreadManager(),
+                0,
+                socketFactory,
+                connectionHandler::set,
+                Utilities.createPeerInfoList(addressBook, addressBook.getNodeId(0)));
 
         server.run();
         Assertions.assertSame(

@@ -22,6 +22,7 @@ import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
+import java.util.Objects;
 
 /**
  * Manages a connection that is initiated by this node. If the connection in use is broken, it will try to establish a
@@ -46,7 +47,8 @@ public class OutboundConnectionManager implements ConnectionManager {
     @Override
     public Connection waitForConnection() {
         try (final LockedResource<Connection> resource = lock.lock()) {
-            while (!resource.getResource().connected()) {
+            final Connection connection = Objects.requireNonNull(resource.getResource());
+            while (!connection.connected()) {
                 resource.getResource().disconnect();
                 resource.setResource(connectionCreator.createConnection(peerId));
             }

@@ -108,6 +108,7 @@ public class TlsFactory implements SocketFactory {
         serverSocket.setWantClientAuth(true);
         serverSocket.setNeedClientAuth(true);
         SocketFactory.configureAndBind(serverSocket, socketConfig, port);
+        serverSocket.getSSLParameters().setEndpointIdentificationAlgorithm("HTTPS");
         return serverSocket;
     }
 
@@ -119,6 +120,7 @@ public class TlsFactory implements SocketFactory {
         clientSocket.setEnabledCipherSuites(new String[] {CryptoConstants.TLS_SUITE});
         clientSocket.setWantClientAuth(true);
         clientSocket.setNeedClientAuth(true);
+        clientSocket.getSSLParameters().setEndpointIdentificationAlgorithm("HTTPS");
         SocketFactory.configureAndConnect(clientSocket, socketConfig, hostname, port);
         clientSocket.startHandshake();
         return clientSocket;

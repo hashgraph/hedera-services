@@ -34,14 +34,12 @@ import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConnection;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.Socket;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,8 +54,6 @@ public class InboundConnectionHandler {
     private final AddressBook addressBook;
     private final InterruptableConsumer<Connection> newConnectionConsumer;
     private final SocketConfig socketConfig;
-    private final boolean doVersionCheck;
-    private final SoftwareVersion softwareVersion;
     /** Rate Limited Logger for SocketExceptions */
     private final RateLimitedLogger socketExceptionLogger;
 
@@ -69,16 +65,12 @@ public class InboundConnectionHandler {
             @NonNull final NodeId selfId,
             @NonNull final AddressBook addressBook,
             @NonNull final InterruptableConsumer<Connection> newConnectionConsumer,
-            final boolean doVersionCheck,
-            @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Time time) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.selfId = Objects.requireNonNull(selfId);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.newConnectionConsumer = Objects.requireNonNull(newConnectionConsumer);
-        this.doVersionCheck = doVersionCheck;
-        this.softwareVersion = Objects.requireNonNull(softwareVersion);
         Objects.requireNonNull(time);
         this.socketExceptionLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         this.socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
@@ -90,8 +82,10 @@ public class InboundConnectionHandler {
      * @param clientSocket the newly created socket
      */
     public void handle(final Socket clientSocket) {
-        SerializableDataInputStream dis = null;
-        SerializableDataOutputStream dos = null;
+        SerializableDataInputStream dataInputStream = null;
+        SerializableDataOutputStream dataOutputStream = null;
+        SyncInputStream syncInputStream = null;
+        SyncOutputStream syncOutputStream = null;
         NodeId otherId = null;
         long acceptTime = 0;
         try {
@@ -99,63 +93,48 @@ public class InboundConnectionHandler {
             clientSocket.setTcpNoDelay(socketConfig.tcpNoDelay());
             clientSocket.setSoTimeout(socketConfig.timeoutSyncClientSocket());
 
-            final SyncInputStream sis = SyncInputStream.createSyncInputStream(
+            syncInputStream = SyncInputStream.createSyncInputStream(
                     platformContext, clientSocket.getInputStream(), socketConfig.bufferSize());
-            final SyncOutputStream sos = SyncOutputStream.createSyncOutputStream(
+            syncOutputStream = SyncOutputStream.createSyncOutputStream(
                     platformContext, clientSocket.getOutputStream(), socketConfig.bufferSize());
 
-            dis = new SerializableDataInputStream(sis);
-            dos = new SerializableDataOutputStream(sos);
+            dataInputStream = new SerializableDataInputStream(syncInputStream);
+            dataOutputStream = new SerializableDataOutputStream(syncOutputStream);
 
-            if (doVersionCheck) {
-                dos.writeSerializable(softwareVersion, true);
-                dos.flush();
+            dataOutputStream.writeInt(ByteConstants.COMM_CONNECT); // send an ACK for creating connection
+            dataOutputStream.flush();
 
-                final SoftwareVersion otherVersion = dis.readSerializable(Set.of(softwareVersion.getClassId()));
-                if (otherVersion == null
-                        || otherVersion.getClass() != softwareVersion.getClass()
-                        || otherVersion.compareTo(softwareVersion) != 0) {
-                    throw new IOException("This node has software version " + softwareVersion
-                            + " but the other node has software version " + otherVersion + ". Closing connection.");
-                }
-            }
-
-            final String otherKey = dis.readUTF();
-
-            otherId = addressBook.getNodeId(otherKey);
-
-            dos.writeInt(ByteConstants.COMM_CONNECT); // send an ACK for creating connection
-            dos.flush();
-
-            final SocketConnection sc = SocketConnection.create(
+            otherId = addressBook.getNodeId(dataInputStream.readUTF());
+            final SocketConnection socketConnection = SocketConnection.create(
                     selfId,
                     otherId,
                     connectionTracker,
                     false,
                     clientSocket,
-                    sis,
-                    sos,
+                    syncInputStream,
+                    syncOutputStream,
                     platformContext.getConfiguration());
-            newConnectionConsumer.accept(sc);
+
+            newConnectionConsumer.accept(socketConnection);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
-            String formattedException = NetworkUtils.formatException(e);
+            final String formattedException = NetworkUtils.formatException(e);
             logger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Inbound connection from {} to {} was interrupted: {}",
                     otherId == null ? "unknown" : otherId,
                     selfId,
                     formattedException);
-            NetworkUtils.close(dis, dos, clientSocket);
+            NetworkUtils.close(dataInputStream, dataOutputStream, clientSocket);
         } catch (final IOException e) {
-            String formattedException = NetworkUtils.formatException(e);
+            final String formattedException = NetworkUtils.formatException(e);
             socketExceptionLogger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Inbound connection from {} to {} had IOException: {}",
                     otherId == null ? "unknown" : otherId,
                     selfId,
                     formattedException);
-            NetworkUtils.close(dis, dos, clientSocket);
+            NetworkUtils.close(dataInputStream, dataOutputStream, clientSocket);
         } catch (final RuntimeException e) {
             logger.error(
                     EXCEPTION.getMarker(),
@@ -163,7 +142,9 @@ public class InboundConnectionHandler {
                     clientSocket.getInetAddress().toString(),
                     acceptTime == 0 ? "N/A" : (System.currentTimeMillis() - acceptTime),
                     e);
-            NetworkUtils.close(dis, dos, clientSocket);
+            NetworkUtils.close(dataInputStream, dataOutputStream, clientSocket);
+        } finally {
+            NetworkUtils.close(dataInputStream, dataOutputStream, syncInputStream, syncOutputStream, clientSocket);
         }
     }
 }

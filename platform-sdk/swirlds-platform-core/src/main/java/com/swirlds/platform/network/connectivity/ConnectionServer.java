@@ -21,13 +21,19 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.platform.network.PeerInfo;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.security.cert.X509Certificate;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSocket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,32 +54,32 @@ public class ConnectionServer implements InterruptableRunnable {
     /** a thread pool used to handle incoming connections */
     private final ExecutorService incomingConnPool;
 
+    private final List<PeerInfo> peerInfoList;
     /**
-     *  @param threadManager
-     *  		responsible for managing thread lifecycles
-     * @param port
-     * 		the port ot use
-     * @param socketFactory
-     * 		responsible for creating new sockets
-     * @param newConnectionHandler
-     * 		handles a new connection after it has been created
+     * @param threadManager        responsible for managing thread lifecycles
+     * @param port                 the port ot use
+     * @param socketFactory        responsible for creating new sockets
+     * @param newConnectionHandler handles a new connection after it has been created
+     * @param peerInfoList         List of all peers
      */
     public ConnectionServer(
             final ThreadManager threadManager,
             final int port,
             final SocketFactory socketFactory,
-            final Consumer<Socket> newConnectionHandler) {
+            final Consumer<Socket> newConnectionHandler,
+            final List<PeerInfo> peerInfoList) {
         this.port = port;
         this.newConnectionHandler = newConnectionHandler;
         this.socketFactory = socketFactory;
         this.incomingConnPool = Executors.newCachedThreadPool(new ThreadConfiguration(threadManager)
                 .setThreadName("sync_server")
                 .buildFactory());
+        this.peerInfoList = peerInfoList;
     }
 
     @Override
     public void run() throws InterruptedException {
-        try (ServerSocket serverSocket = socketFactory.createServerSocket(port)) {
+        try (final ServerSocket serverSocket = socketFactory.createServerSocket(port)) {
             listen(serverSocket);
         } catch (final RuntimeException | IOException e) {
             logger.error(EXCEPTION.getMarker(), "Cannot bind ServerSocket", e);
@@ -90,7 +96,10 @@ public class ConnectionServer implements InterruptableRunnable {
         while (!serverSocket.isClosed()) {
             try {
                 final Socket clientSocket = serverSocket.accept(); // listen, waiting until someone connects
-                incomingConnPool.submit(() -> newConnectionHandler.accept(clientSocket));
+                incomingConnPool.submit(() -> {
+                    validatePeer(clientSocket);
+                    newConnectionHandler.accept(clientSocket);
+                });
             } catch (final SocketTimeoutException expectedWithNonZeroSOTimeout) {
                 // A timeout is expected, so we won't log it
                 if (Thread.currentThread().isInterrupted()) {
@@ -100,6 +109,33 @@ public class ConnectionServer implements InterruptableRunnable {
             } catch (final RuntimeException | IOException e) {
                 logger.error(EXCEPTION.getMarker(), "SyncServer serverSocket.accept() error", e);
             }
+        }
+    }
+
+    private void validatePeer(final Socket clientSocket) {
+        if (clientSocket instanceof final SSLSocket sslsocket) {
+            sslsocket.addHandshakeCompletedListener(event -> {
+                try {
+                    final X509Certificate agreementCert = (X509Certificate) sslsocket.getSession().getPeerCertificates()[0];
+                    final Optional<PeerInfo> peerOptional = peerInfoList.stream()
+                            .filter(peerInfo -> ((X509Certificate) peerInfo.signingCertificate())
+                                    .getSubjectX500Principal()
+                                    .equals(agreementCert.getIssuerX500Principal()))
+                            .findFirst();
+                    if (peerOptional.isEmpty()) {
+                        logger.warn(
+                                "Handshake with client {}:{} was successful but we couldn't find a matching peer",
+                                sslsocket.getInetAddress(),
+                                sslsocket.getPort());
+                        //Peer invalid. We should close the peer's connection.
+                    }
+                } catch (final SSLPeerUnverifiedException e) {
+                    logger.warn(
+                            "Handshake with client {}:{} was successful but we couldn't find a matching peer",
+                            sslsocket.getInetAddress(),
+                            sslsocket.getPort());
+                }
+            });
         }
     }
 }
