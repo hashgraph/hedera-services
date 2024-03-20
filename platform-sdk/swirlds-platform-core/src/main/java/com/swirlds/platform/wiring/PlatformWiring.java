@@ -80,7 +80,6 @@ import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
-import com.swirlds.platform.wiring.components.BirthRoundMigrationShimWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
@@ -151,7 +150,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ComponentWiring<SavedStateController, Void> savedStateControllerWiring;
     private final StateHasherWiring signedStateHasherWiring;
     private final PlatformCoordinator platformCoordinator;
-    private final BirthRoundMigrationShimWiring birthRoundMigrationShimWiring;
+    private final ComponentWiring<BirthRoundMigrationShim, GossipEvent> birthRoundMigrationShimWiring;
 
     /**
      * Constructor.
@@ -189,7 +188,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            birthRoundMigrationShimWiring = BirthRoundMigrationShimWiring.create(model);
+            birthRoundMigrationShimWiring = new ComponentWiring<>(
+                    model,
+                    BirthRoundMigrationShim.class,
+                    model.schedulerBuilder("birthRoundMigrationShim")
+                            .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                            .build()
+                            .cast());
         } else {
             birthRoundMigrationShimWiring = null;
         }
@@ -317,9 +322,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         final InputWire<GossipEvent> pipelineInputWire;
         if (birthRoundMigrationShimWiring != null) {
             birthRoundMigrationShimWiring
-                    .eventOutput()
+                    .getOutputWire()
                     .solderTo(eventHasherWiring.getInputWire(EventHasher::hashEvent));
-            pipelineInputWire = birthRoundMigrationShimWiring.eventInput();
+            pipelineInputWire = birthRoundMigrationShimWiring.getInputWire(BirthRoundMigrationShim::migrateEvent);
         } else {
             pipelineInputWire = eventHasherWiring.getInputWire(EventHasher::hashEvent);
         }
