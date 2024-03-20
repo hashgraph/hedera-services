@@ -17,7 +17,7 @@
 package com.swirlds.base.internal.impl;
 
 import com.swirlds.base.internal.BaseExecutorObserver;
-import com.swirlds.base.internal.BaseTask;
+import com.swirlds.base.internal.BaseTaskDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Collection;
@@ -93,88 +93,42 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
         observers.add(observer);
     }
 
-    private void onTaskSubmitted(@NonNull String type, @NonNull String name) {
-        observers.forEach(observer -> observer.onTaskSubmitted(type, name));
-    }
-
-    private void onTaskStarted(@NonNull final String type, @NonNull final String name) {
-        observers.forEach(observer -> observer.onTaskStarted(type, name));
-    }
-
-    private void onTaskDone(@NonNull final String type, @NonNull final String name, @NonNull Duration duration) {
-        observers.forEach(observer -> observer.onTaskDone(type, name, duration));
-    }
-
-    private void onTaskFailed(@NonNull final String type, @NonNull final String name, @NonNull Duration duration) {
-        observers.forEach(observer -> observer.onTaskFailed(type, name, duration));
-    }
-
     @NonNull
-    private String getName(@NonNull final Runnable runnable) {
-        if (runnable instanceof BaseTask baseTask) {
-            return baseTask.getName();
-        }
-        return BaseTask.DEFAULT_TYPE_AND_NAME;
-    }
-
-    @NonNull
-    private String getType(@NonNull final Runnable runnable) {
-        if (runnable instanceof BaseTask baseTask) {
-            return baseTask.getType();
-        }
-        return BaseTask.DEFAULT_TYPE_AND_NAME;
-    }
-
-    @NonNull
-    private <V> String getName(@NonNull final Callable<V> callable) {
-        if (callable instanceof BaseTask baseTask) {
-            return baseTask.getName();
-        }
-        return BaseTask.DEFAULT_TYPE_AND_NAME;
-    }
-
-    @NonNull
-    private <V> String getType(@NonNull final Callable<V> callable) {
-        if (callable instanceof BaseTask baseTask) {
-            return baseTask.getType();
-        }
-        return BaseTask.DEFAULT_TYPE_AND_NAME;
-    }
-
-    @NonNull
-    private Runnable wrapAndCallSubmit(@NonNull final Runnable command) {
+    private Runnable wrapOnSubmit(@NonNull final Runnable command) {
         Objects.requireNonNull(command, "command must not be null");
-        final String name = getType(command);
-        final String type = getName(command);
-        onTaskSubmitted(type, name);
+        final BaseTaskDefinition taskDefinition = BaseTaskDefinition.of(command);
+        observers.forEach(observer -> observer.onTaskSubmitted(taskDefinition));
         return () -> {
             final long start = System.currentTimeMillis();
-            onTaskStarted(type, name);
+            observers.forEach(observer -> observer.onTaskStarted(taskDefinition));
             try {
                 command.run();
-                onTaskDone(type, name, Duration.ofMillis(System.currentTimeMillis() - start));
+                observers.forEach(observer ->
+                        observer.onTaskDone(taskDefinition, Duration.ofMillis(System.currentTimeMillis() - start)));
             } catch (Throwable t) {
-                onTaskFailed(type, name, Duration.ofMillis(System.currentTimeMillis() - start));
+                observers.forEach(observer ->
+                        observer.onTaskFailed(taskDefinition, Duration.ofMillis(System.currentTimeMillis() - start)));
                 throw t;
             }
         };
     }
 
     @NonNull
-    private <V> Callable<V> wrapAndCallSubmit(@NonNull final Callable<V> callable) {
+    private <V> Callable<V> wrapOnSubmit(@NonNull final Callable<V> callable) {
         Objects.requireNonNull(callable, "callable must not be null");
-        final String name = getType(callable);
-        final String type = getName(callable);
-        onTaskSubmitted(type, name);
+        final BaseTaskDefinition taskDefinition = BaseTaskDefinition.of(callable);
+        observers.forEach(observer -> observer.onTaskSubmitted(taskDefinition));
         return () -> {
             final long start = System.currentTimeMillis();
-            onTaskStarted(type, name);
+            observers.forEach(observer -> observer.onTaskStarted(taskDefinition));
             try {
                 final V result = callable.call();
-                onTaskDone(type, name, Duration.ofMillis(System.currentTimeMillis() - start));
+                observers.forEach(observer ->
+                        observer.onTaskDone(taskDefinition, Duration.ofMillis(System.currentTimeMillis() - start)));
                 return result;
             } catch (Throwable t) {
-                onTaskFailed(type, name, Duration.ofMillis(System.currentTimeMillis() - start));
+                observers.forEach(observer ->
+                        observer.onTaskFailed(taskDefinition, Duration.ofMillis(System.currentTimeMillis() - start)));
                 throw t;
             }
         };
@@ -183,28 +137,28 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
     @Override
     public ScheduledFuture<?> schedule(
             @NonNull final Runnable command, final long delay, @NonNull final TimeUnit unit) {
-        final Runnable wrapped = wrapAndCallSubmit(command);
+        final Runnable wrapped = wrapOnSubmit(command);
         return innerService.schedule(wrapped, delay, unit);
     }
 
     @Override
     public <V> ScheduledFuture<V> schedule(
             @NonNull final Callable<V> callable, final long delay, @NonNull final TimeUnit unit) {
-        final Callable<V> wrapped = wrapAndCallSubmit(callable);
+        final Callable<V> wrapped = wrapOnSubmit(callable);
         return innerService.schedule(wrapped, delay, unit);
     }
 
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(
             @NonNull final Runnable command, final long initialDelay, final long period, @NonNull final TimeUnit unit) {
-        final Runnable wrapped = wrapAndCallSubmit(command);
+        final Runnable wrapped = wrapOnSubmit(command);
         return innerService.scheduleAtFixedRate(wrapped, initialDelay, period, unit);
     }
 
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(
             @NonNull final Runnable command, final long initialDelay, final long delay, @NonNull final TimeUnit unit) {
-        final Runnable wrapped = wrapAndCallSubmit(command);
+        final Runnable wrapped = wrapOnSubmit(command);
         return innerService.scheduleWithFixedDelay(wrapped, initialDelay, delay, unit);
     }
 
@@ -235,26 +189,26 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
 
     @Override
     public <T> Future<T> submit(Callable<T> task) {
-        final Callable<T> wrapped = wrapAndCallSubmit(task);
+        final Callable<T> wrapped = wrapOnSubmit(task);
         return innerService.submit(wrapped);
     }
 
     @Override
     public <T> Future<T> submit(Runnable task, T result) {
-        final Runnable wrapped = wrapAndCallSubmit(task);
+        final Runnable wrapped = wrapOnSubmit(task);
         return innerService.submit(wrapped, result);
     }
 
     @Override
     public Future<?> submit(Runnable task) {
-        final Runnable wrapped = wrapAndCallSubmit(task);
+        final Runnable wrapped = wrapOnSubmit(task);
         return innerService.submit(wrapped);
     }
 
     @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
         Collection<? extends Callable<T>> wrapped =
-                tasks.stream().map(this::wrapAndCallSubmit).toList();
+                tasks.stream().map(this::wrapOnSubmit).toList();
         return innerService.invokeAll(wrapped);
     }
 
@@ -262,14 +216,14 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
             throws InterruptedException {
         Collection<? extends Callable<T>> wrapped =
-                tasks.stream().map(this::wrapAndCallSubmit).toList();
+                tasks.stream().map(this::wrapOnSubmit).toList();
         return innerService.invokeAll(wrapped, timeout, unit);
     }
 
     @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
         Collection<? extends Callable<T>> wrapped =
-                tasks.stream().map(this::wrapAndCallSubmit).toList();
+                tasks.stream().map(this::wrapOnSubmit).toList();
         return innerService.invokeAny(wrapped);
     }
 
@@ -277,13 +231,13 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
         Collection<? extends Callable<T>> wrapped =
-                tasks.stream().map(this::wrapAndCallSubmit).toList();
+                tasks.stream().map(this::wrapOnSubmit).toList();
         return innerService.invokeAny(wrapped, timeout, unit);
     }
 
     @Override
     public void execute(Runnable command) {
-        final Runnable wrapped = wrapAndCallSubmit(command);
+        final Runnable wrapped = wrapOnSubmit(command);
         innerService.execute(wrapped);
     }
 }

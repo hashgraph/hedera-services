@@ -21,11 +21,11 @@ import java.time.Duration;
 
 public interface BaseExecutorObserver {
 
-    void onTaskSubmitted(@NonNull String type, @NonNull String name);
+    void onTaskSubmitted(@NonNull BaseTaskDefinition taskDefinition);
 
-    void onTaskStarted(@NonNull String type, @NonNull String name);
+    void onTaskStarted(@NonNull BaseTaskDefinition taskDefinition);
 
-    void onTaskDone(@NonNull String type, @NonNull String name, @NonNull Duration duration);
+    void onTaskDone(@NonNull BaseTaskDefinition taskDefinition, @NonNull Duration duration);
 
-    void onTaskFailed(@NonNull String type, @NonNull String name, @NonNull Duration duration);
+    void onTaskFailed(@NonNull BaseTaskDefinition taskDefinition, @NonNull Duration duration);
 }
