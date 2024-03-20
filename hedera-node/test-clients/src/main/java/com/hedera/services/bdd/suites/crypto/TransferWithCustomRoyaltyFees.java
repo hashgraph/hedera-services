@@ -879,7 +879,7 @@ public class TransferWithCustomRoyaltyFees extends HapiSuite {
                         cryptoCreate(htsCollector).balance(ONE_MILLION_HBARS),
                         cryptoCreate(tokenReceiver).balance(ONE_MILLION_HBARS),
                         cryptoCreate(tokenTreasury).balance(ONE_MILLION_HBARS),
-                        tokenCreate(feeDenom2).treasury(alice).initialSupply(10),
+                        tokenCreate(feeDenom2).treasury(tokenReceiver).initialSupply(10),
                         tokenAssociate(bob, feeDenom2),
                         tokenCreate(feeDenom)
                                 .treasury(carol)
