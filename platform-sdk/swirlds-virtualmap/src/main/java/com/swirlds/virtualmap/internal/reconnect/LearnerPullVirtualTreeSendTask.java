@@ -18,7 +18,8 @@ package com.swirlds.virtualmap.internal.reconnect;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.internal.Path;
@@ -35,7 +36,7 @@ public class LearnerPullVirtualTreeSendTask {
     private static final String NAME = "reconnect-learner-sender";
 
     private final StandardWorkGroup workGroup;
-    private final SerializableDataOutputStream out;
+    private final AsyncOutputStream<PullVirtualTreeRequest> out;
     private final VirtualLearnerTreeView view;
     private final NodeTraversalOrder traversalOrder;
     private final AtomicBoolean senderIsFinished;
@@ -55,7 +56,7 @@ public class LearnerPullVirtualTreeSendTask {
      */
     public LearnerPullVirtualTreeSendTask(
             final StandardWorkGroup workGroup,
-            final SerializableDataOutputStream out,
+            final AsyncOutputStream<PullVirtualTreeRequest> out,
             final VirtualLearnerTreeView view,
             final NodeTraversalOrder traversalOrder,
             final AtomicBoolean senderIsFinished,
@@ -72,50 +73,32 @@ public class LearnerPullVirtualTreeSendTask {
         workGroup.execute(NAME, this::run);
     }
 
-    private long waitPaths = 0;
-
     private void run() {
-        try {
-            long path = Path.ROOT_PATH;
-            out.writeLong(path);
-            out.flush();
+        try (out) {
+            // assuming root is always dirty
+            out.sendAsync(new PullVirtualTreeRequest(view, Path.ROOT_PATH, new Hash()));
             view.anticipateMesssage();
             if (!rootResponseReceived.await(60, TimeUnit.SECONDS)) {
                 throw new MerkleSynchronizationException("Timed out waiting for root node response from the teacher");
             }
 
-            int requestCounter = 0;
-            long lastFlushTime = System.currentTimeMillis();
-            path = traversalOrder.getNextPathToSend();
             while (true) {
+                final long path = traversalOrder.getNextPathToSend();
                 // logger.info(RECONNECT.getMarker(), "TOREMOVE Learner send path: " + path);
-                final long now = System.currentTimeMillis();
-                if (path == -2) {
-                    waitPaths++;
-                    if (requestCounter > 0) {
-                        out.flush();
-                        requestCounter = 0;
-                        lastFlushTime = now;
-                    }
+//                System.err.println("TOREMOVE Learner send path: " + path);
+                if (path < Path.INVALID_PATH) {
+                    Thread.onSpinWait();
+                    continue;
                 }
-                if (path >= Path.INVALID_PATH) {
-                    out.writeLong(path);
-                }
-                if ((requestCounter++ == 128) || (now - lastFlushTime > 8)) {
-                    out.flush();
-                    requestCounter = 0;
-                    lastFlushTime = now;
-                }
+                final Hash hash = path == Path.INVALID_PATH ? null : view.getNodeHash(path);
+                out.sendAsync(new PullVirtualTreeRequest(view, path, hash));
                 if (path == Path.INVALID_PATH) {
                     break;
-                } else if (path >= 0) {
-                    view.anticipateMesssage();
                 }
-                path = traversalOrder.getNextPathToSend();
+                view.anticipateMesssage();
             }
-            out.flush();
-            // logger.info(RECONNECT.getMarker(), "TOREMOVE waitPaths = {}", waitPaths);
             // logger.info(RECONNECT.getMarker(), "TOREMOVE Learner send done");
+//            System.err.println("TOREMOVE Learner send done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Learner's sending task interrupted");
             Thread.currentThread().interrupt();

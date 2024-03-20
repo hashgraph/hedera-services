@@ -59,9 +59,7 @@ public interface NodeTraversalOrder {
      * Notifies this object that a node response is received from teacher.
      *
      * @param path received node path
-     * @param hash received node hash
-     * @return if this node is clean, i.e. if its hash in the learner tree matches the hash received
-     *      from teacher
+     * @param isClean indicates if the node at the given path matches the corresponding node on the teacher
      */
-    boolean nodeReceived(final long path, final Hash hash);
+    void nodeReceived(final long path, final boolean isClean);
 }

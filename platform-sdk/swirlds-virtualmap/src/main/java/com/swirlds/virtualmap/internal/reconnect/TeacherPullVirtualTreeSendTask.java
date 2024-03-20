@@ -75,16 +75,18 @@ public class TeacherPullVirtualTreeSendTask {
      */
     private void run() {
         try (out) {
-            while (!allRequestsReceived.get() || view.hasPendingRequests()) {
+            while (!allRequestsReceived.get() || view.hasPendingResponses()) {
                 final PullVirtualTreeResponse response = view.getNextResponse();
                 if (response == null) {
-                    Thread.sleep(1);
+                    Thread.onSpinWait();
                     continue;
                 }
-                logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher send path: " + response.getPath());
+//                logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher send path: " + response.getPath());
+//                System.err.println("TOREMOVE Teacher send path: " + response.getPath());
                 out.sendAsync(response);
             }
-            logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher send done");
+//            logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher send done");
+//            System.err.println("TOREMOVE Teacher send done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Teacher's sending task is interrupted");
             Thread.currentThread().interrupt();

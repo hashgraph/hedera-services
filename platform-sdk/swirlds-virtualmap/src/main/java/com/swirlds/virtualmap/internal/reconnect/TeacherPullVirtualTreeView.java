@@ -25,6 +25,7 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
@@ -61,6 +62,8 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
     private static final Logger logger = LogManager.getLogger(TeacherPullVirtualTreeView.class);
 
     private final ReconnectConfig reconnectConfig;
+
+    private AsyncInputStream<PullVirtualTreeRequest> in;
 
     /**
      * The {@link RecordAccessor} used for accessing the original map state.
@@ -111,18 +114,27 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,
             final Queue<TeacherSubtree> subtrees) {
+        in = new AsyncInputStream<>(inputStream, workGroup, () -> new PullVirtualTreeRequest(this), reconnectConfig);
+        in.start();
+
         final AsyncOutputStream<PullVirtualTreeResponse> out =
                 new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig);
+//                new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig, 1);
         out.start();
 
         final AtomicBoolean allRequestsReceived = new AtomicBoolean(false);
 
         final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
-                time, reconnectConfig, workGroup, inputStream, out, this, allRequestsReceived);
+                time, reconnectConfig, workGroup, in, out, this, allRequestsReceived);
         teacherReceiveTask.exec();
         final TeacherPullVirtualTreeSendTask teacherSendTask = new TeacherPullVirtualTreeSendTask(
                 reconnectConfig, workGroup, out, this, allRequestsReceived);
         teacherSendTask.exec();
+    }
+
+    @Override
+    public void abort() {
+        in.abort();
     }
 
     private boolean isLeaf(final long path) {
@@ -130,21 +142,15 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
     }
 
     @Override
-    public void writeNode(final SerializableDataOutputStream out, final long path) throws IOException {
+    public void writeNode(
+            final SerializableDataOutputStream out, final long path, final boolean isClean) throws IOException {
         checkValidNode(path, reconnectState);
         if (path == 0) {
             out.writeLong(reconnectState.getFirstLeafPath());
             out.writeLong(reconnectState.getLastLeafPath());
         }
-        if (reconnectState.getFirstLeafPath() > 0) {
-            final Hash nodeHash = records.findHash(path);
-            if (nodeHash == null) {
-                throw new MerkleSynchronizationException("Cannot load virtual node hash, path = " + path);
-            }
-            out.write(nodeHash.getValue());
-            if (isLeaf(path)) {
-                out.writeSerializable(records.findLeafRecord(path, false), false);
-            }
+        if ((!isClean) && isLeaf(path) && (reconnectState.getFirstLeafPath() > 0)) {
+            out.writeSerializable(records.findLeafRecord(path, false), false);
         }
     }
 
@@ -156,12 +162,13 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
     private final Deque<PullVirtualTreeResponse> responses = new ConcurrentLinkedDeque<>();
 
     @Override
-    public void registerRequest(final long path) {
-        responses.addLast(new PullVirtualTreeResponse(TeacherPullVirtualTreeView.this, path));
+    public void registerRequest(final PullVirtualTreeRequest request) {
+        responses.addLast(new PullVirtualTreeResponse(
+                TeacherPullVirtualTreeView.this, request.getPath(), request.getHash()));
     }
 
     @Override
-    public boolean hasPendingRequests() {
+    public boolean hasPendingResponses() {
         return !responses.isEmpty();
     }
 

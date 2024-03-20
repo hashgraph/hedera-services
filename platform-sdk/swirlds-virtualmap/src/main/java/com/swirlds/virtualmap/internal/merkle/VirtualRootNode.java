@@ -1463,8 +1463,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 {
                     final VirtualLearnerTreeView view = new LearnerPullVirtualTreeView<>(
                             reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
-                    final NodeTraversalOrder order = new TopToBottomTraversalOrder(
-                            view, originalState.getFirstLeafPath(), originalState.getLastLeafPath());
+                    final NodeTraversalOrder order = new TopToBottomTraversalOrder(view);
                     view.setNodeTraveralOrder(order);
                     learnerTreeView = view;
                 }
@@ -1473,8 +1472,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 {
                     final VirtualLearnerTreeView view = new LearnerPullVirtualTreeView<>(
                             reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
-                    final NodeTraversalOrder order = new TwoPhaseParentsTraversalOrder(
-                            view, originalState.getFirstLeafPath(), originalState.getLastLeafPath());
+                    final NodeTraversalOrder order = new TwoPhaseParentsTraversalOrder(view);
                     view.setNodeTraveralOrder(order);
                     learnerTreeView = view;
                 }

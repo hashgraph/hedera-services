@@ -30,9 +30,6 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
 
     private ReconnectNodeCount nodeCount;
 
-    private final long originalFirstLeafPath;
-    private final long originalLastLeafPath;
-
     private long reconnectFirstLeafPath;
     private long reconnectLastLeafPath;
 
@@ -41,11 +38,8 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
 
     private final Set<Long> cleanNodes = ConcurrentHashMap.newKeySet();
 
-    public TopToBottomTraversalOrder(
-            final VirtualLearnerTreeView view, final long firstLeafPath, final long lastLeafPath) {
+    public TopToBottomTraversalOrder(final VirtualLearnerTreeView view) {
         this.view = view;
-        this.originalFirstLeafPath = firstLeafPath;
-        this.originalLastLeafPath = lastLeafPath;
     }
 
     @Override
@@ -56,23 +50,10 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
     }
 
     @Override
-    public boolean nodeReceived(final long path, final Hash hash) {
-        long parent = Path.getParentPath(path);
-        boolean isClean = false;
-        while ((parent > 0) && !isClean) {
-            isClean = cleanNodes.contains(parent);
-            parent = Path.getParentPath(parent);
-        }
+    public void nodeReceived(final long path, final boolean isClean) {
         final boolean isLeaf = path >= reconnectFirstLeafPath;
-        if (!isClean) {
-            if (path <= originalLastLeafPath) {
-                final Hash originalHash = view.getNodeHash(path);
-                assert originalHash != null;
-                isClean = hash.equals(originalHash);
-                if (isClean && !isLeaf) {
-                    cleanNodes.add(path);
-                }
-            }
+        if (isClean && !isLeaf) {
+            cleanNodes.add(path);
         }
         if (isLeaf) {
             nodeCount.incrementLeafCount();
@@ -85,7 +66,6 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
                 nodeCount.incrementRedundantInternalCount();
             }
         }
-        return isClean;
     }
 
     @Override
@@ -94,7 +74,7 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
             final int firstLeafRank = Path.getRank(reconnectFirstLeafPath);
             if (firstLeafRank > 4) {
                 // Skip a 3/4 parent ranks above
-                lastPath = Path.getRightGrandChildPath(0, firstLeafRank * 3 / 4);
+//                lastPath = Path.getRightGrandChildPath(0, firstLeafRank * 3 / 4);
             }
         }
         long path = lastPath + 1;
@@ -102,6 +82,9 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
         while ((result != Path.INVALID_PATH) && (result != path)) {
             path = result;
             result = skipCleanPaths(path);
+        }
+        if (result != lastPath + 1) {
+//            System.err.println("Skipped: " + (result - lastPath - 1));
         }
         view.applySendBackpressure();
         return lastPath = result;

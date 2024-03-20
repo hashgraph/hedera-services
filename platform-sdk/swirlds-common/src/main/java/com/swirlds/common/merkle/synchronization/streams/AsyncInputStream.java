@@ -140,7 +140,7 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
                         anticipatedMessages.getAndUpdate((final int value) -> value == 0 ? 0 : (value - 1));
 
                 if (previous == 0) {
-                    MILLISECONDS.sleep(1);
+                    Thread.onSpinWait();
                     continue;
                 }
 

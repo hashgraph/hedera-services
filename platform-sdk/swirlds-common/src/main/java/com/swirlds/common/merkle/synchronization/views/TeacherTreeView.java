@@ -55,6 +55,12 @@ public interface TeacherTreeView<T>
             final Queue<TeacherSubtree> subtrees);
 
     /**
+     * Aborts the reconnect process on the teacher side. It may be used to release resources, when
+     * reconnect failed with an exception.
+     */
+    default void abort() {}
+
+    /**
      * Get the root of the tree.
      *
      * @return the root

@@ -96,8 +96,8 @@ public record VirtualMapConfig(
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numHashThreads,
         @Min(1) @Max(64) @ConfigProperty(defaultValue = "6") int virtualHasherChunkHeight,
 //        @ConfigProperty(defaultValue = "push") String reconnectMode,
-        @ConfigProperty(defaultValue = "pullTopToBottom") String reconnectMode,
-//        @ConfigProperty(defaultValue = "pullTwoPhaseParents") String reconnectMode,
+//        @ConfigProperty(defaultValue = "pullTopToBottom") String reconnectMode,
+        @ConfigProperty(defaultValue = "pullTwoPhaseParents") String reconnectMode,
         @Min(0) @ConfigProperty(defaultValue = "500000") int reconnectFlushInterval,
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "25.0")
                 double percentCleanerThreads, // FUTURE WORK: We need to add min/max support for double values

@@ -32,9 +32,6 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
 
     private ReconnectNodeCount nodeCount;
 
-    private final long originalFirstLeafPath;
-    private final long originalLastLeafPath;
-
     private long reconnectFirstLeafPath;
     private long reconnectLastLeafPath;
 
@@ -60,11 +57,8 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
     // Used during phase 2
     private long lastLeafPath = Path.INVALID_PATH;
 
-    public TwoPhaseParentsTraversalOrder(
-            final VirtualLearnerTreeView view, final long firstLeafPath, final long lastLeafPath) {
+    public TwoPhaseParentsTraversalOrder(final VirtualLearnerTreeView view) {
         this.view = view;
-        this.originalFirstLeafPath = firstLeafPath;
-        this.originalLastLeafPath = lastLeafPath;
     }
 
     @Override
@@ -74,12 +68,12 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
         this.nodeCount = nodeCount;
 
         final int leafParentRank = Path.getRank(firstLeafPath) - 1;
-        if (leafParentRank < 15) {
+        if (leafParentRank < 10) {
             usePhase1 = false;
             return; // no phase 1, just iterate over all leaves
         }
 
-        chunksTopRank = 12;
+        chunksTopRank = leafParentRank * 3 / 4;
         chunkCount = 1 << chunksTopRank;
         final int minChunkHeight = leafParentRank - chunksTopRank;
 
@@ -106,28 +100,15 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
     }
 
     @Override
-    public boolean nodeReceived(final long path, final Hash hash) {
+    public void nodeReceived(final long path, final boolean isClean) {
         final boolean isLeaf = path >= reconnectFirstLeafPath;
-        boolean isClean;
         if (isLeaf) {
-            isClean = hasCleanParent(path);
-            if (!isClean && (path <= originalLastLeafPath)) {
-                final Hash originalHash = view.getNodeHash(path);
-                assert originalHash != null;
-                isClean = hash.equals(originalHash);
-            }
             nodeCount.incrementLeafCount();
             if (isClean) {
                 nodeCount.incrementRedundantLeafCount();
             }
         } else {
             final int rank = Path.getRank(path);
-            isClean = hasCleanParent(path);
-            if ((!isClean) && (path <= originalLastLeafPath)) {
-                final Hash originalHash = view.getNodeHash(path);
-                assert originalHash != null;
-                isClean = hash.equals(originalHash);
-            }
             if (path != 0) {
                 assert usePhase1;
                 final int chunk = getPathChunk(path);
@@ -153,7 +134,6 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
                 nodeCount.incrementRedundantInternalCount();
             }
         }
-        return isClean;
     }
 
     private Set<Long> sent = new HashSet<>();
@@ -188,9 +168,9 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
         } else {
             view.applySendBackpressure();
         }
-//        if (sent.contains(result)) {
-//            System.err.println("Already sent: " + result);
-//        }
+        if (sent.contains(result)) {
+            System.err.println("Already sent: " + result);
+        }
         sent.add(result);
         return result;
     }
@@ -223,7 +203,7 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
 //            System.err.println("First leaf sent: " + System.currentTimeMillis());
         }
         long path = lastLeafPath == Path.INVALID_PATH ? reconnectFirstLeafPath : lastLeafPath + 1;
-        if (path > reconnectLastLeafPath) {
+        if ((path > reconnectLastLeafPath) || (reconnectFirstLeafPath < 0)) {
             return Path.INVALID_PATH;
         }
         long result = skipCleanPaths(path, reconnectLastLeafPath);

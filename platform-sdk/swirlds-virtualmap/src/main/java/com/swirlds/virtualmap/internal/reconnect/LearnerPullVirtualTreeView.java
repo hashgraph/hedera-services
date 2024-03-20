@@ -28,6 +28,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
@@ -150,6 +151,10 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         in = new AsyncInputStream<>(inputStream, workGroup, () -> new PullVirtualTreeResponse(this), reconnectConfig);
         in.start();
 
+        final AsyncOutputStream<PullVirtualTreeRequest> out =
+                new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig);
+        out.start();
+
         final AtomicBoolean senderIsFinished = new AtomicBoolean();
         final CountDownLatch rootResponseReceived = new CountDownLatch(1);
 
@@ -159,7 +164,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         reconstructedRoot.set(0L);
         assert traversalOrder != null;
         final LearnerPullVirtualTreeSendTask learnerSendTask = new LearnerPullVirtualTreeSendTask(
-                workGroup, outputStream, this, traversalOrder, senderIsFinished, rootResponseReceived);
+                workGroup, out, this, traversalOrder, senderIsFinished, rootResponseReceived);
         learnerSendTask.exec();
     }
 
@@ -173,21 +178,8 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         return path >= reconnectState.getFirstLeafPath();
     }
 
-    private static int completelyRead(final InputStream in, final byte[] dst) throws IOException {
-        int totalBytesRead = 0;
-        while (totalBytesRead < dst.length) {
-            final int bytesRead = in.read(dst, totalBytesRead, dst.length - totalBytesRead);
-            if (bytesRead < 0) {
-                // Reached EOF
-                break;
-            }
-            totalBytesRead += bytesRead;
-        }
-        return totalBytesRead;
-    }
-
     @Override
-    public void readNode(final SerializableDataInputStream in, final long path) throws IOException {
+    public void readNode(final SerializableDataInputStream in, final long path, final boolean isClean) throws IOException {
         if (path == Path.ROOT_PATH) {
             final long firstLeafPath = in.readLong();
             final long lastLeafPath = in.readLong();
@@ -204,19 +196,15 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             }
         }
         assert !firstNode : "Root node must be the first node received from the teacher";
-        final Hash hash = new Hash(DigestType.SHA_384);
-        if (completelyRead(in, hash.getValue()) != DigestType.SHA_384.digestLength()) {
-            throw new IOException("Failed to read node hash from the teacher");
-        }
         final boolean isLeaf = isLeaf(path);
-        final boolean isClean = traversalOrder.nodeReceived(path, hash);
+        traversalOrder.nodeReceived(path, isClean);
         if (isLeaf) {
             if (firstLeaf) {
                 root.prepareForFirstLeaf();
                 firstLeaf = false;
             }
-            final VirtualLeafRecord<K, V> leaf = in.readSerializable(false, VirtualLeafRecord::new);
             if (!isClean) {
+                final VirtualLeafRecord<K, V> leaf = in.readSerializable(false, VirtualLeafRecord::new);
                 nodeRemover.newLeafNode(path, leaf.getKey());
                 root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest
             }
@@ -261,16 +249,12 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         // The path given is the _ORIGINAL_ child. Each call to this
         // method will be made only for the original state from the original tree.
 
-        // If the originalChild is null, then it means we're outside the range of valid nodes, and we will
-        // return a NULL_HASH.
-        if (originalChild == null) {
+        // Make sure the path is valid for the original state
+        if (originalChild > originalState.getLastLeafPath()) {
             return NULL_HASH;
         }
 
-        // Make sure the path is valid for the original state
-        checkValidNode(originalChild, originalState);
         final Hash hash = originalRecords.findHash(originalChild);
-
         // The hash must have been specified by this point. The original tree was hashed before
         // we started running on the learner, so either the hash is in cache or on disk, but it
         // definitely exists at this point. If it is null, something bad happened elsewhere.

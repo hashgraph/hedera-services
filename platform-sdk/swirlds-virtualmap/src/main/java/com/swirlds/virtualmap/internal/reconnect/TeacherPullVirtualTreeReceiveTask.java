@@ -20,14 +20,18 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.virtualmap.internal.Path;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,7 +46,7 @@ public class TeacherPullVirtualTreeReceiveTask {
     private static final String NAME = "reconnect-teacher-receiver";
 
     private final StandardWorkGroup workGroup;
-    private final SerializableDataInputStream in;
+    private final AsyncInputStream<PullVirtualTreeRequest> in;
     private final AsyncOutputStream<PullVirtualTreeResponse> out;
     private final VirtualTeacherTreeView view;
 
@@ -65,8 +69,8 @@ public class TeacherPullVirtualTreeReceiveTask {
             @NonNull final Time time,
             @NonNull final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
-            final SerializableDataInputStream in,
-            final AsyncOutputStream<PullVirtualTreeResponse> out, // sync mode
+            final AsyncInputStream<PullVirtualTreeRequest> in,
+            final AsyncOutputStream<PullVirtualTreeResponse> out,
             final VirtualTeacherTreeView view,
             final AtomicBoolean allRequestsReceived) {
         this.workGroup = workGroup;
@@ -109,18 +113,22 @@ public class TeacherPullVirtualTreeReceiveTask {
      * This thread is responsible for sending lessons (and nested queries) to the learner.
      */
     private void run() {
-        try {
+        try (in) {
+            in.anticipateMessage(); // root node request
             while (true) {
                 rateLimit();
-                final long path = in.readLong();
-                logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher receive path: " + path);
-                if (path == Path.INVALID_PATH) {
+                final PullVirtualTreeRequest request = in.readAnticipatedMessage();
+//                logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher receive path: " + request.getPath());
+//                System.err.println("TOREMOVE Teacher receive path: " + request.getPath());
+                if (request.getPath() == Path.INVALID_PATH) {
                     logger.info(RECONNECT.getMarker(), "Teacher receiver is complete as requested by the learner");
                     break;
                 }
-                view.registerRequest(path);
+                in.anticipateMessage();
+                view.registerRequest(request);
             }
-            logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher receive done");
+//            logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher receive done");
+//            System.err.println("TOREMOVE Teacher receive done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Teacher's receiving task is interrupted");
             Thread.currentThread().interrupt();

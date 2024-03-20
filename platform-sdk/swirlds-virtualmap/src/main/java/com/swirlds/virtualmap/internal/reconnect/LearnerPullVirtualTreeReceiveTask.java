@@ -83,18 +83,20 @@ public class LearnerPullVirtualTreeReceiveTask {
                     final PullVirtualTreeResponse response =
                             in.readAnticipatedMessage(); // will call the view to read hash and leaf
                     // logger.info(RECONNECT.getMarker(), "TOREMOVE Learner receive path: " + response.getPath());
+//                    System.err.println("TOREMOVE Learner receive path: " + response.getPath());
                     if (response.getPath() == 0) {
                         rootResponseReceived.countDown();
                     }
                     expectedResponses.decrementAndGet();
                 } else {
-                    MILLISECONDS.sleep(1);
+                    Thread.onSpinWait();
                 }
 
                 finished = senderIsFinished.get();
                 responseExpected = expectedResponses.get() > 0;
             }
             // logger.info(RECONNECT.getMarker(), "TOREMOVE Learner receive done");
+//            System.err.println("TOREMOVE Learner receive done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Learner's receiving task interrupted");
             Thread.currentThread().interrupt();

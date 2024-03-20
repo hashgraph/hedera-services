@@ -25,15 +25,15 @@ public interface VirtualTeacherTreeView extends TeacherTreeView<Long> {
 
     // For internal nodes, writes node hashes. For root node, additionally writes virtual
     // state metadata (leaf paths)
-    void writeNode(final SerializableDataOutputStream out, final long path) throws IOException;
+    void writeNode(final SerializableDataOutputStream out, final long path, final boolean isClean) throws IOException;
 
     Hash loadHash(final long path);
 
     // Only used in async teaching pull model, when teacher sends responses in a different thread
     // than receives requests
-    void registerRequest(final long path);
+    void registerRequest(final PullVirtualTreeRequest request);
 
-    boolean hasPendingRequests();
+    boolean hasPendingResponses();
 
     PullVirtualTreeResponse getNextResponse() throws InterruptedException;
 }

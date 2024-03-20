@@ -16,19 +16,20 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.virtualmap.internal.Path;
 import java.io.IOException;
 
 /**
  * Used during the synchronization protocol to send data needed to reconstruct a single node.
  */
-public class PullVirtualTreeResponse implements SelfSerializable {
+public class PullVirtualTreeRequest implements SelfSerializable {
 
-    private static final long CLASS_ID = 0xecfbef49a90334e3L;
+    private static final long CLASS_ID = 0xecfbef49a90334ffL;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -42,36 +43,33 @@ public class PullVirtualTreeResponse implements SelfSerializable {
 
     private long path = -1;
 
-    // Only used on the teacher side
-    private Hash hash;
+    private Hash hash = null;
 
     /**
      * Zero-arg constructor for constructable registry.
      */
-    public PullVirtualTreeResponse() {
+    public PullVirtualTreeRequest() {
         teacherView = null;
         learnerView = null;
     }
 
     /**
-     * This constructor is used by the teacher to create new responses.
+     * This constructor is used by the teacher to deserialize the request from the stream.
      */
-    public PullVirtualTreeResponse(final VirtualTeacherTreeView teacherView, final long path, final Hash hash) {
+    public PullVirtualTreeRequest(final VirtualTeacherTreeView teacherView) {
         this.teacherView = teacherView;
         this.learnerView = null;
-        this.path = path;
-        this.hash = hash;
     }
 
     /**
-     * This constructor is used by the learner when deserializing responses.
-     *
-     * @param learnerTreeView
-     * 		the learner's view
+     * This constructor is used by the learner to send requests to the teacher.
      */
-    public PullVirtualTreeResponse(final VirtualLearnerTreeView learnerTreeView) {
+    public PullVirtualTreeRequest(final VirtualLearnerTreeView learnerTreeView, final long path, final Hash hash) {
         this.teacherView = null;
         this.learnerView = learnerTreeView;
+        assert path == Path.INVALID_PATH || (path >= 0 && hash != null);
+        this.path = path;
+        this.hash = hash;
     }
 
     /**
@@ -79,15 +77,11 @@ public class PullVirtualTreeResponse implements SelfSerializable {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        assert teacherView != null;
+        assert learnerView != null;
         out.writeLong(path);
-        Hash teacherHash = teacherView.loadHash(path);
-        if ((teacherHash == null) && (path != 0)) {
-            throw new MerkleSerializationException("Cannot load node hash (bad request from learner?), path = " + path);
+        if (hash != null) {
+            out.write(hash.getValue());
         }
-        final boolean isClean = (teacherHash == null) || teacherHash.equals(hash);
-        out.write(isClean ? 0 : 1);
-        teacherView.writeNode(out, path, isClean);
     }
 
     /**
@@ -95,14 +89,22 @@ public class PullVirtualTreeResponse implements SelfSerializable {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        assert learnerView != null;
+        assert teacherView != null;
         path = in.readLong();
-        final boolean isClean = in.read() == 0;
-        learnerView.readNode(in, path, isClean);
+        if (path >= 0) {
+            hash = new Hash(DigestType.SHA_384);
+            if (VirtualReconnectUtils.completelyRead(in, hash.getValue()) != DigestType.SHA_384.digestLength()) {
+                throw new IOException("Failed to read node hash from the learner");
+            }
+        }
     }
 
     public long getPath() {
         return path;
+    }
+
+    public Hash getHash() {
+        return hash;
     }
 
     /**
