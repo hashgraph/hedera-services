@@ -37,13 +37,13 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
     private static final String SENDER = "0.0.1301";
     private static final String RECEIVER = "0.0.1302";
     private static final String LAST_CREATED_ACCOUNT = "0.0.3416";
-    private static final String FIRST_CREATED_TOPIC = "0.0.3423";
-    private static final String LAST_CREATED_TOPIC = "0.0.5805";
+    private static final String FIRST_CREATED_TOPIC = "0.0.3500";
+    private static final String LAST_CREATED_TOPIC = "0.0.5800";
     private static final String INVALID_TOPIC_ID = "0.0.41064";
     private static final String TOPIC_ID_WITH_MESSAGE_SUBMITTED_TO = "0.0.5800";
 
-    private static final String FIRST_CREATED_FILE = "0.0.5813";
-    private static final String LAST_CREATED_FILE = "0.0.6810";
+    private static final String FIRST_CREATED_FILE = "0.0.6000";
+    private static final String LAST_CREATED_FILE = "0.0.6800";
     private static final String INVALID_FILE_ID = "0.0.41000";
 
     public static void main(String... args) {
