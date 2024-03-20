@@ -31,7 +31,7 @@ import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.event.DefaultLogEvent;
 import com.swirlds.logging.api.internal.level.ConfigLevel;
-import com.swirlds.logging.util.InMemoryHandler;
+import com.swirlds.logging.test.fixtures.InMemoryHandler;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
