@@ -442,7 +442,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         } catch (final InvalidProtocolBufferException impossible) {
         }
 
-        if (advertiseCreation) {
+        if (advertiseCreation || verboseLoggingOn) {
             final String banner = "\n\n"
                     + bannerWith(String.format("Created token '%s' with id '0.0.%d'.", token, tokenID.getTokenNum()));
             log.info(banner);

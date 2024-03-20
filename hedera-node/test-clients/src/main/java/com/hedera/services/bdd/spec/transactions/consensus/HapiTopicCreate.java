@@ -188,7 +188,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
             throw new IllegalStateException(impossible);
         }
 
-        if (advertiseCreation) {
+        if (advertiseCreation || verboseLoggingOn) {
             final String banner = "\n\n"
                     + bannerWith(String.format(
                             "Created topic '%s' with id '0.0.%d'.",

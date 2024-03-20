@@ -336,7 +336,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                         address -> obs.accept(HapiParserUtil.asHeadlongAddress(address.toByteArray())),
                         () -> obs.accept(HapiParserUtil.evmAddressFromSecp256k1Key(key))));
 
-        if (advertiseCreation) {
+        if (advertiseCreation || verboseLoggingOn) {
             final String banner = "\n\n"
                     + bannerWith(String.format(
                             "Created account '%s' with id '0.0.%d'.",
