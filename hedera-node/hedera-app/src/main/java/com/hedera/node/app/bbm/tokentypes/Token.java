@@ -28,7 +28,6 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -71,50 +70,6 @@ record Token(
         @NonNull Optional<JKey> pauseKey,
         @NonNull Optional<JKey> supplyKey,
         @NonNull Optional<JKey> wipeKey) {
-
-    static Token fromMono(@NonNull final MerkleToken token) {
-        var tokenRes = new Token(
-                token.tokenType(),
-                supplyTypeFromMono(token.supplyType()),
-                token.getKey().longValue(),
-                token.symbol(),
-                token.name(),
-                token.memo(),
-                token.isDeleted(),
-                token.isPaused(),
-                token.decimals(),
-                token.maxSupply(),
-                token.totalSupply(),
-                token.getLastUsedSerialNumber(),
-                token.expiry(),
-                token.autoRenewPeriod() == -1L ? Optional.empty() : Optional.of(token.autoRenewPeriod()),
-                token.accountsAreFrozenByDefault(),
-                token.accountsKycGrantedByDefault(),
-                token.treasury(),
-                token.autoRenewAccount(),
-                token.customFeeSchedule(),
-                token.adminKey(),
-                token.feeScheduleKey(),
-                token.freezeKey(),
-                token.kycKey(),
-                token.pauseKey(),
-                token.supplyKey(),
-                token.wipeKey());
-        Objects.requireNonNull(tokenRes.tokenType, "tokenType");
-        Objects.requireNonNull(tokenRes.tokenSupplyType, "tokenSupplyType");
-        Objects.requireNonNull(tokenRes.symbol, "symbol");
-        Objects.requireNonNull(tokenRes.name, "name");
-        Objects.requireNonNull(tokenRes.memo, "memo");
-        Objects.requireNonNull(tokenRes.adminKey, "adminKey");
-        Objects.requireNonNull(tokenRes.feeScheduleKey, "feeScheduleKey");
-        Objects.requireNonNull(tokenRes.freezeKey, "freezeKey");
-        Objects.requireNonNull(tokenRes.kycKey, "kycKey");
-        Objects.requireNonNull(tokenRes.pauseKey, "pauseKey");
-        Objects.requireNonNull(tokenRes.supplyKey, "supplyKey");
-        Objects.requireNonNull(tokenRes.wipeKey, "wipeKey");
-
-        return tokenRes;
-    }
 
     static Token fromMod(@NonNull final com.hedera.hapi.node.state.token.Token token) {
         Token tokenRes;

@@ -21,7 +21,6 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,18 +33,6 @@ record UniqueToken(
         @NonNull byte[] metadata,
         @NonNull NftNumPair previous,
         @NonNull NftNumPair next) {
-
-    static final byte[] EMPTY_BYTES = new byte[0];
-
-    static UniqueToken fromMono(@NonNull final UniqueTokenValue utv) {
-        return new UniqueToken(
-                utv.getOwner(),
-                utv.getSpender(),
-                utv.getCreationTime(),
-                null != utv.getMetadata() ? utv.getMetadata() : EMPTY_BYTES,
-                utv.getPrev(),
-                utv.getNext());
-    }
 
     static UniqueToken fromMod(@NonNull final OnDiskValue<Nft> wrapper) {
         final var value = wrapper.getValue();

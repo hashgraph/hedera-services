@@ -18,12 +18,10 @@ package com.hedera.node.app.bbm.singleton;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.swirlds.base.utility.Pair;
@@ -34,7 +32,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -58,24 +55,6 @@ public class StakingInfoDumpUtils {
             Pair.of("rewardSumHistory", getFieldFormatter(StakingInfo::rewardSumHistory, Arrays::toString)),
             Pair.of("weight", getFieldFormatter(StakingInfo::weight, Object::toString)));
 
-    public static void dumpMonoStakingInfo(
-            @NonNull final Path path,
-            @NonNull final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfoMerkleMap,
-            @NonNull final DumpCheckpoint checkpoint) {
-        System.out.printf("=== %d staking info ===%n", stakingInfoMerkleMap.size());
-
-        final var allStakingInfo = gatherStakingInfoFromMono(MerkleMapLike.from(stakingInfoMerkleMap));
-
-        int reportSize;
-        try (@NonNull final var writer = new Writer(path)) {
-            reportSummary(writer, allStakingInfo);
-            reportOnStakingInfo(writer, allStakingInfo);
-            reportSize = writer.getSize();
-        }
-
-        System.out.printf("=== staking info report is %d bytes %n", reportSize);
-    }
-
     public static void dumpModStakingInfo(
             @NonNull final Path path,
             @NonNull
@@ -94,14 +73,6 @@ public class StakingInfoDumpUtils {
         }
 
         System.out.printf("=== staking info report is %d bytes %n", reportSize);
-    }
-
-    @NonNull
-    static Map<Long, StakingInfo> gatherStakingInfoFromMono(
-            @NonNull final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfoStore) {
-        final var allStakingInfo = new TreeMap<Long, StakingInfo>();
-        stakingInfoStore.forEachNode((en, mt) -> allStakingInfo.put(en.longValue(), StakingInfo.fromMono(mt)));
-        return allStakingInfo;
     }
 
     @NonNull

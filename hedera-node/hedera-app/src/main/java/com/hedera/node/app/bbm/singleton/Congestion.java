@@ -20,12 +20,8 @@ import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.bbm.utils.ThingsToStrings;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,27 +32,6 @@ record Congestion(
         // last two represented as Strings already formatted from List<RichInstant>
         @Nullable String genericLevelStarts,
         @Nullable String gasLevelStarts) {
-    static Congestion fromMerkleNetworkContext(@NonNull final MerkleNetworkContext networkContext) {
-        final var tpsThrottleUsageSnapshots = Arrays.stream(networkContext.usageSnapshots())
-                .map(PbjConverter::toPbj)
-                .toList();
-        final var gasThrottleUsageSnapshot = PbjConverter.toPbj(networkContext.getGasThrottleUsageSnapshot());
-        // format the following two from `List<RichInstant>` to String
-        final var gasCongestionStarts = Arrays.stream(
-                        networkContext.getMultiplierSources().gasCongestionStarts())
-                .map(RichInstant::fromJava)
-                .map(ThingsToStrings::toStringOfRichInstant)
-                .collect(Collectors.joining(", "));
-        final var genericCongestionStarts = Arrays.stream(
-                        networkContext.getMultiplierSources().genericCongestionStarts())
-                .map(RichInstant::fromJava)
-                .map(ThingsToStrings::toStringOfRichInstant)
-                .collect(Collectors.joining(", "));
-
-        return new Congestion(
-                tpsThrottleUsageSnapshots, gasThrottleUsageSnapshot, genericCongestionStarts, gasCongestionStarts);
-    }
-
     static Congestion fromMod(
             @NonNull final CongestionLevelStarts congestionLevelStarts,
             @NonNull final ThrottleUsageSnapshots throttleUsageSnapshots) {

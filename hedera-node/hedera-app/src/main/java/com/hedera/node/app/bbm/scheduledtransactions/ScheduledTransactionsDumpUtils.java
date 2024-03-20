@@ -17,23 +17,17 @@
 package com.hedera.node.app.bbm.scheduledtransactions;
 
 import static com.hedera.node.app.bbm.utils.ThingsToStrings.quoteForCsv;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.state.merkle.disk.OnDiskKey;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
@@ -62,19 +56,6 @@ public class ScheduledTransactionsDumpUtils {
         }
     }
 
-    public static void dumpMonoScheduledTransactions(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<EntityNumVirtualKey>, ScheduleVirtualValue> scheduledTransactions,
-            @NonNull final DumpCheckpoint checkpoint) {
-        try (@NonNull final var writer = new Writer(path)) {
-            final var dumpableScheduledTransactions = gatherMonoScheduledTransactions(scheduledTransactions);
-            reportOnScheduledTransactions(writer, dumpableScheduledTransactions);
-            System.out.printf(
-                    "=== mono scheduled transactions report is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
-        }
-    }
-
     @NonNull
     private static Map<ScheduledTransactionId, ScheduledTransaction> gatherModScheduledTransactions(
             MerkleMap<InMemoryKey<ScheduleID>, InMemoryValue<ScheduleID, Schedule>> source) {
@@ -89,29 +70,6 @@ public class ScheduledTransactionsDumpUtils {
                 throw new RuntimeException(e);
             }
         });
-        scheduledTransactions.forEach(filePair -> r.put(filePair.key(), filePair.value()));
-        return r;
-    }
-
-    @NonNull
-    private static Map<ScheduledTransactionId, ScheduledTransaction> gatherMonoScheduledTransactions(
-            VirtualMap<OnDiskKey<EntityNumVirtualKey>, ScheduleVirtualValue> source) {
-        final var r = new HashMap<ScheduledTransactionId, ScheduledTransaction>();
-        final var threadCount = 8;
-        final var scheduledTransactions =
-                new ConcurrentLinkedQueue<Pair<ScheduledTransactionId, ScheduledTransaction>>();
-        try {
-            VirtualMapLike.from(source)
-                    .extractVirtualMapData(
-                            getStaticThreadManager(),
-                            p -> scheduledTransactions.add(Pair.of(
-                                    ScheduledTransactionId.fromMono(p.left().getKey()),
-                                    ScheduledTransaction.fromMono(p.right()))),
-                            threadCount);
-        } catch (final InterruptedException ex) {
-            System.err.println("*** Traversal of files virtual map interrupted!");
-            Thread.currentThread().interrupt();
-        }
         scheduledTransactions.forEach(filePair -> r.put(filePair.key(), filePair.value()));
         return r;
     }

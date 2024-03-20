@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.mono.statedumpers.nfts;
 
 import com.google.common.collect.ComparisonChain;
-import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 record UniqueTokenId(long id, long serial) implements Comparable<UniqueTokenId> {

@@ -16,12 +16,7 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.bbm.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
-import static com.hedera.node.app.bbm.DumpCheckpoint.MOD_POST_MIGRATION;
-import static com.hedera.node.app.bbm.DumpCheckpoint.MONO_PRE_MIGRATION;
-import static com.hedera.node.app.bbm.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.bbm.StateDumper.dumpModChildrenFrom;
-import static com.hedera.node.app.bbm.StateDumper.dumpMonoChildrenFrom;
 import static com.hedera.node.app.records.impl.BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
@@ -37,6 +32,11 @@ import static com.hedera.node.app.service.mono.state.migration.StateChildIndices
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_MIGRATION;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MONO_PRE_MIGRATION;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
+import static com.hedera.node.app.service.mono.statedumpers.StateDumper.dumpMonoChildrenFrom;
 import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
@@ -50,7 +50,6 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
@@ -80,6 +79,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;

@@ -239,6 +239,7 @@ module com.hedera.node.app.service.mono {
 
     exports com.hedera.node.app.service.mono.fees.calculation.meta;
     exports com.hedera.node.app.service.mono.files.store;
+    exports com.hedera.node.app.service.mono.statedumpers;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;

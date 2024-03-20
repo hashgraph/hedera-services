@@ -18,10 +18,9 @@ package com.hedera.node.app.bbm.singleton;
 
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.Writer;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -46,20 +45,6 @@ public class CongestionDumpUtils {
             Pair.of(
                     "gasLevelStarts",
                     getFieldFormatter(Congestion::gasLevelStarts, getNullableFormatter(Object::toString))));
-
-    public static void dumpMonoCongestion(
-            @NonNull final Path path,
-            @NonNull final MerkleNetworkContext merkleNetworkContext,
-            @NonNull final DumpCheckpoint checkpoint) {
-
-        int reportSize;
-        try (@NonNull final var writer = new Writer(path)) {
-            reportOnCongestion(writer, Congestion.fromMerkleNetworkContext(merkleNetworkContext));
-            reportSize = writer.getSize();
-        }
-
-        System.out.printf("=== staking rewards report is %d bytes %n", reportSize);
-    }
 
     public static void dumpModCongestion(
             @NonNull final Path path,

@@ -18,7 +18,6 @@ package com.hedera.node.app.bbm.associations;
 
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,22 +35,6 @@ record TokenAssociation(
         boolean isAutomaticAssociation,
         EntityId prev,
         EntityId next) {
-
-    @NonNull
-    static TokenAssociation fromMono(@NonNull final OnDiskTokenRel tokenRel) {
-        final var at = toLongsPair(toPair(tokenRel.getKey()));
-
-        return new TokenAssociation(
-                entityIdFrom(at.left()),
-                entityIdFrom(at.right()),
-                tokenRel.getBalance(),
-                tokenRel.isFrozen(),
-                tokenRel.isKycGranted(),
-                tokenRel.isAutomaticAssociation(),
-                entityIdFrom(tokenRel.getPrev()),
-                entityIdFrom(tokenRel.getNext()));
-    }
-
     static TokenAssociation fromMod(@NonNull final OnDiskValue<TokenRelation> wrapper) {
         final var value = wrapper.getValue();
         return new TokenAssociation(
@@ -82,9 +65,5 @@ record TokenAssociation(
 
     static EntityId tokenIdFromMod(@Nullable final com.hedera.hapi.node.base.TokenID tokenId) {
         return null == tokenId ? EntityId.MISSING_ENTITY_ID : new EntityId(0L, 0L, tokenId.tokenNum());
-    }
-
-    static EntityId entityIdFrom(long num) {
-        return new EntityId(0L, 0L, num);
     }
 }

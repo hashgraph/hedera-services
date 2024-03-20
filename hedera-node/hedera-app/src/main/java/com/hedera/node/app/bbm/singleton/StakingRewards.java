@@ -17,20 +17,10 @@
 package com.hedera.node.app.bbm.singleton;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public record StakingRewards(
         boolean stakingRewardsActivated, long totalStakedRewardStart, long totalStakedStart, long pendingRewards) {
-
-    public static StakingRewards fromMono(@NonNull final MerkleNetworkContext merkleNetworkContext) {
-
-        return new StakingRewards(
-                merkleNetworkContext.areRewardsActivated(),
-                merkleNetworkContext.getTotalStakedRewardStart(),
-                merkleNetworkContext.getTotalStakedStart(),
-                merkleNetworkContext.pendingRewards());
-    }
 
     public static StakingRewards fromMod(@NonNull final NetworkStakingRewards networkStakingRewards) {
         return new StakingRewards(

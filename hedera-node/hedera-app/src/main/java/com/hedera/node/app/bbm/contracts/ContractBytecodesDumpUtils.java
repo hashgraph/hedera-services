@@ -21,14 +21,9 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -88,22 +83,6 @@ public class ContractBytecodesDumpUtils {
         final var contractArr = contractsToReturn.toArray(new Contract[0]);
         System.out.printf("=== %d contracts iterated over (%d saved)%n", processed.get(), contractArr.length);
         return new Contracts(List.of(contractArr), List.of(), contractArr.length);
-    }
-
-    public static void dumpMonoContractBytecodes(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<EntityNumVirtualKey, OnDiskAccount> accounts,
-            @NonNull final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> files,
-            @NonNull final DumpCheckpoint checkpoint) {
-        final var accountAdapter = AccountStorageAdapter.fromOnDisk(VirtualMapLike.from(accounts));
-        final var knownContracts = ContractUtils.getMonoContracts(files, accountAdapter);
-        final var sb = generateReport(knownContracts);
-        try (@NonNull final var writer = new Writer(path)) {
-            writer.writeln(sb.toString());
-            System.out.printf(
-                    "=== contract bytecodes report is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
-        }
     }
 
     private static StringBuilder generateReport(Contracts knownContracts) {

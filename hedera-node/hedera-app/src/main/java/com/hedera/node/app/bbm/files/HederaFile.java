@@ -42,16 +42,6 @@ public record HederaFile(
                 SystemFileType.byId.get((int) value.fileId().fileNum()));
     }
 
-    @NonNull
-    static HederaFile of(final int fileId, @NonNull final byte[] contents) {
-        return new HederaFile(FileStore.ORDINARY, fileId, contents, null, SystemFileType.byId.get(fileId));
-    }
-
-    @NonNull
-    static HederaFile of(final int fileId, @NonNull final byte[] contents, @NonNull final HFileMeta metadata) {
-        return new HederaFile(FileStore.ORDINARY, fileId, contents, metadata, SystemFileType.byId.get(fileId));
-    }
-
     boolean isActive() {
         if (null != systemFileType) {
             return true;

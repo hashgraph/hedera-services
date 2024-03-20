@@ -18,16 +18,11 @@ package com.hedera.node.app.bbm.scheduledtransactions;
 
 import com.google.common.collect.ComparisonChain;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 record ScheduledTransactionId(long num) implements Comparable<ScheduledTransactionId> {
     static ScheduledTransactionId fromMod(@NonNull final ScheduleID scheduleID) {
         return new ScheduledTransactionId(scheduleID.scheduleNum());
-    }
-
-    static ScheduledTransactionId fromMono(@NonNull final EntityNumVirtualKey key) {
-        return new ScheduledTransactionId(key.getKeyAsLong());
     }
 
     @Override

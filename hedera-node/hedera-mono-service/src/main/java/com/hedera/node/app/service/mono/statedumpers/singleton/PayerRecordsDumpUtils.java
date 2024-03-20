@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.mono.statedumpers.singleton;
 
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.utils.FieldBuilder;
 import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
-import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.fcqueue.FCQueue;
 import edu.umd.cs.findbugs.annotations.NonNull;

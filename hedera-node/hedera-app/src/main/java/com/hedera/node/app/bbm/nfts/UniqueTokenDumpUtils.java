@@ -21,13 +21,11 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.base.utility.Pair;
@@ -55,18 +53,6 @@ public class UniqueTokenDumpUtils {
             reportOnUniques(writer, dumpableUniques);
             System.out.printf(
                     "=== mod  uniques report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
-        }
-    }
-
-    public static void dumpMonoUniqueTokens(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniques,
-            @NonNull final DumpCheckpoint checkpoint) {
-        try (@NonNull final var writer = new Writer(path)) {
-            final var dumpableUniques = gatherUniques(uniques, UniqueTokenId::fromMono, UniqueToken::fromMono);
-            reportOnUniques(writer, dumpableUniques);
-            System.out.printf(
-                    "=== mono uniques report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
         }
     }
 

@@ -19,12 +19,10 @@ package com.hedera.node.app.bbm.singleton;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -72,22 +70,6 @@ public class BlockInfoDumpUtils {
             reportOnBlockInfo(writer, combined);
             System.out.printf(
                     "=== mod running hashes and block info report is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
-        }
-    }
-
-    public static void dumpMonoBlockInfo(
-            @NonNull final Path path,
-            @NonNull final MerkleNetworkContext merkleNetworkContext,
-            @NonNull final RecordsRunningHashLeaf recordsRunningHashLeaf,
-            @NonNull final DumpCheckpoint checkpoint) {
-        try (@NonNull final var writer = new Writer(path)) {
-            final var combined =
-                    BlockInfoAndRunningHashes.combineFromMono(merkleNetworkContext, recordsRunningHashLeaf);
-            reportOnBlockInfo(writer, combined);
-
-            System.out.printf(
-                    "=== mono running hashes and block info report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
         }
     }

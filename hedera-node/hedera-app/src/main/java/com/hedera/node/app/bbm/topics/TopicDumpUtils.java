@@ -19,12 +19,12 @@ package com.hedera.node.app.bbm.topics;
 import static com.hedera.node.app.bbm.utils.ThingsToStrings.getMaybeStringifyByteString;
 import static com.hedera.node.app.bbm.utils.ThingsToStrings.quoteForCsv;
 
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.merkle.map.MerkleMap;
@@ -57,18 +57,6 @@ public class TopicDumpUtils {
             reportOnTopics(writer, dumpableTopics);
             System.out.printf(
                     "=== mod topics report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
-        }
-    }
-
-    public static void dumpMonoTopics(
-            @NonNull final Path path,
-            @NonNull final MerkleMap<EntityNum, MerkleTopic> topics,
-            @NonNull final DumpCheckpoint checkpoint) {
-        try (@NonNull final var writer = new Writer(path)) {
-            final var dumpableTopics = gatherTopics(MerkleMapLike.from(topics));
-            reportOnTopics(writer, dumpableTopics);
-            System.out.printf(
-                    "=== mono topics report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
         }
     }
 

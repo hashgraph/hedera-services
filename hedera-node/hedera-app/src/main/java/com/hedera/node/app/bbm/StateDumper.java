@@ -17,45 +17,21 @@
 package com.hedera.node.app.bbm;
 
 import static com.hedera.node.app.bbm.accounts.AccountDumpUtils.dumpModAccounts;
-import static com.hedera.node.app.bbm.accounts.AccountDumpUtils.dumpMonoAccounts;
 import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpModTokenRelations;
-import static com.hedera.node.app.bbm.associations.TokenAssociationsDumpUtils.dumpMonoTokenRelations;
 import static com.hedera.node.app.bbm.contracts.ContractBytecodesDumpUtils.dumpModContractBytecodes;
-import static com.hedera.node.app.bbm.contracts.ContractBytecodesDumpUtils.dumpMonoContractBytecodes;
 import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpModFiles;
-import static com.hedera.node.app.bbm.files.FilesDumpUtils.dumpMonoFiles;
 import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpModUniqueTokens;
-import static com.hedera.node.app.bbm.nfts.UniqueTokenDumpUtils.dumpMonoUniqueTokens;
 import static com.hedera.node.app.bbm.scheduledtransactions.ScheduledTransactionsDumpUtils.dumpModScheduledTransactions;
-import static com.hedera.node.app.bbm.scheduledtransactions.ScheduledTransactionsDumpUtils.dumpMonoScheduledTransactions;
 import static com.hedera.node.app.bbm.singleton.BlockInfoDumpUtils.dumpModBlockInfo;
-import static com.hedera.node.app.bbm.singleton.BlockInfoDumpUtils.dumpMonoBlockInfo;
 import static com.hedera.node.app.bbm.singleton.CongestionDumpUtils.dumpModCongestion;
-import static com.hedera.node.app.bbm.singleton.CongestionDumpUtils.dumpMonoCongestion;
 import static com.hedera.node.app.bbm.singleton.PayerRecordsDumpUtils.dumpModTxnRecordQueue;
-import static com.hedera.node.app.bbm.singleton.PayerRecordsDumpUtils.dumpMonoPayerRecords;
 import static com.hedera.node.app.bbm.singleton.StakingInfoDumpUtils.dumpModStakingInfo;
-import static com.hedera.node.app.bbm.singleton.StakingInfoDumpUtils.dumpMonoStakingInfo;
 import static com.hedera.node.app.bbm.singleton.StakingRewardsDumpUtils.dumpModStakingRewards;
-import static com.hedera.node.app.bbm.singleton.StakingRewardsDumpUtils.dumpMonoStakingRewards;
 import static com.hedera.node.app.bbm.tokentypes.TokenTypesDumpUtils.dumpModTokenType;
-import static com.hedera.node.app.bbm.tokentypes.TokenTypesDumpUtils.dumpMonoTokenType;
 import static com.hedera.node.app.bbm.topics.TopicDumpUtils.dumpModTopics;
-import static com.hedera.node.app.bbm.topics.TopicDumpUtils.dumpMonoTopics;
 import static com.hedera.node.app.ids.EntityIdService.ENTITY_ID_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.RECORD_STREAM_RUNNING_HASH;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.SCHEDULE_TXS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STAKING_INFO;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
 import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
@@ -97,8 +73,8 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
@@ -138,38 +114,6 @@ public class StateDumper {
     private static final String SEMANTIC_STAKING_REWARDS = "stakingRewards.txt";
     private static final String SEMANTIC_TXN_RECORD_QUEUE = "transactionRecords.txt";
     private static final String SEMANTIC_CONGESTION = "congestion.txt";
-
-    public static void dumpMonoChildrenFrom(
-            @NonNull final MerkleHederaState state, @NonNull final DumpCheckpoint checkpoint) {
-        final MerkleNetworkContext networkContext = state.getChild(NETWORK_CTX);
-        final var dumpLoc = getExtantDumpLoc("mono", networkContext.consensusTimeOfLastHandledTxn());
-        dumpMonoUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), state.getChild(UNIQUE_TOKENS), checkpoint);
-        dumpMonoTokenRelations(
-                Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(TOKEN_ASSOCIATIONS), checkpoint);
-        dumpMonoFiles(Paths.get(dumpLoc, SEMANTIC_FILES), state.getChild(STORAGE), checkpoint);
-        dumpMonoAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), state.getChild(ACCOUNTS), checkpoint);
-        dumpMonoContractBytecodes(
-                Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
-                state.getChild(ACCOUNTS),
-                state.getChild(STORAGE),
-                checkpoint);
-        dumpMonoTopics(Paths.get(dumpLoc, SEMANTIC_TOPICS), state.getChild(TOPICS), checkpoint);
-        dumpMonoScheduledTransactions(
-                Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS), state.getChild(SCHEDULE_TXS), checkpoint);
-        dumpMonoTokenType(Paths.get(dumpLoc, SEMANTIC_TOKEN_TYPE), state.getChild(TOKENS), checkpoint);
-        dumpMonoBlockInfo(
-                Paths.get(dumpLoc, SEMANTIC_BLOCK),
-                networkContext,
-                state.getChild(RECORD_STREAM_RUNNING_HASH),
-                checkpoint);
-        dumpMonoStakingInfo(Paths.get(dumpLoc, SEMANTIC_STAKING_INFO), state.getChild(STAKING_INFO), checkpoint);
-        dumpMonoStakingRewards(Paths.get(dumpLoc, SEMANTIC_STAKING_REWARDS), networkContext, checkpoint);
-        dumpMonoPayerRecords(
-                Paths.get(dumpLoc, SEMANTIC_TXN_RECORD_QUEUE),
-                state.getChild(PAYER_RECORDS_OR_CONSOLIDATED_FCQ),
-                checkpoint);
-        dumpMonoCongestion(Paths.get(dumpLoc, SEMANTIC_CONGESTION), networkContext, checkpoint);
-    }
 
     public static void dumpModChildrenFrom(
             @NonNull final MerkleHederaState state, @NonNull final DumpCheckpoint checkpoint) {

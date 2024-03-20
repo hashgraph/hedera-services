@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.mono.statedumpers.associations;
 
 import com.google.common.collect.ComparisonChain;
-import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

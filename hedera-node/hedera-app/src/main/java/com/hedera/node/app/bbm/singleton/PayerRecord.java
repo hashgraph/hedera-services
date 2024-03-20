@@ -18,7 +18,6 @@ package com.hedera.node.app.bbm.singleton;
 
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,10 +42,5 @@ public record PayerRecord(TxnId transactionId, RichInstant consensusTime, Entity
                 txnId,
                 new RichInstant(consensusTimestamp.seconds(), consensusTimestamp.nanos()),
                 EntityId.fromPbjAccountId(recordEntry.payerAccountId()));
-    }
-
-    public static PayerRecord fromMono(@NonNull ExpirableTxnRecord record) {
-        return new PayerRecord(
-                record.getTxnId(), record.getConsensusTime(), record.getTxnId().getPayerAccount());
     }
 }

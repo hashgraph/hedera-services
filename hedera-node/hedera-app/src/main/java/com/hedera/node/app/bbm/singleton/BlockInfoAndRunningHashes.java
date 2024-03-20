@@ -16,14 +16,10 @@
 
 package com.hedera.node.app.bbm.singleton;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
@@ -42,25 +38,6 @@ record BlockInfoAndRunningHashes(
         @Nullable Hash nMinus1RunningHash,
         @Nullable Hash nMinus2RunningHash,
         @Nullable Hash nMinus3RunningHash) {
-
-    public static BlockInfoAndRunningHashes combineFromMono(
-            @NonNull final MerkleNetworkContext merkleNetworkContext,
-            @NonNull final RecordsRunningHashLeaf recordsRunningHashLeaf) {
-        requireNonNull(merkleNetworkContext);
-        requireNonNull(recordsRunningHashLeaf);
-        return new BlockInfoAndRunningHashes(
-                merkleNetworkContext.getAlignmentBlockNo(),
-                merkleNetworkContext.stringifiedBlockHashes(),
-                RichInstant.fromJava(merkleNetworkContext.consensusTimeOfLastHandledTxn()),
-                merkleNetworkContext.areMigrationRecordsStreamed(),
-                RichInstant.fromJava(merkleNetworkContext.firstConsTimeOfCurrentBlock()),
-                merkleNetworkContext.seqNo().current(),
-                recordsRunningHashLeaf.getRunningHash().getHash(),
-                recordsRunningHashLeaf.getNMinus1RunningHash().getHash(),
-                recordsRunningHashLeaf.getNMinus2RunningHash().getHash(),
-                recordsRunningHashLeaf.getNMinus3RunningHash().getHash());
-    }
-
     public static BlockInfoAndRunningHashes combineFromMod(
             @NonNull final BlockInfo blockInfo, @NonNull final RunningHashes runningHashes, final long entityId) {
 

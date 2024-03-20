@@ -21,7 +21,6 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -77,27 +76,6 @@ record ScheduledTransaction(
                 value.signatories().stream()
                         .map(ScheduledTransaction::toPrimitiveKey)
                         .toList());
-    }
-
-    static ScheduledTransaction fromMono(@NonNull final ScheduleVirtualValue scheduleVirtualValue) {
-        return new ScheduledTransaction(
-                scheduleVirtualValue.getKey().getKeyAsLong(),
-                scheduleVirtualValue.adminKey(),
-                scheduleVirtualValue.memo().orElse("<EMPTY>"),
-                scheduleVirtualValue.isDeleted(),
-                scheduleVirtualValue.isExecuted(),
-                scheduleVirtualValue.calculatedWaitForExpiry(),
-                scheduleVirtualValue.waitForExpiryProvided(),
-                scheduleVirtualValue.payer(),
-                scheduleVirtualValue.schedulingAccount(),
-                scheduleVirtualValue.schedulingTXValidStart(),
-                scheduleVirtualValue.expirationTimeProvided(),
-                scheduleVirtualValue.calculatedExpirationTime(),
-                scheduleVirtualValue.getResolutionTime(),
-                scheduleVirtualValue.bodyBytes(),
-                scheduleVirtualValue.ordinaryViewOfScheduledTxn(),
-                scheduleVirtualValue.scheduledTxn(),
-                scheduleVirtualValue.signatories());
     }
 
     static EntityId entityIdFrom(long num) {

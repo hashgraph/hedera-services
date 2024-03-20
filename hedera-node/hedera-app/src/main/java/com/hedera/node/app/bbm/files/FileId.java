@@ -27,10 +27,6 @@ public record FileId(long shardNum, long realmNum, long fileNum) implements Comp
         return new FileId(fileID.shardNum(), fileID.realmNum(), fileID.fileNum());
     }
 
-    static FileId fromMono(@NonNull final Integer fileNum) {
-        return new FileId(0, 0, fileNum);
-    }
-
     @Override
     public String toString() {
         return "%d%s%d%s%d".formatted(shardNum, Writer.FIELD_SEPARATOR, realmNum, Writer.FIELD_SEPARATOR, fileNum);

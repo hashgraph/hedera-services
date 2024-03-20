@@ -19,12 +19,11 @@ package com.hedera.node.app.bbm.associations;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.base.utility.Pair;
@@ -54,20 +53,6 @@ public class TokenAssociationsDumpUtils {
             reportOnTokenAssociations(writer, dumpableTokenRelations);
             System.out.printf(
                     "=== mod token associations report is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
-        }
-    }
-
-    public static void dumpMonoTokenRelations(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<OnDiskTokenRel>, OnDiskTokenRel> associations,
-            @NonNull final DumpCheckpoint checkpoint) {
-        try (@NonNull final var writer = new Writer(path)) {
-            final var dumpableTokenRelations =
-                    gatherTokenRelations(associations, TokenAssociationId::fromMono, TokenAssociation::fromMono);
-            reportOnTokenAssociations(writer, dumpableTokenRelations);
-            System.out.printf(
-                    "=== mono token associations report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
         }
     }

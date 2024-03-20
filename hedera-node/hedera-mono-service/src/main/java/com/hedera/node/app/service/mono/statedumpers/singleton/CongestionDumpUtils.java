@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.mono.statedumpers.singleton;
 
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.utils.FieldBuilder;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;

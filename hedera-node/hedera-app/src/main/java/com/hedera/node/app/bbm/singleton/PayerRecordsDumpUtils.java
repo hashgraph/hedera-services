@@ -17,14 +17,12 @@
 package com.hedera.node.app.bbm.singleton;
 
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
-import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.state.merkle.queue.QueueNode;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.fcqueue.FCQueue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -45,19 +43,6 @@ public class PayerRecordsDumpUtils {
                     "consensusTime",
                     getFieldFormatter(PayerRecord::consensusTime, ThingsToStrings::toStringOfRichInstant)),
             Pair.of("payer", getFieldFormatter(PayerRecord::payer, ThingsToStrings::toStringOfEntityId)));
-
-    public static void dumpMonoPayerRecords(
-            @NonNull final Path path,
-            @NonNull final FCQueue<ExpirableTxnRecord> records,
-            @NonNull final DumpCheckpoint checkpoint) {
-        var transactionRecords = gatherTxnRecordsFromMono(records);
-        int reportSize;
-        try (@NonNull final var writer = new Writer(path)) {
-            reportOnTxnRecords(writer, transactionRecords);
-            reportSize = writer.getSize();
-        }
-        System.out.printf("=== payer records report is %d bytes %n", reportSize);
-    }
 
     public static void dumpModTxnRecordQueue(
             @NonNull final Path path,
@@ -82,12 +67,6 @@ public class PayerRecordsDumpUtils {
         return records;
     }
 
-    private static List<PayerRecord> gatherTxnRecordsFromMono(FCQueue<ExpirableTxnRecord> records) {
-        var listTxnRecords = new ArrayList<PayerRecord>();
-        records.stream().forEach(p -> listTxnRecords.add(PayerRecord.fromMono(p)));
-        return listTxnRecords;
-    }
-
     static void reportOnTxnRecords(@NonNull Writer writer, @NonNull List<PayerRecord> records) {
         writer.writeln(formatHeader());
         records.stream()
@@ -110,10 +89,6 @@ public class PayerRecordsDumpUtils {
     private static <T> BiConsumer<FieldBuilder, PayerRecord> getFieldFormatter(
             @NonNull final Function<PayerRecord, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
-    }
-
-    static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
-        return t -> null != t ? formatter.apply(t) : "";
     }
 
     static <T> void formatField(

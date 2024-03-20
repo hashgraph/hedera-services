@@ -17,10 +17,9 @@
 package com.hedera.node.app.bbm.singleton;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
 import com.hedera.node.app.bbm.utils.Writer;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -44,20 +43,6 @@ public class StakingRewardsDumpUtils {
                     getFieldFormatter(StakingRewards::totalStakedRewardStart, Object::toString)),
             Pair.of("totalStakedStart", getFieldFormatter(StakingRewards::totalStakedStart, Object::toString)),
             Pair.of("pendingRewards", getFieldFormatter(StakingRewards::pendingRewards, Object::toString)));
-
-    public static void dumpMonoStakingRewards(
-            @NonNull final Path path,
-            @NonNull final MerkleNetworkContext merkleNetworkContext,
-            @NonNull final DumpCheckpoint checkpoint) {
-
-        int reportSize;
-        try (@NonNull final var writer = new Writer(path)) {
-            reportOnStakingRewards(writer, StakingRewards.fromMono(merkleNetworkContext));
-            reportSize = writer.getSize();
-        }
-
-        System.out.printf("=== staking rewards report is %d bytes %n", reportSize);
-    }
 
     public static void dumpModStakingRewards(
             @NonNull final Path path,
