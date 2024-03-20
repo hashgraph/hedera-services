@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# The location were this script can be found.
+SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
+
+# You must install mermaid to use this script.
+# npm install -g @mermaid-js/mermaid-cli
+
 # Add the flag "--less-mystery" to add back labels for mystery input wires (noisy diagram warning)
 
 pcli diagram \
@@ -43,4 +49,5 @@ pcli diagram \
     -c 'State File Management' \
     -c 'Consensus Round Handler' \
     -c 'State Hasher' \
-    -c 'ISS Detector'
+    -c 'ISS Detector' \
+    -o "${SCRIPT_PATH}/../../../../../../../../docs/core/wiring-diagram.svg"
