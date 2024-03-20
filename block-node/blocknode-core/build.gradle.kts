@@ -19,7 +19,7 @@ plugins {
     id("com.hedera.hashgraph.blocknode.conventions")
 }
 
-application { mainClass = "com.hedera.node.blocknode.core.BlockNode" }
+application { mainClass = "com.hedera.node.blocknode.core.BlockNodeMain" }
 
 mainModuleInfo {
     runtimeOnly("com.swirlds.config.impl")
