@@ -103,6 +103,7 @@ public final class BrowserWindowManager {
      * @param comp the index of the tab to select
      */
     public static void showBrowserWindow(@Nullable final ScrollableJPanel comp) {
+
         if (GraphicsEnvironment.isHeadless()) {
             return;
         }
@@ -110,7 +111,6 @@ public final class BrowserWindowManager {
             getBrowserWindow().setVisible(true);
             return;
         }
-        setBrowserWindow(new WinBrowser(new PlatformHashgraphGuiSource()));
         getBrowserWindow().goTab(comp);
     }
 

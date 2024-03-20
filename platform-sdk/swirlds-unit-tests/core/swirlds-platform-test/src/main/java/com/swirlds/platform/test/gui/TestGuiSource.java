@@ -19,7 +19,6 @@ package com.swirlds.platform.test.gui;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
-import com.swirlds.platform.gui.hashgraph.internal.FinalShadowgraphGuiSource;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
@@ -55,13 +54,17 @@ public class TestGuiSource {
 
         intake = new TestIntake(platformContext, graphGenerator.getAddressBook());
 
-        guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
+        // TODO
+        guiSource = null;
+        //        guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
     }
 
     public TestGuiSource(@NonNull final GraphGenerator<?> graphGenerator, @NonNull final TestIntake intake) {
         this.graphGenerator = graphGenerator;
         this.intake = intake;
-        this.guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
+        this.guiSource = null; // TODO
+        //        this.guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(),
+        // graphGenerator.getAddressBook());
     }
 
     public void runGui() {

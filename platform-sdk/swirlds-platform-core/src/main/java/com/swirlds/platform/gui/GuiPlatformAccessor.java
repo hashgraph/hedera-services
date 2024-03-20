@@ -22,12 +22,12 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
-import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,30 +59,6 @@ public final class GuiPlatformAccessor {
     }
 
     private GuiPlatformAccessor() {}
-
-    /**
-     * Set the shadow graph for a node.
-     *
-     * @param nodeId      the ID of the node
-     * @param shadowGraph the shadow graph
-     */
-    public void setShadowGraph(@NonNull final NodeId nodeId, @NonNull final Shadowgraph shadowGraph) {
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-        Objects.requireNonNull(shadowGraph, "shadowGraph must not be null");
-        shadowGraphs.put(nodeId, shadowGraph);
-    }
-
-    /**
-     * Get the shadow graph for a node, or null if none is set.
-     *
-     * @param nodeId the ID of the node
-     * @return the shadow graph
-     */
-    @Nullable
-    public Shadowgraph getShadowGraph(@NonNull NodeId nodeId) {
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-        return shadowGraphs.getOrDefault(nodeId, null);
-    }
 
     /**
      * Information required to sort events by consensus order (or, if events have not yet reached consensus, by received
@@ -127,10 +103,11 @@ public final class GuiPlatformAccessor {
     /**
      * Get a sorted list of events.
      */
-    public PlatformEvent[] getAllEvents(@NonNull NodeId nodeId) {
+    public List<EventImpl> getAllEvents(@NonNull NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
 
-        final EventImpl[] allEvents = getShadowGraph(nodeId).getAllEvents();
+        //        final List<EventImpl> allEvents = getShadowGraph(nodeId).getAllEvents(); // TODO
+        final List<EventImpl> allEvents = new ArrayList<>(); // TODO
 
         // If events reach consensus during the execution of this method, order will change.
         // Capture information before sorting, since sorting breaks if order changes mid-sort.
@@ -139,7 +116,7 @@ public final class GuiPlatformAccessor {
             orderInfo.put(event.getHashedData().getHash(), EventOrderInfo.of(event));
         }
 
-        Arrays.sort(allEvents, (eventA, eventB) -> {
+        allEvents.sort((eventA, eventB) -> {
             final EventOrderInfo orderA = orderInfo.get(eventA.getHashedData().getHash());
             final EventOrderInfo orderB = orderInfo.get(eventB.getHashedData().getHash());
             return orderA.compareTo(orderB);
