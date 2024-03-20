@@ -18,8 +18,7 @@ package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
-import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.hollowAccountFuzzingWithTokenOperations;
-import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.hollowAccountFuzzingWithTransferOperations;
+import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.hollowAccountFuzzingTest;
 import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.initOperations;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -43,20 +42,11 @@ public class HollowAccountFuzzing extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hollowAccountTransferFuzzing() {
-        return defaultHapiSpec("HollowAccountTransferFuzzingTransfer")
+    final HapiSpec hollowAccountFuzzing() {
+        return defaultHapiSpec("HollowAccountFuzzing")
                 .given(initOperations())
                 .when()
-                .then(runWithProvider(hollowAccountFuzzingWithTransferOperations(PROPERTIES))
-                        .lasting(10L, TimeUnit.SECONDS));
-    }
-
-    @HapiTest
-    final HapiSpec hollowAccountFuzzingWithTokenOps() {
-        return defaultHapiSpec("HollowAccountTransferFuzzingToken")
-                .given(initOperations())
-                .when()
-                .then(runWithProvider(hollowAccountFuzzingWithTokenOperations(PROPERTIES))
+                .then(runWithProvider(hollowAccountFuzzingTest(PROPERTIES))
                         .lasting(10L, TimeUnit.SECONDS));
     }
 
@@ -67,6 +57,6 @@ public class HollowAccountFuzzing extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(hollowAccountTransferFuzzing());
+        return List.of(hollowAccountFuzzing());
     }
 }

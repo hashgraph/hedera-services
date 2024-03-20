@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
-import static com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount.ACCOUNT_SUFFIX;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
@@ -52,7 +51,6 @@ abstract class RandomOperationCustom<T extends HapiTxnOp<T>> implements OpProvid
     private Optional<String> randomHollowAccountKey() {
         return accounts.getQualifying();
     }
-
 
     protected abstract HapiSpecOperation generateOpSignedBy(String keyName);
 

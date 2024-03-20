@@ -18,9 +18,6 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
@@ -43,15 +40,15 @@ public class RandomTokenAssociation implements OpProvider {
     public static final int MAX_TOKENS_PER_OP = 2;
     public static final int DEFAULT_CEILING_NUM = 10_000;
 
-    private int ceilingNum = DEFAULT_CEILING_NUM;
+    protected int ceilingNum = DEFAULT_CEILING_NUM;
 
-    private final RegistrySourcedNameProvider<TokenID> tokens;
-    private final RegistrySourcedNameProvider<AccountID> accounts;
-    private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
-    private final ResponseCodeEnum[] outcomes;
-    private final String[] signers;
+    protected final RegistrySourcedNameProvider<TokenID> tokens;
+    protected final RegistrySourcedNameProvider<AccountID> accounts;
+    protected final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
+    protected final ResponseCodeEnum[] outcomes;
+    protected final String[] signers;
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
+    protected final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, TOKEN_WAS_DELETED, ACCOUNT_DELETED);
 
     public RandomTokenAssociation(
@@ -104,7 +101,7 @@ public class RandomTokenAssociation implements OpProvider {
                 .hasKnownStatusFrom(outcomes);
 
         if (signers != null && signers.length > 0) {
-                op.signedBy(signers);
+            op.signedBy(signers);
         }
 
         return Optional.of(op);

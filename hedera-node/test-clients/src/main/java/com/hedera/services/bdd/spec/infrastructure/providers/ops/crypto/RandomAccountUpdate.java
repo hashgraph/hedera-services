@@ -40,7 +40,8 @@ public class RandomAccountUpdate implements OpProvider {
 
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
 
-    public RandomAccountUpdate(EntityNameProvider<Key> keys,
+    public RandomAccountUpdate(
+            EntityNameProvider<Key> keys,
             EntityNameProvider<AccountID> accounts,
             ResponseCodeEnum[] outcomes,
             String... signers) {
