@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.consensus;
 
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.BIRTH_ROUND_PLATFORM_CONTEXT;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.areEventListsEquivalent;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.areGenerationNumbersValid;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.gatherOtherParentAges;
@@ -30,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
@@ -41,6 +44,7 @@ import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -50,6 +54,8 @@ import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Sanity checks for the event generator utilities.
@@ -447,6 +453,24 @@ public class GraphGeneratorTests {
         validateEventOrder(generator);
         validateCopyWithNewSeed(generator);
         validateMaxGeneration(generator);
+        validateBirthRoundAdvancing(generator);
+    }
+
+    /**
+     * Ensure that the birth round monotonically advances
+     */
+    private void validateBirthRoundAdvancing(@NonNull final GraphGenerator<?> generator) {
+        final List<IndexedEvent> events = generator.generateEvents(100);
+        final long firstEventBirthRound = events.get(0).getBirthRound();
+        final long lastEventBirthRound = events.get(events.size() - 1).getBirthRound();
+        long currentBirthRound = firstEventBirthRound;
+        assertTrue(lastEventBirthRound > firstEventBirthRound);
+        for (final IndexedEvent event : events) {
+            final long eventBirthRound = event.getBirthRound();
+            assertTrue(eventBirthRound >= currentBirthRound);
+            currentBirthRound = eventBirthRound;
+        }
+        generator.reset();
     }
 
     /**
@@ -478,12 +502,16 @@ public class GraphGeneratorTests {
         generator2.reset();
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Test Standard Generator")
-    public void testStandardGenerator() {
+    public void testStandardGenerator(final boolean birthRoundAsAncientThreshold) {
+        final PlatformContext platformContext =
+                birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -493,14 +521,18 @@ public class GraphGeneratorTests {
         generatorSanityChecks(generator);
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Forking Source Test")
-    public void forkingSourceTest() {
+    public void forkingSourceTest(final boolean birthRoundAsAncientThreshold) {
         final int numberOfEvents = 1000;
 
+        final PlatformContext platformContext =
+                birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -597,17 +629,21 @@ public class GraphGeneratorTests {
      * Sometimes an other parent is chosen not to be the most recent event from a node. These tests
      * verify that behavior.
      */
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Other Parent Age Tests")
-    public void otherParentAgeTests() {
+    public void otherParentAgeTests(final boolean birthRoundAsAncientThreshold) {
 
         final int numberOfEvents = 100_000;
 
         // A default generator uses a power distribution with alpha = 0.95
+        final PlatformContext platformContext =
+                birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         StandardGraphGenerator generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -621,6 +657,7 @@ public class GraphGeneratorTests {
 
         // Completely disable old other parents
         generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource().setRequestedOtherParentAgeDistribution(staticDynamicValue(0)),
                 new StandardEventSource().setRequestedOtherParentAgeDistribution(staticDynamicValue(0)),
@@ -635,6 +672,7 @@ public class GraphGeneratorTests {
 
         // One node is much more likely to create events with old other parents
         generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource(),
                 new StandardEventSource(),
@@ -663,6 +701,7 @@ public class GraphGeneratorTests {
 
         // One node likes to consistently provide old other parents, all others always provide most recent parent
         generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource().setRequestedOtherParentAgeDistribution(staticDynamicValue(0)),
                 new StandardEventSource().setRequestedOtherParentAgeDistribution(staticDynamicValue(0)),
@@ -694,16 +733,20 @@ public class GraphGeneratorTests {
      * Sanity checks on creation timestamps for events, make sure fraction of events with repeating timestamps
      * matches expected value.
      */
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Repeated Timestamp Tests")
-    void repeatedTimestampTests() {
+    void repeatedTimestampTests(final boolean birthRoundAsAncientThreshold) {
 
         final int numberOfEvents = 100_000;
 
         // A default generator uses a power distribution with alpha = 0.95
+        final PlatformContext platformContext =
+                birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                platformContext,
                 0,
                 new StandardEventSource(),
                 new StandardEventSource(),

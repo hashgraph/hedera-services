@@ -192,7 +192,8 @@ class IntakeAndConsensusTests {
             Objects.requireNonNull(platformContext);
             final List<StandardEventSource> eventSources =
                     Stream.generate(StandardEventSource::new).limit(numNodes).toList();
-            generator = new StandardGraphGenerator(seed, (List<EventSource<?>>) (List<?>) eventSources);
+            generator =
+                    new StandardGraphGenerator(platformContext, seed, (List<EventSource<?>>) (List<?>) eventSources);
             intake = new TestIntake(platformContext, generator.getAddressBook());
         }
 
@@ -244,6 +245,11 @@ class IntakeAndConsensusTests {
         public long getMaxGeneration(@NonNull final NodeId creatorId) {
             Objects.requireNonNull(creatorId);
             return generator.getMaxGeneration(creatorId);
+        }
+
+        @Override
+        public long getMaxBirthRound(@Nullable final NodeId creatorId) {
+            return generator.getMaxBirthRound(creatorId);
         }
 
         @Override
