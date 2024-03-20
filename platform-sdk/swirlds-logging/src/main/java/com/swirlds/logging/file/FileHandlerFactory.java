@@ -56,7 +56,7 @@ public class FileHandlerFactory implements LogHandlerFactory {
     @Override
     public LogHandler create(@NonNull final String handlerName, @NonNull final Configuration configuration) {
         try {
-            return new FileHandler(handlerName, configuration, true);
+            return new RollingFileHandler(handlerName, configuration, true);
         } catch (IOException e) {
             throw new RuntimeException("Unable to create FileHandler", e);
         }

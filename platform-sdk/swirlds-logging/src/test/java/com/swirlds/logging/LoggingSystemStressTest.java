@@ -28,7 +28,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
-import com.swirlds.logging.file.FileHandler;
+import com.swirlds.logging.file.RollingFileHandler;
 import com.swirlds.logging.test.fixtures.internal.LoggingMirrorImpl;
 import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.logging.util.LoggingTestUtils;
@@ -103,7 +103,7 @@ public class LoggingSystemStressTest {
         final String fileHandlerName = "file";
         final Configuration configuration = LoggingTestUtils.prepareConfiguration(logFile, fileHandlerName);
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final FileHandler handler = new FileHandler(fileHandlerName, configuration, true);
+        final RollingFileHandler handler = new RollingFileHandler(fileHandlerName, configuration, true);
         final LoggingMirrorImpl mirror = new LoggingMirrorImpl();
         loggingSystem.addHandler(handler);
         loggingSystem.addHandler(mirror);

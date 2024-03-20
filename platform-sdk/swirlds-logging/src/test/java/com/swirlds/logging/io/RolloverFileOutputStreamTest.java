@@ -47,12 +47,12 @@ class RolloverFileOutputStreamTest {
 
     @Test
     public void testDateSizeBaseRollingOverriding() throws IOException {
-        // given: a RolloverFileOutputStream configure to roll by date and size with max 1 roll file
+        // given: a RolloverFileOutputStream configure to roll by size with max 1 roll file
         // when: Writing just enough data to trigger the rolling 3 times plus one below the limit
         // then: there should only exist the index 0. The base file should contain the latest under limit write
 
         // given
-        try (OutputStream rolloverOutputStream = new RolloverFileOutputStream(
+        try (OutputStream rolloverOutputStream = new OnSizeAndDateRolloverFileOutputStream(
                 testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 1, DATE_PATTERN)) {
 
             // when
@@ -87,8 +87,8 @@ class RolloverFileOutputStreamTest {
         createRolledFiles(testFolder.resolve(FILE_BASE_NAME), "0");
         createRolledFiles(testFolder.resolve(FILE_BASE_NAME), "1");
 
-        try (OutputStream rolloverOutputStream = new RolloverFileOutputStream(
-                testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 3, null)) {
+        try (OutputStream rolloverOutputStream = new OnSizeRolloverFileOutputStream(
+                testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 3)) {
 
             // when
             // Write enough data to fill one file
@@ -119,8 +119,8 @@ class RolloverFileOutputStreamTest {
         createRolledFiles(testFolder.resolve(FILE_BASE_NAME), "0");
         createRolledFiles(testFolder.resolve(FILE_BASE_NAME), "1");
 
-        try (OutputStream rolloverOutputStream = new RolloverFileOutputStream(
-                testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 2, null)) {
+        try (OutputStream rolloverOutputStream = new OnSizeRolloverFileOutputStream(
+                testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 2)) {
 
             // when
             // Write enough data to fill one file
@@ -148,8 +148,8 @@ class RolloverFileOutputStreamTest {
         // then: there should only exist the index 0. The base file should contain the latest under limit write
 
         // given
-        try (OutputStream rolloverOutputStream = new RolloverFileOutputStream(
-                testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 1, null)) {
+        try (OutputStream rolloverOutputStream = new OnSizeRolloverFileOutputStream(
+                testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 1)) {
 
             // when
             // Write enough data to fill one file
@@ -177,7 +177,7 @@ class RolloverFileOutputStreamTest {
 
         // given
         FakeTime timeProvider = new FakeTime(Instant.now(), Duration.ZERO);
-        try (OutputStream rolloverOutputStream = new RolloverFileOutputStream(
+        try (OutputStream rolloverOutputStream = new OnSizeAndDateRolloverFileOutputStream(
                 testFolder.resolve(FILE_BASE_NAME),
                 MAX_FILE_SIZE,
                 APPEND_TO_EXISTING,
@@ -220,7 +220,7 @@ class RolloverFileOutputStreamTest {
         // then: there should exist the index 0 and index 1
 
         // given
-        try (OutputStream rolloverOutputStream = new RolloverFileOutputStream(
+        try (OutputStream rolloverOutputStream = new OnSizeAndDateRolloverFileOutputStream(
                 testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 2, DATE_PATTERN)) {
 
             // when
@@ -251,7 +251,7 @@ class RolloverFileOutputStreamTest {
 
         // given:
         Path logFilePath = testFolder.resolve(FILE_BASE_NAME);
-        RolloverFileOutputStream outputStream = new RolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1, null);
+        RolloverFileOutputStream outputStream = new OnSizeRolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1);
         // when:
         outputStream.write("Test data".getBytes(), 5, 4);
         outputStream.flush();
@@ -272,7 +272,7 @@ class RolloverFileOutputStreamTest {
 
         // given:
         Path logFilePath = testFolder.resolve(FILE_BASE_NAME);
-        RolloverFileOutputStream outputStream = new RolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1, null);
+        RolloverFileOutputStream outputStream = new OnSizeRolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1);
 
         // when:
         String testData = "Test data";
@@ -296,7 +296,7 @@ class RolloverFileOutputStreamTest {
 
         // given:
         Path logFilePath = testFolder.resolve(FILE_BASE_NAME);
-        RolloverFileOutputStream outputStream = new RolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1, null);
+        RolloverFileOutputStream outputStream = new OnSizeRolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1);
         // when:
         outputStream.write('c');
         outputStream.flush();
@@ -321,7 +321,7 @@ class RolloverFileOutputStreamTest {
         Files.writeString(logFilePath, initialContent);
 
         RolloverFileOutputStream outputStream =
-                new RolloverFileOutputStream(logFilePath, initialContent.length() * 2 + 1, true, 1, null);
+                new OnSizeRolloverFileOutputStream(logFilePath, initialContent.length() * 2 + 1, true, 1);
 
         // when:
         writeDataToOutputStream(outputStream, initialContent.getBytes(StandardCharsets.UTF_8));
@@ -348,7 +348,7 @@ class RolloverFileOutputStreamTest {
         Files.writeString(logFilePath, initialContent);
 
         RolloverFileOutputStream outputStream =
-                new RolloverFileOutputStream(logFilePath, initialContent.length() * 2 + 1, false, 1, null);
+                new OnSizeRolloverFileOutputStream(logFilePath, initialContent.length() * 2 + 1, false, 1);
 
         // when
         writeDataToOutputStream(outputStream, initialContent.getBytes(StandardCharsets.UTF_8));
@@ -373,7 +373,7 @@ class RolloverFileOutputStreamTest {
         assertThrows(IllegalStateException.class, () -> {
             // Try to write something to the file
             try (RolloverFileOutputStream v =
-                    new RolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1, null); ) {}
+                    new OnSizeRolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1)) {}
         });
     }
 
