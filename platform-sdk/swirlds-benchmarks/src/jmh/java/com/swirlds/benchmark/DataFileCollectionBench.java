@@ -51,9 +51,10 @@ public class DataFileCollectionBench extends BaseBench {
 
         final LongListOffHeap index = new LongListOffHeap();
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
+        final MerkleDbConfig dbConfig = getConfig(MerkleDbConfig.class);
         final var store =
                 new DataFileCollection<BenchmarkRecord>(
-                        getConfig(MerkleDbConfig.class),
+                        dbConfig,
                         getTestDir(),
                         storeName,
                         null,
@@ -63,7 +64,7 @@ public class DataFileCollectionBench extends BaseBench {
                         return readDataItem(dataLocation);
                     }
                 };
-        final var compactor = new DataFileCompactor<>(storeName, store, index, null, null, null, null);
+        final var compactor = new DataFileCompactor<>(dbConfig, storeName, store, index, null, null, null, null);
         System.out.println();
 
         // Write files

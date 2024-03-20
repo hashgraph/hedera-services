@@ -33,9 +33,7 @@ import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.ModelManualLink;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.DefaultConfiguration;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
-import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -57,6 +55,7 @@ public final class DiagramCommand extends AbstractCommand {
     private Set<String> collapsedGroups = Set.of();
     private List<String> substitutionStrings = List.of();
     private List<String> manualLinks = List.of();
+    private boolean lessMystery = false;
 
     private DiagramCommand() {}
 
@@ -90,6 +89,13 @@ public final class DiagramCommand extends AbstractCommand {
         this.manualLinks = manualLinks;
     }
 
+    @CommandLine.Option(
+            names = {"-m", "--less-mystery"},
+            description = "Do not hide mystery edges. May create a noisy diagram if there are a lot of mystery edges.")
+    private void setLessMystery(final boolean lessMystery) {
+        this.lessMystery = lessMystery;
+    }
+
     /**
      * Entry point.
      */
@@ -106,14 +112,11 @@ public final class DiagramCommand extends AbstractCommand {
         platformWiring.wireExternalComponents(
                 new PlatformStatusManager(platformContext, platformContext.getTime(), threadManager, a -> {}),
                 new TransactionPool(platformContext),
-                new DefaultLatestCompleteStateNexus(
-                        platformContext.getConfiguration().getConfigData(StateConfig.class),
-                        platformContext.getMetrics()),
                 notificationEngine);
 
         final String diagramString = platformWiring
                 .getModel()
-                .generateWiringDiagram(parseGroups(), parseSubstitutions(), parseManualLinks());
+                .generateWiringDiagram(parseGroups(), parseSubstitutions(), parseManualLinks(), !lessMystery);
         final String encodedDiagramString = Base64.getEncoder().encodeToString(diagramString.getBytes());
 
         final String editorUrl = "https://mermaid.ink/svg/" + encodedDiagramString + "?bgColor=e8e8e8";

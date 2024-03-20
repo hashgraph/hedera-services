@@ -39,6 +39,7 @@ import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
@@ -292,7 +293,8 @@ class MerkleDbSnapshotTest {
                 mock(ScheduledExecutorService.class),
                 new DefaultMetricsFactory(metricsConfig),
                 metricsConfig);
-        MerkleDbStatistics statistics = new MerkleDbStatistics("test");
+        MerkleDbStatistics statistics =
+                new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), "test");
         statistics.registerMetrics(metrics);
         vm.getDataSource().registerMetrics(metrics);
     }

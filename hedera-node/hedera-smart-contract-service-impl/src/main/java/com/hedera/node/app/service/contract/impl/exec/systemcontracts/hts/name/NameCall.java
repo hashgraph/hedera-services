@@ -16,12 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -45,9 +46,9 @@ public class NameCall extends AbstractRevertibleTokenViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull FullResult resultOfViewingToken(@NonNull Token token) {
+    protected @NonNull PricedResult resultOfViewingToken(@NonNull Token token) {
         final var output = NameTranslator.NAME.getOutputs().encodeElements(token.name());
-        return successResult(output, gasCalculator.viewGasRequirement());
+        return gasOnly(successResult(output, gasCalculator.viewGasRequirement()), SUCCESS, true);
     }
 
     /**

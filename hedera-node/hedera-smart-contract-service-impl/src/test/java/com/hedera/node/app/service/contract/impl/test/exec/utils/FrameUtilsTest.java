@@ -17,6 +17,9 @@
 package com.hedera.node.app.service.contract.impl.test.exec.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.QUALIFIED_DELEGATE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.UNQUALIFIED_DELEGATE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
@@ -30,6 +33,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYS
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PERMITTED_ADDRESS_CALLER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PERMITTED_CALLERS_CONFIG;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -166,33 +170,22 @@ class FrameUtilsTest {
 
         given(worldUpdater.get(EIP_1014_ADDRESS)).willReturn(account);
         given(account.getNonce()).willReturn(TOKEN_PROXY_ACCOUNT_NONCE);
-        given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
 
-        // when
-        final var isQualifiedForDelegate = !FrameUtils.unqualifiedDelegateDetected(frame);
-
-        // then
-        assertTrue(isQualifiedForDelegate);
+        assertEquals(DIRECT_OR_TOKEN_REDIRECT, FrameUtils.callTypeOf(frame));
     }
 
     @Test
     void unqualifiedDelegateDetectedValidationFailTokenNull() {
         // given
         givenNonInitialFrame();
-        given(frame.getMessageFrameStack()).willReturn(stack);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
 
         given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
         given(frame.getContractAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
 
         given(worldUpdater.get(EIP_1014_ADDRESS)).willReturn(null);
-        given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
 
-        // when
-        final var isQualifiedForDelegate = !FrameUtils.unqualifiedDelegateDetected(frame);
-
-        // then
-        assertFalse(isQualifiedForDelegate);
+        assertEquals(UNQUALIFIED_DELEGATE, FrameUtils.callTypeOf(frame));
     }
 
     @Test
@@ -211,11 +204,7 @@ class FrameUtilsTest {
         given(worldUpdater.get(PERMITTED_ADDRESS_CALLER)).willReturn(null);
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(PERMITTED_CALLERS_CONFIG);
 
-        // when
-        final var isQualifiedForDelegate = !FrameUtils.unqualifiedDelegateDetected(frame);
-
-        // then
-        assertTrue(isQualifiedForDelegate);
+        assertEquals(QUALIFIED_DELEGATE, FrameUtils.callTypeOf(frame));
     }
 
     @Test

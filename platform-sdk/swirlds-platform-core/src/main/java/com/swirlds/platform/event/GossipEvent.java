@@ -190,7 +190,9 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     public void buildDescriptor() {
         if (descriptor != null) {
-            throw new IllegalStateException("Descriptor has already been built");
+            // Prior implementation was to throw an IllegalStateException if the descriptor was already built.
+            // There is no harm in allowing this method to be called multiple times and no-op if the descriptor exists.
+            return;
         }
 
         this.descriptor = hashedData.createEventDescriptor();

@@ -90,7 +90,8 @@ class IngestComponentTest {
                 "memo",
                 new HederaSoftwareVersion(
                         SemanticVersion.newBuilder().major(1).build(),
-                        SemanticVersion.newBuilder().major(2).build()));
+                        SemanticVersion.newBuilder().major(2).build(),
+                        0));
 
         final var configProvider = new ConfigProviderImpl(false);
         app = DaggerHederaInjectionComponent.builder()
