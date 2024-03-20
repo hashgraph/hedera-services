@@ -743,7 +743,7 @@ public class SwirldsPlatform implements Platform {
                     AncientMode.getAncientMode(platformContext)));
             platformWiring.getIssDetectorWiring().overridingState().put(initialState.reserve("initialize issDetector"));
 
-            // We don't want to invoke these callbacks until after we are starting up.
+            // We don't want to send this notification until after we are starting up.
             thingsToStart.add(() -> {
                 // If we loaded from disk then call the appropriate dispatch.
                 // Let the app know that a state was loaded.
