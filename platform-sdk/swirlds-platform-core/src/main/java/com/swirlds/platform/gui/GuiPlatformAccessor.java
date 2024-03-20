@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Provides a way to access private platform objects from the GUI. Suboptimal, but necessary to preserve the current UI
@@ -43,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class GuiPlatformAccessor {
 
     private final Map<NodeId, Shadowgraph> shadowGraphs = new ConcurrentHashMap<>();
-    private final Map<NodeId, AtomicReference<Consensus>> consensusReferences = new ConcurrentHashMap<>();
+    private final Map<NodeId, Consensus> consensusReferences = new ConcurrentHashMap<>();
     private final Map<NodeId, SignedStateNexus> latestCompleteStateComponents = new ConcurrentHashMap<>();
     private final Map<NodeId, SignedStateNexus> latestImmutableStateComponents = new ConcurrentHashMap<>();
 
@@ -153,10 +152,9 @@ public final class GuiPlatformAccessor {
      * @param nodeId    the ID of the node
      * @param consensus the consensus
      */
-    public void setConsensusReference(
-            @NonNull final NodeId nodeId, @NonNull final AtomicReference<Consensus> consensus) {
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-        Objects.requireNonNull(consensus, "consensus must not be null");
+    public void setConsensus(@NonNull final NodeId nodeId, @NonNull final Consensus consensus) {
+        Objects.requireNonNull(nodeId);
+        Objects.requireNonNull(consensus);
         consensusReferences.put(nodeId, consensus);
     }
 
@@ -169,11 +167,7 @@ public final class GuiPlatformAccessor {
     @Nullable
     public Consensus getConsensus(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
-        final AtomicReference<Consensus> consensusReference = consensusReferences.getOrDefault(nodeId, null);
-        if (consensusReference == null) {
-            return null;
-        }
-        return consensusReference.get();
+        return consensusReferences.getOrDefault(nodeId, null);
     }
 
     /**

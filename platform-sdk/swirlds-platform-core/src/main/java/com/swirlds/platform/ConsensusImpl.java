@@ -260,10 +260,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * round.
      *
      * @param event the event to be added
-     * @return A list of consensus rounds, or null if no consensus was reached
+     * @return A list of consensus rounds, list will be empty if no consensus was reached
      */
     @Override
-    public @Nullable List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
+    @NonNull
+    public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
         recentEvents.add(event);
         final List<ConsensusRound> toReturn = new ArrayList<>();
         // set its round to undefined so that it gets calculated
@@ -276,7 +277,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
             consensusRound = recalculateAndVote();
         }
-        return toReturn.isEmpty() ? null : toReturn;
+        return toReturn;
     }
 
     /**

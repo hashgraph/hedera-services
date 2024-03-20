@@ -135,7 +135,11 @@ class PcesBirthRoundMigrationTests {
         final int eventsPerFile = eventCount / fileCount;
         final Instant startingTime = randomInstant(random);
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                platformContext,
                 random.nextLong(),
                 new StandardEventSource(),
                 new StandardEventSource(),

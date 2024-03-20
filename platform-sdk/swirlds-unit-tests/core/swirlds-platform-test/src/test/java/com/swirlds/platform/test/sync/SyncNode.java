@@ -142,7 +142,7 @@ public class SyncNode {
                 .withConfiguration(configuration)
                 .build();
 
-        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
+        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class), mock(IntakeEventCounter.class));
         this.executor = executor;
     }
 

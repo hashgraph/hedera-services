@@ -70,7 +70,7 @@ class SyncFilteringTest {
 
         final List<EventSource<?>> sources = new ArrayList<>();
         for (int i = 0; i < addressBook.getSize(); i++) {
-            sources.add(new StandardEventSource(false));
+            sources.add(new StandardEventSource());
         }
         final StandardGraphGenerator generator =
                 new StandardGraphGenerator(platformContext, random.nextLong(), sources, addressBook);

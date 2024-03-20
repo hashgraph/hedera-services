@@ -182,7 +182,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -205,17 +204,17 @@ public class SwirldsPlatform implements Platform {
     private final Shadowgraph shadowGraph;
 
     /**
-     * the object used to calculate consensus. it is volatile because the whole object is replaced when reading a state
-     * from disk or getting it through reconnect
+     * the current nodes in the network and their information
      */
-    private final AtomicReference<Consensus> consensusRef = new AtomicReference<>();
-    /** the current nodes in the network and their information */
     private final AddressBook currentAddressBook;
 
     private final Metrics metrics;
 
-    /** the object that contains all key pairs and CSPRNG state for this member */
+    /**
+     * the object that contains all key pairs and CSPRNG state for this member
+     */
     private final KeysAndCerts keysAndCerts;
+
     /**
      * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from a
      * genesis state, this is 0.
@@ -237,11 +236,20 @@ public class SwirldsPlatform implements Platform {
     private final SignedStateNexus latestImmutableStateNexus = new LockFreeStateNexus();
 
     private final TransactionPool transactionPool;
-    /** Handles all interaction with {@link SwirldState} */
+
+    /**
+     * Handles all interaction with {@link SwirldState}
+     */
     private final SwirldStateManager swirldStateManager;
-    /** Checks the validity of transactions and submits valid ones to the transaction pool */
+
+    /**
+     * Checks the validity of transactions and submits valid ones to the transaction pool
+     */
     private final SwirldTransactionSubmitter transactionSubmitter;
-    /** clears all pipelines to prepare for a reconnect */
+
+    /**
+     * clears all pipelines to prepare for a reconnect
+     */
     private final Clearable clearAllPipelines;
 
     /**
@@ -280,12 +288,22 @@ public class SwirldsPlatform implements Platform {
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
-    /** Manages emergency recovery */
+    /**
+     * Manages emergency recovery
+     */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
-    /** Controls which states are saved to disk */
+
+    /**
+     * Controls which states are saved to disk
+     */
     private final SavedStateController savedStateController;
 
     private final SignedStateGarbageCollector signedStateGarbageCollector;
+
+    /**
+     * The object that executes the hashgraph consensus algorithm.
+     */
+    private final Consensus consensus;
 
     /**
      * Encapsulated wiring for the platform.
@@ -383,11 +401,20 @@ public class SwirldsPlatform implements Platform {
         registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
         final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
+        consensus = new ConsensusImpl(platformContext, consensusMetrics, getAddressBook());
 
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        this.shadowGraph = new Shadowgraph(platformContext, currentAddressBook);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        final IntakeEventCounter intakeEventCounter;
+        if (syncConfig.waitForEventsInIntake()) {
+            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
+        } else {
+            intakeEventCounter = new NoOpIntakeEventCounter();
+        }
+
+        this.shadowGraph = new Shadowgraph(platformContext, currentAddressBook, intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
@@ -572,14 +599,6 @@ public class SwirldsPlatform implements Platform {
 
         final PcesSequencer sequencer = new DefaultPcesSequencer();
 
-        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
-        final IntakeEventCounter intakeEventCounter;
-        if (syncConfig.waitForEventsInIntake()) {
-            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
-        } else {
-            intakeEventCounter = new NoOpIntakeEventCounter();
-        }
-
         final InternalEventValidator internalEventValidator = new DefaultInternalEventValidator(
                 platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
         final EventDeduplicator eventDeduplicator = new StandardEventDeduplicator(platformContext, intakeEventCounter);
@@ -593,8 +612,7 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter);
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
-        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(
-                platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter, e -> {});
+        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, selfId, consensus);
 
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
@@ -720,8 +738,6 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter,
                 () -> emergencyState.getState("emergency reconnect")) {};
 
-        consensusRef.set(new ConsensusImpl(platformContext, consensusMetrics, getAddressBook()));
-
         if (startedFromGenesis) {
             initialAncientThreshold = 0;
             startingRound = 0;
@@ -775,7 +791,7 @@ public class SwirldsPlatform implements Platform {
 
         // To be removed once the GUI component is better integrated with the platform.
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
-        GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
+        GuiPlatformAccessor.getInstance().setConsensus(selfId, consensus);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteStateNexus);
         GuiPlatformAccessor.getInstance().setLatestImmutableStateComponent(selfId, latestImmutableStateNexus);
     }
@@ -882,7 +898,8 @@ public class SwirldsPlatform implements Platform {
     private void loadStateIntoConsensus(@NonNull final SignedState signedState) {
         Objects.requireNonNull(signedState);
 
-        consensusRef.get().loadFromSignedState(signedState);
+        // Future work: this should pass through the wiring framework
+        consensus.loadFromSignedState(signedState);
 
         // FUTURE WORK: this needs to be updated for birth round compatibility.
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
@@ -891,6 +908,7 @@ public class SwirldsPlatform implements Platform {
                 signedState.getState().getPlatformState().getAncientThreshold(),
                 ancientMode);
 
+        // Future work: this should pass through the wiring framework
         shadowGraph.startWithEventWindow(eventWindow);
     }
 
