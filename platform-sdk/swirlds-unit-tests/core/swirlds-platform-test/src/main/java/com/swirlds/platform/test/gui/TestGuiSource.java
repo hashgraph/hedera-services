@@ -50,7 +50,7 @@ public class TestGuiSource {
      * @param numNodes        the number of nodes
      */
     public TestGuiSource(@NonNull final PlatformContext platformContext, final long seed, final int numNodes) {
-        graphGenerator = new StandardGraphGenerator(seed, generateSources(numNodes));
+        graphGenerator = new StandardGraphGenerator(platformContext, seed, generateSources(numNodes));
         graphGenerator.reset();
 
         intake = new TestIntake(platformContext, graphGenerator.getAddressBook());
