@@ -17,9 +17,11 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
@@ -39,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -52,10 +55,16 @@ import static com.hedera.services.bdd.suites.contract.Utils.expectedPrecompileGa
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF;
+import static com.hedera.services.bdd.suites.utils.MiscEETUtils.genRandomBytes;
 import static com.hedera.services.bdd.suites.utils.contracts.FunctionParameters.functionParameters;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
@@ -67,6 +76,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.FunctionParameters;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -90,6 +100,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     private static final String MULTI_KEY = "purpose";
 
     public static final String MINT_CONTRACT = "MintContract";
+    public static final String NEGATIVE_MINT_CONTRACT = "NegativeMintContract";
     public static final String MINT_NFT_CONTRACT = "MintNFTContract";
     private static final String NESTED_MINT_CONTRACT = "NestedMint";
     private static final String ACCOUNT = "anybody";
@@ -116,11 +127,223 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     List<HapiSpec> negativeSpecs() {
-        return List.of(rollbackOnFailedMintAfterFungibleTransfer());
+        return List.of(
+                rollbackOnFailedMintAfterFungibleTransfer(),
+                mintTokensWithExtremeValues(),
+                mintTokensWithInvalidValues());
     }
 
     List<HapiSpec> positiveSpecs() {
         return List.of(transferNftAfterNestedMint());
+    }
+
+    @HapiTest
+    final HapiSpec mintTokensWithExtremeValues() {
+        var mintExtremeValue = "mintExtremeValue";
+        var mintInvalidAddressType = "mintInvalidAddressType";
+
+        var invalidTokenNFTTest = "invalidTokenNFTTest";
+        var invalidTokenTest = "invalidTokenTest";
+        return defaultHapiSpec("MintFungibleTokenWithInvalidAndExtremeValues")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECIPIENT).maxAutomaticTokenAssociations(1),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(1000)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(NEGATIVE_MINT_CONTRACT),
+                        contractCreate(NEGATIVE_MINT_CONTRACT).gas(GAS_TO_OFFER))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // Fungible Mint calls with extreme values
+                        contractCall(
+                                        NEGATIVE_MINT_CONTRACT,
+                                        mintExtremeValue,
+                                        new byte[][] {},
+                                        false,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                .payingWith(GENESIS)
+                                .via("mintExtremeValue")
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck("mintExtremeValue", CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        NEGATIVE_MINT_CONTRACT,
+                                        mintExtremeValue,
+                                        new byte[][] {},
+                                        true,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                .payingWith(GENESIS)
+                                .via("mintNegativeExtremeValue")
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck("mintNegativeExtremeValue", CONTRACT_REVERT_EXECUTED),
+                        contractCall(NEGATIVE_MINT_CONTRACT, mintInvalidAddressType, new byte[][] {}, 100L)
+                                .payingWith(GENESIS)
+                                .via(invalidTokenTest)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER),
+                        // NFT Mint calls with extreme values
+                        contractCall(
+                                        NEGATIVE_MINT_CONTRACT,
+                                        mintExtremeValue,
+                                        new byte[][] {TEST_METADATA_1.getBytes()},
+                                        false,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                .payingWith(GENESIS)
+                                .via("mintExtremeValueNFT")
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck("mintExtremeValueNFT", CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        NEGATIVE_MINT_CONTRACT,
+                                        mintExtremeValue,
+                                        new byte[][] {TEST_METADATA_1.getBytes()},
+                                        true,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                .payingWith(GENESIS)
+                                .via("mintNegativeExtremeValueNFT")
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck("mintNegativeExtremeValueNFT", CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        NEGATIVE_MINT_CONTRACT,
+                                        mintInvalidAddressType,
+                                        new byte[][] {TEST_METADATA_1.getBytes()},
+                                        0L)
+                                .payingWith(GENESIS)
+                                .via(invalidTokenNFTTest)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER),
+                        getTxnRecord(invalidTokenTest).andAllChildRecords().logged(),
+                        getTxnRecord(invalidTokenNFTTest).andAllChildRecords().logged())))
+                .then(
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 1_000),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
+                        childRecordsCheck(
+                                invalidTokenTest, SUCCESS, recordWith().status(INVALID_TOKEN_ID)),
+                        childRecordsCheck(
+                                invalidTokenNFTTest, SUCCESS, recordWith().status(INVALID_TOKEN_ID)));
+    }
+
+    @HapiTest
+    final HapiSpec mintTokensWithInvalidValues() {
+        var mintToken = "mintToken";
+
+        var fungibleMintWithMetadataTest = "fungibleMintWithMetadataTest";
+        var mintWithZeroedAddressTest = "mintWithZeroedAddressTest";
+        var mintWithZeroedAddressAndMetadataTest = "mintWithZeroedAddressAndMetadataTest";
+
+        return defaultHapiSpec("MintFungibleTokenWithInvalidAndExtremeValues")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECIPIENT).maxAutomaticTokenAssociations(1),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(1000)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(NEGATIVE_MINT_CONTRACT),
+                        contractCreate(NEGATIVE_MINT_CONTRACT).gas(GAS_TO_OFFER))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(NEGATIVE_MINT_CONTRACT)),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        contractCall(
+                                        NEGATIVE_MINT_CONTRACT,
+                                        mintToken,
+                                        new byte[][] {genRandomBytes(100)},
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        1L)
+                                .payingWith(GENESIS)
+                                .via(fungibleMintWithMetadataTest)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        NEGATIVE_MINT_CONTRACT,
+                                        mintToken,
+                                        new byte[][] {},
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(0L)
+                                                .build()),
+                                        1L)
+                                .payingWith(GENESIS)
+                                .via(mintWithZeroedAddressTest)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        NEGATIVE_MINT_CONTRACT,
+                                        mintToken,
+                                        new byte[][] {genRandomBytes(100)},
+                                        idAsHeadlongAddress(AccountID.newBuilder()
+                                                .setAccountNum(0L)
+                                                .build()),
+                                        0L)
+                                .payingWith(GENESIS)
+                                .via(mintWithZeroedAddressAndMetadataTest)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord(fungibleMintWithMetadataTest)
+                                .andAllChildRecords()
+                                .logged(),
+                        getTxnRecord(mintWithZeroedAddressTest)
+                                .andAllChildRecords()
+                                .logged(),
+                        getTxnRecord(mintWithZeroedAddressAndMetadataTest)
+                                .andAllChildRecords()
+                                .logged())))
+                .then(
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 1_000),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
+                        childRecordsCheck(
+                                fungibleMintWithMetadataTest,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TRANSACTION_BODY)),
+                        childRecordsCheck(
+                                mintWithZeroedAddressTest,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)),
+                        childRecordsCheck(
+                                mintWithZeroedAddressAndMetadataTest,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)));
     }
 
     @HapiTest

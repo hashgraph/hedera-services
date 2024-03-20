@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging;
+package com.swirlds.logging.test.api.internal.level;
+
+import static com.swirlds.base.test.fixtures.assertions.AssertionUtils.assertThrowsNPE;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -24,11 +26,9 @@ import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.logging.api.internal.level.MarkerState;
-import com.swirlds.logging.util.HandlerLoggingLevelConfigTestOrchestrator;
-import com.swirlds.logging.util.HandlerLoggingLevelConfigTestOrchestrator.TestScenario;
+import com.swirlds.logging.util.LoggingTestScenario;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -264,7 +264,6 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testClassShouldOverrideDefaultLevel() {
         // given
-
         final Configuration configuration = getConfigBuilder()
                 .withValue("logging.level.com.sample.package.Class", Level.TRACE)
                 .getOrCreateConfig();
@@ -302,94 +301,117 @@ public class HandlerLoggingLevelConfigTest {
     }
 
     // Default scenario: what should happen if no configuration is reloaded
-    private static TestScenario defaultScenario() {
-        return HandlerLoggingLevelConfigTestOrchestrator.TestScenario.builder()
+    private static LoggingTestScenario defaultScenario() {
+        return LoggingTestScenario.builder()
                 .name("default")
-                .assertThat("", Level.ERROR, true)
-                .assertThat("", Level.WARN, true)
-                .assertThat("", Level.INFO, true)
-                .assertThat("", Level.DEBUG, false)
+                .assertThatLevelIsAllowed("", Level.ERROR)
+                .assertThatLevelIsAllowed("", Level.WARN)
+                .assertThatLevelIsAllowed("", Level.INFO)
+                .assertThatLevelIsNotAllowed("", Level.DEBUG)
                 .build();
     }
 
     // Scenario 1: Change logging level
-    private static TestScenario scenario1() {
-        return HandlerLoggingLevelConfigTestOrchestrator.TestScenario.builder()
+    private static LoggingTestScenario scenario1() {
+        return LoggingTestScenario.builder()
                 .name("scenario1")
-                .withConfigurationFrom(Map.of("logging.level", Level.TRACE))
-                .assertThat("com.sample.Class", Level.TRACE, true) // Fix Scenario
-                .assertThat("com.Class", Level.INFO, true)
-                .assertThat("Class", Level.TRACE, true)
+                .withConfiguration("logging.level", Level.TRACE)
+                .assertThatLevelIsAllowed("com.sample.Class", Level.TRACE) // Fix Scenario
+                .assertThatLevelIsAllowed("com.Class", Level.INFO)
+                .assertThatLevelIsAllowed("Class", Level.TRACE)
                 .build();
     }
 
     // Scenario 2: No Specific Configuration for Package
-    private static TestScenario scenario2() {
-        return HandlerLoggingLevelConfigTestOrchestrator.TestScenario.builder()
+    private static LoggingTestScenario scenario2() {
+        return LoggingTestScenario.builder()
                 .name("scenario2")
-                .withConfigurationFrom(Map.of("logging.level", Level.WARN))
-                .assertThat("com.sample.Class", Level.DEBUG, false)
+                .withConfiguration("logging.level", Level.WARN)
+                .assertThatLevelIsNotAllowed("com.sample.Class", Level.DEBUG)
                 .build();
     }
 
     // Scenario 3: Class-Specific Configuration
-    private static TestScenario scenario3() {
-        return HandlerLoggingLevelConfigTestOrchestrator.TestScenario.builder()
+    private static LoggingTestScenario scenario3() {
+        return LoggingTestScenario.builder()
                 .name("scenario3")
-                .withConfigurationFrom(Map.of("logging.level.com.sample.package.Class", Level.ERROR))
-                .assertThat("com.sample.package.Class", Level.ERROR, true)
+                .withConfiguration("logging.level.com.sample.package.Class", Level.ERROR)
+                .assertThatLevelIsAllowed("com.sample.package.Class", Level.ERROR)
                 .build();
     }
 
     // Scenario 4: Package-Level Configuration
-    private static TestScenario scenario4() {
-        return HandlerLoggingLevelConfigTestOrchestrator.TestScenario.builder()
+    private static LoggingTestScenario scenario4() {
+        return LoggingTestScenario.builder()
                 .name("scenario4")
-                .withConfigurationFrom(Map.of("logging.level.com.sample.package", Level.TRACE))
-                .assertThat("com.sample.package.Class", Level.TRACE, true) // FIX SCENARIO
+                .withConfiguration("logging.level.com.sample.package", Level.TRACE)
+                .assertThatLevelIsAllowed("com.sample.package.Class", Level.TRACE) // FIX SCENARIO
                 .build();
     }
 
     // Scenario 5: Mixed Configuration
-    private static TestScenario scenario5() {
+    private static LoggingTestScenario scenario5() {
         String subPackage = ".sub";
         String clazz = ".Random";
         String subpackageSubClazz = ".sub.Random";
-        return HandlerLoggingLevelConfigTestOrchestrator.TestScenario.builder()
+        return LoggingTestScenario.builder()
                 .name("scenario5")
-                .withConfigurationFrom(Map.of(
-                        "logging.level",
-                        Level.WARN,
-                        "logging.level.com.sample",
-                        Level.INFO,
-                        "logging.level.com.sample.package",
-                        Level.ERROR))
-                .assertThat("Class", Level.ERROR, true)
-                .assertThat("Class", Level.WARN, true)
-                .assertThat("Class", Level.INFO, false)
-                .assertThat("Class", Level.DEBUG, false)
-                .assertThat("Class", Level.TRACE, false)
-                .assertThat("a" + clazz, Level.WARN, true)
-                .assertThat("b" + clazz, Level.INFO, false)
-                .assertThat("c" + clazz, Level.DEBUG, false)
-                .assertThat("d" + clazz, Level.TRACE, false)
-                .assertThat("other" + clazz, Level.ERROR, true)
-                .assertThat("other.a" + clazz, Level.WARN, true)
-                .assertThat("other.b" + clazz, Level.INFO, false)
-                .assertThat("other.c" + clazz, Level.DEBUG, false)
-                .assertThat("other.d" + clazz, Level.TRACE, false)
-                .assertThat("com.sample" + clazz, Level.ERROR, true)
-                .assertThat("com.sample" + clazz, Level.WARN, true)
-                .assertThat("com.sample" + clazz, Level.INFO, true)
-                .assertThat("com.sample" + clazz, Level.DEBUG, false)
-                .assertThat("com.sample" + clazz, Level.TRACE, false)
-                .assertThat("com.sample.package" + clazz, Level.ERROR, true)
-                .assertThat("com.sample.package" + clazz, Level.WARN, false)
-                .assertThat("com.sample.package" + clazz, Level.INFO, false)
-                .assertThat("com.sample.package" + clazz, Level.DEBUG, false)
-                .assertThat("com.sample.package" + clazz, Level.TRACE, false)
-                .assertThat("com.sample" + subPackage, Level.WARN, true)
-                .assertThat("com.sample" + subpackageSubClazz, Level.INFO, true)
+                .withConfiguration("logging.level", Level.WARN)
+                .withConfiguration("logging.level.com.sample", Level.INFO)
+                .withConfiguration("logging.level.com.sample.package", Level.ERROR)
+                .assertThatLevelIsAllowed("Class", Level.ERROR)
+                .assertThatLevelIsAllowed("Class", Level.WARN)
+                .assertThatLevelIsNotAllowed("Class", Level.INFO)
+                .assertThatLevelIsNotAllowed("Class", Level.DEBUG)
+                .assertThatLevelIsNotAllowed("Class", Level.TRACE)
+                .assertThatLevelIsAllowed("a" + clazz, Level.WARN)
+                .assertThatLevelIsNotAllowed("b" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("c" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("d" + clazz, Level.TRACE)
+                .assertThatLevelIsAllowed("other" + clazz, Level.ERROR)
+                .assertThatLevelIsAllowed("other.a" + clazz, Level.WARN)
+                .assertThatLevelIsNotAllowed("other.b" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("other.c" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("other.d" + clazz, Level.TRACE)
+                .assertThatLevelIsAllowed("com.sample" + clazz, Level.ERROR)
+                .assertThatLevelIsAllowed("com.sample" + clazz, Level.WARN)
+                .assertThatLevelIsAllowed("com.sample" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("com.sample" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("com.sample" + clazz, Level.TRACE)
+                .assertThatLevelIsAllowed("com.sample.package" + clazz, Level.ERROR)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.WARN)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.TRACE)
+                .assertThatLevelIsAllowed("com.sample" + subPackage, Level.WARN)
+                .assertThatLevelIsAllowed("com.sample" + subpackageSubClazz, Level.INFO)
                 .build();
+    }
+
+    @Test
+    void testSimpleConfigUpdate() {
+        // given
+        final Configuration initialConfiguration =
+                getConfigBuilder().withValue("logging.level", Level.ERROR).getOrCreateConfig();
+        final Configuration updatedConfiguration =
+                getConfigBuilder().withValue("logging.level", Level.TRACE).getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(initialConfiguration);
+
+        // when
+        config.update(updatedConfiguration);
+
+        // then
+        checkEnabledForLevel(config, "com.sample.Foo", Level.TRACE);
+    }
+
+    @Test
+    void testConfigUpdateWithNullConfig() {
+        // given
+        final Configuration initialConfiguration = getConfigBuilder().getOrCreateConfig();
+        final Configuration updatedConfiguration = null;
+        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(initialConfiguration);
+
+        // then
+        assertThrowsNPE(() -> config.update(updatedConfiguration));
     }
 }

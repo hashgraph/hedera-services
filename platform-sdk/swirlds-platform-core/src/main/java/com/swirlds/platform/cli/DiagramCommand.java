@@ -57,8 +57,9 @@ public final class DiagramCommand extends AbstractCommand {
     private Set<String> collapsedGroups = Set.of();
     private List<String> substitutionStrings = List.of();
     private List<String> manualLinks = List.of();
-    private Path outputFilePath;
-    private boolean verbose;
+    private Path outputFilePath = Path.of("wiring-diagram.svg");
+    private boolean verbose = false;
+    private boolean lessMystery = false;
 
     private DiagramCommand() {}
 
@@ -106,6 +107,13 @@ public final class DiagramCommand extends AbstractCommand {
         this.verbose = verbose;
     }
 
+    @CommandLine.Option(
+            names = {"-m", "--less-mystery"},
+            description = "Do not hide mystery edges. May create a noisy diagram if there are a lot of mystery edges.")
+    private void setLessMystery(final boolean lessMystery) {
+        this.lessMystery = lessMystery;
+    }
+
     /**
      * Entry point.
      */
@@ -126,7 +134,7 @@ public final class DiagramCommand extends AbstractCommand {
 
         final String diagramString = platformWiring
                 .getModel()
-                .generateWiringDiagram(parseGroups(), parseSubstitutions(), parseManualLinks());
+                .generateWiringDiagram(parseGroups(), parseSubstitutions(), parseManualLinks(), !lessMystery);
 
         final VirtualTerminal terminal = new VirtualTerminal()
                 .setProgressIndicatorEnabled(false)
