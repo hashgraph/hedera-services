@@ -2030,8 +2030,6 @@ class SequentialTaskSchedulerTests {
         taskSchedulerA.getOutputWire().solderTo(bIn);
         taskSchedulerB.getOutputWire().solderTo(cIn);
 
-        model.start();
-
         final AtomicInteger countA = new AtomicInteger();
         final CountDownLatch latchA = new CountDownLatch(1);
         aIn.bind(x -> {
@@ -2066,6 +2064,8 @@ class SequentialTaskSchedulerTests {
             }
             countC.set(hash32(countC.get(), x));
         });
+
+        model.start();
 
         // Add enough data to fill all available capacity.
         int expectedCount = 0;

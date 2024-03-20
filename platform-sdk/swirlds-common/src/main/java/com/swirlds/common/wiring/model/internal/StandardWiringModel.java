@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.model.internal;
 
 import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
 import com.swirlds.base.time.Time;
@@ -86,9 +87,19 @@ public class StandardWiringModel implements WiringModel {
     private final Set<InputWireDescriptor> boundInputWires = new HashSet<>();
 
     /**
+     * Input wires with at least one thing soldered to them.
+     */
+    private final Set<InputWireDescriptor> solderedInputWires = new HashSet<>();
+
+    /**
      * The default fork join pool, schedulers not explicitly assigned a pool will use this one.
      */
     private final ForkJoinPool defaultPool;
+
+    /**
+     * True if start() has been called.
+     */
+    private boolean started = false;
 
     /**
      * Constructor.
@@ -111,6 +122,7 @@ public class StandardWiringModel implements WiringModel {
     @NonNull
     @Override
     public final <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name) {
+        throwIfStarted();
         return new TaskSchedulerBuilder<>(this, name, defaultPool);
     }
 
@@ -120,6 +132,7 @@ public class StandardWiringModel implements WiringModel {
     @NonNull
     @Override
     public final TaskSchedulerMetricsBuilder metricsBuilder() {
+        throwIfStarted();
         return new TaskSchedulerMetricsBuilder(metrics, time);
     }
 
@@ -136,6 +149,7 @@ public class StandardWiringModel implements WiringModel {
      */
     @NonNull
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
+        throwIfStarted();
         return getHeartbeatScheduler().buildHeartbeatWire(period);
     }
 
@@ -149,6 +163,7 @@ public class StandardWiringModel implements WiringModel {
      * @return the output wire
      */
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
+        throwIfStarted();
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
     }
 
@@ -184,9 +199,35 @@ public class StandardWiringModel implements WiringModel {
     public String generateWiringDiagram(
             @NonNull final List<ModelGroup> groups,
             @NonNull final List<ModelEdgeSubstitution> substitutions,
-            @NonNull final List<ModelManualLink> manualLinks) {
+            @NonNull final List<ModelManualLink> manualLinks,
+            final boolean moreMystery) {
+        addVertexForUnsolderedInputWires(moreMystery);
         final WiringFlowchart flowchart = new WiringFlowchart(vertices, substitutions, groups, manualLinks);
         return flowchart.render();
+    }
+
+    /**
+     * Add a special vertex for all unsoldered input wires.
+     */
+    private void addVertexForUnsolderedInputWires(final boolean moreMystery) {
+        final Set<InputWireDescriptor> unsolderedInputWires = new HashSet<>(inputWires);
+        unsolderedInputWires.removeAll(solderedInputWires);
+
+        if (unsolderedInputWires.isEmpty()) {
+            return;
+        }
+
+        final ModelVertex unsolderedDataSource =
+                new StandardVertex("Mystery Input", DIRECT_THREADSAFE, SCHEDULER, true);
+        vertices.put(unsolderedDataSource.getName(), unsolderedDataSource);
+
+        for (final InputWireDescriptor unsolderedInputWire : unsolderedInputWires) {
+            final ModelVertex destination = getVertex(unsolderedInputWire.taskSchedulerName());
+
+            final String edgeDescription = moreMystery ? "mystery data" : unsolderedInputWire.name();
+            final ModelEdge edge = new ModelEdge(unsolderedDataSource, destination, edgeDescription, true, true);
+            unsolderedDataSource.getOutgoingEdges().add(edge);
+        }
     }
 
     /**
@@ -195,6 +236,7 @@ public class StandardWiringModel implements WiringModel {
      * @param scheduler the task scheduler to register
      */
     public void registerScheduler(@NonNull final TaskScheduler<?> scheduler) {
+        throwIfStarted();
         registerVertex(scheduler.getName(), scheduler.getType(), scheduler.isInsertionBlocking());
         if (scheduler.getType() == SEQUENTIAL_THREAD) {
             threadSchedulers.add((SequentialThreadTaskScheduler<?>) scheduler);
@@ -212,6 +254,7 @@ public class StandardWiringModel implements WiringModel {
             @NonNull final String vertexName,
             @NonNull final TaskSchedulerType type,
             final boolean insertionIsBlocking) {
+        throwIfStarted();
         Objects.requireNonNull(vertexName);
         Objects.requireNonNull(type);
         final boolean unique =
@@ -234,6 +277,7 @@ public class StandardWiringModel implements WiringModel {
             @NonNull final String destinationVertex,
             @NonNull final String label,
             @NonNull final SolderType solderType) {
+        throwIfStarted();
 
         final boolean blockingEdge = solderType == SolderType.PUT;
 
@@ -249,6 +293,8 @@ public class StandardWiringModel implements WiringModel {
             throw new IllegalArgumentException(
                     "Duplicate edge: " + originVertex + " -> " + destinationVertex + ", label = " + label);
         }
+
+        solderedInputWires.add(new InputWireDescriptor(destinationVertex, label));
     }
 
     /**
@@ -260,6 +306,8 @@ public class StandardWiringModel implements WiringModel {
      */
     public void registerInputWireCreation(
             @NonNull final String taskSchedulerName, @NonNull final String inputWireName) {
+        throwIfStarted();
+
         final boolean unique = inputWires.add(new InputWireDescriptor(taskSchedulerName, inputWireName));
         if (!unique) {
             throw new IllegalStateException(
@@ -276,6 +324,8 @@ public class StandardWiringModel implements WiringModel {
      * @param inputWireName     the name of the input wire
      */
     public void registerInputWireBinding(@NonNull final String taskSchedulerName, @NonNull final String inputWireName) {
+        throwIfStarted();
+
         final InputWireDescriptor descriptor = new InputWireDescriptor(taskSchedulerName, inputWireName);
 
         final boolean registered = inputWires.contains(descriptor);
@@ -292,10 +342,21 @@ public class StandardWiringModel implements WiringModel {
     }
 
     /**
+     * Throw an exception if start() has already been called.
+     */
+    private void throwIfStarted() {
+        if (started) {
+            throw new IllegalStateException("start() has already been called, operation not permitted.");
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public void start() {
+        throwIfStarted();
+        started = true;
 
         // We don't have to do anything with the output of these sanity checks.
         // The methods below will log errors if they find problems.
@@ -317,6 +378,9 @@ public class StandardWiringModel implements WiringModel {
      */
     @Override
     public void stop() {
+        if (!started) {
+            throw new IllegalStateException("start() has not been called, operation not permitted.");
+        }
         if (heartbeatScheduler != null) {
             heartbeatScheduler.stop();
         }
