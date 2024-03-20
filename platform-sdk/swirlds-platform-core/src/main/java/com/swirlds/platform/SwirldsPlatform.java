@@ -164,6 +164,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
+import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
@@ -801,7 +802,7 @@ public class SwirldsPlatform implements Platform {
         final State state = initialState.getState();
         final PlatformState platformState = state.getPlatformState();
 
-        return new BirthRoundMigrationShim(
+        return new DefaultBirthRoundMigrationShim(
                 platformContext,
                 platformState.getFirstVersionInBirthRoundMode(),
                 platformState.getLastRoundBeforeBirthRoundMode(),

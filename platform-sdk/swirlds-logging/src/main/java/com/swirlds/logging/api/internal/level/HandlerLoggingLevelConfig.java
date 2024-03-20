@@ -79,16 +79,16 @@ public class HandlerLoggingLevelConfig {
     /**
      * The prefix for the configuration.
      */
-    private final String name;
+    private final String handlerName;
 
     /**
      * Creates a new logging level configuration based on the given configuration and handler name.
      *
      * @param configuration The configuration.
-     * @param name        The name.
+     * @param handlerName        The name of the handler.
      */
-    public HandlerLoggingLevelConfig(@NonNull final Configuration configuration, @Nullable String name) {
-        this.name = name;
+    public HandlerLoggingLevelConfig(@NonNull final Configuration configuration, @Nullable final String handlerName) {
+        this.handlerName = handlerName;
         this.levelCache = new ConcurrentHashMap<>();
         this.markerConfigCache = new AtomicReference<>(new ConcurrentHashMap<>());
         this.levelConfigProperties = new AtomicReference<>(new ConcurrentHashMap<>());
@@ -104,30 +104,31 @@ public class HandlerLoggingLevelConfig {
     }
 
     /**
-     * Updates the configuration based on the given configuration. That method can be used to change the logging level
-     * dynamically at runtime.
+     * Extracts the configuration for the given handler name based on the given configuration.
      *
+     * @param handlerName The name of the handler.
      * @param configuration The configuration.
      */
-    public void update(final @NonNull Configuration configuration) {
+    @NonNull
+    private static ExtractedLoggingConfig extractConfig(
+            @Nullable final String handlerName, @NonNull final Configuration configuration) {
         Objects.requireNonNull(configuration, "configuration must not be null");
 
         final ConfigLevel defaultLevel =
                 configuration.getValue(PROPERTY_LOGGING_LEVEL, ConfigLevel.class, ConfigLevel.UNDEFINED);
         final ConfigLevel defaultHandlerLevel;
-        final String propertyHandler = PROPERTY_LOGGING_HANDLER_LEVEL.formatted(name);
+        final String propertyHandler = PROPERTY_LOGGING_HANDLER_LEVEL.formatted(handlerName);
         final Boolean inheritLevels = configuration.getValue(
-                PROPERTY_LOGGING_HANDLER_INHERIT_LEVELS.formatted(name), Boolean.class, Boolean.TRUE);
+                PROPERTY_LOGGING_HANDLER_INHERIT_LEVELS.formatted(handlerName), Boolean.class, Boolean.TRUE);
 
         final Map<String, ConfigLevel> levelConfigProperties = new ConcurrentHashMap<>();
         final Map<String, MarkerState> markerConfigStore = new ConcurrentHashMap<>();
 
-        if (name != null) {
+        if (handlerName != null) {
             defaultHandlerLevel = configuration.getValue(propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED);
         } else {
             defaultHandlerLevel = ConfigLevel.UNDEFINED;
         }
-
         if (defaultLevel == ConfigLevel.UNDEFINED && defaultHandlerLevel == ConfigLevel.UNDEFINED) {
             levelConfigProperties.put("", DEFAULT_LEVEL);
         } else if (defaultHandlerLevel != ConfigLevel.UNDEFINED) {
@@ -139,25 +140,32 @@ public class HandlerLoggingLevelConfig {
                 levelConfigProperties.put("", DEFAULT_LEVEL);
             }
         }
-
         if (Boolean.TRUE.equals(inheritLevels)) {
             levelConfigProperties.putAll(readLevels(PROPERTY_LOGGING_LEVEL, configuration));
             markerConfigStore.putAll(readMarkers(PROPERTY_LOGGING_MARKER, configuration));
         }
-
-        levelCache.clear();
-
-        if (name != null) {
+        if (handlerName != null) {
             levelConfigProperties.putAll(readLevels(propertyHandler, configuration));
-            markerConfigStore.putAll(readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(name), configuration));
+            markerConfigStore.putAll(
+                    readMarkers(PROPERTY_LOGGING_HANDLER_MARKER.formatted(handlerName), configuration));
         }
+        return new ExtractedLoggingConfig(levelConfigProperties, markerConfigStore);
+    }
 
-        this.levelConfigProperties.set(Collections.unmodifiableMap(levelConfigProperties));
-        this.markerConfigCache.set(markerConfigStore);
+    /**
+     * Updates the handler config based on the given configuration.
+     *
+     * @param configuration The configuration.
+     */
+    public void update(@NonNull final Configuration configuration) {
+        final ExtractedLoggingConfig extractedLoggingConfig = extractConfig(handlerName, configuration);
+        levelCache.clear();
+        this.levelConfigProperties.set(Collections.unmodifiableMap(extractedLoggingConfig.levelConfigProperties()));
+        this.markerConfigCache.set(extractedLoggingConfig.markerConfigStore());
     }
 
     @NonNull
-    private Map<String, MarkerState> readMarkers(
+    private static Map<String, MarkerState> readMarkers(
             @NonNull final String prefix, @NonNull final Configuration configuration) {
         final Map<String, MarkerState> result = new HashMap<>();
         final String fullPrefix = PROPERTY_PACKAGE_LEVEL.formatted(prefix);
@@ -181,7 +189,7 @@ public class HandlerLoggingLevelConfig {
      * @return map of levels and package names
      */
     @NonNull
-    private Map<String, ConfigLevel> readLevels(
+    private static Map<String, ConfigLevel> readLevels(
             @NonNull final String prefix, @NonNull final Configuration configuration) {
         final Map<String, ConfigLevel> result = new HashMap<>();
         final String fullPrefix = PROPERTY_PACKAGE_LEVEL.formatted(prefix);
@@ -202,7 +210,7 @@ public class HandlerLoggingLevelConfig {
         return Collections.unmodifiableMap(result);
     }
 
-    private boolean containsUpperCase(@NonNull final String name) {
+    private static boolean containsUpperCase(@NonNull final String name) {
         return name.chars().anyMatch(Character::isUpperCase);
     }
 
@@ -258,4 +266,14 @@ public class HandlerLoggingLevelConfig {
                 .map(stringConfigLevelMap::get)
                 .orElseThrow();
     }
+
+    /**
+     * Helper record to store the extracted logging configuration.
+     *
+     * @param levelConfigProperties The level configuration properties
+     * @param markerConfigStore     The marker configuration store
+     */
+    private record ExtractedLoggingConfig(
+            @NonNull Map<String, ConfigLevel> levelConfigProperties,
+            @NonNull Map<String, MarkerState> markerConfigStore) {}
 }

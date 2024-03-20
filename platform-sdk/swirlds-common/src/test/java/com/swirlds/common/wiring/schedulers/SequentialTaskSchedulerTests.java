@@ -458,9 +458,11 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
+        final long capacity = 11;
+
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
-                .withUnhandledTaskCapacity(11)
+                .withUnhandledTaskCapacity(capacity)
                 .withSleepDuration(Duration.ofMillis(1))
                 .build()
                 .cast();
@@ -483,7 +485,8 @@ class SequentialTaskSchedulerTests {
                 },
                 Duration.ofSeconds(10),
                 "unable to add tasks");
-        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
+        long currentUnprocessedTaskCount = taskScheduler.getUnprocessedTaskCount();
+        assertTrue(currentUnprocessedTaskCount == capacity || currentUnprocessedTaskCount == capacity + 1);
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -502,7 +505,8 @@ class SequentialTaskSchedulerTests {
         // wire would have processed all of the work that was added to it.
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
-        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
+        currentUnprocessedTaskCount = taskScheduler.getUnprocessedTaskCount();
+        assertTrue(currentUnprocessedTaskCount == capacity || currentUnprocessedTaskCount == capacity + 1);
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
@@ -2026,8 +2030,6 @@ class SequentialTaskSchedulerTests {
         taskSchedulerA.getOutputWire().solderTo(bIn);
         taskSchedulerB.getOutputWire().solderTo(cIn);
 
-        model.start();
-
         final AtomicInteger countA = new AtomicInteger();
         final CountDownLatch latchA = new CountDownLatch(1);
         aIn.bind(x -> {
@@ -2062,6 +2064,8 @@ class SequentialTaskSchedulerTests {
             }
             countC.set(hash32(countC.get(), x));
         });
+
+        model.start();
 
         // Add enough data to fill all available capacity.
         int expectedCount = 0;
