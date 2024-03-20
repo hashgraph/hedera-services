@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.blocknode.core;
+package com.hedera.node.blocknode.core.services;
 
-import com.hedera.node.blocknode.core.grpc.BlockNodeServer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.*;
 
-public class BlockNode {
-    private static final Logger logger = LogManager.getLogger(BlockNode.class);
+public class BlockNodeServicesRegistryImpl {
+    private Map<String, Object> serviceMap = new HashMap<>();
 
-    public static void main(final String... args) {
-        logger.info("BlockNode - Main");
-        BlockNodeServer grpcServer = new BlockNodeServer();
+    public void registerService(String serviceName, Object serviceInstance) {
+        serviceMap.put(serviceName, serviceInstance);
+    }
 
-        grpcServer.start();
+    public Object getService(String serviceName) {
+        return serviceMap.get(serviceName);
     }
 }

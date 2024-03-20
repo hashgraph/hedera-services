@@ -34,4 +34,8 @@ public class ConfigProvider {
         final var builder = ConfigurationBuilder.create().withConfigDataType(BlockNodeGrpcConfig.class);
         this.configuration = builder.build();
     }
+
+    public Configuration getConfiguration() {
+        return configuration;
+    }
 }

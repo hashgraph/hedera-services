@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.blocknode.core.grpc.impl;
+package com.hedera.node.blocknode.core.grpc;
 
 // import com.hedera.block.node.api.proto.java.BlockServiceGrpc;
 // import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentRequest;
 // import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentResponse;
 // import com.hedera.block.node.api.proto.java.BlocksPutIfAbsentResponseCode;
-import com.hedera.node.blocknode.core.grpc.BlockNodeServer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class BlockNodeService // extends BlockServiceGrpc.BlockServiceImplBase
  {
-    private static final Logger logger = LogManager.getLogger(BlockNodeServer.class);
-
-    public BlockNodeService() {}
-
     //    @Override
     //    public StreamObserver<BlocksPutIfAbsentRequest> blocksPutIfAbsent(
     //            StreamObserver<BlocksPutIfAbsentResponse> responseObserver) {
@@ -57,4 +50,5 @@ public class BlockNodeService // extends BlockServiceGrpc.BlockServiceImplBase
     //            }
     //        };
     //    }
+
 }
