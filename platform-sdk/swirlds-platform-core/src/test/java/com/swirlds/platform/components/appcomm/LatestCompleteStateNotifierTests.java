@@ -32,7 +32,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Basic sanity check tests for the {@link LatestCompleteStateNotifier} class
+ * Basic sanity check tests for the {@link DefaultLatestCompleteStateNotifier} class
  */
 public class LatestCompleteStateNotifierTests {
 
@@ -60,7 +60,7 @@ public class LatestCompleteStateNotifierTests {
             }
         });
 
-        final LatestCompleteStateNotifier component = new LatestCompleteStateNotifier(notificationEngine);
+        final LatestCompleteStateNotifier component = new DefaultLatestCompleteStateNotifier();
         component.latestCompleteStateHandler(signedState.reserve("testNewLatestCompleteStateEventNotification"));
 
         // Allow the notification callback to execute

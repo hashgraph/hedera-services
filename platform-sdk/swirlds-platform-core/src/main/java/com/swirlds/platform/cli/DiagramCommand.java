@@ -26,7 +26,6 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
@@ -108,11 +107,9 @@ public final class DiagramCommand extends AbstractCommand {
         final PlatformWiring platformWiring = new PlatformWiring(platformContext);
 
         final ThreadManager threadManager = getStaticThreadManager();
-        final NotificationEngine notificationEngine = NotificationEngine.buildEngine(threadManager);
         platformWiring.wireExternalComponents(
                 new PlatformStatusManager(platformContext, platformContext.getTime(), threadManager, a -> {}),
-                new TransactionPool(platformContext),
-                notificationEngine);
+                new TransactionPool(platformContext));
 
         final String diagramString = platformWiring
                 .getModel()
