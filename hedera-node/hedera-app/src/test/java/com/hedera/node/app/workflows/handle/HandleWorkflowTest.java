@@ -899,7 +899,7 @@ class HandleWorkflowTest extends AppTestBase {
         assertThat(accountsState.isModified()).isFalse();
         assertThat(aliasesState.isModified()).isFalse();
         verify(blockRecordManager, never()).advanceConsensusClock(any(), any());
-        verify(blockRecordManager, never()).startUserTransaction(any(), any());
+        verify(blockRecordManager, never()).startUserTransaction(any(), any(), any());
         verify(blockRecordManager, never()).endUserTransaction(any(), any());
     }
 
@@ -1524,7 +1524,7 @@ class HandleWorkflowTest extends AppTestBase {
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
-            verify(blockRecordManager).startUserTransaction(TX_CONSENSUS_NOW, state);
+            verify(blockRecordManager).startUserTransaction(TX_CONSENSUS_NOW, state, platformState);
             verify(blockRecordManager).endUserTransaction(any(), eq(state));
             verify(blockRecordManager).endRound(state);
         }

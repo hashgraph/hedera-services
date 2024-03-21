@@ -169,7 +169,7 @@ public final class LoggingTestUtils {
                 .withConverter(MarkerState.class, new MarkerStateConverter())
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.%s.type".formatted(fileHandlerName), "file")
-                .withValue("logging.handler.%s.active".formatted(fileHandlerName), "true")
+                .withValue("logging.handler.%s.enabled".formatted(fileHandlerName), "true")
                 .withValue("logging.handler.%s.formatTimestamp".formatted(fileHandlerName), "false")
                 .withValue("logging.handler.%s.level".formatted(fileHandlerName), "trace")
                 .withValue("logging.handler.%s.file".formatted(fileHandlerName), logFile)
