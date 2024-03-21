@@ -258,6 +258,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 EventWindowManager.class,
                 model.schedulerBuilder("eventWindowManager")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                        .withHyperlink(platformCoreHyperlink(EventWindowManager.class))
                         .build()
                         .cast());
 
