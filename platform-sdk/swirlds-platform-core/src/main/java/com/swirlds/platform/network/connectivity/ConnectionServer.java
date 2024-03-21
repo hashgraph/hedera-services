@@ -21,8 +21,8 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.Utilities;
 import com.swirlds.platform.network.PeerInfo;
+import com.swirlds.platform.network.communication.handshake.HandshakeCompletedListenerImpl;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -94,10 +94,10 @@ public class ConnectionServer implements InterruptableRunnable {
         while (!serverSocket.isClosed()) {
             try {
                 final Socket clientSocket = serverSocket.accept(); // listen, waiting until someone connects
-                incomingConnPool.submit(() -> {
-                    addHandshakeListener(clientSocket);
-                    newConnectionHandler.accept(clientSocket);
-                });
+                if (clientSocket instanceof final SSLSocket sslSocket) {
+                    sslSocket.addHandshakeCompletedListener(new HandshakeCompletedListenerImpl(peerInfoList));
+                }
+                incomingConnPool.submit(() -> newConnectionHandler.accept(clientSocket));
             } catch (final SocketTimeoutException expectedWithNonZeroSOTimeout) {
                 // A timeout is expected, so we won't log it
                 if (Thread.currentThread().isInterrupted()) {
@@ -107,28 +107,6 @@ public class ConnectionServer implements InterruptableRunnable {
             } catch (final RuntimeException | IOException e) {
                 logger.error(EXCEPTION.getMarker(), "SyncServer serverSocket.accept() error", e);
             }
-        }
-    }
-
-    /**
-     * Adds a handshake completed listener
-     * */
-    private void addHandshakeListener(final Socket clientSocket) {
-        if (clientSocket instanceof final SSLSocket sslsocket) {
-            sslsocket.addHandshakeCompletedListener(event -> {
-                final PeerInfo peer = Utilities.validateTLSPeer(event.getSocket(), peerInfoList);
-                if (peer == null) {
-                    try {
-                        event.getSocket().close();
-                    } catch (final IOException e) {
-                        logger.warn(
-                                "Attempt to close connection from {}:{} threw IO exception {}",
-                                event.getSocket().getInetAddress(),
-                                event.getSocket().getPort(),
-                                e.getMessage());
-                    }
-                }
-            });
         }
     }
 }

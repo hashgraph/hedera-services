@@ -16,6 +16,9 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.NETWORK;
+
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -391,7 +394,10 @@ public final class Utilities {
     }
 
     /**
-     * Validates that there exists a known TLS peer whose signing certificate's subject
+     * Validates that the client on the other end of the socket possesses an agreement
+     *  certificate, that the certificate's subject matches the signing certificate's subject
+     *  for one or more known peers
+     * there exists a known TLS peer whose signing certificate's subject
      *      matches the agreement certificate's issuer
      *
      * @param sslsocket
@@ -413,6 +419,7 @@ public final class Utilities {
                     .findFirst();
             if (peerOptional.isEmpty()) {
                 logger.warn(
+                        NETWORK.getMarker(),
                         "Handshake with client {}:{} was successful but we couldn't find a matching peer. Closing connection.",
                         sslsocket.getInetAddress(),
                         sslsocket.getPort());
@@ -421,6 +428,7 @@ public final class Utilities {
             }
         } catch (final SSLPeerUnverifiedException e) {
             logger.warn(
+                    EXCEPTION.getMarker(),
                     "Attempt to obtain certificate from an unverified peer {}:{} threw exception {}",
                     sslsocket.getInetAddress(),
                     sslsocket.getPort(),
