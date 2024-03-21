@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.statedumpers.contracts;
 
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;

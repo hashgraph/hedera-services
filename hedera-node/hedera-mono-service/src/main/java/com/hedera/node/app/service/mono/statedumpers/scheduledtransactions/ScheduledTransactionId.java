@@ -18,10 +18,20 @@ package com.hedera.node.app.service.mono.statedumpers.scheduledtransactions;
 
 import com.google.common.collect.ComparisonChain;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 record ScheduledTransactionId(long num) implements Comparable<ScheduledTransactionId> {
     static ScheduledTransactionId fromMono(@NonNull final EntityNumVirtualKey key) {
+        return new ScheduledTransactionId(key.getKeyAsLong());
+    }
+
+    static ScheduledTransactionId fromMono(@NonNull final SecondSinceEpocVirtualKey key) {
+        return new ScheduledTransactionId(key.getKeyAsLong());
+    }
+
+    static ScheduledTransactionId fromMono(@NonNull final ScheduleEqualityVirtualKey key) {
         return new ScheduledTransactionId(key.getKeyAsLong());
     }
 

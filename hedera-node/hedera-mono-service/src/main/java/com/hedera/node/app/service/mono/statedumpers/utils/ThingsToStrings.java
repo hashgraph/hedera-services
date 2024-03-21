@@ -50,10 +50,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -300,9 +297,10 @@ public class ThingsToStrings {
             return false;
         }
 
-        final var orderedApprovals = approvals.stream().sorted(Comparator
-                .<AccountApprovalForAllAllowance>comparingLong(a -> a.tokenId().tokenNum())
-                .thenComparingLong(b -> b.spenderId().accountNum()))
+        final var orderedApprovals = approvals.stream()
+                .sorted(Comparator.<AccountApprovalForAllAllowance>comparingLong(
+                                a -> a.tokenId().tokenNum())
+                        .thenComparingLong(b -> b.spenderId().accountNum()))
                 .toList();
         sb.append("(");
         for (final var approval : orderedApprovals) {
@@ -333,8 +331,8 @@ public class ThingsToStrings {
         }
 
         final var orderedAllowances = allowances.stream()
-                .sorted(Comparator
-                        .<AccountCryptoAllowance>comparingLong(a -> a.spenderId().accountNum())
+                .sorted(Comparator.<AccountCryptoAllowance>comparingLong(
+                                a -> a.spenderId().accountNum())
                         .thenComparingLong(a -> a.amount()))
                 .toList();
         sb.append("(");
@@ -366,8 +364,8 @@ public class ThingsToStrings {
         }
 
         final var orderedAllowances = allowances.stream()
-                .sorted(Comparator
-                        .<AccountFungibleTokenAllowance>comparingLong(a -> a.tokenId().tokenNum())
+                .sorted(Comparator.<AccountFungibleTokenAllowance>comparingLong(
+                                a -> a.tokenId().tokenNum())
                         .thenComparingLong(b -> b.spenderId().accountNum()))
                 .toList();
         sb.append("(");

@@ -115,7 +115,9 @@ public record HederaAccount(
                 toAccountFungibleTokenAllowance(account.getFungibleTokenAllowances()),
                 account.getNumTreasuryTitles(),
                 account.isExpiredAndPendingRemoval(),
-                account.getFirstContractStorageKey() == null ? Bytes.EMPTY : toBytes(account.getFirstContractStorageKey().getKey()),
+                account.getFirstContractStorageKey() == null
+                        ? Bytes.EMPTY
+                        : toBytes(account.getFirstContractStorageKey().getKey()),
                 account.isImmutable(),
                 account.getStakedId() >= 0 ? -1 : account.getStakedNodeAddressBookId());
     }

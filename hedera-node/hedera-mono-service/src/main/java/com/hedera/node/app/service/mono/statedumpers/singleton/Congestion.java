@@ -40,16 +40,18 @@ record Congestion(
                 .toList();
         final var gasThrottleUsageSnapshot = PbjConverter.toPbj(networkContext.getGasThrottleUsageSnapshot());
         // format the following two from `List<RichInstant>` to String
-        final var gasCongestionStarts = Arrays.stream(
-                        networkContext.getMultiplierSources().gasCongestionStarts())
-                .map(RichInstant::fromJava)
-                .map(ThingsToStrings::toStringOfRichInstant)
-                .collect(Collectors.joining(", "));
-        final var genericCongestionStarts = Arrays.stream(
-                        networkContext.getMultiplierSources().genericCongestionStarts())
-                .map(RichInstant::fromJava)
-                .map(ThingsToStrings::toStringOfRichInstant)
-                .collect(Collectors.joining(", "));
+        final var gasCongestionStarts = networkContext.getMultiplierSources() != null
+                ? Arrays.stream(networkContext.getMultiplierSources().gasCongestionStarts())
+                        .map(RichInstant::fromJava)
+                        .map(ThingsToStrings::toStringOfRichInstant)
+                        .collect(Collectors.joining(", "))
+                : "";
+        final var genericCongestionStarts = networkContext.getMultiplierSources() != null
+                ? Arrays.stream(networkContext.getMultiplierSources().genericCongestionStarts())
+                        .map(RichInstant::fromJava)
+                        .map(ThingsToStrings::toStringOfRichInstant)
+                        .collect(Collectors.joining(", "))
+                : "";
 
         return new Congestion(
                 tpsThrottleUsageSnapshots, gasThrottleUsageSnapshot, genericCongestionStarts, gasCongestionStarts);
