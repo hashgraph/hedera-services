@@ -47,7 +47,6 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
-import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -95,6 +94,7 @@ import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
@@ -534,7 +534,7 @@ public class SwirldsPlatform implements Platform {
             eventStreamManagerName = String.valueOf(selfId);
         }
 
-        final EventStreamManager<EventImpl> eventStreamManager = new EventStreamManager<>(
+        final EventStreamManager eventStreamManager = new EventStreamManager(
                 platformContext,
                 time,
                 threadManager,
