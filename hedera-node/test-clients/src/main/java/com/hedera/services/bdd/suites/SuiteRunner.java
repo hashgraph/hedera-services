@@ -320,7 +320,6 @@ public class SuiteRunner {
             // aof(MixedSmartContractOpsLoadTest::new));
             put("MixedFileOpsLoadTest", aof(MixedFileOpsLoadTest::new));
             put("UniqueTokenStateSetup", aof(UniqueTokenStateSetup::new));
-            ThreadDumpGenerator.generateThreadDumpAtIntervals(Path.of("./thread-dumps"), 5, 5);
             /* Functional tests - RECONNECT */
             put("CreateAccountsBeforeReconnect", aof(CreateAccountsBeforeReconnect::new));
             put("CreateTopicsBeforeReconnect", aof(CreateTopicsBeforeReconnect::new));
