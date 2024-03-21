@@ -29,6 +29,7 @@ import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.Loggers;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.test.fixtures.LoggingMirror;
+import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import com.swirlds.logging.test.fixtures.internal.LoggingMirrorImpl;
 import com.swirlds.logging.util.LoggingTestUtils;
 import jakarta.inject.Inject;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @WithTestExecutor
+@WithLoggingMirror
 @Tag(TIMING_SENSITIVE)
 public class LoggingSystemStressTest {
 
