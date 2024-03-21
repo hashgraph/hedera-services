@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.schedule;
 
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,7 +28,7 @@ import java.util.Set;
  * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/schedule_service.proto">Schedule
  * Service</a>.
  */
-public interface ScheduleService extends Service {
+public interface ScheduleService extends RpcService {
 
     String NAME = "ScheduleService";
 

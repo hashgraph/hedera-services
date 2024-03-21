@@ -61,6 +61,7 @@ itestModuleInfo {
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.common")
     requires("com.swirlds.config.api")
+    requires("com.swirlds.state.api")
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.hedera.node.hapi")
     requires("com.swirlds.metrics.api")

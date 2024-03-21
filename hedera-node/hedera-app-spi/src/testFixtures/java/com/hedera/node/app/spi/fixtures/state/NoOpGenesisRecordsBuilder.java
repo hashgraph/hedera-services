@@ -33,7 +33,7 @@ package com.hedera.node.app.spi.fixtures.state;
  */
 
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.swirlds.state.spi.worfklows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.SortedSet;
 
