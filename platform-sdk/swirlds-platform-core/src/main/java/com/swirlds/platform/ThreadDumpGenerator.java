@@ -393,8 +393,8 @@ public class ThreadDumpGenerator {
      * Used to generate a unique file name for a thread dump
      */
     private static String makeFileName() {
-        final SimpleDateFormat dt = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss-SSS");
-        return "threadDump " + dt.format(new Date()) + "  " + random.nextInt() + ".txt";
+        final SimpleDateFormat dt = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS");
+        return "threadDump " + dt.format(new Date()) + "-" + random.nextInt() + ".log";
     }
 
     /**
