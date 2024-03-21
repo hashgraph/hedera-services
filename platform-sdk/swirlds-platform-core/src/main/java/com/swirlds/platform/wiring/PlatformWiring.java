@@ -24,7 +24,6 @@ import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.component.ComponentWiring;
@@ -53,6 +52,7 @@ import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
@@ -62,7 +62,6 @@ import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
@@ -547,7 +546,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final TransactionPrehandler transactionPrehandler,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
-            @NonNull final EventStreamManager<EventImpl> eventStreamManager,
+            @NonNull final EventStreamManager eventStreamManager,
             @NonNull final FutureEventBuffer futureEventBuffer,
             @NonNull final IssDetector issDetector,
             @NonNull final IssHandler issHandler,
