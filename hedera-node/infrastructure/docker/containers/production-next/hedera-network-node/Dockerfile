@@ -264,8 +264,8 @@ ENV PATH ${JAVA_HOME}/bin:${PATH}
 ENV JAVA_HEAP_MIN ""
 ENV JAVA_HEAP_MAX ""
 ENV JAVA_OPTS ""
-ENV JAVA_MAIN_CLASS ""
-ENV JAVA_CLASS_PATH ""
+ENV JAVA_MAIN_CLASS "com.hedera.node.app.ServicesMain"
+ENV JAVA_CLASS_PATH "data/lib/*:data/apps/*"
 
 # Performance Tuning for Malloc
 ENV MALLOC_ARENA_MAX 4
