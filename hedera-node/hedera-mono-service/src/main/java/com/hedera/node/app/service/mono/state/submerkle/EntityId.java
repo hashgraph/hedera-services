@@ -23,7 +23,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
 import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
-import com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder;
+import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -105,10 +105,7 @@ public class EntityId implements SelfSerializable {
      * @return the equivalent entity id using the node's shard and realm.
      */
     public static EntityId fromNum(final long num) {
-        return new EntityId(
-                StaticPropertiesHolder.STATIC_PROPERTIES.getShard(),
-                StaticPropertiesHolder.STATIC_PROPERTIES.getRealm(),
-                num);
+        return new EntityId(StaticProperties.getShard(), StaticProperties.getRealm(), num);
     }
 
     @Override

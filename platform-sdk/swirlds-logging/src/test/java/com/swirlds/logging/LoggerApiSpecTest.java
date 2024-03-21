@@ -258,9 +258,9 @@ public class LoggerApiSpecTest {
         Assertions.assertDoesNotThrow(() -> logger.log(level, message, (String) null, null), LOG_ERROR_MESSAGE);
 
         Assertions.assertDoesNotThrow(() -> logger.log(level, message, THROW, "arg"), LOG_ERROR_MESSAGE);
-        Assertions.assertDoesNotThrow(() -> logger.log(level, message, THROW, null), LOG_ERROR_MESSAGE);
+        Assertions.assertDoesNotThrow(() -> logger.log(level, message, THROW, (String) null), LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(() -> logger.log(level, message, null, "arg"), LOG_ERROR_MESSAGE);
-        Assertions.assertDoesNotThrow(() -> logger.log(level, message, null, null), LOG_ERROR_MESSAGE);
+        Assertions.assertDoesNotThrow(() -> logger.log(level, message, null, (String) null), LOG_ERROR_MESSAGE);
 
         Assertions.assertDoesNotThrow(() -> logger.log(level, message, THROW, "arg1", "arg2"), LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(() -> logger.log(level, message, THROW, "arg1", null), LOG_ERROR_MESSAGE);
@@ -272,8 +272,8 @@ public class LoggerApiSpecTest {
         Assertions.assertDoesNotThrow(() -> logger.log(level, message, null, null, null), LOG_ERROR_MESSAGE);
 
         Arrays.stream(ARGS_VARIANTS).forEach(args -> {
-            Assertions.assertDoesNotThrow(() -> logger.log(level, message, args), LOG_ERROR_MESSAGE);
-            Assertions.assertDoesNotThrow(() -> logger.log(level, message, THROW, args), LOG_ERROR_MESSAGE);
+            Assertions.assertDoesNotThrow(() -> logger.log(level, message, (Object[]) args), LOG_ERROR_MESSAGE);
+            Assertions.assertDoesNotThrow(() -> logger.log(level, message, THROW, (Object[]) args), LOG_ERROR_MESSAGE);
         });
     }
 

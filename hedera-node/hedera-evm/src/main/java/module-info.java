@@ -17,7 +17,7 @@ module com.hedera.node.app.service.evm {
     requires com.google.common;
     requires com.sun.jna;
     requires org.bouncycastle.provider;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.service.evm.store.contracts.utils;
     exports com.hedera.node.app.service.evm.contracts.execution;

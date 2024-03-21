@@ -227,7 +227,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         // to avoid a huge burst of transactions at the start of the test
         if (lastTPSMeasureTime == 0) {
             lastTPSMeasureTime = now;
-            rampUpStartTimeMilliSeconds = (long) (now / MILLISECONDS_TO_NANOSECONDS);
+            rampUpStartTimeMilliSeconds = now / MILLISECONDS_TO_NANOSECONDS;
             logger.info(
                     STARTUP.getMarker(),
                     "First time calling generateTransactions() Expected TPS per code is {}",

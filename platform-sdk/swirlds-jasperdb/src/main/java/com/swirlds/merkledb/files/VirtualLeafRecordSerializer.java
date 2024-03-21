@@ -43,7 +43,7 @@ import java.util.Objects;
  *
  * <p>Protobuf schema:
  *
- * <p><pre>
+ * <pre>
  * message LeafRecord {
  *
  *     // Virtual node path
@@ -55,7 +55,7 @@ import java.util.Objects;
  *     // Virtual value
  *     bytes value = 3;
  * }
- * </pre>>
+ * </pre>
  */
 public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue>
         implements DataItemSerializer<VirtualLeafRecord<K, V>> {

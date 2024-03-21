@@ -3,7 +3,7 @@ module com.hedera.node.app.spi {
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.spi;
     exports com.hedera.node.app.spi.fees;

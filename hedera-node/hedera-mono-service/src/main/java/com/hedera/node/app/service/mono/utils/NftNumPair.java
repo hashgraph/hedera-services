@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.service.mono.utils;
 
-import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-
+import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import java.util.Objects;
 
@@ -39,7 +38,7 @@ public record NftNumPair(long tokenNum, long serialNum) {
     @Override
     public String toString() {
         return String.format(
-                "%d.%d.%d.%d", STATIC_PROPERTIES.getShard(), STATIC_PROPERTIES.getRealm(), tokenNum, serialNum);
+                "%d.%d.%d.%d", StaticProperties.getShard(), StaticProperties.getRealm(), tokenNum, serialNum);
     }
 
     @Override

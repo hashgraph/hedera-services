@@ -45,7 +45,6 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/** {@inheritDoc} */
 @Singleton
 public class RecordedStorageFeeCharging implements StorageFeeCharging {
     private static final List<Builder> NO_SIDECARS = Collections.emptyList();

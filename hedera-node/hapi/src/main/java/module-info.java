@@ -58,6 +58,6 @@ module com.hedera.node.hapi {
     requires transitive io.grpc;
     requires grpc.protobuf;
     requires org.antlr.antlr4.runtime;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
     requires static java.annotation;
 }

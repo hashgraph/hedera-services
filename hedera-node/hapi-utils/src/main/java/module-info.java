@@ -35,6 +35,6 @@ module com.hedera.node.app.hapi.utils {
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.nativelib.secp256k1;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
 }

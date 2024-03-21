@@ -59,7 +59,7 @@ public class IterableStorageManager {
      *
      * <p>Besides updating the first keys of these linked lists in the scoped accounts, also updates the
      * slots used per contract via
-     * {@link HandleHederaOperations#updateStorageMetadata(long, Bytes, int)}.
+     * {@link HandleHederaOperations#updateStorageMetadata(ContractID, Bytes, int)}.
      *
      * @param enhancement the enhancement for the current transaction
      * @param allAccesses the pending changes to storage values

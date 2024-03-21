@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUti
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numFromEvmAddress;
 
+import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -190,7 +191,7 @@ public class EntityNum implements Comparable<EntityNum> {
     }
 
     static boolean areValidNums(final long shard, final long realm) {
-        return shard == STATIC_PROPERTIES.getShard() && realm == STATIC_PROPERTIES.getRealm();
+        return shard == StaticProperties.getShard() && realm == StaticProperties.getRealm();
     }
 
     @Override

@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.config.MockHederaNumbers;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
@@ -43,11 +44,11 @@ class StaticPropertiesHolderTest {
         given(pretendNumbers.realm()).willReturn(0L);
 
         // when:
-        STATIC_PROPERTIES.configureNumbers(pretendNumbers, 100);
+        StaticPropertiesHolder.configureNumbers(pretendNumbers, 100);
 
         // then:
-        assertEquals(0L, STATIC_PROPERTIES.getShard());
-        assertEquals(0L, STATIC_PROPERTIES.getRealm());
+        assertEquals(0L, StaticProperties.getShard());
+        assertEquals(0L, StaticProperties.getRealm());
         assertEquals(expectedAccount, STATIC_PROPERTIES.scopedAccountWith(3L));
         assertEquals(expectedToken, STATIC_PROPERTIES.scopedTokenWith(3L));
         assertEquals(expectedSchedule, STATIC_PROPERTIES.scopedScheduleWith(3L));
@@ -64,6 +65,6 @@ class StaticPropertiesHolderTest {
 
     @AfterEach
     void cleanup() {
-        STATIC_PROPERTIES.configureNumbers(defaultNumbers, 100);
+        StaticPropertiesHolder.configureNumbers(defaultNumbers, 100);
     }
 }

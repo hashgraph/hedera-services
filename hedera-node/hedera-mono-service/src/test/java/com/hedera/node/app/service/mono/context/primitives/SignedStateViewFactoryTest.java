@@ -130,7 +130,7 @@ class SignedStateViewFactoryTest {
         given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
         given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
         given(state.isInitialized()).willReturn(true);
-        assertTrue(factory.isUsable(state));
+        assertTrue(SignedStateViewFactory.isUsable(state));
     }
 
     @Test
@@ -138,13 +138,13 @@ class SignedStateViewFactoryTest {
         given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
         given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
         given(state.isInitialized()).willReturn(false);
-        assertFalse(factory.isUsable(state));
+        assertFalse(SignedStateViewFactory.isUsable(state));
 
         given(state.getStateVersion()).willReturn(StateVersions.MINIMUM_SUPPORTED_VERSION);
-        assertFalse(factory.isUsable(state));
+        assertFalse(SignedStateViewFactory.isUsable(state));
 
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
-        assertFalse(factory.isUsable(state));
+        assertFalse(SignedStateViewFactory.isUsable(state));
     }
 
     @Test
@@ -155,7 +155,7 @@ class SignedStateViewFactoryTest {
         given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
         given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
         given(state.isInitialized()).willReturn(true);
-        assertTrue(factory.isUsable(state));
+        assertTrue(SignedStateViewFactory.isUsable(state));
         assertDoesNotThrow(() -> factory.tryToUpdateToLatestSignedChildren(childrenToUpdate));
         assertChildrenAreExpectedMocks(childrenToUpdate);
     }
@@ -164,7 +164,7 @@ class SignedStateViewFactoryTest {
     void throwsIfUpdatedWithInvalidState() {
         given(platform.getLatestImmutableState(notNull())).willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
-        assertFalse(factory.isUsable(state));
+        assertFalse(SignedStateViewFactory.isUsable(state));
         assertThrows(
                 NoValidSignedStateException.class,
                 () -> factory.tryToUpdateToLatestSignedChildren(new MutableStateChildren()));
@@ -174,7 +174,7 @@ class SignedStateViewFactoryTest {
     void returnsEmptyWhenGettingFromInvalidState() {
         given(platform.getLatestImmutableState(notNull())).willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
-        assertFalse(factory.isUsable(state));
+        assertFalse(SignedStateViewFactory.isUsable(state));
         final var children = factory.childrenOfLatestSignedState();
         assertEquals(Optional.empty(), children);
     }
@@ -241,7 +241,7 @@ class SignedStateViewFactoryTest {
         given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
         given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
         given(state.isInitialized()).willReturn(true);
-        assertTrue(factory.isUsable(state));
+        assertTrue(SignedStateViewFactory.isUsable(state));
         given(platform.getLatestImmutableState(notNull())).willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         final var stateView = factory.latestSignedStateView();
         assertFalse(stateView.isEmpty());
@@ -250,7 +250,7 @@ class SignedStateViewFactoryTest {
     @Test
     void failsToConstructStateViewIfChildrenEmpty() {
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
-        assertFalse(factory.isUsable(state));
+        assertFalse(SignedStateViewFactory.isUsable(state));
         given(platform.getLatestImmutableState(notNull())).willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         final var stateView = factory.latestSignedStateView();
         assertTrue(stateView.isEmpty());

@@ -63,7 +63,7 @@ public class LockSuite extends HapiSuite {
      * <p>As a `lock-key` holder, I want to lock a subset of the currently held unpartitioned
      * unlocked fungible tokens held by a user's account without requiring the user's signature.
      * If an account has `x` unlocked tokens, then the number of tokens that can be additionally
-     * locked is governed by: `0 <= number_of_tokens_to_be_locked <= x`.
+     * locked is governed by: `0 &#60;= number_of_tokens_to_be_locked &#60;= x`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
@@ -92,7 +92,7 @@ public class LockSuite extends HapiSuite {
      * <p>As a `lock-key` holder, I want to lock a subset of the currently held unlocked fungible
      * tokens held by a user's account in a partition without requiring the user's signature.
      * If an account has `x` unlocked tokens, then the number of tokens that can be additionally
-     * locked is governed by: `0 <= number_of_tokens_to_be_locked <= x`.
+     * locked is governed by: `0 &#60;= number_of_tokens_to_be_locked &#60;= x`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
@@ -115,7 +115,7 @@ public class LockSuite extends HapiSuite {
      * <p>As a `lock-key` holder, I want to unlock a subset of the currently held unpartitioned locked
      * fungible tokens held by a user's account without requiring the user's signature.
      * If an account has `x` locked tokens, then the number of tokens that can be additionally
-     * unlocked is governed by: `0 <= number_of_locked_tokens <= x`.
+     * unlocked is governed by: `0 &#60;= number_of_locked_tokens &#60;= x`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
@@ -140,7 +140,7 @@ public class LockSuite extends HapiSuite {
      * <p>As a `lock-key` holder, I want to unlock a subset of the currently held locked fungible tokens
      * held by a user's account in a partition without requiring the user's signature.
      * If an account has `x` locked tokens in a partition, then the number of tokens that can be
-     * additionally unlocked is governed by: `0 <= number_of_locked_tokens <= x`.
+     * additionally unlocked is governed by: `0 &#60;= number_of_locked_tokens &#60;= x`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */

@@ -18,6 +18,10 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Hedera Services API Utilities"
 
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.compileJava { options.compilerArgs.add("-Xlint:-exports") }
+
 mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {

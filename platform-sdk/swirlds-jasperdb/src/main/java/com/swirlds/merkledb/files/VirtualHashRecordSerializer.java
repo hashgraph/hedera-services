@@ -39,7 +39,7 @@ import java.nio.ByteBuffer;
  *
  * <p>Protobuf schema:
  *
- * <p><pre>
+ * <pre>
  * message HashRecord {
  *
  *     // Virtual node path
@@ -48,7 +48,7 @@ import java.nio.ByteBuffer;
  *     // Hash. Always DigestType.SHA_384 for now
  *     bytes hash = 2;
  * }
- * </pre>>
+ * </pre>
  */
 public final class VirtualHashRecordSerializer implements DataItemSerializer<VirtualHashRecord> {
 

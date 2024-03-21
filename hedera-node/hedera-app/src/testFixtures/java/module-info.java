@@ -16,5 +16,5 @@ module com.hedera.node.app.test.fixtures {
     requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core;
     requires org.assertj.core;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

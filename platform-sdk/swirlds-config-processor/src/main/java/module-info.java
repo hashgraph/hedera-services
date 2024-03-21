@@ -6,6 +6,6 @@ module com.swirlds.config.processor {
     requires com.squareup.javapoet;
     requires java.compiler;
     requires transitive org.antlr.antlr4.runtime;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
     requires static com.google.auto.service;
 }

@@ -44,7 +44,6 @@ dependencies.components {
             "com.google.code.findbugs:jsr305",
             "com.google.errorprone:error_prone_annotations",
             "com.google.guava:listenablefuture",
-            "com.google.j2objc:j2objc-annotations",
             "org.checkerframework:checker-compat-qual",
             "org.checkerframework:checker-qual",
             "org.codehaus.mojo:animal-sniffer-annotations"
@@ -82,9 +81,6 @@ dependencies.components {
     withModule<RemoveDependenciesMetadataRule>("com.github.ben-manes.caffeine:caffeine") {
         params(annotationLibraries)
     }
-    withModule<RemoveDependenciesMetadataRule>("com.github.spotbugs:spotbugs-annotations") {
-        params(annotationLibraries)
-    }
     withModule<RemoveDependenciesMetadataRule>("com.google.dagger:dagger-compiler") {
         params(annotationLibraries)
     }
@@ -95,7 +91,11 @@ dependencies.components {
         params(annotationLibraries)
     }
     withModule<RemoveDependenciesMetadataRule>("com.google.guava:guava") {
-        params(annotationLibraries)
+        params(
+            annotationLibraries -
+                "com.google.code.findbugs:jsr305" -
+                "com.google.errorprone:error_prone_annotations"
+        )
     }
     withModule<RemoveDependenciesMetadataRule>("com.google.protobuf:protobuf-java-util") {
         params(annotationLibraries)
@@ -123,13 +123,17 @@ dependencies.components {
     withModule<RemoveDependenciesMetadataRule>("junit:junit") {
         params(listOf("org.hamcrest:hamcrest-core"))
     }
+
+    withModule<AddDependenciesMetadataRule>("org.hyperledger.besu:secp256k1") {
+        params(listOf("net.java.dev.jna:jna"))
+    }
 }
 
 // Fix or enhance the 'module-info.class' of third-party Modules. This is about the
 // 'module-info.class' inside the Jar files. In our full Java Modules setup every
 // Jar needs to have this file. If it is missing, it is added by what is configured here.
 extraJavaModuleInfo {
-    failOnAutomaticModules.set(true) // Only allow Jars with 'module-info' on all module paths
+    failOnAutomaticModules = true // Only allow Jars with 'module-info' on all module paths
 
     module("io.grpc:grpc-netty", "grpc.netty") {
         exportAllPackages()
@@ -145,8 +149,13 @@ extraJavaModuleInfo {
     module("io.grpc:grpc-services", "grpc.services")
     module("io.grpc:grpc-protobuf", "grpc.protobuf")
     module("io.grpc:grpc-protobuf-lite", "grpc.protobuf.lite")
-    module("javax.annotation:javax.annotation-api", "java.annotation")
     module("com.github.spotbugs:spotbugs-annotations", "com.github.spotbugs.annotations")
+    module("com.google.code.findbugs:jsr305", "java.annotation") {
+        exportAllPackages()
+        mergeJar("javax.annotation:javax.annotation-api")
+    }
+    module("com.google.errorprone:error_prone_annotations", "com.google.errorprone.annotations")
+    module("com.google.j2objc:j2objc-annotations", "com.google.j2objc.annotations")
     module("com.google.protobuf:protobuf-java", "com.google.protobuf") {
         exportAllPackages()
         requireAllDefinedDependencies()
@@ -157,14 +166,12 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
         requires("java.logging")
     }
-    module("com.google.guava:failureaccess", "com.google.guava.failureaccess")
+    module("com.google.guava:failureaccess", "com.google.common.util.concurrent.internal")
     module("com.google.api.grpc:proto-google-common-protos", "com.google.api.grpc.common")
     module("com.google.dagger:dagger", "dagger")
     module("io.perfmark:perfmark-api", "io.perfmark")
     module("javax.inject:javax.inject", "javax.inject")
-    //    module("org.apache.commons:commons-lang3", "org.apache.commons.lang3")
     module("commons-codec:commons-codec", "org.apache.commons.codec")
-    //    module("commons-io:commons-io", "org.apache.commons.io")
     module("org.apache.commons:commons-math3", "org.apache.commons.math3")
     module("org.apache.commons:commons-collections4", "org.apache.commons.collections4")
     module("com.esaulpaugh:headlong", "headlong")
@@ -202,7 +209,11 @@ extraJavaModuleInfo {
     module("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.nativelib.blake2bf")
     module("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.nativelib.bls12_381")
     module("org.hyperledger.besu:besu-datatypes", "org.hyperledger.besu.datatypes")
-    module("org.hyperledger.besu:evm", "org.hyperledger.besu.evm")
+    module("org.hyperledger.besu:evm", "org.hyperledger.besu.evm") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+        requiresStatic("com.fasterxml.jackson.annotation")
+    }
     module("org.hyperledger.besu:plugin-api", "org.hyperledger.besu.plugin.api")
     module("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.nativelib.secp256k1")
     module("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.nativelib.secp256r1")
@@ -276,7 +287,6 @@ extraJavaModuleInfo {
         requires("java.compiler")
     }
     module("junit:junit", "junit")
-    //    module("org.apache.commons:commons-compress", "org.apache.commons.compress")
     module("org.hamcrest:hamcrest", "org.hamcrest")
     module("org.json:json", "org.json")
     module("org.mockito:mockito-core", "org.mockito")

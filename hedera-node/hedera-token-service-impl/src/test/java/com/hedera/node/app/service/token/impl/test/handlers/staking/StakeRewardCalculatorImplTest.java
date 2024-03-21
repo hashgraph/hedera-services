@@ -76,14 +76,16 @@ class StakeRewardCalculatorImplTest {
 
     @Test
     void zeroRewardsForMissingNodeStakeInfo() {
-        final var reward = subject.computeRewardFromDetails(Account.newBuilder().build(), null, 321, 123);
+        final var reward = StakeRewardCalculatorImpl.computeRewardFromDetails(
+                Account.newBuilder().build(), null, 321, 123);
         assertEquals(0, reward);
     }
 
     @Test
     void zeroRewardsForDeletedNodeStakeInfo() {
         final var stakingInfo = StakingNodeInfo.newBuilder().deleted(true).build();
-        final var reward = subject.computeRewardFromDetails(Account.newBuilder().build(), stakingInfo, 321, 123);
+        final var reward = StakeRewardCalculatorImpl.computeRewardFromDetails(
+                Account.newBuilder().build(), stakingInfo, 321, 123);
         assertEquals(0, reward);
     }
 

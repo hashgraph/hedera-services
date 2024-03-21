@@ -145,5 +145,5 @@ module com.swirlds.platform.core {
     requires jdk.net;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

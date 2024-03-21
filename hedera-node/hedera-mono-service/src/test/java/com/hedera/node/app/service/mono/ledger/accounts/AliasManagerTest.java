@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
@@ -82,8 +83,8 @@ class AliasManagerTest {
 
     @Test
     void non20ByteStringCannotBeMirror() {
-        assertFalse(subject.isMirror(new byte[] {(byte) 0xab, (byte) 0xcd}));
-        assertFalse(subject.isMirror(unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbbde")));
+        assertFalse(HederaEvmContractAliases.isMirror(new byte[] {(byte) 0xab, (byte) 0xcd}));
+        assertFalse(HederaEvmContractAliases.isMirror(unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbbde")));
     }
 
     @Test

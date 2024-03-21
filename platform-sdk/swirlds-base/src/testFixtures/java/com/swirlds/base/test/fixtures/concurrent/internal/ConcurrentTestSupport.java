@@ -122,6 +122,7 @@ public class ConcurrentTestSupport implements TestExecutor, AutoCloseable {
      */
     @NonNull
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public final <V> List<V> submitAndWait(@NonNull final Callable<V>... callable) {
         Objects.requireNonNull(callable, "callable must not be null");
         return submitAndWait(List.of(callable));

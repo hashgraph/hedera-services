@@ -51,7 +51,7 @@ class CryptoFeeBuilderTest {
         final var serviceFee = feeBuilder().setRbh(6L);
 
         final var defaultCryptoCreate = CryptoCreateTransactionBody.getDefaultInstance();
-        var feeData = subject.getCryptoCreateTxFeeMatrices(
+        var feeData = CryptoFeeBuilder.getCryptoCreateTxFeeMatrices(
                 txBuilder().setCryptoCreateAccount(defaultCryptoCreate).build(), sigValueObj);
         assertEquals(networkFee, feeData.getNetworkdata());
         assertEquals(nodeFee, feeData.getNodedata());
@@ -60,7 +60,7 @@ class CryptoFeeBuilderTest {
         final var cryptoCreate = CryptoCreateTransactionBody.newBuilder()
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1000L))
                 .setNewRealmAdminKey(Key.getDefaultInstance());
-        feeData = subject.getCryptoCreateTxFeeMatrices(
+        feeData = CryptoFeeBuilder.getCryptoCreateTxFeeMatrices(
                 txBuilder().setCryptoCreateAccount(cryptoCreate).build(), sigValueObj);
         assertEquals(networkFee, feeData.getNetworkdata());
         assertEquals(nodeFee, feeData.getNodedata());
@@ -85,7 +85,7 @@ class CryptoFeeBuilderTest {
 
     @Test
     void getsCorrectCostTransactionRecordQueryFeeMatrices() {
-        assertEquals(FeeData.getDefaultInstance(), subject.getCostTransactionRecordQueryFeeMatrices());
+        assertEquals(FeeData.getDefaultInstance(), CryptoFeeBuilder.getCostTransactionRecordQueryFeeMatrices());
     }
 
     @Test
@@ -133,12 +133,12 @@ class CryptoFeeBuilderTest {
 
     @Test
     void getsCorrectCostCryptoAccountRecordsQueryFeeMatrices() {
-        assertEquals(FeeData.getDefaultInstance(), subject.getCostCryptoAccountRecordsQueryFeeMatrices());
+        assertEquals(FeeData.getDefaultInstance(), CryptoFeeBuilder.getCostCryptoAccountRecordsQueryFeeMatrices());
     }
 
     @Test
     void getsCorrectCostCryptoAccountInfoQueryFeeMatrices() {
-        assertEquals(FeeData.getDefaultInstance(), subject.getCostCryptoAccountInfoQueryFeeMatrices());
+        assertEquals(FeeData.getDefaultInstance(), CryptoFeeBuilder.getCostCryptoAccountInfoQueryFeeMatrices());
     }
 
     private void assertQueryFee(final FeeData feeData, final long expectedBpr) {

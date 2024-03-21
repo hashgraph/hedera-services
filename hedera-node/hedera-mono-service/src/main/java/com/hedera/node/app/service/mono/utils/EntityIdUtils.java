@@ -24,6 +24,7 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -314,7 +315,7 @@ public final class EntityIdUtils {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.getEvmAddress();
             final var evmAddress = alias.toByteArray();
-            if (aliasManager.isMirror(evmAddress)) {
+            if (HederaEvmContractAliases.isMirror(evmAddress)) {
                 return EntityNum.fromLong(numOfMirror(evmAddress));
             }
             if (aliasObs != null) {
@@ -339,7 +340,7 @@ public final class EntityIdUtils {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.getAlias();
             final var evmAddress = alias.toByteArray();
-            if (aliasManager.isMirror(evmAddress)) {
+            if (HederaEvmContractAliases.isMirror(evmAddress)) {
                 final var accountNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
                 return EntityNum.fromLong(accountNum);
             }

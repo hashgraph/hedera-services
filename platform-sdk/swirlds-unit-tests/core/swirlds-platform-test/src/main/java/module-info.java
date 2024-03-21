@@ -11,5 +11,5 @@ open module com.swirlds.platform.test {
     requires java.desktop;
     requires org.junit.jupiter.api;
     requires org.mockito;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

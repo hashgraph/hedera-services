@@ -22,5 +22,5 @@ module com.hedera.node.app.service.mono.test.fixtures {
     requires net.i2p.crypto.eddsa;
     requires org.junit.jupiter.api;
     requires org.mockito;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

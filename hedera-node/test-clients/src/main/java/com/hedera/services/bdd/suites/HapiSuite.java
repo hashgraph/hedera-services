@@ -297,6 +297,7 @@ public abstract class HapiSuite {
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     protected final List<HapiSpec> allOf(final List<HapiSpec>... specLists) {
         return Arrays.stream(specLists).flatMap(List::stream).toList();
     }

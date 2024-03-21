@@ -183,6 +183,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
      * @deprecated This method should be deleted when we are no longer supporting the previous event serialization
      * format.
      */
+    @Deprecated(forRemoval = true)
     public void updateOtherParentEventDescriptor(@NonNull final BaseEventHashedData event) {
         if (event.hasOtherParent()) {
             if (otherId == null) {

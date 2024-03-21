@@ -27,6 +27,7 @@ import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
@@ -150,7 +151,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 
     @Override
     protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
-        return spec.fees().forOp(HederaFunctionality.ContractGetRecords, fees.getCostForQueryByIdOnly());
+        return spec.fees().forOp(HederaFunctionality.ContractGetRecords, FeeBuilder.getCostForQueryByIdOnly());
     }
 
     @Override

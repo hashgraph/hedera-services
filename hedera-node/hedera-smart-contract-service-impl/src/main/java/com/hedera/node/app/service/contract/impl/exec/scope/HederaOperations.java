@@ -111,7 +111,6 @@ public interface HederaOperations {
 
     /**
      * Returns the lazy creation cost within this scope.
-     * @param recipient the recipient contract address
      *
      * @param recipient the recipient contract address
      * @return the lazy creation cost in gas

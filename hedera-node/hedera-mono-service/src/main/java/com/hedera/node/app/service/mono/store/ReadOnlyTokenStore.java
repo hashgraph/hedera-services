@@ -62,8 +62,6 @@ import org.apache.commons.lang3.tuple.Pair;
  * Note that in the third case, there <i>is</i> one valid use of the token; namely, in an update
  * transaction whose only purpose is to manually renew the expired token. Such update transactions
  * must use a dedicated expiry-extension service, which will be implemented before TokenUpdate.
- *
- * <p>
  */
 public class ReadOnlyTokenStore {
     protected final AccountStore accountStore;

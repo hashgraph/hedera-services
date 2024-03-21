@@ -41,9 +41,6 @@ public class ServiceApiFactory {
         this.configuration = requireNonNull(configuration);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public <C> C getApi(@NonNull final Class<C> apiInterface) throws IllegalArgumentException {
         requireNonNull(apiInterface);
         final var provider = API_PROVIDER.get(apiInterface);

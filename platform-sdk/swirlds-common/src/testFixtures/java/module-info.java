@@ -23,5 +23,5 @@ open module com.swirlds.common.test.fixtures {
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;
     requires org.junit.jupiter.api;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

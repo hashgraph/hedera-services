@@ -33,6 +33,7 @@ import java.util.Objects;
  * @deprecated Use ProtoLong and ProtoLong.PROTOBUF instead of Long and this codec.
  */
 @SuppressWarnings("Singleton")
+@Deprecated(forRemoval = true)
 class TestLongCodec implements Codec<Long> {
     public static final TestLongCodec SINGLETON = new TestLongCodec();
 

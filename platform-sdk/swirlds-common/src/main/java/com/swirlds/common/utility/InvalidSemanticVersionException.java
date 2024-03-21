@@ -21,28 +21,16 @@ package com.swirlds.common.utility;
  */
 public class InvalidSemanticVersionException extends RuntimeException {
 
-    /**
-     * {@inheritDoc}
-     */
     public InvalidSemanticVersionException() {}
 
-    /**
-     * {@inheritDoc}
-     */
     public InvalidSemanticVersionException(final String message) {
         super(message);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public InvalidSemanticVersionException(final String message, final Throwable cause) {
         super(message, cause);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public InvalidSemanticVersionException(final Throwable cause) {
         super(cause);
     }

@@ -151,16 +151,16 @@ module com.swirlds.common {
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive io.prometheus.simpleclient;
+    requires transitive jdk.httpserver;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;
     requires com.sun.jna;
     requires io.github.classgraph;
     requires io.prometheus.simpleclient.httpserver;
     requires java.desktop;
-    requires jdk.httpserver;
     requires jdk.management;
     requires org.apache.logging.log4j.core;
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.nativelib.secp256k1;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

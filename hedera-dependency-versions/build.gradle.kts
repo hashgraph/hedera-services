@@ -54,7 +54,7 @@ moduleInfo {
     version("com.github.spotbugs.annotations", "4.7.3")
     version("com.google.auto.service", "1.1.1")
     version("com.google.auto.service.processor", "1.1.1")
-    version("com.google.common", "31.1-jre")
+    version("com.google.common", "33.0.0-jre")
     version("com.google.jimfs", "1.2")
     version("com.google.protobuf", protobufVersion)
     version("com.google.protobuf.util", protobufVersion)
@@ -77,7 +77,7 @@ moduleInfo {
     version("io.prometheus.simpleclient", prometheusVersion)
     version("io.prometheus.simpleclient.httpserver", prometheusVersion)
     version("jakarta.inject", "2.0.1")
-    version("java.annotation", "1.3.2")
+    version("java.annotation", "3.0.2")
     version("javax.inject", "1")
     version("lazysodium.java", "5.1.1")
     version("net.i2p.crypto.eddsa", "0.3.0")
@@ -114,4 +114,8 @@ moduleInfo {
     version("tuweni.units", tuweniVersion)
     version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
     version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
+}
+
+dependencies.constraints {
+    api("javax.annotation:javax.annotation-api:1.3.2")
 }

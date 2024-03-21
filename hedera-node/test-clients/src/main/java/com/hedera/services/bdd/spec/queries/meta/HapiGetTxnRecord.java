@@ -40,6 +40,7 @@ import com.esaulpaugh.headlong.abi.ABIJSON;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -1034,7 +1035,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     @Override
     protected long costOnlyNodePayment(final HapiSpec spec) throws Throwable {
         return spec.fees()
-                .forOp(HederaFunctionality.TransactionGetRecord, cryptoFees.getCostTransactionRecordQueryFeeMatrices());
+                .forOp(
+                        HederaFunctionality.TransactionGetRecord,
+                        CryptoFeeBuilder.getCostTransactionRecordQueryFeeMatrices());
     }
 
     @Override

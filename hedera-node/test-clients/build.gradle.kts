@@ -23,6 +23,23 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
+sourceSets {
+    // Needed because "resource" directory is misnamed. See
+    // https://github.com/hashgraph/hedera-services/issues/3361
+    main { resources { srcDir("src/main/resource") } }
+
+    create("rcdiff")
+    create("yahcli")
+}
+
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.compileJava { options.compilerArgs.add("-Xlint:-exports,-lossy-conversions") }
+
+tasks.named<JavaCompile>("compileYahcliJava") {
+    options.compilerArgs.add("-Xlint:-lossy-conversions")
+}
+
 mainModuleInfo { runtimeOnly("org.junit.platform.launcher") }
 
 itestModuleInfo {
@@ -40,15 +57,6 @@ eetModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.testcontainers")
     requires("org.testcontainers.junit.jupiter")
-}
-
-sourceSets {
-    // Needed because "resource" directory is misnamed. See
-    // https://github.com/hashgraph/hedera-services/issues/3361
-    main { resources { srcDir("src/main/resource") } }
-
-    create("rcdiff")
-    create("yahcli")
 }
 
 // The following tasks run the 'HapiTestEngine' tests (residing in src/main/java).

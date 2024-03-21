@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
 import static com.hedera.node.app.service.mono.utils.EntityNum.*;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -128,7 +129,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
             final var alias = idOrAlias.getAlias();
             if (isOfEvmAddressSize(alias)) {
                 final var evmAddress = alias.toByteArray();
-                if (aliasManager.isMirror(evmAddress)) {
+                if (HederaEvmContractAliases.isMirror(evmAddress)) {
                     return lookupAccountByNumber(EntityNum.fromMirror(evmAddress), linkedRefs);
                 }
             }

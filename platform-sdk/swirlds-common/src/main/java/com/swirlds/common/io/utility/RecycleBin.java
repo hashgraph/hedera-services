@@ -34,7 +34,7 @@ public interface RecycleBin extends Startable {
 
     /**
      * Remove a file or directory tree from its current location and move it to a temporary location.
-     * <p></p>
+     * <p>
      * Recycled data will persist in the temporary location for an unspecified amount of time, perhaps even no time at
      * all. Files in this temporary location may be deleted at any time without warning. It is never ok to write code
      * that depends on the existence of files in this temporary location. Files in this temporary location should be

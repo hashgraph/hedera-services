@@ -21,23 +21,14 @@ import com.swirlds.logging.legacy.LogMarker;
 
 public class DispatchException extends PlatformException {
 
-    /**
-     * {@inheritDoc}
-     */
     public DispatchException(final String message) {
         super(message, LogMarker.EXCEPTION);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public DispatchException(final String message, final Throwable cause) {
         super(message, cause, LogMarker.EXCEPTION);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public DispatchException(final Throwable cause) {
         super(cause, LogMarker.EXCEPTION);
     }

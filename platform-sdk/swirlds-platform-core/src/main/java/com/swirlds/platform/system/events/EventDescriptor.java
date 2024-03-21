@@ -85,8 +85,8 @@ public class EventDescriptor implements SelfSerializable {
      * @param hash        the hash of the event
      * @param generation  the age of an event, smaller is older
      * @param birthRound  the round when the event was created
-     * @deprecated (since = "0.46.0", forRemoval = true)
      */
+    @Deprecated(since = "0.46.0", forRemoval = true)
     protected EventDescriptor(@NonNull final Hash hash, final long generation, final long birthRound) {
         this.hash = Objects.requireNonNull(hash, "hash must not be null");
         this.generation = generation;
@@ -98,8 +98,8 @@ public class EventDescriptor implements SelfSerializable {
      * Set the creator node of the event. This is package protected to only allow related classes to use it.
      *
      * @param creator the creator node id
-     * @deprecated (since = "0.46.0", forRemoval = true)
      */
+    @Deprecated(since = "0.46.0", forRemoval = true)
     protected void setCreator(@NonNull final NodeId creator) {
         this.creator = Objects.requireNonNull(creator, "creator must not be null");
     }

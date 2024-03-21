@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.service.mono.files;
 
-import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-
+import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.files.store.BytesStoreAdapter;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.utility.CommonUtils;
@@ -55,7 +54,7 @@ public final class MetadataMapFactory {
         assert flag;
 
         return FileID.newBuilder()
-                .setShardNum(STATIC_PROPERTIES.getShard())
+                .setShardNum(StaticProperties.getShard())
                 .setRealmNum(Long.parseLong(matcher.group(REALM_INDEX)))
                 .setFileNum(Long.parseLong(matcher.group(ACCOUNT_INDEX)))
                 .build();

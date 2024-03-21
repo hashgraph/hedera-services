@@ -317,7 +317,7 @@ public class EndOfStakingPeriodUpdaterTest {
         final var expectedMidnightTime =
                 Timestamp.newBuilder().seconds(1653609599L).nanos(expectedNanos).build();
 
-        Assertions.assertThat(subject.lastInstantOfPreviousPeriodFor(consensusTime))
+        Assertions.assertThat(EndOfStakingPeriodUpdater.lastInstantOfPreviousPeriodFor(consensusTime))
                 .isEqualTo(expectedMidnightTime);
     }
 

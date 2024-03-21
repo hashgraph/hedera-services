@@ -21,7 +21,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A simple triple of objects.
- * <p>
+ *
  * @param left value for the left object
  * @param middle value for the middle object
  * @param right value for the right object

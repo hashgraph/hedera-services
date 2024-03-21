@@ -520,6 +520,7 @@ public class DumpFilesSubcommand {
      */
     @SafeVarargs
     @NonNull
+    @SuppressWarnings("varargs")
     static <K, V> Map<K, V> merge(@NonNull final BinaryOperator<V> mergeFunction, @NonNull final Map<K, V>... maps) {
         return Stream.of(maps)
                 .flatMap(m -> m.entrySet().stream())

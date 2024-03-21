@@ -16,9 +16,9 @@ module com.hedera.node.app.service.token {
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
+    requires transitive org.apache.logging.log4j;
     requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.evm;
-    requires com.github.spotbugs.annotations;
     requires com.swirlds.common;
-    requires transitive org.apache.logging.log4j;
+    requires static transitive com.github.spotbugs.annotations;
 }

@@ -30,7 +30,7 @@ import java.util.Objects;
  *
  * <p>A range of integers specified by inclusive index at the low end, exclusive at the high end,
  * thus an empty range is from == to. (There is no check _on construction_ that this range is
- * "valid", i.e., 0 <= from, from <= to.)
+ * "valid", i.e., 0 &#60;= from, from &#60;= to.)
  *
  * @param from - inclusive
  * @param to - exclusive

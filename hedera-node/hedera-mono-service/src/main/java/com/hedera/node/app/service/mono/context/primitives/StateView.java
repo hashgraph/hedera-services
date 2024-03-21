@@ -40,6 +40,7 @@ import static java.util.Collections.unmodifiableMap;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
@@ -691,8 +692,8 @@ public class StateView {
         doBoundedIteration(view.tokenAssociations(), view.tokens(), firstRel, maxRels, (token, rel) -> {
             final var grpcRel = new RawTokenRelationship(
                             rel.getBalance(),
-                            STATIC_PROPERTIES.getShard(),
-                            STATIC_PROPERTIES.getRealm(),
+                            StaticProperties.getShard(),
+                            StaticProperties.getRealm(),
                             rel.getRelatedTokenNum(),
                             rel.isFrozen(),
                             rel.isKycGranted(),

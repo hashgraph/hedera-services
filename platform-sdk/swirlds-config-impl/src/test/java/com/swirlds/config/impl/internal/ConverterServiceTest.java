@@ -128,9 +128,9 @@ class ConverterServiceTest {
         Assertions.assertEquals(new BigInteger("789"), cs.convert("789", BigInteger.class));
 
         try {
-            URL url = new URL("https://www.example.com");
+            URL url = new URI("https://www.example.com").toURL();
             Assertions.assertEquals(url, cs.convert("https://www.example.com", URL.class));
-        } catch (MalformedURLException e) {
+        } catch (MalformedURLException | URISyntaxException e) {
             // Handle exception if URL creation fails
             Assertions.fail("Failed to create URL");
         }

@@ -202,7 +202,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                           6 account adjustments: {} tb, ${} (~{}x pure crypto)
                                         3 tokens involved,
                                           6 account adjustments: {} tb, ${} (~{}x pure crypto)
-                                                                                                  """;
+""";
     public static final String HODL_XFER = "hodlXfer";
     public static final String PAYEE_NO_SIG_REQ = "payeeNoSigReq";
     private static final String HBAR_XFER = "hbarXfer";

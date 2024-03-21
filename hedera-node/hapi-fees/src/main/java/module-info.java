@@ -23,6 +23,6 @@ module com.hedera.node.app.hapi.fees {
     requires com.fasterxml.jackson.databind;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
 }

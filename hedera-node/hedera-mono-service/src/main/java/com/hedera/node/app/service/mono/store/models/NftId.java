@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.service.mono.store.models;
 
-import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-
+import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -40,7 +39,7 @@ public record NftId(long shard, long realm, long num, long serialNo) implements 
     }
 
     public static NftId withDefaultShardRealm(final long num, final long serialNo) {
-        return new NftId(STATIC_PROPERTIES.getShard(), STATIC_PROPERTIES.getRealm(), num, serialNo);
+        return new NftId(StaticProperties.getShard(), StaticProperties.getRealm(), num, serialNo);
     }
 
     public static NftId fromGrpc(final NftID nftId) {

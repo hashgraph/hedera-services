@@ -56,11 +56,13 @@ public abstract class TestBase {
      * @return a dynamic test that runs all specs from the suites concurrently
      */
     @SafeVarargs
+    @SuppressWarnings("varargs")
     protected final DynamicTest concurrentSpecsFrom(final Supplier<HapiSuite>... suiteSuppliers) {
         return internalSpecsFrom("", Arrays.asList(suiteSuppliers), TestBase::contextualizedSpecsFromConcurrent);
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     protected final DynamicTest concurrentEthSpecsFrom(final Supplier<HapiSuite>... suiteSuppliers) {
         return internalSpecsFrom(ETH_SUFFIX, Arrays.asList(suiteSuppliers), this::contextualizedEthSpecsFromConcurrent);
     }

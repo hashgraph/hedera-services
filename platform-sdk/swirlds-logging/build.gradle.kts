@@ -21,6 +21,12 @@ plugins {
     id("com.hedera.hashgraph.benchmark-conventions")
 }
 
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.compileJava { options.compilerArgs.add("-Xlint:-exports") }
+
+tasks.compileTestFixturesJava { options.compilerArgs.add("-Xlint:-exports") }
+
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
 
 testModuleInfo {

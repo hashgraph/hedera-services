@@ -488,7 +488,7 @@ public final class JrsTestReportGenerator {
                                 <th>Data</th>
                                 <th>Notes</th>
                             </tr>
-                         """
+                        """
                         .formatted(tableId, hidden ? "none" : "block"));
 
         for (final JrsTestReportRow row : rows) {

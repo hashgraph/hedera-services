@@ -8,8 +8,8 @@ module com.swirlds.config.impl {
     requires transitive com.swirlds.config.api;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
-    requires static com.github.spotbugs.annotations;
-    requires static com.google.auto.service;
+    requires static transitive com.github.spotbugs.annotations;
+    requires static transitive com.google.auto.service;
 
     provides ConfigurationBuilderFactory with
             ConfigurationBuilderFactoryImpl;

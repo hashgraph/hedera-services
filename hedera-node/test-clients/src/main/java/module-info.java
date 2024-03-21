@@ -74,5 +74,5 @@ module com.hedera.node.test.clients {
     requires org.opentest4j;
     requires tuweni.bytes;
     requires tuweni.units;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

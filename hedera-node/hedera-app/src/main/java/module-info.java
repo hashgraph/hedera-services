@@ -44,7 +44,7 @@ module com.hedera.node.app {
     requires io.netty.transport;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app to

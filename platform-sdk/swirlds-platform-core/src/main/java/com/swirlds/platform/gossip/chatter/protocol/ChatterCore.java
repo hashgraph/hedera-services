@@ -128,7 +128,6 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
     /**
      * Creates an instance that will handle all communication with a peer
-     * <p>
      *
      * @param peerId       the peer's ID
      * @param eventHandler a handler that will send the event outside of chatter
@@ -206,7 +205,6 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
     /**
      * Notify chatter that a new event has been created
-     * <p>
      *
      * @param event the new event
      */
@@ -217,7 +215,6 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
     /**
      * Notify chatter that an event has been received and validated
-     * <p>
      *
      * @param event the event received
      */

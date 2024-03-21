@@ -17,5 +17,5 @@ module com.hedera.node.app.spi.test.fixtures {
 
     // Temporarily needed until FakePreHandleContext can be removed
     requires static com.hedera.node.app.service.token;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

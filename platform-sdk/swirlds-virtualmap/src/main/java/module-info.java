@@ -22,5 +22,5 @@ open module com.swirlds.virtualmap {
     requires com.swirlds.logging;
     requires java.management; // Test dependency
     requires org.apache.logging.log4j;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

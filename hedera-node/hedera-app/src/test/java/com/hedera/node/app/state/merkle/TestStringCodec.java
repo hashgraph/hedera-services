@@ -33,6 +33,7 @@ import java.util.Objects;
  * @deprecated Use ProtoString and ProtoString.PROTOBUF instead of String and this codec.
  */
 @SuppressWarnings("Singleton")
+@Deprecated(forRemoval = true)
 class TestStringCodec implements Codec<String> {
     public static final TestStringCodec SINGLETON = new TestStringCodec();
 

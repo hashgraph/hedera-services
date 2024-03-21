@@ -361,7 +361,7 @@ class SideEffectsTrackerTest {
     void purgesZeroChangesSuccessfully() {
         final var accountNums = new long[] {100L, 200L, 300L, 400L, 200L};
         final var balanceChanges = new long[] {1000L, 2000L, 0L, 300L, -100L};
-        final var result = subject.purgeZeroChanges(accountNums, balanceChanges, 4);
+        final var result = SideEffectsTracker.purgeZeroChanges(accountNums, balanceChanges, 4);
         assertEquals(3, result);
     }
 
@@ -369,9 +369,9 @@ class SideEffectsTrackerTest {
     void includesOrderedFungibleChanges() {
         final var accountNums = new long[] {100L, 200L, 300L, 400L, 200L};
         final var balanceChanges = new long[] {1000L, 2000L, 0L, 300L, -100L};
-        var result = subject.includeOrderedFungibleChange(accountNums, balanceChanges, 4, 300L, 100L);
+        var result = SideEffectsTracker.includeOrderedFungibleChange(accountNums, balanceChanges, 4, 300L, 100L);
         assertEquals(4, result);
-        result = subject.includeOrderedFungibleChange(accountNums, balanceChanges, 4, 500L, 100L);
+        result = SideEffectsTracker.includeOrderedFungibleChange(accountNums, balanceChanges, 4, 500L, 100L);
         assertEquals(5, result);
     }
 

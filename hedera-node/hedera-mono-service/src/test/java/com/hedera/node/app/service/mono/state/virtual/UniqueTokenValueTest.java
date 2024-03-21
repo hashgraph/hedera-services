@@ -208,7 +208,7 @@ class UniqueTokenValueTest {
 
         final UniqueTokenValue src =
                 new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
-        final UniqueTokenValue copy = (UniqueTokenValue) src.copy();
+        final UniqueTokenValue copy = src.copy();
 
         // Make sure parent is immutable and not modified.
         assertThat(src.isImmutable()).isTrue();

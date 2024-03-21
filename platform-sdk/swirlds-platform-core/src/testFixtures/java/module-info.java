@@ -6,7 +6,7 @@ open module com.swirlds.platform.core.test.fixtures {
     requires com.swirlds.logging;
     requires org.apache.logging.log4j;
     requires org.junit.jupiter.api;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 
     exports com.swirlds.platform.test.fixtures.stream;
     exports com.swirlds.platform.test.fixtures.event;

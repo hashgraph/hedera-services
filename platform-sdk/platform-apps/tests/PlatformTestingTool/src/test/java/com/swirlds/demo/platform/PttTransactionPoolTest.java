@@ -45,6 +45,7 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.LifecycleStatus;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
+import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
 import com.swirlds.platform.system.Platform;
 import java.io.IOException;
 import java.time.Instant;
@@ -68,7 +69,7 @@ public class PttTransactionPoolTest {
     private static final int nodesNum = 4;
     private static PayloadConfig config = PayloadConfig.builder().build();
     private static PttTransactionPool pttTransactionPool;
-    private static MapValueFCQ fcqValue;
+    private static MapValueFCQ<TransactionRecord> fcqValue;
 
     static {
         platform = Mockito.mock(Platform.class);
@@ -79,7 +80,7 @@ public class PttTransactionPoolTest {
         handler = Mockito.mock(FCMTransactionHandler.class);
     }
 
-    private MapValueFCQ fcq;
+    private MapValueFCQ<TransactionRecord> fcq;
 
     @BeforeEach
     public void setUp() {
@@ -187,7 +188,7 @@ public class PttTransactionPoolTest {
         try {
             final PlatformTestingToolState state = new PlatformTestingToolState();
             state.setFcmFamily(fCMFamily);
-            handler.performOperation(
+            FCMTransactionHandler.performOperation(
                     trans,
                     state,
                     expectedFCMFamily,
@@ -245,7 +246,7 @@ public class PttTransactionPoolTest {
         try {
             final PlatformTestingToolState state = new PlatformTestingToolState();
             state.setFcmFamily(fCMFamily);
-            handler.performOperation(
+            FCMTransactionHandler.performOperation(
                     trans,
                     state,
                     expectedFCMFamily,

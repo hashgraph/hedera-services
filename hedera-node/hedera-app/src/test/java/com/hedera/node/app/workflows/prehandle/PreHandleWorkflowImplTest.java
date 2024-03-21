@@ -219,7 +219,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         final var transactions = list.stream();
         final var creator = NODE_1.nodeAccountID();
         workflow.preHandle(storeFactory, creator, transactions);
-        assertThat((Object) platformTx.getMetadata()).isNull();
+        Object metadata = platformTx.getMetadata();
+        assertThat(metadata).isNull();
     }
 
     /**

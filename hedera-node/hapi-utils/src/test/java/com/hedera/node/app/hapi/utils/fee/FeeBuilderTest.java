@@ -119,7 +119,7 @@ class FeeBuilderTest {
     @Test
     void assertCalculateBPT() {
         FeeBuilder feeBuilder = new FeeBuilder();
-        assertEquals(236, feeBuilder.calculateBpt());
+        assertEquals(236, FeeBuilder.calculateBpt());
     }
 
     @Test

@@ -33,13 +33,13 @@ class HederaEvmContractAliasesTest {
 
     @Test
     void non20ByteStringCannotBeMirror() {
-        assertFalse(hederaEvmContractAliases.isMirror(new byte[] {(byte) 0xab, (byte) 0xcd}));
-        assertFalse(hederaEvmContractAliases.isMirror(unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbbde")));
+        assertFalse(HederaEvmContractAliases.isMirror(new byte[] {(byte) 0xab, (byte) 0xcd}));
+        assertFalse(HederaEvmContractAliases.isMirror(unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbbde")));
     }
 
     @Test
     void with20Byte() {
-        assertTrue(hederaEvmContractAliases.isMirror(byteArray));
+        assertTrue(HederaEvmContractAliases.isMirror(byteArray));
         assertTrue(
                 hederaEvmContractAliases.isMirror(Address.fromHexString("0x000000000000000000000000000000000000071e")));
     }

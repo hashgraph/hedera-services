@@ -6,11 +6,11 @@
  *   <li><i>Be affected by</i> other tests running concurrently.
  * </ol>
  *
- * <p>An example of the first kind is a test like {@link
- * com.hedera.services.bdd.suites.file.FileUpdateSuite#chainIdChangesDynamically(), {@link
- * com.hedera.services.bdd.suites.leaky.LeakyEthereumTestsSuite#legacyUnprotectedEtxBeforeEIP155() and {@link
- * com.hedera.services.bdd.suites.leaky.LeakyEthereumTestsSuite#legacyEtxAfterEIP155()}}} that changes the
- * network's EVM {@code chainid} to a non-standard value. Any concurrent {@code EthereumCall} that
+ * <p>An example of the first kind is a test like
+ * {@link com.hedera.services.bdd.suites.file.FileUpdateSuite#chainIdChangesDynamically()},
+ * {@link com.hedera.services.bdd.suites.leaky.LeakyEthereumTestsSuite#legacyUnprotectedEtxBeforeEIP155()}
+ * and {@link com.hedera.services.bdd.suites.leaky.LeakyEthereumTestsSuite#legacyEtxAfterEIP155()}
+ * that changes the network's EVM {@code chainid} to a non-standard value. Any concurrent {@code EthereumCall} that
  * uses the standard dev {@code 298} chainid will now fail. The updated {@code chainid} "leaked"
  * out! Any test that updates system files for properties, permissions, fees, or throttles can have
  * the same kind of non-deterministic effect.

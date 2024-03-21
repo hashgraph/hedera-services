@@ -18,6 +18,10 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Token Service Implementation"
 
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.compileJava { options.compilerArgs.add("-Xlint:-exports,-lossy-conversions") }
+
 mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
