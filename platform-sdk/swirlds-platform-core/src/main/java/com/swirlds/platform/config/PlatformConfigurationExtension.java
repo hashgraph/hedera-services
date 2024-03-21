@@ -40,6 +40,7 @@ import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
@@ -51,6 +52,7 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     public Set<Class<? extends Record>> getConfigDataTypes() {
 
         // Please keep lists in this method alphabetized (enforced by unit test).

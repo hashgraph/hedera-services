@@ -19,6 +19,7 @@ package com.swirlds.config.api;
 import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Set;
 
@@ -38,6 +39,7 @@ public interface ConfigurationExtension {
      *
      * @return a collection of configuration data types
      */
+    @NonNull
     default Set<Class<? extends Record>> getConfigDataTypes() {
         return Collections.emptySet();
     }
@@ -48,6 +50,7 @@ public interface ConfigurationExtension {
      *
      * @return a collection of configuration converters
      */
+    @NonNull
     default Set<ConverterPair<?>> getConverters() {
         return Collections.emptySet();
     }
@@ -58,6 +61,7 @@ public interface ConfigurationExtension {
      *
      * @return a collection of configuration validators
      */
+    @NonNull
     default Set<ConfigValidator> getValidators() {
         return Collections.emptySet();
     }
@@ -68,11 +72,12 @@ public interface ConfigurationExtension {
      *
      * @return a collection of configuration sources
      */
+    @NonNull
     default Set<ConfigSource> getConfigSources() {
         return Collections.emptySet();
     }
 
-    record ConverterPair<T>(Class<T> type, ConfigConverter<T> converter) {
+    record ConverterPair<T>(@NonNull Class<T> type, @NonNull ConfigConverter<T> converter) {
         public static <T> ConverterPair<T> of(Class<T> type, ConfigConverter<T> converter) {
             return new ConverterPair<>(type, converter);
         }
