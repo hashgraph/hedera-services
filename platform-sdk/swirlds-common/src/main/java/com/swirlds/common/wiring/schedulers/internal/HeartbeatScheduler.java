@@ -16,6 +16,8 @@
 
 package com.swirlds.common.wiring.schedulers.internal;
 
+import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCommonHyperlink;
+
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
@@ -54,7 +56,8 @@ public class HeartbeatScheduler implements Startable, Stoppable {
         this.model = Objects.requireNonNull(model);
         this.time = Objects.requireNonNull(time);
         this.name = Objects.requireNonNull(name);
-        model.registerVertex(name, TaskSchedulerType.SEQUENTIAL, false);
+        model.registerVertex(
+                name, TaskSchedulerType.SEQUENTIAL, platformCommonHyperlink(HeartbeatScheduler.class), false);
     }
 
     /**
