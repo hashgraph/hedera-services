@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.util;
+package com.swirlds.logging.test.fixtures;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.extensions.event.LogEvent;
@@ -51,7 +51,6 @@ public class InMemoryHandler extends AbstractLogHandler {
     /**
      * Creates a new log handler.
      *
-     * @param configKey     the configuration key
      * @param configuration the configuration
      */
     public InMemoryHandler(final Configuration configuration) {
