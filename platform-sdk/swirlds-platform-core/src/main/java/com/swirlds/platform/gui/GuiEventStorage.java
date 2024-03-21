@@ -27,6 +27,7 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -35,6 +36,7 @@ import com.swirlds.platform.metrics.NoOpConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * This class is responsible for storing events utilized by the GUI.
@@ -48,9 +50,11 @@ public class GuiEventStorage {
 
     private final Consensus consensus;
     private final SimpleLinker linker;
+    private final Configuration configuration;
 
     public GuiEventStorage(@NonNull final Configuration configuration, @NonNull final AddressBook addressBook) {
 
+        this.configuration = Objects.requireNonNull(configuration);
         final PlatformContext platformContext = new DefaultPlatformContext(
                 configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
@@ -95,7 +99,8 @@ public class GuiEventStorage {
     public synchronized void handleSnapshotOverride(@NonNull final ConsensusSnapshot snapshot) {
         consensus.loadSnapshot(snapshot);
         linker.clear();
-        linker.setNonAncientThreshold(snapshot.getMinimumGenerationNonAncient(26)); // TODO setting
+        linker.setNonAncientThreshold(snapshot.getMinimumGenerationNonAncient(
+                configuration.getConfigData(ConsensusConfig.class).roundsNonAncient()));
     }
 
     /**

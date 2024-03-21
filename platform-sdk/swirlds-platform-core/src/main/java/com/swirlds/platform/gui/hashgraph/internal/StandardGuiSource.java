@@ -75,6 +75,6 @@ public class StandardGuiSource implements HashgraphGuiSource {
      */
     @Override
     public boolean isReady() {
-        return true; // TODO figure out if this is still necessary
+        return true;
     }
 }

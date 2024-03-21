@@ -31,6 +31,7 @@ import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -299,13 +300,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         this.publishPreconsensusEvents = publishPreconsensusEvents;
         this.publishSnapshotOverrides = publishSnapshotOverrides;
         if (publishPreconsensusEvents || publishSnapshotOverrides) {
-            platformPublisherWiring = new ComponentWiring<>(
-                    model,
-                    PlatformPublisher.class,
-                    model.schedulerBuilder("platformPublisher")
-                            .withType(TaskSchedulerType.SEQUENTIAL) // TODO don't build this here
-                            .build()
-                            .cast());
+            // Although with the usual pattern we don't define schedulers in this class, this is a special case.
+            // We don't want to construct this scheduler in scenarios where we aren't using a publisher, and
+            // we don't have the ability to conditionally construct the scheduler using the standard pattern.
+            final TaskScheduler<Void> publisherScheduler = model.schedulerBuilder("platformPublisher")
+                    .withType(TaskSchedulerType.SEQUENTIAL)
+                    .build()
+                    .cast();
+            platformPublisherWiring = new ComponentWiring<>(model, PlatformPublisher.class, publisherScheduler);
         } else {
             platformPublisherWiring = null;
         }
@@ -770,8 +772,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @param nonAncientEventWindow the new non-ancient event window
      */
-    // TODO can this be merged with the method that updates the consensus snapshot?
     public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+        // Future work: this method can merge with consensusSnapshotOverride
+
         eventWindowManagerWiring.manualWindowInput().inject(nonAncientEventWindow);
 
         // Since there is asynchronous access to the shadowgraph, it's important to ensure that

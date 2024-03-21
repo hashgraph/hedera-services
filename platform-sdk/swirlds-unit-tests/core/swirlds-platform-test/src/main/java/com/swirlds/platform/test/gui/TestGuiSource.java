@@ -54,7 +54,6 @@ public class TestGuiSource {
 
         intake = new TestIntake(platformContext, graphGenerator.getAddressBook());
 
-        // TODO
         guiSource = null;
         //        guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
     }

@@ -493,7 +493,7 @@ public class SwirldsPlatform implements Platform {
                 new DefaultLatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
         platformWiring = thingsToStart.add(new PlatformWiring(
-                platformContext, preconsensusEventConsumer != null, snapshotOverrideConsumer != null)); // TODO
+                platformContext, preconsensusEventConsumer != null, snapshotOverrideConsumer != null));
 
         final boolean useOldStyleIntakeQueue = eventConfig.useOldStyleIntakeQueue();
 
