@@ -109,7 +109,6 @@ import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
@@ -790,10 +789,6 @@ public class SwirldsPlatform implements Platform {
         if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {
             thingsToStart.add(new JvmAnchor(threadManager));
         }
-
-        // To be removed once the GUI component is better integrated with the platform.
-        GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteStateNexus);
-        GuiPlatformAccessor.getInstance().setLatestImmutableStateComponent(selfId, latestImmutableStateNexus);
     }
 
     /**
