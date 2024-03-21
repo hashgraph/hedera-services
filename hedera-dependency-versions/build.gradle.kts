@@ -115,6 +115,4 @@ moduleInfo {
     version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
     version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
     version("loki.log4j2", "0.9.17")
-
-
 }
