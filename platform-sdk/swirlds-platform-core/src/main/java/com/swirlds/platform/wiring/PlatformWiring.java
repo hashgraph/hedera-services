@@ -93,9 +93,9 @@ import com.swirlds.platform.wiring.components.HashLoggerWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
 import com.swirlds.platform.wiring.components.IssHandlerWiring;
 import com.swirlds.platform.wiring.components.LatestCompleteStateNotifierWiring;
+import com.swirlds.platform.wiring.components.PassThroughWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
-import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.RunningHashUpdaterWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateHasherWiring;
@@ -121,7 +121,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final WiringModel model;
 
     private final ComponentWiring<EventHasher, GossipEvent> eventHasherWiring;
-    private final PostHashCollectorWiring postHashCollectorWiring;
+    private final PassThroughWiring<GossipEvent> postHashCollectorWiring;
     private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
     private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
@@ -214,7 +214,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         }
 
         eventHasherWiring = new ComponentWiring<>(model, EventHasher.class, schedulers.eventHasherScheduler());
-        postHashCollectorWiring = PostHashCollectorWiring.create(schedulers.postHashCollectorScheduler());
+        postHashCollectorWiring =
+                new PassThroughWiring<>(model, "GossipEvent", schedulers.postHashCollectorScheduler());
         internalEventValidatorWiring = new ComponentWiring<>(
                 model, InternalEventValidator.class, schedulers.internalEventValidatorScheduler());
         eventDeduplicatorWiring =
@@ -359,9 +360,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         }
 
         gossipWiring.eventOutput().solderTo(pipelineInputWire);
-        eventHasherWiring.getOutputWire().solderTo(postHashCollectorWiring.eventInput());
+        eventHasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
         postHashCollectorWiring
-                .eventOutput()
+                .getOutputWire()
                 .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent));
         internalEventValidatorWiring
                 .getOutputWire()
@@ -748,7 +749,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     @NonNull
     public LongSupplier getIntakeQueueSizeSupplier() {
-        return postHashCollectorWiring.unprocessedTaskCountSupplier();
+        return () -> postHashCollectorWiring.getScheduler().getUnprocessedTaskCount();
     }
 
     /**

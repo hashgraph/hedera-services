@@ -24,7 +24,6 @@ import com.swirlds.logging.test.fixtures.LoggingMirror;
 import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @WithLoggingMirror
@@ -46,7 +45,6 @@ public class LoggersTest {
     }
 
     @Test
-    @Disabled
     void testLoggerCreationByNullName() {
         // given
         final String loggerName = null;
@@ -71,7 +69,6 @@ public class LoggersTest {
     }
 
     @Test
-    @Disabled
     void testLoggerCreationByNullClass() {
         // given
         final Class clazz = null;
