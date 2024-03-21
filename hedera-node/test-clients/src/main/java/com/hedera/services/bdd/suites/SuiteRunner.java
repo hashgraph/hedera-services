@@ -499,7 +499,7 @@ public class SuiteRunner {
         String[] effArgs = trueArgs(args);
         log.info("Effective args :: {}", List.of(effArgs));
 
-        ThreadDumpGenerator.generateThreadDumpAtIntervals(Path.of("./"), 120);
+        ThreadDumpGenerator.generateThreadDumpAtIntervals(Path.of("./"), 120000);
         if (Arrays.asList(effArgs).contains("-CI")) {
             var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
             var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
