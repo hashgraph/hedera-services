@@ -129,7 +129,7 @@ public class BlockNodeFileWatcherService {
         Signature sig = Signature.getInstance("SHA384withRSA", "SunRsaSign");
         sig.initVerify(restoredPublicKey);
         sig.update(
-                systemTransactions.getFirst().getStateSignature().getStateHash().toByteArray());
+                stateProof.getFirst().getEndRunningHashes().getRunningHash().toByteArray());
 
         if (!sig.verify(
                 stateProof.getFirst().getBlockSignatures(0).getSignature().toByteArray())) {
