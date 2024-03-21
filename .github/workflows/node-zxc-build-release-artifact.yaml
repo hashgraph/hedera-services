@@ -402,6 +402,7 @@ jobs:
             exit 1
           fi
 
+
   local-node-images:
     name: Publish Local Node Images
     runs-on: [ self-hosted, Linux, large, ephemeral ]
@@ -530,6 +531,7 @@ jobs:
             "linux/amd64, linux/arm64" >> "${GITHUB_STEP_SUMMARY}"
 
           printf "\n\n" >> "${GITHUB_STEP_SUMMARY}"
+
 
   evm-mc-publish:
     name: Publish EVM to Maven Central
@@ -785,6 +787,8 @@ jobs:
         run: |
           SDK_ARCHIVE_DIR="${HOME}/sdk-archives"
           gsutil -m cp -r "${SDK_ARCHIVE_DIR}"/* gs://platform-sdk-ci-release-artifacts/${RELEASE_TAG}/
+
+
 
   send-notifications:
     name: Send Release Notifications
