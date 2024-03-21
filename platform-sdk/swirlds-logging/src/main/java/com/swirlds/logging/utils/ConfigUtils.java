@@ -124,9 +124,9 @@ public class ConfigUtils {
          */
         @NonNull
         public static DataSize parseFrom(final @NonNull String value) {
-            final String result = value.replaceAll("\\s", "");
+            final String result = value.replaceAll("\\s", "").toLowerCase();
             DataUnit unit =
-                    switch (result.charAt(result.length() - 3)) {
+                    switch (result.charAt(result.length() - 2)) {
                         case 'k':
                             yield KILO_BYTE;
                         case 'm':
