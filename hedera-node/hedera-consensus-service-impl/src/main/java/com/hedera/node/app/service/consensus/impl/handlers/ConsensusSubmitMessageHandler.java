@@ -30,6 +30,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -88,7 +89,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         // If a submit key is specified on the topic, then only those transactions signed by that key can be
         // submitted to the topic. If there is no submit key, then it is not required on the transaction.
         final var submitKey = topic.submitKey();
-        if (submitKey != null) context.requireKeyOrThrow(submitKey, INVALID_SUBMIT_KEY);
+        if (topic.hasSubmitKey()) {
+            context.requireKey(submitKey);
+        }
     }
 
     /**
@@ -106,9 +109,11 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));
+
         /* Validate all needed fields in the transaction */
         final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);
+        validateTrue(topic.get().submitKey() != null, INVALID_SUBMIT_KEY);
 
         /* since we have validated topic exists, topic.get() is safe to be called */
         try {
