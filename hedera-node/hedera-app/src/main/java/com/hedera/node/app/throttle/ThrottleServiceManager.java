@@ -136,6 +136,14 @@ public class ThrottleServiceManager {
         return validatedThrottles.successStatus();
     }
 
+    /**
+     * Updates all metrics for the throttles.
+     */
+    public void updateAllMetrics() {
+        ingestThrottle.updateAllMetrics();
+        backendThrottle.updateAllMetrics();
+    }
+
     private void saveThrottleSnapshotsTo(@NonNull final WritableStates serviceStates) {
         final var hapiThrottles = backendThrottle.allActiveThrottles();
         final List<ThrottleUsageSnapshot> hapiThrottleSnapshots;

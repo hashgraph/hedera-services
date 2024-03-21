@@ -136,7 +136,7 @@ public class ThrottleAccumulator {
         this.gasThrottle = requireNonNull(gasThrottle, "gasThrottle must not be null");
 
         this.throttleMetrics = throttleMetrics;
-        this.throttleMetrics.setupGasThrottle(gasThrottle, configProvider.getConfiguration());
+        this.throttleMetrics.setupGasThrottleMetric(gasThrottle, configProvider.getConfiguration());
     }
 
     /**
@@ -309,6 +309,13 @@ public class ThrottleAccumulator {
         for (int i = 0, n = activeThrottles.size(); i < n; i++) {
             activeThrottles.get(i).resetUsageTo(snapshots.get(i));
         }
+    }
+
+    /**
+     * Updates all metrics for the active throttles and the gas throttle
+     */
+    public void updateAllMetrics() {
+        throttleMetrics.updateAllMetrics();
     }
 
     private boolean shouldThrottleTxn(
@@ -785,7 +792,7 @@ public class ThrottleAccumulator {
         activeThrottles = newActiveThrottles;
 
         final var configuration = configProvider.getConfiguration();
-        throttleMetrics.setupThrottles(activeThrottles, configuration);
+        throttleMetrics.setupThrottleMetrics(activeThrottles, configuration);
 
         logResolvedDefinitions(capacitySplitSource.getAsInt());
     }
@@ -800,7 +807,7 @@ public class ThrottleAccumulator {
             log.warn("{} gas throttling enabled, but limited to 0 gas/sec", throttleType.name());
         }
         gasThrottle = new GasLimitDeterministicThrottle(contractsConfig.maxGasPerSec());
-        throttleMetrics.setupGasThrottle(gasThrottle, configuration);
+        throttleMetrics.setupGasThrottleMetric(gasThrottle, configuration);
         log.info(
                 "Resolved {} gas throttle -\n {} gas/sec (throttling {})",
                 throttleType.name(),

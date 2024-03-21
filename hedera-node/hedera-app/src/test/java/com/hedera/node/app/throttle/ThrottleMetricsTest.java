@@ -19,6 +19,7 @@ package com.hedera.node.app.throttle;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,9 +27,10 @@ import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.metrics.api.DoubleGauge;
 import com.swirlds.metrics.api.Metrics;
 import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -49,7 +51,7 @@ class ThrottleMetricsTest {
     }
 
     @Test
-    void setupLiveMetricShouldCreateFunctionMetric(@Mock DeterministicThrottle throttle) {
+    void setupSingleLiveMetricShouldCreateMetric(@Mock DeterministicThrottle throttle) {
         // given
         when(throttle.name()).thenReturn("throttle1");
         final var configuration = HederaTestConfigBuilder.create()
@@ -58,10 +60,28 @@ class ThrottleMetricsTest {
         final var throttleMetrics = new ThrottleMetrics(metrics, ThrottleType.FRONTEND_THROTTLE);
 
         // when
-        throttleMetrics.setupThrottles(List.of(throttle), configuration);
+        throttleMetrics.setupThrottleMetrics(List.of(throttle), configuration);
 
         // then
-        verify(metrics).getOrCreate(any(FunctionGauge.Config.class));
+        verify(metrics).getOrCreate(any(DoubleGauge.Config.class));
+    }
+
+    @Test
+    void setupTwoLiveMetricsShouldCreateTwoMetrics(
+            @Mock DeterministicThrottle throttle1, @Mock DeterministicThrottle throttle2) {
+        // given
+        when(throttle1.name()).thenReturn("throttle1");
+        when(throttle2.name()).thenReturn("throttle2");
+        final var configuration = HederaTestConfigBuilder.create()
+                .withValue("stats.hapiThrottlesToSample", "throttle1,throttle2")
+                .getOrCreateConfig();
+        final var throttleMetrics = new ThrottleMetrics(metrics, ThrottleType.FRONTEND_THROTTLE);
+
+        // when
+        throttleMetrics.setupThrottleMetrics(List.of(throttle1, throttle2), configuration);
+
+        // then
+        verify(metrics, times(2)).getOrCreate(any(DoubleGauge.Config.class));
     }
 
     @Test
@@ -74,7 +94,7 @@ class ThrottleMetricsTest {
         final var throttleMetrics = new ThrottleMetrics(metrics, ThrottleType.FRONTEND_THROTTLE);
 
         // when
-        throttleMetrics.setupThrottles(List.of(throttle), configuration);
+        throttleMetrics.setupThrottleMetrics(List.of(throttle), configuration);
 
         // then
         verify(metrics, never()).getOrCreate(any());
@@ -89,14 +109,14 @@ class ThrottleMetricsTest {
         final var throttleMetrics = new ThrottleMetrics(metrics, ThrottleType.FRONTEND_THROTTLE);
 
         // when
-        throttleMetrics.setupThrottles(List.of(), configuration);
+        throttleMetrics.setupThrottleMetrics(List.of(), configuration);
 
         // then
-        verify(metrics).getOrCreate(any(FunctionGauge.Config.class));
+        verify(metrics).getOrCreate(any(DoubleGauge.Config.class));
     }
 
     @Test
-    void setupGasMetricShouldCreateFunctionGauge(@Mock GasLimitDeterministicThrottle throttle) {
+    void setupGasMetricShouldCreateMetric(@Mock GasLimitDeterministicThrottle throttle) {
         // given
         final var configuration = HederaTestConfigBuilder.create()
                 .withValue("stats.hapiThrottlesToSample", "<GAS>")
@@ -104,10 +124,10 @@ class ThrottleMetricsTest {
         final var throttleMetrics = new ThrottleMetrics(metrics, ThrottleType.FRONTEND_THROTTLE);
 
         // when
-        throttleMetrics.setupGasThrottle(throttle, configuration);
+        throttleMetrics.setupGasThrottleMetric(throttle, configuration);
 
         // then
-        verify(metrics).getOrCreate(any(FunctionGauge.Config.class));
+        verify(metrics).getOrCreate(any(DoubleGauge.Config.class));
     }
 
     @Test
@@ -119,9 +139,81 @@ class ThrottleMetricsTest {
         final var throttleMetrics = new ThrottleMetrics(metrics, ThrottleType.FRONTEND_THROTTLE);
 
         // when
-        throttleMetrics.setupGasThrottle(throttle, configuration);
+        throttleMetrics.setupGasThrottleMetric(throttle, configuration);
 
         // then
         verify(metrics, never()).getOrCreate(any());
+    }
+
+    @Test
+    void updateWithoutMetricsDoesNotFail() {
+        // given
+        final var throttleMetrics = new ThrottleMetrics(metrics, ThrottleType.FRONTEND_THROTTLE);
+
+        // then
+        Assertions.assertThatCode(throttleMetrics::updateAllMetrics).doesNotThrowAnyException();
+    }
+
+    @Test
+    void updateSingleMetricSucceeds(@Mock DeterministicThrottle throttle, @Mock DoubleGauge gauge) {
+        // given
+        when(throttle.name()).thenReturn("throttle1");
+        when(throttle.instantaneousPercentUsed()).thenReturn(Math.PI);
+        when(metrics.getOrCreate(any(DoubleGauge.Config.class))).thenReturn(gauge);
+        final var configuration = HederaTestConfigBuilder.create()
+                .withValue("stats.hapiThrottlesToSample", "throttle1")
+                .getOrCreateConfig();
+        final var throttleMetrics = new ThrottleMetrics(metrics, ThrottleType.FRONTEND_THROTTLE);
+        throttleMetrics.setupThrottleMetrics(List.of(throttle), configuration);
+
+        // when
+        throttleMetrics.updateAllMetrics();
+
+        // then
+        verify(gauge).set(Math.PI);
+    }
+
+    @Test
+    void updateTwoMetricsSucceeds(
+            @Mock DeterministicThrottle throttle1,
+            @Mock DoubleGauge gauge1,
+            @Mock DeterministicThrottle throttle2,
+            @Mock DoubleGauge gauge2) {
+        // given
+        when(throttle1.name()).thenReturn("throttle1");
+        when(throttle1.instantaneousPercentUsed()).thenReturn(Math.E);
+        when(throttle2.name()).thenReturn("throttle2");
+        when(throttle2.instantaneousPercentUsed()).thenReturn(-Math.E);
+        when(metrics.getOrCreate(any(DoubleGauge.Config.class))).thenReturn(gauge1, gauge2);
+        final var configuration = HederaTestConfigBuilder.create()
+                .withValue("stats.hapiThrottlesToSample", "throttle1,throttle2")
+                .getOrCreateConfig();
+        final var throttleMetrics = new ThrottleMetrics(metrics, ThrottleType.FRONTEND_THROTTLE);
+        throttleMetrics.setupThrottleMetrics(List.of(throttle1, throttle2), configuration);
+
+        // when
+        throttleMetrics.updateAllMetrics();
+
+        // then
+        verify(gauge1).set(Math.E);
+        verify(gauge2).set(-Math.E);
+    }
+
+    @Test
+    void updateGasMetricSucceeds(@Mock GasLimitDeterministicThrottle gasThrottle, @Mock DoubleGauge gauge) {
+        // given
+        when(gasThrottle.instantaneousPercentUsed()).thenReturn(-Math.PI);
+        when(metrics.getOrCreate(any(DoubleGauge.Config.class))).thenReturn(gauge);
+        final var configuration = HederaTestConfigBuilder.create()
+                .withValue("stats.hapiThrottlesToSample", "<GAS>")
+                .getOrCreateConfig();
+        final var throttleMetrics = new ThrottleMetrics(metrics, ThrottleType.FRONTEND_THROTTLE);
+        throttleMetrics.setupGasThrottleMetric(gasThrottle, configuration);
+
+        // when
+        throttleMetrics.updateAllMetrics();
+
+        // then
+        verify(gauge).set(-Math.PI);
     }
 }

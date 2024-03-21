@@ -982,7 +982,7 @@ class ThrottleAccumulatorTest {
 
         // then
         assertEquals(capacity, subject.gasLimitThrottle().capacity());
-        verify(throttleMetrics).setupGasThrottle(subject.gasLimitThrottle(), configuration);
+        verify(throttleMetrics).setupGasThrottleMetric(subject.gasLimitThrottle(), configuration);
     }
 
     @ParameterizedTest
@@ -1008,7 +1008,7 @@ class ThrottleAccumulatorTest {
 
         // then
         assertEquals(expected, rebuilt);
-        verify(throttleMetrics).setupThrottles(rebuilt, configuration);
+        verify(throttleMetrics).setupThrottleMetrics(rebuilt, configuration);
     }
 
     @ParameterizedTest
@@ -2013,6 +2013,18 @@ class ThrottleAccumulatorTest {
         }
 
         assertEquals(0, subject.activeThrottlesFor(CRYPTO_TRANSFER).get(0).used());
+    }
+
+    @Test
+    void updateMetrics() {
+        // given
+        subject = new ThrottleAccumulator(() -> CAPACITY_SPLIT, configProvider, FRONTEND_THROTTLE, throttleMetrics);
+
+        // when
+        subject.updateAllMetrics();
+
+        // then
+        verify(throttleMetrics).updateAllMetrics();
     }
 
     @NotNull

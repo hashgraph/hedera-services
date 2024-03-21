@@ -23,15 +23,14 @@ import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType;
 import com.hedera.node.config.data.StatsConfig;
-import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.DoubleGauge;
+import com.swirlds.metrics.api.DoubleGauge.Config;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,14 +42,20 @@ public class ThrottleMetrics {
     private static final Logger log = LogManager.getLogger(ThrottleMetrics.class);
 
     private static final String GAS_THROTTLE_ID = "<GAS>";
-    private static final String LOG_MESSAGE_TPL = "Registered {} gauge for '{}' under name '{}'";
-    private static final Supplier<Double> ZERO_SUPPLIER = () -> 0.0;
 
     private final Metrics metrics;
     private final String nameTemplate;
     private final String descriptionTemplate;
     private final Function<StatsConfig, List<String>> throttlesToSampleSupplier;
+    private List<MetricPair> liveMetricPairs = List.of();
+    private MetricPair gasThrottleMetricPair;
 
+    /**
+     * Constructs a {@link ThrottleMetrics} instance.
+     *
+     * @param metrics the {@link Metrics} instance to use for registering metrics
+     * @param throttleType the type of throttle to maintain metrics for
+     */
     public ThrottleMetrics(@NonNull final Metrics metrics, @NonNull final ThrottleType throttleType) {
         this.metrics = requireNonNull(metrics);
         final var typePrefix = requireNonNull(throttleType) == ThrottleType.FRONTEND_THROTTLE ? "HAPI" : "cons";
@@ -61,51 +66,72 @@ public class ThrottleMetrics {
                 : StatsConfig::consThrottlesToSample;
     }
 
-    public void setupThrottles(
+    /**
+     * Sets up all metrics for the given throttles.
+     *
+     * @param throttles the throttles to set up metrics for
+     * @param configuration the configuration that specifies which throttles should be monitored
+     */
+    public void setupThrottleMetrics(
             @NonNull final List<DeterministicThrottle> throttles, @NonNull final Configuration configuration) {
         final var statsConfig = configuration.getConfigData(StatsConfig.class);
         final var throttlesToSample = throttlesToSampleSupplier.apply(statsConfig);
 
-        final Set<String> liveMetrics = new HashSet<>();
-        throttles.stream()
+        liveMetricPairs = throttles.stream()
                 .filter(throttle -> throttlesToSample.contains(throttle.name()))
-                .forEach(throttle -> {
-                    setupLiveMetric(throttle);
-                    liveMetrics.add(throttle.name());
-                });
+                .map(this::setupLiveMetricPair)
+                .toList();
+
+        final var throttleNames =
+                throttles.stream().map(DeterministicThrottle::name).collect(Collectors.toSet());
         throttlesToSample.stream()
-                .filter(name -> !liveMetrics.contains(name) && !GAS_THROTTLE_ID.equals(name))
+                .filter(name -> !throttleNames.contains(name) && !GAS_THROTTLE_ID.equals(name))
                 .forEach(this::setupInertMetric);
     }
 
-    public void setupGasThrottle(
+    /**
+     * Sets up the gas throttle metric.
+     *
+     * @param gasThrottle the gas throttle to set up the metric for
+     * @param configuration the configuration that specifies which throttles should be monitored
+     */
+    public void setupGasThrottleMetric(
             @NonNull final GasLimitDeterministicThrottle gasThrottle, @NonNull final Configuration configuration) {
         final var statsConfig = configuration.getConfigData(StatsConfig.class);
         final var throttlesToSample = throttlesToSampleSupplier.apply(statsConfig);
 
-        if (throttlesToSample.contains(GAS_THROTTLE_ID)) {
-            setupLiveMetric(gasThrottle);
+        gasThrottleMetricPair = throttlesToSample.contains(GAS_THROTTLE_ID) ? setupLiveMetricPair(gasThrottle) : null;
+    }
+
+    /**
+     * Updates all metrics for the given throttles.
+     */
+    public void updateAllMetrics() {
+        for (final var metricPair : liveMetricPairs) {
+            metricPair.gauge().set(metricPair.throttle().instantaneousPercentUsed());
+        }
+        if (gasThrottleMetricPair != null) {
+            gasThrottleMetricPair.gauge().set(gasThrottleMetricPair.throttle().instantaneousPercentUsed());
         }
     }
 
-    private void setupLiveMetric(@NonNull final CongestibleThrottle throttle) {
-        setupMetric(throttle.name(), throttle::instantaneousPercentUsed, "LIVE");
+    private MetricPair setupLiveMetricPair(@NonNull final CongestibleThrottle throttle) {
+        final var gauge = setupMetric(throttle.name(), "LIVE");
+        return new MetricPair(throttle, gauge);
     }
 
     private void setupInertMetric(@NonNull final String throttleName) {
-        setupMetric(throttleName, ZERO_SUPPLIER, "INERT");
+        setupMetric(throttleName, "INERT");
     }
 
-    private void setupMetric(
-            @NonNull final String throttleName,
-            @NonNull final Supplier<Double> valueSupplier,
-            @NonNull final String status) {
+    private DoubleGauge setupMetric(@NonNull final String throttleName, @NonNull final String status) {
         final var name = String.format(nameTemplate, throttleName);
         final var description = String.format(descriptionTemplate, throttleName);
-        final var config = new FunctionGauge.Config<>("app", name, Double.class, valueSupplier)
-                .withDescription(description)
-                .withFormat("%,13.2f");
-        metrics.getOrCreate(config);
-        log.info(LOG_MESSAGE_TPL, status, description, name);
+        final var config = new Config("app", name).withDescription(description).withFormat("%,13.2f");
+        final var gauge = metrics.getOrCreate(config);
+        log.info("Registered {} gauge for '{}' under name '{}'", status, description, name);
+        return gauge;
     }
+
+    private record MetricPair(CongestibleThrottle throttle, DoubleGauge gauge) {}
 }
