@@ -30,7 +30,7 @@ import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import com.swirlds.logging.benchmark.log4j2.Log4JRunner;
-import com.swirlds.logging.benchmark.swirldslog.SwirldsLogLoggingBenchmarkConfig;
+import com.swirlds.logging.benchmark.swirldslog.plain.SwirldsLogLoggingBenchmarkConfig;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;

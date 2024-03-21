@@ -30,6 +30,8 @@ import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
+import com.swirlds.logging.benchmark.swirldslog.plain.SwirldsLogLoggingBenchmarkConfig;
+import com.swirlds.logging.benchmark.swirldslog.rolling.RollingSwirldsLogLoggingBenchmarkConfig;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -52,6 +54,9 @@ public class SwirldsLogBenchmark {
 
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
+    @Param({"DISABLED", "ENABLED"})
+    public String rolling;
+
 
     private static final String LOGGER_NAME = Constants.SWIRLDS + "Benchmark";
     private Logger logger;
@@ -62,7 +67,9 @@ public class SwirldsLogBenchmark {
 
     @Setup(Level.Trial)
     public void init() {
-        config = new SwirldsLogLoggingBenchmarkConfig();
+        config = Objects.equals(rolling, "DISABLED") ? new SwirldsLogLoggingBenchmarkConfig()
+                : new RollingSwirldsLogLoggingBenchmarkConfig();
+
         if (Objects.equals(loggingType, FILE_TYPE)) {
             loggingSystem = config.configureFileLogging();
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {

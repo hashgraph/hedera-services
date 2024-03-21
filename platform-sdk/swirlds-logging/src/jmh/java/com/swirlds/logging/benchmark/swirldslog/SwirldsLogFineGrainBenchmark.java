@@ -30,6 +30,8 @@ import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
+import com.swirlds.logging.benchmark.swirldslog.plain.SwirldsLogLoggingBenchmarkConfig;
+import com.swirlds.logging.benchmark.swirldslog.rolling.RollingSwirldsLogLoggingBenchmarkConfig;
 import com.swirlds.logging.benchmark.util.Throwables;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -60,10 +62,12 @@ public class SwirldsLogFineGrainBenchmark {
     private Logger logger;
     private LoggingSystem loggingSystem;
     private LoggingBenchmarkConfig<LoggingSystem> config;
-
+    @Param({"DISABLED", "ENABLED"})
+    public String rolling;
     @Setup(Level.Trial)
     public void init() {
-        config = new SwirldsLogLoggingBenchmarkConfig();
+        config = Objects.equals(rolling, "DISABLED") ? new SwirldsLogLoggingBenchmarkConfig()
+                : new RollingSwirldsLogLoggingBenchmarkConfig();
         if (Objects.equals(loggingType, FILE_TYPE)) {
             loggingSystem = config.configureFileLogging();
         } else if (Objects.equals(loggingType, CONSOLE_TYPE)) {
