@@ -82,10 +82,8 @@ public class InboundConnectionHandler {
      * @param clientSocket the newly created socket
      */
     public void handle(final Socket clientSocket) {
-        SerializableDataInputStream dataInputStream = null;
-        SerializableDataOutputStream dataOutputStream = null;
-        SyncInputStream syncInputStream = null;
-        SyncOutputStream syncOutputStream = null;
+        SerializableDataInputStream dis = null;
+        SerializableDataOutputStream dos = null;
         NodeId otherId = null;
         long acceptTime = 0;
         try {
@@ -93,48 +91,50 @@ public class InboundConnectionHandler {
             clientSocket.setTcpNoDelay(socketConfig.tcpNoDelay());
             clientSocket.setSoTimeout(socketConfig.timeoutSyncClientSocket());
 
-            syncInputStream = SyncInputStream.createSyncInputStream(
+            final SyncInputStream sis = SyncInputStream.createSyncInputStream(
                     platformContext, clientSocket.getInputStream(), socketConfig.bufferSize());
-            syncOutputStream = SyncOutputStream.createSyncOutputStream(
+            final SyncOutputStream sos = SyncOutputStream.createSyncOutputStream(
                     platformContext, clientSocket.getOutputStream(), socketConfig.bufferSize());
 
-            dataInputStream = new SerializableDataInputStream(syncInputStream);
-            dataOutputStream = new SerializableDataOutputStream(syncOutputStream);
+            dis = new SerializableDataInputStream(sis);
+            dos = new SerializableDataOutputStream(sos);
 
-            dataOutputStream.writeInt(ByteConstants.COMM_CONNECT); // send an ACK for creating connection
-            dataOutputStream.flush();
+            final String otherKey = dis.readUTF();
 
-            otherId = addressBook.getNodeId(dataInputStream.readUTF());
-            final SocketConnection socketConnection = SocketConnection.create(
+            otherId = addressBook.getNodeId(otherKey);
+
+            dos.writeInt(ByteConstants.COMM_CONNECT); // send an ACK for creating connection
+            dos.flush();
+
+            final SocketConnection sc = SocketConnection.create(
                     selfId,
                     otherId,
                     connectionTracker,
                     false,
                     clientSocket,
-                    syncInputStream,
-                    syncOutputStream,
+                    sis,
+                    sos,
                     platformContext.getConfiguration());
-
-            newConnectionConsumer.accept(socketConnection);
+            newConnectionConsumer.accept(sc);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
-            final String formattedException = NetworkUtils.formatException(e);
+            String formattedException = NetworkUtils.formatException(e);
             logger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Inbound connection from {} to {} was interrupted: {}",
                     otherId == null ? "unknown" : otherId,
                     selfId,
                     formattedException);
-            NetworkUtils.close(dataInputStream, dataOutputStream, clientSocket);
+            NetworkUtils.close(dis, dos, clientSocket);
         } catch (final IOException e) {
-            final String formattedException = NetworkUtils.formatException(e);
+            String formattedException = NetworkUtils.formatException(e);
             socketExceptionLogger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Inbound connection from {} to {} had IOException: {}",
-                    "unknown",
+                    otherId == null ? "unknown" : otherId,
                     selfId,
                     formattedException);
-            NetworkUtils.close(dataInputStream, dataOutputStream, clientSocket);
+            NetworkUtils.close(dis, dos, clientSocket);
         } catch (final RuntimeException e) {
             logger.error(
                     EXCEPTION.getMarker(),
@@ -142,9 +142,7 @@ public class InboundConnectionHandler {
                     clientSocket.getInetAddress().toString(),
                     acceptTime == 0 ? "N/A" : (System.currentTimeMillis() - acceptTime),
                     e);
-            NetworkUtils.close(dataInputStream, dataOutputStream, clientSocket);
-        } finally {
-            NetworkUtils.close(dataInputStream, dataOutputStream, syncInputStream, syncOutputStream, clientSocket);
+            NetworkUtils.close(dis, dos, clientSocket);
         }
     }
 }

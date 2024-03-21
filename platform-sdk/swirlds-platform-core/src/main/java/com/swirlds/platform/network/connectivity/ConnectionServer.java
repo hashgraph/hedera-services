@@ -111,7 +111,7 @@ public class ConnectionServer implements InterruptableRunnable {
     }
 
     /**
-     * Adds a handshake completed listener so we're notified whenever a peer handshake completes
+     * Adds a handshake completed listener
      * */
     private void addHandshakeListener(final Socket clientSocket) {
         if (clientSocket instanceof final SSLSocket sslsocket) {
