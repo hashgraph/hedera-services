@@ -52,6 +52,12 @@ public class GuiEventStorage {
     private final SimpleLinker linker;
     private final Configuration configuration;
 
+    /**
+     * Constructor
+     *
+     * @param configuration this node's configuration
+     * @param addressBook   the network's address book
+     */
     public GuiEventStorage(@NonNull final Configuration configuration, @NonNull final AddressBook addressBook) {
 
         this.configuration = Objects.requireNonNull(configuration);
@@ -80,6 +86,10 @@ public class GuiEventStorage {
         maxGeneration = Math.max(maxGeneration, event.getGeneration());
 
         final EventImpl eventImpl = linker.linkEvent(event);
+        if (eventImpl == null) {
+            return;
+        }
+
         final List<ConsensusRound> rounds = consensus.addEvent(eventImpl);
 
         if (rounds == null) {

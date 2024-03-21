@@ -69,8 +69,7 @@ public class SimpleLinker {
      */
     public SimpleLinker(@NonNull final AncientMode ancientMode) {
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            this.parentDescriptorMap =
-                    new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+            throw new UnsupportedOperationException("not yet supported");
         } else {
             this.parentDescriptorMap =
                     new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);

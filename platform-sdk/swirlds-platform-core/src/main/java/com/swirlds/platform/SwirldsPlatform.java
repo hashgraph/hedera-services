@@ -309,10 +309,10 @@ public class SwirldsPlatform implements Platform {
      * @param appVersion                the current version of the running application
      * @param initialState              the initial state of the platform
      * @param emergencyRecoveryManager  used in emergency recovery.
-     * @param preconsensusEventConsumer the consumer for preconsensus events, null if publishing these events has not
-     *                                  been enabled
-     * @param snapshotOverrideConsumer  the consumer for snapshot overrides, null if publishing these events has not
-     *                                  been enabled
+     * @param preconsensusEventConsumer the consumer for preconsensus events, null if publishing this data has not been
+     *                                  enabled
+     * @param snapshotOverrideConsumer  the consumer for snapshot overrides, null if publishing this data has not been
+     *                                  enabled
      */
     SwirldsPlatform(
             @NonNull final PlatformContext platformContext,

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gui.GuiEventStorage;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.internal.EventImpl;
@@ -26,7 +25,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A {@link HashgraphGuiSource} that retrieves events from a {@link Shadowgraph}
+ * A {@link HashgraphGuiSource} that retrieves events from a stream of events
  */
 public class StandardGuiSource implements HashgraphGuiSource {
 
@@ -57,7 +56,7 @@ public class StandardGuiSource implements HashgraphGuiSource {
      */
     @Override
     @NonNull
-    public List<EventImpl> getEvents(long startGeneration, int numGenerations) {
+    public List<EventImpl> getEvents(final long startGeneration, final int numGenerations) {
         return eventStorage.getNonAncientEvents();
     }
 

@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class DefaultPlatformPublisher implements PlatformPublisher {
 
-    private final Logger logger = LogManager.getLogger(DefaultPlatformPublisher.class);
+    private static final Logger logger = LogManager.getLogger(DefaultPlatformPublisher.class);
 
     private final Consumer<GossipEvent> preconsensusEventConsumer;
     private boolean preconsensusEventConsumerErrorLogged = false;
