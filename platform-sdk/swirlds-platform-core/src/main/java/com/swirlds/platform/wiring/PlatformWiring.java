@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
+import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
@@ -553,8 +554,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final PcesSequencer pcesSequencer,
             @NonNull final EventCreationManager eventCreationManager,
             @NonNull final StateSignatureCollector stateSignatureCollector,
-            @NonNull final EventWindowManager eventWindowManager,
             @NonNull final TransactionPrehandler transactionPrehandler,
+            @NonNull final EventWindowManager eventWindowManager,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final EventStreamManager eventStreamManager,
             @NonNull final FutureEventBuffer futureEventBuffer,
