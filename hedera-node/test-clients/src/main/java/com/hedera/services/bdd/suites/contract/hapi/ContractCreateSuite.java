@@ -167,10 +167,12 @@ public class ContractCreateSuite extends HapiSuite {
         return defaultHapiSpec("createContractWithStakingFields", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
                         uploadInitCode(contract),
+                        // refuse eth conversion because ethereum transaction is missing staking fields to map
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
                                 .declinedReward(true)
-                                .stakedNodeId(0),
+                                .stakedNodeId(0)
+                                .refusingEthConversion(),
                         getContractInfo(contract)
                                 .has(contractWith()
                                         .isDeclinedReward(true)
@@ -181,7 +183,8 @@ public class ContractCreateSuite extends HapiSuite {
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
                                 .declinedReward(true)
-                                .stakedAccountId("0.0.10"),
+                                .stakedAccountId("0.0.10")
+                                .refusingEthConversion(),
                         getContractInfo(contract)
                                 .has(contractWith()
                                         .isDeclinedReward(true)
@@ -192,7 +195,8 @@ public class ContractCreateSuite extends HapiSuite {
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
                                 .declinedReward(false)
-                                .stakedNodeId(0),
+                                .stakedNodeId(0)
+                                .refusingEthConversion(),
                         getContractInfo(contract)
                                 .has(contractWith()
                                         .isDeclinedReward(false)
@@ -202,7 +206,8 @@ public class ContractCreateSuite extends HapiSuite {
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
                                 .declinedReward(false)
-                                .stakedAccountId("0.0.10"),
+                                .stakedAccountId("0.0.10")
+                                .refusingEthConversion(),
                         getContractInfo(contract)
                                 .has(contractWith()
                                         .isDeclinedReward(false)
@@ -214,12 +219,14 @@ public class ContractCreateSuite extends HapiSuite {
                                 .adminKey(THRESHOLD)
                                 .declinedReward(false)
                                 .stakedAccountId("0.0.0")
-                                .hasPrecheck(INVALID_STAKING_ID),
+                                .hasPrecheck(INVALID_STAKING_ID)
+                                .refusingEthConversion(),
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
                                 .declinedReward(false)
                                 .stakedNodeId(-1L)
-                                .hasPrecheck(INVALID_STAKING_ID));
+                                .hasPrecheck(INVALID_STAKING_ID)
+                                .refusingEthConversion());
     }
 
     @HapiTest
@@ -238,11 +245,14 @@ public class ContractCreateSuite extends HapiSuite {
         return defaultHapiSpec("allowCreationsOfEmptyContract")
                 .given(
                         newKeyNamed(ADMIN_KEY),
+                        // refuse eth conversion because we can't set invalid bytecode to callData in ethereum
+                        // transaction
                         contractCreate(contract)
                                 .adminKey(ADMIN_KEY)
                                 .entityMemo("Empty Contract")
                                 .inlineInitCode(ByteString.EMPTY)
-                                .hasKnownStatus(CONTRACT_BYTECODE_EMPTY))
+                                .hasKnownStatus(CONTRACT_BYTECODE_EMPTY)
+                                .refusingEthConversion())
                 .when()
                 .then();
     }
@@ -269,7 +279,10 @@ public class ContractCreateSuite extends HapiSuite {
                 .when()
                 .then(
                         explicitContractCreate(neverToBe, (spec, b) -> b.setFileID(systemFileId))
-                                .hasKnownStatus(INVALID_FILE_ID),
+                                // refuse eth conversion because we can't set invalid bytecode to callData in ethereum
+                                // transaction
+                                .hasKnownStatus(INVALID_FILE_ID)
+                                .refusingEthConversion(),
                         explicitEthereumTransaction(neverToBe, (spec, b) -> {
                                     final var signedEthTx = signMessage(
                                             placeholderEthTx(), getPrivateKeyFromSpec(spec, SECP_256K1_SOURCE_KEY));
@@ -421,7 +434,12 @@ public class ContractCreateSuite extends HapiSuite {
         return defaultHapiSpec("RejectsInsufficientGas", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
-                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(0L).hasKnownStatus(INSUFFICIENT_GAS));
+                // refuse eth conversion because ethereum transaction fails in IngestChecker with precheck status
+                // INSUFFICIENT_GAS
+                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                        .gas(0L)
+                        .hasKnownStatus(INSUFFICIENT_GAS)
+                        .refusingEthConversion());
     }
 
     @HapiTest
@@ -456,7 +474,10 @@ public class ContractCreateSuite extends HapiSuite {
         return defaultHapiSpec("RejectsInvalidBytecode")
                 .given(uploadInitCode(contract))
                 .when()
-                .then(contractCreate(contract).hasKnownStatus(ERROR_DECODING_BYTESTRING));
+                // refuse eth conversion because we can't set invalid bytecode to callData in ethereum transaction
+                .then(contractCreate(contract)
+                        .hasKnownStatus(ERROR_DECODING_BYTESTRING)
+                        .refusingEthConversion());
     }
 
     @HapiTest
@@ -488,7 +509,12 @@ public class ContractCreateSuite extends HapiSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         uploadInitCode(justSendContract, sendInternalAndDelegateContract),
-                        contractCreate(justSendContract).gas(300_000L).exposingNumTo(justSendContractNum::set),
+                        // refuse eth conversion because we can't delegate call contract by contract num
+                        // when it has EVM address alias (isNotPriority check fails)
+                        contractCreate(justSendContract)
+                                .gas(300_000L)
+                                .exposingNumTo(justSendContractNum::set)
+                                .refusingEthConversion(),
                         contractCreate(sendInternalAndDelegateContract)
                                 .gas(300_000L)
                                 .balance(2 * totalToSend))
@@ -548,7 +574,10 @@ public class ContractCreateSuite extends HapiSuite {
                 .then(contractCreate("contract")
                         .bytecode("bytecode")
                         .payingWith(ACCOUNT)
-                        .hasKnownStatus(INSUFFICIENT_GAS));
+                        .hasKnownStatus(INSUFFICIENT_GAS)
+                        // refuse eth conversion because we can't set invalid bytecode to callData in ethereum
+                        // transaction
+                        .refusingEthConversion());
     }
 
     @HapiTest
@@ -683,15 +712,18 @@ public class ContractCreateSuite extends HapiSuite {
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(contract),
                         cryptoCreate(autoRenewAccount).balance(ONE_HUNDRED_HBARS),
+                        // refuse eth conversion because ethereum transaction is missing autoRenewAccountId field to map
                         contractCreate(contract)
                                 .adminKey(ADMIN_KEY)
                                 .autoRenewAccountId(autoRenewAccount)
                                 .signedBy(DEFAULT_PAYER, ADMIN_KEY)
-                                .hasKnownStatus(INVALID_SIGNATURE),
+                                .hasKnownStatus(INVALID_SIGNATURE)
+                                .refusingEthConversion(),
                         contractCreate(contract)
                                 .adminKey(ADMIN_KEY)
                                 .autoRenewAccountId(autoRenewAccount)
                                 .signedBy(DEFAULT_PAYER, ADMIN_KEY, autoRenewAccount)
+                                .refusingEthConversion()
                                 .logged(),
                         getContractInfo(contract)
                                 .has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
