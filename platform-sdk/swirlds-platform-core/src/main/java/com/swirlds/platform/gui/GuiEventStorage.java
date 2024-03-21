@@ -60,6 +60,14 @@ public class GuiEventStorage {
     }
 
     /**
+     * Get the consensus object. This is a local copy, not one used by an active platform.
+     */
+    @NonNull
+    public Consensus getConsensus() {
+        return consensus;
+    }
+
+    /**
      * Handle a preconsensus event. Called after events are released from the orphan buffer.
      *
      * @param event the event to handle

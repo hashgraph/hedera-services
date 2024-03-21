@@ -792,7 +792,6 @@ public class SwirldsPlatform implements Platform {
         }
 
         // To be removed once the GUI component is better integrated with the platform.
-        GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
         GuiPlatformAccessor.getInstance().setLatestCompleteStateComponent(selfId, latestCompleteStateNexus);
         GuiPlatformAccessor.getInstance().setLatestImmutableStateComponent(selfId, latestImmutableStateNexus);
     }

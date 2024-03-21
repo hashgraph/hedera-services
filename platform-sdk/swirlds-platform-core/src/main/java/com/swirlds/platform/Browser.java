@@ -245,7 +245,8 @@ public class Browser {
         startPlatforms(new ArrayList<>(platforms.values()), appMains);
 
         if (showUi) {
-            setBrowserWindow(new WinBrowser(guiSource, guiMetrics));
+            setBrowserWindow(
+                    new WinBrowser(nodesToRun.getFirst(), guiSource, guiEventStorage.getConsensus(), guiMetrics));
             showBrowserWindow(null);
             moveBrowserWindowToFront();
         }

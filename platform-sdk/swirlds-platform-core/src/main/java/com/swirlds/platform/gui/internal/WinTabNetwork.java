@@ -16,7 +16,9 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
 import com.swirlds.platform.gui.hashgraph.HashgraphGui;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
@@ -45,19 +47,29 @@ class WinTabNetwork extends PrePaintableJPanel {
     JTabbedPane tabbed = new JTabbedPane(JTabbedPane.LEFT, JTabbedPane.WRAP_TAB_LAYOUT);
 
     private final WinTab2Stats tabStats;
-    HashgraphGui tabHashgraph;
-    WinTab2Consensus tabConsensus = new WinTab2Consensus();
+    private final HashgraphGui tabHashgraph;
+    private final WinTab2Consensus tabConsensus;
 
     /**
      * Instantiate and initialize content of this tab.
      *
+     * @param firstNodeId     the ID of the first node running on this machine, information from this node will be shown
+     *                        in the UI
      * @param hashgraphSource provides access to events
+     * @param consensus       a local view of the hashgraph
      * @param guiMetrics      provides access to metrics
      */
-    public WinTabNetwork(final HashgraphGuiSource hashgraphSource, @NonNull final Metrics guiMetrics) {
+    public WinTabNetwork(
+            @NonNull final NodeId firstNodeId,
+            @NonNull final HashgraphGuiSource hashgraphSource,
+            @NonNull final Consensus consensus,
+            @NonNull final Metrics guiMetrics) {
 
         tabStats = new WinTab2Stats(guiMetrics);
         tabHashgraph = new HashgraphGui(hashgraphSource);
+
+        tabConsensus = new WinTab2Consensus(consensus, firstNodeId);
+
         Rectangle winRect = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
 
         Dimension d = new Dimension(winRect.width - 20, winRect.height - 110);

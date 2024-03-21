@@ -20,7 +20,9 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gui.GuiConstants;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.ScrollableJPanel;
@@ -166,10 +168,17 @@ public class WinBrowser extends JFrame {
      * This constructor creates the contents of the browser window, and creates a new thread to continually update this
      * window to reflect what is happening in the Browser.
      *
+     * @param firstNodeId     the ID of the first node running on this machine, information from this node will be shown
+     *                        in the UI
      * @param hashgraphSource provides access to events
+     * @param consensus       a local view of the hashgraph
      * @param guiMetrics      provides access to metrics
      */
-    public WinBrowser(@NonNull final HashgraphGuiSource hashgraphSource, @NonNull final Metrics guiMetrics) {
+    public WinBrowser(
+            @NonNull final NodeId firstNodeId,
+            @NonNull final HashgraphGuiSource hashgraphSource,
+            @NonNull final Consensus consensus,
+            @NonNull final Metrics guiMetrics) {
         ActionListener repaintPeriodically = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 // Do a (possibly slow) prePaint of components, like changing text in a JTextArea text.
@@ -186,7 +195,8 @@ public class WinBrowser extends JFrame {
         tabAddresses = GuiUtils.makeScrollableJPanel(new WinTabAddresses());
         tabCalls = GuiUtils.makeScrollableJPanel(new WinTabCalls());
         tabPosts = GuiUtils.makeScrollableJPanel(new WinTabPosts());
-        tabNetwork = GuiUtils.makeScrollableJPanel(new WinTabNetwork(hashgraphSource, guiMetrics));
+        tabNetwork =
+                GuiUtils.makeScrollableJPanel(new WinTabNetwork(firstNodeId, hashgraphSource, consensus, guiMetrics));
         tabSecurity = GuiUtils.makeScrollableJPanel(new WinTabSecurity());
 
         Rectangle winRect = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();

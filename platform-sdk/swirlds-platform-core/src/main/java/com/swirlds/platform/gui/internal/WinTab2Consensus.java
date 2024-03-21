@@ -18,6 +18,7 @@ package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.platform.gui.GuiUtils.wrap;
 
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.GuiUtils;
@@ -25,10 +26,12 @@ import com.swirlds.platform.gui.components.PrePaintableJPanel;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.swing.JTextArea;
 
 /**
@@ -41,11 +44,16 @@ class WinTab2Consensus extends PrePaintableJPanel {
     /** the entire table is in this single Component */
     private JTextArea text;
 
+    private final Consensus consensus;
+    private final NodeId firstNodeId;
+
     /**
      * Instantiate and initialize content of this tab.
      */
-    public WinTab2Consensus() {
+    public WinTab2Consensus(@NonNull final Consensus consnesus, @NonNull final NodeId firstNodeId) {
         text = GuiUtils.newJTextArea("");
+        this.consensus = Objects.requireNonNull(consnesus);
+        this.firstNodeId = Objects.requireNonNull(firstNodeId);
         add(text);
     }
 
@@ -58,15 +66,14 @@ class WinTab2Consensus extends PrePaintableJPanel {
             }
             Platform platform = WinBrowser.memberDisplayed.getPlatform();
             String s = "";
-            s += "Node" + platform.getSelfId().id();
-            final Consensus consensus = GuiPlatformAccessor.getInstance().getConsensus(platform.getSelfId());
+            s += "Node" + firstNodeId.id();
             long r1 = consensus.getDeleteRound();
             long r2 = consensus.getFameDecidedBelow();
             long r3 = consensus.getMaxRound();
             final SignedStateNexus latestImmutableStateComponent =
-                    GuiPlatformAccessor.getInstance().getLatestImmutableStateComponent(platform.getSelfId());
+                    GuiPlatformAccessor.getInstance().getLatestImmutableStateComponent(firstNodeId);
             final SignedStateNexus latestCompleteStateComponent =
-                    GuiPlatformAccessor.getInstance().getLatestCompleteStateComponent(platform.getSelfId());
+                    GuiPlatformAccessor.getInstance().getLatestCompleteStateComponent(firstNodeId);
             long r0 = latestCompleteStateComponent.getRound();
 
             if (r1 == -1) {

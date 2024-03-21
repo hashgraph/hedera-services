@@ -16,22 +16,15 @@
 
 package com.swirlds.platform.gui;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.Consensus;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Provides a way to access private platform objects from the GUI. Suboptimal, but necessary to preserve the current UI
@@ -42,8 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
 @Deprecated(forRemoval = true)
 public final class GuiPlatformAccessor {
 
-    private final Map<NodeId, Shadowgraph> shadowGraphs = new ConcurrentHashMap<>();
-    private final Map<NodeId, AtomicReference<Consensus>> consensusReferences = new ConcurrentHashMap<>();
     private final Map<NodeId, SignedStateNexus> latestCompleteStateComponents = new ConcurrentHashMap<>();
     private final Map<NodeId, SignedStateNexus> latestImmutableStateComponents = new ConcurrentHashMap<>();
 
@@ -98,59 +89,6 @@ public final class GuiPlatformAccessor {
                 return Long.compare(this.consensusOrder, that.consensusOrder);
             }
         }
-    }
-
-    /**
-     * Get a sorted list of events.
-     */
-    public List<EventImpl> getAllEvents(@NonNull NodeId nodeId) {
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-
-        //        final List<EventImpl> allEvents = getShadowGraph(nodeId).getAllEvents(); // TODO
-        final List<EventImpl> allEvents = new ArrayList<>(); // TODO
-
-        // If events reach consensus during the execution of this method, order will change.
-        // Capture information before sorting, since sorting breaks if order changes mid-sort.
-        final Map<Hash, EventOrderInfo> orderInfo = new HashMap<>();
-        for (final EventImpl event : allEvents) {
-            orderInfo.put(event.getHashedData().getHash(), EventOrderInfo.of(event));
-        }
-
-        allEvents.sort((eventA, eventB) -> {
-            final EventOrderInfo orderA = orderInfo.get(eventA.getHashedData().getHash());
-            final EventOrderInfo orderB = orderInfo.get(eventB.getHashedData().getHash());
-            return orderA.compareTo(orderB);
-        });
-        return allEvents;
-    }
-
-    /**
-     * Set the consensus for a node.
-     *
-     * @param nodeId    the ID of the node
-     * @param consensus the consensus
-     */
-    public void setConsensusReference(
-            @NonNull final NodeId nodeId, @NonNull final AtomicReference<Consensus> consensus) {
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-        Objects.requireNonNull(consensus, "consensus must not be null");
-        consensusReferences.put(nodeId, consensus);
-    }
-
-    /**
-     * Get the consensus for a node, or null if none is set.
-     *
-     * @param nodeId the ID of the node
-     * @return the consensus
-     */
-    @Nullable
-    public Consensus getConsensus(@NonNull final NodeId nodeId) {
-        Objects.requireNonNull(nodeId, "nodeId must not be null");
-        final AtomicReference<Consensus> consensusReference = consensusReferences.getOrDefault(nodeId, null);
-        if (consensusReference == null) {
-            return null;
-        }
-        return consensusReference.get();
     }
 
     /**
