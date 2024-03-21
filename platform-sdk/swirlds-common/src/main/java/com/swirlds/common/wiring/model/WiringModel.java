@@ -111,13 +111,17 @@ public interface WiringModel extends Startable, Stoppable {
      * @param groups        optional groupings of vertices
      * @param substitutions edges to substitute
      * @param manualLinks   manual links to add to the diagram
+     * @param moreMystery   if enabled then use a generic label for all input from mystery sources. This removes
+     *                      information about mystery edges, but allows the diagram to be easier to groc. Turn this off
+     *                      when attempting to debug mystery edges.
      * @return a mermaid style wiring diagram
      */
     @NonNull
     String generateWiringDiagram(
-            @NonNull final List<ModelGroup> groups,
-            @NonNull final List<ModelEdgeSubstitution> substitutions,
-            @NonNull final List<ModelManualLink> manualLinks);
+            @NonNull List<ModelGroup> groups,
+            @NonNull List<ModelEdgeSubstitution> substitutions,
+            @NonNull List<ModelManualLink> manualLinks,
+            boolean moreMystery);
 
     /**
      * Start everything in the model that needs to be started. Performs static analysis of the wiring topology and

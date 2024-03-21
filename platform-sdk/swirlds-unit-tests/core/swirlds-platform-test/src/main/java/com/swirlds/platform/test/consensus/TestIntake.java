@@ -132,6 +132,9 @@ public class TestIntake implements LoadableFromSignedState {
                 .nonAncientEventWindowOutput()
                 .solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
 
+        // Ensure unsoldered wires are created.
+        hasherWiring.getInputWire(EventHasher::hashEvent);
+
         model.start();
     }
 

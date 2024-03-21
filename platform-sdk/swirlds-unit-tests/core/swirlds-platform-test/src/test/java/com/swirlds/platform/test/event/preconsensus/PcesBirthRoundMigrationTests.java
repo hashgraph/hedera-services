@@ -22,6 +22,7 @@ import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.findPcesFiles;
+import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -136,6 +137,7 @@ class PcesBirthRoundMigrationTests {
         final Instant startingTime = randomInstant(random);
 
         final StandardGraphGenerator generator = new StandardGraphGenerator(
+                DEFAULT_PLATFORM_CONTEXT,
                 random.nextLong(),
                 new StandardEventSource(),
                 new StandardEventSource(),
