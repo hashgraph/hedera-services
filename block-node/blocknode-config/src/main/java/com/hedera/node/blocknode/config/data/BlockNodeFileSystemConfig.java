@@ -23,4 +23,5 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("blockNodeFileSystem")
 public record BlockNodeFileSystemConfig(
         @ConfigProperty(defaultValue = "LOCAL") FileSystem fileSystem,
-        @ConfigProperty(defaultValue = "build/blocks/") String blocksExportPath) {}
+        @ConfigProperty(defaultValue = "/home/nikolay/Desktop/hedera-services/block-node/blocknode-core/build/blocks/")
+                String blocksExportPath) {}

@@ -16,11 +16,35 @@
 
 package com.hedera.node.blocknode.filesystem.local;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.blocknode.config.ConfigProvider;
+import com.hedera.node.blocknode.config.data.BlockNodeFileSystemConfig;
 import com.hedera.node.blocknode.core.spi.DummyCoreSpi;
 import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
 import com.hedera.services.stream.v7.proto.Block;
+import com.hedera.services.stream.v7.proto.BlockItem;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.zip.GZIPOutputStream;
 
 public class LocalFileSystem implements FileSystemApi {
+
+    private final BlockNodeFileSystemConfig fileSystemConfig;
+
+    private final Path blocksExportPath;
+
+    private static final String FILE_EXTENSION = ".blk.gz";
+
+    public LocalFileSystem(ConfigProvider configProvider) {
+        this.fileSystemConfig = configProvider.getConfiguration().getConfigData(BlockNodeFileSystemConfig.class);
+
+        this.blocksExportPath = Path.of(fileSystemConfig.blocksExportPath());
+        blocksExportPath.toFile().mkdirs();
+    }
+
     @Override
     public void doSomething() {
         final DummyCoreSpi dummyCoreSpi = () -> {
@@ -32,11 +56,31 @@ public class LocalFileSystem implements FileSystemApi {
 
     @Override
     public void writeBlock(Block block) {
-        // file.write
+        try {
+            OutputStream out = Files.newOutputStream(blocksExportPath.resolve(extractBlockFileNameFromBlock(block)));
+            block.writeTo(new GZIPOutputStream(out, 1024 * 256));
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public Block readBlock(long number) {
         return null;
+    }
+
+    private String extractBlockFileNameFromBlock(Block block) {
+        Long blockNumber = null;
+        for (BlockItem item : block.getItemsList()) {
+            if (item.hasHeader()) {
+                blockNumber = item.getHeader().getNumber();
+                break;
+            }
+        }
+
+        requireNonNull(blockNumber, "Block number can not be extracted.");
+
+        return String.format("%036d", blockNumber) + FILE_EXTENSION;
     }
 }
