@@ -181,6 +181,8 @@ import com.hedera.services.bdd.suites.token.TokenManagementSpecsStateful;
 import com.hedera.services.bdd.suites.token.TokenPauseSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
+
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -197,6 +199,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import com.swirlds.platform.ThreadDumpGenerator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -316,6 +320,7 @@ public class SuiteRunner {
             // aof(MixedSmartContractOpsLoadTest::new));
             put("MixedFileOpsLoadTest", aof(MixedFileOpsLoadTest::new));
             put("UniqueTokenStateSetup", aof(UniqueTokenStateSetup::new));
+            ThreadDumpGenerator.generateThreadDumpAtIntervals(Path.of("./thread-dumps"), 5, 5);
             /* Functional tests - RECONNECT */
             put("CreateAccountsBeforeReconnect", aof(CreateAccountsBeforeReconnect::new));
             put("CreateTopicsBeforeReconnect", aof(CreateTopicsBeforeReconnect::new));
@@ -494,6 +499,8 @@ public class SuiteRunner {
     public static void main(String... args) throws Exception {
         String[] effArgs = trueArgs(args);
         log.info("Effective args :: {}", List.of(effArgs));
+
+        ThreadDumpGenerator.generateThreadDumpAtIntervals(Path.of("./"), 120);
         if (Arrays.asList(effArgs).contains("-CI")) {
             var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
             var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
