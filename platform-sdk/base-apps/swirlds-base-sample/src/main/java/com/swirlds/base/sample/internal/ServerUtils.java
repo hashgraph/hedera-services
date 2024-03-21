@@ -16,6 +16,8 @@
 
 package com.swirlds.base.sample.internal;
 
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.spi.HttpServerProvider;
 import com.swirlds.base.sample.config.BaseApiConfig;
 import com.swirlds.base.sample.service.InventoryService;
 import com.swirlds.base.sample.service.ItemService;
@@ -23,9 +25,9 @@ import com.swirlds.base.sample.service.OperationService;
 import com.swirlds.base.sample.service.PurchaseService;
 import com.swirlds.base.sample.service.SaleService;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import io.undertow.Undertow;
-import io.undertow.server.handlers.BlockingHandler;
-import io.undertow.server.handlers.PathHandler;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,25 +40,13 @@ public class ServerUtils {
     /**
      * Creates and starts a Http server with a set of defined handlers
      */
-    public static void createServer(final @NonNull BaseApiConfig config, final @NonNull Context swirldsContext) {
-        // Create a path handler to associate handlers with different paths
-        final PathHandler pathHandler = new PathHandler();
+    public static void createServer(final @NonNull BaseApiConfig config, final @NonNull Context swirldsContext)
+            throws IOException {
+        // Create HTTP server instance
+        HttpServerProvider provider = HttpServerProvider.provider();
+        HttpServer server = provider.createHttpServer(new InetSocketAddress(config.host(), config.port()), 0);
 
-        new AdapterHandler<>(swirldsContext, new InventoryService(), config.apiBasePath() + "/inventories")
-                .into(pathHandler);
-        new AdapterHandler<>(swirldsContext, new OperationService(swirldsContext), config.apiBasePath() + "/operations")
-                .into(pathHandler);
-        new AdapterHandler<>(swirldsContext, new ItemService(), config.apiBasePath() + "/items").into(pathHandler);
-        new AdapterHandler<>(swirldsContext, new SaleService(swirldsContext), config.apiBasePath() + "/sales")
-                .into(pathHandler);
-        new AdapterHandler<>(swirldsContext, new PurchaseService(swirldsContext), config.apiBasePath() + "/purchases")
-                .into(pathHandler);
-        // Create the Undertow server with the path handler and bind it to port
-        final Undertow server = Undertow.builder()
-                .addHttpListener(config.port(), config.host())
-                // Blocking adapter
-                .setHandler(new BlockingHandler(pathHandler))
-                .build();
+        final List<AdapterHandler<?>> handlers = createHandlers(config, swirldsContext, server);
 
         // Start the server
         server.start();
@@ -73,6 +63,22 @@ public class ServerUtils {
                     + "|___/\\__,_|_| |_| |_| .__/|_|\\___(_) ");
         }
         logger.info("Server started on {}:{}", config.host(), config.port());
-        logger.debug("All registered paths {}", pathHandler);
+        logger.trace("All registered handlers:{}", handlers);
+    }
+
+    @NonNull
+    private static List<AdapterHandler<?>> createHandlers(
+            final @NonNull BaseApiConfig config, final @NonNull Context swirldsContext, final HttpServer server) {
+        final List<AdapterHandler<?>> handlers = List.of(
+                new AdapterHandler<>(swirldsContext, new InventoryService(), config.apiBasePath() + "/inventories"),
+                new AdapterHandler<>(
+                        swirldsContext, new OperationService(swirldsContext), config.apiBasePath() + "/operations"),
+                new AdapterHandler<>(swirldsContext, new ItemService(), config.apiBasePath() + "/items"),
+                new AdapterHandler<>(swirldsContext, new SaleService(swirldsContext), config.apiBasePath() + "/sales"),
+                new AdapterHandler<>(
+                        swirldsContext, new PurchaseService(swirldsContext), config.apiBasePath() + "/purchases"));
+
+        handlers.forEach(h -> h.registerInto(server));
+        return handlers;
     }
 }

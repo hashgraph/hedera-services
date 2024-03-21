@@ -17,28 +17,27 @@
 package com.swirlds.base.sample.internal;
 
 import com.google.common.base.Preconditions;
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import com.swirlds.base.sample.metrics.ApplicationMetrics;
 import com.swirlds.base.sample.persistence.EntityNotFoundException;
 import com.swirlds.base.sample.service.CrudService;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.PathHandler;
-import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Adapts a CrudService into an HttpHandler for undertow
- */
 public class AdapterHandler<T> implements HttpHandler {
-    private static final Logger logger = LogManager.getLogger(AdapterHandler.class);
+    private static final Logger logger = LogManager.getLogger(AdapterHandler.class.getName());
     private @NonNull final Context context;
     private @NonNull final CrudService<T> delegatedService;
     private @NonNull final String path;
@@ -51,18 +50,13 @@ public class AdapterHandler<T> implements HttpHandler {
         this.tps = new CountPerSecond(context.metrics(), ApplicationMetrics.REQUESTS_PER_SECOND);
     }
 
-    /**
-     * Handle the given request and generate an appropriate response. See {@code HttpServerExchange} for a description
-     * of the steps involved in handling an exchange.
-     *
-     * @throws NullPointerException if exchange is {@code null}
-     */
     @Override
-    public void handleRequest(final @NonNull HttpServerExchange exchange) {
-        final String requestMethod = exchange.getRequestMethod().toString();
+    public void handle(HttpExchange exchange) throws IOException {
+        final String requestMethod = exchange.getRequestMethod();
         long start = System.nanoTime();
 
-        final List<String> urlParts = DataTransferUtils.urlToList(exchange);
+        final List<String> urlParts =
+                DataTransferUtils.urlToList(exchange.getRequestURI().toString());
         final String id = urlParts.getLast();
         final boolean isId = !id.equalsIgnoreCase(getControllerName());
         Object result = null;
@@ -102,17 +96,17 @@ public class AdapterHandler<T> implements HttpHandler {
                 }
 
                 default:
-                    throw new UnsupportedOperationException("Operation not supported for %s".formatted(requestMethod));
+                    throw new UnsupportedOperationException("Operation not supported for " + requestMethod);
             }
         } catch (UnsupportedOperationException e) {
             statusCode = 405;
-            result = Map.of("error", "Operation not supported for %s".formatted(requestMethod));
+            result = Map.of("error", "Operation not supported for " + requestMethod);
         } catch (IllegalArgumentException e) {
             statusCode = 400;
             result = Map.of("error", e.getMessage());
         } catch (EntityNotFoundException e) {
             statusCode = 404;
-            result = Map.of("error", "%s with code %s not found".formatted(e.getEntityType(), e.getId()));
+            result = Map.of("error", e.getEntityType() + " with code " + e.getId() + " not found");
         } catch (RuntimeException e) {
             statusCode = 500;
             result = Map.of("error", "Internal error");
@@ -126,15 +120,15 @@ public class AdapterHandler<T> implements HttpHandler {
         if (statusCode - 200 >= 100) {
             context.metrics().getOrCreate(ApplicationMetrics.ERROR_TOTAL).increment();
         }
-        exchange.setStatusCode(statusCode);
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json;charset=utf-8");
-        exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
-        exchange.getResponseSender().send(response);
+        exchange.sendResponseHeaders(statusCode, response.getBytes().length);
+        OutputStream os = exchange.getResponseBody();
+        os.write(response.getBytes());
+        os.close();
 
         logger.trace(
                 "Received Request to:{}{} took:{}ns answered status:{} body:{}",
                 requestMethod,
-                exchange.getRequestURL(),
+                exchange.getRequestURI(),
                 duration,
                 statusCode,
                 response);
@@ -164,7 +158,8 @@ public class AdapterHandler<T> implements HttpHandler {
     }
 
     private @NonNull String getControllerName() {
-        return DataTransferUtils.urlToList(this.path).getLast();
+        return DataTransferUtils.urlToList(this.path)
+                .get(DataTransferUtils.urlToList(this.path).size() - 1);
     }
 
     @Override
@@ -172,25 +167,18 @@ public class AdapterHandler<T> implements HttpHandler {
         return this.path;
     }
 
-    /**
-     * Adds the handler into a pathHandler
-     */
-    public void into(@NonNull final PathHandler pathHandler) {
-        pathHandler.addPrefixPath(path, this);
+    public void registerInto(@NonNull final HttpServer server) {
+
+        HttpContext context = server.createContext(path);
+        context.setHandler(this);
     }
 
-    /**
-     * cors support
-     */
-    private static void handleOptionsRequest(@NonNull final HttpServerExchange exchange) {
-        exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
-        exchange.getResponseHeaders()
-                .put(new HttpString("Access-Control-Allow-Methods"), "GET, POST, PUT, DELETE, OPTIONS");
-        exchange.getResponseHeaders().put(new HttpString("Access-Control-Max-Age"), "3600");
-        exchange.getResponseHeaders()
-                .put(new HttpString("Access-Control-Allow-Headers"), "content-type, authorization");
-        exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Credentials"), "true");
-
-        exchange.endExchange();
+    private static void handleOptionsRequest(@NonNull final HttpExchange exchange) throws IOException {
+        exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        exchange.getResponseHeaders().add("Access-Control-Max-Age", "3600");
+        exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "content-type, authorization");
+        exchange.getResponseHeaders().add("Access-Control-Allow-Credentials", "true");
+        exchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, -1);
     }
 }

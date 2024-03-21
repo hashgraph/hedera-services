@@ -17,7 +17,7 @@ The project makes use of the following modules:
 - **swirlds-logging**: TODO: pending
 
 The project makes use of the following 3rd party dependencies:
-- **Undertow**: embedded application server.
+- **jdk.httpserver**: embedded application server.
 - **jackson**: json serializing/deserializing.
 - **guava**: parameters validation + immutable collections.
 - **spot-bugs**: non-null checks.

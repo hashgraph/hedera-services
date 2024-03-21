@@ -18,23 +18,25 @@ package com.swirlds.base.sample.internal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.sun.net.httpserver.HttpExchange;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import io.undertow.server.HttpServerExchange;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -93,11 +95,11 @@ public class DataTransferUtils {
      * {@code HttpServerExchange}
      */
     public static <T> @Nullable T deserializeJsonFromExchange(
-            final @NonNull HttpServerExchange exchange, final @NonNull Class<T> clazz) {
+            final @NonNull HttpExchange exchange, final @NonNull Class<T> clazz) {
         try {
             final StringBuilder requestBody = new StringBuilder();
             try (BufferedReader reader =
-                    new BufferedReader(new InputStreamReader(exchange.getInputStream(), StandardCharsets.UTF_8))) {
+                    new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     requestBody.append(line);
@@ -115,8 +117,8 @@ public class DataTransferUtils {
      * @param exchange Http exchange
      * @return the path components of the URL
      */
-    public static @NonNull List<String> urlToList(final @NonNull HttpServerExchange exchange) {
-        return urlToList(exchange.getRequestURI());
+    public static @NonNull List<String> urlToList(final @NonNull HttpExchange exchange) {
+        return urlToList(exchange.getRequestURI().toString());
     }
 
     /**
@@ -126,18 +128,9 @@ public class DataTransferUtils {
      * @return the path components of the URL
      */
     public static @NonNull List<String> urlToList(final @NonNull String path) {
-        final List<String> paths = new ArrayList<>();
-        // Split the path into individual segments
-        final String[] pathSegments = path.split("/");
-
-        // Add each path segment to the list
-        for (String segment : pathSegments) {
-            if (!segment.isEmpty()) {
-                paths.add(segment);
-            }
-        }
-
-        return paths;
+        return Arrays.stream(path.split("/"))
+                .filter(segment -> !segment.isEmpty())
+                .collect(Collectors.toList());
     }
 
     /**
@@ -146,9 +139,25 @@ public class DataTransferUtils {
      * @param exchange Http exchange
      * @return all url parameters in a map.
      */
-    public static @NonNull Map<String, String> getUrlParams(final @NonNull HttpServerExchange exchange) {
-        return exchange.getQueryParameters().entrySet().stream()
-                .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().getFirst()));
+    public static @NonNull Map<String, String> getUrlParams(final @NonNull HttpExchange exchange) {
+        Map<String, String> params = new HashMap<>();
+        String query = exchange.getRequestURI().getQuery();
+        if (query != null) {
+            String[] pairs = query.split("&");
+            for (String pair : pairs) {
+                int idx = pair.indexOf("=");
+                try {
+                    String key = idx > 0 ? URLDecoder.decode(pair.substring(0, idx), "UTF-8") : pair;
+                    String value = idx > 0 && pair.length() > idx + 1
+                            ? URLDecoder.decode(pair.substring(idx + 1), "UTF-8")
+                            : null;
+                    params.put(key, value);
+                } catch (UnsupportedEncodingException e) {
+                    // Handle the exception as needed
+                }
+            }
+        }
+        return params;
     }
 
     /**
