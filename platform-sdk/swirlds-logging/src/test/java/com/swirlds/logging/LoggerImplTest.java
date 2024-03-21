@@ -19,13 +19,11 @@ package com.swirlds.logging;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.api.Logger;
-import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.LoggerImpl;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
-import com.swirlds.logging.file.FileHandlerFactory;
 import com.swirlds.logging.util.DummyConsumer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -69,34 +67,11 @@ public class LoggerImplTest {
     }
 
     @Test
-    void testNullName() {
-        // given
-        LoggerImpl logger = new LoggerImpl(null, new SimpleLogEventFactory(), new DummyConsumer());
-
-        // when
-        final String name = logger.getName();
-        final boolean traceEnabled = logger.isTraceEnabled();
-        final boolean debugEnabled = logger.isDebugEnabled();
-        final boolean infoEnabled = logger.isInfoEnabled();
-        final boolean warnEnabled = logger.isWarnEnabled();
-        final boolean errorEnabled = logger.isErrorEnabled();
-
-        // then
-        Assertions.assertEquals("", name);
-        Assertions.assertTrue(traceEnabled);
-        Assertions.assertTrue(debugEnabled);
-        Assertions.assertTrue(infoEnabled);
-        Assertions.assertTrue(warnEnabled);
-        Assertions.assertTrue(errorEnabled);
-    }
-
-    @Test
     void testSpecWithNullName() {
-        // given
-        LoggerImpl logger = new LoggerImpl(null, new SimpleLogEventFactory(), new DummyConsumer());
-
-        // then
-        LoggerApiSpecTest.testSpec(logger);
+        // given + then
+        Assertions.assertThrows(
+                NullPointerException.class,
+                () -> new LoggerImpl(null, new SimpleLogEventFactory(), new DummyConsumer()));
     }
 
     @Test
@@ -116,13 +91,12 @@ public class LoggerImplTest {
                 .withConverter(new MarkerStateConverter())
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.file.type", "file")
-                .withValue("logging.handler.file.active", "true")
+                .withValue("logging.handler.file.enabled", "true")
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", "benchmark.log")
                 .build();
-        final LogHandler fileHandler = new FileHandlerFactory().create("file", configuration);
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        loggingSystem.addHandler(fileHandler);
+        loggingSystem.installHandlers();
         final Logger logger = loggingSystem.getLogger("test-name");
 
         // then
@@ -132,6 +106,6 @@ public class LoggerImplTest {
     @Test
     void testSpecWithDifferentLoggers() {
         LoggerApiSpecTest.testSpec(new LoggerImpl("test-name", new SimpleLogEventFactory(), new DummyConsumer()));
-        LoggerApiSpecTest.testSpec(new LoggerImpl(null, new SimpleLogEventFactory(), new DummyConsumer()));
+        LoggerApiSpecTest.testSpec(new LoggerImpl("null", new SimpleLogEventFactory(), new DummyConsumer()));
     }
 }

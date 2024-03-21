@@ -25,13 +25,14 @@ import static com.swirlds.logging.util.LoggingTestUtils.linesToStatements;
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.api.Loggers;
 import com.swirlds.logging.api.internal.LoggingSystem;
-import com.swirlds.logging.file.FileHandler;
+import com.swirlds.logging.test.fixtures.LoggingMirror;
+import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import com.swirlds.logging.test.fixtures.internal.LoggingMirrorImpl;
-import com.swirlds.logging.util.InMemoryHandler;
 import com.swirlds.logging.util.LoggingTestUtils;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,21 +46,21 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @WithTestExecutor
+@WithLoggingMirror
 @Tag(TIMING_SENSITIVE)
 public class LoggingSystemStressTest {
 
     private static final int TOTAL_RUNNABLE = 100;
     private static final String LOG_FILE = "log-files/logging.log";
 
+    @Inject
+    private LoggingMirror loggingMirror;
+
     @Test
-    void testMultipleLoggersInParallel(TestExecutor testExecutor) {
+    void testMultipleLoggersInParallel(final TestExecutor testExecutor) {
         // given
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final InMemoryHandler handler = new InMemoryHandler(configuration);
-        loggingSystem.addHandler(handler);
         final List<Runnable> runnables = IntStream.range(0, TOTAL_RUNNABLE)
-                .mapToObj(i -> loggingSystem.getLogger("logger-" + i))
+                .mapToObj(i -> Loggers.getLogger("logger-" + i))
                 .map(l -> (Runnable) () -> LoggingTestUtils.loggExtensively(l))
                 .collect(Collectors.toList());
 
@@ -67,12 +68,11 @@ public class LoggingSystemStressTest {
         testExecutor.executeAndWait(runnables);
 
         // then
-        Assertions.assertEquals(
-                EXPECTED_STATEMENTS * TOTAL_RUNNABLE, handler.getEvents().size());
+        Assertions.assertEquals(EXPECTED_STATEMENTS * TOTAL_RUNNABLE, loggingMirror.getEventCount());
         IntStream.range(0, TOTAL_RUNNABLE)
                 .forEach(i -> Assertions.assertEquals(
                         EXPECTED_STATEMENTS,
-                        handler.getEvents().stream()
+                        loggingMirror.getEvents().stream()
                                 .filter(e -> Objects.equals(e.loggerName(), "logger-" + i))
                                 .count()));
     }
@@ -80,32 +80,24 @@ public class LoggingSystemStressTest {
     @Test
     void testOneLoggerInParallel(TestExecutor testExecutor) {
         // given
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final Logger logger = loggingSystem.getLogger("logger");
-        final InMemoryHandler handler = new InMemoryHandler(configuration);
-        loggingSystem.addHandler(handler);
+        final Logger logger = Loggers.getLogger("logger");
 
         // when
         doLog(testExecutor, logger, TOTAL_RUNNABLE);
 
         // then
-        Assertions.assertEquals(
-                EXPECTED_STATEMENTS * TOTAL_RUNNABLE, handler.getEvents().size());
+        Assertions.assertEquals(EXPECTED_STATEMENTS * TOTAL_RUNNABLE, loggingMirror.getEventCount());
     }
 
     @Test
-    void testFileLoggingFileMultipleEventsInParallel(TestExecutor testExecutor) throws IOException {
+    void testFileLoggingFileMultipleEventsInParallel(final TestExecutor testExecutor) throws IOException {
 
         // given
         final String logFile = LoggingTestUtils.prepareLoggingFile(LOG_FILE);
-        final String fileHandlerName = "file";
-        final Configuration configuration = LoggingTestUtils.prepareConfiguration(logFile, fileHandlerName);
+        final Configuration configuration = LoggingTestUtils.prepareConfiguration(logFile, "file");
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final FileHandler handler = new FileHandler(fileHandlerName, configuration, true);
         final LoggingMirrorImpl mirror = new LoggingMirrorImpl();
-        loggingSystem.addHandler(handler);
+        loggingSystem.installHandlers();
         loggingSystem.addHandler(mirror);
         // A random log name, so it's easier to combine lines after
         final String loggerName = UUID.randomUUID().toString();

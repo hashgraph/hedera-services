@@ -53,7 +53,7 @@ import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.wiring.InOrderLinkerWiring;
 import com.swirlds.platform.wiring.OrphanBufferWiring;
 import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
-import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
+import com.swirlds.platform.wiring.components.PassThroughWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Deque;
@@ -76,7 +76,7 @@ public class TestIntake implements LoadableFromSignedState {
 
     /**
      * @param platformContext the platform context used to configure this intake.
-     * @param addressBook the address book used by this intake
+     * @param addressBook     the address book used by this intake
      */
     public TestIntake(@NonNull PlatformContext platformContext, @NonNull final AddressBook addressBook) {
         final NodeId selfId = new NodeId(0);
@@ -94,8 +94,8 @@ public class TestIntake implements LoadableFromSignedState {
         final EventHasher eventHasher = new DefaultEventHasher(platformContext);
         hasherWiring.bind(eventHasher);
 
-        final PostHashCollectorWiring postHashCollectorWiring =
-                PostHashCollectorWiring.create(directScheduler("postHashCollector"));
+        final PassThroughWiring<GossipEvent> postHashCollectorWiring =
+                new PassThroughWiring(model, "GossipEvent", "postHashCollector", TaskSchedulerType.DIRECT);
 
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
@@ -114,8 +114,8 @@ public class TestIntake implements LoadableFromSignedState {
 
         final EventWindowManagerWiring eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 
-        hasherWiring.getOutputWire().solderTo(postHashCollectorWiring.eventInput());
-        postHashCollectorWiring.eventOutput().solderTo(orphanBufferWiring.eventInput());
+        hasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
+        postHashCollectorWiring.getOutputWire().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
         linkerWiring.eventOutput().solderTo("shadowgraph", "addEvent", shadowGraph::addEvent);
         linkerWiring.eventOutput().solderTo("output", "eventAdded", output::eventAdded);
