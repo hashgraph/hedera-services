@@ -80,9 +80,7 @@ import com.hedera.node.config.types.KeyValuePair;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.base.utility.Pair;
 import com.swirlds.config.api.ConfigurationExtension;
-import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.validation.ConfigValidator;
 import java.util.Collection;
 import java.util.Set;
@@ -132,22 +130,22 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 VersionConfig.class);
     }
 
-    public Collection<Pair<Class<?>, ConfigConverter<?>>> getConverters() {
+    public Collection<ConverterPair<?>> getConverters() {
         return Set.of(
-                Pair.of(CongestionMultipliers.class, new CongestionMultipliersConverter()),
-                Pair.of(EntityScaleFactors.class, new EntityScaleFactorsConverter()),
-                Pair.of(KnownBlockValues.class, new KnownBlockValuesConverter()),
-                Pair.of(LegacyContractIdActivations.class, new LegacyContractIdActivationsConverter()),
-                Pair.of(ScaleFactor.class, new ScaleFactorConverter()),
-                Pair.of(AccountID.class, new AccountIDConverter()),
-                Pair.of(ContractID.class, new ContractIDConverter()),
-                Pair.of(FileID.class, new FileIDConverter()),
-                Pair.of(PermissionedAccountsRange.class, new PermissionedAccountsRangeConverter()),
-                Pair.of(SemanticVersion.class, new SemanticVersionConverter()),
-                Pair.of(LongPair.class, new LongPairConverter()),
-                Pair.of(KeyValuePair.class, new KeyValuePairConverter()),
-                Pair.of(HederaFunctionalitySet.class, new FunctionalitySetConverter()),
-                Pair.of(Bytes.class, new BytesConverter()));
+                ConverterPair.of(CongestionMultipliers.class, new CongestionMultipliersConverter()),
+                ConverterPair.of(EntityScaleFactors.class, new EntityScaleFactorsConverter()),
+                ConverterPair.of(KnownBlockValues.class, new KnownBlockValuesConverter()),
+                ConverterPair.of(LegacyContractIdActivations.class, new LegacyContractIdActivationsConverter()),
+                ConverterPair.of(ScaleFactor.class, new ScaleFactorConverter()),
+                ConverterPair.of(AccountID.class, new AccountIDConverter()),
+                ConverterPair.of(ContractID.class, new ContractIDConverter()),
+                ConverterPair.of(FileID.class, new FileIDConverter()),
+                ConverterPair.of(PermissionedAccountsRange.class, new PermissionedAccountsRangeConverter()),
+                ConverterPair.of(SemanticVersion.class, new SemanticVersionConverter()),
+                ConverterPair.of(LongPair.class, new LongPairConverter()),
+                ConverterPair.of(KeyValuePair.class, new KeyValuePairConverter()),
+                ConverterPair.of(HederaFunctionalitySet.class, new FunctionalitySetConverter()),
+                ConverterPair.of(Bytes.class, new BytesConverter()));
     }
 
     public Collection<ConfigValidator> getValidators() {

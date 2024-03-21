@@ -16,7 +16,6 @@
 
 package com.swirlds.config.api;
 
-import com.swirlds.base.utility.Pair;
 import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
@@ -49,7 +48,7 @@ public interface ConfigurationExtension {
      *
      * @return a collection of configuration converters
      */
-    default Collection<Pair<Class<?>, ConfigConverter<?>>> getConverters() {
+    default Collection<ConverterPair<?>> getConverters() {
         return Collections.emptySet();
     }
 
@@ -71,5 +70,11 @@ public interface ConfigurationExtension {
      */
     default Collection<ConfigSource> getConfigSources() {
         return Collections.emptySet();
+    }
+
+    record ConverterPair<T>(Class<T> type, ConfigConverter<T> converter) {
+        public static <T> ConverterPair<T> of(Class<T> type, ConfigConverter<T> converter) {
+            return new ConverterPair<>(type, converter);
+        }
     }
 }

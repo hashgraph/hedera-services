@@ -16,10 +16,10 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.base.utility.Pair;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.ConfigurationExtension;
+import com.swirlds.config.api.ConfigurationExtension.ConverterPair;
 import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
@@ -133,8 +133,8 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
         return this;
     }
 
-    private void addConverter(Pair<Class<?>, ConfigConverter<?>> classConfigConverterPair) {
-        withConverter(classConfigConverterPair.right());
+    private <T> void addConverter(final ConverterPair<T> converterPair) {
+        addConverter(converterPair.type(), converterPair.converter());
     }
 
     @NonNull
