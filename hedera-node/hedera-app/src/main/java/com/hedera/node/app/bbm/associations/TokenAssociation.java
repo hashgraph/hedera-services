@@ -18,11 +18,7 @@ package com.hedera.node.app.bbm.associations;
 
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -46,17 +42,6 @@ record TokenAssociation(
                 value.automaticAssociation(),
                 tokenIdFromMod(value.previousToken()),
                 tokenIdFromMod(value.nextToken()));
-    }
-
-    @NonNull
-    static Pair<AccountID, TokenID> toPair(@NonNull final EntityNumPair enp) {
-        final var at = enp.asAccountTokenRel();
-        return Pair.of(at.getLeft(), at.getRight());
-    }
-
-    @NonNull
-    static Pair<Long, Long> toLongsPair(@NonNull final Pair<AccountID, TokenID> pat) {
-        return Pair.of(pat.left().getAccountNum(), pat.right().getTokenNum());
     }
 
     static EntityId accountIdFromMod(@Nullable final com.hedera.hapi.node.base.AccountID accountId) {

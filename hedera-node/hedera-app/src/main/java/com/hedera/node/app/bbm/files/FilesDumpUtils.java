@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.bbm.files;
 
-import static com.hedera.node.app.bbm.utils.ThingsToStrings.quoteForCsv;
-import static com.hedera.node.app.bbm.utils.ThingsToStrings.squashLinesToEscapes;
-import static com.hedera.node.app.bbm.utils.ThingsToStrings.toStringOfByteArray;
+import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.quoteForCsv;
+import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.squashLinesToEscapes;
+import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.toStringOfByteArray;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.FileID;

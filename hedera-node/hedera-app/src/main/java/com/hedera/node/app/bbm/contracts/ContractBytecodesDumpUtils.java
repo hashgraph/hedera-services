@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.bbm.contracts;
 
-import static com.hedera.node.app.bbm.contracts.ContractUtils.ESTIMATED_NUMBER_OF_CONTRACTS;
+import static com.hedera.node.app.service.mono.statedumpers.contracts.ContractUtils.ESTIMATED_NUMBER_OF_CONTRACTS;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.ContractID;

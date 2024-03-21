@@ -19,7 +19,7 @@ package com.hedera.node.app.bbm.singleton;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
-import com.hedera.node.app.bbm.utils.ThingsToStrings;
+import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;

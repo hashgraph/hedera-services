@@ -16,16 +16,16 @@
 
 package com.hedera.node.app.bbm.nfts;
 
-import static com.hedera.node.app.bbm.utils.ThingsToStrings.getMaybeStringifyByteString;
+import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.getMaybeStringifyByteString;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
-import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.base.utility.Pair;

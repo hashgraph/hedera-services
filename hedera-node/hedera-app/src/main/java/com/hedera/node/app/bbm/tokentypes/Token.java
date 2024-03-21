@@ -19,7 +19,7 @@ package com.hedera.node.app.bbm.tokentypes;
 import static com.hedera.node.app.bbm.tokentypes.TokenTypesDumpUtils.jkeyDeepEqualsButBothNullIsFalse;
 import static com.hedera.node.app.bbm.tokentypes.TokenTypesDumpUtils.jkeyIsComplex;
 import static com.hedera.node.app.bbm.tokentypes.TokenTypesDumpUtils.jkeyPresentAndOk;
-import static com.hedera.node.app.bbm.utils.ThingsToStrings.toStructureSummaryOfJKey;
+import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.toStructureSummaryOfJKey;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -129,13 +129,6 @@ record Token(
             fcCustomFees.add(fcCustomFee);
         });
         return fcCustomFees;
-    }
-
-    static TokenSupplyType supplyTypeFromMono(
-            @NonNull com.hedera.node.app.service.mono.state.enums.TokenSupplyType tokenSupplyType) {
-        return (tokenSupplyType.equals(com.hedera.node.app.service.mono.state.enums.TokenSupplyType.INFINITE))
-                ? TokenSupplyType.INFINITE
-                : TokenSupplyType.FINITE;
     }
 
     private static Optional<JKey> keyFromMod(@Nullable Key key) {

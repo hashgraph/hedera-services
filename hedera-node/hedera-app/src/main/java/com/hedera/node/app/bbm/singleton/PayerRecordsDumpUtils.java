@@ -18,9 +18,9 @@ package com.hedera.node.app.bbm.singleton;
 
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
-import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.state.merkle.queue.QueueNode;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;

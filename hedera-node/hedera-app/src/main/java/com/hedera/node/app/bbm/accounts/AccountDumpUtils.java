@@ -20,12 +20,10 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualKey;
@@ -70,19 +68,6 @@ public class AccountDumpUtils {
 
     private AccountDumpUtils() {
         // Utility class
-    }
-
-    public static void dumpMonoAccounts(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<EntityNumVirtualKey, OnDiskAccount> accounts,
-            @NonNull final DumpCheckpoint checkpoint) {
-
-        try (@NonNull final var writer = new Writer(path)) {
-            HederaAccount[] dumpableAccounts = gatherAccounts(accounts, HederaAccount::fromMono);
-            reportOnAccounts(writer, dumpableAccounts);
-            System.out.printf(
-                    "=== mod accounts report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
-        }
     }
 
     public static void dumpModAccounts(

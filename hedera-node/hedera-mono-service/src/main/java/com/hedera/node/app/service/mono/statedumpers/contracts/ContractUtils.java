@@ -31,8 +31,8 @@ import java.util.TreeSet;
 
 public class ContractUtils {
 
-    static final int ESTIMATED_NUMBER_OF_CONTRACTS = 100_000;
-    static final int ESTIMATED_NUMBER_OF_DELETED_CONTRACTS = 10_000;
+    public static final int ESTIMATED_NUMBER_OF_CONTRACTS = 100_000;
+    public static final int ESTIMATED_NUMBER_OF_DELETED_CONTRACTS = 10_000;
 
     private ContractUtils() {
         // Utility class

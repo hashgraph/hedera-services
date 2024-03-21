@@ -16,18 +16,20 @@
 
 package com.hedera.node.app.bbm.scheduledtransactions;
 
-import static com.hedera.node.app.bbm.utils.ThingsToStrings.quoteForCsv;
+import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.quoteForCsv;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
-import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
-import com.hedera.node.app.state.merkle.memory.InMemoryKey;
-import com.hedera.node.app.state.merkle.memory.InMemoryValue;
+import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
+import com.hedera.node.app.state.merkle.disk.OnDiskKey;
+import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
@@ -44,8 +46,7 @@ public class ScheduledTransactionsDumpUtils {
 
     public static void dumpModScheduledTransactions(
             @NonNull final Path path,
-            @NonNull
-                    final MerkleMap<InMemoryKey<ScheduleID>, InMemoryValue<ScheduleID, Schedule>> scheduledTransactions,
+            @NonNull final VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> scheduledTransactions,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableScheduledTransactions = gatherModScheduledTransactions(scheduledTransactions);
@@ -58,19 +59,35 @@ public class ScheduledTransactionsDumpUtils {
 
     @NonNull
     private static Map<ScheduledTransactionId, ScheduledTransaction> gatherModScheduledTransactions(
-            MerkleMap<InMemoryKey<ScheduleID>, InMemoryValue<ScheduleID, Schedule>> source) {
+            VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> source) {
         final var r = new HashMap<ScheduledTransactionId, ScheduledTransaction>();
         final var scheduledTransactions =
                 new ConcurrentLinkedQueue<Pair<ScheduledTransactionId, ScheduledTransaction>>();
-        source.forEach((key, value) -> {
-            try {
-                scheduledTransactions.add(Pair.of(
-                        ScheduledTransactionId.fromMod(key.key()), ScheduledTransaction.fromMod(value.getValue())));
-            } catch (InvalidKeyException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        scheduledTransactions.forEach(filePair -> r.put(filePair.key(), filePair.value()));
+
+        try {
+            VirtualMapLike.from(source)
+                    .extractVirtualMapDataC(
+                            getStaticThreadManager(),
+                            p -> {
+                                try {
+                                    scheduledTransactions.add(Pair.of(
+                                            ScheduledTransactionId.fromMod(
+                                                    p.key().getKey()),
+                                            ScheduledTransaction.fromMod(
+                                                    p.value().getValue())));
+                                } catch (InvalidKeyException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            },
+                            8);
+        } catch (final InterruptedException ex) {
+            System.err.println("*** Traversal of uniques virtual map interrupted!");
+            Thread.currentThread().interrupt();
+        }
+        while (!scheduledTransactions.isEmpty()) {
+            final var mapping = scheduledTransactions.poll();
+            r.put(mapping.key(), mapping.value());
+        }
         return r;
     }
 

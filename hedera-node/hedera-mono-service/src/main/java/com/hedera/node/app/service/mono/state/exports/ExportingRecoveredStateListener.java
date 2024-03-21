@@ -27,6 +27,8 @@ import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A tiny {@link NewRecoveredStateListener}, registered <i>only</i> when {@code ServicesState#init()} is called with
@@ -37,6 +39,7 @@ import java.util.Objects;
  * </ol>
  */
 public class ExportingRecoveredStateListener implements NewRecoveredStateListener {
+    private static final Logger logger = LogManager.getLogger(ExportingRecoveredStateListener.class);
     private final RecordStreamManager recordStreamManager;
     private final BalancesExporter balancesExporter;
     private final NodeId nodeId;
@@ -55,8 +58,13 @@ public class ExportingRecoveredStateListener implements NewRecoveredStateListene
         recordStreamManager.setInFreeze(true);
         balancesExporter.exportBalancesFrom(
                 notification.getSwirldState(), notification.getConsensusTimestamp(), nodeId);
-        if (selectedDumpCheckpoints().contains(MONO_POST_EVENT_STREAM_REPLAY)) {
-            dumpMonoChildrenFrom(notification.getSwirldState(), MONO_POST_EVENT_STREAM_REPLAY);
+        try {
+            if (selectedDumpCheckpoints().contains(MONO_POST_EVENT_STREAM_REPLAY)) {
+                dumpMonoChildrenFrom(notification.getSwirldState(), MONO_POST_EVENT_STREAM_REPLAY);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("Error while dumping state at MONO_POST_EVENT_STREAM_REPLAY", e);
         }
     }
 }

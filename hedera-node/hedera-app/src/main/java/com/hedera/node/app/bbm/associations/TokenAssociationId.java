@@ -17,13 +17,14 @@
 package com.hedera.node.app.bbm.associations;
 
 import com.google.common.collect.ComparisonChain;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.node.app.bbm.utils.Writer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 record TokenAssociationId(long accountId, long tokenId) implements Comparable<TokenAssociationId> {
-    static TokenAssociationId fromMod(@NonNull final com.hedera.hapi.node.base.TokenAssociation association) {
+    static TokenAssociationId fromMod(@NonNull final EntityIDPair pair) {
         return new TokenAssociationId(
-                association.accountId().accountNum(), association.tokenId().tokenNum());
+                pair.accountId().accountNum(), pair.tokenId().tokenNum());
     }
 
     @Override

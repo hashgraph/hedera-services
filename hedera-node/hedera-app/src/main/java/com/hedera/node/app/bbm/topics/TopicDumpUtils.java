@@ -16,23 +16,27 @@
 
 package com.hedera.node.app.bbm.topics;
 
-import static com.hedera.node.app.bbm.utils.ThingsToStrings.getMaybeStringifyByteString;
-import static com.hedera.node.app.bbm.utils.ThingsToStrings.quoteForCsv;
+import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.getMaybeStringifyByteString;
+import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.quoteForCsv;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
-import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
+import com.hedera.node.app.state.merkle.disk.OnDiskKey;
+import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -49,24 +53,43 @@ public class TopicDumpUtils {
 
     public static void dumpModTopics(
             @NonNull final Path path,
-            @NonNull final MerkleMap<EntityNum, MerkleTopic> topics,
+            @NonNull final VirtualMap<OnDiskKey<TopicID>, OnDiskValue<Topic>> topics,
             @NonNull final DumpCheckpoint checkpoint) {
-
         try (@NonNull final var writer = new Writer(path)) {
-            final var dumpableTopics = gatherTopics(MerkleMapLike.from(topics));
+            final var dumpableTopics = gatherTopics(topics);
             reportOnTopics(writer, dumpableTopics);
             System.out.printf(
                     "=== mod topics report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
         }
     }
 
-    private static Map<Long, Topic> gatherTopics(@NonNull final MerkleMapLike<EntityNum, MerkleTopic> topicsStore) {
-        final var allTopics = new TreeMap<Long, Topic>();
-        topicsStore.forEachNode((en, mt) -> allTopics.put(en.longValue(), new Topic(mt)));
-        return allTopics;
+    private static Map<Long, BBMTopic> gatherTopics(
+            @NonNull final VirtualMap<OnDiskKey<TopicID>, OnDiskValue<Topic>> topicsStore) {
+        final var r = new TreeMap<Long, BBMTopic>();
+        final var threadCount = 8;
+        final var mappings = new ConcurrentLinkedQueue<Pair<Long, BBMTopic>>();
+        try {
+            VirtualMapLike.from(topicsStore)
+                    .extractVirtualMapDataC(
+                            getStaticThreadManager(),
+                            p -> mappings.add(Pair.of(
+                                    Long.valueOf(p.left().getKey().topicNum()),
+                                    BBMTopic.fromMod(p.right().getValue()))),
+                            threadCount);
+        } catch (final InterruptedException ex) {
+            System.err.println("*** Traversal of uniques virtual map interrupted!");
+            Thread.currentThread().interrupt();
+        }
+        // Consider in the future: Use another thread to pull things off the queue as they're put on by the
+        // virtual map traversal
+        while (!mappings.isEmpty()) {
+            final var mapping = mappings.poll();
+            r.put(mapping.key(), mapping.value());
+        }
+        return r;
     }
 
-    private static void reportOnTopics(@NonNull Writer writer, @NonNull Map<Long, Topic> topics) {
+    private static void reportOnTopics(@NonNull Writer writer, @NonNull Map<Long, BBMTopic> topics) {
         writer.writeln(formatHeader());
         topics.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> formatTopic(writer, e.getValue()));
         writer.writeln("");
@@ -78,34 +101,36 @@ public class TopicDumpUtils {
     }
 
     @NonNull
-    private static List<Pair<String, BiConsumer<FieldBuilder, Topic>>> fieldFormatters = List.of(
-            Pair.of("number", getFieldFormatter(Topic::number, Object::toString)),
-            Pair.of("memo", getFieldFormatter(Topic::memo, csvQuote)),
-            Pair.of("expiry", getFieldFormatter(Topic::expirationTimestamp, ThingsToStrings::toStringOfRichInstant)),
-            Pair.of("deleted", getFieldFormatter(Topic::deleted, booleanFormatter)),
+    private static List<Pair<String, BiConsumer<FieldBuilder, BBMTopic>>> fieldFormatters = List.of(
+            Pair.of("number", getFieldFormatter(BBMTopic::number, Object::toString)),
+            Pair.of("memo", getFieldFormatter(BBMTopic::memo, csvQuote)),
+            Pair.of("expiry", getFieldFormatter(BBMTopic::expirationTimestamp, ThingsToStrings::toStringOfRichInstant)),
+            Pair.of("deleted", getFieldFormatter(BBMTopic::deleted, booleanFormatter)),
             Pair.of(
                     "adminKey",
-                    getFieldFormatter(Topic::adminKey, getNullableFormatter(ThingsToStrings::toStringOfJKey))),
+                    getFieldFormatter(BBMTopic::adminKey, getNullableFormatter(ThingsToStrings::toStringOfJKey))),
             Pair.of(
                     "submitKey",
-                    getFieldFormatter(Topic::submitKey, getNullableFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("runningHash", getFieldFormatter(Topic::runningHash, getMaybeStringifyByteString(FIELD_SEPARATOR))),
-            Pair.of("sequenceNumber", getFieldFormatter(Topic::sequenceNumber, Object::toString)),
-            Pair.of("autoRenewSecs", getFieldFormatter(Topic::autoRenewDurationSeconds, Object::toString)),
+                    getFieldFormatter(BBMTopic::submitKey, getNullableFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of(
+                    "runningHash",
+                    getFieldFormatter(BBMTopic::runningHash, getMaybeStringifyByteString(FIELD_SEPARATOR))),
+            Pair.of("sequenceNumber", getFieldFormatter(BBMTopic::sequenceNumber, Object::toString)),
+            Pair.of("autoRenewSecs", getFieldFormatter(BBMTopic::autoRenewDurationSeconds, Object::toString)),
             Pair.of(
                     "autoRenewAccount",
                     getFieldFormatter(
-                            Topic::autoRenewAccountId, getNullableFormatter(ThingsToStrings::toStringOfEntityId))));
+                            BBMTopic::autoRenewAccountId, getNullableFormatter(ThingsToStrings::toStringOfEntityId))));
 
-    private static <T> BiConsumer<FieldBuilder, Topic> getFieldFormatter(
-            @NonNull final Function<Topic, T> fun, @NonNull final Function<T, String> formatter) {
+    private static <T> BiConsumer<FieldBuilder, BBMTopic> getFieldFormatter(
+            @NonNull final Function<BBMTopic, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
     }
 
     private static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final Topic topic,
-            @NonNull final Function<Topic, T> fun,
+            @NonNull final BBMTopic topic,
+            @NonNull final Function<BBMTopic, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(topic)));
     }
@@ -114,7 +139,7 @@ public class TopicDumpUtils {
         return t -> null != t ? formatter.apply(t) : "";
     }
 
-    private static void formatTopic(@NonNull final Writer writer, @NonNull final Topic topic) {
+    private static void formatTopic(@NonNull final Writer writer, @NonNull final BBMTopic topic) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, topic));
         writer.writeln(fb);

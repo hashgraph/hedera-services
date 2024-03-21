@@ -18,12 +18,13 @@ package com.hedera.node.app.bbm.associations;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.bbm.utils.FieldBuilder;
-import com.hedera.node.app.bbm.utils.ThingsToStrings;
 import com.hedera.node.app.bbm.utils.Writer;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.base.utility.Pair;
@@ -43,9 +44,7 @@ import java.util.stream.Collectors;
 public class TokenAssociationsDumpUtils {
     public static void dumpModTokenRelations(
             @NonNull final Path path,
-            @NonNull
-                    final VirtualMap<OnDiskKey<com.hedera.hapi.node.base.TokenAssociation>, OnDiskValue<TokenRelation>>
-                            associations,
+            @NonNull final VirtualMap<OnDiskKey<EntityIDPair>, OnDiskValue<TokenRelation>> associations,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableTokenRelations = gatherTokenRelations(

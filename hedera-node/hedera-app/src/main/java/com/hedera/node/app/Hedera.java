@@ -441,8 +441,13 @@ public final class Hedera implements SwirldMain {
         final Object test = state.getChild(0);
         boolean doBbmMigration = test instanceof VirtualMap;
         if (doBbmMigration) {
-            if (shouldDump(trigger, MONO_PRE_MIGRATION)) {
-                dumpMonoChildrenFrom(state, MONO_PRE_MIGRATION);
+            try {
+                if (shouldDump(trigger, MONO_PRE_MIGRATION)) {
+                    dumpMonoChildrenFrom(state, MONO_PRE_MIGRATION);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.error("Failed to dump mono state before migration at MONO_PRE_MIGRATION", e);
             }
 
             // --------------------- BEGIN MONO -> MODULAR MIGRATION ---------------------
@@ -659,8 +664,13 @@ public final class Hedera implements SwirldMain {
         final var migrator = new OrderedServiceMigrator(servicesRegistry);
         logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
-        if (shouldDump(trigger, MOD_POST_MIGRATION)) {
-            dumpModChildrenFrom(state, MOD_POST_MIGRATION);
+        try {
+            if (shouldDump(trigger, MOD_POST_MIGRATION)) {
+                dumpModChildrenFrom(state, MOD_POST_MIGRATION);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("Error dumping state after migration at MOD_POST_MIGRATION", e);
         }
 
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
@@ -899,8 +909,13 @@ public final class Hedera implements SwirldMain {
     public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
         // (FUTURE) - dump the semantic contents of the recovered state for
         // comparison with the mirroring mono-service state
-        if (shouldDump(daggerApp.initTrigger(), MOD_POST_EVENT_STREAM_REPLAY)) {
-            dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY);
+        try {
+            if (shouldDump(daggerApp.initTrigger(), MOD_POST_EVENT_STREAM_REPLAY)) {
+                dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("Error dumping state after migration at MOD_POST_EVENT_STREAM_REPLAY", e);
         }
         daggerApp.blockRecordManager().close();
     }

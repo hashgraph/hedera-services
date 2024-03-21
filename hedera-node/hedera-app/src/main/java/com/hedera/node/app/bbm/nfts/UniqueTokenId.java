@@ -19,15 +19,9 @@ package com.hedera.node.app.bbm.nfts;
 import com.google.common.collect.ComparisonChain;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.node.app.bbm.utils.Writer;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 record UniqueTokenId(long id, long serial) implements Comparable<UniqueTokenId> {
-
-    static UniqueTokenId fromMono(@NonNull final UniqueTokenKey ukey) {
-        return new UniqueTokenId(ukey.getNum(), ukey.getTokenSerial());
-    }
-
     static UniqueTokenId fromMod(@NonNull final NftID nftID) {
         return new UniqueTokenId(nftID.tokenIdOrThrow().tokenNum(), nftID.serialNumber());
     }
