@@ -81,7 +81,6 @@ import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
-import com.swirlds.platform.wiring.components.EventStreamManagerWiring;
 import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.HashLoggerWiring;
@@ -137,7 +136,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final GossipWiring gossipWiring;
     private final EventWindowManagerWiring eventWindowManagerWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
-    private final EventStreamManagerWiring eventStreamManagerWiring;
+    private final ComponentWiring<EventStreamManager, Void> eventStreamManagerWiring;
     private final RunningHashUpdaterWiring runningHashUpdaterWiring;
     private final IssDetectorWiring issDetectorWiring;
     private final IssHandlerWiring issHandlerWiring;
@@ -225,7 +224,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
         shadowgraphWiring = ShadowgraphWiring.create(schedulers.shadowgraphScheduler());
         consensusRoundHandlerWiring = ConsensusRoundHandlerWiring.create(schedulers.consensusRoundHandlerScheduler());
-        eventStreamManagerWiring = EventStreamManagerWiring.create(schedulers.eventStreamManagerScheduler());
+        eventStreamManagerWiring =
+                new ComponentWiring<>(model, EventStreamManager.class, schedulers.eventStreamManagerScheduler());
         runningHashUpdaterWiring = RunningHashUpdaterWiring.create(schedulers.runningHashUpdateScheduler());
 
         signedStateHasherWiring = StateHasherWiring.create(schedulers.stateHasherScheduler());
@@ -390,7 +390,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         consensusEngineWiring
                 .getSplitAndTransformedOutput(ConsensusEngine::getConsensusEvents)
-                .solderTo(eventStreamManagerWiring.eventsInput());
+                .solderTo(eventStreamManagerWiring.getInputWire(EventStreamManager::addEvents));
 
         consensusRoundHandlerWiring
                 .stateOutput()
@@ -430,7 +430,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         runningHashUpdaterWiring
                 .runningHashUpdateOutput()
                 .solderTo(consensusRoundHandlerWiring.runningHashUpdateInput());
-        runningHashUpdaterWiring.runningHashUpdateOutput().solderTo(eventStreamManagerWiring.runningHashUpdateInput());
+        runningHashUpdaterWiring
+                .runningHashUpdateOutput()
+                .solderTo(eventStreamManagerWiring.getInputWire(EventStreamManager::updateRunningHash));
 
         issDetectorWiring.issNotificationOutput().solderTo(issHandlerWiring.issNotificationInput());
 
@@ -514,7 +516,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param stateSignatureCollector   the signed state manager to bind
      * @param transactionPrehandler     the transaction prehandler to bind
      * @param consensusRoundHandler     the consensus round handler to bind
-     * @param eventStreamManager        the event stream manager to bind
+     * @param defaultEventStreamManager the event stream manager to bind
      * @param futureEventBuffer         the future event buffer to bind
      * @param issDetector               the ISS detector to bind
      * @param issHandler                the ISS handler to bind
@@ -546,7 +548,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final TransactionPrehandler transactionPrehandler,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
-            @NonNull final EventStreamManager eventStreamManager,
+            @NonNull final EventStreamManager defaultEventStreamManager,
             @NonNull final FutureEventBuffer futureEventBuffer,
             @NonNull final IssDetector issDetector,
             @NonNull final IssHandler issHandler,
@@ -576,7 +578,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
         applicationTransactionPrehandlerWiring.bind(transactionPrehandler);
         consensusRoundHandlerWiring.bind(consensusRoundHandler);
-        eventStreamManagerWiring.bind(eventStreamManager);
+        eventStreamManagerWiring.bind(defaultEventStreamManager);
         futureEventBufferWiring.bind(futureEventBuffer);
         issDetectorWiring.bind(issDetector);
         issHandlerWiring.bind(issHandler);
