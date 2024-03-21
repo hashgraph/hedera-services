@@ -64,7 +64,9 @@ import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.DefaultConsensusEngine;
+import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.DefaultSavedStateController;
+import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.config.StateConfig;
@@ -562,6 +564,8 @@ public class SwirldsPlatform implements Platform {
                 initialState.getState(),
                 appVersion);
 
+        final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
+
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
@@ -654,6 +658,7 @@ public class SwirldsPlatform implements Platform {
                 eventCreationManager,
                 swirldStateManager,
                 stateSignatureCollector,
+                eventWindowManager,
                 consensusRoundHandler,
                 eventStreamManager,
                 futureEventBuffer,
