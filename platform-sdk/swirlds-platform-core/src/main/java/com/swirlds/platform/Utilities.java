@@ -395,22 +395,20 @@ public final class Utilities {
 
     /**
      * Validates that the client on the other end of the socket possesses an agreement
-     *  certificate, that the certificate's subject matches the signing certificate's subject
-     *  for one or more known peers
-     * there exists a known TLS peer whose signing certificate's subject
-     *      matches the agreement certificate's issuer
+     *  certificate, and that the agreement certificate's issuer's principal matches
+     *  the signing certificate's subject for one or more known peers
      *
-     * @param sslsocket
+     * @param sslSocket
      * 		the address book to create the list from
      * @param peerInfoList
      * 		List of peers to validate
      * @return info of the corresponding peer
      * */
     public static PeerInfo validateTLSPeer(
-            final @NonNull SSLSocket sslsocket, final @NonNull List<PeerInfo> peerInfoList) {
+            final @NonNull SSLSocket sslSocket, final @NonNull List<PeerInfo> peerInfoList) {
         PeerInfo matchingPair = null;
         try {
-            final Certificate[] certs = sslsocket.getSession().getPeerCertificates();
+            final Certificate[] certs = sslSocket.getSession().getPeerCertificates();
             final X509Certificate agreementCert = (X509Certificate) certs[0];
             final Optional<PeerInfo> peerOptional = peerInfoList.stream()
                     .filter(peerInfo -> ((X509Certificate) peerInfo.signingCertificate())
@@ -421,8 +419,8 @@ public final class Utilities {
                 logger.warn(
                         NETWORK.getMarker(),
                         "Handshake with client {}:{} was successful but we couldn't find a matching peer. Closing connection.",
-                        sslsocket.getInetAddress(),
-                        sslsocket.getPort());
+                        sslSocket.getInetAddress(),
+                        sslSocket.getPort());
             } else {
                 matchingPair = peerOptional.get();
             }
@@ -430,8 +428,8 @@ public final class Utilities {
             logger.warn(
                     EXCEPTION.getMarker(),
                     "Attempt to obtain certificate from an unverified peer {}:{} threw exception {}",
-                    sslsocket.getInetAddress(),
-                    sslsocket.getPort(),
+                    sslSocket.getInetAddress(),
+                    sslSocket.getPort(),
                     e.getMessage());
         }
         return matchingPair;
