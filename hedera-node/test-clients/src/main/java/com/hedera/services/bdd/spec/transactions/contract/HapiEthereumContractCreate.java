@@ -144,6 +144,8 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.retryLimits = contractCreate.getRetryLimits();
         this.permissibleStatuses = contractCreate.getPermissibleStatuses();
         this.permissiblePrechecks = contractCreate.getPermissiblePrechecks();
+        this.payer = contractCreate.getPayer();
+        this.fee = contractCreate.getFee();
     }
 
     public HapiEthereumContractCreate(
@@ -319,7 +321,11 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                             ethFileID.ifPresent(builder::setCallData);
                             maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
                         });
-        return b -> b.setEthereumTransaction(opBody);
+
+        return b -> {
+            this.fee.ifPresent(b::setTransactionFee);
+            this.memo.ifPresent(b::setMemo);
+            b.setEthereumTransaction(opBody);};
     }
 
     @Override
