@@ -100,8 +100,10 @@ import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
@@ -631,6 +633,9 @@ public class SwirldsPlatform implements Platform {
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
 
+        final TransactionPrehandler transactionPrehandler =
+                new DefaultTransactionPrehandler(platformContext, latestImmutableStateNexus);
+
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState);
 
         final SignedStateHasher signedStateHasher =
@@ -652,8 +657,8 @@ public class SwirldsPlatform implements Platform {
                 shadowGraph,
                 sequencer,
                 eventCreationManager,
-                swirldStateManager,
                 stateSignatureCollector,
+                transactionPrehandler,
                 consensusRoundHandler,
                 eventStreamManager,
                 futureEventBuffer,
@@ -722,14 +727,14 @@ public class SwirldsPlatform implements Platform {
 
         consensusRef.set(new ConsensusImpl(platformContext, consensusMetrics, getAddressBook()));
 
+        latestImmutableStateNexus.setState(initialState.reserve("set latest immutable to initial state"));
+
         if (startedFromGenesis) {
             initialAncientThreshold = 0;
             startingRound = 0;
         } else {
             initialAncientThreshold = initialState.getState().getPlatformState().getAncientThreshold();
             startingRound = initialState.getRound();
-
-            latestImmutableStateNexus.setState(initialState.reserve("set latest immutable to initial state"));
 
             initialState.setGarbageCollector(signedStateGarbageCollector);
             logSignedStateHash(initialState);

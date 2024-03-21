@@ -23,8 +23,8 @@ import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWiring;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
@@ -55,7 +55,7 @@ public class PlatformCoordinator {
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
-    private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
+    private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final StateHasherWiring stateHasherWiring;
@@ -89,7 +89,7 @@ public class PlatformCoordinator {
             @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
             @NonNull final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring,
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
-            @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
+            @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
             @NonNull final StateHasherWiring stateHasherWiring) {
@@ -133,7 +133,7 @@ public class PlatformCoordinator {
         inOrderLinkerWiring.flushRunnable().run();
         shadowgraphWiring.flushRunnable().run();
         consensusEngineWiring.flush();
-        applicationTransactionPrehandlerWiring.flushRunnable().run();
+        applicationTransactionPrehandlerWiring.flush();
         futureEventBufferWiring.flush();
         eventCreationManagerWiring.flush();
     }
