@@ -68,7 +68,9 @@ public class ServicesMain implements SwirldMain {
      * Create a new instance
      */
     public ServicesMain() {
-        if (workflowsEnabled()) {
+        final var configProvider = new ConfigProviderImpl(false);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        if (hederaConfig.workflowsEnabled().isEmpty()) {
             logger.info("No workflows enabled, using mono-service");
             delegate = new MonoServicesMain();
         } else {
@@ -218,20 +220,5 @@ public class ServicesMain implements SwirldMain {
             exitSystem(CONFIGURATION_ERROR);
             throw e;
         }
-    }
-
-    /**
-     * Determines if workflows – i.e. the modular code – are enabled. Set the config value to "false"
-     * or to "0" to disable.
-     *
-     * @return {@code true} if workflows are enabled, otherwise {@code false}. Defaults to {@code true}.
-     */
-    private static boolean workflowsEnabled() {
-        final var configProvider = new ConfigProviderImpl(false);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-
-        final String value = hederaConfig.workflowsEnabled();
-        if (value.isEmpty()) return true;
-        else return !value.toLowerCase().contains("false") && !value.equals("0");
     }
 }
