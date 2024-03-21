@@ -77,6 +77,13 @@ public interface ConfigurationExtension {
         return Collections.emptySet();
     }
 
+    /**
+     * A pair of type and its corresponding converter.
+     *
+     * @param type type to convert
+     * @param converter converter to use
+     * @param <T> type to convert
+     */
     record ConverterPair<T>(@NonNull Class<T> type, @NonNull ConfigConverter<T> converter) {
         public static <T> ConverterPair<T> of(Class<T> type, ConfigConverter<T> converter) {
             return new ConverterPair<>(type, converter);
