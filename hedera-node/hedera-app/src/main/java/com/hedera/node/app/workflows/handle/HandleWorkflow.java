@@ -310,7 +310,7 @@ public class HandleWorkflow {
         final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
 
         // Setup record builder list
-        final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state);
+        final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state, platformState);
         final var recordListBuilder = new RecordListBuilder(consensusNow);
         final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
 

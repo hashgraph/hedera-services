@@ -9,4 +9,5 @@ open module com.swirlds.base.test.fixtures {
     requires transitive org.junit.jupiter.api;
     requires static com.github.spotbugs.annotations;
     requires jakarta.inject;
+    requires org.assertj.core;
 }
