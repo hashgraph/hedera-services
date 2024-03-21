@@ -171,7 +171,6 @@ public class Browser {
 
         final boolean showUi = !GraphicsEnvironment.isHeadless();
 
-        final InfoSwirld infoSwirld;
         final GuiEventStorage guiEventStorage;
         final HashgraphGuiSource guiSource;
         Metrics guiMetrics = null;
@@ -179,7 +178,8 @@ public class Browser {
             setupBrowserWindow();
             setStateHierarchy(new StateHierarchy(null));
             final InfoApp infoApp = getStateHierarchy().getInfoApp(appDefinition.getApplicationName());
-            infoSwirld = new InfoSwirld(infoApp, new byte[CryptoConstants.HASH_SIZE_BYTES]);
+            final InfoSwirld infoSwirld = new InfoSwirld(infoApp, new byte[CryptoConstants.HASH_SIZE_BYTES]);
+            new InfoMember(infoSwirld, "Node" + nodesToRun.getFirst().id());
 
             // Duplicating config here is ugly, but Browser is test only code now.
             // In the future we should clean it up, but it's not urgent to do so.
@@ -191,7 +191,6 @@ public class Browser {
 
             guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
         } else {
-            infoSwirld = null;
             guiSource = null;
             guiEventStorage = null;
         }
@@ -224,8 +223,6 @@ public class Browser {
             platforms.put(nodeId, platform);
 
             if (showUi) {
-                new InfoMember(infoSwirld, platform);
-
                 if (index == 0) {
                     guiMetrics = platform.getContext().getMetrics();
                 }
