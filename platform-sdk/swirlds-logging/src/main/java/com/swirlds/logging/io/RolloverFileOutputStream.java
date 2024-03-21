@@ -16,7 +16,8 @@
 
 package com.swirlds.logging.io;
 
-import com.swirlds.logging.utils.FileUtils;
+import static com.swirlds.logging.utils.StringUtils.toPaddedDigitsString;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -25,33 +26,43 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.function.Function;
+import java.nio.file.StandardCopyOption;
 
 /**
- * {@link RolloverFileOutputStream} is an {@link OutputStream} implementation that supports general rollover
- * functionality for the underlying file. Note: It's important to manage the lifecycle of the output stream properly by
- * calling {@link #flush()} and {@link #close()} methods when finished using it to ensure proper resource cleanup.
+ * {@link RolloverFileOutputStream} is an {@link OutputStream} implementation that supports rollover
+ * size  functionality for the underlying file. Note: It's important to manage the lifecycle of the output
+ * stream properly by calling {@link #flush()} and {@link #close()} methods when finished using it to ensure proper
+ * resource cleanup.
  */
-abstract class RolloverFileOutputStream extends OutputStream {
+public class RolloverFileOutputStream extends OutputStream {
     protected final Path logPath;
     private final int maxRollover;
     private final long maxFileSize;
     private final boolean append;
     private long remainingSize;
     private FileOutputStream outputStream;
-    protected final String baseName;
-    protected final String extension;
-    protected final int indexLength;
-    protected int index;
+    private final String baseName;
+    private final String extension;
+    private final int indexLength;
+    private int index;
 
     /**
-     * Creates an {@link RolloverFileOutputStream}
+     * Creates an {@link RolloverFileOutputStream}. Supporting size based rollover.
+     * Usage:
+     * <pre>
+     *     // Example usage with size-based rollover
+     *     Path logPath = Paths.get("logs", "example.log");
+     *     long maxFileSize = 1024 * 1024; // 1 MB
+     *     boolean append = true;
+     *     int maxRollover = 5; // Maximum number of rolling files
+     *     RolloverFileOutputStream outputStream = new RolloverFileOutputStream(logPath, maxFileSize, append, maxRollover);
+     * </pre>
      *
-     * @param logPath     path where the logging file is located. Should contain the base dir + the name of the logging
-     *                    file.
-     * @param maxFileSize maximum size for the file. The limit is checked with best effort
-     * @param append      if true and the file exists, appends the content to the file. if not, the file is rolled.
-     * @param maxRollover Within a rolling period, how many rolling files are allowed.
+     * @param logPath         path where the logging file is located. Should contain the base dir + the name of the
+     *                        logging file.
+     * @param maxFileSize     maximum size for the file. The limit is checked with best effort
+     * @param append          if true and the file exists, appends the content to the file. if not, the file is rolled.
+     * @param maxRollover     Within a rolling period, how many rolling files are allowed.
      */
     protected RolloverFileOutputStream(
             final @NonNull Path logPath, final long maxFileSize, final boolean append, final int maxRollover) {
@@ -65,9 +76,6 @@ abstract class RolloverFileOutputStream extends OutputStream {
         this.extension = i >= 0 ? baseFile.substring(i + 1) : "";
         this.index = 0;
         this.indexLength = String.valueOf(maxRollover).length();
-    }
-
-    protected void init(final @NonNull Path logPath) {
         try {
             this.outputStream = new FileOutputStream(logPath.toString(), this.append);
         } catch (FileNotFoundException e) {
@@ -124,50 +132,7 @@ abstract class RolloverFileOutputStream extends OutputStream {
         ((OutputStream) outputStream).close();
     }
 
-    /**
-     * Method that holds the logic of rolling. Can make use of {@link RolloverFileOutputStream#doRoll(Function)}
-     */
-    protected abstract void roll();
-
-    /**
-     * Performs the actual rolling of the file. Each subclass can call this when needed or reimplement the way this is
-     * done.
-     *
-     * @param newPathSupplier a function that will convert an index into a path.
-     */
-    protected void doRoll(final @NonNull Function<Integer, Path> newPathSupplier) {
-        final long maxIndex = maxRollover - 1;
-        int currentIndex = index;
-        Path newPath = newPathSupplier.apply(currentIndex);
-
-        while (Files.exists(newPath) && currentIndex <= maxIndex) {
-            currentIndex++;
-            newPath = newPathSupplier.apply(currentIndex % maxRollover);
-        }
-
-        if (currentIndex > maxIndex) {
-            currentIndex = index;
-            newPath = newPathSupplier.apply(currentIndex % maxRollover);
-            FileUtils.delete(newPath);
-        }
-
-        final File file = logFilePath().toFile();
-        try {
-            outputStream.close();
-            FileUtils.renameFile(file, newPath.toFile());
-            outputStream = new FileOutputStream(file, append);
-        } catch (IOException e) {
-            throw new IllegalStateException("Something happened while rolling over", e);
-        }
-        index = getNextIndex(currentIndex);
-        remainingSize = maxFileSize;
-    }
-
-    protected int getNextIndex(final int currentIndex) {
-        return currentIndex;
-    }
-
-    protected String dotExtension() {
+    private String dotExtension() {
         if (extension.isEmpty()) {
             return "";
         }
@@ -186,5 +151,40 @@ abstract class RolloverFileOutputStream extends OutputStream {
 
     protected Path logFilePath() {
         return logPath.resolve(logFileName());
+    }
+
+    /**
+     *Rolls the file
+     */
+    private void roll() {
+        final long maxIndex = maxRollover - 1;
+        int currentIndex = index;
+        Path newPath = getPathFor(currentIndex);
+
+        // Start by searching a new index if current index is in use
+        while (Files.exists(newPath) && currentIndex <= maxIndex) {
+            currentIndex++;
+            newPath = getPathFor(currentIndex % maxRollover);
+        }
+
+        if (currentIndex > maxIndex) {
+            currentIndex = index;
+            newPath = getPathFor(currentIndex % maxRollover);
+        }
+
+        final File file = logFilePath().toFile();
+        try {
+            outputStream.close();
+            Files.move(file.toPath(), newPath, StandardCopyOption.REPLACE_EXISTING);
+            outputStream = new FileOutputStream(file, append);
+        } catch (IOException e) {
+            throw new IllegalStateException("Something happened while rolling over", e);
+        }
+        index = currentIndex;
+        remainingSize = maxFileSize;
+    }
+
+    private Path getPathFor(int index) {
+        return logPath.resolve(baseName + "." + toPaddedDigitsString(index, indexLength) + dotExtension());
     }
 }

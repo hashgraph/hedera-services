@@ -48,40 +48,4 @@ public class FileUtils {
             throw new IllegalStateException("Cannot write to log directory. Path:" + path, e);
         }
     }
-
-    /**
-     * Tries to rename the file using all possible strategies in case of failure
-     *
-     * @param src         the file to be renamed
-     * @param destination the desired destination of the src file
-     * @throws IOException in case none of the strategies for renaming worked
-     */
-    public static void renameFile(@NonNull final File src, @NonNull final File destination) throws IOException {
-        // Try old school renames
-        if (!src.renameTo(destination)) {
-            try {
-                // Try new move
-                Files.move(src.toPath(), destination.toPath());
-            } catch (IOException e) {
-                // Copy
-                Files.copy(src.toPath(), destination.toPath());
-                // Delete
-                Files.deleteIfExists(src.toPath());
-            }
-        }
-    }
-
-    /**
-     * Deletes the file throwing non-checked exception in case of failure
-     *
-     * @param src the file to delete
-     * @throws IllegalStateException if file could not be deleted
-     */
-    public static void delete(@NonNull final Path src) {
-        try {
-            Files.delete(src);
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not delete file: " + src, e);
-        }
-    }
 }

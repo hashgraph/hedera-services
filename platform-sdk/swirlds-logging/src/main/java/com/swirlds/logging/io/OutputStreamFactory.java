@@ -37,7 +37,6 @@ public class OutputStreamFactory {
     private static final String APPEND_PROPERTY = ".append";
     private static final String SIZE_PROPERTY = ".file-rolling.maxFileSize";
     private static final String MAX_ROLLOVER = ".file-rolling.maxRollover";
-    private static final String DATE_PATTERN_PROPERTY = ".file-rolling.datePattern";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
     private static final int DEFAULT_MAX_ROLLOVER_FILES = 1;
     private static final int BUFFER_CAPACITY = 8192 * 8;
@@ -56,7 +55,7 @@ public class OutputStreamFactory {
      *
      * @param configuration the configuration to read the properties from
      * @param handlerName   the name of the handler that is configuring the output-stream
-     * @return a {@link FileOutputStream} a {@link RolloverFileOutputStream} depending on the configuration
+     * @return a {@link FileOutputStream} or a {@link RolloverFileOutputStream} depending on the configuration
      * @throws IOException          if there was a problem when creating the underlying file
      * @throws NullPointerException if any of the parameters is null
      */
@@ -83,14 +82,7 @@ public class OutputStreamFactory {
 
             final int maxRollingOver = configValueOrElse(
                     configuration, propertyPrefix + MAX_ROLLOVER, Integer.class, DEFAULT_MAX_ROLLOVER_FILES);
-            final String datePattern =
-                    configuration.getValue(propertyPrefix + DATE_PATTERN_PROPERTY, String.class, null);
-            if (datePattern == null) {
-                return new OnSizeRolloverFileOutputStream(filePath, maxFileSize, append, maxRollingOver);
-            } else {
-                return new OnSizeAndDateRolloverFileOutputStream(
-                        filePath, maxFileSize, append, maxRollingOver, datePattern);
-            }
+            return new RolloverFileOutputStream(filePath, maxFileSize, append, maxRollingOver);
         } catch (IOException | IllegalStateException e) {
             throw new IOException("Could not create log file " + filePath.toAbsolutePath(), e);
         }
@@ -107,6 +99,7 @@ public class OutputStreamFactory {
      * @throws IOException          if there was a problem when creating the underlying file
      * @throws NullPointerException if any of the parameters is null
      */
+    @NonNull
     public OutputStream bufferedOutputStream(
             final @NonNull Configuration configuration, final @NonNull String handlerName) throws IOException {
 

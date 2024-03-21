@@ -29,13 +29,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 /**
- * A file handler that writes log events to a file with optional rolling based on size or size and date.
+ * A {@link com.swirlds.logging.api.extensions.handler.LogHandler} that writes log events to a file with optional rolling based on size.
  * <p>
  * The rolling behavior of the underlying file is determined by the provided configuration. When enabled, rolling occurs
- * based on size or a combination of size and date. To enable it at least {@code file-rolling.maxFileSize} property
+ * based on size. To enable it at least {@code file-rolling.maxFileSize} property
  * needs to be informed.
  * <p>
- * Rolling is implemented with a best effort strategy. Log events are initially written to the file, and rolling occurs
+ * Rolling is implemented with best effort strategy. Log events are initially written to the file, and rolling occurs
  * if the file size exceeds the configured limit. This approach maintains data coherence and avoids the performance
  * penalties associated with handling files in a highly specific manner. However, it may result in occasional file sizes
  * exceeding the limit, depending on the volume of data being written.
@@ -47,12 +47,11 @@ import java.nio.file.Path;
  *     <li>{@code file} - The {@link Path} of the log file.</li>
  *     <li>{@code append} - Determines whether to append to an existing file or overwrite it.</li>
  *     <li>{@code formatTimestamp} - If set to true, epoch values are formatted as human-readable strings.</li>
- *     <li>{@code file-rolling.maxRollover} - Maximum number of files used for rolling.</li>
  *     <li>{@code file-rolling.maxFileSize} - Maximum size of the file for size-based rolling.</li>
- *     <li>{@code file-rolling.datePattern} - Date pattern for enabling size and date-based rolling.</li>
+ *     <li>{@code file-rolling.maxRollover} - Maximum number of files used for rolling.</li>
  * </ul>
  */
-public class RollingFileHandler extends AbstractSyncedHandler {
+public class FileHandler extends AbstractSyncedHandler {
 
     private static final int EVENT_LOG_PRINTER_SIZE = 4 * 1024;
     private final OutputStream outputStream;
@@ -65,7 +64,7 @@ public class RollingFileHandler extends AbstractSyncedHandler {
      * @param configuration the configuration
      * @param buffered      if true a buffer is used in between the file writing
      */
-    public RollingFileHandler(
+    public FileHandler(
             @NonNull final String handlerName, @NonNull final Configuration configuration, final boolean buffered)
             throws IOException {
         super(handlerName, configuration);
@@ -76,7 +75,7 @@ public class RollingFileHandler extends AbstractSyncedHandler {
                     ? OutputStreamFactory.getInstance().bufferedOutputStream(configuration, handlerName)
                     : OutputStreamFactory.getInstance().outputStream(configuration, handlerName);
         } catch (IOException e) {
-            throw new IOException("Could not create rolling handler", e);
+            throw new IOException("Could not create FileHandler", e);
         }
     }
 

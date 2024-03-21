@@ -21,16 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.test.fixtures.time.FakeTime;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
@@ -40,73 +36,9 @@ class RolloverFileOutputStreamTest {
     private static final String FILE_BASE_NAME = "testFile";
     private static final long MAX_FILE_SIZE = 1000; // 1 KB
     private static final boolean APPEND_TO_EXISTING = false;
-    public static final String DATE_PATTERN = "yyyy-MM-dd";
 
     @TempDir(cleanup = CleanupMode.ALWAYS)
     private Path testFolder;
-
-    @Test
-    public void testDateSizeBaseRollingOverriding() throws IOException {
-        // given: a RolloverFileOutputStream configure to roll by size with max 1 roll file
-        // when: Writing just enough data to trigger the rolling 3 times plus one below the limit
-        // then: there should only exist the index 0. The base file should contain the latest under limit write
-
-        // given
-        try (OutputStream rolloverOutputStream = new OnSizeAndDateRolloverFileOutputStream(
-                testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 1, DATE_PATTERN)) {
-
-            // when
-            // Write enough data to fill one file
-            writeDataToOutputStream(rolloverOutputStream, "Some data to fill one file.", MAX_FILE_SIZE);
-            // Write more data to trigger rolling
-            writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE);
-            writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE);
-            writeDataToOutputStream(
-                    rolloverOutputStream, "More data to trigger rolling.".getBytes(StandardCharsets.UTF_8));
-
-            // then
-            // Verify the existence of the rolled file
-            String expectedRolledFileName = FILE_BASE_NAME + "-" + getDateAsString(Instant.now());
-            Path rolledFilePath = testFolder.resolve(expectedRolledFileName + ".0");
-            assertTrue(Files.exists(testFolder.resolve(FILE_BASE_NAME)), "no file %s found".formatted(FILE_BASE_NAME));
-            assertEquals("More data to trigger rolling.", Files.readString(testFolder.resolve(FILE_BASE_NAME)));
-            assertTrue(Files.exists(rolledFilePath), "no file %s found".formatted(rolledFilePath.toString()));
-            assertFalse(Files.exists(testFolder.resolve(expectedRolledFileName + ".1")));
-            assertEquals(MAX_FILE_SIZE, rolledFilePath.toFile().length());
-        }
-    }
-
-    @Test
-    public void testDateSizeBaseRollingNotOverridingExistingFiles() throws IOException {
-        // given: a RolloverFileOutputStream configure to roll by size with max 3 roll file.
-        //   And 2 previously existing rolling files
-        // when: Writing just enough data to trigger the rolling 1 time
-        // then: the previously existing files should not be modified and there should exist a roll file with index 2
-
-        // given
-        createRolledFiles(testFolder.resolve(FILE_BASE_NAME), "0");
-        createRolledFiles(testFolder.resolve(FILE_BASE_NAME), "1");
-
-        try (OutputStream rolloverOutputStream = new OnSizeRolloverFileOutputStream(
-                testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 3)) {
-
-            // when
-            // Write enough data to fill one file
-            writeDataToOutputStream(rolloverOutputStream, "Some data to fill one file.", MAX_FILE_SIZE);
-
-            // then
-            // Verify the existence of the rolled file
-            Path rolledFilePath = testFolder.resolve(FILE_BASE_NAME + ".0");
-            assertTrue(Files.exists(rolledFilePath), "no file %s found".formatted(rolledFilePath.toString()));
-            assertEquals(0, rolledFilePath.toFile().length());
-            rolledFilePath = testFolder.resolve(FILE_BASE_NAME + ".1");
-            assertTrue(Files.exists(rolledFilePath), "no file %s found".formatted(rolledFilePath.toString()));
-            assertEquals(0, rolledFilePath.toFile().length());
-            rolledFilePath = testFolder.resolve(FILE_BASE_NAME + ".2");
-            assertTrue(Files.exists(rolledFilePath), "no file %s found".formatted(rolledFilePath.toString()));
-            assertEquals(MAX_FILE_SIZE, rolledFilePath.toFile().length());
-        }
-    }
 
     @Test
     public void testDateSizeBaseRollingOverridingFirstExistingFile() throws IOException {
@@ -119,7 +51,7 @@ class RolloverFileOutputStreamTest {
         createRolledFiles(testFolder.resolve(FILE_BASE_NAME), "0");
         createRolledFiles(testFolder.resolve(FILE_BASE_NAME), "1");
 
-        try (OutputStream rolloverOutputStream = new OnSizeRolloverFileOutputStream(
+        try (OutputStream rolloverOutputStream = new RolloverFileOutputStream(
                 testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 2)) {
 
             // when
@@ -148,7 +80,7 @@ class RolloverFileOutputStreamTest {
         // then: there should only exist the index 0. The base file should contain the latest under limit write
 
         // given
-        try (OutputStream rolloverOutputStream = new OnSizeRolloverFileOutputStream(
+        try (OutputStream rolloverOutputStream = new RolloverFileOutputStream(
                 testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 1)) {
 
             // when
@@ -168,79 +100,6 @@ class RolloverFileOutputStreamTest {
     }
 
     @Test
-    public void tesDateSizeBaseRollingOverridingOnlyWithingDate() throws IOException {
-        // given: a RolloverFileOutputStream configure to roll by size and date with max 1 roll file.
-        //    and a fake instant provider.
-        // when: Writing just enough data to trigger the rolling multiple times in original time and one after 1 unit of
-        // time elapsed.
-        // then: there should only exist the index 0 for both days.
-
-        // given
-        FakeTime timeProvider = new FakeTime(Instant.now(), Duration.ZERO);
-        try (OutputStream rolloverOutputStream = new OnSizeAndDateRolloverFileOutputStream(
-                testFolder.resolve(FILE_BASE_NAME),
-                MAX_FILE_SIZE,
-                APPEND_TO_EXISTING,
-                1,
-                DATE_PATTERN,
-                timeProvider::now)) {
-
-            // when
-            // Write enough data to fill one file
-            writeDataToOutputStream(rolloverOutputStream, "Some data to fill one file.", MAX_FILE_SIZE);
-            // Write more data to trigger rolling
-            writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE);
-            writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE);
-
-            // Simulate the passing of time
-            timeProvider.tick(Duration.of(1, ChronoUnit.DAYS));
-            writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE);
-            writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE);
-
-            // then
-            // Verify the existence of the rolled file
-            String expectedRolledFileName = FILE_BASE_NAME + "-" + getDateAsString(Instant.now());
-            Path rolledFilePath = testFolder.resolve(expectedRolledFileName + ".0");
-            assertTrue(Files.exists(rolledFilePath), "no file %s found".formatted(rolledFilePath.toString()));
-            assertFalse(
-                    Files.exists(testFolder.resolve(expectedRolledFileName + ".1")),
-                    "file %s should not have been found".formatted(expectedRolledFileName + ".1"));
-
-            assertEquals(MAX_FILE_SIZE, rolledFilePath.toFile().length());
-            expectedRolledFileName =
-                    FILE_BASE_NAME + "-" + getDateAsString(Instant.now().plus(1, ChronoUnit.DAYS));
-            assertTrue(Files.exists(testFolder.resolve(expectedRolledFileName + ".0")));
-        }
-    }
-
-    @Test
-    public void testDateSizeBaseRollingNoOverriding() throws IOException {
-        // given: a RolloverFileOutputStream configure to roll by size and date with max 2 roll file.
-        // when: Writing just enough data to trigger the rolling 2
-        // then: there should exist the index 0 and index 1
-
-        // given
-        try (OutputStream rolloverOutputStream = new OnSizeAndDateRolloverFileOutputStream(
-                testFolder.resolve(FILE_BASE_NAME), MAX_FILE_SIZE, APPEND_TO_EXISTING, 2, DATE_PATTERN)) {
-
-            // when
-            // Write enough data to fill one file
-            writeDataToOutputStream(rolloverOutputStream, "Some data to fill one file.", MAX_FILE_SIZE);
-
-            // Write more data to trigger rolling
-            writeDataToOutputStream(rolloverOutputStream, "More data to trigger rolling.", MAX_FILE_SIZE * 2);
-
-            // then
-            // Verify the existence of the rolled file
-            String expectedRolledFileName = FILE_BASE_NAME + "-" + getDateAsString(Instant.now());
-            Path rolledFilePath = testFolder.resolve(expectedRolledFileName + ".0");
-            assertTrue(Files.exists(rolledFilePath), "no file %s found".formatted(rolledFilePath.toString()));
-            rolledFilePath = testFolder.resolve(expectedRolledFileName + ".1");
-            assertTrue(Files.exists(rolledFilePath));
-        }
-    }
-
-    @Test
     void testWriteArrayFlushAndClose() throws IOException {
         // Creating an instance of RolloverFileOutputStream
         // Writing data to the stream
@@ -251,7 +110,7 @@ class RolloverFileOutputStreamTest {
 
         // given:
         Path logFilePath = testFolder.resolve(FILE_BASE_NAME);
-        RolloverFileOutputStream outputStream = new OnSizeRolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1);
+        RolloverFileOutputStream outputStream = new RolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1);
         // when:
         outputStream.write("Test data".getBytes(), 5, 4);
         outputStream.flush();
@@ -272,7 +131,7 @@ class RolloverFileOutputStreamTest {
 
         // given:
         Path logFilePath = testFolder.resolve(FILE_BASE_NAME);
-        RolloverFileOutputStream outputStream = new OnSizeRolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1);
+        RolloverFileOutputStream outputStream = new RolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1);
 
         // when:
         String testData = "Test data";
@@ -296,7 +155,7 @@ class RolloverFileOutputStreamTest {
 
         // given:
         Path logFilePath = testFolder.resolve(FILE_BASE_NAME);
-        RolloverFileOutputStream outputStream = new OnSizeRolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1);
+        RolloverFileOutputStream outputStream = new RolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1);
         // when:
         outputStream.write('c');
         outputStream.flush();
@@ -321,7 +180,7 @@ class RolloverFileOutputStreamTest {
         Files.writeString(logFilePath, initialContent);
 
         RolloverFileOutputStream outputStream =
-                new OnSizeRolloverFileOutputStream(logFilePath, initialContent.length() * 2 + 1, true, 1);
+                new RolloverFileOutputStream(logFilePath, initialContent.length() * 2 + 1, true, 1);
 
         // when:
         writeDataToOutputStream(outputStream, initialContent.getBytes(StandardCharsets.UTF_8));
@@ -348,7 +207,7 @@ class RolloverFileOutputStreamTest {
         Files.writeString(logFilePath, initialContent);
 
         RolloverFileOutputStream outputStream =
-                new OnSizeRolloverFileOutputStream(logFilePath, initialContent.length() * 2 + 1, false, 1);
+                new RolloverFileOutputStream(logFilePath, initialContent.length() * 2 + 1, false, 1);
 
         // when
         writeDataToOutputStream(outputStream, initialContent.getBytes(StandardCharsets.UTF_8));
@@ -372,8 +231,7 @@ class RolloverFileOutputStreamTest {
         // Attempt to write to the file and assert that an IllegalStateException is thrown
         assertThrows(IllegalStateException.class, () -> {
             // Try to write something to the file
-            try (RolloverFileOutputStream v =
-                    new OnSizeRolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1)) {}
+            try (RolloverFileOutputStream v = new RolloverFileOutputStream(logFilePath, MAX_FILE_SIZE, true, 1)) {}
         });
     }
 
@@ -390,13 +248,6 @@ class RolloverFileOutputStreamTest {
     private static void writeDataToOutputStream(final OutputStream outputStream, final byte[] initialContent)
             throws IOException {
         outputStream.write(initialContent);
-    }
-
-    /**
-     * Get date part in "yyyy-MM-dd" format
-     */
-    private static String getDateAsString(Instant instant) {
-        return instant.toString().substring(0, 10);
     }
 
     /**
