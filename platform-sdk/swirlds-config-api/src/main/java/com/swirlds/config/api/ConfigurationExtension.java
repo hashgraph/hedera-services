@@ -19,8 +19,8 @@ package com.swirlds.config.api;
 import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 
 /**
  * The {@link ConfigurationExtension} is used to extend the configuration api with additional configuration types,
@@ -38,7 +38,7 @@ public interface ConfigurationExtension {
      *
      * @return a collection of configuration data types
      */
-    default Collection<Class<? extends Record>> getConfigDataTypes() {
+    default Set<Class<? extends Record>> getConfigDataTypes() {
         return Collections.emptySet();
     }
 
@@ -48,7 +48,7 @@ public interface ConfigurationExtension {
      *
      * @return a collection of configuration converters
      */
-    default Collection<ConverterPair<?>> getConverters() {
+    default Set<ConverterPair<?>> getConverters() {
         return Collections.emptySet();
     }
 
@@ -58,7 +58,7 @@ public interface ConfigurationExtension {
      *
      * @return a collection of configuration validators
      */
-    default Collection<ConfigValidator> getValidators() {
+    default Set<ConfigValidator> getValidators() {
         return Collections.emptySet();
     }
 
@@ -68,7 +68,7 @@ public interface ConfigurationExtension {
      *
      * @return a collection of configuration sources
      */
-    default Collection<ConfigSource> getConfigSources() {
+    default Set<ConfigSource> getConfigSources() {
         return Collections.emptySet();
     }
 

@@ -82,7 +82,6 @@ import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.config.api.validation.ConfigValidator;
-import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -91,7 +90,7 @@ import java.util.Set;
 @AutoService(ConfigurationExtension.class)
 public class ServicesConfigExtension implements ConfigurationExtension {
 
-    public Collection<Class<? extends Record>> getConfigDataTypes() {
+    public Set<Class<? extends Record>> getConfigDataTypes() {
 
         return Set.of(
                 AccountsConfig.class,
@@ -130,7 +129,7 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 VersionConfig.class);
     }
 
-    public Collection<ConverterPair<?>> getConverters() {
+    public Set<ConverterPair<?>> getConverters() {
         return Set.of(
                 ConverterPair.of(CongestionMultipliers.class, new CongestionMultipliersConverter()),
                 ConverterPair.of(EntityScaleFactors.class, new EntityScaleFactorsConverter()),
@@ -148,7 +147,7 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 ConverterPair.of(Bytes.class, new BytesConverter()));
     }
 
-    public Collection<ConfigValidator> getValidators() {
+    public Set<ConfigValidator> getValidators() {
         return Set.of(new EmulatesMapValidator());
     }
 }

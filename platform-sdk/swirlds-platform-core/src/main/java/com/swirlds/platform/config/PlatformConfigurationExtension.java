@@ -40,8 +40,7 @@ import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
-import java.util.Collection;
-import java.util.List;
+import java.util.Set;
 
 /**
  * Registers configuration types for the platform.
@@ -52,12 +51,12 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
     /**
      * {@inheritDoc}
      */
-    public Collection<Class<? extends Record>> getConfigDataTypes() {
+    public Set<Class<? extends Record>> getConfigDataTypes() {
 
         // Please keep lists in this method alphabetized (enforced by unit test).
 
         // Load Configuration Definitions
-        return List.of(
+        return Set.of(
                 AddressBookConfig.class,
                 BasicCommonConfig.class,
                 BasicConfig.class,
