@@ -18,9 +18,7 @@ package com.swirlds.platform.config;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
@@ -32,7 +30,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -88,10 +85,8 @@ public class DefaultConfiguration {
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
-                .withConverter(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse)
-                .withSource(mappedSettingsConfigSource);
-        ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder, Set.of("com.swirlds"));
+        final ConfigurationBuilder configurationBuilder =
+                ConfigurationBuilder.create().autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
 
         for (final Path configurationPath : configurationPaths) {
             logger.info(LogMarker.CONFIG.getMarker(), "Loading configuration from {}", configurationPath);

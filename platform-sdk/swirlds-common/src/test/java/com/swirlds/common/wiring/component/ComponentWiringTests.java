@@ -56,6 +56,12 @@ public class ComponentWiringTests {
             handleBar(true);
             return "" + baseOutput;
         }
+
+        @InputWireLabel("data to be filtered")
+        @SchedulerLabel("filter")
+        default Boolean filter(@NonNull final Long baseOutput) {
+            return baseOutput % 2 == 0;
+        }
     }
 
     private static class FooBarBazImpl implements FooBarBaz {
@@ -89,6 +95,16 @@ public class ComponentWiringTests {
 
         @NonNull
         List<String> handleInputB(@NonNull Long l);
+
+        @NonNull
+        default Boolean filter(@NonNull final String baseOutput) {
+            return baseOutput.hashCode() % 2 == 0;
+        }
+
+        @NonNull
+        default String transformer(@NonNull final String baseOutput) {
+            return "(" + baseOutput + ")";
+        }
     }
 
     private static class ComponentWithListOutputImpl implements ComponentWithListOutput {
@@ -274,6 +290,69 @@ public class ComponentWiringTests {
 
     @ParameterizedTest
     @ValueSource(ints = {0, 1})
+    void filterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+
+        final TaskScheduler<Long> scheduler = wiringModel
+                .schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
+
+        final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
+
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+
+        if (bindLocation == 0) {
+            fooBarBazWiring.bind(fooBarBazImpl);
+        }
+
+        final InputWire<Integer> fooInput = fooBarBazWiring.getInputWire(FooBarBaz::handleFoo);
+        final InputWire<Boolean> barInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBar);
+        final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
+
+        final OutputWire<Long> output = fooBarBazWiring.getFilteredOutput(FooBarBaz::filter);
+
+        // Getting the same filter multiple times should yield the same instance
+        assertSame(output, fooBarBazWiring.getFilteredOutput(FooBarBaz::filter));
+
+        if (bindLocation == 1) {
+            fooBarBazWiring.bind(fooBarBazImpl);
+        }
+
+        final AtomicReference<Long> outputValue = new AtomicReference<>();
+        output.solderTo("outputHandler", "output", outputValue::set);
+
+        long expectedRunningValue = 0;
+        for (int i = 0; i < 1000; i++) {
+            outputValue.set(null);
+            if (i % 3 == 0) {
+                expectedRunningValue += i;
+                fooInput.put(i);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+                final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
+                assertEquals(expectedValue, outputValue.get());
+            } else if (i % 3 == 1) {
+                final boolean choice = i % 7 == 0;
+                expectedRunningValue *= choice ? 1 : -1;
+                barInput.put(choice);
+                final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
+                assertEquals(expectedValue, outputValue.get());
+            } else {
+                final String value = "value" + i;
+                expectedRunningValue *= value.hashCode();
+                bazInput.put(value);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
     void splitterTest(final int bindLocation) {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -310,6 +389,108 @@ public class ComponentWiringTests {
 
         componentWiring.getInputWire(ComponentWithListOutput::handleInputB).put(123L);
         expectedOutputData.addAll(List.of("1", "2", "3"));
+
+        assertEquals(expectedOutputData, outputData);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void filteredSplitterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+
+        final TaskScheduler<List<String>> scheduler = wiringModel
+                .schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
+
+        final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, scheduler);
+
+        if (bindLocation == 0) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        final OutputWire<String> filteredOutput =
+                componentWiring.getSplitAndFilteredOutput(ComponentWithListOutput::filter);
+        assertSame(filteredOutput, componentWiring.getSplitAndFilteredOutput(ComponentWithListOutput::filter));
+
+        final List<String> outputData = new ArrayList<>();
+        filteredOutput.solderTo("addToOutputData", "split data", outputData::add);
+
+        final List<String> expectedOutputData = new ArrayList<>();
+
+        if (bindLocation == 1) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputA).put("hello world");
+        for (final String s : "hello world".split("")) {
+            if (s.hashCode() % 2 == 0) {
+                expectedOutputData.add(s);
+            }
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputB).put(123L);
+        for (final String s : "123".split("")) {
+            if (s.hashCode() % 2 == 0) {
+                expectedOutputData.add(s);
+            }
+        }
+
+        assertEquals(expectedOutputData, outputData);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void transformedSplitterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+
+        final TaskScheduler<List<String>> scheduler = wiringModel
+                .schedulerBuilder("test")
+                .withType(TaskSchedulerType.DIRECT)
+                .withUncaughtExceptionHandler((t, e) -> {
+                    e.printStackTrace();
+                })
+                .build()
+                .cast();
+
+        final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, scheduler);
+
+        if (bindLocation == 0) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        final OutputWire<String> transformedOutput =
+                componentWiring.getSplitAndTransformedOutput(ComponentWithListOutput::transformer);
+        assertSame(
+                transformedOutput, componentWiring.getSplitAndTransformedOutput(ComponentWithListOutput::transformer));
+
+        final List<String> outputData = new ArrayList<>();
+        transformedOutput.solderTo("addToOutputData", "split data", outputData::add);
+
+        final List<String> expectedOutputData = new ArrayList<>();
+
+        if (bindLocation == 1) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputA).put("hello world");
+        for (final String s : "hello world".split("")) {
+            expectedOutputData.add("(" + s + ")");
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputB).put(123L);
+        for (final String s : "123".split("")) {
+            expectedOutputData.add("(" + s + ")");
+        }
 
         assertEquals(expectedOutputData, outputData);
     }

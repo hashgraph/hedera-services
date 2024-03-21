@@ -16,7 +16,11 @@
 
 package com.swirlds.logging.benchmark.util;
 
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.logging.benchmark.config.Constants;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Utility class for configuring benchmark handling of
@@ -24,6 +28,10 @@ import com.swirlds.logging.benchmark.config.Constants;
  * <li>outputFile deletion
  */
 public class ConfigManagement {
+
+    public static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withSources(SystemEnvironmentConfigSource.getInstance())
+            .build();
 
     private ConfigManagement() {}
 
@@ -48,14 +56,7 @@ public class ConfigManagement {
         return getEnvOrElse(Constants.DELETE_OUTPUT_FOLDER_ENV, Constants.DELETE_OUTPUT_FOLDER);
     }
 
-    private static boolean getEnvOrElse(final String deleteOutputFilesEnv, final boolean deleteOutputFiles) {
-        try {
-            final String enableTimestampFormatting = System.getenv(deleteOutputFilesEnv);
-            return enableTimestampFormatting != null
-                    ? Boolean.parseBoolean(enableTimestampFormatting)
-                    : deleteOutputFiles;
-        } catch (Exception e) {
-            return deleteOutputFiles;
-        }
+    private static boolean getEnvOrElse(final @NonNull String deleteOutputFilesEnv, final boolean deleteOutputFiles) {
+        return CONFIGURATION.getValue(deleteOutputFilesEnv, Boolean.class, deleteOutputFiles);
     }
 }

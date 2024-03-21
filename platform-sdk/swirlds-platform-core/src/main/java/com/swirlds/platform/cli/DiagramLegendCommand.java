@@ -106,7 +106,8 @@ public final class DiagramLegendCommand extends AbstractCommand {
                 List.of(new ModelManualLink(
                         concurrentScheduler.getName(),
                         "manual diagram link (not actually a wire)",
-                        sequentialScheduler.getName())));
+                        sequentialScheduler.getName())),
+                false);
         final String encodedDiagramString = Base64.getEncoder().encodeToString(diagramString.getBytes());
 
         final String editorUrl = "https://mermaid.ink/svg/" + encodedDiagramString + "?bgColor=e8e8e8";

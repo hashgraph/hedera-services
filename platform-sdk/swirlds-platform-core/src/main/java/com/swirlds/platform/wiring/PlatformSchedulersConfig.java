@@ -88,10 +88,11 @@ import com.swirlds.config.api.ConfigProperty;
  * @param issDetectorSchedulerType                          the ISS detector scheduler type
  * @param issDetectorUnhandledCapacity                      number of unhandled tasks allowed for the ISS detector
  * @param hashLoggerSchedulerType                           the hash logger scheduler type
- * @param hashLoggerUnhandledTaskCapacity                   number of unhandled tasks allowed in the hash logger task
- *                                                          scheduler
- * @param completeStateNotifierUnhandledCapacity            number of unhandled tasks allowed for the state completion
- *                                                          notifier
+ * @param hashLoggerUnhandledTaskCapacity                   number of unhandled tasks allowed in the hash logger
+ *                                                          task scheduler
+ * @param completeStateNotifierUnhandledCapacity            number of unhandled tasks allowed for the state completion notifier
+ * @param stateHasherSchedulerType                          the state hasher scheduler type
+ * @param stateHasherUnhandledCapacity                      number of unhandled tasks allowed for the state hasher
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -138,4 +139,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType hashLoggerSchedulerType,
         @ConfigProperty(defaultValue = "100") int hashLoggerUnhandledTaskCapacity,
-        @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
+        @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity) {}

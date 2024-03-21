@@ -43,12 +43,14 @@ class HalfDiskHashMapTest {
     @TempDir
     Path tempDirPath;
 
+    private MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+
     // =================================================================================================================
     // Helper Methods
     private HalfDiskHashMap<VirtualLongKey> createNewTempMap(FilesTestType testType, int count) throws IOException {
         // create map
         HalfDiskHashMap<VirtualLongKey> map = new HalfDiskHashMap<>(
-                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
+                dbConfig,
                 count,
                 (KeySerializer<VirtualLongKey>) testType.keySerializer,
                 tempDirPath.resolve(testType.name()),
@@ -146,6 +148,7 @@ class HalfDiskHashMapTest {
         // create map
         final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 10_000);
         final DataFileCompactor dataFileCompactor = new DataFileCompactor(
+                dbConfig,
                 "HalfDiskHashMapTest",
                 map.getFileCollection(),
                 map.getBucketIndexToBucketLocation(),

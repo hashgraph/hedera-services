@@ -29,7 +29,6 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -190,7 +189,6 @@ public final class PlatformBuilder {
             configurationBuilder = ConfigurationBuilder.create();
         }
 
-        ConfigUtils.scanAndRegisterAllConfigExtensions(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
         rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configurationBuilder, settingsPath));
 
         final Configuration configuration = configurationBuilder.build();

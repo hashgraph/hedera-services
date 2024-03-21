@@ -66,7 +66,10 @@ public class LogFiles {
         }
     }
 
-    public static void tryForceDeleteDir() {
+    /**
+     * If exists and is possible, remove the {@code LOGGING_FOLDER} dir and all its content
+     */
+    public static void tryDeleteDirAndContent() {
         final Path path = Path.of(LOGGING_FOLDER);
         try (Stream<Path> walk = Files.walk(path)) {
             walk.sorted(Comparator.reverseOrder())

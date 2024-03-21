@@ -128,6 +128,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final Key treasuryKey = C_COMPLEX_KEY;
     protected final Key EMPTY_KEYLIST =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    protected final Key metadataKey = A_COMPLEX_KEY;
     /* ---------- Node IDs */
     protected final EntityNumber node0Id = EntityNumber.newBuilder().number(0L).build();
     protected final EntityNumber node1Id = EntityNumber.newBuilder().number(1L).build();
@@ -290,6 +291,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
     protected final String memo = "test memo";
+    protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
     protected final long expirationTime = 1_234_567L;
     protected final long autoRenewSecs = 100L;
     protected static final long payerBalance = 10_000L;
@@ -818,7 +820,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 paused,
                 accountsFrozenByDefault,
                 accountsKycGrantedByDefault,
-                customFees);
+                customFees,
+                metadata,
+                metadataKey);
     }
 
     protected Token givenValidNonFungibleToken(boolean hasKyc) {
@@ -876,7 +880,6 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(true)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(2L))
                 .previousToken(asToken(3L))
@@ -890,7 +893,6 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .balance(1)
                 .frozen(false)
                 .kycGranted(true)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(2L))
                 .previousToken(asToken(3L))
@@ -898,7 +900,11 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Nft givenNft(NftID tokenID) {
-        return Nft.newBuilder().ownerId(ownerId).nftId(tokenID).build();
+        return Nft.newBuilder()
+                .ownerId(ownerId)
+                .metadata(Bytes.wrap("test"))
+                .nftId(tokenID)
+                .build();
     }
 
     protected CustomFee withFixedFee(final FixedFee fixedFee) {
@@ -945,7 +951,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
         given(context.readableStore(ReadableNetworkStakingRewardsStore.class)).willReturn(readableRewardsStore);
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(writableRewardsStore);
-        given(context.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
+        given(context.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
     }
 
     protected void givenStoresAndConfig(final FinalizeContext context) {

@@ -265,7 +265,8 @@ public final class Hedera implements SwirldMain {
         // we need to migrate the state to a newer release, and to determine which schemas to execute.
         logger.debug("Loading Software Version");
         final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
-        version = new HederaSoftwareVersion(versionConfig.hapiVersion(), versionConfig.servicesVersion());
+        version = new HederaSoftwareVersion(
+                versionConfig.hapiVersion(), versionConfig.servicesVersion(), hederaConfig.configVersion());
         logger.info(
                 "Creating Hedera Consensus Node {} with HAPI {}",
                 () -> HapiUtils.toString(version.getServicesVersion()),
@@ -591,9 +592,10 @@ public final class Hedera implements SwirldMain {
         } else if (previousVersion instanceof SerializableSemVers) {
             deserializedVersion = new HederaSoftwareVersion(
                     toPbj(((SerializableSemVers) previousVersion).getProto()),
-                    toPbj(((SerializableSemVers) previousVersion).getServices()));
+                    toPbj(((SerializableSemVers) previousVersion).getServices()),
+                    0);
         } else {
-            deserializedVersion = new HederaSoftwareVersion(SemanticVersion.DEFAULT, SemanticVersion.DEFAULT);
+            deserializedVersion = new HederaSoftwareVersion(SemanticVersion.DEFAULT, SemanticVersion.DEFAULT, 0);
         }
         logger.info("Deserialized version is {}, version {}", deserializedVersion, version);
 
