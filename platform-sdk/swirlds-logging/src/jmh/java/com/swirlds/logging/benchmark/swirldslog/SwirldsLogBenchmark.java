@@ -54,9 +54,9 @@ public class SwirldsLogBenchmark {
 
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
+
     @Param({"DISABLED", "ENABLED"})
     public String rolling;
-
 
     private static final String LOGGER_NAME = Constants.SWIRLDS + "Benchmark";
     private Logger logger;
@@ -67,7 +67,8 @@ public class SwirldsLogBenchmark {
 
     @Setup(Level.Trial)
     public void init() {
-        config = Objects.equals(rolling, "DISABLED") ? new SwirldsLogLoggingBenchmarkConfig()
+        config = Objects.equals(rolling, "DISABLED")
+                ? new SwirldsLogLoggingBenchmarkConfig()
                 : new RollingSwirldsLogLoggingBenchmarkConfig();
 
         if (Objects.equals(loggingType, FILE_TYPE)) {

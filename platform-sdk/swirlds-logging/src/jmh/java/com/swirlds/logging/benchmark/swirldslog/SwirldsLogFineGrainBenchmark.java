@@ -62,11 +62,14 @@ public class SwirldsLogFineGrainBenchmark {
     private Logger logger;
     private LoggingSystem loggingSystem;
     private LoggingBenchmarkConfig<LoggingSystem> config;
+
     @Param({"DISABLED", "ENABLED"})
     public String rolling;
+
     @Setup(Level.Trial)
     public void init() {
-        config = Objects.equals(rolling, "DISABLED") ? new SwirldsLogLoggingBenchmarkConfig()
+        config = Objects.equals(rolling, "DISABLED")
+                ? new SwirldsLogLoggingBenchmarkConfig()
                 : new RollingSwirldsLogLoggingBenchmarkConfig();
         if (Objects.equals(loggingType, FILE_TYPE)) {
             loggingSystem = config.configureFileLogging();
