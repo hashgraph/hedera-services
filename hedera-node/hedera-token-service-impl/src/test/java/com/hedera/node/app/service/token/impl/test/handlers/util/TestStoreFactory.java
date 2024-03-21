@@ -42,12 +42,12 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.test.fixtures.state.MapReadableStates;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.platform.test.fixtures.state.MapWritableStates;
 import java.util.HashMap;
 import java.util.Map;
 

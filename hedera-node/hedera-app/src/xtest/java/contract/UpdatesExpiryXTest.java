@@ -51,7 +51,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateExpiryTranslator;
 import com.hedera.node.app.spi.fixtures.Scenarios;
-import com.hedera.node.app.spi.state.ReadableKVState;
+import com.swirlds.platform.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashMap;

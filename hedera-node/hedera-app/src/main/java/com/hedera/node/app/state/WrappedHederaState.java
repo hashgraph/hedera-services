@@ -18,8 +18,9 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.swirlds.platform.state.HederaState;
+import com.swirlds.platform.state.spi.ReadableStates;
+import com.swirlds.platform.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;

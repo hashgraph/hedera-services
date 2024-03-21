@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.state.merkle;
 
-import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.state.HederaState;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;

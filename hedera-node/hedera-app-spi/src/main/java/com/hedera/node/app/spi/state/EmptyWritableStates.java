@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.spi.state;
 
+import com.swirlds.platform.state.spi.WritableKVState;
+import com.swirlds.platform.state.spi.WritableQueueState;
+import com.swirlds.platform.state.spi.WritableSingletonState;
+import com.swirlds.platform.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Objects;

@@ -20,10 +20,10 @@ import static com.hedera.node.app.ids.EntityIdService.ENTITY_ID_STATE_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.swirlds.platform.state.spi.WritableSingletonState;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.platform.state.spi.WritableStates;
+import com.swirlds.platform.test.fixtures.state.MapWritableStates;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;

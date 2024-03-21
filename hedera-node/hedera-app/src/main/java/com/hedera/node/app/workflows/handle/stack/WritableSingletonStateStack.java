@@ -18,7 +18,8 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.swirlds.platform.state.spi.WritableSingletonState;
+import com.swirlds.platform.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -44,7 +45,7 @@ public class WritableSingletonStateStack<T> implements WritableSingletonState<T>
     /**
      * Constructs a {@link WritableSingletonStateStack} that delegates to the current {@link WritableSingletonState} in
      * the given {@link WritableStatesStack} for the given state key. A {@link WritableStatesStack} is an implementation
-     * of {@link com.hedera.node.app.spi.state.WritableStates} that delegates to the most recent version in a
+     * of {@link WritableStates} that delegates to the most recent version in a
      * {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack}
      *
      * @param writableStatesStack the {@link WritableStatesStack}

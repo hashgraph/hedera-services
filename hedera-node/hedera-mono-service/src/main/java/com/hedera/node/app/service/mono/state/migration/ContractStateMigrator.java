@@ -29,9 +29,9 @@ import com.hedera.node.app.service.mono.state.migration.internal.ContractMigrati
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
-import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.platform.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;

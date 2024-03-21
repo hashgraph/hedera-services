@@ -18,11 +18,11 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableQueueState;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.swirlds.platform.state.spi.ReadableStates;
+import com.swirlds.platform.state.spi.WritableKVState;
+import com.swirlds.platform.state.spi.WritableQueueState;
+import com.swirlds.platform.state.spi.WritableSingletonState;
+import com.swirlds.platform.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

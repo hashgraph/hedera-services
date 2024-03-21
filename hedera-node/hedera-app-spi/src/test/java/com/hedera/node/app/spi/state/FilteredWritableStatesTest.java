@@ -19,7 +19,9 @@ package com.hedera.node.app.spi.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.swirlds.platform.state.spi.WritableStates;
+import com.swirlds.platform.test.fixtures.state.MapWritableStates;
+import com.swirlds.platform.test.fixtures.state.StateTestBase;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;

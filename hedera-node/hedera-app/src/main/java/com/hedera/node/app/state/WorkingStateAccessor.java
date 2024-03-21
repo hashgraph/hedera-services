@@ -18,6 +18,7 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
+import com.swirlds.platform.state.HederaState;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;

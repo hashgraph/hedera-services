@@ -19,8 +19,8 @@ package com.hedera.node.app.ids;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.swirlds.platform.state.spi.WritableSingletonState;
+import com.swirlds.platform.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

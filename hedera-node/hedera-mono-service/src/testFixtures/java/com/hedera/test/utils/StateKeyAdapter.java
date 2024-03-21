@@ -16,8 +16,8 @@
 
 package com.hedera.test.utils;
 
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableKVStateBase;
+import com.swirlds.platform.state.spi.ReadableKVState;
+import com.swirlds.platform.state.spi.ReadableKVStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.function.Function;

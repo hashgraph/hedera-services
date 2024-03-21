@@ -35,6 +35,9 @@ jmhModuleInfo {
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.platform.core.test.fixtures")
     requires("jmh.core")
+    requires("org.junit.jupiter")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
 }
 
 testModuleInfo {
@@ -42,11 +45,16 @@ testModuleInfo {
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.logging.test.fixtures")
     requires("com.swirlds.platform.core")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("jakarta.inject")
     requires("org.assertj.core")
+    requires("io.github.classgraph")
+    requires("org.junit.jupiter")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
 }

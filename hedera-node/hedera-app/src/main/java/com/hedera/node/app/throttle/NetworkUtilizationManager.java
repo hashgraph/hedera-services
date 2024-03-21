@@ -18,8 +18,8 @@ package com.hedera.node.app.throttle;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.swirlds.platform.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;

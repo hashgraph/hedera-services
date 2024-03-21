@@ -28,13 +28,19 @@ import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.StateUtils;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.platform.state.merkle.StateUtils;
+import com.swirlds.platform.state.merkle.disk.OnDiskKey;
+import com.swirlds.platform.state.merkle.disk.OnDiskKeySerializer;
+import com.swirlds.platform.state.merkle.disk.OnDiskReadableKVState;
+import com.swirlds.platform.state.merkle.disk.OnDiskValue;
+import com.swirlds.platform.state.merkle.disk.OnDiskValueSerializer;
+import com.swirlds.platform.state.merkle.disk.OnDiskWritableKVState;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -82,9 +88,9 @@ class OnDiskTest extends MerkleTestBase {
                 (short) 1,
                 DigestType.SHA_384,
                 (short) 1,
-                new OnDiskKeySerializer<>(md),
+                new OnDiskKeySerializer<>(onDiskKeySerializerClassId(ACCOUNT_STATE_KEY), AccountID.PROTOBUF),
                 (short) 1,
-                new OnDiskValueSerializer<>(md));
+                new OnDiskValueSerializer<>(onDiskValueSerializerClassId(ACCOUNT_STATE_KEY), Account.PROTOBUF));
         // Force all hashes to disk, to make sure we're going through all the
         // serialization paths we can
         tableConfig.hashesRamToDiskThreshold(0);
@@ -124,7 +130,13 @@ class OnDiskTest extends MerkleTestBase {
     @Test
     void populateTheMapAndFlushToDiskAndReadBack() throws IOException {
         // Populate the data set and flush it all to disk
-        final var ws = new OnDiskWritableKVState<>(md, virtualMap);
+        final var ws = new OnDiskWritableKVState<>(
+                ACCOUNT_STATE_KEY,
+                onDiskKeyClassId(ACCOUNT_STATE_KEY),
+                AccountID.PROTOBUF,
+                onDiskValueClassId(ACCOUNT_STATE_KEY),
+                Account.PROTOBUF,
+                virtualMap);
         for (int i = 0; i < 10; i++) {
             final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = Account.newBuilder()
@@ -154,7 +166,8 @@ class OnDiskTest extends MerkleTestBase {
 
         // read it back now as our map and validate the data come back fine
         virtualMap = parseTree(serializedBytes, snapshotDir);
-        final var rs = new OnDiskReadableKVState<>(md, virtualMap);
+        final var rs = new OnDiskReadableKVState<>(
+                ACCOUNT_STATE_KEY, onDiskKeyClassId(ACCOUNT_STATE_KEY), AccountID.PROTOBUF, virtualMap);
         for (int i = 0; i < 10; i++) {
             final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = rs.get(id);
@@ -167,7 +180,13 @@ class OnDiskTest extends MerkleTestBase {
 
     @Test
     void populateFlushToDisk() {
-        final var ws = new OnDiskWritableKVState<>(md, virtualMap);
+        final var ws = new OnDiskWritableKVState<>(
+                ACCOUNT_STATE_KEY,
+                onDiskKeyClassId(ACCOUNT_STATE_KEY),
+                AccountID.PROTOBUF,
+                onDiskValueClassId(ACCOUNT_STATE_KEY),
+                Account.PROTOBUF,
+                virtualMap);
         for (int i = 1; i < 10; i++) {
             final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = Account.newBuilder()
@@ -180,7 +199,8 @@ class OnDiskTest extends MerkleTestBase {
         ws.commit();
         virtualMap = copyHashAndFlush(virtualMap);
 
-        final var rs = new OnDiskReadableKVState<>(md, virtualMap);
+        final var rs = new OnDiskReadableKVState<>(
+                ACCOUNT_STATE_KEY, onDiskKeyClassId(ACCOUNT_STATE_KEY), AccountID.PROTOBUF, virtualMap);
         for (int i = 1; i < 10; i++) {
             final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = rs.get(id);
@@ -193,7 +213,7 @@ class OnDiskTest extends MerkleTestBase {
 
     @Test
     void toStringWorks() {
-        final var key = new OnDiskKey<>(md);
+        final var key = new OnDiskKey<>(onDiskKeyClassId(ACCOUNT_STATE_KEY), AccountID.PROTOBUF);
         final var string = key.toString();
         assertThat(string).isEqualTo("OnDiskKey{key=null}");
     }

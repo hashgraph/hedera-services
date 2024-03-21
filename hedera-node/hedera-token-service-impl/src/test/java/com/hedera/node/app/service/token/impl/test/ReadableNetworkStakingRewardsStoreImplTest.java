@@ -23,8 +23,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.swirlds.platform.state.spi.ReadableSingletonState;
+import com.swirlds.platform.state.spi.ReadableStates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

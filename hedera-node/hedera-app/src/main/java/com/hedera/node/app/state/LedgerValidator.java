@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state;
 
+import com.swirlds.platform.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

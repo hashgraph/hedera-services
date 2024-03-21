@@ -19,8 +19,8 @@ package com.hedera.node.app.records;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.swirlds.platform.state.spi.ReadableSingletonState;
+import com.swirlds.platform.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class ReadableBlockRecordStore {

@@ -29,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 
-/** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
+/** Standard implementation of the {@link FileService} {@link Service}. */
 public final class FileServiceImpl implements FileService {
     public static final String BLOBS_KEY = "FILES";
     public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
