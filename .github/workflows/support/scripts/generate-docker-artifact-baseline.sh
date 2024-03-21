@@ -2,7 +2,7 @@
 set -o pipefail
 set +e
 
-readonly DOCKER_IMAGE_NAME="main-network-node"
+readonly DOCKER_IMAGE_NAME="hedera-network-node"
 
 GROUP_ACTIVE="false"
 
