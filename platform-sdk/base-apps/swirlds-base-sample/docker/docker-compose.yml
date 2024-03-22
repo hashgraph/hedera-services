@@ -1,14 +1,6 @@
 version: '3'
 
 services:
-  swagger-ui:
-    image: swaggerapi/swagger-ui
-    environment:
-      - SWAGGER_JSON=/api/swagger.yaml
-    volumes:
-      - ./swagger/api.yaml:/api/swagger.yaml:ro
-    restart: always
-    network_mode: "host"
   prometheus:
     image: prom/prometheus
     volumes:
@@ -16,7 +8,8 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     restart: always
-    network_mode: "host"
+    ports:
+      - "9090:9090"
   grafana:
     image: grafana/grafana
     environment:
@@ -29,7 +22,8 @@ services:
       - ./grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
       - ./grafana/dashboards:/var/lib/grafana/dashboards
     restart: always
-    network_mode: "host"
+    ports:
+      - "3000:3000"
     depends_on:
       - prometheus
   loki:
