@@ -32,7 +32,6 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
-import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy.Decision;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
@@ -77,7 +76,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
         requireNonNull(frame);
 
         // compute the gas requirement
-        gasRequirement = calculateGas(systemContractGasCalculatorOf(frame));
+        gasRequirement = calculateGas(frame);
 
         // get the contract ID
         final ContractID contractID = asEvmContractId(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS));
@@ -180,7 +179,12 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
         return entropy.slice(0, 32);
     }
 
-    long calculateGas(@NonNull final SystemContractGasCalculator gasCalculator) {
+    long calculateGas(@NonNull final MessageFrame frame) {
+        final var gasCalculator = systemContractGasCalculatorOf(frame);
+        if (frame.isStatic()) {
+            return gasCalculator.viewGasRequirement();
+        }
+
         return Math.max(
                 gasCalculator.canonicalGasRequirement(DispatchType.UTIL_PRNG), gasCalculator.viewGasRequirement());
     }
