@@ -22,9 +22,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -106,41 +104,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         this.uptimeTracker =
                 new UptimeTracker(platformContext, addressBook, statusActionSubmitter, selfId, Time.getCurrent());
         initialState(state);
-    }
-
-    /**
-     * Prehandles application transactions. Similar to {@link #prehandleApplicationTransactions(EventImpl)} but accepts
-     * a {@link GossipEvent} instead of an {@link EventImpl}.
-     *
-     * @param event the event to handle
-     */
-    public void prehandleApplicationTransactions(final GossipEvent event) {
-        // As a temporary work around, convert to EventImpl.
-        // Once we remove the legacy pathway, we can remove this.
-        final EventImpl eventImpl = new EventImpl(event, null, null);
-        prehandleApplicationTransactions(eventImpl);
-    }
-
-    /**
-     * Prehandles application transactions.
-     *
-     * @param event the event to handle
-     */
-    public void prehandleApplicationTransactions(final EventImpl event) {
-        final long startTime = System.nanoTime();
-
-        State immutableState = latestImmutableState.get();
-        while (!immutableState.tryReserve()) {
-            immutableState = latestImmutableState.get();
-        }
-        try {
-            transactionHandler.preHandle(event, immutableState.getSwirldState());
-        } finally {
-            event.getBaseEvent().signalPrehandleCompletion();
-            immutableState.release();
-
-            stats.preHandleTime(startTime, System.nanoTime());
-        }
     }
 
     /**
