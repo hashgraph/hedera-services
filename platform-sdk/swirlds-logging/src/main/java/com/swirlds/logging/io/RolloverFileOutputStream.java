@@ -29,10 +29,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 /**
- * {@link RolloverFileOutputStream} is an {@link OutputStream} implementation that supports rollover
- * size  functionality for the underlying file. Note: It's important to manage the lifecycle of the output
- * stream properly by calling {@link #flush()} and {@link #close()} methods when finished using it to ensure proper
- * resource cleanup.
+ * {@link RolloverFileOutputStream} is an {@link OutputStream} implementation that supports rollover size  functionality
+ * for the underlying file. Note: It's important to manage the lifecycle of the output stream properly by calling
+ * {@link #flush()} and {@link #close()} methods when finished using it to ensure proper resource cleanup.
  */
 public class RolloverFileOutputStream extends OutputStream {
     protected final Path logPath;
@@ -47,8 +46,7 @@ public class RolloverFileOutputStream extends OutputStream {
     private int index;
 
     /**
-     * Creates an {@link RolloverFileOutputStream}. Supporting size based rollover.
-     * Usage:
+     * Creates an {@link RolloverFileOutputStream}. Supporting size based rollover. Usage:
      * <pre>
      *     // Example usage with size-based rollover
      *     Path logPath = Paths.get("logs", "example.log");
@@ -58,11 +56,11 @@ public class RolloverFileOutputStream extends OutputStream {
      *     RolloverFileOutputStream outputStream = new RolloverFileOutputStream(logPath, maxFileSize, append, maxRollover);
      * </pre>
      *
-     * @param logPath         path where the logging file is located. Should contain the base dir + the name of the
-     *                        logging file.
-     * @param maxFileSize     maximum size for the file. The limit is checked with best effort
-     * @param append          if true and the file exists, appends the content to the file. if not, the file is rolled.
-     * @param maxRollover     Within a rolling period, how many rolling files are allowed.
+     * @param logPath     path where the logging file is located. Should contain the base dir + the name of the logging
+     *                    file.
+     * @param maxFileSize maximum size for the file. The limit is checked with best effort
+     * @param append      if true and the file exists, appends the content to the file. if not, the file is rolled.
+     * @param maxRollover Within a rolling period, how many rolling files are allowed.
      */
     protected RolloverFileOutputStream(
             final @NonNull Path logPath, final long maxFileSize, final boolean append, final int maxRollover) {
@@ -70,10 +68,17 @@ public class RolloverFileOutputStream extends OutputStream {
         this.append = append;
         this.maxRollover = maxRollover;
         this.maxFileSize = maxFileSize;
-        String baseFile = logPath.getFileName().toString();
-        final int i = baseFile.lastIndexOf(".");
-        this.baseName = i >= 0 ? baseFile.substring(0, i) : baseFile;
-        this.extension = i >= 0 ? baseFile.substring(i + 1) : "";
+        final String baseFile = logPath.getFileName().toString();
+        final int lastDotIndex = baseFile.lastIndexOf(".");
+
+        if (lastDotIndex > 0) {
+            this.baseName = baseFile.substring(0, lastDotIndex);
+            this.extension = baseFile.substring(lastDotIndex + 1);
+        } else {
+            this.baseName = baseFile;
+            this.extension = "";
+        }
+
         this.index = 0;
         this.indexLength = String.valueOf(maxRollover).length();
         try {
@@ -154,7 +159,7 @@ public class RolloverFileOutputStream extends OutputStream {
     }
 
     /**
-     *Rolls the file
+     * Rolls the file
      */
     private void roll() {
         final long maxIndex = maxRollover - 1;
