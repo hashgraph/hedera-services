@@ -70,13 +70,13 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTok
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenMint;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenTransfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUnfreeze;
-import com.hedera.services.bdd.spec.infrastructure.selectors.HollowAccountSelector;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -121,11 +121,10 @@ public class HollowAccountCompletedFuzzingFactory {
             final var props = RegressionProviderFactory.propsFrom(resource);
 
             final var accounts = new RegistrySourcedNameProvider<>(
-                    AccountID.class, spec.registry(), new HollowAccountSelector(HOLLOW_ACCOUNT));
+                    AccountID.class, spec.registry(), new RandomSelector(account -> account.equals(HOLLOW_ACCOUNT)));
             final var tokens = new RegistrySourcedNameProvider<>(TokenID.class, spec.registry(), new RandomSelector());
             var tokenRels = new RegistrySourcedNameProvider<>(
                     TokenAccountRegistryRel.class, spec.registry(), new RandomSelector());
-            // TODO new RandomSelector(account -> !account.equals("kvoto si iskam")));
             var allTopics = new RegistrySourcedNameProvider<>(TopicID.class, spec.registry(), new RandomSelector());
             var unstableTopics = new RegistrySourcedNameProvider<>(
                     TopicID.class, spec.registry(), new RandomSelector(topic -> !topic.startsWith("stable-")));
@@ -138,8 +137,8 @@ public class HollowAccountCompletedFuzzingFactory {
                     ActionableContractCallLocal.class, spec.registry(), new RandomSelector());
 
             final var keys = new RegistrySourcedNameProvider<>(
-                    Key.class, spec.registry(), new HollowAccountSelector(HOLLOW_ACCOUNT));
-
+                    Key.class, spec.registry(), new RandomSelector(account -> account.equals(HOLLOW_ACCOUNT)));
+            final var emptyCustomOutcomes = new ResponseCodeEnum[] {};
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
                     .withInitialization(
@@ -149,7 +148,7 @@ public class HollowAccountCompletedFuzzingFactory {
 
                     /* ---- CONSENSUS ---- */
                     .withOp(
-                            new RandomTopicCreation(keys, allTopics)
+                            new RandomTopicCreation(keys, allTopics, emptyCustomOutcomes)
                                     .ceiling(intPropOrElse(
                                                     "randomTopicCreation.ceilingNum",
                                                     RandomFile.DEFAULT_CEILING_NUM,
@@ -160,9 +159,11 @@ public class HollowAccountCompletedFuzzingFactory {
                                                     props)),
                             intPropOrElse("randomTopicCreation.bias", 0, props))
                     .withOp(
-                            new RandomTopicDeletion(unstableTopics),
+                            new RandomTopicDeletion(unstableTopics, emptyCustomOutcomes),
                             intPropOrElse("randomTopicDeletion.bias", 0, props))
-                    .withOp(new RandomTopicUpdate(unstableTopics), intPropOrElse("randomTopicUpdate.bias", 0, props))
+                    .withOp(
+                            new RandomTopicUpdate(unstableTopics, emptyCustomOutcomes),
+                            intPropOrElse("randomTopicUpdate.bias", 0, props))
                     .withOp(
                             new RandomMessageSubmit(allTopics)
                                     .numStableTopics(intPropOrElse(
@@ -174,29 +175,45 @@ public class HollowAccountCompletedFuzzingFactory {
                     /* ---- TOKEN ---- */
                     .withOp(new RandomToken(tokens, accounts, accounts), intPropOrElse("randomToken.bias", 0, props))
                     .withOp(
-                            new RandomTokenAssociation(tokens, accounts, tokenRels)
+                            new RandomTokenAssociation(tokens, accounts, tokenRels, emptyCustomOutcomes)
                                     .ceiling(intPropOrElse(
                                             "randomTokenAssociation.ceilingNum",
                                             RandomTokenAssociation.DEFAULT_CEILING_NUM,
                                             props)),
                             intPropOrElse("randomTokenAssociation.bias", 0, props))
                     .withOp(
-                            new RandomTokenDissociation(tokenRels),
+                            new RandomTokenDissociation(tokenRels, emptyCustomOutcomes),
                             intPropOrElse("randomTokenDissociation.bias", 0, props))
-                    .withOp(new RandomTokenDeletion(tokenRels), intPropOrElse("randomTokenDeletion.bias", 0, props))
-                    .withOp(new RandomTokenTransfer(tokenRels), intPropOrElse("randomTokenTransfer.bias", 0, props))
-                    .withOp(new RandomTokenFreeze(tokenRels), intPropOrElse("randomTokenFreeze.bias", 0, props))
-                    .withOp(new RandomTokenUnfreeze(tokenRels), intPropOrElse("randomTokenUnfreeze.bias", 0, props))
-                    .withOp(new RandomTokenKycGrant(tokenRels), intPropOrElse("randomTokenKycGrant.bias", 0, props))
-                    .withOp(new RandomTokenKycRevoke(tokenRels), intPropOrElse("randomTokenKycRevoke.bias", 0, props))
-                    .withOp(new RandomTokenMint(tokenRels), intPropOrElse("randomTokenMint.bias", 0, props))
-                    .withOp(new RandomTokenBurn(tokenRels), intPropOrElse("randomTokenBurn.bias", 0, props))
+                    .withOp(
+                            new RandomTokenDeletion(tokenRels, emptyCustomOutcomes),
+                            intPropOrElse("randomTokenDeletion.bias", 0, props))
+                    .withOp(
+                            new RandomTokenTransfer(tokenRels, emptyCustomOutcomes),
+                            intPropOrElse("randomTokenTransfer.bias", 0, props))
+                    .withOp(
+                            new RandomTokenFreeze(tokenRels, emptyCustomOutcomes),
+                            intPropOrElse("randomTokenFreeze.bias", 0, props))
+                    .withOp(
+                            new RandomTokenUnfreeze(tokenRels, emptyCustomOutcomes),
+                            intPropOrElse("randomTokenUnfreeze.bias", 0, props))
+                    .withOp(
+                            new RandomTokenKycGrant(tokenRels, emptyCustomOutcomes),
+                            intPropOrElse("randomTokenKycGrant.bias", 0, props))
+                    .withOp(
+                            new RandomTokenKycRevoke(tokenRels, emptyCustomOutcomes),
+                            intPropOrElse("randomTokenKycRevoke.bias", 0, props))
+                    .withOp(
+                            new RandomTokenMint(tokenRels, emptyCustomOutcomes),
+                            intPropOrElse("randomTokenMint.bias", 0, props))
+                    .withOp(
+                            new RandomTokenBurn(tokenRels, emptyCustomOutcomes),
+                            intPropOrElse("randomTokenBurn.bias", 0, props))
                     // bug
                     //                    .withOp(
                     //                            new RandomTokenUpdate(keys, tokens, accounts),
                     //                            intPropOrElse("randomTokenUpdate.bias", 0, props))
                     .withOp(
-                            new RandomTokenAccountWipe(tokenRels),
+                            new RandomTokenAccountWipe(tokenRels, emptyCustomOutcomes),
                             intPropOrElse("randomTokenAccountWipe.bias", 0, props))
                     //                    /* ---- CONTRACT ---- */
                     .withOp(
@@ -204,10 +221,12 @@ public class HollowAccountCompletedFuzzingFactory {
                                     .ceiling(intPropOrElse(
                                             "randomContract.ceilingNum", RandomContract.DEFAULT_CEILING_NUM, props)),
                             intPropOrElse("randomContract.bias", 0, props))
-                    .withOp(new RandomCall(calls), intPropOrElse("randomCall.bias", 0, props))
-                    .withOp(new RandomCallLocal(localCalls), intPropOrElse("randomCallLocal.bias", 0, props))
+                    .withOp(new RandomCall(calls, emptyCustomOutcomes), intPropOrElse("randomCall.bias", 0, props))
                     .withOp(
-                            new RandomContractDeletion(accounts, contracts),
+                            new RandomCallLocal(localCalls, emptyCustomOutcomes),
+                            intPropOrElse("randomCallLocal.bias", 0, props))
+                    .withOp(
+                            new RandomContractDeletion(accounts, contracts, emptyCustomOutcomes),
                             intPropOrElse("randomContractDeletion.bias", 0, props))
                     .withOp(
                             new RandomSchedule(allSchedules, accounts)

@@ -46,16 +46,19 @@ public class RandomTokenAssociation implements OpProvider {
     private final RegistrySourcedNameProvider<AccountID> accounts;
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
 
+    private final ResponseCodeEnum[] customOutcomes;
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, TOKEN_WAS_DELETED, ACCOUNT_DELETED);
 
     public RandomTokenAssociation(
             RegistrySourcedNameProvider<TokenID> tokens,
             RegistrySourcedNameProvider<AccountID> accounts,
-            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels,
+            ResponseCodeEnum[] customOutcomes) {
         this.tokens = tokens;
         this.accounts = accounts;
         this.tokenRels = tokenRels;
+        this.customOutcomes = customOutcomes;
     }
 
     public RandomTokenAssociation ceiling(int n) {
@@ -87,7 +90,7 @@ public class RandomTokenAssociation implements OpProvider {
         var op = tokenAssociate(account.get(), toUse)
                 .payingWith(account.get())
                 .signedBy(account.get())
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
                 .hasKnownStatusFrom(permissibleOutcomes);
 
         return Optional.of(op);

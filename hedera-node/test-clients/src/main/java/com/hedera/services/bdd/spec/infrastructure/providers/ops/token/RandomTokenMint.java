@@ -35,9 +35,12 @@ public class RandomTokenMint implements OpProvider {
 
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(TOKEN_WAS_DELETED, TOKEN_HAS_NO_SUPPLY_KEY, INVALID_TOKEN_MINT_AMOUNT);
+    private final ResponseCodeEnum[] customOutcomes;
 
-    public RandomTokenMint(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
+    public RandomTokenMint(
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels, ResponseCodeEnum[] customOutcomes) {
         this.tokenRels = tokenRels;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
@@ -53,8 +56,8 @@ public class RandomTokenMint implements OpProvider {
         var op = mintToken(tokenAccountRel.getRight(), amount)
                 .payingWith(tokenAccountRel.getLeft())
                 .signedBy(tokenAccountRel.getLeft())
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
 
         return Optional.of(op);
     }

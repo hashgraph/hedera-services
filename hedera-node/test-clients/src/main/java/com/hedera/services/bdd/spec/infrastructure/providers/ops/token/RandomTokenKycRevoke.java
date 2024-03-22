@@ -32,12 +32,14 @@ import java.util.Optional;
 
 public class RandomTokenKycRevoke implements OpProvider {
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
-
+    private final ResponseCodeEnum[] customOutcomes;
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
             TOKEN_WAS_DELETED, TOKEN_HAS_NO_KYC_KEY, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, ACCOUNT_FROZEN_FOR_TOKEN);
 
-    public RandomTokenKycRevoke(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
+    public RandomTokenKycRevoke(
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels, ResponseCodeEnum[] customOutcomes) {
         this.tokenRels = tokenRels;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
@@ -52,8 +54,8 @@ public class RandomTokenKycRevoke implements OpProvider {
         var op = revokeTokenKyc(rel.getRight(), rel.getLeft())
                 .payingWith(rel.getLeft())
                 .signedBy(rel.getLeft())
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         return Optional.of(op);
     }
 }

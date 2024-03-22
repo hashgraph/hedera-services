@@ -33,9 +33,11 @@ import java.util.Optional;
 public class RandomTopicDeletion implements OpProvider {
     private final RegistrySourcedNameProvider<TopicID> topics;
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOPIC_EXPIRED, INVALID_TOPIC_ID);
+    private final ResponseCodeEnum[] customOutcomes;
 
-    public RandomTopicDeletion(RegistrySourcedNameProvider<TopicID> topics) {
+    public RandomTopicDeletion(RegistrySourcedNameProvider<TopicID> topics, ResponseCodeEnum[] customOutcomes) {
         this.topics = topics;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
@@ -50,8 +52,8 @@ public class RandomTopicDeletion implements OpProvider {
             return Optional.empty();
         }
         HapiTopicDelete op = deleteTopic(topic.get())
-                .hasKnownStatusFrom(permissibleOutcomes)
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes))
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes));
         return Optional.of(op);
     }
 }

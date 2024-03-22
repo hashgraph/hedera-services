@@ -35,9 +35,12 @@ import java.util.Optional;
 
 public class RandomTokenAccountWipe implements OpProvider {
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
+    private final ResponseCodeEnum[] customOutcomes;
 
-    public RandomTokenAccountWipe(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
+    public RandomTokenAccountWipe(
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels, ResponseCodeEnum[] customOutcomes) {
         this.tokenRels = tokenRels;
+        this.customOutcomes = customOutcomes;
     }
 
     private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(TOKEN_HAS_NO_WIPE_KEY);
@@ -63,8 +66,8 @@ public class RandomTokenAccountWipe implements OpProvider {
         var op = wipeTokenAccount(rel.getRight(), rel.getLeft(), amount)
                 .payingWith(rel.getLeft())
                 .signedBy(rel.getLeft())
-                .hasPrecheckFrom(permissiblePrechecks)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         return Optional.of(op);
     }
 }

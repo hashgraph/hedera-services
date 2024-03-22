@@ -50,13 +50,15 @@ public class RandomTransfer implements OpProvider {
 
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(ACCOUNT_DELETED, INSUFFICIENT_ACCOUNT_BALANCE, PAYER_ACCOUNT_DELETED);
+    private final ResponseCodeEnum[] customOutcomes;
 
     private int numStableAccounts = DEFAULT_NUM_STABLE_ACCOUNTS;
     public double recordProb = DEFAULT_RECORD_PROBABILITY;
     private final SplittableRandom r = new SplittableRandom();
     private final EntityNameProvider<AccountID> accounts;
 
-    public RandomTransfer(EntityNameProvider<AccountID> accounts) {
+    public RandomTransfer(EntityNameProvider<AccountID> accounts, ResponseCodeEnum[] customOutcomes) {
+        this.customOutcomes = customOutcomes;
         this.accounts = accounts;
     }
 
@@ -106,8 +108,8 @@ public class RandomTransfer implements OpProvider {
         HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromTo(from, to, amount))
                 .payingWith(from)
                 .signedBy(from)
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
 
         return Optional.of(op);
     }

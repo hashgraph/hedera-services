@@ -32,9 +32,12 @@ public class RandomTokenDeletion implements OpProvider {
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
 
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOKEN_IS_IMMUTABLE, TOKEN_WAS_DELETED);
+    private final ResponseCodeEnum[] customOutcomes;
 
-    public RandomTokenDeletion(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
+    public RandomTokenDeletion(
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels, ResponseCodeEnum[] customOutcomes) {
         this.tokenRels = tokenRels;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
@@ -49,8 +52,8 @@ public class RandomTokenDeletion implements OpProvider {
                 .payingWith(tokenAccountRel.getLeft())
                 .signedBy(tokenAccountRel.getLeft())
                 .purging()
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         return Optional.of(op);
     }
 }

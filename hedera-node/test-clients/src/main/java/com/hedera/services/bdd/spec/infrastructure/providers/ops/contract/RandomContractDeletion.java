@@ -36,6 +36,7 @@ import java.util.Set;
 public class RandomContractDeletion implements OpProvider {
     private final RegistrySourcedNameProvider<AccountID> accounts;
     private final RegistrySourcedNameProvider<ContractID> contracts;
+    private final ResponseCodeEnum[] customOutcomes;
     private boolean transferToContract = true;
 
     private final ResponseCodeEnum[] permissiblePrechecks =
@@ -44,9 +45,12 @@ public class RandomContractDeletion implements OpProvider {
             standardOutcomesAnd(ACCOUNT_DELETED, CONTRACT_DELETED, INVALID_ACCOUNT_ID, INVALID_CONTRACT_ID);
 
     public RandomContractDeletion(
-            RegistrySourcedNameProvider<AccountID> accounts, RegistrySourcedNameProvider<ContractID> contracts) {
+            RegistrySourcedNameProvider<AccountID> accounts,
+            RegistrySourcedNameProvider<ContractID> contracts,
+            ResponseCodeEnum[] customOutcomes) {
         this.accounts = accounts;
         this.contracts = contracts;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
@@ -79,8 +83,8 @@ public class RandomContractDeletion implements OpProvider {
                 .purging()
                 .payingWith(signer.get())
                 .signedBy(signer.get())
-                .hasPrecheckFrom(permissiblePrechecks)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasPrecheckFrom(plus(permissiblePrechecks, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         if (contractThisTime) {
             op.transferContract(transfer.get());
         } else {
