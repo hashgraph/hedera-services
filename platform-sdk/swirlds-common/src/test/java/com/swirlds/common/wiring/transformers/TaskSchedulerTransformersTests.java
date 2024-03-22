@@ -467,6 +467,8 @@ class TaskSchedulerTransformersTests {
             x.release();
         });
 
+        model.start();
+
         final List<FooBar> fooBars = new ArrayList<>(100);
         for (int i = 0; i < 100; i++) {
             final FooBar fooBar = new FooBar();

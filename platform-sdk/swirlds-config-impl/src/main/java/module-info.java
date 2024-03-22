@@ -1,3 +1,4 @@
+import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
 import com.swirlds.config.impl.internal.ConfigurationBuilderFactoryImpl;
 
@@ -10,6 +11,8 @@ module com.swirlds.config.impl {
     requires com.swirlds.config.extensions;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
+
+    uses ConfigurationExtension;
 
     provides ConfigurationBuilderFactory with
             ConfigurationBuilderFactoryImpl;
