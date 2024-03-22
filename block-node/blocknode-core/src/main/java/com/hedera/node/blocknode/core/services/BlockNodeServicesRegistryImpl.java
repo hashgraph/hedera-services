@@ -14,24 +14,18 @@
  * limitations under the License.
  */
 
-plugins {
-    id("application")
-    id("com.hedera.hashgraph.blocknode.conventions")
-}
+package com.hedera.node.blocknode.core.services;
 
-application { mainClass = "com.hedera.node.blocknode.core.BlockNodeMain" }
+import java.util.*;
 
-mainModuleInfo {
-    runtimeOnly("com.swirlds.config.impl")
-    runtimeOnly("grpc.netty")
-    runtimeOnly("com.hedera.storage.blocknode.filesystem.local")
-    runtimeOnly("com.hedera.storage.blocknode.filesystem.s3")
-    runtimeOnly("grpc.stub")
-    runtimeOnly("io.netty.transport.classes.epoll")
-}
+public class BlockNodeServicesRegistryImpl {
+    private Map<String, Object> serviceMap = new HashMap<>();
 
-tasks.withType<JavaExec>().configureEach {
-    if (name.endsWith("main()")) {
-        notCompatibleWithConfigurationCache("JavaExec created by IntelliJ")
+    public void registerService(String serviceName, Object serviceInstance) {
+        serviceMap.put(serviceName, serviceInstance);
+    }
+
+    public Object getService(String serviceName) {
+        return serviceMap.get(serviceName);
     }
 }
