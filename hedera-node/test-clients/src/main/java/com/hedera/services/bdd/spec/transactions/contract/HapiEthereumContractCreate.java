@@ -153,7 +153,9 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         }
 
         try {
-            return Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(balance.get())).longValueExact());
+            return Optional.of(WEIBARS_TO_TINYBARS
+                    .multiply(BigInteger.valueOf(balance.get()))
+                    .longValueExact());
         } catch (ArithmeticException e) {
             return Optional.of(Long.MAX_VALUE);
         }
@@ -336,7 +338,8 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         return b -> {
             this.fee.ifPresent(b::setTransactionFee);
             this.memo.ifPresent(b::setMemo);
-            b.setEthereumTransaction(opBody);};
+            b.setEthereumTransaction(opBody);
+        };
     }
 
     @Override
