@@ -29,7 +29,10 @@ import java.util.Objects;
 
 /**
  * Ad-hoc configuration utilities.
+ * to-be-fixed: #12310
+ * @deprecated Do not extend this class as this should become behaviour of the config api.
  */
+@Deprecated(forRemoval = true)
 public class ConfigUtils {
 
     // FUTURE-WORK move all this as features of the config module.
