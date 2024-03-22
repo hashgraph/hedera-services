@@ -93,8 +93,6 @@ import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -102,7 +100,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class CryptoTransferHandler implements TransactionHandler {
-    private static final Logger log = LogManager.getLogger(CryptoTransferHandler.class);
     private final CryptoTransferValidator validator;
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
