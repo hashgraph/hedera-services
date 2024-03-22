@@ -113,16 +113,44 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void cryptoApproveAllowanceFailsWithInvalidSpender() throws PreCheckException {
+    void cryptoApproveAllowanceFailsWithInvalidSpenderCrypto() throws PreCheckException {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
-        final var tokenAllow =
+        final var allowance =
+                cryptoAllowance.copyBuilder().spender((AccountID) null).build();
+
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId, false, List.of(allowance), List.of(tokenAllowance), List.of(nftAllowance));
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ALLOWANCE_SPENDER_ID);
+    }
+
+    @Test
+    void cryptoApproveAllowanceFailsWithInvalidSpenderToken() throws PreCheckException {
+        readableAccounts =
+                emptyReadableAccountStateBuilder().value(payerId, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        final var allowance =
                 tokenAllowance.copyBuilder().spender((AccountID) null).build();
 
         final var txn = cryptoApproveAllowanceTransaction(
-                payerId, false, List.of(cryptoAllowance), List.of(tokenAllow), List.of(nftAllowance));
+                payerId, false, List.of(cryptoAllowance), List.of(allowance), List.of(nftAllowance));
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ALLOWANCE_SPENDER_ID);
+    }
+
+    @Test
+    void cryptoApproveAllowanceFailsWithInvalidSpenderNFT() throws PreCheckException {
+        readableAccounts =
+                emptyReadableAccountStateBuilder().value(payerId, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        final var allowance =
+                nftAllowance.copyBuilder().spender((AccountID) null).build();
+
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(allowance));
         assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ALLOWANCE_SPENDER_ID);
     }
 

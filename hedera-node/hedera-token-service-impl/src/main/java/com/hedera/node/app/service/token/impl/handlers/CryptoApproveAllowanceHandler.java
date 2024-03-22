@@ -33,7 +33,6 @@ import static com.hedera.node.app.service.token.impl.validators.AllowanceValidat
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.validation.Validations.validateNullableAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -109,20 +108,19 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         // But the spender always needs to be specified.
         for (final var allowance : cryptoAllowances) {
             validateNullableAccountID(allowance.owner());
-            validateAccountID(allowance.spender());
             validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
+            validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
         }
 
         for (final var allowance : tokenAllowances) {
             validateNullableAccountID(allowance.owner());
-            validateFalsePreCheck(allowance.amount() > 0 && allowance.spender() == null, INVALID_ALLOWANCE_SPENDER_ID);
-            validateAccountID(allowance.spender());
             validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
+            validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
         }
 
         for (final var allowance : nftAllowances) {
             validateNullableAccountID(allowance.owner());
-            validateAccountID(allowance.spender());
+            validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
         }
     }
 
