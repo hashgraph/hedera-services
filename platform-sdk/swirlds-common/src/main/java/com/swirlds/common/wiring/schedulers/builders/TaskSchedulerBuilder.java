@@ -67,6 +67,7 @@ public class TaskSchedulerBuilder<O> {
     private ObjectCounter offRamp;
     private ForkJoinPool pool;
     private UncaughtExceptionHandler uncaughtExceptionHandler;
+    private String hyperlink;
 
     private boolean unhandledTaskMetricEnabled = false;
     private boolean busyFractionMetricEnabled = false;
@@ -300,6 +301,18 @@ public class TaskSchedulerBuilder<O> {
     }
 
     /**
+     * Provide a hyperlink to documentation for this task scheduler. If none is provided then no hyperlink will be
+     * generated. Used only for the automatically generated wiring diagram.
+     * @param hyperlink the hyperlink to the documentation for this task scheduler
+     * @return this
+     */
+    @NonNull
+    public TaskSchedulerBuilder<O> withHyperlink(@Nullable final String hyperlink) {
+        this.hyperlink = hyperlink;
+        return this;
+    }
+
+    /**
      * Build an uncaught exception handler if one was not provided.
      *
      * @return the uncaught exception handler
@@ -484,7 +497,7 @@ public class TaskSchedulerBuilder<O> {
                             true);
                 };
 
-        model.registerScheduler(scheduler);
+        model.registerScheduler(scheduler, hyperlink);
 
         return scheduler;
     }

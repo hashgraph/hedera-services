@@ -42,8 +42,7 @@ import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collection;
-import java.util.List;
+import java.util.Set;
 
 /**
  * Registers configuration types for the platform.
@@ -55,10 +54,12 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
      * {@inheritDoc}
      */
     @NonNull
-    public Collection<Class<? extends Record>> getConfigDataTypes() {
+    public Set<Class<? extends Record>> getConfigDataTypes() {
+
         // Please keep lists in this method alphabetized (enforced by unit test).
 
-        return List.of(
+        // Load Configuration Definitions
+        return Set.of(
                 AddressBookConfig.class,
                 BasicCommonConfig.class,
                 BasicConfig.class,
@@ -91,7 +92,7 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
 
     @NonNull
     @Override
-    public Collection<ConverterPair<?>> getConverters() {
-        return List.of(new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse));
+    public Set<ConverterPair<?>> getConverters() {
+        return Set.of(new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse));
     }
 }

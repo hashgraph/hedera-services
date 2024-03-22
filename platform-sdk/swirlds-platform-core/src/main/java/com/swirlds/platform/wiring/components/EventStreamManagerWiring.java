@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.wiring.components;
 
-import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -52,7 +52,7 @@ public record EventStreamManagerWiring(
      *
      * @param eventStreamManager the event stream manager to bind
      */
-    public void bind(@NonNull final EventStreamManager<EventImpl> eventStreamManager) {
+    public void bind(@NonNull final EventStreamManager eventStreamManager) {
         ((BindableInputWire<List<EventImpl>, Void>) eventsInput).bindConsumer(eventStreamManager::addEvents);
         ((BindableInputWire<RunningEventHashUpdate, Void>) runningHashUpdateInput)
                 .bindConsumer(eventStreamManager::updateRunningHash);

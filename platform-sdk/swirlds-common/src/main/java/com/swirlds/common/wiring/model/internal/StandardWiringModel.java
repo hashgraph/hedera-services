@@ -34,6 +34,7 @@ import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskSchedul
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -125,16 +126,9 @@ public class StandardWiringModel implements WiringModel {
     }
 
     /**
-     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
-     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
-     * factors.
-     *
-     * @param period the period of the heartbeat. For example, setting a period of 100ms will cause the heartbeat to be
-     *               sent at 10 hertz. Note that time is measured at millisecond precision, and so periods less than 1ms
-     *               are not supported.
-     * @return the output wire
-     * @throws IllegalStateException if start() has already been called
+     * {@inheritDoc}
      */
+    @Override
     @NonNull
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
         throwIfStarted();
@@ -142,14 +136,10 @@ public class StandardWiringModel implements WiringModel {
     }
 
     /**
-     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
-     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
-     * factors.
-     *
-     * @param frequency the frequency of the heartbeat in hertz. Note that time is measured at millisecond precision,
-     *                  and so frequencies greater than 1000hz are not supported.
-     * @return the output wire
+     * {@inheritDoc}
      */
+    @Override
+    @NonNull
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
         throwIfStarted();
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
@@ -206,7 +196,7 @@ public class StandardWiringModel implements WiringModel {
         }
 
         final ModelVertex unsolderedDataSource =
-                new StandardVertex("Mystery Input", DIRECT_THREADSAFE, SCHEDULER, true);
+                new StandardVertex("Mystery Input", DIRECT_THREADSAFE, SCHEDULER, null, true);
         vertices.put(unsolderedDataSource.getName(), unsolderedDataSource);
 
         for (final InputWireDescriptor unsolderedInputWire : unsolderedInputWires) {
@@ -222,10 +212,11 @@ public class StandardWiringModel implements WiringModel {
      * Register a task scheduler with the wiring model.
      *
      * @param scheduler the task scheduler to register
+     * @param hyperlink the hyperlink to the documentation for this vertex, or null if there is no documentation
      */
-    public void registerScheduler(@NonNull final TaskScheduler<?> scheduler) {
+    public void registerScheduler(@NonNull final TaskScheduler<?> scheduler, @Nullable final String hyperlink) {
         throwIfStarted();
-        registerVertex(scheduler.getName(), scheduler.getType(), scheduler.isInsertionBlocking());
+        registerVertex(scheduler.getName(), scheduler.getType(), hyperlink, scheduler.isInsertionBlocking());
         if (scheduler.getType() == SEQUENTIAL_THREAD) {
             threadSchedulers.add((SequentialThreadTaskScheduler<?>) scheduler);
         }
@@ -236,17 +227,21 @@ public class StandardWiringModel implements WiringModel {
      *
      * @param vertexName          the name of the vertex
      * @param type                the type of task scheduler that corresponds to this vertex.
+     * @param hyperlink           the hyperlink to the documentation for this vertex, or null if there is no
+     *                            documentation
      * @param insertionIsBlocking if true then insertion may block until capacity is available
      */
     public void registerVertex(
             @NonNull final String vertexName,
             @NonNull final TaskSchedulerType type,
+            @Nullable final String hyperlink,
             final boolean insertionIsBlocking) {
         throwIfStarted();
         Objects.requireNonNull(vertexName);
         Objects.requireNonNull(type);
-        final boolean unique =
-                vertices.put(vertexName, new StandardVertex(vertexName, type, SCHEDULER, insertionIsBlocking)) == null;
+        final boolean unique = vertices.put(
+                        vertexName, new StandardVertex(vertexName, type, SCHEDULER, hyperlink, insertionIsBlocking))
+                == null;
         if (!unique) {
             throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
         }
@@ -405,7 +400,7 @@ public class StandardWiringModel implements WiringModel {
         }
 
         // Create an ad hoc vertex.
-        final StandardVertex adHocVertex = new StandardVertex(vertexName, DIRECT, SCHEDULER, true);
+        final StandardVertex adHocVertex = new StandardVertex(vertexName, DIRECT, SCHEDULER, null, true);
 
         vertices.put(vertexName, adHocVertex);
         return adHocVertex;
