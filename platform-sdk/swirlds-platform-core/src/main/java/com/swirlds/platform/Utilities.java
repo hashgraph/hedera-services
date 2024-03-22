@@ -399,7 +399,7 @@ public final class Utilities {
      *  the signing certificate's subject for one or more known peers
      *
      * @param sslSocket
-     * 		the address book to create the list from
+     * 		the peer's TLS socket
      * @param peerInfoList
      * 		List of peers to validate
      * @return info of the corresponding peer

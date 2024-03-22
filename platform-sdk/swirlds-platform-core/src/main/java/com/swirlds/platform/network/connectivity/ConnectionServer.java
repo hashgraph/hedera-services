@@ -23,11 +23,13 @@ import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.communication.handshake.HandshakeCompletedListenerImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -65,14 +67,14 @@ public class ConnectionServer implements InterruptableRunnable {
             final int port,
             final SocketFactory socketFactory,
             final Consumer<Socket> newConnectionHandler,
-            final List<PeerInfo> peerInfoList) {
+            @NonNull final List<PeerInfo> peerInfoList) {
         this.port = port;
         this.newConnectionHandler = newConnectionHandler;
         this.socketFactory = socketFactory;
         this.incomingConnPool = Executors.newCachedThreadPool(new ThreadConfiguration(threadManager)
                 .setThreadName("sync_server")
                 .buildFactory());
-        this.peerInfoList = peerInfoList;
+        this.peerInfoList = Objects.requireNonNull(peerInfoList);
     }
 
     @Override

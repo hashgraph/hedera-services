@@ -112,6 +112,8 @@ class SocketFactoryTest {
                 if (s instanceof SSLSocket) {
                     if (peerInfoList.stream().anyMatch(peer -> mockingDetails(peer.signingCertificate())
                             .isMock())) {
+                        // we've passed a mocked peer's certificate as an example of an invalid agreement
+                        // certificate - it possesses no valid issuer's principal
                         assertNull(Utilities.validateTLSPeer((SSLSocket) s, peerInfoList));
                     } else {
                         assertNotNull(Utilities.validateTLSPeer((SSLSocket) s, peerInfoList));
