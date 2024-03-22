@@ -22,7 +22,6 @@ import com.swirlds.base.sample.internal.InitialData;
 import com.swirlds.base.sample.internal.ServerUtils;
 import com.swirlds.base.sample.metrics.ApplicationMetrics;
 import com.swirlds.base.sample.metrics.BenchmarkMetrics;
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.metrics.platform.prometheus.AbstractMetricAdapter;
 import com.swirlds.common.platform.NodeId;
@@ -34,7 +33,6 @@ import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.metrics.api.Metrics;
 import java.nio.file.Path;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,11 +48,12 @@ public class BaseSampleMain {
     public static void main(String[] args) {
         try {
             final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-            ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_CONFIG_PACKAGE));
+
             configurationBuilder
                     .withSource(SystemEnvironmentConfigSource.getInstance())
                     .withSource(SystemPropertiesConfigSource.getInstance())
-                    .withSource(new ClasspathFileConfigSource(Path.of(APPLICATION_PROPERTIES)));
+                    .withSource(new ClasspathFileConfigSource(Path.of(APPLICATION_PROPERTIES)))
+                    .autoDiscoverExtensions();
 
             if (EXTERNAL_PROPERTIES.toFile().exists()) {
                 configurationBuilder.withSources(new PropertyFileConfigSource(EXTERNAL_PROPERTIES));

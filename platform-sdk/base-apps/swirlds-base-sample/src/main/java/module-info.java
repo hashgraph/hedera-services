@@ -1,3 +1,6 @@
+import com.swirlds.base.sample.config.BaseConfigurationExtension;
+import com.swirlds.config.api.ConfigurationExtension;
+
 module com.swirlds.base.sample {
     exports com.swirlds.base.sample.config to
             com.swirlds.config.impl;
@@ -15,4 +18,8 @@ module com.swirlds.base.sample {
     requires jdk.management;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires static com.google.auto.service;
+
+    provides ConfigurationExtension with
+            BaseConfigurationExtension;
 }
