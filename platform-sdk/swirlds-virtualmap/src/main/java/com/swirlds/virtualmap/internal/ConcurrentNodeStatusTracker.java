@@ -203,14 +203,13 @@ public final class ConcurrentNodeStatusTracker {
     /**
      * Get the status of a node as reported by the learner, or return UNKNOWN.
      * <p>
-     * This method is similar to the getStatus(long value) above except
-     * it stops the tree traversal when it reaches the root and returns UNKNOWN.
-     * The root of the tree is always marked as NOT_KNOWN (see the ConcurrentNodeStatusTracker constructor.)
-     * So this method avoids implicitly assuming that the node is NOT_KNOWN because a later
-     * report from the learner for either this node directly or one of its ancestors can redefine the status.
+     * Unlike the getStatus(long value) method above, this method returns the actual
+     * status of the requested node without traversing the tree to its parents.
+     * If the learner hasn't reported a status for this particular node, this method
+     * returns UNKNOWN.
      *
      * @param value path of node to check
-     * @return status of a node, or UNKNOWN if its status or its ancestors' statuses have never been reported yet
+     * @return status of the node, or UNKNOWN if its status has never been reported yet
      */
     public Status getReportedStatus(long value) {
         if (value < 0 || value >= capacity) {
@@ -218,17 +217,11 @@ public final class ConcurrentNodeStatusTracker {
                     String.format("Value can only be between [0, %d), %d is illegal", capacity, value));
         }
 
-        Status status;
-        do {
-            final int index = getIndexInBitSetFor(value);
-            final long bitSetIndex = getBitSetIndexFor(value);
-            status = statusBitSets
-                    .computeIfAbsent(bitSetIndex, k -> new BitSetGroup())
-                    .getStatus(index);
-            value = Path.getParentPath(value);
-        } while (status == Status.UNKNOWN && value != 0);
-
-        return status;
+        final int index = getIndexInBitSetFor(value);
+        final long bitSetIndex = getBitSetIndexFor(value);
+        return statusBitSets
+                .computeIfAbsent(bitSetIndex, k -> new BitSetGroup())
+                .getStatus(index);
     }
 
     /**
