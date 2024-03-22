@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
@@ -107,19 +108,19 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         // But the spender always needs to be specified.
         for (final var allowance : cryptoAllowances) {
             validateNullableAccountID(allowance.owner());
-            validateAccountID(allowance.spender());
             validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
+            validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
         }
 
         for (final var allowance : tokenAllowances) {
             validateNullableAccountID(allowance.owner());
-            validateAccountID(allowance.spender());
             validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
+            validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
         }
 
         for (final var allowance : nftAllowances) {
             validateNullableAccountID(allowance.owner());
-            validateAccountID(allowance.spender());
+            validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
         }
     }
 
