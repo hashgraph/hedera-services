@@ -110,7 +110,7 @@ considered to be [ancient](#ancient-event).
 ## Minimum Non-Ancient Round
 
 The minimum non-ancient round number is defined as the
-([latest round](#latest-consensus-round) - [rounds non-ancient](#rounds-non-ancient)) + 1).
+([latest round](#latest-consensus-round) - [rounds non-ancient](#rounds-non-ancient) + 1).
 
 ## Non-Ancient Event
 
