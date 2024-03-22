@@ -19,6 +19,8 @@ package com.swirlds.logging.benchmark.log4j2;
 import static com.swirlds.logging.benchmark.config.Constants.CONSOLE_AND_FILE_TYPE;
 import static com.swirlds.logging.benchmark.config.Constants.CONSOLE_TYPE;
 import static com.swirlds.logging.benchmark.config.Constants.FILE_TYPE;
+import static com.swirlds.logging.benchmark.config.Constants.MODE_NOT_ROLLING;
+import static com.swirlds.logging.benchmark.config.Constants.MODE_ROLLING;
 
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
@@ -42,7 +44,7 @@ public class Log4J2BaseBenchmark {
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
 
-    @Param({"NOT_ROLLING", "ROLLING"})
+    @Param({MODE_NOT_ROLLING, MODE_ROLLING})
     public String mode;
 
     protected Logger logger;
@@ -52,7 +54,7 @@ public class Log4J2BaseBenchmark {
 
     @Setup(Level.Trial)
     public void init() {
-        config = Objects.equals(mode, "NOT_ROLLING") ? new Log4JConfig() : new Log4JRollingConfig();
+        config = Objects.equals(mode, MODE_NOT_ROLLING) ? new Log4JConfig() : new Log4JRollingConfig();
         if (Objects.equals(loggingType, FILE_TYPE)) {
             logger = config.configureFileLogging(LogFiles.provideLogFilePath(Constants.LOG4J2, FILE_TYPE, mode))
                     .getLogger(LOGGER_NAME);

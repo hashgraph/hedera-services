@@ -19,6 +19,8 @@ package com.swirlds.logging.benchmark.swirldslog;
 import static com.swirlds.logging.benchmark.config.Constants.CONSOLE_AND_FILE_TYPE;
 import static com.swirlds.logging.benchmark.config.Constants.CONSOLE_TYPE;
 import static com.swirlds.logging.benchmark.config.Constants.FILE_TYPE;
+import static com.swirlds.logging.benchmark.config.Constants.MODE_NOT_ROLLING;
+import static com.swirlds.logging.benchmark.config.Constants.MODE_ROLLING;
 
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
@@ -41,7 +43,7 @@ public class SwirldsLogBaseBenchmark {
     @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
 
-    @Param({"NOT_ROLLING", "ROLLING"})
+    @Param({MODE_NOT_ROLLING, MODE_ROLLING})
     public String mode;
 
     private static final String LOGGER_NAME = Constants.SWIRLDS + "Benchmark";
@@ -52,7 +54,7 @@ public class SwirldsLogBaseBenchmark {
 
     @Setup(Level.Trial)
     public void init() {
-        config = Objects.equals(mode, "DISABLED") ? new SwirldsLogConfig() : new RollingSwirldsLogConfig();
+        config = Objects.equals(mode, MODE_NOT_ROLLING) ? new SwirldsLogConfig() : new RollingSwirldsLogConfig();
 
         if (Objects.equals(loggingType, FILE_TYPE)) {
             loggingSystem = config.configureFileLogging(LogFiles.provideLogFilePath(Constants.LOG4J2, FILE_TYPE, mode));
@@ -67,7 +69,6 @@ public class SwirldsLogBaseBenchmark {
 
     @TearDown(Level.Trial)
     public void tearDown() {
-        // loggingSystem.stopAndFinalize();
         config.tearDown();
     }
 }

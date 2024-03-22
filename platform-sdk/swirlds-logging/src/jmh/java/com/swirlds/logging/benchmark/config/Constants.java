@@ -46,6 +46,8 @@ public class Constants {
     public static final String USER_1 = UUID.randomUUID().toString();
     public static final String USER_2 = UUID.randomUUID().toString();
     public static final String USER_3 = UUID.randomUUID().toString();
+    public static final String MODE_NOT_ROLLING = "NOT_ROLLING";
+    public static final String MODE_ROLLING = "ROLLING";
 
     private Constants() {}
 }
