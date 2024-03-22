@@ -54,6 +54,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     private OptionalLong expiry = OptionalLong.empty();
     private OptionalLong autoRenewPeriod = OptionalLong.empty();
     private boolean hasNoAdminKey = false;
+    private boolean hasNoSubmitKey = false;
     private Optional<String> adminKey = Optional.empty();
     private Optional<String> submitKey = Optional.empty();
     private Optional<String> autoRenewAccount = Optional.empty();
@@ -114,6 +115,11 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 
     public HapiGetTopicInfo hasNoAdminKey() {
         hasNoAdminKey = true;
+        return this;
+    }
+
+    public HapiGetTopicInfo hasNoSubmitKey() {
+        hasNoSubmitKey = true;
         return this;
     }
 
@@ -184,6 +190,10 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
                 exp -> assertEquals(asId(exp, spec), info.getAutoRenewAccount(), "Bad auto-renew account!"));
         if (hasNoAdminKey) {
             assertFalse(info.hasAdminKey(), "Should have no admin key!");
+        }
+
+        if (hasNoSubmitKey) {
+            assertFalse(info.hasSubmitKey(), "Should have no submit key!");
         }
         expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, info.getLedgerId()));
     }
