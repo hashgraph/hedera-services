@@ -537,7 +537,7 @@ public class SwirldsPlatform implements Platform {
             eventStreamManagerName = String.valueOf(selfId);
         }
 
-        final EventStreamManager defaultEventStreamManager = new DefaultEventStreamManager(
+        final EventStreamManager eventStreamManager = new DefaultEventStreamManager(
                 platformContext,
                 time,
                 threadManager,
@@ -661,7 +661,7 @@ public class SwirldsPlatform implements Platform {
                 stateSignatureCollector,
                 transactionPrehandler,
                 consensusRoundHandler,
-                defaultEventStreamManager,
+                eventStreamManager,
                 futureEventBuffer,
                 issDetector,
                 issHandler,
