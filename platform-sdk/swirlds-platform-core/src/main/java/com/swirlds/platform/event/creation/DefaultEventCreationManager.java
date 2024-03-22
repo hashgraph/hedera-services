@@ -27,7 +27,6 @@ import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
-import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -122,7 +121,7 @@ public class DefaultEventCreationManager implements EventCreationManager {
      * {@inheritDoc}
      */
     @Override
-    public void clear(@NonNull final ClearTrigger ignored) {
+    public void clear() {
         creator.clear();
         phase.activatePhase(IDLE);
     }
