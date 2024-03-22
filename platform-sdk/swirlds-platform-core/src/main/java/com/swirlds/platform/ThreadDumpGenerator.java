@@ -394,7 +394,7 @@ public class ThreadDumpGenerator {
      */
     private static String makeFileName() {
         final SimpleDateFormat dt = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS");
-        return "threadDump " + dt.format(new Date()) + "-" + random.nextInt() + ".log";
+        return "threadDump-" + dt.format(new Date()) + "-" + random.nextInt() + ".log";
     }
 
     /**
