@@ -41,7 +41,6 @@ import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -213,19 +212,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 .getAncientMode();
     }
 
-    @Override
-    public void loadFromSignedState(@NonNull final SignedState signedState) {
-        reset();
-        loadSnapshot(signedState.getState().getPlatformState().getSnapshot());
-    }
-
     /**
      * Load consensus from a snapshot. This will continue consensus from the round of the snapshot
      * once all the required events are provided.
-     *
-     * <p>NOTE: once the snapshot starts being saved in the signed state, {@link
-     * #loadFromSignedState(SignedState)} will call into this method
      */
+    @Override
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {
         reset();
         initJudges = new InitJudges(snapshot.round(), new HashSet<>(snapshot.judgeHashes()));
@@ -236,7 +227,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     }
 
     /** Reset this instance to a state of a newly created instance */
-    public void reset() {
+    private void reset() {
         recentEvents.clear();
         rounds.reset();
         numConsensus = 0;
@@ -661,8 +652,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
         // Future work: prior to enabling a birth round based ancient mode, we need to use real values for
         // previousRoundNonAncient and previousRoundNonExpired. This is currently a place holder.
-        final long previousRoundNonAncient = 0;
-        final long previousRoundNonExpired = 0;
+        final long previousRoundNonAncient = ConsensusConstants.ROUND_FIRST;
+        final long previousRoundNonExpired = ConsensusConstants.ROUND_FIRST;
 
         final long nonAncientThreshold = ancientMode.selectIndicator(
                 getMinGenerationNonAncient(),

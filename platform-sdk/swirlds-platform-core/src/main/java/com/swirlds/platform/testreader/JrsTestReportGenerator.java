@@ -523,7 +523,7 @@ public final class JrsTestReportGenerator {
 
             int mostRecentFailureB = Integer.MAX_VALUE;
             for (int index = 1; index < b.tests().size(); index++) {
-                if (b.tests().get(index).status() != PASS) {
+                if (b.tests().get(index).status() != FAIL) {
                     mostRecentFailureB = index;
                     break;
                 }

@@ -28,7 +28,7 @@ import java.util.stream.LongStream;
  */
 public final class SyntheticSnapshot {
     /** genesis snapshot, when loaded by consensus, it will start from genesis */
-    private static final ConsensusSnapshot GENESIS_SNAPSHOT = new ConsensusSnapshot(
+    public static final ConsensusSnapshot GENESIS_SNAPSHOT = new ConsensusSnapshot(
             ConsensusConstants.ROUND_FIRST,
             List.of(),
             List.of(new MinimumJudgeInfo(ConsensusConstants.ROUND_FIRST, GraphGenerations.FIRST_GENERATION)),
