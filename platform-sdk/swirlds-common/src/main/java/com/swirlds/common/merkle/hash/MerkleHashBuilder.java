@@ -17,24 +17,25 @@
 package com.swirlds.common.merkle.hash;
 
 import static com.swirlds.common.crypto.engine.CryptoEngine.THREAD_COMPONENT_NAME;
-import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.POST_ORDERED_DEPTH_FIRST_RANDOM;
 import static com.swirlds.common.merkle.utility.MerkleConstants.MERKLE_DIGEST_TYPE;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
-import com.swirlds.common.merkle.iterators.MerkleIterator;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.Iterator;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,7 +45,7 @@ import org.apache.logging.log4j.Logger;
 public class MerkleHashBuilder {
     private static final Logger logger = LogManager.getLogger(MerkleHashBuilder.class);
 
-    private final Executor threadPool;
+    private final ForkJoinPool threadPool;
 
     private final int cpuThreadCount;
 
@@ -81,7 +82,7 @@ public class MerkleHashBuilder {
                 })
                 .buildFactory();
 
-        this.threadPool = Executors.newFixedThreadPool(cpuThreadCount, threadFactory);
+        this.threadPool = new ForkJoinPool(cpuThreadCount);
     }
 
     /**
@@ -125,7 +126,7 @@ public class MerkleHashBuilder {
         final Iterator<MerkleNode> iterator = root.treeIterator()
                 .setFilter(MerkleHashBuilder::filter)
                 .setDescendantFilter(MerkleHashBuilder::descendantFilter);
-        hashSubtree(iterator, null);
+        hashSubtree(iterator);
         return root.getHash();
     }
 
@@ -143,44 +144,11 @@ public class MerkleHashBuilder {
             return new StandardFuture<>(root.getHash());
         } else {
             final FutureMerkleHash result = new FutureMerkleHash();
-            AtomicInteger activeThreadCount = new AtomicInteger(cpuThreadCount);
-            for (int threadIndex = 0; threadIndex < cpuThreadCount; threadIndex++) {
-                threadPool.execute(createHashingRunnable(threadIndex, activeThreadCount, result, root));
-            }
+            threadPool.submit(new NodeTask(root,
+                    () -> result.set(root.getHash()),
+                    result::cancelWithException));
             return result;
         }
-    }
-
-    /**
-     * Create a thread that will attempt to hash the tree starting at the root.
-     *
-     * @param threadId
-     * 		Used to generate a randomized iteration order
-     */
-    private Runnable createHashingRunnable(
-            final int threadId, AtomicInteger activeThreadCount, final FutureMerkleHash result, final MerkleNode root) {
-
-        return () -> {
-            final MerkleIterator<MerkleNode> it = root.treeIterator()
-                    .setFilter(MerkleHashBuilder::filter)
-                    .setDescendantFilter(MerkleHashBuilder::descendantFilter);
-            if (threadId > 0) {
-                // One thread can iterate in-order, all others will use random order.
-                it.setOrder(POST_ORDERED_DEPTH_FIRST_RANDOM);
-            }
-
-            try {
-                hashSubtree(it, activeThreadCount);
-
-                // The last thread to terminate is responsible for setting the future
-                int remainingActiveThreads = activeThreadCount.getAndDecrement() - 1;
-                if (remainingActiveThreads == 0) {
-                    result.set(root.getHash());
-                }
-            } catch (final Throwable t) {
-                result.cancelWithException(t);
-            }
-        };
     }
 
     /**
@@ -188,31 +156,72 @@ public class MerkleHashBuilder {
      *
      * @param it
      * 		An iterator that walks through the tree.
-     * @param activeThreadCount
-     * 		If single threaded then this is null, otherwise contains the number of threads
-     * 		that are actively hashing. Once the active thread count dips below the maximum,
-     * 		this means that one thread has either finished or exploded.
      */
-    private void hashSubtree(final Iterator<MerkleNode> it, final AtomicInteger activeThreadCount) {
+    private void hashSubtree(final Iterator<MerkleNode> it) {
         while (it.hasNext()) {
             final MerkleNode node = it.next();
-            // Potential optimization: if this node is currently locked, do not wait here. Skip it and continue.
-            // This would require a lock object that support the "try lock" paradigm.
-            synchronized (node) {
-                if (activeThreadCount != null && activeThreadCount.get() != cpuThreadCount) {
-                    break;
-                }
 
-                if (node.getHash() != null) {
-                    continue;
-                }
-
-                if (node.isLeaf()) {
-                    merkleCryptography.digestSync(node.asLeaf(), MERKLE_DIGEST_TYPE);
-                } else {
-                    merkleCryptography.digestSync(node.asInternal(), MERKLE_DIGEST_TYPE);
-                }
+            if (node.getHash() != null) {
+                continue;
             }
+
+            merkleCryptography.digestSync(node, MERKLE_DIGEST_TYPE);
         }
     }
+
+    class NodeTask extends ForkJoinTask<Void> {
+        MerkleNode node;
+        Runnable onComplete;
+        Consumer<Throwable> onError;
+
+        NodeTask(final MerkleNode node, final Runnable onComplete, final Consumer<Throwable> onError) {
+            this.node = node;
+            this.onComplete = onComplete;
+            this.onError = onError;
+        }
+
+        @Override
+        public Void getRawResult() {
+            return null;
+        }
+
+        @Override
+        protected void setRawResult(Void value) {
+        }
+
+        @Override
+        public boolean exec() {
+            try {
+                if (node == null || node.getHash() != null) {
+                    onComplete.run();
+                } else if (node.isLeaf()) {
+                    complete();
+                } else {
+                    MerkleInternal internal = node.asInternal();
+                    int nChildren = internal.getNumberOfChildren();
+                    if (nChildren == 0) {
+                        complete();
+                    } else {
+                        final AtomicInteger subTasks = new AtomicInteger(nChildren);
+                        for (int childIndex = 0; childIndex < nChildren; childIndex++) {
+                            MerkleNode child = internal.getChild(childIndex);
+                            new NodeTask(child, () -> {
+                                if (subTasks.decrementAndGet() == 0) complete();
+                            }, onError).fork();
+                        }
+                    }
+                }
+            } catch (Throwable t) {
+                onError.accept(t);
+                return false;
+            }
+            return true;
+        }
+
+        void complete() {
+            merkleCryptography.digestSync(node, MERKLE_DIGEST_TYPE);
+            onComplete.run();
+        }
+    }
+
 }
