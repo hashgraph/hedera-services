@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
@@ -32,6 +33,7 @@ import static com.hedera.node.app.service.token.impl.validators.AllowanceValidat
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.validation.Validations.validateNullableAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -113,6 +115,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
         for (final var allowance : tokenAllowances) {
             validateNullableAccountID(allowance.owner());
+            validateFalsePreCheck(allowance.amount() > 0 && allowance.spender() == null, INVALID_ALLOWANCE_SPENDER_ID);
             validateAccountID(allowance.spender());
             validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
         }
