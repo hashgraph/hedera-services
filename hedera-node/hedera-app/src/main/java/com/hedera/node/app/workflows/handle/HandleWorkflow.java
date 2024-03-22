@@ -39,6 +39,7 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartR
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.isGasThrottled;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
@@ -322,8 +323,6 @@ public class HandleWorkflow {
 
         final var tokenServiceContext =
                 new TokenContextImpl(configuration, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
-        // It's awful that we have to check this every time a transaction is handled, especially since this mostly
-        // applies to non-production cases. Let's find a way to 💥💥 remove this 💥💥
         genesisRecordsTimeHook.process(tokenServiceContext);
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
@@ -603,6 +602,16 @@ public class HandleWorkflow {
                         getGasLimitForContractTx(transactionInfo.txBody(), transactionInfo.functionality());
                 final var excessAmount = gasLimitForContractTx - gasUsed;
                 networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
+            }
+        }
+        // If a transaction appeared to try an auto-creation, and hence used
+        // frontend throttle capacity; but then failed, we need to reclaim the
+        // frontend throttle capacity on the node that submitted the transaction
+        if (canAutoCreate(transactionInfo.functionality()) && recordBuilder.status() != SUCCESS) {
+            final var numImplicitCreations = throttleServiceManager.numImplicitCreations(
+                    transactionInfo.txBody(), tokenServiceContext.readableStore(ReadableAccountStore.class));
+            if (usedSelfFrontendThrottleCapacity(numImplicitCreations, transactionInfo.txBody())) {
+                throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations);
             }
         }
 
@@ -923,6 +932,13 @@ public class HandleWorkflow {
         final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
         userTransactionRecordBuilder.status(status);
         recordListBuilder.revertChildrenOf(userTransactionRecordBuilder);
+    }
+
+    private boolean usedSelfFrontendThrottleCapacity(
+            final int numImplicitCreations, @NonNull final TransactionBody txnBody) {
+        return numImplicitCreations > 0
+                && txnBody.nodeAccountIDOrThrow()
+                        .equals(networkInfo.selfNodeInfo().accountId());
     }
 
     /*

@@ -200,8 +200,7 @@ class LedgerBalanceChangesTest {
                 historian,
                 txnCtx,
                 aliasManager,
-                feeDistribution,
-                cryptoCreateThrottleReclaimer);
+                feeDistribution);
 
         subject = new HederaLedger(
                 tokenStore,
@@ -308,8 +307,7 @@ class LedgerBalanceChangesTest {
                 historian,
                 txnCtx,
                 aliasManager,
-                feeDistribution,
-                cryptoCreateThrottleReclaimer);
+                feeDistribution);
         subject = new HederaLedger(
                 tokenStore,
                 ids,

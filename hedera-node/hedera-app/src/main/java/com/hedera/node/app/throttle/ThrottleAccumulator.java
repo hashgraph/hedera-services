@@ -98,6 +98,8 @@ public class ThrottleAccumulator {
     private static final Logger log = LogManager.getLogger(ThrottleAccumulator.class);
     private static final Set<HederaFunctionality> GAS_THROTTLED_FUNCTIONS =
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
+    private static final Set<HederaFunctionality> AUTO_CREATE_FUNCTIONS =
+            EnumSet.of(CRYPTO_TRANSFER, ETHEREUM_TRANSACTION);
     private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
 
     private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
@@ -284,6 +286,10 @@ public class ThrottleAccumulator {
      */
     public static boolean isGasThrottled(@NonNull final HederaFunctionality function) {
         return GAS_THROTTLED_FUNCTIONS.contains(function);
+    }
+
+    public static boolean canAutoCreate(@NonNull final HederaFunctionality function) {
+        return AUTO_CREATE_FUNCTIONS.contains(function);
     }
 
     /*
@@ -595,7 +601,7 @@ public class ThrottleAccumulator {
         }
     }
 
-    private int getImplicitCreationsCount(
+    public int getImplicitCreationsCount(
             @NonNull final TransactionBody txnBody, @NonNull final ReadableAccountStore accountStore) {
         int implicitCreationsCount = 0;
         if (txnBody.hasEthereumTransaction()) {
