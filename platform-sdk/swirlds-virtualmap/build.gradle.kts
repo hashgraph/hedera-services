@@ -37,7 +37,6 @@ jmhModuleInfo {
 
 testModuleInfo {
     requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.config.api.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.virtualmap.test.fixtures")
     requires("org.junit.jupiter.api")
