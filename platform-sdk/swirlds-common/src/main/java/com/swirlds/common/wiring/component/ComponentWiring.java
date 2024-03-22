@@ -141,7 +141,8 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         } catch (final NullPointerException e) {
             throw new IllegalStateException(
                     "Component wiring does not support primitive input types or return types. Use a boxed primitive "
-                            + "instead.");
+                            + "instead.",
+                    e);
         }
 
         return getOrBuildInputWire(proxy.getMostRecentlyInvokedMethod(), handler, null, null, null);
@@ -164,7 +165,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             handler.accept(proxyComponent, null);
         } catch (final NullPointerException e) {
             throw new IllegalStateException(
-                    "Component wiring does not support primitive input types. Use a boxed primitive instead.");
+                    "Component wiring does not support primitive input types. Use a boxed primitive instead.", e);
         }
 
         return getOrBuildInputWire(proxy.getMostRecentlyInvokedMethod(), null, handler, null, null);
@@ -187,7 +188,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             handler.apply(proxyComponent);
         } catch (final NullPointerException e) {
             throw new IllegalStateException(
-                    "Component wiring does not support primitive input types. Use a boxed primitive instead.");
+                    "Component wiring does not support primitive input types. Use a boxed primitive instead.", e);
         }
 
         return getOrBuildInputWire(proxy.getMostRecentlyInvokedMethod(), null, null, handler, null);
@@ -208,7 +209,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             handler.accept(proxyComponent);
         } catch (final NullPointerException e) {
             throw new IllegalStateException(
-                    "Component wiring does not support primitive input types. Use a boxed primitive instead.");
+                    "Component wiring does not support primitive input types. Use a boxed primitive instead.", e);
         }
 
         return getOrBuildInputWire(proxy.getMostRecentlyInvokedMethod(), null, null, null, handler);
@@ -312,8 +313,10 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         try {
             transformation.apply(proxyComponent, null);
         } catch (final NullPointerException e) {
-            throw new IllegalStateException("Component wiring does not support primitive input types or return types. "
-                    + "Use a boxed primitive instead.");
+            throw new IllegalStateException(
+                    "Component wiring does not support primitive input types or return types. "
+                            + "Use a boxed primitive instead.",
+                    e);
         }
 
         final Method method = proxy.getMostRecentlyInvokedMethod();
@@ -376,8 +379,10 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         try {
             predicate.apply(proxyComponent, null);
         } catch (final NullPointerException e) {
-            throw new IllegalStateException("Component wiring does not support primitive input types or return types. "
-                    + "Use a boxed primitive instead.");
+            throw new IllegalStateException(
+                    "Component wiring does not support primitive input types or return types. "
+                            + "Use a boxed primitive instead.",
+                    e);
         }
 
         final Method method = proxy.getMostRecentlyInvokedMethod();
