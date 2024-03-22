@@ -138,16 +138,9 @@ public class StandardWiringModel implements WiringModel {
     }
 
     /**
-     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
-     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
-     * factors.
-     *
-     * @param period the period of the heartbeat. For example, setting a period of 100ms will cause the heartbeat to be
-     *               sent at 10 hertz. Note that time is measured at millisecond precision, and so periods less than 1ms
-     *               are not supported.
-     * @return the output wire
-     * @throws IllegalStateException if start() has already been called
+     * {@inheritDoc}
      */
+    @Override
     @NonNull
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
         throwIfStarted();
@@ -155,14 +148,10 @@ public class StandardWiringModel implements WiringModel {
     }
 
     /**
-     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
-     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
-     * factors.
-     *
-     * @param frequency the frequency of the heartbeat in hertz. Note that time is measured at millisecond precision,
-     *                  and so frequencies greater than 1000hz are not supported.
-     * @return the output wire
+     * {@inheritDoc}
      */
+    @Override
+    @NonNull
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
         throwIfStarted();
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
