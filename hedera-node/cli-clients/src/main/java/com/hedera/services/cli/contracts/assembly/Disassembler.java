@@ -73,7 +73,6 @@ public class Disassembler {
 
         // Check end conditions
         if (codeOffset < 0 || codeOffset >= bytecode.length) return null;
-        ;
 
         // Get the next opcode and its syntax.
         final byte opcode = bytecode[codeOffset];

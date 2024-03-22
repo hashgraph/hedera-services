@@ -236,16 +236,16 @@ public class Opcodes {
 
         // Add all the "multiple" opcodes
         for (int i = 1; i <= 32; i++) {
-            descrs.add(new Descr(0x60 + i - 1, i, "PUSH" + Integer.toString(i)));
+            descrs.add(new Descr(0x60 + i - 1, i, "PUSH" + i));
         }
         for (int i = 1; i <= 16; i++) {
-            descrs.add(new Descr(0x80 + i - 1, "DUP" + Integer.toString(i)));
+            descrs.add(new Descr(0x80 + i - 1, "DUP" + i));
         }
         for (int i = 1; i <= 16; i++) {
-            descrs.add(new Descr(0x90 + i - 1, "SWAP" + Integer.toString(i)));
+            descrs.add(new Descr(0x90 + i - 1, "SWAP" + i));
         }
         for (int i = 0; i <= 4; i++) {
-            descrs.add(new Descr(0xA0 + i, "LOG" + Integer.toString(i)));
+            descrs.add(new Descr(0xA0 + i, "LOG" + i));
         }
         // Add all the unassigned (thus invalid) opcodes
         concatStreams(

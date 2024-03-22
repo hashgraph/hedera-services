@@ -29,8 +29,8 @@ import java.util.Objects;
 @SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class CodeRecognizerManager {
 
-    public List<CodeRecognizer> recognizers = new ArrayList<>();
-    public static final List<Class<? extends CodeRecognizer>> recognizerClasses;
+    private final List<CodeRecognizer> recognizers = new ArrayList<>();
+    private static final List<Class<? extends CodeRecognizer>> recognizerClasses;
 
     public class Distributor extends CodeRecognizer {
 
@@ -38,21 +38,26 @@ public class CodeRecognizerManager {
             super();
         }
 
+        @Override
         public void begin() {
             for (var recognizer : recognizers) recognizer.begin();
         }
 
+        @Override
         public void acceptCodeLine(@NonNull final CodeLine code) {
             Objects.requireNonNull(code);
             for (var recognizer : recognizers) recognizer.acceptCodeLine(code);
         }
 
+        @Override
         public void acceptDataLine(@NonNull final DataPseudoOpLine data) {
             Objects.requireNonNull(data);
             for (var recognizer : recognizers) recognizer.acceptDataLine(data);
         }
 
-        public @NonNull CodeRecognizer.Results end() {
+        @Override
+        @NonNull
+        public CodeRecognizer.Results end() {
             var result = new CodeRecognizer.Results();
             for (var recognizer : recognizers) {
                 var r = recognizer.end();
@@ -64,7 +69,8 @@ public class CodeRecognizerManager {
         protected void reset() {}
     }
 
-    public final @NonNull Distributor distributor;
+    @NonNull
+    public final Distributor distributor;
 
     public CodeRecognizerManager() {
         for (var recognizerKlass : recognizerClasses)
@@ -83,7 +89,8 @@ public class CodeRecognizerManager {
     /**
      * Returns a CodeRecognizer that will process each line through all the registered recognizers.
      */
-    public @NonNull CodeRecognizer getDistributor() {
+    @NonNull
+    public CodeRecognizer getDistributor() {
         return distributor;
     }
 

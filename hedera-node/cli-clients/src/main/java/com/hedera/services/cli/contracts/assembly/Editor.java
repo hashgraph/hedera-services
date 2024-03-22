@@ -277,7 +277,6 @@ public class Editor {
     protected @NonNull Range<Byte> validateByteRange(
             @NonNull final Range<Line> lineRange, final Range<Byte> byteRange) {
         Objects.requireNonNull(lineRange);
-        Objects.requireNonNull(byteRange);
         if (null == byteRange || !isValidByteRange(lineRange, byteRange))
             throw new IllegalArgumentException("EDIT: invalid byteRange");
         return byteRange;
