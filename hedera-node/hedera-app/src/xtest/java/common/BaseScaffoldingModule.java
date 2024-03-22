@@ -78,6 +78,7 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.throttle.ThrottleMetrics;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -314,8 +315,10 @@ public interface BaseScaffoldingModule {
 
     @Provides
     @Singleton
-    static CongestionMultipliers createCongestionMultipliers(@NonNull ConfigProvider configProvider) {
-        var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE);
+    static CongestionMultipliers createCongestionMultipliers(
+            @NonNull ConfigProvider configProvider, @NonNull Metrics metrics) {
+        var throttleMetrics = new ThrottleMetrics(metrics, BACKEND_THROTTLE);
+        var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE, throttleMetrics);
         final var genericFeeMultiplier = getThrottleMultiplier(configProvider, backendThrottle);
 
         return getCongestionMultipliers(configProvider, genericFeeMultiplier, backendThrottle);
@@ -324,8 +327,9 @@ public interface BaseScaffoldingModule {
     @Provides
     @Singleton
     static SynchronizedThrottleAccumulator createSynchronizedThrottleAccumulator(
-            @NonNull ConfigProvider configProvider) {
-        var frontendThrottle = new ThrottleAccumulator(() -> 1, configProvider, FRONTEND_THROTTLE);
+            @NonNull ConfigProvider configProvider, @NonNull Metrics metrics) {
+        var throttleMetrics = new ThrottleMetrics(metrics, FRONTEND_THROTTLE);
+        var frontendThrottle = new ThrottleAccumulator(() -> 1, configProvider, FRONTEND_THROTTLE, throttleMetrics);
         return new SynchronizedThrottleAccumulator(frontendThrottle);
     }
 
@@ -373,8 +377,10 @@ public interface BaseScaffoldingModule {
 
     @Provides
     @Singleton
-    static NetworkUtilizationManager createNetworkUtilizationManager(@NonNull ConfigProvider configProvider) {
-        var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE);
+    static NetworkUtilizationManager createNetworkUtilizationManager(
+            @NonNull ConfigProvider configProvider, @NonNull Metrics metrics) {
+        var throttleMetrics = new ThrottleMetrics(metrics, BACKEND_THROTTLE);
+        var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE, throttleMetrics);
         final var genericFeeMultiplier = getThrottleMultiplier(configProvider, backendThrottle);
 
         final var congestionMultipliers =
