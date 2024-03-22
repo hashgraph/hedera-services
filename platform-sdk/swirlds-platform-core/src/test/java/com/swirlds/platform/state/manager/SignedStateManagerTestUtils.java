@@ -65,11 +65,4 @@ public class SignedStateManagerTestUtils {
 
         return signature;
     }
-
-    /**
-     * Create a HashSigner that always returns valid (fake) signatures.
-     */
-    public static HashSigner buildFakeHashSigner(final PublicKey key) {
-        return hash -> buildFakeSignature(key, hash);
-    }
 }

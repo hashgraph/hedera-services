@@ -41,6 +41,7 @@ import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
@@ -407,7 +408,7 @@ public final class EventRecoveryWorkflow {
         }
 
         final ReservedSignedState signedState = new SignedState(
-                        platformContext, newState, "EventRecoveryWorkflow.handleNextRound()", isFreezeState)
+                        platformContext, CryptoStatic::verifySignature, newState, "EventRecoveryWorkflow.handleNextRound()", isFreezeState)
                 .reserve("recovery");
         previousState.close();
 

@@ -26,6 +26,7 @@ import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.legacy.payload.ReconnectDataUsagePayload;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.State;
@@ -191,7 +192,7 @@ public class ReconnectLearner {
 
         final State state = (State) synchronizer.getRoot();
         final SignedState newSignedState =
-                new SignedState(platformContext, state, "ReconnectLearner.reconnect()", false);
+                new SignedState(platformContext, CryptoStatic::verifySignature, state, "ReconnectLearner.reconnect()", false);
         newSignedState.setSigSet(sigSet);
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();

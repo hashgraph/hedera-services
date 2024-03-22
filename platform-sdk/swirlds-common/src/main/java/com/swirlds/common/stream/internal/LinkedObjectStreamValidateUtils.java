@@ -25,6 +25,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.StreamType;
@@ -32,6 +33,7 @@ import com.swirlds.logging.legacy.payload.StreamParseErrorPayload;
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PublicKey;
 import java.util.Iterator;
 import java.util.List;
@@ -126,9 +128,10 @@ public final class LinkedObjectStreamValidateUtils {
             Signature entireSignature = parsedPairs.left().right();
             Hash metaHashInSig = parsedPairs.right().left();
             Signature metaSignature = parsedPairs.right().right();
-            if (!entireSignature.verifySignature(entireHash.getValue(), publicKey)) {
+
+            if (!verifySignature(entireHash.getValue(), entireSignature, publicKey)) {
                 result = StreamValidationResult.INVALID_ENTIRE_SIGNATURE;
-            } else if (!metaSignature.verifySignature(metaHashInSig.getValue(), publicKey)) {
+            } else if (!verifySignature(metaHashInSig.getValue(), metaSignature, publicKey)) {
                 result = StreamValidationResult.INVALID_META_SIGNATURE;
             } else {
                 result = StreamValidationResult.OK;
@@ -224,5 +227,18 @@ public final class LinkedObjectStreamValidateUtils {
             return Pair.of(StreamValidationResult.CALCULATED_END_HASH_NOT_MATCH, endHash);
         }
         return Pair.of(StreamValidationResult.OK, endHash);
+    }
+
+    // Code duplicated in order to avoid wasting time on the event stream which will be removed soon
+    public static boolean verifySignature(final byte[] data, final Signature signature, final PublicKey publicKey) {
+        try {
+            final java.security.Signature sig = java.security.Signature.getInstance(
+                    SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
+            sig.initVerify(publicKey);
+            sig.update(data);
+            return sig.verify(signature.getSignatureBytes());
+        } catch (final Exception  e) {
+            throw new RuntimeException(e);
+        }
     }
 }

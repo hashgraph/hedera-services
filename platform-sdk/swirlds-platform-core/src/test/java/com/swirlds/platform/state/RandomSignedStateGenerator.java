@@ -31,6 +31,8 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -70,6 +72,7 @@ public class RandomSignedStateGenerator {
     private Integer roundsNonAncient = null;
     private Hash epoch = null;
     private ConsensusSnapshot consensusSnapshot;
+    private SignatureVerifier signatureVerifier;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -186,12 +189,20 @@ public class RandomSignedStateGenerator {
         platformState.setRoundsNonAncient(roundsNonAncientInstance);
         platformState.setSnapshot(consensusSnapshotInstance);
 
+        if(signatureVerifier == null){
+            signatureVerifier = (data, signature, key)-> {
+                final Hash hash = new Hash(data, stateHash.getDigestType());
+                return hash.equals(stateHash);
+            };
+        }
+
         final SignedState signedState = new SignedState(
                 new TestConfigBuilder()
                         .withValue("state.stateHistoryEnabled", true)
                         .withConfigDataType(StateConfig.class)
                         .getOrCreateConfig()
                         .getConfigData(StateConfig.class),
+                signatureVerifier,
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
                 freezeStateInstance);
@@ -218,20 +229,7 @@ public class RandomSignedStateGenerator {
             signaturesInstance = new HashMap<>();
 
             for (final NodeId nodeID : signingNodeIdsInstance) {
-                final Signature signature = randomSignature(random);
-
-                final Signature wrappedSignature = spy(signature);
-                doAnswer(invocation -> {
-                            final byte[] bytes = invocation.getArgument(0);
-                            final Hash hash =
-                                    new Hash(bytes, stateInstance.getHash().getDigestType());
-
-                            return hash.equals(stateInstance.getHash());
-                        })
-                        .when(wrappedSignature)
-                        .verifySignature(any(), any());
-
-                signaturesInstance.put(nodeID, wrappedSignature);
+                signaturesInstance.put(nodeID, randomSignature(random));
             }
         } else {
             signaturesInstance = signatures;
@@ -404,6 +402,12 @@ public class RandomSignedStateGenerator {
     @NonNull
     public RandomSignedStateGenerator setConsensusSnapshot(@NonNull final ConsensusSnapshot consensusSnapshot) {
         this.consensusSnapshot = consensusSnapshot;
+        return this;
+    }
+
+    @NonNull
+    public RandomSignedStateGenerator setSignatureVerifier(@NonNull final SignatureVerifier signatureVerifier) {
+        this.signatureVerifier = signatureVerifier;
         return this;
     }
 }

@@ -31,6 +31,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.RecoveryScratchpad;
@@ -241,7 +242,7 @@ public final class StartupStateUtils {
 
         final State stateCopy = initialSignedState.getState().copy();
         final SignedState signedStateCopy =
-                new SignedState(platformContext, stateCopy, "StartupStateUtils: copy initial state", false);
+                new SignedState(platformContext, CryptoStatic::verifySignature, stateCopy, "StartupStateUtils: copy initial state", false);
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 
         return signedStateCopy.reserve("Copied initial state");
