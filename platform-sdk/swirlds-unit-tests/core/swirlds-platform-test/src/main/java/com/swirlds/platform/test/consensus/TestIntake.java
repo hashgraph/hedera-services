@@ -18,6 +18,7 @@ package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.mockito.Mockito.mock;
 
@@ -194,7 +195,7 @@ public class TestIntake implements LoadableFromSignedState {
 
     @Override
     public void loadFromSignedState(@NonNull final SignedState signedState) {
-        consensus.loadFromSignedState(signedState);
+        consensus.loadSnapshot(signedState.getState().getPlatformState().getSnapshot());
         shadowGraph.clear();
     }
 
@@ -235,7 +236,7 @@ public class TestIntake implements LoadableFromSignedState {
     }
 
     public void reset() {
-        consensus.reset();
+        consensus.loadSnapshot(GENESIS_SNAPSHOT);
         shadowGraph.clear();
         output.clear();
     }
