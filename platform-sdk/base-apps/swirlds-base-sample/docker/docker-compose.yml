@@ -34,4 +34,3 @@ services:
     volumes:
       - ./loki/:/etc/loki/
     restart: always
-    network_mode: "host"
