@@ -20,10 +20,12 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.StaticPlatformBuilder.LOG4J_FILE_NAME;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
+import static com.swirlds.platform.gui.internal.BrowserWindowManager.setBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
@@ -35,18 +37,25 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
+import com.swirlds.platform.gui.GuiEventStorage;
+import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.platform.gui.hashgraph.internal.StandardGuiSource;
 import com.swirlds.platform.gui.internal.StateHierarchy;
-import com.swirlds.platform.gui.model.GuiModel;
+import com.swirlds.platform.gui.internal.WinBrowser;
 import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
+import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -160,12 +169,31 @@ public class Browser {
         final Map<NodeId, SwirldMain> appMains = loadSwirldMains(appDefinition, nodesToRun);
         ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
 
-        setupBrowserWindow();
-        setStateHierarchy(new StateHierarchy(null));
-        appDefinition.setSwirldId(new byte[CryptoConstants.HASH_SIZE_BYTES]);
+        final boolean showUi = !GraphicsEnvironment.isHeadless();
 
-        final InfoApp infoApp = getStateHierarchy().getInfoApp(appDefinition.getApplicationName());
-        final InfoSwirld infoSwirld = new InfoSwirld(infoApp, appDefinition.getSwirldId());
+        final GuiEventStorage guiEventStorage;
+        final HashgraphGuiSource guiSource;
+        Metrics guiMetrics = null;
+        if (showUi) {
+            setupBrowserWindow();
+            setStateHierarchy(new StateHierarchy(null));
+            final InfoApp infoApp = getStateHierarchy().getInfoApp(appDefinition.getApplicationName());
+            final InfoSwirld infoSwirld = new InfoSwirld(infoApp, new byte[CryptoConstants.HASH_SIZE_BYTES]);
+            new InfoMember(infoSwirld, "Node" + nodesToRun.getFirst().id());
+
+            // Duplicating config here is ugly, but Browser is test only code now.
+            // In the future we should clean it up, but it's not urgent to do so.
+            final ConfigurationBuilder guiConfigBuilder = ConfigurationBuilder.create();
+            BootstrapUtils.setupConfigBuilder(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
+            final Configuration guiConfig = guiConfigBuilder.build();
+
+            guiEventStorage = new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());
+
+            guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
+        } else {
+            guiSource = null;
+            guiEventStorage = null;
+        }
 
         final Map<NodeId, SwirldsPlatform> platforms = new HashMap<>();
         for (int index = 0; index < nodesToRun.size(); index++) {
@@ -185,15 +213,20 @@ public class Browser {
                     appMain::newState,
                     nodeId);
 
+            if (showUi && index == 0) {
+                builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
+                builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
+            }
+
             final SwirldsPlatform platform = (SwirldsPlatform)
                     builder.withConfigurationBuilder(configBuilder).build();
             platforms.put(nodeId, platform);
 
-            new InfoMember(infoSwirld, platform);
-
-            GuiModel.getInstance().setPlatformName(nodeId, "Node " + nodeId.id());
-            GuiModel.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
-            GuiModel.getInstance().setInstanceNumber(nodeId, index);
+            if (showUi) {
+                if (index == 0) {
+                    guiMetrics = platform.getContext().getMetrics();
+                }
+            }
         }
 
         addPlatforms(platforms.values());
@@ -208,8 +241,12 @@ public class Browser {
 
         startPlatforms(new ArrayList<>(platforms.values()), appMains);
 
-        showBrowserWindow(null);
-        moveBrowserWindowToFront();
+        if (showUi) {
+            setBrowserWindow(
+                    new WinBrowser(nodesToRun.getFirst(), guiSource, guiEventStorage.getConsensus(), guiMetrics));
+            showBrowserWindow(null);
+            moveBrowserWindowToFront();
+        }
     }
 
     /**

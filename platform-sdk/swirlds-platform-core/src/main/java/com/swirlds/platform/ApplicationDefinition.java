@@ -32,7 +32,6 @@ public class ApplicationDefinition {
     private final String mainClassName;
     private final Path appJarPath;
     private final AddressBook configAddressBook;
-    private byte[] swirldId;
 
     public ApplicationDefinition(
             @NonNull final String swirldName,
@@ -69,13 +68,5 @@ public class ApplicationDefinition {
 
     public AddressBook getConfigAddressBook() {
         return configAddressBook;
-    }
-
-    public byte[] getSwirldId() {
-        return swirldId;
-    }
-
-    public void setSwirldId(final byte[] swirldId) {
-        this.swirldId = swirldId;
     }
 }

@@ -19,6 +19,7 @@ package com.swirlds.platform.components;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -121,6 +122,14 @@ public class DefaultConsensusEngine implements ConsensusEngine {
         } finally {
             intakeEventCounter.eventExitedIntakePipeline(event.getBaseEvent().getSenderId());
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void outOfBandSnapshotUpdate(@NonNull final ConsensusSnapshot snapshot) {
+        consensusSupplier.get().loadSnapshot(snapshot);
     }
 
     /**

@@ -18,6 +18,8 @@ package com.swirlds.platform.test.gui;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +33,11 @@ class HashgraphGuiTest {
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final TestGuiSource guiSource = new TestGuiSource(platformContext, seed, numNodes);
+
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(seed).setSize(numNodes).build();
+
+        final TestGuiSource guiSource = new TestGuiSource(platformContext, seed, addressBook);
         guiSource.generateEvents(initialEvents);
         guiSource.runGui();
     }

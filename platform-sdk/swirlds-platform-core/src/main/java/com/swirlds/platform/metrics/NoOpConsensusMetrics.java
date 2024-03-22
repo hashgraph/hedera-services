@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.fixtures.consensus;
+package com.swirlds.platform.metrics;
 
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.ConsensusMetrics;
 
 public class NoOpConsensusMetrics implements ConsensusMetrics {
     @Override
