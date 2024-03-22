@@ -408,8 +408,6 @@ public class TaskSchedulerBuilder<O> {
     private void registerMetrics(
             @Nullable final ObjectCounter unhandledTaskCounter, @NonNull final FractionalTimer busyFractionTimer) {
 
-        // TODO before merging check JRS metrics to make sure everything still works as expected
-
         if (unhandledTaskMetricEnabled) {
             Objects.requireNonNull(unhandledTaskCounter);
 
