@@ -29,11 +29,11 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Optional;
 
-public class RandomTokenHollow extends RandomToken {
+public class RandomTokenHollowAccount extends RandomToken {
 
     private String[] signers;
 
-    public RandomTokenHollow(
+    public RandomTokenHollowAccount(
             EntityNameProvider<Key> keys,
             RegistrySourcedNameProvider<TokenID> tokens,
             RegistrySourcedNameProvider<AccountID> accounts,

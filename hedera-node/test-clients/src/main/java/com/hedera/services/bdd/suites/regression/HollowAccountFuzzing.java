@@ -35,7 +35,7 @@ public class HollowAccountFuzzing extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(HollowAccountFuzzing.class);
 
-    private static final String PROPERTIES = "hollow-account-fuzzing-transfer.properties";
+    private static final String PROPERTIES = "hollow-account-fuzzing.properties";
 
     public static void main(String... args) {
         new HollowAccountFuzzing().runSuiteSync();

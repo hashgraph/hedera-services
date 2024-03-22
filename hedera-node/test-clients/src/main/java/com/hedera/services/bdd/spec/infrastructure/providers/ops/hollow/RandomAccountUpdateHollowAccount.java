@@ -27,10 +27,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
-public class RandomAccountUpdateHollow extends RandomAccountUpdate {
+public class RandomAccountUpdateHollowAccount extends RandomAccountUpdate {
     private final String[] signers;
 
-    public RandomAccountUpdateHollow(
+    public RandomAccountUpdateHollowAccount(
             EntityNameProvider<Key> keys, EntityNameProvider<AccountID> accounts, String... signers) {
         super(keys, accounts);
         this.signers = signers;

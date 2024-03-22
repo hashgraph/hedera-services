@@ -42,9 +42,9 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatin
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.contract.RandomContract;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.contract.RandomContractDeletion;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountDeletionWithReceiver;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomAccountUpdateHollow;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTokenAssociationHollow;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTokenHollow;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomAccountUpdateHollowAccount;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTokenAssociationHollowAccount;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTokenHollowAccount;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTransferFromHollowAccount;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTransferToHollowAccount;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken;
@@ -115,11 +115,11 @@ public class HollowAccountFuzzingFactory {
                     .withOp(new RandomToken(keys, tokens, validAccounts), intPropOrElse("randomToken.bias", 0, props))
                     // expects invalid signature
                     .withOp(
-                            new RandomTokenHollow(keys, tokens, hollowAccounts, UNIQUE_PAYER_ACCOUNT),
+                            new RandomTokenHollowAccount(keys, tokens, hollowAccounts, UNIQUE_PAYER_ACCOUNT),
                             intPropOrElse("randomTokenHollow.bias", 0, props))
                     // expects invalid signature
                     .withOp(
-                            new RandomTokenAssociationHollow(tokens, hollowAccounts, tokenRels, UNIQUE_PAYER_ACCOUNT)
+                            new RandomTokenAssociationHollowAccount(tokens, hollowAccounts, tokenRels, UNIQUE_PAYER_ACCOUNT)
                                     .ceiling(intPropOrElse(
                                             "randomTokenAssociation.ceilingNum",
                                             RandomTokenAssociation.DEFAULT_CEILING_NUM,
@@ -128,7 +128,7 @@ public class HollowAccountFuzzingFactory {
                     /* ---- ACCOUNT ---- */
                     // expects invalid signature
                     .withOp(
-                            new RandomAccountUpdateHollow(keys, hollowAccounts, UNIQUE_PAYER_ACCOUNT),
+                            new RandomAccountUpdateHollowAccount(keys, hollowAccounts, UNIQUE_PAYER_ACCOUNT),
                             intPropOrElse("randomAccountUpdate.bias", 0, props))
                     .withOp(
                             new RandomAccountDeletionWithReceiver(hollowAccounts, accountsToDelete),

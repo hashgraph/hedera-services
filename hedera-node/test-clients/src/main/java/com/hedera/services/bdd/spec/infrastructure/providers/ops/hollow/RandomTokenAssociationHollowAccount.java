@@ -29,10 +29,10 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-public class RandomTokenAssociationHollow extends RandomTokenAssociation {
+public class RandomTokenAssociationHollowAccount extends RandomTokenAssociation {
     private final String[] signers;
 
-    public RandomTokenAssociationHollow(
+    public RandomTokenAssociationHollowAccount(
             RegistrySourcedNameProvider<TokenID> tokens,
             RegistrySourcedNameProvider<AccountID> accounts,
             RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels,
