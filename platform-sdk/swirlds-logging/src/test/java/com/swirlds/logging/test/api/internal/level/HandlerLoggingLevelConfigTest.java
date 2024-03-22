@@ -46,7 +46,6 @@ public class HandlerLoggingLevelConfigTest {
     }
 
     @Test
-    @Disabled
     void testConstructor() {
         // given
         final HandlerLoggingLevelConfig config =
@@ -57,7 +56,6 @@ public class HandlerLoggingLevelConfigTest {
     }
 
     @Test
-    @Disabled
     void testWithDifferentPrefix() {
         // given
         final HandlerLoggingLevelConfig config =

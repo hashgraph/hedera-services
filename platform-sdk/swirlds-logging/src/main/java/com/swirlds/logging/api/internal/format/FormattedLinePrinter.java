@@ -27,6 +27,7 @@ import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
@@ -53,7 +54,7 @@ public class FormattedLinePrinter {
      * Creates a format
      *
      * @param formatTimestamp if true, timestamps will be converted to a human-readable format defined by
-     *                           {@link EpochFormatUtils}
+     *                        {@link EpochFormatUtils}
      */
     public FormattedLinePrinter(boolean formatTimestamp) {
         this.formatTimestamp = formatTimestamp;
@@ -75,41 +76,72 @@ public class FormattedLinePrinter {
             return;
         }
         try {
-            if (formatTimestamp) {
-                appendable.append(EpochFormatUtils.timestampAsString(event.timestamp()));
+            if (formatTimestamp && event.marker() != null && event.context() != null) {
+                printAll(appendable, event);
             } else {
-                appendable.append(Long.toString(event.timestamp()));
+                printConditional(appendable, event);
             }
-            appendable.append(' ');
-            appendable.append(asString(event.level()));
-            appendable.append(" [");
-            appendable.append(requireNonNullElse(event.threadName(), THREAD_SUFFIX));
-            appendable.append("] ");
-            appendable.append(requireNonNullElse(event.loggerName(), LOGGER_SUFFIX));
-            appendable.append(" - ");
-            appendable.append(asString(event.message()));
-
-            Marker marker = event.marker();
-            if (marker != null) {
-                appendable.append(" - [");
-                appendable.append(asString(marker));
-                appendable.append("]");
-            }
-
-            final Map<String, String> context = event.context();
-            if (context != null && !context.isEmpty()) {
-                appendable.append(" - ");
-                appendable.append(context.toString());
-            }
-            appendable.append(System.lineSeparator());
 
             Throwable throwable = event.throwable();
             if (throwable != null) {
                 StackTracePrinter.print(appendable, throwable);
             }
+
         } catch (final Throwable e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format and print event", e);
         }
+    }
+
+    private void printConditional(final @NonNull Appendable appendable, final @NonNull LogEvent event)
+            throws IOException {
+        if (formatTimestamp) {
+            appendable.append(EpochFormatUtils.timestampAsString(event.timestamp()));
+        } else {
+            appendable.append(Long.toString(event.timestamp()));
+        }
+        dataAndLevel(appendable, event);
+
+        Marker marker = event.marker();
+        if (marker != null) {
+            appendable.append(" - [");
+            appendable.append(asString(marker));
+            appendable.append("]");
+        }
+
+        final Map<String, String> context = event.context();
+        if (context != null && !context.isEmpty()) {
+            appendable.append(" - ");
+            appendable.append(context.toString());
+        }
+        appendable.append(System.lineSeparator());
+
+
+    }
+
+    private static void dataAndLevel(final @NonNull Appendable appendable, final @NonNull LogEvent event)
+            throws IOException {
+        appendable.append(' ');
+        appendable.append(asString(event.level()));
+        appendable.append(" [");
+        appendable.append(requireNonNullElse(event.threadName(), THREAD_SUFFIX));
+        appendable.append("] ");
+        appendable.append(requireNonNullElse(event.loggerName(), LOGGER_SUFFIX));
+        appendable.append(" - ");
+        appendable.append(asString(event.message()));
+    }
+
+    private void printAll(@NonNull final Appendable appendable,
+            @NonNull final LogEvent event) throws IOException {
+        appendable.append(EpochFormatUtils.timestampAsString(event.timestamp()));
+        dataAndLevel(appendable, event);
+        appendable.append(" - [");
+        appendable.append(asString(event.marker()));
+        appendable.append("]");
+        if (!event.context().isEmpty()) {
+            appendable.append(" - ");
+            appendable.append(event.context().toString());
+        }
+        appendable.append(System.lineSeparator());
     }
 
     /**
