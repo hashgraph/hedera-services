@@ -111,8 +111,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.contract = contractCreate.contract;
         this.key = contractCreate.key;
         this.autoRenewPeriodSecs = contractCreate.autoRenewPeriodSecs;
-        this.balance = contractCreate.balance.map(
-                aLong -> WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(aLong)).longValueExact());
+        this.balance = mapBalance(contractCreate.balance);
         this.adminKeyControl = contractCreate.adminKeyControl;
         this.adminKeyType = contractCreate.adminKeyType;
         this.memo = contractCreate.memo;
@@ -146,6 +145,18 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.permissiblePrechecks = contractCreate.getPermissiblePrechecks();
         this.payer = contractCreate.getPayer();
         this.fee = contractCreate.getFee();
+    }
+
+    private Optional<Long> mapBalance(Optional<Long> balance) {
+        if (balance.isEmpty()) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(balance.get())).longValueExact());
+        } catch (ArithmeticException e) {
+            return Optional.of(Long.MAX_VALUE);
+        }
     }
 
     public HapiEthereumContractCreate(
