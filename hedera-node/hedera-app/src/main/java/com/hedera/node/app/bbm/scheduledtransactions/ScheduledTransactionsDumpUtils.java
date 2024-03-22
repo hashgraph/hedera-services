@@ -81,7 +81,7 @@ public class ScheduledTransactionsDumpUtils {
                             },
                             8);
         } catch (final InterruptedException ex) {
-            System.err.println("*** Traversal of uniques virtual map interrupted!");
+            System.err.println("*** Traversal of scheduledTransactions virtual map interrupted!");
             Thread.currentThread().interrupt();
         }
         while (!scheduledTransactions.isEmpty()) {

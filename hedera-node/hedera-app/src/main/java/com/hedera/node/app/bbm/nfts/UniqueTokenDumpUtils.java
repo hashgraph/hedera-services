@@ -62,7 +62,7 @@ public class UniqueTokenDumpUtils {
             @NonNull final Function<K, UniqueTokenId> keyMapper,
             @NonNull final Function<V, UniqueToken> valueMapper) {
         final var r = new HashMap<UniqueTokenId, UniqueToken>();
-        final var threadCount = 8; // Good enough for my laptop, why not?
+        final var threadCount = 5;
         final var mappings = new ConcurrentLinkedQueue<Pair<UniqueTokenId, UniqueToken>>();
         try {
             VirtualMapLike.from(source)

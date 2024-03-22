@@ -123,7 +123,7 @@ public class TokenTypesDumpUtils {
                             threadCount);
 
         } catch (final InterruptedException ex) {
-            System.err.println("*** Traversal of uniques virtual map interrupted!");
+            System.err.println("*** Traversal of token types virtual map interrupted!");
             Thread.currentThread().interrupt();
         }
 

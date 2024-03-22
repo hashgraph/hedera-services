@@ -77,7 +77,7 @@ public class TopicDumpUtils {
                                     BBMTopic.fromMod(p.right().getValue()))),
                             threadCount);
         } catch (final InterruptedException ex) {
-            System.err.println("*** Traversal of uniques virtual map interrupted!");
+            System.err.println("*** Traversal of topics virtual map interrupted!");
             Thread.currentThread().interrupt();
         }
         // Consider in the future: Use another thread to pull things off the queue as they're put on by the
