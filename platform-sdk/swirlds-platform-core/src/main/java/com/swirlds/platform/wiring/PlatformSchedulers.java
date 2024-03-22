@@ -20,7 +20,6 @@ import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCommonHyp
 import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -39,13 +38,14 @@ import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -254,7 +254,7 @@ public record PlatformSchedulers(
                         .withType(config.applicationTransactionPrehandlerSchedulerType())
                         .withUnhandledTaskCapacity(config.applicationTransactionPrehandlerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
-                        .withHyperlink(platformCoreHyperlink(SwirldStateManager.class))
+                        .withHyperlink(platformCoreHyperlink(TransactionPrehandler.class))
                         .withFlushingEnabled(true)
                         .build()
                         .cast(),

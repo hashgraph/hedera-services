@@ -49,6 +49,10 @@ public class ComponentWiringTests {
 
         void handleBaz(@NonNull String baz);
 
+        @InputWireLabel("trigger")
+        @NonNull
+        Long triggerQux();
+
         @InputWireLabel("data to be transformed")
         @SchedulerLabel("transformer")
         @NonNull
@@ -68,12 +72,14 @@ public class ComponentWiringTests {
         private long runningValue = 0;
 
         @Override
+        @NonNull
         public Long handleFoo(@NonNull final Integer foo) {
             runningValue += foo;
             return runningValue;
         }
 
         @Override
+        @NonNull
         public Long handleBar(@NonNull final Boolean bar) {
             runningValue *= bar ? 1 : -1;
             return runningValue;
@@ -82,6 +88,13 @@ public class ComponentWiringTests {
         @Override
         public void handleBaz(@NonNull final String baz) {
             runningValue *= baz.hashCode();
+        }
+
+        @Override
+        @NonNull
+        public Long triggerQux() {
+            runningValue -= 1;
+            return runningValue;
         }
 
         public long getRunningValue() {
@@ -148,6 +161,8 @@ public class ComponentWiringTests {
 
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x, y) -> {}));
 
+        assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x) -> 1L));
+
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getTransformedOutput((x, y) -> 0L));
     }
 
@@ -186,6 +201,9 @@ public class ComponentWiringTests {
 
         final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
         assertEquals("handleBaz", bazInput.getName());
+        final InputWire<Void> triggerQux = fooBarBazWiring.getInputWire(FooBarBaz::triggerQux);
+        assertEquals("trigger", triggerQux.getName());
+
         final OutputWire<Long> output = fooBarBazWiring.getOutputWire();
 
         if (bindLocation == 2) {
@@ -199,6 +217,7 @@ public class ComponentWiringTests {
         assertSame(fooInput, fooBarBazWiring.getInputWire(FooBarBaz::handleFoo));
         assertSame(barInput, fooBarBazWiring.getInputWire(FooBarBaz::handleBar));
         assertSame(bazInput, fooBarBazWiring.getInputWire(FooBarBaz::handleBaz));
+        assertSame(triggerQux, fooBarBazWiring.getInputWire(FooBarBaz::triggerQux));
 
         // Getting the output wire multiple times should yield the same instance
         assertSame(output, fooBarBazWiring.getOutputWire());
@@ -209,21 +228,25 @@ public class ComponentWiringTests {
 
         long expectedRunningValue = 0;
         for (int i = 0; i < 1000; i++) {
-            if (i % 3 == 0) {
+            if (i % 4 == 0) {
                 expectedRunningValue += i;
                 fooInput.put(i);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals(expectedRunningValue, outputValue.get());
-            } else if (i % 3 == 1) {
+            } else if (i % 4 == 1) {
                 final boolean choice = i % 7 == 0;
                 expectedRunningValue *= choice ? 1 : -1;
                 barInput.put(choice);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals(expectedRunningValue, outputValue.get());
-            } else {
+            } else if (i % 4 == 2) {
                 final String value = "value" + i;
                 expectedRunningValue *= value.hashCode();
                 bazInput.put(value);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            } else {
+                expectedRunningValue -= 1;
+                triggerQux.put(null);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             }
         }
@@ -256,6 +279,7 @@ public class ComponentWiringTests {
         final InputWire<Integer> fooInput = fooBarBazWiring.getInputWire(FooBarBaz::handleFoo);
         final InputWire<Boolean> barInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBar);
         final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
+        final InputWire<Void> triggerQux = fooBarBazWiring.getInputWire(FooBarBaz::triggerQux);
 
         final OutputWire<String> output = fooBarBazWiring.getTransformedOutput(FooBarBaz::transformer);
 
@@ -271,22 +295,27 @@ public class ComponentWiringTests {
 
         long expectedRunningValue = 0;
         for (int i = 0; i < 1000; i++) {
-            if (i % 3 == 0) {
+            if (i % 4 == 0) {
                 expectedRunningValue += i;
                 fooInput.put(i);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals("" + expectedRunningValue, outputValue.get());
-            } else if (i % 3 == 1) {
+            } else if (i % 4 == 1) {
                 final boolean choice = i % 7 == 0;
                 expectedRunningValue *= choice ? 1 : -1;
                 barInput.put(choice);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals("" + expectedRunningValue, outputValue.get());
-            } else {
+            } else if (i % 4 == 2) {
                 final String value = "value" + i;
                 expectedRunningValue *= value.hashCode();
                 bazInput.put(value);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            } else {
+                expectedRunningValue -= 1;
+                triggerQux.put(null);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+                assertEquals("" + expectedRunningValue, outputValue.get());
             }
         }
     }
@@ -318,6 +347,7 @@ public class ComponentWiringTests {
         final InputWire<Integer> fooInput = fooBarBazWiring.getInputWire(FooBarBaz::handleFoo);
         final InputWire<Boolean> barInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBar);
         final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
+        final InputWire<Void> triggerQux = fooBarBazWiring.getInputWire(FooBarBaz::triggerQux);
 
         final OutputWire<Long> output = fooBarBazWiring.getFilteredOutput(FooBarBaz::filter);
 
@@ -334,23 +364,28 @@ public class ComponentWiringTests {
         long expectedRunningValue = 0;
         for (int i = 0; i < 1000; i++) {
             outputValue.set(null);
-            if (i % 3 == 0) {
+            if (i % 4 == 0) {
                 expectedRunningValue += i;
                 fooInput.put(i);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
                 assertEquals(expectedValue, outputValue.get());
-            } else if (i % 3 == 1) {
+            } else if (i % 4 == 1) {
                 final boolean choice = i % 7 == 0;
                 expectedRunningValue *= choice ? 1 : -1;
                 barInput.put(choice);
                 final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
                 assertEquals(expectedValue, outputValue.get());
-            } else {
+            } else if (i % 4 == 2) {
                 final String value = "value" + i;
                 expectedRunningValue *= value.hashCode();
                 bazInput.put(value);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            } else {
+                expectedRunningValue -= 1;
+                triggerQux.put(null);
+                final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
+                assertEquals(expectedValue, outputValue.get());
             }
         }
     }

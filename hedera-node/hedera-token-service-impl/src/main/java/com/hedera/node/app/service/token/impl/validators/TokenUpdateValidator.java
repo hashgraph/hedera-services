@@ -112,7 +112,7 @@ public class TokenUpdateValidator {
         getIfUsable(resolvedAutoRenewId, readableAccountStore, expiryValidator, INVALID_AUTORENEW_ACCOUNT);
         // If token has an existing auto-renewal account, validate its expiration
         // FUTURE : Not sure why we should validate existing auto-renew account. Retained as in mono-service
-        if (!resolvedAutoRenewId.equals(AccountID.DEFAULT)) {
+        if (!resolvedAutoRenewId.equals(AccountID.DEFAULT) && existingAutoRenewId != null) {
             getIfUsable(existingAutoRenewId, readableAccountStore, expiryValidator, INVALID_AUTORENEW_ACCOUNT);
         }
     }
