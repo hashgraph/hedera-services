@@ -30,6 +30,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
@@ -38,7 +39,6 @@ import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
@@ -305,7 +305,7 @@ public class TokenTupleUtils {
                 token.symbol(),
                 headlongAddressOf(token.treasuryAccountIdOrElse(ZERO_ACCOUNT_ID)),
                 token.memo(),
-                token.supplyType().protoOrdinal() == TokenSupplyType.FINITE_VALUE,
+                token.supplyType() == TokenSupplyType.FINITE,
                 token.maxSupply(),
                 token.accountsFrozenByDefault(),
                 keyList,
