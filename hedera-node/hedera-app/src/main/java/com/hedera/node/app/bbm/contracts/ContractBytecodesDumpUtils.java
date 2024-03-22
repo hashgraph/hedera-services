@@ -128,14 +128,16 @@ public class ContractBytecodesDumpUtils {
     @NonNull
     private static Pair<Contracts, List<Integer>> getNonTrivialContracts(Contracts knownContracts) {
         final var zeroLengthContracts = new ArrayList<Integer>(10000);
-        knownContracts.contracts().removeIf(contract -> {
+        final var contractsKnown = new ArrayList<>(knownContracts.contracts());
+        contractsKnown.removeIf(contract -> {
             if (0 == contract.bytecode().length) {
                 zeroLengthContracts.addAll(contract.ids());
                 return true;
             }
             return false;
         });
-        return Pair.of(knownContracts, zeroLengthContracts);
+        return Pair.of(new Contracts(contractsKnown, knownContracts.deletedContracts(), knownContracts.registeredContractsCount()),
+                zeroLengthContracts);
     }
 
     /** Returns all _unique_ contracts (by their bytecode) from the signed state.
