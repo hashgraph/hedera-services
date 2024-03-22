@@ -21,22 +21,20 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
-import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import com.swirlds.logging.benchmark.util.ConfigManagement;
-import com.swirlds.logging.benchmark.util.LogFiles;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Convenience methods for configuring swirlds-logging logger
  */
-public class SwirldsLogLoggingBenchmarkConfig implements LoggingBenchmarkConfig<LoggingSystem> {
+public class SwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
 
     /**
      * {@inheritDoc}
+     * @param logFile
      */
-    public @NonNull LoggingSystem configureFileLogging() {
-        final String logFile = LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE);
+    public @NonNull LoggingSystem configureFileLogging(final String logFile) {
         final com.swirlds.config.api.Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
@@ -72,9 +70,9 @@ public class SwirldsLogLoggingBenchmarkConfig implements LoggingBenchmarkConfig<
 
     /**
      * {@inheritDoc}
+     * @param logFile
      */
-    public @NonNull LoggingSystem configureFileAndConsoleLogging() {
-        final String logFile = LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE);
+    public @NonNull LoggingSystem configureFileAndConsoleLogging(final String logFile) {
         final com.swirlds.config.api.Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
@@ -92,21 +90,6 @@ public class SwirldsLogLoggingBenchmarkConfig implements LoggingBenchmarkConfig<
                 .build();
 
         return configure(configuration);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void tearDown() {
-
-        if (ConfigManagement.deleteOutputFiles()) {
-            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE));
-            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE));
-        }
-        if (ConfigManagement.deleteOutputFolder()) {
-            LogFiles.tryDeleteDirAndContent();
-        }
     }
 
     @NonNull

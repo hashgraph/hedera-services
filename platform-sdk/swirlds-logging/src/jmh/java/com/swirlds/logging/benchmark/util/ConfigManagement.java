@@ -43,13 +43,6 @@ public class ConfigManagement {
     }
 
     /**
-     * Reads the value from DELETE_OUTPUT_FILES system variable or returns {@link Constants#DELETE_OUTPUT_FILES}
-     */
-    public static boolean deleteOutputFiles() {
-        return getEnvOrElse(Constants.DELETE_OUTPUT_FILES_ENV, Constants.DELETE_OUTPUT_FILES);
-    }
-
-    /**
      * Reads the value from DELETE_OUTPUT_FOLDER system variable or returns {@link Constants#DELETE_OUTPUT_FOLDER}
      */
     public static boolean deleteOutputFolder() {
@@ -57,6 +50,6 @@ public class ConfigManagement {
     }
 
     private static boolean getEnvOrElse(final @NonNull String deleteOutputFilesEnv, final boolean deleteOutputFiles) {
-        return CONFIGURATION.getValue(deleteOutputFilesEnv, Boolean.class, deleteOutputFiles);
+        return Boolean.TRUE.equals(CONFIGURATION.getValue(deleteOutputFilesEnv, Boolean.class, deleteOutputFiles));
     }
 }

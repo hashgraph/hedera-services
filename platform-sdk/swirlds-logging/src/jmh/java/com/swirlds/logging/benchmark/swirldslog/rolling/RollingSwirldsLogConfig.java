@@ -21,22 +21,20 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
-import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import com.swirlds.logging.benchmark.util.ConfigManagement;
-import com.swirlds.logging.benchmark.util.LogFiles;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Convenience methods for configuring swirlds-logging logger
  */
-public class RollingSwirldsLogLoggingBenchmarkConfig implements LoggingBenchmarkConfig<LoggingSystem> {
+public class RollingSwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
 
     /**
      * {@inheritDoc}
+     * @param logFile
      */
-    public @NonNull LoggingSystem configureFileLogging() {
-        final String logFile = LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE);
+    public @NonNull LoggingSystem configureFileLogging(final String logFile) {
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
@@ -74,9 +72,9 @@ public class RollingSwirldsLogLoggingBenchmarkConfig implements LoggingBenchmark
 
     /**
      * {@inheritDoc}
+     * @param logFile
      */
-    public @NonNull LoggingSystem configureFileAndConsoleLogging() {
-        final String logFile = LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE);
+    public @NonNull LoggingSystem configureFileAndConsoleLogging(final String logFile) {
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
@@ -89,28 +87,12 @@ public class RollingSwirldsLogLoggingBenchmarkConfig implements LoggingBenchmark
                 .withValue("logging.handler.console.type", "console")
                 .withValue("logging.handler.console.enabled", "true")
                 .withValue("logging.handler.console.formatTimestamp", ConfigManagement.formatTimestamp() + "")
-                .withValue("logging.handler.file.file-rolling.maxFileSize", "500MB")
+                .withValue("logging.handler.file.file-rolling.maxFileSize", "30MB")
                 .withValue("logging.handler.file.file-rolling.maxRollover", "1")
                 .withValue("logging.handler.console.level", "trace")
-                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
 
         return configure(configuration);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void tearDown() {
-
-        if (ConfigManagement.deleteOutputFiles()) {
-            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.FILE_TYPE));
-            LogFiles.deleteFile(LogFiles.provideLogFilePath(Constants.SWIRLDS, Constants.CONSOLE_AND_FILE_TYPE));
-        }
-        if (ConfigManagement.deleteOutputFolder()) {
-            LogFiles.tryDeleteDirAndContent();
-        }
     }
 
     @NonNull
