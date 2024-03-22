@@ -23,6 +23,7 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -199,11 +200,11 @@ public class HandlerLoggingLevelConfig {
             final ConfigLevel level =
                     configuration.getValue(configPropertyName, ConfigLevel.class, ConfigLevel.UNDEFINED);
             if (level != ConfigLevel.UNDEFINED) {
-                if (containsUpperCase(name)) {
                     result.put(name, level);
-                } else {
-                    result.put(PROPERTY_PACKAGE_LEVEL.formatted(name), level);
-                }
+                //if (containsUpperCase(name)) {
+                //} else {
+                //    result.put(PROPERTY_PACKAGE_LEVEL.formatted(name), level);
+                //}
             }
         });
 
@@ -233,17 +234,16 @@ public class HandlerLoggingLevelConfig {
         }
         if (marker != null) {
             final List<String> allMarkerNames = marker.getAllMarkerNames();
-            final List<MarkerState> markerStates = allMarkerNames.stream()
-                    .map(markerName -> markerConfigCache.get().computeIfAbsent(markerName, n -> MarkerState.UNDEFINED))
-                    .filter(markerState -> markerState != MarkerState.UNDEFINED)
-                    .toList();
-            if (!markerStates.isEmpty()) {
-                if (markerStates.stream().anyMatch(markerState -> markerState == MarkerState.ENABLED)) {
-                    return true;
-                } else if (markerStates.stream().allMatch(markerState -> markerState == MarkerState.DISABLED)) {
-                    return false;
+            boolean isEnabled=true;
+            final Map<String, MarkerState> stringMarkerStateMap = markerConfigCache.get();
+            for (String markerName:allMarkerNames){
+                final MarkerState markerState = stringMarkerStateMap.get(markerName);
+                if(MarkerState.DISABLED.equals(markerState)){
+                    isEnabled=false;
+                    break;
                 }
             }
+            return isEnabled;
         }
 
         final ConfigLevel enabledLevel = levelCache.computeIfAbsent(name.trim(), this::getConfiguredLevel);
@@ -252,19 +252,20 @@ public class HandlerLoggingLevelConfig {
 
     @NonNull
     private ConfigLevel getConfiguredLevel(@NonNull final String name) {
-        final String stripName = name.strip();
         final Map<String, ConfigLevel> stringConfigLevelMap = levelConfigProperties.get();
-        return stringConfigLevelMap.keySet().stream()
-                .filter(stripName::startsWith)
-                .reduce((a, b) -> {
-                    if (a.length() > b.length()) {
-                        return a;
-                    } else {
-                        return b;
-                    }
-                })
-                .map(stringConfigLevelMap::get)
-                .orElseThrow();
+        ConfigLevel configLevel = stringConfigLevelMap.get(name);
+        if(configLevel!=null)
+            return configLevel;
+
+        final StringBuilder buffer = new StringBuilder(name);
+        for (int i= buffer.length()-1; i>0;i--){
+            if('.' == buffer.charAt(i)){
+                configLevel = stringConfigLevelMap.get(buffer.substring(0, i ));
+                if(configLevel!=null)
+                    return configLevel;
+            }
+        }
+        return  stringConfigLevelMap.get("");
     }
 
     /**

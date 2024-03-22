@@ -19,7 +19,7 @@ package com.swirlds.logging.console;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
-import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
+import com.swirlds.logging.api.extensions.handler.AbstractLogHandler;
 import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
 import com.swirlds.logging.io.BufferedOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,13 +30,13 @@ import java.nio.charset.StandardCharsets;
 /**
  * A handler that logs events to the console.
  * <p>
- * This class extends the {@link AbstractSyncedHandler} and provides a simple way to log {@link LogEvent}s to the
+ * This class extends the {@link AbstractLogHandler} and provides a simple way to log {@link LogEvent}s to the
  * console using a {@link FormattedLinePrinter}.
  *
- * @see AbstractSyncedHandler
+ * @see AbstractLogHandler
  * @see FormattedLinePrinter
  */
-public class ConsoleHandler extends AbstractSyncedHandler {
+public class ConsoleHandler extends AbstractLogHandler {
 
     private static final int BUFFER_CAPACITY = 8192;
     private final FormattedLinePrinter format;
@@ -62,7 +62,7 @@ public class ConsoleHandler extends AbstractSyncedHandler {
      * @param event The log event to be printed.
      */
     @Override
-    protected void handleEvent(@NonNull final LogEvent event) {
+    public void accept(@NonNull final LogEvent event) {
         StringBuilder builder = new StringBuilder();
         format.print(builder, event);
         try {
@@ -76,7 +76,7 @@ public class ConsoleHandler extends AbstractSyncedHandler {
      * {@inheritDoc}
      */
     @Override
-    protected void handleStopAndFinalize() {
+    public void stopAndFinalize() {
         try {
             outputStream.flush();
         } catch (IOException exception) { // Should Not happen

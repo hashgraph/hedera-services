@@ -73,8 +73,14 @@ public class StackTracePrinter {
             writer.append("[INVALID REFERENCE]");
             return;
         }
+        innerPrinter(writer, throwable, alreadyPrinted, enclosingTrace);
+    }
+
+    private static void innerPrinter(final @NonNull Appendable writer, final @NonNull Throwable throwable,
+            final @NonNull Set<Throwable> alreadyPrinted, final @NonNull StackTraceElement[] enclosingTrace)
+            throws IOException {
         if (alreadyPrinted.contains(throwable)) {
-            writer.append("[CIRCULAR REFERENCE: " + throwable + "]");
+            writer.append("[CIRCULAR REFERENCE: ").append(String.valueOf(throwable)).append("]");
             return;
         }
         alreadyPrinted.add(throwable);
@@ -126,7 +132,7 @@ public class StackTracePrinter {
         }
         final Throwable cause = throwable.getCause();
         if (cause != null) {
-            print(writer, cause, alreadyPrinted, stackTrace);
+            innerPrinter(writer, cause, alreadyPrinted, stackTrace);
         }
     }
 
