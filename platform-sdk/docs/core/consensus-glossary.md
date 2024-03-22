@@ -154,6 +154,10 @@ Another term for a [judge](#judge).
 
 A famous witness is unique if there are not two famous witnesses in the same round that are created by the same node.
 
+### Invariant: Prerequisite Unique Famous Witnesses
+
+In order to compute consensus for round R, all unique famous witnesses for round R-1 must be in the hashgraph.
+
 ## Witnesses
 
 The first event created by a node in a particular [round](#round) is considered to be a witness. As long as a node is
@@ -164,10 +168,6 @@ branching, it will only create one witness per round.
 Terms we have but haven't had a chance to write up yet.
 
 ## Famous Witness
-### Invariant: Prerequisite Unique Famous Witnesses
-
-In order to compute consensus for round R, all unique famous witnesses for round R-1 must be in the hashgraph.
-
 ## Round
 ## Round Created
 ## Event
