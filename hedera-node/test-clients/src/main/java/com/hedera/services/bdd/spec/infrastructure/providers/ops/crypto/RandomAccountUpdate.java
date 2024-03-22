@@ -51,7 +51,7 @@ public class RandomAccountUpdate implements OpProvider {
     public Optional<HapiSpecOperation> get() {
         final var target = accounts.getQualifying();
         final var newKey = keys.getQualifying();
-        if (target.isEmpty() && newKey.isEmpty()) {
+        if (target.isEmpty() || newKey.isEmpty()) {
             return Optional.empty();
         }
 
