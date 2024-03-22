@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.PlatformEvent;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
+import java.util.List;
 
 /**
  * Metadata that is used to aid in drawing a {@code HashgraphPicture}
@@ -42,7 +44,7 @@ public class PictureMetadata {
             final FontMetrics fm,
             final Dimension pictureDimension,
             final AddressBookMetadata addressBookMetadata,
-            final PlatformEvent[] events) {
+            final List<EventImpl> events) {
         this.addressBookMetadata = addressBookMetadata;
         final int fa = fm.getMaxAscent();
         final int fd = fm.getMaxDescent();
@@ -58,7 +60,7 @@ public class PictureMetadata {
 
         long minGenTmp = Long.MAX_VALUE;
         long maxGenTmp = Long.MIN_VALUE;
-        for (final PlatformEvent event : events) {
+        for (final EventImpl event : events) {
             minGenTmp = Math.min(minGenTmp, event.getGeneration());
             maxGenTmp = Math.max(maxGenTmp, event.getGeneration());
         }

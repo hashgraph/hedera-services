@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gui.model;
 
-import com.swirlds.platform.system.Platform;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,20 +27,12 @@ public class InfoMember extends InfoEntity {
 
     private final List<InfoState> states = new ArrayList<>(); // children
 
-    private final Platform platform;
-
-    public InfoMember(final InfoSwirld swirld, final Platform platform) {
-        super(platform.getSelfAddress().getNickname() + " - "
-                + platform.getSelfAddress().getSelfName());
-        this.platform = platform;
+    public InfoMember(@NonNull final InfoSwirld swirld, @NonNull final String name) {
+        super(name);
         swirld.getMembers().add(this);
     }
 
     public List<InfoState> getStates() {
         return states;
-    }
-
-    public Platform getPlatform() {
-        return platform;
     }
 }
