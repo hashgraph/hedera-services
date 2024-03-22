@@ -41,7 +41,7 @@ import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourc
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.contract.RandomContract;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.contract.RandomContractDeletion;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomAccountDeletionHollow;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountDeletionWithReceiver;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomAccountUpdateHollow;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTokenAssociationHollow;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTokenHollow;
@@ -131,7 +131,7 @@ public class HollowAccountFuzzingFactory {
                             new RandomAccountUpdateHollow(keys, hollowAccounts, UNIQUE_PAYER_ACCOUNT),
                             intPropOrElse("randomAccountUpdate.bias", 0, props))
                     .withOp(
-                            new RandomAccountDeletionHollow(hollowAccounts, accountsToDelete),
+                            new RandomAccountDeletionWithReceiver(hollowAccounts, accountsToDelete),
                             intPropOrElse("randomAccountDeletion.bias", 0, props))
                     /* ---- CONTRACT ---- */
                     // expects success

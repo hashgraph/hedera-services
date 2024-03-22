@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
+package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -32,9 +32,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
 
-public class RandomAccountDeletionHollow implements OpProvider {
+public class RandomAccountDeletionWithReceiver implements OpProvider {
 
-    private final EntityNameProvider<AccountID> hollowAccounts;
+    private final EntityNameProvider<AccountID> receiverAccounts;
 
     private final EntityNameProvider<AccountID> accountsToDelete;
 
@@ -43,16 +43,16 @@ public class RandomAccountDeletionHollow implements OpProvider {
         SUCCESS, LIVE_HASH_NOT_FOUND, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, ACCOUNT_DELETED, INVALID_ACCOUNT_ID
     };
 
-    public RandomAccountDeletionHollow(
-            EntityNameProvider<AccountID> hollowAccounts, EntityNameProvider<AccountID> accountsToDelete) {
-        this.hollowAccounts = hollowAccounts;
+    public RandomAccountDeletionWithReceiver(
+            EntityNameProvider<AccountID> receiverAccounts, EntityNameProvider<AccountID> accountsToDelete) {
+        this.receiverAccounts = receiverAccounts;
         this.accountsToDelete = accountsToDelete;
     }
 
     @Override
     public Optional<HapiSpecOperation> get() {
-        final var hollow = hollowAccounts.getQualifying();
-        if (hollow.isEmpty()) {
+        final var receiver = receiverAccounts.getQualifying();
+        if (receiver.isEmpty()) {
             return Optional.empty();
         }
 
@@ -63,7 +63,7 @@ public class RandomAccountDeletionHollow implements OpProvider {
 
         HapiCryptoDelete op = cryptoDelete(target.get())
                 .purging()
-                .transfer(hollow.get())
+                .transfer(receiver.get())
                 .hasPrecheckFrom(permissiblePrechecks)
                 .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
