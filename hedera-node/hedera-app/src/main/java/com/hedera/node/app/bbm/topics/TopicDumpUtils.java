@@ -72,9 +72,15 @@ public class TopicDumpUtils {
             VirtualMapLike.from(topicsStore)
                     .extractVirtualMapDataC(
                             getStaticThreadManager(),
-                            p -> mappings.add(Pair.of(
-                                    Long.valueOf(p.left().getKey().topicNum()),
-                                    BBMTopic.fromMod(p.right().getValue()))),
+                            p -> {
+                                try {
+                                    mappings.add(Pair.of(
+                                            Long.valueOf(p.left().getKey().topicNum()),
+                                            BBMTopic.fromMod(p.right().getValue())));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            },
                             threadCount);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of topics virtual map interrupted!");

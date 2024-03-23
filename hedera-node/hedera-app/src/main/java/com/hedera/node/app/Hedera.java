@@ -668,9 +668,9 @@ public final class Hedera implements SwirldMain {
             if (shouldDump(trigger, MOD_POST_MIGRATION)) {
                 dumpModChildrenFrom(state, MOD_POST_MIGRATION);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            logger.error("Error dumping state after migration at MOD_POST_MIGRATION", e);
+        } catch(Exception t) {
+            t.printStackTrace();
+            logger.error("Error dumping state after migration at MOD_POST_MIGRATION", t);
         }
 
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);

@@ -57,7 +57,7 @@ public class CongestionDumpUtils {
             reportSize = writer.getSize();
         }
 
-        System.out.printf("=== staking rewards report is %d bytes %n", reportSize);
+        System.out.printf("=== congestion report is %d bytes %n", reportSize);
     }
 
     static void reportOnCongestion(@NonNull Writer writer, @NonNull Congestion congestion) {

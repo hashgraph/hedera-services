@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.consensus.impl.schemas;
 
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
+import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.stateToPbj;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TopicID;
@@ -32,6 +33,9 @@ import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -65,11 +69,23 @@ public class InitialModServiceConsensusSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         if (fs != null) {
+            final var numTopicInsertions = new AtomicLong();
+            final var topicStoreRef = new AtomicReference<>(ctx.newStates().<TopicID, Topic>get(TOPICS_KEY));
             log.info("BBM: running consensus migration...");
 
-            var ts = ctx.newStates().<TopicID, Topic>get(TOPICS_KEY);
-            ConsensusServiceStateTranslator.migrateFromMerkleToPbj(fs, ts);
-            if (ts.isModified()) ((WritableKVStateBase) ts).commit();
+            fs.forEach((k, v) -> {
+                final var pbjTopic = stateToPbj(v);
+                topicStoreRef.get().put(pbjTopic.topicId(), pbjTopic);
+                if (numTopicInsertions.incrementAndGet() % 10_000 == 0) {
+                    // Make sure we are flushing data to disk as we go
+                    ((WritableKVStateBase) topicStoreRef.get()).commit();
+                    ctx.copyAndReleaseOnDiskState(TOPICS_KEY);
+                    // And ensure we have the latest writable state
+                    topicStoreRef.set(ctx.newStates().get(TOPICS_KEY));
+                }
+            });
+
+            if (topicStoreRef.get().isModified()) ((WritableKVStateBase) topicStoreRef.get()).commit();
 
             log.info("BBM: finished consensus service migration");
         } else {
