@@ -16,7 +16,6 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.bbm.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.records.impl.BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
@@ -38,6 +37,7 @@ import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MONO_
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.service.mono.statedumpers.StateDumper.dumpMonoChildrenFrom;
 import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
+import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -668,7 +668,7 @@ public final class Hedera implements SwirldMain {
             if (shouldDump(trigger, MOD_POST_MIGRATION)) {
                 dumpModChildrenFrom(state, MOD_POST_MIGRATION);
             }
-        } catch(Exception t) {
+        } catch (Exception t) {
             t.printStackTrace();
             logger.error("Error dumping state after migration at MOD_POST_MIGRATION", t);
         }
