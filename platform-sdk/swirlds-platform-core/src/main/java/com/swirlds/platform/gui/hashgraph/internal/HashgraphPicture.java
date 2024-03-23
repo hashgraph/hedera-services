@@ -23,6 +23,7 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.PlatformEvent;
 import java.awt.AWTException;
@@ -37,7 +38,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.Serial;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.List;
 import javax.swing.JPanel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -90,7 +91,7 @@ public class HashgraphPicture extends JPanel {
             final int numMem = addressBook.getSize();
             final AddressBookMetadata currentMetadata = options.isExpanded() ? expandedMetadata : nonExpandedMetadata;
 
-            PlatformEvent[] events;
+            List<EventImpl> events;
             if (options.displayLatestEvents()) {
                 final long startGen = Math.max(
                         hashgraphSource.getMaxGeneration() - options.getNumGenerationsDisplay(),
@@ -104,10 +105,10 @@ public class HashgraphPicture extends JPanel {
             if (events == null) { // in case a screen refresh happens before any events
                 return;
             }
-            events = Arrays.stream(events)
+            events = events.stream()
                     .filter(e -> addressBook.contains(e.getCreatorId()))
                     .filter(e -> addressBook.getIndexOfNodeId(e.getCreatorId()) < numMem)
-                    .toArray(PlatformEvent[]::new);
+                    .toList();
 
             pictureMetadata = new PictureMetadata(fm, this.getSize(), currentMetadata, events);
 

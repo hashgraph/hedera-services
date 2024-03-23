@@ -19,16 +19,17 @@ package com.swirlds.platform.gui.hashgraph.internal;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.PlatformEvent;
+import java.util.List;
 
 /**
  * A {@link HashgraphGuiSource} that wraps another source but caches the results until {@link #refresh()} is called
  */
 public class CachingGuiSource implements HashgraphGuiSource {
     private final HashgraphGuiSource source;
-    private PlatformEvent[] events = null;
+    private List<EventImpl> events = null;
     private AddressBook addressBook = null;
     private long maxGeneration = EventConstants.GENERATION_UNDEFINED;
     private long startGeneration = Generations.FIRST_GENERATION;
@@ -44,7 +45,7 @@ public class CachingGuiSource implements HashgraphGuiSource {
     }
 
     @Override
-    public PlatformEvent[] getEvents(final long startGeneration, final int numGenerations) {
+    public List<EventImpl> getEvents(final long startGeneration, final int numGenerations) {
         this.startGeneration = startGeneration;
         this.numGenerations = numGenerations;
         return events;

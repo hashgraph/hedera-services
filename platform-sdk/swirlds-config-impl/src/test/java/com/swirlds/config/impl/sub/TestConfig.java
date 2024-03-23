@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.config.sub;
+package com.swirlds.config.impl.sub;
 
 import com.swirlds.config.api.ConfigData;
 
