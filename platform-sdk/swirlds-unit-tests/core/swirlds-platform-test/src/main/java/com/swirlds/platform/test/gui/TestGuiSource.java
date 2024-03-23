@@ -16,12 +16,17 @@
 
 package com.swirlds.platform.test.gui;
 
+import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.gui.GuiEventStorage;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
-import com.swirlds.platform.gui.hashgraph.internal.FinalShadowgraphGuiSource;
+import com.swirlds.platform.gui.hashgraph.internal.StandardGuiSource;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.TestIntake;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
@@ -41,27 +46,37 @@ public class TestGuiSource {
     private final TestIntake intake;
     private final HashgraphGuiSource guiSource;
     private ConsensusSnapshot savedSnapshot;
+    private final GuiEventStorage eventStorage;
 
     /**
      * Construct a {@link TestGuiSource} with the given platform context, seed, and number of nodes.
      *
      * @param platformContext the platform context
      * @param seed            the seed
-     * @param numNodes        the number of nodes
+     * @param addressBook     the address book for this node
      */
-    public TestGuiSource(@NonNull final PlatformContext platformContext, final long seed, final int numNodes) {
-        graphGenerator = new StandardGraphGenerator(platformContext, seed, generateSources(numNodes));
+    public TestGuiSource(
+            @NonNull final PlatformContext platformContext, final long seed, @NonNull final AddressBook addressBook) {
+
+        graphGenerator = new StandardGraphGenerator(platformContext, seed, generateSources(addressBook.getSize()));
         graphGenerator.reset();
 
         intake = new TestIntake(platformContext, graphGenerator.getAddressBook());
 
-        guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
+        eventStorage = new GuiEventStorage(platformContext.getConfiguration(), addressBook);
+        guiSource = new StandardGuiSource(addressBook, eventStorage);
     }
 
-    public TestGuiSource(@NonNull final GraphGenerator<?> graphGenerator, @NonNull final TestIntake intake) {
+    public TestGuiSource(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
+            @NonNull final GraphGenerator<?> graphGenerator,
+            @NonNull final TestIntake intake) {
         this.graphGenerator = graphGenerator;
         this.intake = intake;
-        this.guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
+
+        eventStorage = new GuiEventStorage(platformContext.getConfiguration(), addressBook);
+        guiSource = new StandardGuiSource(addressBook, eventStorage);
     }
 
     public void runGui() {
@@ -69,7 +84,11 @@ public class TestGuiSource {
     }
 
     public void generateEvents(final int numEvents) {
-        intake.addEvents(graphGenerator.generateEvents(numEvents));
+        final List<IndexedEvent> events = graphGenerator.generateEvents(numEvents);
+        intake.addEvents(events);
+        for (final IndexedEvent event : events) {
+            eventStorage.handlePreconsensusEvent(event.getBaseEvent());
+        }
     }
 
     public @NonNull JPanel controls() {
@@ -90,8 +109,13 @@ public class TestGuiSource {
                 Integer.valueOf(Integer.MAX_VALUE),
                 Integer.valueOf(numEventsStep)));
         nextEvent.addActionListener(e -> {
-            intake.addEvents(graphGenerator.generateEvents(
-                    numEvents.getValue() instanceof Integer value ? value : defaultNumEvents));
+            final List<IndexedEvent> events = graphGenerator.generateEvents(
+                    numEvents.getValue() instanceof Integer value ? value : defaultNumEvents);
+            intake.addEvents(events);
+            for (final IndexedEvent event : events) {
+                eventStorage.handlePreconsensusEvent(event.getBaseEvent());
+            }
+
             updateFameDecidedBelow.run();
         });
         // Reset
@@ -99,6 +123,7 @@ public class TestGuiSource {
         reset.addActionListener(e -> {
             graphGenerator.reset();
             intake.reset();
+            eventStorage.handleSnapshotOverride(GENESIS_SNAPSHOT);
             updateFameDecidedBelow.run();
         });
         // snapshots
@@ -128,6 +153,7 @@ public class TestGuiSource {
             }
             intake.reset();
             intake.loadSnapshot(savedSnapshot);
+            eventStorage.handleSnapshotOverride(savedSnapshot);
         });
 
         // create JPanel

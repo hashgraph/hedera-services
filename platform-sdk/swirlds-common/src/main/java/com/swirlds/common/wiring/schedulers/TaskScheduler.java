@@ -24,15 +24,12 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.internal.DefaultSquelcher;
 import com.swirlds.common.wiring.schedulers.internal.Squelcher;
 import com.swirlds.common.wiring.schedulers.internal.ThrowingSquelcher;
-import com.swirlds.common.wiring.wires.input.Bindable;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.input.TaskSchedulerInput;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -142,44 +139,6 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
         // Intentionally do not register this with the model. Connections using this output wire will be represented
         // in the model in the same way as connections to the primary output wire.
         return new StandardOutputWire<>(model, name);
-    }
-
-    /**
-     * Build an input wire that produces an instant (reflecting current time) at the specified rate. Note that the exact
-     * rate of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
-     * factors.
-     *
-     * @param name   the name of the input
-     * @param period the period of the heartbeat. For example, setting a period of 100ms will cause the heartbeat to be
-     *               sent at 10 hertz. Note that time is measured at millisecond precision, and so periods less than 1ms
-     *               are not supported.
-     * @return a bindable object that allows for the implementation of the heartbeat handler to be bound to the input
-     * wire that provides the heartbeats
-     * @throws IllegalStateException if the heartbeat has already started
-     */
-    @NonNull
-    public Bindable<Instant, OUT> buildHeartbeatInputWire(@NonNull final String name, @NonNull final Duration period) {
-        final BindableInputWire<Instant, OUT> inputWire = buildInputWire(name);
-        model.buildHeartbeatWire(period).solderTo(inputWire);
-        return inputWire;
-    }
-
-    /**
-     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
-     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
-     * factors.
-     *
-     * @param name      the name of the input
-     * @param frequency the frequency of the heartbeat in hertz. Note that time is measured at millisecond precision,
-     *                  and so frequencies greater than 1000hz are not supported.
-     * @return a bindable object that allows for the implementation of the heartbeat handler to be bound to the input
-     * wire that provides the heartbeats
-     */
-    @NonNull
-    public Bindable<Instant, OUT> buildHeartbeatInputWire(@NonNull final String name, final double frequency) {
-        final BindableInputWire<Instant, OUT> inputWire = buildInputWire(name);
-        model.buildHeartbeatWire(frequency).solderTo(inputWire);
-        return inputWire;
     }
 
     /**

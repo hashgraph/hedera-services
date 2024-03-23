@@ -20,11 +20,15 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.Consensus;
 import com.swirlds.platform.gui.GuiConstants;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.ScrollableJPanel;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.model.InfoMember;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -48,16 +52,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The main browser window. It contains a tabbed pane, which contains the classes with names WinTab*, some
- * of which might themselves contain tabbed panes, whose tabs would be classes named WinTab2*, and so on.
- *
- * The classes WinBrowser, ScrollableJPanel, and UpdatableJPanel, each have an prePaint() method. Once a
- * second, a timer thread calls WinBrowser.prePaint, and then the call is passed down the Component tree, so
- * that every Component can do the slow calculations for what should appear on the screen. Then the thread
- * calls repaint(), to quickly re-render everything. For example, if there is a long calculation necessary
- * to find the text for a JTextArea, then the long calculation is done inside prePaint(), and the fast
- * rendering of the result is done in paintComponent(). This prevents the GUI thread from hanging for too
- * long when there are slow calculations being performed.
+ * The main browser window. It contains a tabbed pane, which contains the classes with names WinTab*, some of which
+ * might themselves contain tabbed panes, whose tabs would be classes named WinTab2*, and so on.
+ * <p>
+ * The classes WinBrowser, ScrollableJPanel, and UpdatableJPanel, each have an prePaint() method. Once a second, a timer
+ * thread calls WinBrowser.prePaint, and then the call is passed down the Component tree, so that every Component can do
+ * the slow calculations for what should appear on the screen. Then the thread calls repaint(), to quickly re-render
+ * everything. For example, if there is a long calculation necessary to find the text for a JTextArea, then the long
+ * calculation is done inside prePaint(), and the fast rendering of the result is done in paintComponent(). This
+ * prevents the GUI thread from hanging for too long when there are slow calculations being performed.
  */
 public class WinBrowser extends JFrame {
     /** needed to serializing */
@@ -106,10 +109,10 @@ public class WinBrowser extends JFrame {
     }
 
     /**
-     * Perform a prePaint to recalculate the contents of each Component, maybe slowly, so that the next
-     * repaint() will trigger a fast render of everything. Then perform a repaint(). This is synchronized
-     * because it is called by a timer once a second, and is also called by the thread that manages the
-     * mouse whenever a user changes a tab in this window or changes a tab in the Network tab.
+     * Perform a prePaint to recalculate the contents of each Component, maybe slowly, so that the next repaint() will
+     * trigger a fast render of everything. Then perform a repaint(). This is synchronized because it is called by a
+     * timer once a second, and is also called by the thread that manages the mouse whenever a user changes a tab in
+     * this window or changes a tab in the Network tab.
      */
     static synchronized void prePaintThenRepaint() {
         try {
@@ -162,10 +165,20 @@ public class WinBrowser extends JFrame {
     }
 
     /**
-     * This constructor creates the contents of the browser window, and creates a new thread to continually
-     * update this window to reflect what is happening in the Browser.
+     * This constructor creates the contents of the browser window, and creates a new thread to continually update this
+     * window to reflect what is happening in the Browser.
+     *
+     * @param firstNodeId     the ID of the first node running on this machine, information from this node will be shown
+     *                        in the UI
+     * @param hashgraphSource provides access to events
+     * @param consensus       a local view of the hashgraph
+     * @param guiMetrics      provides access to metrics
      */
-    public WinBrowser(final HashgraphGuiSource hashgraphSource) {
+    public WinBrowser(
+            @NonNull final NodeId firstNodeId,
+            @NonNull final HashgraphGuiSource hashgraphSource,
+            @NonNull final Consensus consensus,
+            @NonNull final Metrics guiMetrics) {
         ActionListener repaintPeriodically = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 // Do a (possibly slow) prePaint of components, like changing text in a JTextArea text.
@@ -173,28 +186,6 @@ public class WinBrowser extends JFrame {
                 prePaintThenRepaint();
             }
         };
-
-        // The following adjusts the size of everything slightly on MacOS (should use EmptyBorder instead)
-        // UIManager.put("TabbedPane.contentBorderInsets", new Insets(0, 0, 0, 0));
-
-        // Search for "TabbedPane." on this page for all UIManager string values:
-        // http://www.rgagnon.com/javadetails/JavaUIDefaults.txt
-
-        // The following have no effect on MacOS:
-        // UIManager.put("TabbedPane.contentAreaColor ", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.selected", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.background", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.shadow", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.borderColor", Color.RED);
-        // UIManager.put("TabbedPane.darkShadow", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.light", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.highlight", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.focus", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.unselectedBackground", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.selectHighlight", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.tabAreaBackground", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.borderHightlightColor", ColorUIResource.RED);
-        // UIManager.put("TabbedPane.shadow", ColorUIResource.RED);
 
         nameBar = new JPanel();
         nameBarLabel = new JTextArea();
@@ -204,7 +195,8 @@ public class WinBrowser extends JFrame {
         tabAddresses = GuiUtils.makeScrollableJPanel(new WinTabAddresses());
         tabCalls = GuiUtils.makeScrollableJPanel(new WinTabCalls());
         tabPosts = GuiUtils.makeScrollableJPanel(new WinTabPosts());
-        tabNetwork = GuiUtils.makeScrollableJPanel(new WinTabNetwork(hashgraphSource));
+        tabNetwork =
+                GuiUtils.makeScrollableJPanel(new WinTabNetwork(firstNodeId, hashgraphSource, consensus, guiMetrics));
         tabSecurity = GuiUtils.makeScrollableJPanel(new WinTabSecurity());
 
         Rectangle winRect = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
@@ -271,8 +263,7 @@ public class WinBrowser extends JFrame {
     /**
      * Switch to the tab containing the given contents, and bring the window forward.
      *
-     * @param contents
-     * 		the contents of that tab
+     * @param contents the contents of that tab
      */
     public void goTab(ScrollableJPanel contents) {
         requestFocus(true);

@@ -32,8 +32,8 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -192,7 +192,7 @@ public final class RecoveryTestUtils {
             final Random random, final Path destination, final int secondsPerFile, final List<EventImpl> events)
             throws NoSuchAlgorithmException, IOException {
 
-        final EventStreamManager<EventImpl> eventEventStreamManager = new EventStreamManager<>(
+        final EventStreamManager eventEventStreamManager = new EventStreamManager(
                 TestPlatformContextBuilder.create().build(),
                 Time.getCurrent(),
                 getStaticThreadManager(),

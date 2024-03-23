@@ -18,11 +18,10 @@ package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.platform.gui.GuiUtils.wrap;
 
+import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.gui.model.Reference;
-import com.swirlds.platform.system.Platform;
 import javax.swing.JTextArea;
 
 /**
@@ -30,7 +29,7 @@ import javax.swing.JTextArea;
  */
 class WinTabSecurity extends PrePaintableJPanel {
     private static final long serialVersionUID = 1L;
-    Reference swirldId = null;
+    Reference swirldId = new Reference(new byte[CryptoConstants.HASH_SIZE_BYTES]); // place holder
     JTextArea text;
     String s = "";
 
@@ -45,8 +44,6 @@ class WinTabSecurity extends PrePaintableJPanel {
                 || swirldId != null) { // already set this up once
             return;
         }
-        Platform platform = WinBrowser.memberDisplayed.getPlatform();
-        swirldId = new Reference(GuiModel.getInstance().getSwirldId(platform.getSelfId()));
 
         s += "Swirld ID: \n        " + swirldId.to62() + "\n";
         s += swirldId.toWords("        ");

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.stream;
+package com.swirlds.platform.event.stream;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -22,8 +22,10 @@ import static org.mockito.Mockito.verify;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.stream.MultiStream;
+import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
+import com.swirlds.platform.internal.EventImpl;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
@@ -31,17 +33,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class EventStreamManagerTest {
-    private static final MultiStream<ObjectForTestStream> multiStreamMock = mock(MultiStream.class);
-    private static final EventStreamManager<ObjectForTestStream> eventStreamManager =
-            new EventStreamManager<>(Time.getCurrent(), multiStreamMock, EventStreamManagerTest::isFreezeEvent);
+    private static final MultiStream<EventImpl> multiStreamMock = mock(MultiStream.class);
+    private static final EventStreamManager eventStreamManager =
+            new EventStreamManager(Time.getCurrent(), multiStreamMock, EventStreamManagerTest::isFreezeEvent);
 
-    private static final ObjectForTestStream freezeEvent = mock(ObjectForTestStream.class);
+    private static final EventImpl freezeEvent = mock(EventImpl.class);
 
     @Test
     void addEventTest() {
         final int nonFreezeEventsNum = 10;
         for (int i = 0; i < nonFreezeEventsNum; i++) {
-            final ObjectForTestStream event = mock(ObjectForTestStream.class);
+            final EventImpl event = mock(EventImpl.class);
             eventStreamManager.addEvents(List.of(event));
 
             verify(multiStreamMock).addObject(event);
@@ -54,7 +56,7 @@ class EventStreamManagerTest {
         // for freeze event, multiStream should be closed after adding it
         verify(multiStreamMock).close();
 
-        final ObjectForTestStream eventAddAfterFrozen = mock(ObjectForTestStream.class);
+        final EventImpl eventAddAfterFrozen = mock(EventImpl.class);
         eventStreamManager.addEvents(List.of(eventAddAfterFrozen));
         // after frozen, when adding event to the EventStreamManager, multiStream.add(event) should not be called
         verify(multiStreamMock, never()).addObject(eventAddAfterFrozen);
@@ -75,7 +77,7 @@ class EventStreamManagerTest {
      * @param event the event to be added
      * @return whether
      */
-    private static boolean isFreezeEvent(final ObjectForTestStream event) {
+    private static boolean isFreezeEvent(final EventImpl event) {
         return event == freezeEvent;
     }
 }
