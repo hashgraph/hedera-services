@@ -149,7 +149,7 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
             out.writeLong(reconnectState.getFirstLeafPath());
             out.writeLong(reconnectState.getLastLeafPath());
         }
-        if ((!isClean) && isLeaf(path) && (reconnectState.getFirstLeafPath() > 0)) {
+        if (!isClean && isLeaf(path) && (reconnectState.getFirstLeafPath() > 0)) {
             out.writeSerializable(records.findLeafRecord(path, false), false);
         }
     }

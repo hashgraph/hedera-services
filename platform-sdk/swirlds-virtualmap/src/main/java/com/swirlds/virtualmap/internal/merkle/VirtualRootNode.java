@@ -84,6 +84,7 @@ import com.swirlds.virtualmap.internal.reconnect.TeacherPullVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.TeacherPushVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.TopToBottomTraversalOrder;
 import com.swirlds.virtualmap.internal.reconnect.TwoPhaseParentsTraversalOrder;
+import com.swirlds.virtualmap.internal.reconnect.TwoPhasePessimisticTraversalOrder;
 import com.swirlds.virtualmap.internal.reconnect.VirtualLearnerTreeView;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -1381,6 +1382,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         switch (config.reconnectMode()) {
             case "pullTopToBottom":
             case "pullTwoPhaseParents":
+            case "pullTwoPhasePessimistic":
                 return new TeacherPullVirtualTreeView<>(
                         getStaticThreadManager(), reconnectConfig, this, state, pipeline);
             default:
@@ -1473,6 +1475,15 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                     final VirtualLearnerTreeView view = new LearnerPullVirtualTreeView<>(
                             reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
                     final NodeTraversalOrder order = new TwoPhaseParentsTraversalOrder(view);
+                    view.setNodeTraveralOrder(order);
+                    learnerTreeView = view;
+                }
+                break;
+            case "pullTwoPhasePessimistic":
+                {
+                    final VirtualLearnerTreeView view = new LearnerPullVirtualTreeView<>(
+                            reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
+                    final NodeTraversalOrder order = new TwoPhasePessimisticTraversalOrder(view);
                     view.setNodeTraveralOrder(order);
                     learnerTreeView = view;
                 }

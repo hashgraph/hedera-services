@@ -20,12 +20,16 @@ import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.virtualmap.internal.Path;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
-public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
+public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
 
     private final VirtualLearnerTreeView view;
 
@@ -34,9 +38,6 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
     private long reconnectFirstLeafPath;
     private long reconnectLastLeafPath;
 
-    // This set is populated during phase 1 (if any) on the receiving thread. After phase 1 is
-    // complete, the set is used on the sending thread. No concurrent reads or writes, not a
-    // concurrent set
     private final Set<Long> cleanNodes = ConcurrentHashMap.newKeySet();
 
     // Number of parent node chunks processed in parallel in phase 1
@@ -44,17 +45,18 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
 
     private int chunksTopRank;
 
+    private Map<Integer, Integer> chunkStartRanks; // first leaf rank or first leaf rank - 1
     private Map<Integer, Long> chunkStartPaths;
     private Map<Integer, Long> chunkWidths;
-    private Map<Integer, Integer> chunkStartRanks;
 
     private int lastSentPathChunk;
-    private Map<Integer, Long> chunkNextPaths;
+    private AtomicReferenceArray<Deque<Long>> chunkNextToCheckPaths;
+    private Map<Integer, Long> chunkNextPessimisticPaths;
 
     // Used during phase 2
     private long lastLeafPath = Path.INVALID_PATH;
 
-    public TwoPhaseParentsTraversalOrder(final VirtualLearnerTreeView view) {
+    public TwoPhasePessimisticTraversalOrder(final VirtualLearnerTreeView view) {
         this.view = view;
     }
 
@@ -80,7 +82,8 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
         chunkWidths = new ConcurrentHashMap<>(chunkCount);
         chunkStartRanks = new ConcurrentHashMap<>(chunkCount);
         lastSentPathChunk = -1;
-        chunkNextPaths = new ConcurrentHashMap<>(chunkCount);
+        chunkNextToCheckPaths = new AtomicReferenceArray<>(chunkCount);
+        chunkNextPessimisticPaths = new ConcurrentHashMap<>(chunkCount);
         for (int i = 0; i < chunkCount; i++) {
             final long p = firstPathInLeafParentRank + ((long) i << minChunkHeight);
             if (Path.getLeftChildPath(p) + (2L << minChunkHeight) <= reconnectFirstLeafPath) {
@@ -92,7 +95,8 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
                 chunkWidths.put(i, 1L << minChunkHeight);
                 chunkStartRanks.put(i, leafParentRank);
             }
-            chunkNextPaths.put(i, chunkStartPaths.get(i));
+            chunkNextToCheckPaths.set(i, new ConcurrentLinkedDeque<>());
+            chunkNextPessimisticPaths.put(i, chunkStartPaths.get(i));
         }
     }
 
@@ -109,20 +113,18 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
             if (path != 0) {
                 assert chunkCount > 0;
                 final int chunk = getPathChunk(path);
-                final int chunkStartRank = chunkStartRanks.get(chunk);
-                final long chunkNextPath = chunkNextPaths.get(chunk);
                 if (isClean) {
                     cleanNodes.add(path);
                     cleanNodes.remove(Path.getLeftChildPath(path));
                     cleanNodes.remove(Path.getRightChildPath(path));
-                    if ((chunkNextPath > 0) && Path.isInSubTree(path, chunkNextPath)) {
-                        final long lastCleanPath = Path.getRightGrandChildPath(path, chunkStartRank - rank);
-                        chunkNextPaths.put(chunk, getNextPathInChunk(chunk, lastCleanPath));
+                    if ((path != 1) && Path.isLeft(path)) {
+                        chunkNextToCheckPaths.get(chunk).addFirst(Path.getParentPath(path));
                     }
                 } else {
-                    if ((chunkNextPath != -1) && Path.isInSubTree(chunkNextPath, path)) {
-                        final long originAtChunkStartRank = Path.getLeftGrandChildPath(path, chunkStartRank - rank);
-                        chunkNextPaths.put(chunk, skipCleanPaths(originAtChunkStartRank + 1, reconnectFirstLeafPath));
+                    final int chunkStartRank = chunkStartRanks.get(chunk);
+                    final int pathRank = Path.getRank(path);
+                    if ((pathRank == chunkStartRank) && Path.isLeft(path)) {
+                        chunkNextToCheckPaths.get(chunk).addLast(path + 1);
                     }
                 }
             }
@@ -133,7 +135,7 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
         }
     }
 
-    private Set<Long> sent = new HashSet<>();
+    private final Set<Long> sent = new HashSet<>();
 
     @Override
     public long getNextPathToSend() throws InterruptedException {
@@ -141,24 +143,26 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
         if (lastLeafPath == -1) {
             for (int i = 0; i < chunkCount; i++) {
                 final int chunk = (lastSentPathChunk + 1 + i) % chunkCount;
-                result = chunkNextPaths.get(chunk);
+                final Deque<Long> toCheck = chunkNextToCheckPaths.get(chunk);
+                result = toCheck.isEmpty() ? -1 : toCheck.pollFirst();
+                while ((result != -1) && hasCleanParent(result)) {
+                    result = toCheck.isEmpty() ? -1 : toCheck.pollFirst();
+                }
+                if (result != -1) {
+                    lastSentPathChunk = chunk;
+                    break;
+                }
+                result = cleanOrNext(chunk, chunkNextPessimisticPaths.get(chunk));
                 if (result == -1) {
+                    chunkNextPessimisticPaths.put(chunk, -1L);
                     continue;
                 }
-                // Skip the path, if it's clean, or it's right and its left sibling is clean (but parent is not)
-                if (hasCleanParent(result) || ((Path.isRight(result) && cleanNodes.contains(Path.getSiblingPath(result))))) {
-                    final int rank = Path.getRank(result);
-                    final int chunkStartRank = chunkStartRanks.get(chunk);
-                    final long originAtChunkStartRank = Path.getLeftGrandChildPath(result, chunkStartRank - rank);
-                    result = cleanOrNext(chunk, originAtChunkStartRank + 1);
-                }
-                if (result == -1) {
-                    chunkNextPaths.put(chunk, result);
-                    continue;
-                }
-                final long next = getNextPathInChunk(chunk, result);
-                chunkNextPaths.put(chunk, next);
                 lastSentPathChunk = chunk;
+                long next = result + 2;
+                if (next > getLastChunkPath(chunk)) {
+                    next = -1;
+                }
+                chunkNextPessimisticPaths.put(chunk, next);
                 break;
             }
         }
@@ -175,7 +179,7 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
     }
 
     private long cleanOrNext(final int chunk, final long path) {
-        if (getPathChunk(path) != chunk) {
+        if ((path == -1) || (getPathChunk(path) != chunk)) {
             return -1;
         }
         return hasCleanParent(path) ? getNextPathInChunk(chunk, path) : path;
@@ -218,6 +222,10 @@ public class TwoPhaseParentsTraversalOrder implements NodeTraversalOrder {
         assert rank >= chunksTopRank;
         final long pathAtTopRank = Path.getGrandParentPath(path, rank - chunksTopRank);
         return (int) (pathAtTopRank - Path.getLeftGrandChildPath(0, chunksTopRank));
+    }
+
+    private long getLastChunkPath(final int chunk) {
+        return chunkStartPaths.get(chunk) + chunkWidths.get(chunk) - 1;
     }
 
     private boolean hasCleanParent(final long path) {
