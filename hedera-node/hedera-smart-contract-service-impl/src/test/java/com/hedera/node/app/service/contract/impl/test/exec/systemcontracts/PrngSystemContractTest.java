@@ -125,7 +125,7 @@ class PrngSystemContractTest {
         var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
 
         // then:
-        assertEqualContractResult(PRECOMPILE_CONTRACT_SUCCESS_RESULT, actual);
+        assertEqualContractResult(PRECOMPILE_CONTRACT_SUCCESS_RESULT, actual, 100L);
     }
 
     @Test
@@ -136,6 +136,7 @@ class PrngSystemContractTest {
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
+        given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
 
         when(systemContractOperations.dispatch(any(), any(), any(), any())).thenReturn(contractCallRecordBuilder);
         when(contractCallRecordBuilder.contractCallResult(any())).thenReturn(contractCallRecordBuilder);
@@ -145,7 +146,7 @@ class PrngSystemContractTest {
         var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
 
         // then:
-        assertEqualContractResult(PRECOMPILE_CONTRACT_SUCCESS_RESULT, actual);
+        assertEqualContractResult(PRECOMPILE_CONTRACT_SUCCESS_RESULT, actual, GAS_REQUIRED);
     }
 
     @Test
@@ -153,6 +154,7 @@ class PrngSystemContractTest {
         // given:
         givenCommon();
         commonMocks();
+        given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(proxyWorldUpdater.entropy()).willReturn(Bytes.wrap(ZERO_ENTROPY.toByteArray()));
@@ -163,7 +165,7 @@ class PrngSystemContractTest {
         var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
 
         // then:
-        assertEqualContractResult(PRECOMPILE_CONTRACT_FAILED_RESULT, actual);
+        assertEqualContractResult(PRECOMPILE_CONTRACT_FAILED_RESULT, actual, GAS_REQUIRED);
     }
 
     @Test
@@ -172,6 +174,7 @@ class PrngSystemContractTest {
         commonMocks();
         givenCommon();
 
+        given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
         when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
                 .thenReturn(mock(ContractCallRecordBuilder.class));
 
@@ -179,11 +182,10 @@ class PrngSystemContractTest {
         var actual = subject.computeFully(EXPECTED_RANDOM_NUMBER, messageFrame);
 
         // then:
-        assertEqualContractResult(PRECOMPILE_CONTRACT_FAILED_RESULT, actual);
+        assertEqualContractResult(PRECOMPILE_CONTRACT_FAILED_RESULT, actual, GAS_REQUIRED);
     }
 
     private void givenInitialFrame() {
-        given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
         given(systemContractGasCalculator.viewGasRequirement()).willReturn(100L);
         given(initialFrame.getContextVariable(FrameUtils.SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE))
                 .willReturn(systemContractGasCalculator);
@@ -197,8 +199,8 @@ class PrngSystemContractTest {
         givenInitialFrame();
     }
 
-    private void assertEqualContractResult(PrecompileContractResult expected, FullResult actual) {
-        assertEquals(GAS_REQUIRED, actual.gasRequirement());
+    private void assertEqualContractResult(PrecompileContractResult expected, FullResult actual, long gasRequirement) {
+        assertEquals(gasRequirement, actual.gasRequirement());
         assertEquals(expected.getState(), actual.result().getState());
         assertEquals(expected.getOutput(), actual.result().getOutput());
         assertEquals(expected.getHaltReason(), actual.result().getHaltReason());
