@@ -57,7 +57,7 @@ public class StakingInfoDumpUtils {
             Pair.of("rewardSumHistory", getFieldFormatter(BBMStakingInfo::rewardSumHistory, Arrays::toString)),
             Pair.of("weight", getFieldFormatter(BBMStakingInfo::weight, Object::toString)));
 
-    public static void dumpModBBMStakingInfo(
+    public static void dumpModStakingInfo(
             @NonNull final Path path,
             @NonNull
                     final MerkleMap<InMemoryKey<EntityNumber>, InMemoryValue<EntityNumber, StakingNodeInfo>>

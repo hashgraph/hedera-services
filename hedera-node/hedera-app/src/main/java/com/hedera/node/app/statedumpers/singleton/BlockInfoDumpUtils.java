@@ -82,7 +82,8 @@ public class BlockInfoDumpUtils {
     }
 
     private static void reportOnBlockInfo(
-            @NonNull final Writer writer, @NonNull final BBMBlockInfoAndRunningHashes combinedBBMBlockInfoAndRunningHashes) {
+            @NonNull final Writer writer,
+            @NonNull final BBMBlockInfoAndRunningHashes combinedBBMBlockInfoAndRunningHashes) {
         writer.writeln(formatHeaderForBlockInfo());
         formatBlockInfo(writer, combinedBBMBlockInfoAndRunningHashes);
         writer.writeln("");
@@ -95,7 +96,8 @@ public class BlockInfoDumpUtils {
 
     @NonNull
     static <T> BiConsumer<FieldBuilder, BBMBlockInfoAndRunningHashes> getFieldFormatter(
-            @NonNull final Function<BBMBlockInfoAndRunningHashes, T> fun, @NonNull final Function<T, String> formatter) {
+            @NonNull final Function<BBMBlockInfoAndRunningHashes, T> fun,
+            @NonNull final Function<T, String> formatter) {
         return (fb, u) -> formatField(fb, u, fun, formatter);
     }
 
@@ -108,7 +110,8 @@ public class BlockInfoDumpUtils {
     }
 
     private static void formatBlockInfo(
-            @NonNull final Writer writer, @NonNull final BBMBlockInfoAndRunningHashes combinedBBMBlockInfoAndRunningHashes) {
+            @NonNull final Writer writer,
+            @NonNull final BBMBlockInfoAndRunningHashes combinedBBMBlockInfoAndRunningHashes) {
         final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, combinedBBMBlockInfoAndRunningHashes));
         writer.writeln(fb);
@@ -125,13 +128,13 @@ public class BlockInfoDumpUtils {
         var consTimeOfLastHandledTxn = blockInfo.consTimeOfLastHandledTxn() == null
                 ? RichInstant.fromJava(Instant.EPOCH)
                 : new RichInstant(
-                blockInfo.consTimeOfLastHandledTxn().seconds(),
-                blockInfo.consTimeOfLastHandledTxn().nanos());
+                        blockInfo.consTimeOfLastHandledTxn().seconds(),
+                        blockInfo.consTimeOfLastHandledTxn().nanos());
         var firstConsTimeOfCurrentBlock = blockInfo.firstConsTimeOfCurrentBlock() == null
                 ? RichInstant.fromJava(Instant.EPOCH)
                 : new RichInstant(
-                blockInfo.firstConsTimeOfCurrentBlock().seconds(),
-                blockInfo.firstConsTimeOfCurrentBlock().nanos());
+                        blockInfo.firstConsTimeOfCurrentBlock().seconds(),
+                        blockInfo.firstConsTimeOfCurrentBlock().nanos());
 
         var runningHash = Bytes.EMPTY.equals(runningHashes.runningHash())
                 ? null

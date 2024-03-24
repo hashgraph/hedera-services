@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.statedumpers.singleton;
 
+import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.singleton.BBMStakingRewards;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
@@ -44,9 +45,9 @@ public class StakingRewardsDumpUtils {
             Pair.of("totalStakedStart", getFieldFormatter(BBMStakingRewards::totalStakedStart, Object::toString)),
             Pair.of("pendingRewards", getFieldFormatter(BBMStakingRewards::pendingRewards, Object::toString)));
 
-    public static void dumpModBBMStakingRewards(
+    public static void dumpModStakingRewards(
             @NonNull final Path path,
-            @NonNull final BBMStakingRewards stakingRewards,
+            @NonNull final NetworkStakingRewards stakingRewards,
             @NonNull final DumpCheckpoint checkpoint) {
         int reportSize;
         try (@NonNull final var writer = new Writer(path)) {
@@ -88,7 +89,7 @@ public class StakingRewardsDumpUtils {
         fb.append(formatter.apply(fun.apply(BBMStakingRewards)));
     }
 
-    public static BBMStakingRewards fromMod(@NonNull final BBMStakingRewards networkBBMStakingRewards) {
+    public static BBMStakingRewards fromMod(@NonNull final NetworkStakingRewards networkBBMStakingRewards) {
         return new BBMStakingRewards(
                 networkBBMStakingRewards.stakingRewardsActivated(),
                 networkBBMStakingRewards.totalStakedRewardStart(),

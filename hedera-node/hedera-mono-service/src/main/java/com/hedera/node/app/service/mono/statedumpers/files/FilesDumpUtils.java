@@ -142,9 +142,6 @@ public class FilesDumpUtils {
                 allFiles.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
             final var fileNum = file.getKey().fileNum();
             final var hf = file.getValue();
-            if (fileNum == 13704L) {
-                System.out.println(hf + "isActive" + hf.isActive());
-            }
             if (hf.isActive()) {
                 final var sb = new StringBuilder();
                 ThingsToStrings.toStringOfByteArray(sb, hf.contents());
@@ -154,17 +151,13 @@ public class FilesDumpUtils {
                         hf.fileStore() == FileStore.SPECIAL ? "SPECIAL" : "",
                         hf.systemFileType() != null ? hf.systemFileType().name() : "",
                         hf.contents() != null ? hf.contents().length : 0,
-                        hf.metadata() != null ? Long.toString(hf.metadata().getExpiry()) : "",
-                        hf.metadata() != null
-                                ? ThingsToStrings.quoteForCsv(",", hf.metadata().getMemo())
-                                : "",
+                        Long.toString(hf.metadata().getExpiry()),
+                        ThingsToStrings.quoteForCsv(",", hf.metadata().getMemo()),
                         sb,
-                        hf.metadata() != null
-                                ? ThingsToStrings.quoteForCsv(
-                                        ",",
-                                        ThingsToStrings.squashLinesToEscapes(
-                                                MiscUtils.describe(hf.metadata().getWacl())))
-                                : "");
+                        ThingsToStrings.quoteForCsv(
+                                ",",
+                                ThingsToStrings.squashLinesToEscapes(
+                                        MiscUtils.describe(hf.metadata().getWacl()))));
             } else {
                 writer.write("%d,DELETED%n", fileNum);
             }

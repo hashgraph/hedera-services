@@ -75,7 +75,8 @@ public class BlockInfoDumpUtils {
     }
 
     private static void reportOnBlockInfo(
-            @NonNull final Writer writer, @NonNull final BBMBlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
+            @NonNull final Writer writer,
+            @NonNull final BBMBlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
         writer.writeln(formatHeaderForBlockInfo());
         formatBlockInfo(writer, combinedBlockInfoAndRunningHashes);
         writer.writeln("");
@@ -88,7 +89,8 @@ public class BlockInfoDumpUtils {
 
     @NonNull
     static <T> BiConsumer<FieldBuilder, BBMBlockInfoAndRunningHashes> getFieldFormatter(
-            @NonNull final Function<BBMBlockInfoAndRunningHashes, T> fun, @NonNull final Function<T, String> formatter) {
+            @NonNull final Function<BBMBlockInfoAndRunningHashes, T> fun,
+            @NonNull final Function<T, String> formatter) {
         return (fb, u) -> formatField(fb, u, fun, formatter);
     }
 
@@ -101,7 +103,8 @@ public class BlockInfoDumpUtils {
     }
 
     private static void formatBlockInfo(
-            @NonNull final Writer writer, @NonNull final BBMBlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
+            @NonNull final Writer writer,
+            @NonNull final BBMBlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
         final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, combinedBlockInfoAndRunningHashes));
         writer.writeln(fb);
