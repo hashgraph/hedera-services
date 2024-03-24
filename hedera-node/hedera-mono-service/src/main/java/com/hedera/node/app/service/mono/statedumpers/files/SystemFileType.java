@@ -20,7 +20,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
-enum SystemFileType {
+public enum SystemFileType {
     ADDRESS_BOOK(101),
     NODE_DETAILS(102),
     FEE_SCHEDULES(111),
@@ -42,7 +42,7 @@ enum SystemFileType {
 
     public final int id;
 
-    static final Map<Integer, SystemFileType> byId = new HashMap<>();
+    public static final Map<Integer, SystemFileType> byId = new HashMap<>();
 
     SystemFileType(final int id) {
         this.id = id;

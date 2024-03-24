@@ -16,32 +16,11 @@
 
 package com.hedera.node.app.service.mono.statedumpers;
 
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.RECORD_STREAM_RUNNING_HASH;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.SCHEDULE_TXS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STAKING_INFO;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
-import static com.hedera.node.app.service.mono.statedumpers.accounts.AccountDumpUtils.dumpMonoAccounts;
-import static com.hedera.node.app.service.mono.statedumpers.associations.TokenAssociationsDumpUtils.dumpMonoTokenRelations;
 import static com.hedera.node.app.service.mono.statedumpers.files.FilesDumpUtils.dumpMonoFiles;
-import static com.hedera.node.app.service.mono.statedumpers.nfts.UniqueTokenDumpUtils.dumpMonoUniqueTokens;
-import static com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.ScheduledTransactionsDumpUtils.dumpMonoScheduledTransactions;
-import static com.hedera.node.app.service.mono.statedumpers.singleton.BlockInfoDumpUtils.dumpMonoBlockInfo;
-import static com.hedera.node.app.service.mono.statedumpers.singleton.CongestionDumpUtils.dumpMonoCongestion;
-import static com.hedera.node.app.service.mono.statedumpers.singleton.StakingRewardsDumpUtils.dumpMonoStakingRewards;
-import static com.hedera.node.app.service.mono.statedumpers.tokentypes.TokenTypesDumpUtils.dumpMonoTokenType;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.statedumpers.contracts.ContractBytecodesDumpUtils;
-import com.hedera.node.app.service.mono.statedumpers.singleton.PayerRecordsDumpUtils;
-import com.hedera.node.app.service.mono.statedumpers.singleton.StakingInfoDumpUtils;
-import com.hedera.node.app.service.mono.statedumpers.topics.TopicDumpUtils;
 import com.swirlds.common.merkle.MerkleInternal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -72,33 +51,36 @@ public class StateDumper {
             @NonNull final MerkleInternal state, @NonNull final DumpCheckpoint checkpoint) {
         final MerkleNetworkContext networkContext = state.getChild(NETWORK_CTX);
         final var dumpLoc = getExtantDumpLoc("mono", networkContext.consensusTimeOfLastHandledTxn());
-        dumpMonoUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), state.getChild(UNIQUE_TOKENS), checkpoint);
-        dumpMonoTokenRelations(
-                Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(TOKEN_ASSOCIATIONS), checkpoint);
+        //        dumpMonoUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), state.getChild(UNIQUE_TOKENS),
+        // checkpoint);
+        //        dumpMonoTokenRelations(
+        //                Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), state.getChild(TOKEN_ASSOCIATIONS), checkpoint);
         dumpMonoFiles(Paths.get(dumpLoc, SEMANTIC_FILES), state.getChild(STORAGE), checkpoint);
-        dumpMonoAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), state.getChild(ACCOUNTS), checkpoint);
-        ContractBytecodesDumpUtils.dumpMonoContractBytecodes(
-                Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
-                state.getChild(ACCOUNTS),
-                state.getChild(STORAGE),
-                checkpoint);
-        TopicDumpUtils.dumpMonoTopics(Paths.get(dumpLoc, SEMANTIC_TOPICS), state.getChild(TOPICS), checkpoint);
-        dumpMonoScheduledTransactions(
-                Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS), state.getChild(SCHEDULE_TXS), checkpoint);
-        dumpMonoTokenType(Paths.get(dumpLoc, SEMANTIC_TOKEN_TYPE), state.getChild(TOKENS), checkpoint);
-        dumpMonoBlockInfo(
-                Paths.get(dumpLoc, SEMANTIC_BLOCK),
-                networkContext,
-                state.getChild(RECORD_STREAM_RUNNING_HASH),
-                checkpoint);
-        StakingInfoDumpUtils.dumpMonoStakingInfo(
-                Paths.get(dumpLoc, SEMANTIC_STAKING_INFO), state.getChild(STAKING_INFO), checkpoint);
-        dumpMonoStakingRewards(Paths.get(dumpLoc, SEMANTIC_STAKING_REWARDS), networkContext, checkpoint);
-        PayerRecordsDumpUtils.dumpMonoPayerRecords(
-                Paths.get(dumpLoc, SEMANTIC_TXN_RECORD_QUEUE),
-                state.getChild(PAYER_RECORDS_OR_CONSOLIDATED_FCQ),
-                checkpoint);
-        dumpMonoCongestion(Paths.get(dumpLoc, SEMANTIC_CONGESTION), networkContext, checkpoint);
+        //        dumpMonoAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), state.getChild(ACCOUNTS), checkpoint);
+        //        ContractBytecodesDumpUtils.dumpMonoContractBytecodes(
+        //                Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
+        //                state.getChild(ACCOUNTS),
+        //                state.getChild(STORAGE),
+        //                checkpoint);
+        //        TopicDumpUtils.dumpMonoTopics(Paths.get(dumpLoc, SEMANTIC_TOPICS), state.getChild(TOPICS),
+        // checkpoint);
+        //        dumpMonoScheduledTransactions(
+        //                Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS), state.getChild(SCHEDULE_TXS),
+        // checkpoint);
+        //        dumpMonoTokenType(Paths.get(dumpLoc, SEMANTIC_TOKEN_TYPE), state.getChild(TOKENS), checkpoint);
+        //        dumpMonoBlockInfo(
+        //                Paths.get(dumpLoc, SEMANTIC_BLOCK),
+        //                networkContext,
+        //                state.getChild(RECORD_STREAM_RUNNING_HASH),
+        //                checkpoint);
+        //        StakingInfoDumpUtils.dumpMonoStakingInfo(
+        //                Paths.get(dumpLoc, SEMANTIC_STAKING_INFO), state.getChild(STAKING_INFO), checkpoint);
+        //        dumpMonoStakingRewards(Paths.get(dumpLoc, SEMANTIC_STAKING_REWARDS), networkContext, checkpoint);
+        //        PayerRecordsDumpUtils.dumpMonoPayerRecords(
+        //                Paths.get(dumpLoc, SEMANTIC_TXN_RECORD_QUEUE),
+        //                state.getChild(PAYER_RECORDS_OR_CONSOLIDATED_FCQ),
+        //                checkpoint);
+        //        dumpMonoCongestion(Paths.get(dumpLoc, SEMANTIC_CONGESTION), networkContext, checkpoint);
     }
 
     private static String getExtantDumpLoc(

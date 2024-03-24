@@ -58,7 +58,7 @@ public class FilesDumpUtils {
     /** Collects the information for each data file in the file store, also the summaries of all files of all types. */
     @SuppressWarnings("java:S108") // "Nested blocks of code should not be left empty" - not for switches on an enum
     @NonNull
-    private static Map<FileId, HederaFile> gatherMonoFiles(
+    private static Map<BBMFileId, BBMHederaFile> gatherMonoFiles(
             @NonNull final VirtualMap<VirtualBlobKey, VirtualBlobValue> source) {
         final var foundFiles = new ConcurrentHashMap<Integer, byte[]>();
         final var foundMetadata = new ConcurrentHashMap<Integer, HFileMeta>();
@@ -77,36 +77,27 @@ public class FilesDumpUtils {
                     .extractVirtualMapDataC(
                             getStaticThreadManager(),
                             entry -> {
-                                final var contractId = entry.key().getEntityNumCode();
-
+                                final var id = entry.key().getEntityNumCode();
                                 final var type = entry.key().getType();
                                 nType.merge(type, 1, Integer::sum);
 
                                 final var value = entry.value().getData();
-                                if (null != value) {
-                                    switch (type) {
-                                        case FILE_DATA -> foundFiles.put(contractId, value);
+                                switch (type) {
+                                    case FILE_DATA -> foundFiles.put(id, value);
 
-                                        case FILE_METADATA -> {
-                                            final var metadata = MetadataMapFactory.toAttr(value);
-                                            if (null != metadata) {
-                                                foundMetadata.put(contractId, metadata);
-                                            } else {
-                                                nNullMetadataValues.incrementAndGet();
+                                    case FILE_METADATA -> {
+                                        final var metadata = MetadataMapFactory.toAttr(value);
+                                        if (null != metadata) {
+                                            foundMetadata.put(id, metadata);
+                                        } else {
+                                            nNullMetadataValues.incrementAndGet();
 
-                                                System.err.printf(
-                                                        "*** collectFiles file metadata (HFileMeta) null for contract id %d, type %s%n",
-                                                        contractId, type);
-                                            }
+                                            System.err.printf(
+                                                    "*** collectFiles file metadata (HFileMeta) null for contract id %d, type %s%n",
+                                                    id, type);
                                         }
-                                        case CONTRACT_BYTECODE, SYSTEM_DELETED_ENTITY_EXPIRY -> {}
                                     }
-                                } else {
-                                    nNullValues.merge(type, 1, Integer::sum);
-
-                                    System.err.printf(
-                                            "*** collectFiles file value (bytes) null for contract id %d, type %s%n",
-                                            contractId, type);
+                                    case CONTRACT_BYTECODE, SYSTEM_DELETED_ENTITY_EXPIRY -> {}
                                 }
                             },
                             THREAD_COUNT);
@@ -119,50 +110,50 @@ public class FilesDumpUtils {
             System.err.printf("*** collectFiles interrupted (did not run to completion)%n");
         }
 
-        final var r = new HashMap<FileId, HederaFile>();
-        for (@NonNull final var e : foundFiles.entrySet()) {
-            final var contractId = e.getKey();
-            final var contents = e.getValue();
-            final var metadata = foundMetadata.getOrDefault(contractId, null);
-            r.put(
-                    FileId.fromMono(contractId),
-                    null != metadata
-                            ? HederaFile.of(contractId, contents, metadata)
-                            : HederaFile.of(contractId, contents));
+        final var r = new HashMap<BBMFileId, BBMHederaFile>();
+        for (@NonNull final var e : foundMetadata.entrySet()) {
+            final var id = e.getKey();
+            final var metadata = e.getValue();
+            final var data = foundFiles.getOrDefault(id, null);
+            r.put(BBMFileId.fromMono(id), BBMHederaFile.of(id, data, metadata));
         }
 
         return r;
     }
 
-    private static void reportOnFiles(@NonNull final Writer writer, @NonNull final Map<FileId, HederaFile> files) {
+    private static void reportOnFiles(
+            @NonNull final Writer writer, @NonNull final Map<BBMFileId, BBMHederaFile> files) {
         reportFileContentsHeader(writer);
         reportFileContents(writer, files);
         writer.writeln("");
     }
 
     /** Emits the CSV header line for the file contents - **KEEP IN SYNC WITH reportFileContents!!!** */
-    private static void reportFileContentsHeader(@NonNull final Writer writer) {
+    public static void reportFileContentsHeader(@NonNull final Writer writer) {
         final var header = "fileId,PRESENT/DELETED,SPECIAL file,SYSTEM file,length(bytes),expiry,memo,content,key";
         writer.write("%s%n", header);
     }
 
     /** Emits the actual content (hexified) for each file, and it's full key */
-    private static void reportFileContents(
-            @NonNull final Writer writer, @NonNull final Map<FileId, HederaFile> allFiles) {
+    public static void reportFileContents(
+            @NonNull final Writer writer, @NonNull final Map<BBMFileId, BBMHederaFile> allFiles) {
         for (@NonNull
         final var file :
                 allFiles.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
-            final var fileId = file.getKey().fileNum();
+            final var fileNum = file.getKey().fileNum();
             final var hf = file.getValue();
+            if (fileNum == 13704L) {
+                System.out.println(hf + "isActive" + hf.isActive());
+            }
             if (hf.isActive()) {
                 final var sb = new StringBuilder();
                 ThingsToStrings.toStringOfByteArray(sb, hf.contents());
                 writer.write(
                         "%d,PRESENT,%s,%s,%d,%s,%s,%s,%s%n",
-                        fileId,
+                        fileNum,
                         hf.fileStore() == FileStore.SPECIAL ? "SPECIAL" : "",
                         hf.systemFileType() != null ? hf.systemFileType().name() : "",
-                        hf.contents().length,
+                        hf.contents() != null ? hf.contents().length : 0,
                         hf.metadata() != null ? Long.toString(hf.metadata().getExpiry()) : "",
                         hf.metadata() != null
                                 ? ThingsToStrings.quoteForCsv(",", hf.metadata().getMemo())
@@ -175,7 +166,7 @@ public class FilesDumpUtils {
                                                 MiscUtils.describe(hf.metadata().getWacl())))
                                 : "");
             } else {
-                writer.write("%d,DELETED%n", fileId);
+                writer.write("%d,DELETED%n", fileNum);
             }
         }
     }

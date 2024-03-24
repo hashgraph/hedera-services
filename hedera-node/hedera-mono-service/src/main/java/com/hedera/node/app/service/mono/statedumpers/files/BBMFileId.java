@@ -14,28 +14,34 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.statedumpers.nfts;
+package com.hedera.node.app.service.mono.statedumpers.files;
 
 import com.google.common.collect.ComparisonChain;
-import com.hedera.hapi.node.base.NftID;
-import com.hedera.node.app.statedumpers.utils.Writer;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-record UniqueTokenId(long id, long serial) implements Comparable<UniqueTokenId> {
-    static UniqueTokenId fromMod(@NonNull final NftID nftID) {
-        return new UniqueTokenId(nftID.tokenIdOrThrow().tokenNum(), nftID.serialNumber());
+public record BBMFileId(long shardNum, long realmNum, long fileNum) implements Comparable<BBMFileId> {
+
+    public static BBMFileId fromMod(@NonNull final FileID fileID) {
+        return new BBMFileId(fileID.shardNum(), fileID.realmNum(), fileID.fileNum());
+    }
+
+    static BBMFileId fromMono(@NonNull final Integer fileNum) {
+        return new BBMFileId(0, 0, fileNum);
     }
 
     @Override
     public String toString() {
-        return "%d%s%d".formatted(id, Writer.FIELD_SEPARATOR, serial);
+        return "%d%s%d%s%d".formatted(shardNum, Writer.FIELD_SEPARATOR, realmNum, Writer.FIELD_SEPARATOR, fileNum);
     }
 
     @Override
-    public int compareTo(UniqueTokenId o) {
+    public int compareTo(BBMFileId o) {
         return ComparisonChain.start()
-                .compare(this.id, o.id)
-                .compare(this.serial, o.serial)
+                .compare(this.shardNum, o.shardNum)
+                .compare(this.realmNum, o.realmNum)
+                .compare(this.fileNum, o.fileNum)
                 .result();
     }
 }

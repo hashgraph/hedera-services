@@ -20,10 +20,11 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.singleton.BBMStakingInfo;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.statedumpers.utils.FieldBuilder;
-import com.hedera.node.app.statedumpers.utils.Writer;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,6 +33,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -41,34 +43,34 @@ public class StakingInfoDumpUtils {
     static final String FIELD_SEPARATOR = ";";
 
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, StakingInfo>>> fieldFormatters = List.of(
-            Pair.of("number", getFieldFormatter(StakingInfo::number, Object::toString)),
-            Pair.of("minStake", getFieldFormatter(StakingInfo::minStake, Object::toString)),
-            Pair.of("maxStake", getFieldFormatter(StakingInfo::maxStake, Object::toString)),
-            Pair.of("stakeToReward", getFieldFormatter(StakingInfo::stakeToReward, Object::toString)),
-            Pair.of("stakeToNotReward", getFieldFormatter(StakingInfo::stakeToNotReward, Object::toString)),
-            Pair.of("stakeRewardStart", getFieldFormatter(StakingInfo::stakeRewardStart, Object::toString)),
+    static List<Pair<String, BiConsumer<FieldBuilder, BBMStakingInfo>>> fieldFormatters = List.of(
+            Pair.of("number", getFieldFormatter(BBMStakingInfo::number, Object::toString)),
+            Pair.of("minStake", getFieldFormatter(BBMStakingInfo::minStake, Object::toString)),
+            Pair.of("maxStake", getFieldFormatter(BBMStakingInfo::maxStake, Object::toString)),
+            Pair.of("stakeToReward", getFieldFormatter(BBMStakingInfo::stakeToReward, Object::toString)),
+            Pair.of("stakeToNotReward", getFieldFormatter(BBMStakingInfo::stakeToNotReward, Object::toString)),
+            Pair.of("stakeRewardStart", getFieldFormatter(BBMStakingInfo::stakeRewardStart, Object::toString)),
             Pair.of(
                     "unclaimedStakeRewardStart",
-                    getFieldFormatter(StakingInfo::unclaimedStakeRewardStart, Object::toString)),
-            Pair.of("stake", getFieldFormatter(StakingInfo::stake, Object::toString)),
-            Pair.of("rewardSumHistory", getFieldFormatter(StakingInfo::rewardSumHistory, Arrays::toString)),
-            Pair.of("weight", getFieldFormatter(StakingInfo::weight, Object::toString)));
+                    getFieldFormatter(BBMStakingInfo::unclaimedStakeRewardStart, Object::toString)),
+            Pair.of("stake", getFieldFormatter(BBMStakingInfo::stake, Object::toString)),
+            Pair.of("rewardSumHistory", getFieldFormatter(BBMStakingInfo::rewardSumHistory, Arrays::toString)),
+            Pair.of("weight", getFieldFormatter(BBMStakingInfo::weight, Object::toString)));
 
-    public static void dumpModStakingInfo(
+    public static void dumpModBBMStakingInfo(
             @NonNull final Path path,
             @NonNull
                     final MerkleMap<InMemoryKey<EntityNumber>, InMemoryValue<EntityNumber, StakingNodeInfo>>
-                            stakingInfoVirtualMap,
+                            BBMStakingInfoVirtualMap,
             @NonNull final DumpCheckpoint checkpoint) {
-        System.out.printf("=== %d staking info ===%n", stakingInfoVirtualMap.size());
+        System.out.printf("=== %d staking info ===%n", BBMStakingInfoVirtualMap.size());
 
-        final var allStakingInfo = gatherStakingInfoFromMod(stakingInfoVirtualMap);
+        final var allBBMStakingInfo = gatherBBMStakingInfoFromMod(BBMStakingInfoVirtualMap);
 
         int reportSize;
         try (@NonNull final var writer = new Writer(path)) {
-            reportSummary(writer, allStakingInfo);
-            reportOnStakingInfo(writer, allStakingInfo);
+            reportSummary(writer, allBBMStakingInfo);
+            reportOnBBMStakingInfo(writer, allBBMStakingInfo);
             reportSize = writer.getSize();
         }
 
@@ -76,32 +78,31 @@ public class StakingInfoDumpUtils {
     }
 
     @NonNull
-    static Map<Long, StakingInfo> gatherStakingInfoFromMod(
+    static Map<Long, BBMStakingInfo> gatherBBMStakingInfoFromMod(
             @NonNull
                     final MerkleMap<InMemoryKey<EntityNumber>, InMemoryValue<EntityNumber, StakingNodeInfo>>
-                            stakingInfoMap) {
-        final var r = new HashMap<Long, StakingInfo>();
-        MerkleMapLike.from(stakingInfoMap)
-                .forEach((k, v) -> r.put(k.key().number(), StakingInfo.fromMod(v.getValue())));
+                            BBMStakingInfoMap) {
+        final var r = new HashMap<Long, BBMStakingInfo>();
+        MerkleMapLike.from(BBMStakingInfoMap).forEach((k, v) -> r.put(k.key().number(), fromMod(v.getValue())));
         return r;
     }
 
-    static void reportSummary(@NonNull Writer writer, @NonNull Map<Long, StakingInfo> stakingInfo) {
-        writer.writeln("=== %7d: staking info".formatted(stakingInfo.size()));
+    static void reportSummary(@NonNull Writer writer, @NonNull Map<Long, BBMStakingInfo> BBMStakingInfo) {
+        writer.writeln("=== %7d: staking info".formatted(BBMStakingInfo.size()));
         writer.writeln("");
     }
 
-    static void reportOnStakingInfo(@NonNull Writer writer, @NonNull Map<Long, StakingInfo> stakingInfo) {
+    static void reportOnBBMStakingInfo(@NonNull Writer writer, @NonNull Map<Long, BBMStakingInfo> BBMStakingInfo) {
         writer.writeln(formatHeader());
-        stakingInfo.entrySet().stream()
+        BBMStakingInfo.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> formatStakingInfo(writer, e.getValue()));
+                .forEach(e -> formatBBMStakingInfo(writer, e.getValue()));
         writer.writeln("");
     }
 
-    static void formatStakingInfo(@NonNull final Writer writer, @NonNull final StakingInfo stakingInfo) {
+    static void formatBBMStakingInfo(@NonNull final Writer writer, @NonNull final BBMStakingInfo BBMStakingInfo) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, stakingInfo));
+        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, BBMStakingInfo));
         writer.writeln(fb);
     }
 
@@ -110,8 +111,8 @@ public class StakingInfoDumpUtils {
         return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 
-    static <T> BiConsumer<FieldBuilder, StakingInfo> getFieldFormatter(
-            @NonNull final Function<StakingInfo, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMStakingInfo> getFieldFormatter(
+            @NonNull final Function<BBMStakingInfo, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
     }
 
@@ -121,10 +122,10 @@ public class StakingInfoDumpUtils {
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final StakingInfo stakingInfo,
-            @NonNull final Function<StakingInfo, T> fun,
+            @NonNull final BBMStakingInfo BBMStakingInfo,
+            @NonNull final Function<BBMStakingInfo, T> fun,
             @NonNull final Function<T, String> formatter) {
-        fb.append(formatter.apply(fun.apply(stakingInfo)));
+        fb.append(formatter.apply(fun.apply(BBMStakingInfo)));
     }
 
     static <T> Function<List<T>, String> getListFormatter(
@@ -142,5 +143,22 @@ public class StakingInfoDumpUtils {
                 return sb.toString();
             } else return "";
         };
+    }
+
+    public static BBMStakingInfo fromMod(@NonNull final StakingNodeInfo BBMStakingInfo) {
+        Objects.requireNonNull(BBMStakingInfo.rewardSumHistory(), "rewardSumHistory");
+        return new BBMStakingInfo(
+                Long.valueOf(BBMStakingInfo.nodeNumber()).intValue(),
+                BBMStakingInfo.minStake(),
+                BBMStakingInfo.maxStake(),
+                BBMStakingInfo.stakeToReward(),
+                BBMStakingInfo.stakeToNotReward(),
+                BBMStakingInfo.stakeRewardStart(),
+                BBMStakingInfo.unclaimedStakeRewardStart(),
+                BBMStakingInfo.stake(),
+                BBMStakingInfo.rewardSumHistory().stream()
+                        .mapToLong(Long::longValue)
+                        .toArray(),
+                BBMStakingInfo.weight());
     }
 }

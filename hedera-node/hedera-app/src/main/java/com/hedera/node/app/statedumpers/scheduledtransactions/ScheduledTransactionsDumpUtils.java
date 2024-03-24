@@ -21,18 +21,25 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledTransaction;
+import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledTransactionId;
 import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.statedumpers.utils.FieldBuilder;
-import com.hedera.node.app.statedumpers.utils.Writer;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,11 +65,11 @@ public class ScheduledTransactionsDumpUtils {
     }
 
     @NonNull
-    private static Map<ScheduledTransactionId, ScheduledTransaction> gatherModScheduledTransactions(
+    private static Map<BBMScheduledTransactionId, BBMScheduledTransaction> gatherModScheduledTransactions(
             VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> source) {
-        final var r = new HashMap<ScheduledTransactionId, ScheduledTransaction>();
+        final var r = new HashMap<BBMScheduledTransactionId, BBMScheduledTransaction>();
         final var scheduledTransactions =
-                new ConcurrentLinkedQueue<Pair<ScheduledTransactionId, ScheduledTransaction>>();
+                new ConcurrentLinkedQueue<Pair<BBMScheduledTransactionId, BBMScheduledTransaction>>();
 
         try {
             VirtualMapLike.from(source)
@@ -71,10 +78,8 @@ public class ScheduledTransactionsDumpUtils {
                             p -> {
                                 try {
                                     scheduledTransactions.add(Pair.of(
-                                            ScheduledTransactionId.fromMod(
-                                                    p.key().getKey()),
-                                            ScheduledTransaction.fromMod(
-                                                    p.value().getValue())));
+                                            fromMod(p.key().getKey()),
+                                            fromMod(p.value().getValue())));
                                 } catch (InvalidKeyException e) {
                                     throw new RuntimeException(e);
                                 }
@@ -93,7 +98,7 @@ public class ScheduledTransactionsDumpUtils {
 
     private static void reportOnScheduledTransactions(
             @NonNull final Writer writer,
-            @NonNull final Map<ScheduledTransactionId, ScheduledTransaction> scheduledTransactions) {
+            @NonNull final Map<BBMScheduledTransactionId, BBMScheduledTransaction> scheduledTransactions) {
         writer.writeln(formatHeader());
         scheduledTransactions.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -138,74 +143,118 @@ public class ScheduledTransactionsDumpUtils {
 
     // spotless:off
     @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, ScheduledTransaction>>> fieldFormatters = List.of(
-            Pair.of("number", getFieldFormatter(ScheduledTransaction::number, Object::toString)),
+    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMScheduledTransaction>>> fieldFormatters = List.of(
+            Pair.of("number", getFieldFormatter(BBMScheduledTransaction::number, Object::toString)),
             Pair.of(
                     "adminKey",
                     getFieldFormatter(
-                            ScheduledTransaction::adminKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("memo", getFieldFormatter(ScheduledTransaction::memo, csvQuote)),
-            Pair.of("isDeleted", getFieldFormatter(ScheduledTransaction::deleted, booleanFormatter)),
-            Pair.of("isExecuted", getFieldFormatter(ScheduledTransaction::executed, booleanFormatter)),
+                            BBMScheduledTransaction::adminKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("memo", getFieldFormatter(BBMScheduledTransaction::memo, csvQuote)),
+            Pair.of("isDeleted", getFieldFormatter(BBMScheduledTransaction::deleted, booleanFormatter)),
+            Pair.of("isExecuted", getFieldFormatter(BBMScheduledTransaction::executed, booleanFormatter)),
             Pair.of(
                     "calculatedWaitForExpiry",
-                    getFieldFormatter(ScheduledTransaction::calculatedWaitForExpiry, booleanFormatter)),
+                    getFieldFormatter(BBMScheduledTransaction::calculatedWaitForExpiry, booleanFormatter)),
             Pair.of(
                     "waitForExpiryProvided",
-                    getFieldFormatter(ScheduledTransaction::waitForExpiryProvided, booleanFormatter)),
-            Pair.of("payer", getFieldFormatter(ScheduledTransaction::payer, ThingsToStrings::toStringOfEntityId)),
+                    getFieldFormatter(BBMScheduledTransaction::waitForExpiryProvided, booleanFormatter)),
+            Pair.of("payer", getFieldFormatter(BBMScheduledTransaction::payer, ThingsToStrings::toStringOfEntityId)),
             Pair.of(
                     "schedulingAccount",
-                    getFieldFormatter(ScheduledTransaction::schedulingAccount, ThingsToStrings::toStringOfEntityId)),
+                    getFieldFormatter(BBMScheduledTransaction::schedulingAccount, ThingsToStrings::toStringOfEntityId)),
             Pair.of(
                     "schedulingTXValidStart",
                     getFieldFormatter(
-                            ScheduledTransaction::schedulingTXValidStart, ThingsToStrings::toStringOfRichInstant)),
+                            BBMScheduledTransaction::schedulingTXValidStart, ThingsToStrings::toStringOfRichInstant)),
             Pair.of(
                     "expirationTimeProvided",
                     getFieldFormatter(
-                            ScheduledTransaction::expirationTimeProvided,
+                            BBMScheduledTransaction::expirationTimeProvided,
                             getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
             Pair.of(
                     "calculatedExpirationTime",
                     getFieldFormatter(
-                            ScheduledTransaction::calculatedExpirationTime,
+                            BBMScheduledTransaction::calculatedExpirationTime,
                             getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
             Pair.of(
                     "resolutionTime",
                     getFieldFormatter(
-                            ScheduledTransaction::resolutionTime,
+                            BBMScheduledTransaction::resolutionTime,
                             getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
             Pair.of(
                     "bodyBytes",
-                    getFieldFormatter(ScheduledTransaction::bodyBytes, ThingsToStrings::toStringOfByteArray)),
-            Pair.of("ordinaryScheduledTxn", getFieldFormatter(ScheduledTransaction::ordinaryScheduledTxn, csvQuote)),
-            Pair.of("scheduledTxn", getFieldFormatter(ScheduledTransaction::scheduledTxn, csvQuote)),
+                    getFieldFormatter(BBMScheduledTransaction::bodyBytes, ThingsToStrings::toStringOfByteArray)),
+            Pair.of("ordinaryScheduledTxn", getFieldFormatter(BBMScheduledTransaction::ordinaryScheduledTxn, csvQuote)),
+            Pair.of("scheduledTxn", getFieldFormatter(BBMScheduledTransaction::scheduledTxn, csvQuote)),
             Pair.of(
                     "signatories",
                     getFieldFormatter(
-                            ScheduledTransaction::signatories,
+                            BBMScheduledTransaction::signatories,
                             getListFormatter(ThingsToStrings::toStringOfByteArray, SUBFIELD_SEPARATOR))));
     // spotless:on
 
     @NonNull
-    static <T> BiConsumer<FieldBuilder, ScheduledTransaction> getFieldFormatter(
-            @NonNull final Function<ScheduledTransaction, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMScheduledTransaction> getFieldFormatter(
+            @NonNull final Function<BBMScheduledTransaction, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, u) -> formatField(fb, u, fun, formatter);
     }
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final ScheduledTransaction scheduledTransaction,
-            @NonNull final Function<ScheduledTransaction, T> fun,
+            @NonNull final BBMScheduledTransaction scheduledTransaction,
+            @NonNull final Function<BBMScheduledTransaction, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(scheduledTransaction)));
     }
 
     private static void formatTokenAssociation(
-            @NonNull final Writer writer, @NonNull final ScheduledTransaction scheduledTransaction) {
+            @NonNull final Writer writer, @NonNull final BBMScheduledTransaction scheduledTransaction) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, scheduledTransaction));
         writer.writeln(fb);
+    }
+
+    static BBMScheduledTransaction fromMod(@NonNull final Schedule value) throws InvalidKeyException {
+        return new BBMScheduledTransaction(
+                value.scheduleId().scheduleNum(),
+                value.adminKey() != null ? Optional.of(JKey.mapKey(value.adminKey())) : Optional.empty(),
+                value.memo(),
+                value.deleted(),
+                value.executed(),
+                // calculatedWaitForExpiry is the same as waitForExpiryProvided;
+                // see ScheduleVirtualValue::from` - to.calculatedWaitForExpiry = to.waitForExpiryProvided;
+                value.waitForExpiry(),
+                value.waitForExpiry(),
+                entityIdFrom(value.payerAccountId().accountNum()),
+                entityIdFrom(value.schedulerAccountId().accountNum()),
+                RichInstant.fromJava(Instant.ofEpochSecond(
+                        value.scheduleValidStart().seconds(),
+                        value.scheduleValidStart().nanos())),
+                RichInstant.fromJava(Instant.ofEpochSecond(value.providedExpirationSecond())),
+                RichInstant.fromJava(Instant.ofEpochSecond(value.calculatedExpirationSecond())),
+                RichInstant.fromJava(Instant.ofEpochSecond(
+                        value.resolutionTime().seconds(), value.resolutionTime().nanos())),
+                PbjConverter.fromPbj(value.originalCreateTransaction()).toByteArray(),
+                PbjConverter.fromPbj(value.originalCreateTransaction()),
+                PbjConverter.fromPbj(value.scheduledTransaction()),
+                value.signatories().stream().map(k -> toPrimitiveKey(k)).toList());
+    }
+
+    static EntityId entityIdFrom(long num) {
+        return new EntityId(0L, 0L, num);
+    }
+
+    static byte[] toPrimitiveKey(com.hedera.hapi.node.base.Key key) {
+        if (key.hasEd25519()) {
+            return key.ed25519().toByteArray();
+        } else if (key.hasEcdsaSecp256k1()) {
+            return key.ecdsaSecp256k1().toByteArray();
+        } else {
+            return new byte[] {};
+        }
+    }
+
+    static BBMScheduledTransactionId fromMod(@NonNull final ScheduleID scheduleID) {
+        return new BBMScheduledTransactionId(scheduleID.scheduleNum());
     }
 }

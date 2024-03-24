@@ -19,12 +19,12 @@ package com.hedera.node.app.service.mono.statedumpers.singleton;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public record StakingRewards(
+public record BBMStakingRewards(
         boolean stakingRewardsActivated, long totalStakedRewardStart, long totalStakedStart, long pendingRewards) {
 
-    public static StakingRewards fromMono(@NonNull final MerkleNetworkContext merkleNetworkContext) {
+    public static BBMStakingRewards fromMono(@NonNull final MerkleNetworkContext merkleNetworkContext) {
 
-        return new StakingRewards(
+        return new BBMStakingRewards(
                 merkleNetworkContext.areRewardsActivated(),
                 merkleNetworkContext.getTotalStakedRewardStart(),
                 merkleNetworkContext.getTotalStakedStart(),

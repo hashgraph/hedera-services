@@ -27,14 +27,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-record Congestion(
+public record BBMCongestion(
         @Nullable List<ThrottleUsageSnapshot> tpsThrottles,
         @Nullable ThrottleUsageSnapshot gasThrottle,
 
         // last two represented as Strings already formatted from List<RichInstant>
         @Nullable String genericLevelStarts,
         @Nullable String gasLevelStarts) {
-    static Congestion fromMerkleNetworkContext(@NonNull final MerkleNetworkContext networkContext) {
+    static BBMCongestion fromMerkleNetworkContext(@NonNull final MerkleNetworkContext networkContext) {
         final var tpsThrottleUsageSnapshots = Arrays.stream(networkContext.usageSnapshots())
                 .map(PbjConverter::toPbj)
                 .toList();
@@ -53,7 +53,7 @@ record Congestion(
                         .collect(Collectors.joining(", "))
                 : "";
 
-        return new Congestion(
+        return new BBMCongestion(
                 tpsThrottleUsageSnapshots, gasThrottleUsageSnapshot, genericCongestionStarts, gasCongestionStarts);
     }
 }

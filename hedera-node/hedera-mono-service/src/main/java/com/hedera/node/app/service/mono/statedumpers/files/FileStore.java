@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.statedumpers.files;
 
-enum FileStore {
+public enum FileStore {
     ORDINARY,
     SPECIAL
 }

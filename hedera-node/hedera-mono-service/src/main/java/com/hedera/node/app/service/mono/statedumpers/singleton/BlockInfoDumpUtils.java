@@ -35,27 +35,27 @@ public class BlockInfoDumpUtils {
 
     // spotless:off
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, BlockInfoAndRunningHashes>>> fieldFormatters = List.of(
-            Pair.of("lastBlockNumber", getFieldFormatter(BlockInfoAndRunningHashes::lastBlockNumber, Object::toString)),
-            Pair.of("blockHashes", getFieldFormatter(BlockInfoAndRunningHashes::blockHashes, Object::toString)),
+    static List<Pair<String, BiConsumer<FieldBuilder, BBMBlockInfoAndRunningHashes>>> fieldFormatters = List.of(
+            Pair.of("lastBlockNumber", getFieldFormatter(BBMBlockInfoAndRunningHashes::lastBlockNumber, Object::toString)),
+            Pair.of("blockHashes", getFieldFormatter(BBMBlockInfoAndRunningHashes::blockHashes, Object::toString)),
             Pair.of(
                     "consTimeOfLastHandledTxn",
                     getFieldFormatter(
-                            BlockInfoAndRunningHashes::consTimeOfLastHandledTxn,
+                            BBMBlockInfoAndRunningHashes::consTimeOfLastHandledTxn,
                             getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
             Pair.of(
                     "migrationRecordsStreamed",
-                    getFieldFormatter(BlockInfoAndRunningHashes::migrationRecordsStreamed, booleanFormatter)),
+                    getFieldFormatter(BBMBlockInfoAndRunningHashes::migrationRecordsStreamed, booleanFormatter)),
             Pair.of(
                     "firstConsTimeOfCurrentBlock",
                     getFieldFormatter(
-                            BlockInfoAndRunningHashes::firstConsTimeOfCurrentBlock,
+                            BBMBlockInfoAndRunningHashes::firstConsTimeOfCurrentBlock,
                             getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
-            Pair.of("entityId", getFieldFormatter(BlockInfoAndRunningHashes::entityId, Object::toString)),
-            Pair.of("runningHash", getFieldFormatter(BlockInfoAndRunningHashes::runningHash, getNullableFormatter(Object::toString))),
-            Pair.of("nMinus1RunningHash", getFieldFormatter(BlockInfoAndRunningHashes::nMinus1RunningHash, getNullableFormatter(Object::toString))),
-            Pair.of("nMinus2RunningHash", getFieldFormatter(BlockInfoAndRunningHashes::nMinus2RunningHash, getNullableFormatter(Object::toString))),
-            Pair.of("nMinus3RunningHas", getFieldFormatter(BlockInfoAndRunningHashes::nMinus3RunningHash, getNullableFormatter(Object::toString))));
+            Pair.of("entityId", getFieldFormatter(BBMBlockInfoAndRunningHashes::entityId, Object::toString)),
+            Pair.of("runningHash", getFieldFormatter(BBMBlockInfoAndRunningHashes::runningHash, getNullableFormatter(Object::toString))),
+            Pair.of("nMinus1RunningHash", getFieldFormatter(BBMBlockInfoAndRunningHashes::nMinus1RunningHash, getNullableFormatter(Object::toString))),
+            Pair.of("nMinus2RunningHash", getFieldFormatter(BBMBlockInfoAndRunningHashes::nMinus2RunningHash, getNullableFormatter(Object::toString))),
+            Pair.of("nMinus3RunningHas", getFieldFormatter(BBMBlockInfoAndRunningHashes::nMinus3RunningHash, getNullableFormatter(Object::toString))));
     // spotless:on
 
     public static void dumpMonoBlockInfo(
@@ -65,7 +65,7 @@ public class BlockInfoDumpUtils {
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             final var combined =
-                    BlockInfoAndRunningHashes.combineFromMono(merkleNetworkContext, recordsRunningHashLeaf);
+                    BBMBlockInfoAndRunningHashes.combineFromMono(merkleNetworkContext, recordsRunningHashLeaf);
             reportOnBlockInfo(writer, combined);
 
             System.out.printf(
@@ -75,7 +75,7 @@ public class BlockInfoDumpUtils {
     }
 
     private static void reportOnBlockInfo(
-            @NonNull final Writer writer, @NonNull final BlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
+            @NonNull final Writer writer, @NonNull final BBMBlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
         writer.writeln(formatHeaderForBlockInfo());
         formatBlockInfo(writer, combinedBlockInfoAndRunningHashes);
         writer.writeln("");
@@ -87,21 +87,21 @@ public class BlockInfoDumpUtils {
     }
 
     @NonNull
-    static <T> BiConsumer<FieldBuilder, BlockInfoAndRunningHashes> getFieldFormatter(
-            @NonNull final Function<BlockInfoAndRunningHashes, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMBlockInfoAndRunningHashes> getFieldFormatter(
+            @NonNull final Function<BBMBlockInfoAndRunningHashes, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, u) -> formatField(fb, u, fun, formatter);
     }
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final BlockInfoAndRunningHashes info,
-            @NonNull final Function<BlockInfoAndRunningHashes, T> fun,
+            @NonNull final BBMBlockInfoAndRunningHashes info,
+            @NonNull final Function<BBMBlockInfoAndRunningHashes, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(info)));
     }
 
     private static void formatBlockInfo(
-            @NonNull final Writer writer, @NonNull final BlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
+            @NonNull final Writer writer, @NonNull final BBMBlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
         final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, combinedBlockInfoAndRunningHashes));
         writer.writeln(fb);

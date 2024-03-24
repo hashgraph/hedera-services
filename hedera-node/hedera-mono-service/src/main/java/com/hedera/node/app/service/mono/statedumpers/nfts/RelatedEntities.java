@@ -22,7 +22,7 @@ import java.util.Map;
 
 record RelatedEntities(long ownersNotTreasury, long ownedByTreasury, long spenders) {
     @NonNull
-    static RelatedEntities countRelatedEntities(@NonNull final Map<UniqueTokenId, UniqueToken> uniques) {
+    static RelatedEntities countRelatedEntities(@NonNull final Map<BBMUniqueTokenId, BBMUniqueToken> uniques) {
         final var cs = new long[3];
         uniques.values().forEach(unique -> {
             if (null != unique.owner() && !unique.owner().equals(EntityId.MISSING_ENTITY_ID)) cs[0]++;

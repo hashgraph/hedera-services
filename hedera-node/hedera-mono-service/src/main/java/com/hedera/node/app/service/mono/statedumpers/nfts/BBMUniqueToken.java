@@ -22,7 +22,7 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-record UniqueToken(
+public record BBMUniqueToken(
         EntityId owner,
         EntityId spender,
         @NonNull RichInstant creationTime,
@@ -32,8 +32,8 @@ record UniqueToken(
 
     static final byte[] EMPTY_BYTES = new byte[0];
 
-    static UniqueToken fromMono(@NonNull final UniqueTokenValue utv) {
-        return new UniqueToken(
+    static BBMUniqueToken fromMono(@NonNull final UniqueTokenValue utv) {
+        return new BBMUniqueToken(
                 utv.getOwner(),
                 utv.getSpender(),
                 utv.getCreationTime(),

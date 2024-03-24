@@ -45,7 +45,7 @@ public class UniqueTokenDumpUtils {
             @NonNull final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniques,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
-            final var dumpableUniques = gatherUniques(uniques, UniqueTokenId::fromMono, UniqueToken::fromMono);
+            final var dumpableUniques = gatherUniques(uniques, BBMUniqueTokenId::fromMono, BBMUniqueToken::fromMono);
             reportOnUniques(writer, dumpableUniques);
             System.out.printf(
                     "=== mono uniques report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
@@ -53,13 +53,13 @@ public class UniqueTokenDumpUtils {
     }
 
     @NonNull
-    private static <K extends VirtualKey, V extends VirtualValue> Map<UniqueTokenId, UniqueToken> gatherUniques(
+    private static <K extends VirtualKey, V extends VirtualValue> Map<BBMUniqueTokenId, BBMUniqueToken> gatherUniques(
             @NonNull final VirtualMap<K, V> source,
-            @NonNull final Function<K, UniqueTokenId> keyMapper,
-            @NonNull final Function<V, UniqueToken> valueMapper) {
-        final var r = new HashMap<UniqueTokenId, UniqueToken>();
+            @NonNull final Function<K, BBMUniqueTokenId> keyMapper,
+            @NonNull final Function<V, BBMUniqueToken> valueMapper) {
+        final var r = new HashMap<BBMUniqueTokenId, BBMUniqueToken>();
         final var threadCount = 8; // Good enough for my laptop, why not?
-        final var mappings = new ConcurrentLinkedQueue<Pair<UniqueTokenId, UniqueToken>>();
+        final var mappings = new ConcurrentLinkedQueue<Pair<BBMUniqueTokenId, BBMUniqueToken>>();
         try {
             VirtualMapLike.from(source)
                     .extractVirtualMapDataC(
@@ -80,7 +80,7 @@ public class UniqueTokenDumpUtils {
     }
 
     private static void reportOnUniques(
-            @NonNull final Writer writer, @NonNull final Map<UniqueTokenId, UniqueToken> uniques) {
+            @NonNull final Writer writer, @NonNull final Map<BBMUniqueTokenId, BBMUniqueToken> uniques) {
         writer.writeln(formatHeader());
         uniques.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -96,32 +96,32 @@ public class UniqueTokenDumpUtils {
 
     // spotless:off
     @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, UniqueToken>>> fieldFormatters = List.of(
-            Pair.of("owner", getFieldFormatter(UniqueToken::owner, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("spender", getFieldFormatter(UniqueToken::spender, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("creationTime", getFieldFormatter(UniqueToken::creationTime, ThingsToStrings::toStringOfRichInstant)),
-            Pair.of("metadata", getFieldFormatter(UniqueToken::metadata, ThingsToStrings.getMaybeStringifyByteString(Writer.FIELD_SEPARATOR))),
-            Pair.of("prev", getFieldFormatter(UniqueToken::previous, Object::toString)),
-            Pair.of("next", getFieldFormatter(UniqueToken::next, Object::toString))
+    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMUniqueToken>>> fieldFormatters = List.of(
+            Pair.of("owner", getFieldFormatter(BBMUniqueToken::owner, ThingsToStrings::toStringOfEntityId)),
+            Pair.of("spender", getFieldFormatter(BBMUniqueToken::spender, ThingsToStrings::toStringOfEntityId)),
+            Pair.of("creationTime", getFieldFormatter(BBMUniqueToken::creationTime, ThingsToStrings::toStringOfRichInstant)),
+            Pair.of("metadata", getFieldFormatter(BBMUniqueToken::metadata, ThingsToStrings.getMaybeStringifyByteString(Writer.FIELD_SEPARATOR))),
+            Pair.of("prev", getFieldFormatter(BBMUniqueToken::previous, Object::toString)),
+            Pair.of("next", getFieldFormatter(BBMUniqueToken::next, Object::toString))
     );
     // spotless:on
 
     @NonNull
-    static <T> BiConsumer<FieldBuilder, UniqueToken> getFieldFormatter(
-            @NonNull final Function<UniqueToken, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMUniqueToken> getFieldFormatter(
+            @NonNull final Function<BBMUniqueToken, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, u) -> formatField(fb, u, fun, formatter);
     }
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final UniqueToken unique,
-            @NonNull final Function<UniqueToken, T> fun,
+            @NonNull final BBMUniqueToken unique,
+            @NonNull final Function<BBMUniqueToken, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(unique)));
     }
 
     private static void formatUnique(
-            @NonNull final Writer writer, @NonNull final UniqueTokenId id, @NonNull final UniqueToken unique) {
+            @NonNull final Writer writer, @NonNull final BBMUniqueTokenId id, @NonNull final BBMUniqueToken unique) {
         final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
         fb.append(id.toString());
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, unique));

@@ -34,15 +34,15 @@ public class StakingRewardsDumpUtils {
     static Function<Boolean, String> booleanFormatter = b -> b ? "T" : "";
 
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, StakingRewards>>> fieldFormatters = List.of(
+    static List<Pair<String, BiConsumer<FieldBuilder, BBMStakingRewards>>> fieldFormatters = List.of(
             Pair.of(
                     "stakingRewardsActivated",
-                    getFieldFormatter(StakingRewards::stakingRewardsActivated, booleanFormatter)),
+                    getFieldFormatter(BBMStakingRewards::stakingRewardsActivated, booleanFormatter)),
             Pair.of(
                     "totalStakedRewardStart",
-                    getFieldFormatter(StakingRewards::totalStakedRewardStart, Object::toString)),
-            Pair.of("totalStakedStart", getFieldFormatter(StakingRewards::totalStakedStart, Object::toString)),
-            Pair.of("pendingRewards", getFieldFormatter(StakingRewards::pendingRewards, Object::toString)));
+                    getFieldFormatter(BBMStakingRewards::totalStakedRewardStart, Object::toString)),
+            Pair.of("totalStakedStart", getFieldFormatter(BBMStakingRewards::totalStakedStart, Object::toString)),
+            Pair.of("pendingRewards", getFieldFormatter(BBMStakingRewards::pendingRewards, Object::toString)));
 
     public static void dumpMonoStakingRewards(
             @NonNull final Path path,
@@ -51,20 +51,20 @@ public class StakingRewardsDumpUtils {
 
         int reportSize;
         try (@NonNull final var writer = new Writer(path)) {
-            reportOnStakingRewards(writer, StakingRewards.fromMono(merkleNetworkContext));
+            reportOnStakingRewards(writer, BBMStakingRewards.fromMono(merkleNetworkContext));
             reportSize = writer.getSize();
         }
 
         System.out.printf("=== staking rewards report is %d bytes %n", reportSize);
     }
 
-    static void reportOnStakingRewards(@NonNull Writer writer, @NonNull StakingRewards stakingRewards) {
+    static void reportOnStakingRewards(@NonNull Writer writer, @NonNull BBMStakingRewards stakingRewards) {
         writer.writeln(formatHeader());
         formatStakingRewards(writer, stakingRewards);
         writer.writeln("");
     }
 
-    static void formatStakingRewards(@NonNull final Writer writer, @NonNull final StakingRewards stakingRewards) {
+    static void formatStakingRewards(@NonNull final Writer writer, @NonNull final BBMStakingRewards stakingRewards) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, stakingRewards));
         writer.writeln(fb);
@@ -75,15 +75,15 @@ public class StakingRewardsDumpUtils {
         return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 
-    static <T> BiConsumer<FieldBuilder, StakingRewards> getFieldFormatter(
-            @NonNull final Function<StakingRewards, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMStakingRewards> getFieldFormatter(
+            @NonNull final Function<BBMStakingRewards, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
     }
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final StakingRewards stakingRewards,
-            @NonNull final Function<StakingRewards, T> fun,
+            @NonNull final BBMStakingRewards stakingRewards,
+            @NonNull final Function<BBMStakingRewards, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(stakingRewards)));
     }

@@ -14,26 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.statedumpers.tokentypes;
+package com.hedera.node.app.service.mono.statedumpers.tokentypes;
 
-import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.toStructureSummaryOfJKey;
-import static com.hedera.node.app.statedumpers.tokentypes.TokenTypesDumpUtils.jkeyDeepEqualsButBothNullIsFalse;
-import static com.hedera.node.app.statedumpers.tokentypes.TokenTypesDumpUtils.jkeyIsComplex;
-import static com.hedera.node.app.statedumpers.tokentypes.TokenTypesDumpUtils.jkeyPresentAndOk;
+import static com.hedera.node.app.service.mono.statedumpers.tokentypes.TokenTypesDumpUtils.jkeyDeepEqualsButBothNullIsFalse;
+import static com.hedera.node.app.service.mono.statedumpers.tokentypes.TokenTypesDumpUtils.jkeyIsComplex;
+import static com.hedera.node.app.service.mono.statedumpers.tokentypes.TokenTypesDumpUtils.jkeyPresentAndOk;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenSupplyType;
-import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.security.InvalidKeyException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,7 +38,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-record Token(
+public record BBMToken(
         @NonNull TokenType tokenType,
         @NonNull TokenSupplyType tokenSupplyType,
         long tokenTypeId, // this is the field `number` with setter/getter `getKey/setKey`
@@ -71,37 +66,34 @@ record Token(
         @NonNull Optional<JKey> supplyKey,
         @NonNull Optional<JKey> wipeKey) {
 
-    static Token fromMod(@NonNull final com.hedera.hapi.node.state.token.Token token) {
-        Token tokenRes;
-
-        tokenRes = new Token(
-                TokenType.valueOf(token.tokenType().protoName()),
-                token.supplyType(),
-                token.tokenId().tokenNum(),
+    static BBMToken fromMono(@NonNull final MerkleToken token) {
+        var tokenRes = new BBMToken(
+                token.tokenType(),
+                supplyTypeFromMono(token.supplyType()),
+                token.getKey().longValue(),
                 token.symbol(),
                 token.name(),
                 token.memo(),
-                token.deleted(),
-                token.paused(),
+                token.isDeleted(),
+                token.isPaused(),
                 token.decimals(),
                 token.maxSupply(),
                 token.totalSupply(),
-                token.lastUsedSerialNumber(),
-                token.expirationSecond(),
-                token.autoRenewSeconds() == -1L ? Optional.empty() : Optional.of(token.autoRenewSeconds()),
-                token.accountsFrozenByDefault(),
+                token.getLastUsedSerialNumber(),
+                token.expiry(),
+                token.autoRenewPeriod() == -1L ? Optional.empty() : Optional.of(token.autoRenewPeriod()),
+                token.accountsAreFrozenByDefault(),
                 token.accountsKycGrantedByDefault(),
-                idFromMod(token.treasuryAccountId()),
-                idFromMod(token.autoRenewAccountId()),
-                customFeesFromMod(token.customFees()),
-                keyFromMod(token.adminKey()),
-                keyFromMod(token.feeScheduleKey()),
-                keyFromMod(token.freezeKey()),
-                keyFromMod(token.kycKey()),
-                keyFromMod(token.pauseKey()),
-                keyFromMod(token.supplyKey()),
-                keyFromMod(token.wipeKey()));
-
+                token.treasury(),
+                token.autoRenewAccount(),
+                token.customFeeSchedule(),
+                token.adminKey(),
+                token.feeScheduleKey(),
+                token.freezeKey(),
+                token.kycKey(),
+                token.pauseKey(),
+                token.supplyKey(),
+                token.wipeKey());
         Objects.requireNonNull(tokenRes.tokenType, "tokenType");
         Objects.requireNonNull(tokenRes.tokenSupplyType, "tokenSupplyType");
         Objects.requireNonNull(tokenRes.symbol, "symbol");
@@ -118,40 +110,15 @@ record Token(
         return tokenRes;
     }
 
-    private static EntityId idFromMod(@Nullable final AccountID accountId) {
-        return null == accountId ? EntityId.MISSING_ENTITY_ID : new EntityId(0L, 0L, accountId.accountNumOrThrow());
-    }
-
-    private static List<FcCustomFee> customFeesFromMod(List<CustomFee> customFees) {
-        List<FcCustomFee> fcCustomFees = new ArrayList<>();
-        customFees.stream().forEach(fee -> {
-            var fcCustomFee = FcCustomFee.fromGrpc(PbjConverter.fromPbj(fee));
-            fcCustomFees.add(fcCustomFee);
-        });
-        return fcCustomFees;
-    }
-
-    private static Optional<JKey> keyFromMod(@Nullable Key key) {
-        try {
-            return key == null ? Optional.empty() : Optional.ofNullable(JKey.mapKey(key));
-        } catch (InvalidKeyException invalidKeyException) {
-            // return invalid JKey
-            return Optional.of(new JKey() {
-                @Override
-                public boolean isEmpty() {
-                    return true;
-                }
-
-                @Override
-                public boolean isValid() {
-                    return false;
-                }
-            });
-        }
+    static TokenSupplyType supplyTypeFromMono(
+            @NonNull com.hedera.node.app.service.mono.state.enums.TokenSupplyType tokenSupplyType) {
+        return (tokenSupplyType.equals(com.hedera.node.app.service.mono.state.enums.TokenSupplyType.INFINITE))
+                ? TokenSupplyType.INFINITE
+                : TokenSupplyType.FINITE;
     }
 
     @NonNull
-    String getKeyProfile() {
+    public String getKeyProfile() {
         final var adminKeyOk = jkeyPresentAndOk(adminKey);
 
         return getKeyDescription((c, ojk) -> {
@@ -163,7 +130,7 @@ record Token(
         });
     }
 
-    String getKeyComplexity() {
+    public String getKeyComplexity() {
         return getKeyDescription((c, ojk) -> {
             if (!jkeyPresentAndOk(ojk)) return "   ";
             if (jkeyIsComplex(ojk.get())) return c + "! ";
@@ -171,11 +138,11 @@ record Token(
         });
     }
 
-    String getKeyStructure() {
+    public String getKeyStructure() {
         final var r = getKeyDescription((c, ojk) -> {
             if (!jkeyPresentAndOk(ojk)) return "";
             final var sb = new StringBuilder();
-            final var b = toStructureSummaryOfJKey(sb, ojk.get());
+            final var b = ThingsToStrings.toStructureSummaryOfJKey(sb, ojk.get());
             if (!b) return "";
             return c + ":" + sb + "; ";
         });
@@ -184,14 +151,14 @@ record Token(
 
     // spotless:off
     @NonNull
-    private static final Map<Character, Function<Token, Optional<JKey>>> KEYS = new TreeMap<>(Map.of(
-            'A', Token::adminKey,
-            'F', Token::feeScheduleKey,
-            'K', Token::kycKey,
-            'P', Token::pauseKey,
-            'S', Token::supplyKey,
-            'W', Token::wipeKey,
-            'Z', Token::freezeKey));
+    private static final Map<Character, Function<BBMToken, Optional<JKey>>> KEYS = new TreeMap<>(Map.of(
+            'A', BBMToken::adminKey,
+            'F', BBMToken::feeScheduleKey,
+            'K', BBMToken::kycKey,
+            'P', BBMToken::pauseKey,
+            'S', BBMToken::supplyKey,
+            'W', BBMToken::wipeKey,
+            'Z', BBMToken::freezeKey));
     // spotless:on
 
     @NonNull

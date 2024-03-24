@@ -23,9 +23,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
-record TokenAssociation(
+public record BBMTokenAssociation(
         EntityId accountId,
         EntityId tokenId,
         long balance,
@@ -36,10 +35,10 @@ record TokenAssociation(
         EntityId next) {
 
     @NonNull
-    static TokenAssociation fromMono(@NonNull final OnDiskTokenRel tokenRel) {
+    static BBMTokenAssociation fromMono(@NonNull final OnDiskTokenRel tokenRel) {
         final var at = toLongsPair(toPair(tokenRel.getKey()));
 
-        return new TokenAssociation(
+        return new BBMTokenAssociation(
                 entityIdFrom(at.left()),
                 entityIdFrom(at.right()),
                 tokenRel.getBalance(),
@@ -59,14 +58,6 @@ record TokenAssociation(
     @NonNull
     static Pair<Long, Long> toLongsPair(@NonNull final Pair<AccountID, TokenID> pat) {
         return Pair.of(pat.left().getAccountNum(), pat.right().getTokenNum());
-    }
-
-    static EntityId accountIdFromMod(@Nullable final com.hedera.hapi.node.base.AccountID accountId) {
-        return null == accountId ? EntityId.MISSING_ENTITY_ID : new EntityId(0L, 0L, accountId.accountNumOrThrow());
-    }
-
-    static EntityId tokenIdFromMod(@Nullable final com.hedera.hapi.node.base.TokenID tokenId) {
-        return null == tokenId ? EntityId.MISSING_ENTITY_ID : new EntityId(0L, 0L, tokenId.tokenNum());
     }
 
     static EntityId entityIdFrom(long num) {

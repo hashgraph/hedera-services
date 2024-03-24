@@ -49,34 +49,34 @@ public class TokenTypesDumpUtils {
     static Function<String, String> csvQuote = s -> ThingsToStrings.quoteForCsv(FIELD_SEPARATOR, s);
     // spotless:off
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, Token>>> fieldFormatters = List.of(
-            Pair.of("tokenType", getFieldFormatter(Token::tokenType, com.hedera.node.app.service.evm.store.tokens.TokenType::name)),
-            Pair.of("tokenSupplyType", getFieldFormatter(Token::tokenSupplyType, TokenSupplyType::name)),
-            Pair.of("tokenTypeId", getFieldFormatter(Token::tokenTypeId, Object::toString)),
-            Pair.of("symbol", getFieldFormatter(Token::symbol, csvQuote)),
-            Pair.of("name", getFieldFormatter(Token::name, csvQuote)),
-            Pair.of("memo", getFieldFormatter(Token::memo, csvQuote)),
-            Pair.of("isDeleted", getFieldFormatter(Token::deleted, booleanFormatter)),
-            Pair.of("isPaused", getFieldFormatter(Token::paused, booleanFormatter)),
-            Pair.of("decimals", getFieldFormatter(Token::decimals, Object::toString)),
-            Pair.of("maxSupply", getFieldFormatter(Token::maxSupply, Object::toString)),
-            Pair.of("totalSupply", getFieldFormatter(Token::totalSupply, Object::toString)),
-            Pair.of("lastUsedSerialNumber", getFieldFormatter(Token::lastUsedSerialNumber, Object::toString)),
-            Pair.of("expiry", getFieldFormatter(Token::expiry, Object::toString)),
-            Pair.of("autoRenewPeriod", getFieldFormatter(Token::autoRenewPeriod, getOptionalFormatter(Object::toString))),
-            Pair.of("accountsFrozenByDefault", getFieldFormatter(Token::accountsFrozenByDefault, booleanFormatter)),
-            Pair.of("accountsKycGrantedByDefault", getFieldFormatter(Token::accountsKycGrantedByDefault, booleanFormatter)),
-            Pair.of("treasuryAccount", getFieldFormatter(Token::treasury, getNullableFormatter(ThingsToStrings::toStringOfEntityId))),
-            Pair.of("autoRenewAccount", getFieldFormatter(Token::autoRenewAccount, getNullableFormatter(ThingsToStrings::toStringOfEntityId))),
-            Pair.of("feeSchedule", getFieldFormatter(Token::feeSchedule,
+    static List<Pair<String, BiConsumer<FieldBuilder, BBMToken>>> fieldFormatters = List.of(
+            Pair.of("tokenType", getFieldFormatter(BBMToken::tokenType, com.hedera.node.app.service.evm.store.tokens.TokenType::name)),
+            Pair.of("tokenSupplyType", getFieldFormatter(BBMToken::tokenSupplyType, TokenSupplyType::name)),
+            Pair.of("tokenTypeId", getFieldFormatter(BBMToken::tokenTypeId, Object::toString)),
+            Pair.of("symbol", getFieldFormatter(BBMToken::symbol, csvQuote)),
+            Pair.of("name", getFieldFormatter(BBMToken::name, csvQuote)),
+            Pair.of("memo", getFieldFormatter(BBMToken::memo, csvQuote)),
+            Pair.of("isDeleted", getFieldFormatter(BBMToken::deleted, booleanFormatter)),
+            Pair.of("isPaused", getFieldFormatter(BBMToken::paused, booleanFormatter)),
+            Pair.of("decimals", getFieldFormatter(BBMToken::decimals, Object::toString)),
+            Pair.of("maxSupply", getFieldFormatter(BBMToken::maxSupply, Object::toString)),
+            Pair.of("totalSupply", getFieldFormatter(BBMToken::totalSupply, Object::toString)),
+            Pair.of("lastUsedSerialNumber", getFieldFormatter(BBMToken::lastUsedSerialNumber, Object::toString)),
+            Pair.of("expiry", getFieldFormatter(BBMToken::expiry, Object::toString)),
+            Pair.of("autoRenewPeriod", getFieldFormatter(BBMToken::autoRenewPeriod, getOptionalFormatter(Object::toString))),
+            Pair.of("accountsFrozenByDefault", getFieldFormatter(BBMToken::accountsFrozenByDefault, booleanFormatter)),
+            Pair.of("accountsKycGrantedByDefault", getFieldFormatter(BBMToken::accountsKycGrantedByDefault, booleanFormatter)),
+            Pair.of("treasuryAccount", getFieldFormatter(BBMToken::treasury, getNullableFormatter(ThingsToStrings::toStringOfEntityId))),
+            Pair.of("autoRenewAccount", getFieldFormatter(BBMToken::autoRenewAccount, getNullableFormatter(ThingsToStrings::toStringOfEntityId))),
+            Pair.of("feeSchedule", getFieldFormatter(BBMToken::feeSchedule,
                     getNullableFormatter(getListFormatter(ThingsToStrings::toStringOfFcCustomFee, SUBFIELD_SEPARATOR)))),
-            Pair.of("adminKey", getFieldFormatter(Token::adminKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("feeScheduleKey", getFieldFormatter(Token::feeScheduleKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("frezeKey", getFieldFormatter(Token::freezeKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("kycKey", getFieldFormatter(Token::kycKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("pauseKey", getFieldFormatter(Token::pauseKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("supplyKey", getFieldFormatter(Token::supplyKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("wipeKey", getFieldFormatter(Token::wipeKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))));
+            Pair.of("adminKey", getFieldFormatter(BBMToken::adminKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("feeScheduleKey", getFieldFormatter(BBMToken::feeScheduleKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("frezeKey", getFieldFormatter(BBMToken::freezeKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("kycKey", getFieldFormatter(BBMToken::kycKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("pauseKey", getFieldFormatter(BBMToken::pauseKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("supplyKey", getFieldFormatter(BBMToken::supplyKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))),
+            Pair.of("wipeKey", getFieldFormatter(BBMToken::wipeKey, getOptionalJKeyFormatter(ThingsToStrings::toStringOfJKey))));
     // spotless:on
 
     public static void dumpMonoTokenType(
@@ -92,10 +92,10 @@ public class TokenTypesDumpUtils {
     }
 
     @NonNull
-    private static Map<TokenType, Map<Long, Token>> gatherTokensFromMono(
+    private static Map<TokenType, Map<Long, BBMToken>> gatherTokensFromMono(
             @NonNull final MerkleMap<EntityNum, MerkleToken> source) {
 
-        final var allTokens = new HashMap<TokenType, Map<Long, Token>>();
+        final var allTokens = new HashMap<TokenType, Map<Long, BBMToken>>();
 
         allTokens.put(TokenType.FUNGIBLE_COMMON, new HashMap<>());
         allTokens.put(TokenType.NON_FUNGIBLE_UNIQUE, new HashMap<>());
@@ -103,11 +103,11 @@ public class TokenTypesDumpUtils {
         // todo check if it is possible to use multi threading with MerkleMaps like VirtualMaps
         MerkleMapLike.from(source).forEachNode((en, mt) -> allTokens
                 .get(TokenType.fromProtobufOrdinal(mt.tokenType().ordinal()))
-                .put(en.longValue(), Token.fromMono(mt)));
+                .put(en.longValue(), BBMToken.fromMono(mt)));
         return allTokens;
     }
 
-    private static void dump(@NonNull Writer writer, @NonNull Map<TokenType, Map<Long, Token>> allTokens) {
+    private static void dump(@NonNull Writer writer, @NonNull Map<TokenType, Map<Long, BBMToken>> allTokens) {
         reportSummary(writer, allTokens);
 
         reportOnTokens(writer, "fungible", allTokens.get(TokenType.FUNGIBLE_COMMON));
@@ -120,7 +120,7 @@ public class TokenTypesDumpUtils {
         reportOnFees(writer, "non-fungible", allTokens.get(TokenType.NON_FUNGIBLE_UNIQUE));
     }
 
-    private static void reportSummary(@NonNull Writer writer, @NonNull Map<TokenType, Map<Long, Token>> allTokens) {
+    private static void reportSummary(@NonNull Writer writer, @NonNull Map<TokenType, Map<Long, BBMToken>> allTokens) {
         writer.writeln("=== %7d: fungible token types"
                 .formatted(allTokens.get(TokenType.FUNGIBLE_COMMON).size()));
         writer.writeln("=== %7d: non-fungible token types"
@@ -129,7 +129,7 @@ public class TokenTypesDumpUtils {
     }
 
     private static void reportOnTokens(
-            @NonNull final Writer writer, @NonNull final String type, @NonNull final Map<Long, Token> tokens) {
+            @NonNull final Writer writer, @NonNull final String type, @NonNull final Map<Long, BBMToken> tokens) {
         writer.writeln("=== %s token types%n".formatted(type));
         writer.writeln(formatHeader());
         tokens.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> formatToken(writer, e.getValue()));
@@ -137,9 +137,9 @@ public class TokenTypesDumpUtils {
     }
 
     private static void reportOnKeyStructure(
-            @NonNull final Writer writer, @NonNull final String type, @NonNull final Map<Long, Token> tokens) {
+            @NonNull final Writer writer, @NonNull final String type, @NonNull final Map<Long, BBMToken> tokens) {
 
-        final BiConsumer<String, Function<Token, String>> map = (title, fun) -> {
+        final BiConsumer<String, Function<BBMToken, String>> map = (title, fun) -> {
             final var histogram = new HashMap<String, Integer>();
 
             for (@NonNull var e : tokens.entrySet()) {
@@ -153,13 +153,13 @@ public class TokenTypesDumpUtils {
             writer.writeln("");
         };
 
-        map.accept("key structures", Token::getKeyStructure);
-        map.accept("key role profiles", Token::getKeyProfile);
-        map.accept("key complexity", Token::getKeyComplexity);
+        map.accept("key structures", BBMToken::getKeyStructure);
+        map.accept("key role profiles", BBMToken::getKeyProfile);
+        map.accept("key complexity", BBMToken::getKeyComplexity);
     }
 
     private static void reportOnFees(
-            @NonNull final Writer writer, @NonNull final String type, @NonNull final Map<Long, Token> tokens) {
+            @NonNull final Writer writer, @NonNull final String type, @NonNull final Map<Long, BBMToken> tokens) {
         final var histogram = new HashMap<String, Integer>();
         for (@NonNull var token : tokens.values()) {
             final var fees = token.feeSchedule();
@@ -179,15 +179,15 @@ public class TokenTypesDumpUtils {
     }
 
     @NonNull
-    static <T> BiConsumer<FieldBuilder, Token> getFieldFormatter(
-            @NonNull final Function<Token, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMToken> getFieldFormatter(
+            @NonNull final Function<BBMToken, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
     }
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final Token token,
-            @NonNull final Function<Token, T> fun,
+            @NonNull final BBMToken token,
+            @NonNull final Function<BBMToken, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(token)));
     }
@@ -213,7 +213,7 @@ public class TokenTypesDumpUtils {
         };
     }
 
-    static void formatToken(@NonNull final Writer writer, @NonNull final Token token) {
+    static void formatToken(@NonNull final Writer writer, @NonNull final BBMToken token) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, token));
         writer.writeln(fb);

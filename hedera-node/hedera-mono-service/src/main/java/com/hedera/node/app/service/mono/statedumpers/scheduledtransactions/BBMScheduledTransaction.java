@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Optional;
 
 @SuppressWarnings("java:S6218") // "Equals/hashcode methods should be overridden in records containing array fields"
-record ScheduledTransaction(
+public record BBMScheduledTransaction(
         long number,
         @NonNull Optional<JKey> adminKey,
         @Nullable String memo,
@@ -47,8 +47,8 @@ record ScheduledTransaction(
         @Nullable SchedulableTransactionBody scheduledTxn,
         @Nullable List<byte[]> signatories) {
 
-    static ScheduledTransaction fromMono(@NonNull final ScheduleVirtualValue scheduleVirtualValue) {
-        return new ScheduledTransaction(
+    static BBMScheduledTransaction fromMono(@NonNull final ScheduleVirtualValue scheduleVirtualValue) {
+        return new BBMScheduledTransaction(
                 scheduleVirtualValue.getKey().getKeyAsLong(),
                 scheduleVirtualValue.adminKey(),
                 scheduleVirtualValue.memo().orElse("<EMPTY>"),

@@ -19,20 +19,25 @@ package com.hedera.node.app.statedumpers.nfts;
 import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.getMaybeStringifyByteString;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.nfts.BBMUniqueToken;
+import com.hedera.node.app.service.mono.statedumpers.nfts.BBMUniqueTokenId;
 import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
+import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.statedumpers.utils.FieldBuilder;
-import com.hedera.node.app.statedumpers.utils.Writer;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -48,8 +53,7 @@ public class UniqueTokenDumpUtils {
             @NonNull final VirtualMap<OnDiskKey<NftID>, OnDiskValue<Nft>> uniques,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
-            final var dumpableUniques =
-                    gatherUniques(uniques, key -> UniqueTokenId.fromMod(key.getKey()), UniqueToken::fromMod);
+            final var dumpableUniques = gatherUniques(uniques);
             reportOnUniques(writer, dumpableUniques);
             System.out.printf(
                     "=== mod  uniques report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
@@ -57,18 +61,16 @@ public class UniqueTokenDumpUtils {
     }
 
     @NonNull
-    private static <K extends VirtualKey, V extends VirtualValue> Map<UniqueTokenId, UniqueToken> gatherUniques(
-            @NonNull final VirtualMap<K, V> source,
-            @NonNull final Function<K, UniqueTokenId> keyMapper,
-            @NonNull final Function<V, UniqueToken> valueMapper) {
-        final var r = new HashMap<UniqueTokenId, UniqueToken>();
+    private static Map<BBMUniqueTokenId, BBMUniqueToken> gatherUniques(
+            @NonNull final VirtualMap<OnDiskKey<NftID>, OnDiskValue<Nft>> source) {
+        final var r = new HashMap<BBMUniqueTokenId, BBMUniqueToken>();
         final var threadCount = 5;
-        final var mappings = new ConcurrentLinkedQueue<Pair<UniqueTokenId, UniqueToken>>();
+        final var mappings = new ConcurrentLinkedQueue<Pair<BBMUniqueTokenId, BBMUniqueToken>>();
         try {
             VirtualMapLike.from(source)
                     .extractVirtualMapDataC(
                             getStaticThreadManager(),
-                            p -> mappings.add(Pair.of(keyMapper.apply(p.left()), valueMapper.apply(p.right()))),
+                            p -> mappings.add(Pair.of(fromMod(p.left().getKey()), fromMod(p.right()))),
                             threadCount);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of uniques virtual map interrupted!");
@@ -84,7 +86,7 @@ public class UniqueTokenDumpUtils {
     }
 
     private static void reportOnUniques(
-            @NonNull final Writer writer, @NonNull final Map<UniqueTokenId, UniqueToken> uniques) {
+            @NonNull final Writer writer, @NonNull final Map<BBMUniqueTokenId, BBMUniqueToken> uniques) {
         writer.writeln(formatHeader());
         uniques.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -100,35 +102,60 @@ public class UniqueTokenDumpUtils {
 
     // spotless:off
     @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, UniqueToken>>> fieldFormatters = List.of(
-            Pair.of("owner", getFieldFormatter(UniqueToken::owner, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("spender", getFieldFormatter(UniqueToken::spender, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("creationTime", getFieldFormatter(UniqueToken::creationTime, ThingsToStrings::toStringOfRichInstant)),
-            Pair.of("metadata", getFieldFormatter(UniqueToken::metadata, getMaybeStringifyByteString(Writer.FIELD_SEPARATOR))),
-            Pair.of("prev", getFieldFormatter(UniqueToken::previous, Object::toString)),
-            Pair.of("next", getFieldFormatter(UniqueToken::next, Object::toString))
+    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMUniqueToken>>> fieldFormatters = List.of(
+            Pair.of("owner", getFieldFormatter(BBMUniqueToken::owner, ThingsToStrings::toStringOfEntityId)),
+            Pair.of("spender", getFieldFormatter(BBMUniqueToken::spender, ThingsToStrings::toStringOfEntityId)),
+            Pair.of("creationTime", getFieldFormatter(BBMUniqueToken::creationTime, ThingsToStrings::toStringOfRichInstant)),
+            Pair.of("metadata", getFieldFormatter(BBMUniqueToken::metadata, getMaybeStringifyByteString(Writer.FIELD_SEPARATOR))),
+            Pair.of("prev", getFieldFormatter(BBMUniqueToken::previous, Object::toString)),
+            Pair.of("next", getFieldFormatter(BBMUniqueToken::next, Object::toString))
     );
     // spotless:on
 
     @NonNull
-    static <T> BiConsumer<FieldBuilder, UniqueToken> getFieldFormatter(
-            @NonNull final Function<UniqueToken, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMUniqueToken> getFieldFormatter(
+            @NonNull final Function<BBMUniqueToken, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, u) -> formatField(fb, u, fun, formatter);
     }
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final UniqueToken unique,
-            @NonNull final Function<UniqueToken, T> fun,
+            @NonNull final BBMUniqueToken unique,
+            @NonNull final Function<BBMUniqueToken, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(unique)));
     }
 
     private static void formatUnique(
-            @NonNull final Writer writer, @NonNull final UniqueTokenId id, @NonNull final UniqueToken unique) {
+            @NonNull final Writer writer, @NonNull final BBMUniqueTokenId id, @NonNull final BBMUniqueToken unique) {
         final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
         fb.append(id.toString());
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, unique));
         writer.writeln(fb);
+    }
+
+    static BBMUniqueToken fromMod(@NonNull final OnDiskValue<Nft> wrapper) {
+        final var value = wrapper.getValue();
+        return new BBMUniqueToken(
+                idFromMod(value.ownerId()),
+                idFromMod(value.spenderId()),
+                new RichInstant(value.mintTime().seconds(), value.mintTime().nanos()),
+                value.metadata().toByteArray(),
+                idPairFromMod(value.ownerPreviousNftId()),
+                idPairFromMod(value.ownerNextNftId()));
+    }
+
+    private static EntityId idFromMod(@Nullable final AccountID accountId) {
+        return null == accountId ? EntityId.MISSING_ENTITY_ID : new EntityId(0L, 0L, accountId.accountNumOrThrow());
+    }
+
+    private static NftNumPair idPairFromMod(@Nullable final NftID nftId) {
+        return null == nftId
+                ? NftNumPair.MISSING_NFT_NUM_PAIR
+                : NftNumPair.fromLongs(nftId.tokenIdOrThrow().tokenNum(), nftId.serialNumber());
+    }
+
+    static BBMUniqueTokenId fromMod(@NonNull final NftID nftID) {
+        return new BBMUniqueTokenId(nftID.tokenIdOrThrow().tokenNum(), nftID.serialNumber());
     }
 }

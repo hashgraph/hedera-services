@@ -16,19 +16,25 @@
 
 package com.hedera.node.app.statedumpers.files;
 
-import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.quoteForCsv;
-import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.squashLinesToEscapes;
-import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.toStringOfByteArray;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey;
+import static com.hedera.node.app.service.mono.statedumpers.files.FilesDumpUtils.reportFileContents;
+import static com.hedera.node.app.service.mono.statedumpers.files.FilesDumpUtils.reportFileContentsHeader;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.service.mono.statedumpers.files.BBMFileId;
+import com.hedera.node.app.service.mono.statedumpers.files.BBMHederaFile;
+import com.hedera.node.app.service.mono.statedumpers.files.FileStore;
+import com.hedera.node.app.service.mono.statedumpers.files.SystemFileType;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.statedumpers.utils.Writer;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -56,15 +62,16 @@ public class FilesDumpUtils {
     }
 
     @NonNull
-    public static Map<FileId, HederaFile> gatherModFiles(VirtualMap<OnDiskKey<FileID>, OnDiskValue<File>> source) {
-        final var r = new HashMap<FileId, HederaFile>();
+    public static Map<BBMFileId, BBMHederaFile> gatherModFiles(
+            VirtualMap<OnDiskKey<FileID>, OnDiskValue<File>> source) {
+        final var r = new HashMap<BBMFileId, BBMHederaFile>();
         final var threadCount = 8;
-        final var files = new ConcurrentLinkedQueue<Pair<FileId, HederaFile>>();
+        final var files = new ConcurrentLinkedQueue<Pair<BBMFileId, BBMHederaFile>>();
         try {
             VirtualMapLike.from(source)
                     .extractVirtualMapData(
                             getStaticThreadManager(),
-                            p -> files.add(Pair.of(FileId.fromMod(p.left().getKey()), HederaFile.fromMod(p.right()))),
+                            p -> files.add(Pair.of(BBMFileId.fromMod(p.left().getKey()), fromMod(p.right()))),
                             threadCount);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of files virtual map interrupted!");
@@ -74,47 +81,29 @@ public class FilesDumpUtils {
         return r;
     }
 
-    private static void reportOnFiles(@NonNull final Writer writer, @NonNull final Map<FileId, HederaFile> files) {
+    static BBMHederaFile fromMod(@NonNull final OnDiskValue<File> wrapper) {
+        final var value = wrapper.getValue();
+        if (value.fileId().fileNum() == 13704L) {
+            System.out.println(value);
+        }
+        final var meta = new HFileMeta(
+                value.deleted(),
+                (JKey) fromPbjKey(Key.newBuilder().keyList(value.keys()).build())
+                        .orElse(null),
+                value.expirationSecond(),
+                value.memo());
+        return new BBMHederaFile(
+                FileStore.ORDINARY,
+                (int) value.fileId().fileNum(),
+                value.contents().toByteArray(),
+                meta,
+                SystemFileType.byId.get((int) value.fileId().fileNum()));
+    }
+
+    private static void reportOnFiles(
+            @NonNull final Writer writer, @NonNull final Map<BBMFileId, BBMHederaFile> files) {
         reportFileContentsHeader(writer);
         reportFileContents(writer, files);
         writer.writeln("");
-    }
-
-    /** Emits the CSV header line for the file contents - **KEEP IN SYNC WITH reportFileContents!!!** */
-    private static void reportFileContentsHeader(@NonNull final Writer writer) {
-        final var header = "fileId,PRESENT/DELETED,SPECIAL file,SYSTEM file,length(bytes),expiry,memo,content,key";
-        writer.write("%s%n", header);
-    }
-
-    /** Emits the actual content (hexified) for each file, and it's full key */
-    private static void reportFileContents(
-            @NonNull final Writer writer, @NonNull final Map<FileId, HederaFile> allFiles) {
-        for (@NonNull
-        final var file :
-                allFiles.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
-            final var fileId = file.getKey().fileNum();
-            final var hf = file.getValue();
-            if (hf.isActive()) {
-                final var sb = new StringBuilder();
-                toStringOfByteArray(sb, hf.contents());
-                writer.write(
-                        "%d,PRESENT,%s,%s,%d,%s,%s,%s,%s%n",
-                        fileId,
-                        hf.fileStore() == FileStore.SPECIAL ? "SPECIAL" : "",
-                        hf.systemFileType() != null ? hf.systemFileType().name() : "",
-                        hf.contents().length,
-                        hf.metadata() != null ? Long.toString(hf.metadata().getExpiry()) : "",
-                        hf.metadata() != null ? quoteForCsv(",", hf.metadata().getMemo()) : "",
-                        sb,
-                        hf.metadata() != null
-                                ? quoteForCsv(
-                                        ",",
-                                        squashLinesToEscapes(
-                                                MiscUtils.describe(hf.metadata().getWacl())))
-                                : "");
-            } else {
-                writer.write("%d,DELETED%n", fileId);
-            }
-        }
     }
 }

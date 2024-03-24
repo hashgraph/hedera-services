@@ -29,6 +29,6 @@ import java.util.Collection;
  *     0-length bytecode files)
  */
 public record Contracts(
-        @NonNull Collection</*@NonNull*/ Contract> contracts,
+        @NonNull Collection</*@NonNull*/ BBMContract> contracts,
         @NonNull Collection<Integer> deletedContracts,
         int registeredContractsCount) {}

@@ -70,32 +70,32 @@ public class ScheduledTransactionsDumpUtils {
     }
 
     @NonNull
-    private static Map<ScheduledTransactionId, ScheduledTransaction> gatherMonoScheduledTransactionsByID(
+    private static Map<BBMScheduledTransactionId, BBMScheduledTransaction> gatherMonoScheduledTransactionsByID(
             MerkleMapLike<EntityNumVirtualKey, ScheduleVirtualValue> source) {
-        final var r = new HashMap<ScheduledTransactionId, ScheduledTransaction>();
-        source.forEach((k, v) -> r.put(ScheduledTransactionId.fromMono(k), ScheduledTransaction.fromMono(v)));
+        final var r = new HashMap<BBMScheduledTransactionId, BBMScheduledTransaction>();
+        source.forEach((k, v) -> r.put(BBMScheduledTransactionId.fromMono(k), BBMScheduledTransaction.fromMono(v)));
         return r;
     }
 
     @NonNull
-    private static Map<ScheduledTransactionId, ScheduledEqualityValue> gatherMonoScheduledTransactionsByEquality(
+    private static Map<BBMScheduledTransactionId, BBMScheduledEqualityValue> gatherMonoScheduledTransactionsByEquality(
             MerkleMapLike<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> source) {
-        final var r = new HashMap<ScheduledTransactionId, ScheduledEqualityValue>();
-        source.forEach((k, v) -> r.put(ScheduledTransactionId.fromMono(k), ScheduledEqualityValue.fromMono(v)));
+        final var r = new HashMap<BBMScheduledTransactionId, BBMScheduledEqualityValue>();
+        source.forEach((k, v) -> r.put(BBMScheduledTransactionId.fromMono(k), BBMScheduledEqualityValue.fromMono(v)));
         return r;
     }
 
     @NonNull
-    private static Map<ScheduledTransactionId, ScheduledSecondValue> gatherMonoScheduledTransactionsByExpiry(
+    private static Map<BBMScheduledTransactionId, BBMScheduledSecondValue> gatherMonoScheduledTransactionsByExpiry(
             MerkleMapLike<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> source) {
-        final var r = new HashMap<ScheduledTransactionId, ScheduledSecondValue>();
-        source.forEach((k, v) -> r.put(ScheduledTransactionId.fromMono(k), ScheduledSecondValue.fromMono(v)));
+        final var r = new HashMap<BBMScheduledTransactionId, BBMScheduledSecondValue>();
+        source.forEach((k, v) -> r.put(BBMScheduledTransactionId.fromMono(k), BBMScheduledSecondValue.fromMono(v)));
         return r;
     }
 
     private static void reportOnScheduledTransactionsById(
             @NonNull final Writer writer,
-            @NonNull final Map<ScheduledTransactionId, ScheduledTransaction> scheduledTransactions) {
+            @NonNull final Map<BBMScheduledTransactionId, BBMScheduledTransaction> scheduledTransactions) {
         writer.writeln(formatHeader());
         scheduledTransactions.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -105,7 +105,7 @@ public class ScheduledTransactionsDumpUtils {
 
     private static void reportOnScheduledTransactionsByEquality(
             @NonNull final Writer writer,
-            @NonNull final Map<ScheduledTransactionId, ScheduledEqualityValue> scheduledTransactions) {
+            @NonNull final Map<BBMScheduledTransactionId, BBMScheduledEqualityValue> scheduledTransactions) {
         writer.writeln(formatHeader());
         scheduledTransactions.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -115,7 +115,7 @@ public class ScheduledTransactionsDumpUtils {
 
     private static void reportOnScheduledTransactionsByExpiry(
             @NonNull final Writer writer,
-            @NonNull final Map<ScheduledTransactionId, ScheduledSecondValue> scheduledTransactions) {
+            @NonNull final Map<BBMScheduledTransactionId, BBMScheduledSecondValue> scheduledTransactions) {
         writer.writeln(formatHeader());
         scheduledTransactions.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -179,134 +179,137 @@ public class ScheduledTransactionsDumpUtils {
 
     // spotless:off
     @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, ScheduledTransaction>>>
+    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMScheduledTransaction>>>
             fieldFormattersForScheduleById = List.of(
-                    Pair.of("number", getFieldFormatterForScheduledTxn(ScheduledTransaction::number, Object::toString)),
+                    Pair.of(
+                            "number",
+                            getFieldFormatterForScheduledTxn(BBMScheduledTransaction::number, Object::toString)),
                     Pair.of(
                             "adminKey",
                             getFieldFormatterForScheduledTxn(
-                                    ScheduledTransaction::adminKey,
+                                    BBMScheduledTransaction::adminKey,
                                     getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-                    Pair.of("memo", getFieldFormatterForScheduledTxn(ScheduledTransaction::memo, csvQuote)),
+                    Pair.of("memo", getFieldFormatterForScheduledTxn(BBMScheduledTransaction::memo, csvQuote)),
                     Pair.of(
                             "isDeleted",
-                            getFieldFormatterForScheduledTxn(ScheduledTransaction::deleted, booleanFormatter)),
+                            getFieldFormatterForScheduledTxn(BBMScheduledTransaction::deleted, booleanFormatter)),
                     Pair.of(
                             "isExecuted",
-                            getFieldFormatterForScheduledTxn(ScheduledTransaction::executed, booleanFormatter)),
+                            getFieldFormatterForScheduledTxn(BBMScheduledTransaction::executed, booleanFormatter)),
                     Pair.of(
                             "calculatedWaitForExpiry",
                             getFieldFormatterForScheduledTxn(
-                                    ScheduledTransaction::calculatedWaitForExpiry, booleanFormatter)),
+                                    BBMScheduledTransaction::calculatedWaitForExpiry, booleanFormatter)),
                     Pair.of(
                             "waitForExpiryProvided",
                             getFieldFormatterForScheduledTxn(
-                                    ScheduledTransaction::waitForExpiryProvided, booleanFormatter)),
+                                    BBMScheduledTransaction::waitForExpiryProvided, booleanFormatter)),
                     Pair.of(
                             "payer",
                             getFieldFormatterForScheduledTxn(
-                                    ScheduledTransaction::payer, ThingsToStrings::toStringOfEntityId)),
+                                    BBMScheduledTransaction::payer, ThingsToStrings::toStringOfEntityId)),
                     Pair.of(
                             "schedulingAccount",
                             getFieldFormatterForScheduledTxn(
-                                    ScheduledTransaction::schedulingAccount, ThingsToStrings::toStringOfEntityId)),
+                                    BBMScheduledTransaction::schedulingAccount, ThingsToStrings::toStringOfEntityId)),
                     Pair.of(
                             "schedulingTXValidStart",
                             getFieldFormatterForScheduledTxn(
-                                    ScheduledTransaction::schedulingTXValidStart,
+                                    BBMScheduledTransaction::schedulingTXValidStart,
                                     ThingsToStrings::toStringOfRichInstant)),
                     Pair.of(
                             "expirationTimeProvided",
                             getFieldFormatterForScheduledTxn(
-                                    ScheduledTransaction::expirationTimeProvided,
+                                    BBMScheduledTransaction::expirationTimeProvided,
                                     getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
                     Pair.of(
                             "calculatedExpirationTime",
                             getFieldFormatterForScheduledTxn(
-                                    ScheduledTransaction::calculatedExpirationTime,
+                                    BBMScheduledTransaction::calculatedExpirationTime,
                                     getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
                     Pair.of(
                             "resolutionTime",
                             getFieldFormatterForScheduledTxn(
-                                    ScheduledTransaction::resolutionTime,
+                                    BBMScheduledTransaction::resolutionTime,
                                     getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
                     Pair.of(
                             "bodyBytes",
                             getFieldFormatterForScheduledTxn(
-                                    ScheduledTransaction::bodyBytes, ThingsToStrings::toStringOfByteArray)),
+                                    BBMScheduledTransaction::bodyBytes, ThingsToStrings::toStringOfByteArray)),
                     Pair.of(
                             "ordinaryScheduledTxn",
-                            getFieldFormatterForScheduledTxn(ScheduledTransaction::ordinaryScheduledTxn, csvQuote)),
+                            getFieldFormatterForScheduledTxn(BBMScheduledTransaction::ordinaryScheduledTxn, csvQuote)),
                     Pair.of(
                             "scheduledTxn",
-                            getFieldFormatterForScheduledTxn(ScheduledTransaction::scheduledTxn, csvQuote)),
+                            getFieldFormatterForScheduledTxn(BBMScheduledTransaction::scheduledTxn, csvQuote)),
                     Pair.of(
                             "signatories",
                             getFieldFormatterForScheduledTxn(
-                                    ScheduledTransaction::signatories,
+                                    BBMScheduledTransaction::signatories,
                                     getListFormatter(ThingsToStrings::toStringOfByteArray, SUBFIELD_SEPARATOR))));
 
     @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, ScheduledEqualityValue>>>
+    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMScheduledEqualityValue>>>
             fieldFormattersForScheduleByEquality = List.of(
                     Pair.of(
                             "number",
-                            getFieldFormatterForScheduledByEquality(ScheduledEqualityValue::number, Object::toString)),
+                            getFieldFormatterForScheduledByEquality(
+                                    BBMScheduledEqualityValue::number, Object::toString)),
                     Pair.of(
                             "ids",
                             getFieldFormatterForScheduledByEquality(
-                                    ScheduledEqualityValue::ids,
+                                    BBMScheduledEqualityValue::ids,
                                     getMapFormatter(e -> e.getKey() + "=" + e.getValue(), SUBFIELD_SEPARATOR))));
 
     @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, ScheduledSecondValue>>>
+    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMScheduledSecondValue>>>
             fieldFormattersForScheduleByExpiry = List.of(
                     Pair.of(
                             "number",
-                            getFieldFormatterForScheduledByExpiry(ScheduledSecondValue::number, Object::toString)),
+                            getFieldFormatterForScheduledByExpiry(BBMScheduledSecondValue::number, Object::toString)),
                     Pair.of(
                             "ids",
                             getFieldFormatterForScheduledByExpiry(
-                                    ScheduledSecondValue::ids,
+                                    BBMScheduledSecondValue::ids,
                                     getMapFormatter(
                                             e -> ThingsToStrings.toStringOfRichInstant(e.getKey()) + "="
                                                     + getListFormatter(Object::toString, SUBFIELD_SEPARATOR),
                                             SUBFIELD_SEPARATOR))));
 
     @NonNull
-    static <T> BiConsumer<FieldBuilder, ScheduledTransaction> getFieldFormatterForScheduledTxn(
-            @NonNull final Function<ScheduledTransaction, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMScheduledTransaction> getFieldFormatterForScheduledTxn(
+            @NonNull final Function<BBMScheduledTransaction, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, u) -> fb.append(formatter.apply(fun.apply(u)));
     }
 
     @NonNull
-    static <T> BiConsumer<FieldBuilder, ScheduledEqualityValue> getFieldFormatterForScheduledByEquality(
-            @NonNull final Function<ScheduledEqualityValue, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMScheduledEqualityValue> getFieldFormatterForScheduledByEquality(
+            @NonNull final Function<BBMScheduledEqualityValue, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, u) -> fb.append(formatter.apply(fun.apply(u)));
     }
 
     @NonNull
-    static <T> BiConsumer<FieldBuilder, ScheduledSecondValue> getFieldFormatterForScheduledByExpiry(
-            @NonNull final Function<ScheduledSecondValue, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMScheduledSecondValue> getFieldFormatterForScheduledByExpiry(
+            @NonNull final Function<BBMScheduledSecondValue, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, u) -> fb.append(formatter.apply(fun.apply(u)));
     }
 
     private static void formatScheduledTransaction(
-            @NonNull final Writer writer, @NonNull final ScheduledTransaction scheduledTransaction) {
+            @NonNull final Writer writer, @NonNull final BBMScheduledTransaction scheduledTransaction) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormattersForScheduleById.stream().map(Pair::right).forEach(ff -> ff.accept(fb, scheduledTransaction));
         writer.writeln(fb);
     }
 
     private static void formatScheduledTransaction(
-            @NonNull final Writer writer, @NonNull final ScheduledSecondValue scheduledTransaction) {
+            @NonNull final Writer writer, @NonNull final BBMScheduledSecondValue scheduledTransaction) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormattersForScheduleByExpiry.stream().map(Pair::right).forEach(ff -> ff.accept(fb, scheduledTransaction));
         writer.writeln(fb);
     }
 
     private static void formatScheduledTransaction(
-            @NonNull final Writer writer, @NonNull final ScheduledEqualityValue scheduledTransaction) {
+            @NonNull final Writer writer, @NonNull final BBMScheduledEqualityValue scheduledTransaction) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormattersForScheduleByEquality.stream()
                 .map(Pair::right)

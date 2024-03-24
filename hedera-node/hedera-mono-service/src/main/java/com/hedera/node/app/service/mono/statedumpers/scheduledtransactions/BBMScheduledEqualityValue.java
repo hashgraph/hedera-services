@@ -16,16 +16,15 @@
 
 package com.hedera.node.app.service.mono.statedumpers.scheduledtransactions;
 
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.NavigableMap;
-import org.eclipse.collections.api.list.primitive.ImmutableLongList;
+import java.util.SortedMap;
 
 @SuppressWarnings("java:S6218") // "Equals/hashcode methods should be overridden in records containing array fields"
-record ScheduledSecondValue(long number, NavigableMap<RichInstant, ImmutableLongList> ids) {
+record BBMScheduledEqualityValue(long number, SortedMap<String, Long> ids) {
 
-    static ScheduledSecondValue fromMono(@NonNull final ScheduleSecondVirtualValue scheduleVirtualValue) {
-        return new ScheduledSecondValue(scheduleVirtualValue.getKey().getKeyAsLong(), scheduleVirtualValue.getIds());
+    static BBMScheduledEqualityValue fromMono(@NonNull final ScheduleEqualityVirtualValue scheduleVirtualValue) {
+        return new BBMScheduledEqualityValue(
+                scheduleVirtualValue.getKey().getKeyAsLong(), scheduleVirtualValue.getIds());
     }
 }

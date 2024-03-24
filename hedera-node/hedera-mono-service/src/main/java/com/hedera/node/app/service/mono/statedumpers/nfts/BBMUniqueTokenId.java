@@ -21,10 +21,10 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-record UniqueTokenId(long id, long serial) implements Comparable<UniqueTokenId> {
+public record BBMUniqueTokenId(long id, long serial) implements Comparable<BBMUniqueTokenId> {
 
-    static UniqueTokenId fromMono(@NonNull final UniqueTokenKey ukey) {
-        return new UniqueTokenId(ukey.getNum(), ukey.getTokenSerial());
+    static BBMUniqueTokenId fromMono(@NonNull final UniqueTokenKey ukey) {
+        return new BBMUniqueTokenId(ukey.getNum(), ukey.getTokenSerial());
     }
 
     @Override
@@ -33,7 +33,7 @@ record UniqueTokenId(long id, long serial) implements Comparable<UniqueTokenId> 
     }
 
     @Override
-    public int compareTo(UniqueTokenId o) {
+    public int compareTo(BBMUniqueTokenId o) {
         return ComparisonChain.start()
                 .compare(this.id, o.id)
                 .compare(this.serial, o.serial)

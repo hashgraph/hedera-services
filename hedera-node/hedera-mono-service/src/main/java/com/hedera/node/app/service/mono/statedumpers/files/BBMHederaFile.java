@@ -14,32 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.statedumpers.files;
+package com.hedera.node.app.service.mono.statedumpers.files;
 
-import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.mono.files.HFileMeta;
-import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /** Holds the content and the metadata for a single data file in the store */
 @SuppressWarnings("java:S6218") // "Equals/hashcode methods should be overridden in records containing array fields"
 // not using this with equals
-public record HederaFile(
+public record BBMHederaFile(
         @NonNull FileStore fileStore,
         @NonNull Integer fileId,
-        @NonNull byte[] contents,
-        @Nullable HFileMeta metadata,
+        @Nullable byte[] contents,
+        @NonNull HFileMeta metadata,
         @Nullable SystemFileType systemFileType) {
-
-    static HederaFile fromMod(@NonNull final OnDiskValue<File> wrapper) {
-        final var value = wrapper.getValue();
-        return new HederaFile(
-                FileStore.ORDINARY,
-                (int) value.fileId().fileNum(),
-                value.contents().toByteArray(),
-                null,
-                SystemFileType.byId.get((int) value.fileId().fileNum()));
+    @NonNull
+    static BBMHederaFile of(final int fileId, @Nullable final byte[] contents, @NonNull final HFileMeta metadata) {
+        return new BBMHederaFile(FileStore.ORDINARY, fileId, contents, metadata, SystemFileType.byId.get(fileId));
     }
 
     boolean isActive() {

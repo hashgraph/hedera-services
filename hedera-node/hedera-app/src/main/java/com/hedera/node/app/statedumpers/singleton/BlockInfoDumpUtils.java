@@ -19,13 +19,20 @@ package com.hedera.node.app.statedumpers.singleton;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.singleton.BBMBlockInfoAndRunningHashes;
 import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.statedumpers.utils.FieldBuilder;
-import com.hedera.node.app.statedumpers.utils.Writer;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -36,27 +43,27 @@ public class BlockInfoDumpUtils {
 
     // spotless:off
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, BlockInfoAndRunningHashes>>> fieldFormatters = List.of(
-            Pair.of("lastBlockNumber", getFieldFormatter(BlockInfoAndRunningHashes::lastBlockNumber, Object::toString)),
-            Pair.of("blockHashes", getFieldFormatter(BlockInfoAndRunningHashes::blockHashes, Object::toString)),
+    static List<Pair<String, BiConsumer<FieldBuilder, BBMBlockInfoAndRunningHashes>>> fieldFormatters = List.of(
+            Pair.of("lastBlockNumber", getFieldFormatter(BBMBlockInfoAndRunningHashes::lastBlockNumber, Object::toString)),
+            Pair.of("blockHashes", getFieldFormatter(BBMBlockInfoAndRunningHashes::blockHashes, Object::toString)),
             Pair.of(
                     "consTimeOfLastHandledTxn",
                     getFieldFormatter(
-                            BlockInfoAndRunningHashes::consTimeOfLastHandledTxn,
+                            BBMBlockInfoAndRunningHashes::consTimeOfLastHandledTxn,
                             getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
             Pair.of(
                     "migrationRecordsStreamed",
-                    getFieldFormatter(BlockInfoAndRunningHashes::migrationRecordsStreamed, booleanFormatter)),
+                    getFieldFormatter(BBMBlockInfoAndRunningHashes::migrationRecordsStreamed, booleanFormatter)),
             Pair.of(
                     "firstConsTimeOfCurrentBlock",
                     getFieldFormatter(
-                            BlockInfoAndRunningHashes::firstConsTimeOfCurrentBlock,
+                            BBMBlockInfoAndRunningHashes::firstConsTimeOfCurrentBlock,
                             getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
-            Pair.of("entityId", getFieldFormatter(BlockInfoAndRunningHashes::entityId, Object::toString)),
-            Pair.of("runningHash", getFieldFormatter(BlockInfoAndRunningHashes::runningHash, getNullableFormatter(Object::toString))),
-            Pair.of("nMinus1RunningHash", getFieldFormatter(BlockInfoAndRunningHashes::nMinus1RunningHash, getNullableFormatter(Object::toString))),
-            Pair.of("nMinus2RunningHash", getFieldFormatter(BlockInfoAndRunningHashes::nMinus2RunningHash, getNullableFormatter(Object::toString))),
-            Pair.of("nMinus3RunningHas", getFieldFormatter(BlockInfoAndRunningHashes::nMinus3RunningHash, getNullableFormatter(Object::toString))));
+            Pair.of("entityId", getFieldFormatter(BBMBlockInfoAndRunningHashes::entityId, Object::toString)),
+            Pair.of("runningHash", getFieldFormatter(BBMBlockInfoAndRunningHashes::runningHash, getNullableFormatter(Object::toString))),
+            Pair.of("nMinus1RunningHash", getFieldFormatter(BBMBlockInfoAndRunningHashes::nMinus1RunningHash, getNullableFormatter(Object::toString))),
+            Pair.of("nMinus2RunningHash", getFieldFormatter(BBMBlockInfoAndRunningHashes::nMinus2RunningHash, getNullableFormatter(Object::toString))),
+            Pair.of("nMinus3RunningHas", getFieldFormatter(BBMBlockInfoAndRunningHashes::nMinus3RunningHash, getNullableFormatter(Object::toString))));
     // spotless:on
 
     public static void dumpModBlockInfo(
@@ -66,7 +73,7 @@ public class BlockInfoDumpUtils {
             @NonNull final EntityNumber entityNumber,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
-            var combined = BlockInfoAndRunningHashes.combineFromMod(blockInfo, runningHashes, entityNumber.number());
+            var combined = combineFromMod(blockInfo, runningHashes, entityNumber.number());
             reportOnBlockInfo(writer, combined);
             System.out.printf(
                     "=== mod running hashes and block info report is %d bytes at checkpoint %s%n",
@@ -75,9 +82,9 @@ public class BlockInfoDumpUtils {
     }
 
     private static void reportOnBlockInfo(
-            @NonNull final Writer writer, @NonNull final BlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
+            @NonNull final Writer writer, @NonNull final BBMBlockInfoAndRunningHashes combinedBBMBlockInfoAndRunningHashes) {
         writer.writeln(formatHeaderForBlockInfo());
-        formatBlockInfo(writer, combinedBlockInfoAndRunningHashes);
+        formatBlockInfo(writer, combinedBBMBlockInfoAndRunningHashes);
         writer.writeln("");
     }
 
@@ -87,27 +94,91 @@ public class BlockInfoDumpUtils {
     }
 
     @NonNull
-    static <T> BiConsumer<FieldBuilder, BlockInfoAndRunningHashes> getFieldFormatter(
-            @NonNull final Function<BlockInfoAndRunningHashes, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMBlockInfoAndRunningHashes> getFieldFormatter(
+            @NonNull final Function<BBMBlockInfoAndRunningHashes, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, u) -> formatField(fb, u, fun, formatter);
     }
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final BlockInfoAndRunningHashes info,
-            @NonNull final Function<BlockInfoAndRunningHashes, T> fun,
+            @NonNull final BBMBlockInfoAndRunningHashes info,
+            @NonNull final Function<BBMBlockInfoAndRunningHashes, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(info)));
     }
 
     private static void formatBlockInfo(
-            @NonNull final Writer writer, @NonNull final BlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
+            @NonNull final Writer writer, @NonNull final BBMBlockInfoAndRunningHashes combinedBBMBlockInfoAndRunningHashes) {
         final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, combinedBlockInfoAndRunningHashes));
+        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, combinedBBMBlockInfoAndRunningHashes));
         writer.writeln(fb);
     }
 
     static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
         return t -> null != t ? formatter.apply(t) : "";
+    }
+
+    public static BBMBlockInfoAndRunningHashes combineFromMod(
+            @NonNull final BlockInfo blockInfo, @NonNull final RunningHashes runningHashes, final long entityId) {
+
+        // convert all TimeStamps fields from blockInfo to RichInstant
+        var consTimeOfLastHandledTxn = blockInfo.consTimeOfLastHandledTxn() == null
+                ? RichInstant.fromJava(Instant.EPOCH)
+                : new RichInstant(
+                blockInfo.consTimeOfLastHandledTxn().seconds(),
+                blockInfo.consTimeOfLastHandledTxn().nanos());
+        var firstConsTimeOfCurrentBlock = blockInfo.firstConsTimeOfCurrentBlock() == null
+                ? RichInstant.fromJava(Instant.EPOCH)
+                : new RichInstant(
+                blockInfo.firstConsTimeOfCurrentBlock().seconds(),
+                blockInfo.firstConsTimeOfCurrentBlock().nanos());
+
+        var runningHash = Bytes.EMPTY.equals(runningHashes.runningHash())
+                ? null
+                : new Hash(runningHashes.runningHash().toByteArray());
+        var nMinus1RunningHash = Bytes.EMPTY.equals(runningHashes.nMinus1RunningHash())
+                ? null
+                : new Hash(runningHashes.nMinus1RunningHash().toByteArray());
+        var nMinus2RunningHash = Bytes.EMPTY.equals(runningHashes.nMinus2RunningHash())
+                ? null
+                : new Hash(runningHashes.nMinus2RunningHash().toByteArray());
+        var nMinus3RunningHash = Bytes.EMPTY.equals(runningHashes.nMinus3RunningHash())
+                ? null
+                : new Hash(runningHashes.nMinus3RunningHash().toByteArray());
+
+        return new BBMBlockInfoAndRunningHashes(
+                blockInfo.lastBlockNumber(),
+                stringifiedBlockHashes(blockInfo),
+                consTimeOfLastHandledTxn,
+                blockInfo.migrationRecordsStreamed(),
+                firstConsTimeOfCurrentBlock,
+                entityId,
+                runningHash,
+                nMinus1RunningHash,
+                nMinus2RunningHash,
+                nMinus3RunningHash);
+    }
+
+    // generate same string format for hashes, as MerkelNetworkContext.stringifiedBlockHashes() for mod
+    static String stringifiedBlockHashes(BlockInfo blockInfo) {
+        final var jsonSb = new StringBuilder("[");
+        final var blockNo = blockInfo.lastBlockNumber();
+        final var blockHashes = blockInfo.blockHashes();
+        final var availableBlocksCount = blockHashes.length() / BlockRecordInfoUtils.HASH_SIZE;
+        final var firstAvailable = blockNo - availableBlocksCount;
+
+        for (int i = 0; i < availableBlocksCount; i++) {
+            final var nextBlockNo = firstAvailable + i;
+            final var blockHash =
+                    blockHashes.toByteArray(i * BlockRecordInfoUtils.HASH_SIZE, BlockRecordInfoUtils.HASH_SIZE);
+            jsonSb.append("{\"num\": ")
+                    .append(nextBlockNo + 1)
+                    .append(", ")
+                    .append("\"hash\": \"")
+                    .append(CommonUtils.hex(blockHash))
+                    .append("\"}")
+                    .append(i < availableBlocksCount ? ", " : "");
+        }
+        return jsonSb.append("]").toString();
     }
 }

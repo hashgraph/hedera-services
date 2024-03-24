@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.statedumpers.topics;
-
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey;
+package com.hedera.node.app.service.mono.statedumpers.topics;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
+import java.util.Objects;
 
-record BBMTopic(
-        long number,
+public record BBMTopic(
+        int number,
         @NonNull String memo,
         @NonNull RichInstant expirationTimestamp,
         boolean deleted,
@@ -37,17 +36,23 @@ record BBMTopic(
         long autoRenewDurationSeconds,
         @Nullable EntityId autoRenewAccountId) {
 
-    static BBMTopic fromMod(@NonNull final com.hedera.hapi.node.state.consensus.Topic topic) {
-        return new BBMTopic(
-                topic.topicId().topicNum(),
-                topic.memo(),
-                RichInstant.fromJava(Instant.ofEpochSecond(topic.expirationSecond())),
-                topic.deleted(),
-                (JKey) fromPbjKey(topic.adminKey()).orElse(null),
-                (JKey) fromPbjKey(topic.submitKey()).orElse(null),
-                topic.runningHash().toByteArray(),
-                topic.sequenceNumber(),
-                topic.autoRenewPeriod(),
-                EntityId.fromNum(topic.autoRenewAccountId().accountNum()));
+    BBMTopic(@NonNull final MerkleTopic topic) {
+        this(
+                topic.getKey().intValue(),
+                topic.getMemo(),
+                topic.getExpirationTimestamp(),
+                topic.isDeleted(),
+                topic.getAdminKey(),
+                topic.getSubmitKey(),
+                null != topic.getRunningHash() ? topic.getRunningHash() : EMPTY_BYTES,
+                topic.getSequenceNumber(),
+                topic.getAutoRenewDurationSeconds(),
+                topic.getAutoRenewAccountId());
+        Objects.requireNonNull(memo, "memo");
+        Objects.requireNonNull(adminKey, "adminKey");
+        Objects.requireNonNull(submitKey, "submitKey");
+        Objects.requireNonNull(runningHash, "runningHash");
     }
+
+    static final byte[] EMPTY_BYTES = new byte[0];
 }

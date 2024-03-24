@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.statedumpers.contracts;
+package com.hedera.node.app.service.mono.statedumpers.contracts;
 
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.state.contract.Bytecode;
-import com.hedera.node.app.state.merkle.disk.OnDiskKey;
-import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.TreeSet;
@@ -37,16 +33,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * @param bytecode - bytecode of the contract
  * @param validity - whether the contract is valid or note, aka active or deleted
  */
-public record Contract(
+public record BBMContract(
         @NonNull TreeSet</*@NonNull*/ Integer> ids, @NonNull byte[] bytecode, @NonNull Validity validity) {
-
-    public static Contract fromMod(OnDiskKey<ContractID> id, OnDiskValue<Bytecode> bytecode) {
-        final var c = new Contract(new TreeSet<>(), bytecode.getValue().code().toByteArray(), Validity.ACTIVE);
-        if (id.getKey().contractNum() != null) {
-            c.ids().add(id.getKey().contractNum().intValue());
-        }
-        return c;
-    }
 
     // For any set of contract ids with the same bytecode, the lowest contract id is used as the "canonical"
     // id for that bytecode (useful for ordering contracts deterministically)
@@ -62,7 +50,7 @@ public record Contract(
         if (o == this) {
             return true;
         }
-        return o instanceof Contract other
+        return o instanceof BBMContract other
                 && new EqualsBuilder()
                         .append(ids, other.ids)
                         .append(bytecode, other.bytecode)

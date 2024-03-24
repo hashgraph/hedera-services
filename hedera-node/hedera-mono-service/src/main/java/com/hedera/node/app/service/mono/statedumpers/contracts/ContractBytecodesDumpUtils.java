@@ -142,9 +142,9 @@ public class ContractBytecodesDumpUtils {
         }
 
         // Second, flatten that map into a collection
-        final var uniqueContracts = new ArrayList<Contract>(contractsByBytecode.size());
+        final var uniqueContracts = new ArrayList<BBMContract>(contractsByBytecode.size());
         for (final var kv : contractsByBytecode.entrySet()) {
-            uniqueContracts.add(new Contract(kv.getValue(), kv.getKey().array(), Validity.ACTIVE));
+            uniqueContracts.add(new BBMContract(kv.getValue(), kv.getKey().array(), Validity.ACTIVE));
         }
 
         return Pair.of(
@@ -154,7 +154,7 @@ public class ContractBytecodesDumpUtils {
 
     private static int estimateReportSize(@NonNull Contracts contracts) {
         int totalBytecodeSize = contracts.contracts().stream()
-                .map(Contract::bytecode)
+                .map(BBMContract::bytecode)
                 .mapToInt(bc -> bc.length)
                 .sum();
         // Make a swag based on how many contracts there are plus bytecode size - each line has not just the bytecode
@@ -167,14 +167,15 @@ public class ContractBytecodesDumpUtils {
     private static void appendFormattedContractLines(
             @NonNull final StringBuilder sb, @NonNull final Contracts contracts) {
         contracts.contracts().stream()
-                .sorted(Comparator.comparingInt(Contract::canonicalId))
+                .sorted(Comparator.comparingInt(BBMContract::canonicalId))
                 .forEach(contract -> appendFormattedContractLine(sb, contract));
     }
 
     private static final HexFormat hexer = HexFormat.of().withUpperCase();
 
     /** Format a single contract line - may want any id, may want _all_ ids */
-    private static void appendFormattedContractLine(@NonNull final StringBuilder sb, @NonNull final Contract contract) {
+    private static void appendFormattedContractLine(
+            @NonNull final StringBuilder sb, @NonNull final BBMContract contract) {
         sb.append(hexer.formatHex(contract.bytecode()));
         sb.append('\t');
         sb.append(contract.canonicalId());

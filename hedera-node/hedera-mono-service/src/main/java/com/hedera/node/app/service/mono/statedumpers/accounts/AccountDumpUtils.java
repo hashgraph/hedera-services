@@ -51,17 +51,17 @@ public class AccountDumpUtils {
     /** String that separates all fields in the CSV format, and also the primitive-typed fields from each other and
      * the other-typed fields from each other in the compressed format.
      */
-    private static final String FIELD_SEPARATOR = ";";
+    public static final String FIELD_SEPARATOR = ";";
 
     /** String that separates sub-fields (the primitive-type fields) in the compressed format. */
-    private static final String SUBFIELD_SEPARATOR = ",";
+    public static final String SUBFIELD_SEPARATOR = ",";
 
     /** String that separates field names from field values in the compressed format */
-    private static final String NAME_TO_VALUE_SEPARATOR = ":";
+    public static final String NAME_TO_VALUE_SEPARATOR = ":";
 
     /** A field joiner that joins _subfields_ with `,` (i.e., _not_ the CSV field separator) and wraps the entire
      * thing in parentheses. */
-    private static final Collector<CharSequence, ?, String> parenWrappingJoiner =
+    public static final Collector<CharSequence, ?, String> parenWrappingJoiner =
             Collectors.joining(SUBFIELD_SEPARATOR, "(", ")");
 
     private AccountDumpUtils() {
@@ -74,7 +74,7 @@ public class AccountDumpUtils {
             @NonNull final DumpCheckpoint checkpoint) {
 
         try (@NonNull final var writer = new Writer(path)) {
-            HederaAccount[] dumpableAccounts = gatherAccounts(accounts, HederaAccount::fromMono);
+            BBMHederaAccount[] dumpableAccounts = gatherAccounts(accounts, BBMHederaAccount::fromMono);
             reportOnAccounts(writer, dumpableAccounts);
             System.out.printf(
                     "=== mod accounts report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
@@ -82,9 +82,9 @@ public class AccountDumpUtils {
     }
 
     @NonNull
-    public static <K extends VirtualKey, V extends VirtualValue> HederaAccount[] gatherAccounts(
-            @NonNull VirtualMap<K, V> accounts, @NonNull Function<V, HederaAccount> mapper) {
-        final var accountsToReturn = new ConcurrentLinkedQueue<HederaAccount>();
+    public static <K extends VirtualKey, V extends VirtualValue> BBMHederaAccount[] gatherAccounts(
+            @NonNull VirtualMap<K, V> accounts, @NonNull Function<V, BBMHederaAccount> mapper) {
+        final var accountsToReturn = new ConcurrentLinkedQueue<BBMHederaAccount>();
         final var threadCount = 8;
         final var processed = new AtomicInteger();
 
@@ -102,7 +102,7 @@ public class AccountDumpUtils {
             Thread.currentThread().interrupt();
         }
 
-        final var accountsArr = accountsToReturn.toArray(new HederaAccount[0]);
+        final var accountsArr = accountsToReturn.toArray(new BBMHederaAccount[0]);
         Arrays.parallelSort(
                 accountsArr, Comparator.comparingLong(a -> a.accountId().accountNum()));
         System.out.printf("=== %d accounts iterated over (%d saved)%n", processed.get(), accountsArr.length);
@@ -110,7 +110,7 @@ public class AccountDumpUtils {
         return accountsArr;
     }
 
-    private static void reportOnAccounts(@NonNull final Writer writer, @NonNull final HederaAccount[] accountsArr) {
+    public static void reportOnAccounts(@NonNull final Writer writer, @NonNull final BBMHederaAccount[] accountsArr) {
         writer.write("account#");
         writer.write(FIELD_SEPARATOR);
         writer.write(formatCsvHeader(allFieldNamesInOrder()));
@@ -125,7 +125,7 @@ public class AccountDumpUtils {
 
     /** Produces the CSV header line: A CSV line from all the field names in the deterministic order. */
     @NonNull
-    private static String formatCsvHeader(@NonNull final List<String> names) {
+    public static String formatCsvHeader(@NonNull final List<String> names) {
         return String.join(FIELD_SEPARATOR, names);
     }
 
@@ -133,25 +133,25 @@ public class AccountDumpUtils {
      * field name.
      */
     @NonNull
-    private static List<String> allFieldNamesInOrder() {
+    public static List<String> allFieldNamesInOrder() {
         final var r = new ArrayList<String>(50);
         r.addAll(getFieldNamesInOrder(booleanFieldsMapping));
         r.addAll(getFieldNamesInOrder(intFieldsMapping));
         r.addAll(getFieldNamesInOrder(longFieldsMapping));
-        r.addAll(getFieldNamesInOrder(getFieldAccessors(new StringBuilder(), HederaAccount.DUMMY_ACCOUNT), false));
+        r.addAll(getFieldNamesInOrder(getFieldAccessors(new StringBuilder(), BBMHederaAccount.DUMMY_ACCOUNT), false));
         return r.stream().map(s -> fieldNameMap.getOrDefault(s, s)).toList();
     }
 
     /** Given one of the primitive-type mappings above, extract the field names, and sort them */
-    private static <T extends Comparable<T>> List<String> getFieldNamesInOrder(
-            @NonNull List<Pair<String, Function<HederaAccount, T>>> mapping) {
+    public static <T extends Comparable<T>> List<String> getFieldNamesInOrder(
+            @NonNull List<Pair<String, Function<BBMHederaAccount, T>>> mapping) {
         return mapping.stream().map(Pair::getLeft).sorted().toList();
     }
 
     /** Given the field mappings above, extract the field names, and sort them */
     // (Overload needed because of type erasure; ugly but seemed to me less ugly than an alternate name, YMMV)
     @SuppressWarnings("java:S1172") // "remove unused method parameter 'ignored'" - nope, needed as described aboved
-    private static List<String> getFieldNamesInOrder(@NonNull final List<Field<?>> fields, final boolean ignored) {
+    public static List<String> getFieldNamesInOrder(@NonNull final List<Field<?>> fields, final boolean ignored) {
         return fields.stream().map(Field::name).sorted().toList();
     }
 
@@ -159,7 +159,7 @@ public class AccountDumpUtils {
      * of its fields.
      */
     @NonNull
-    private static String formatAccount(@NonNull final StringBuilder sb, @NonNull final HederaAccount a) {
+    public static String formatAccount(@NonNull final StringBuilder sb, @NonNull final BBMHederaAccount a) {
         sb.setLength(0);
         sb.append(a.accountId().accountNum());
         formatAccountBooleans(sb, a, "bools");
@@ -170,28 +170,28 @@ public class AccountDumpUtils {
     }
 
     /** Formats all the `boolean`-valued fields of an account, using the mapping `booleanFieldsMapping`. */
-    private static void formatAccountBooleans(
-            @NonNull final StringBuilder sb, @NonNull final HederaAccount a, @NonNull final String name) {
+    public static void formatAccountBooleans(
+            @NonNull final StringBuilder sb, @NonNull final BBMHederaAccount a, @NonNull final String name) {
         formatAccountFieldsForDifferentOutputFormats(
                 sb, a, name, booleanFieldsMapping, false, b -> !b, AccountDumpUtils::tagOnlyFieldFormatter);
     }
 
     /** A field formatter that only emits the _name_ of the field.  Used for boolean fields in compressed format. */
     @NonNull
-    private static <T> String tagOnlyFieldFormatter(@NonNull final Pair<String, T> p) {
+    public static <T> String tagOnlyFieldFormatter(@NonNull final Pair<String, T> p) {
         return p.getLeft();
     }
 
     /** Formats all the `int`-valued fields of an account, using the mapping `intFieldsMapping`. */
-    private static void formatAccountInts(
-            @NonNull final StringBuilder sb, @NonNull final HederaAccount a, @NonNull final String name) {
+    public static void formatAccountInts(
+            @NonNull final StringBuilder sb, @NonNull final BBMHederaAccount a, @NonNull final String name) {
         formatAccountFieldsForDifferentOutputFormats(
                 sb, a, name, intFieldsMapping, 0, n -> n == 0, AccountDumpUtils::taggedFieldFormatter);
     }
 
     /** Formats all the `long`-valued fields of an account, using the mapping `longFieldsMapping`. */
-    private static void formatAccountLongs(
-            @NonNull final StringBuilder sb, @NonNull final HederaAccount a, @NonNull final String name) {
+    public static void formatAccountLongs(
+            @NonNull final StringBuilder sb, @NonNull final BBMHederaAccount a, @NonNull final String name) {
         formatAccountFieldsForDifferentOutputFormats(
                 sb, a, name, longFieldsMapping, 0L, n -> n == 0L, AccountDumpUtils::taggedFieldFormatter);
     }
@@ -201,8 +201,10 @@ public class AccountDumpUtils {
      * anything got added to the accumulating stringbuffer, or not.
      */
     @NonNull
-    private static <R> R applySwallowingExceptions(
-            @NonNull final Function<HederaAccount, R> fn, @NonNull final HederaAccount a, @NonNull R missingValue) {
+    public static <R> R applySwallowingExceptions(
+            @NonNull final Function<BBMHederaAccount, R> fn,
+            @NonNull final BBMHederaAccount a,
+            @NonNull R missingValue) {
         try {
             return fn.apply(a);
         } catch (final RuntimeException ex) {
@@ -214,7 +216,7 @@ public class AccountDumpUtils {
      * formatter (type-specific), produce the formatted form of all the fields given in the mapping.  Can do either of
      * the `Format`s: CSV or compressed fields.
      */
-    private static void formatAccountOtherFields(@NonNull final StringBuilder sb, @NonNull HederaAccount a) {
+    public static void formatAccountOtherFields(@NonNull final StringBuilder sb, @NonNull BBMHederaAccount a) {
         final var fieldAccessors = getFieldAccessors(sb, a);
         for (final var fieldAccessor : fieldAccessors) {
             final var l = sb.length();
@@ -226,7 +228,7 @@ public class AccountDumpUtils {
         }
     }
 
-    private static <R> boolean applySwallowingExceptions(@NonNull final Field<R> field) {
+    public static <R> boolean applySwallowingExceptions(@NonNull final Field<R> field) {
         try {
             return field.apply();
         } catch (final RuntimeException ex) {
@@ -242,7 +244,7 @@ public class AccountDumpUtils {
     // of unrelated types, yet `Object` is not appropriate either
     // 2681: a complaint about no braces around `then` clause - yep, intentional, and correct
     // spotless:off
-    private static List<Field<?>> getFieldAccessors(@NonNull final StringBuilder sb, @NonNull final HederaAccount a) {
+    public static List<Field<?>> getFieldAccessors(@NonNull final StringBuilder sb, @NonNull final BBMHederaAccount a) {
         return Stream.of(
             Field.of("1stContractStorageKey", a::firstContractStorageKey,
                 doWithBuilder(sb, ThingsToStrings::getMaybeStringifyByteString)),
@@ -274,7 +276,7 @@ public class AccountDumpUtils {
 
     /** Apply a formatter, given a `StringBuilder` and return whether (or not) the field _existed_ and should be
      * emitted. */
-    private static <T> Predicate<T> doWithBuilder(
+    public static <T> Predicate<T> doWithBuilder(
             @NonNull final StringBuilder sb, @NonNull final BiPredicate<StringBuilder, T> bifn) {
         return t -> bifn.test(sb, t);
     }
@@ -295,50 +297,50 @@ public class AccountDumpUtils {
     }
 
     /** A mapping for all `int`-valued fields that takes the field name to the field extractor. */
-    private static final List<Pair<String, Function<HederaAccount, Integer>>> intFieldsMapping = List.of(
-            Pair.of("#+B", HederaAccount::numberPositiveBalances),
-            Pair.of("#A", HederaAccount::numberAssociations),
-            Pair.of("#KV", HederaAccount::contractKvPairsNumber),
-            Pair.of("#TT", HederaAccount::numberTreasuryTitles),
-            Pair.of("#UAA", HederaAccount::usedAutoAssociations),
-            Pair.of("^AA", HederaAccount::maxAutoAssociations));
+    public static final List<Pair<String, Function<BBMHederaAccount, Integer>>> intFieldsMapping = List.of(
+            Pair.of("#+B", BBMHederaAccount::numberPositiveBalances),
+            Pair.of("#A", BBMHederaAccount::numberAssociations),
+            Pair.of("#KV", BBMHederaAccount::contractKvPairsNumber),
+            Pair.of("#TT", BBMHederaAccount::numberTreasuryTitles),
+            Pair.of("#UAA", BBMHederaAccount::usedAutoAssociations),
+            Pair.of("^AA", BBMHederaAccount::maxAutoAssociations));
 
     /** A mapping for all `boolean`-valued fields that takes the field name to the field extractor. */
-    private static final List<Pair<String, Function<HederaAccount, Boolean>>> booleanFieldsMapping = List.of(
+    public static final List<Pair<String, Function<BBMHederaAccount, Boolean>>> booleanFieldsMapping = List.of(
             Pair.of("AR", h -> h.autoRenewAccountId() != null),
             Pair.of("BR", a -> a.stakeAtStartOfLastRewardedPeriod() != -1L),
-            Pair.of("DL", HederaAccount::deleted),
-            Pair.of("DR", HederaAccount::declineReward),
-            Pair.of("ER", HederaAccount::expiredAndPendingRemoval),
+            Pair.of("DL", BBMHederaAccount::deleted),
+            Pair.of("DR", BBMHederaAccount::declineReward),
+            Pair.of("ER", BBMHederaAccount::expiredAndPendingRemoval),
             Pair.of("HA", a -> a.alias() != null),
-            Pair.of("IM", HederaAccount::isImmutable),
+            Pair.of("IM", BBMHederaAccount::isImmutable),
             Pair.of("PR", a -> (int) a.stakedId().value() < 0 && !a.declineReward()),
-            Pair.of("RSR", HederaAccount::receiverSigRequired),
-            Pair.of("SC", HederaAccount::smartContract),
+            Pair.of("RSR", BBMHederaAccount::receiverSigRequired),
+            Pair.of("SC", BBMHederaAccount::smartContract),
             Pair.of("TT", a -> a.numberTreasuryTitles() > 0));
 
     /** A mapping for all `long`-valued fields that takes the field name to the field extractor. */
-    private static final List<Pair<String, Function<HederaAccount, Long>>> longFieldsMapping = List.of(
-            Pair.of("#NFT", HederaAccount::numberOwnedNfts),
-            Pair.of("ARS", HederaAccount::autoRenewSeconds),
+    public static final List<Pair<String, Function<BBMHederaAccount, Long>>> longFieldsMapping = List.of(
+            Pair.of("#NFT", BBMHederaAccount::numberOwnedNfts),
+            Pair.of("ARS", BBMHederaAccount::autoRenewSeconds),
             Pair.of("B", a -> (long) a.numberPositiveBalances()),
-            Pair.of("EX", HederaAccount::expirationSecond),
+            Pair.of("EX", BBMHederaAccount::expirationSecond),
             Pair.of("HNSN", a -> a.headNftId().serialNumber()),
             Pair.of("HNTN", a -> a.headNftId().tokenId().tokenNum()),
             Pair.of("HTI", a -> a.headTokenId().tokenNum()),
-            Pair.of("N", HederaAccount::ethereumNonce),
+            Pair.of("N", BBMHederaAccount::ethereumNonce),
             Pair.of("SID", a -> (long) a.stakedId().value()),
-            Pair.of("SNID", HederaAccount::stakedNodeAddressBookId),
-            Pair.of("SPS", coerceMinus1ToBeDefault(HederaAccount::stakePeriodStart)),
-            Pair.of("STM", HederaAccount::stakedToMe),
-            Pair.of("TS", HederaAccount::totalStake),
-            Pair.of("TSL", coerceMinus1ToBeDefault(HederaAccount::stakeAtStartOfLastRewardedPeriod)));
+            Pair.of("SNID", BBMHederaAccount::stakedNodeAddressBookId),
+            Pair.of("SPS", coerceMinus1ToBeDefault(BBMHederaAccount::stakePeriodStart)),
+            Pair.of("STM", BBMHederaAccount::stakedToMe),
+            Pair.of("TS", BBMHederaAccount::totalStake),
+            Pair.of("TSL", coerceMinus1ToBeDefault(BBMHederaAccount::stakeAtStartOfLastRewardedPeriod)));
 
     /** For the compressed field output we want to have field name abbreviations (for compactness), but for the CSV
      * output we can afford the full names.  This maps between them.  (Only the primitive-valued fields have the
      * abbreviations.)
      */
-    private static final Map<String, String> fieldNameMap = toMap(
+    public static final Map<String, String> fieldNameMap = toMap(
             "#+B", "numPositiveBalances",
             "#A", "numAssociations",
             "#KV", "numContractKvPairs",
@@ -376,7 +378,7 @@ public class AccountDumpUtils {
      * didn't just put this in the `Map` class.
      */
     @NonNull
-    private static Map<String, String> toMap(String... es) {
+    public static Map<String, String> toMap(String... es) {
         if (0 != es.length % 2) {
             throw new IllegalArgumentException(
                     "must have even number of args to `toMap`, %d given".formatted(es.length));
@@ -397,11 +399,11 @@ public class AccountDumpUtils {
      * @param isDefaultValue Predicate to decide if this field has its default value (and can be elided)
      * @param formatField Method taking field name _and_ value to a string
      */
-    private static <T extends Comparable<T>> void formatAccountFieldsForDifferentOutputFormats(
+    public static <T extends Comparable<T>> void formatAccountFieldsForDifferentOutputFormats(
             @NonNull final StringBuilder sb,
-            @NonNull final HederaAccount a,
+            @NonNull final BBMHederaAccount a,
             @NonNull final String name,
-            @NonNull List<Pair<String, Function<HederaAccount, T>>> mapping,
+            @NonNull List<Pair<String, Function<BBMHederaAccount, T>>> mapping,
             @NonNull T missingValue,
             @NonNull Predicate<T> isDefaultValue,
             @NonNull Function<Pair<String, T>, String> formatField) {
@@ -425,10 +427,10 @@ public class AccountDumpUtils {
      * @param formatField Method taking field name _and_ value to a string
      * @param joinFields Stream collector to join multiple field values
      */
-    private static <T extends Comparable<T>> void formatAccountFields(
+    public static <T extends Comparable<T>> void formatAccountFields(
             @NonNull final StringBuilder sb,
-            @NonNull final HederaAccount a,
-            @NonNull List<Pair<String, Function<HederaAccount, T>>> mapping,
+            @NonNull final BBMHederaAccount a,
+            @NonNull List<Pair<String, Function<BBMHederaAccount, T>>> mapping,
             @NonNull T missingValue,
             @NonNull Predicate<T> isDefaultValue,
             @NonNull Function<Pair<String, T>, String> formatField,
@@ -442,7 +444,7 @@ public class AccountDumpUtils {
     }
 
     /** A simple formatter for field names in the compressed fields case: writes the field separator then `{name}:` */
-    private static void formatFieldSep(@NonNull final StringBuilder sb, @NonNull final String name) {
+    public static void formatFieldSep(@NonNull final StringBuilder sb, @NonNull final String name) {
         sb.append(FIELD_SEPARATOR);
         sb.append(name);
         sb.append(NAME_TO_VALUE_SEPARATOR);
@@ -450,7 +452,7 @@ public class AccountDumpUtils {
 
     /** A Field formatter that emits fields as "name:value". Used for non-boolean fields in compressed format. */
     @NonNull
-    private static <T> String taggedFieldFormatter(@NonNull final Pair<String, T> p) {
+    public static <T> String taggedFieldFormatter(@NonNull final Pair<String, T> p) {
         return p.getLeft() + NAME_TO_VALUE_SEPARATOR + p.getRight();
     }
 
@@ -462,8 +464,8 @@ public class AccountDumpUtils {
             "java:S4276") // Functional interfaces should be as specialized as possible - except not in this case, for
     // consistency
     @NonNull
-    private static Function<HederaAccount, Long> coerceMinus1ToBeDefault(
-            @NonNull final Function<HederaAccount, Long> fn) {
+    public static Function<BBMHederaAccount, Long> coerceMinus1ToBeDefault(
+            @NonNull final Function<BBMHederaAccount, Long> fn) {
         return a -> {
             final var v = fn.apply(a);
             return v == -1 ? 0 : v;

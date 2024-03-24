@@ -23,9 +23,13 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.contracts.BBMContract;
+import com.hedera.node.app.service.mono.statedumpers.contracts.ByteArrayAsKey;
+import com.hedera.node.app.service.mono.statedumpers.contracts.Contracts;
+import com.hedera.node.app.service.mono.statedumpers.contracts.Validity;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.statedumpers.utils.Writer;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -62,7 +66,7 @@ public class ContractBytecodesDumpUtils {
 
     @NonNull
     public static Contracts gatherModContracts(VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts) {
-        final var contractsToReturn = new ConcurrentLinkedQueue<Contract>();
+        final var contractsToReturn = new ConcurrentLinkedQueue<BBMContract>();
         final var threadCount = 8;
         final var processed = new AtomicInteger();
 
@@ -72,7 +76,7 @@ public class ContractBytecodesDumpUtils {
                             getStaticThreadManager(),
                             p -> {
                                 processed.incrementAndGet();
-                                contractsToReturn.add(Contract.fromMod(p.left(), p.right()));
+                                contractsToReturn.add(fromMod(p.left(), p.right()));
                             },
                             threadCount);
         } catch (final InterruptedException ex) {
@@ -80,7 +84,7 @@ public class ContractBytecodesDumpUtils {
             Thread.currentThread().interrupt();
         }
 
-        final var contractArr = contractsToReturn.toArray(new Contract[0]);
+        final var contractArr = contractsToReturn.toArray(new BBMContract[0]);
         System.out.printf("=== %d contracts iterated over (%d saved)%n", processed.get(), contractArr.length);
         return new Contracts(List.of(contractArr), List.of(), contractArr.length);
     }
@@ -171,9 +175,9 @@ public class ContractBytecodesDumpUtils {
         }
 
         // Second, flatten that map into a collection
-        final var uniqueContracts = new ArrayList<Contract>(contractsByBytecode.size());
+        final var uniqueContracts = new ArrayList<BBMContract>(contractsByBytecode.size());
         for (final var kv : contractsByBytecode.entrySet()) {
-            uniqueContracts.add(new Contract(kv.getValue(), kv.getKey().array(), Validity.ACTIVE));
+            uniqueContracts.add(new BBMContract(kv.getValue(), kv.getKey().array(), Validity.ACTIVE));
         }
 
         return Pair.of(
@@ -183,7 +187,7 @@ public class ContractBytecodesDumpUtils {
 
     private static int estimateReportSize(@NonNull Contracts contracts) {
         int totalBytecodeSize = contracts.contracts().stream()
-                .map(Contract::bytecode)
+                .map(BBMContract::bytecode)
                 .mapToInt(bc -> bc.length)
                 .sum();
         // Make a swag based on how many contracts there are plus bytecode size - each line has not just the bytecode
@@ -196,19 +200,29 @@ public class ContractBytecodesDumpUtils {
     private static void appendFormattedContractLines(
             @NonNull final StringBuilder sb, @NonNull final Contracts contracts) {
         contracts.contracts().stream()
-                .sorted(Comparator.comparingInt(Contract::canonicalId))
+                .sorted(Comparator.comparingInt(BBMContract::canonicalId))
                 .forEach(contract -> appendFormattedContractLine(sb, contract));
     }
 
     private static final HexFormat hexer = HexFormat.of().withUpperCase();
 
     /** Format a single contract line - may want any id, may want _all_ ids */
-    private static void appendFormattedContractLine(@NonNull final StringBuilder sb, @NonNull final Contract contract) {
+    private static void appendFormattedContractLine(
+            @NonNull final StringBuilder sb, @NonNull final BBMContract contract) {
         sb.append(hexer.formatHex(contract.bytecode()));
         sb.append('\t');
         sb.append(contract.canonicalId());
         sb.append('\t');
         sb.append(contract.ids().stream().map(Object::toString).collect(Collectors.joining(",")));
         sb.append('\n');
+    }
+
+    public static BBMContract fromMod(OnDiskKey<ContractID> id, OnDiskValue<Bytecode> bytecode) {
+        final var c =
+                new BBMContract(new TreeSet<>(), bytecode.getValue().code().toByteArray(), Validity.ACTIVE);
+        if (id.getKey().contractNum() != null) {
+            c.ids().add(id.getKey().contractNum().intValue());
+        }
+        return c;
     }
 }

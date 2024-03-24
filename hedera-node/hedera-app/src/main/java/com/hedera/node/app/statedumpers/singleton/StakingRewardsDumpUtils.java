@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.statedumpers.singleton;
 
-import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.singleton.BBMStakingRewards;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.statedumpers.utils.FieldBuilder;
-import com.hedera.node.app.statedumpers.utils.Writer;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -34,38 +34,39 @@ public class StakingRewardsDumpUtils {
     static Function<Boolean, String> booleanFormatter = b -> b ? "T" : "";
 
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, StakingRewards>>> fieldFormatters = List.of(
+    static List<Pair<String, BiConsumer<FieldBuilder, BBMStakingRewards>>> fieldFormatters = List.of(
             Pair.of(
-                    "stakingRewardsActivated",
-                    getFieldFormatter(StakingRewards::stakingRewardsActivated, booleanFormatter)),
+                    "BBMStakingRewardsActivated",
+                    getFieldFormatter(BBMStakingRewards::stakingRewardsActivated, booleanFormatter)),
             Pair.of(
                     "totalStakedRewardStart",
-                    getFieldFormatter(StakingRewards::totalStakedRewardStart, Object::toString)),
-            Pair.of("totalStakedStart", getFieldFormatter(StakingRewards::totalStakedStart, Object::toString)),
-            Pair.of("pendingRewards", getFieldFormatter(StakingRewards::pendingRewards, Object::toString)));
+                    getFieldFormatter(BBMStakingRewards::totalStakedRewardStart, Object::toString)),
+            Pair.of("totalStakedStart", getFieldFormatter(BBMStakingRewards::totalStakedStart, Object::toString)),
+            Pair.of("pendingRewards", getFieldFormatter(BBMStakingRewards::pendingRewards, Object::toString)));
 
-    public static void dumpModStakingRewards(
+    public static void dumpModBBMStakingRewards(
             @NonNull final Path path,
-            @NonNull final NetworkStakingRewards stakingRewards,
+            @NonNull final BBMStakingRewards stakingRewards,
             @NonNull final DumpCheckpoint checkpoint) {
         int reportSize;
         try (@NonNull final var writer = new Writer(path)) {
-            reportOnStakingRewards(writer, StakingRewards.fromMod(stakingRewards));
+            reportOnBBMStakingRewards(writer, fromMod(stakingRewards));
             reportSize = writer.getSize();
         }
 
         System.out.printf("=== staking rewards report is %d bytes %n", reportSize);
     }
 
-    static void reportOnStakingRewards(@NonNull Writer writer, @NonNull StakingRewards stakingRewards) {
+    static void reportOnBBMStakingRewards(@NonNull Writer writer, @NonNull BBMStakingRewards BBMStakingRewards) {
         writer.writeln(formatHeader());
-        formatStakingRewards(writer, stakingRewards);
+        formatBBMStakingRewards(writer, BBMStakingRewards);
         writer.writeln("");
     }
 
-    static void formatStakingRewards(@NonNull final Writer writer, @NonNull final StakingRewards stakingRewards) {
+    static void formatBBMStakingRewards(
+            @NonNull final Writer writer, @NonNull final BBMStakingRewards BBMStakingRewards) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, stakingRewards));
+        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, BBMStakingRewards));
         writer.writeln(fb);
     }
 
@@ -74,16 +75,24 @@ public class StakingRewardsDumpUtils {
         return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 
-    static <T> BiConsumer<FieldBuilder, StakingRewards> getFieldFormatter(
-            @NonNull final Function<StakingRewards, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMStakingRewards> getFieldFormatter(
+            @NonNull final Function<BBMStakingRewards, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
     }
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final StakingRewards stakingRewards,
-            @NonNull final Function<StakingRewards, T> fun,
+            @NonNull final BBMStakingRewards BBMStakingRewards,
+            @NonNull final Function<BBMStakingRewards, T> fun,
             @NonNull final Function<T, String> formatter) {
-        fb.append(formatter.apply(fun.apply(stakingRewards)));
+        fb.append(formatter.apply(fun.apply(BBMStakingRewards)));
+    }
+
+    public static BBMStakingRewards fromMod(@NonNull final BBMStakingRewards networkBBMStakingRewards) {
+        return new BBMStakingRewards(
+                networkBBMStakingRewards.stakingRewardsActivated(),
+                networkBBMStakingRewards.totalStakedRewardStart(),
+                networkBBMStakingRewards.totalStakedStart(),
+                networkBBMStakingRewards.pendingRewards());
     }
 }

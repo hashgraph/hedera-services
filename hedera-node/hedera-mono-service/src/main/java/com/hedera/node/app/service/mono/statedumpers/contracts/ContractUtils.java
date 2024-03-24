@@ -78,20 +78,20 @@ public class ContractUtils {
 
     /** Returns the bytecodes for all the requested contracts */
     @NonNull
-    private static Collection</*@NonNull*/ Contract> getAllContractContents(
+    private static Collection</*@NonNull*/ BBMContract> getAllContractContents(
             @NonNull final VirtualMap<VirtualBlobKey, VirtualBlobValue> fileStore,
             @NonNull final Collection</*@NonNull*/ Integer> contractIds,
             @NonNull final Collection</*@NonNull*/ Integer> deletedContractIds) {
         Objects.requireNonNull(contractIds);
         Objects.requireNonNull(deletedContractIds);
 
-        final var codes = new ArrayList<Contract>(ESTIMATED_NUMBER_OF_CONTRACTS);
+        final var codes = new ArrayList<BBMContract>(ESTIMATED_NUMBER_OF_CONTRACTS);
         for (final var cid : contractIds) {
             final var vbk = new VirtualBlobKey(Type.CONTRACT_BYTECODE, cid);
             if (fileStore.containsKey(vbk)) {
                 final var blob = fileStore.get(vbk);
                 if (null != blob) {
-                    final var c = new Contract(
+                    final var c = new BBMContract(
                             new TreeSet<>(),
                             blob.getData(),
                             deletedContractIds.contains(cid) ? Validity.DELETED : Validity.ACTIVE);

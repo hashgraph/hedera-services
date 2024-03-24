@@ -20,7 +20,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
-public record StakingInfo(
+public record BBMStakingInfo(
         int number,
         long minStake,
         long maxStake,
@@ -31,9 +31,9 @@ public record StakingInfo(
         long stake,
         @NonNull long[] rewardSumHistory,
         int weight) {
-    public static StakingInfo fromMono(@NonNull final MerkleStakingInfo stakingInfo) {
+    public static BBMStakingInfo fromMono(@NonNull final MerkleStakingInfo stakingInfo) {
         Objects.requireNonNull(stakingInfo.getRewardSumHistory(), "rewardSumHistory");
-        return new StakingInfo(
+        return new BBMStakingInfo(
                 stakingInfo.getKey().intValue(),
                 stakingInfo.getMinStake(),
                 stakingInfo.getMaxStake(),

@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.statedumpers.associations;
+package com.hedera.node.app.service.mono.statedumpers.associations;
 
 import com.google.common.collect.ComparisonChain;
-import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.node.app.statedumpers.utils.Writer;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-record TokenAssociationId(long accountId, long tokenId) implements Comparable<TokenAssociationId> {
-    static TokenAssociationId fromMod(@NonNull final EntityIDPair pair) {
-        return new TokenAssociationId(
-                pair.accountId().accountNum(), pair.tokenId().tokenNum());
+public record BBMTokenAssociationId(long accountId, long tokenId) implements Comparable<BBMTokenAssociationId> {
+    public static BBMTokenAssociationId fromMono(@NonNull final EntityNumVirtualKey tokenRel) {
+        final var key =
+                BBMTokenAssociation.toLongsPair(BBMTokenAssociation.toPair(new EntityNumPair(tokenRel.getKeyAsLong())));
+        return new BBMTokenAssociationId(key.left(), key.right());
     }
 
     @Override
@@ -33,7 +35,7 @@ record TokenAssociationId(long accountId, long tokenId) implements Comparable<To
     }
 
     @Override
-    public int compareTo(TokenAssociationId o) {
+    public int compareTo(BBMTokenAssociationId o) {
         return ComparisonChain.start()
                 .compare(this.accountId, o.accountId)
                 .compare(this.tokenId, o.tokenId)

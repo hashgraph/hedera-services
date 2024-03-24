@@ -24,9 +24,9 @@ import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
-public record PayerRecord(TxnId transactionId, RichInstant consensusTime, EntityId payer) {
+public record BBMPayerRecord(TxnId transactionId, RichInstant consensusTime, EntityId payer) {
 
-    public static PayerRecord fromMod(@NonNull TransactionRecordEntry recordEntry) {
+    public static BBMPayerRecord fromMod(@NonNull TransactionRecordEntry recordEntry) {
         Objects.requireNonNull(recordEntry.transactionRecord(), "Record is null");
 
         var modTransactionId = recordEntry.transactionRecord().transactionID();
@@ -39,14 +39,14 @@ public record PayerRecord(TxnId transactionId, RichInstant consensusTime, Entity
                 modTransactionId.nonce());
         var consensusTimestamp = recordEntry.transactionRecord().consensusTimestamp();
 
-        return new PayerRecord(
+        return new BBMPayerRecord(
                 txnId,
                 new RichInstant(consensusTimestamp.seconds(), consensusTimestamp.nanos()),
                 EntityId.fromPbjAccountId(recordEntry.payerAccountId()));
     }
 
-    public static PayerRecord fromMono(@NonNull ExpirableTxnRecord record) {
-        return new PayerRecord(
+    public static BBMPayerRecord fromMono(@NonNull ExpirableTxnRecord record) {
+        return new BBMPayerRecord(
                 record.getTxnId(), record.getConsensusTime(), record.getTxnId().getPayerAccount());
     }
 }

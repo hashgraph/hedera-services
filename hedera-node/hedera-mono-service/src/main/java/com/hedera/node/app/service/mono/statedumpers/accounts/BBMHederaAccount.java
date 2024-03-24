@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.statedumpers.accounts;
+package com.hedera.node.app.service.mono.statedumpers.accounts;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Account.StakedIdOneOfType;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -30,7 +29,6 @@ import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
-import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public record HederaAccount(
+public record BBMHederaAccount(
         @Nullable AccountID accountId,
         @NonNull Bytes alias,
         @Nullable Key key,
@@ -78,12 +76,12 @@ public record HederaAccount(
 
     private static final AccountID MISSING_ACCOUNT_ID = AccountID.DEFAULT;
     public static final long ONE_HBAR_IN_TINYBARS = 100_000_000L;
-    public static final HederaAccount DUMMY_ACCOUNT = new HederaAccount(
+    public static final BBMHederaAccount DUMMY_ACCOUNT = new BBMHederaAccount(
             null, null, null, 0, 0, "", false, 0, 0, null, false, false, null, null, 0, 0, 0, 0, 0, false, 0, 0, 0,
             null, 0, 0, null, null, null, 0, false, null, false, 0);
 
-    public static HederaAccount fromMono(OnDiskAccount account) {
-        return new HederaAccount(
+    public static BBMHederaAccount fromMono(OnDiskAccount account) {
+        return new BBMHederaAccount(
                 AccountID.newBuilder().accountNum(account.getAccountNumber()).build(),
                 Bytes.wrap(account.getAlias().toByteArray()),
                 PbjConverter.asPbjKey(account.getKey()),
@@ -117,9 +115,11 @@ public record HederaAccount(
                 toAccountFungibleTokenAllowance(account.getFungibleTokenAllowances()),
                 account.getNumTreasuryTitles(),
                 account.isExpiredAndPendingRemoval(),
-                toBytes(account.getFirstContractStorageKey().getKey()),
+                account.getFirstContractStorageKey() == null
+                        ? Bytes.EMPTY
+                        : toBytes(account.getFirstContractStorageKey().getKey()),
                 account.isImmutable(),
-                account.getStakedNodeAddressBookId());
+                account.getStakedId() >= 0 ? -1 : account.getStakedNodeAddressBookId());
     }
 
     @NonNull
@@ -154,53 +154,11 @@ public record HederaAccount(
                 .toList();
     }
 
-    public static HederaAccount fromMod(OnDiskValue<Account> account) {
-        return new HederaAccount(
-                account.getValue().accountId(),
-                account.getValue().alias(),
-                account.getValue().key(),
-                account.getValue().expirationSecond(),
-                account.getValue().tinybarBalance(),
-                account.getValue().memo(),
-                account.getValue().deleted(),
-                account.getValue().stakedToMe(),
-                account.getValue().stakePeriodStart(),
-                account.getValue().stakedId(),
-                account.getValue().declineReward(),
-                account.getValue().receiverSigRequired(),
-                account.getValue().headTokenId(),
-                account.getValue().headNftId(),
-                account.getValue().headNftSerialNumber(),
-                account.getValue().numberOwnedNfts(),
-                account.getValue().maxAutoAssociations(),
-                account.getValue().usedAutoAssociations(),
-                account.getValue().numberAssociations(),
-                account.getValue().smartContract(),
-                account.getValue().numberPositiveBalances(),
-                account.getValue().ethereumNonce(),
-                account.getValue().stakeAtStartOfLastRewardedPeriod(),
-                account.getValue().autoRenewAccountId(),
-                account.getValue().autoRenewSeconds(),
-                account.getValue().contractKvPairsNumber(),
-                account.getValue().cryptoAllowances(),
-                account.getValue().approveForAllNftAllowances(),
-                account.getValue().tokenAllowances(),
-                account.getValue().numberTreasuryTitles(),
-                account.getValue().expiredAndPendingRemoval(),
-                account.getValue().firstContractStorageKey(),
-                isAccountImmutable(account.getValue()),
-                account.getValue().stakedNodeId() != null ? account.getValue().stakedNodeId() : 0);
-    }
-
     private static final AccountID immutableAccount1 =
             AccountID.newBuilder().accountNum(800).build();
     private static final AccountID immutableAccount2 =
             AccountID.newBuilder().accountNum(801).build();
-    private static final List<AccountID> immutableAccounts = List.of(immutableAccount1, immutableAccount2);
-
-    private static boolean isAccountImmutable(Account account) {
-        return immutableAccounts.contains(account.accountId());
-    }
+    public static final List<AccountID> immutableAccounts = List.of(immutableAccount1, immutableAccount2);
 
     public boolean isImmutable() {
         return immutable;

@@ -16,23 +16,29 @@
 
 package com.hedera.node.app.statedumpers.topics;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey;
 import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.getMaybeStringifyByteString;
 import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.quoteForCsv;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.topics.BBMTopic;
 import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
+import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.statedumpers.utils.FieldBuilder;
-import com.hedera.node.app.statedumpers.utils.Writer;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -76,7 +82,7 @@ public class TopicDumpUtils {
                                 try {
                                     mappings.add(Pair.of(
                                             Long.valueOf(p.left().getKey().topicNum()),
-                                            BBMTopic.fromMod(p.right().getValue())));
+                                            fromMod(p.right().getValue())));
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
@@ -149,5 +155,19 @@ public class TopicDumpUtils {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, topic));
         writer.writeln(fb);
+    }
+
+    static BBMTopic fromMod(@NonNull final com.hedera.hapi.node.state.consensus.Topic topic) {
+        return new BBMTopic(
+                (int) topic.topicId().topicNum(),
+                topic.memo(),
+                RichInstant.fromJava(Instant.ofEpochSecond(topic.expirationSecond())),
+                topic.deleted(),
+                (JKey) fromPbjKey(topic.adminKey()).orElse(null),
+                (JKey) fromPbjKey(topic.submitKey()).orElse(null),
+                topic.runningHash().toByteArray(),
+                topic.sequenceNumber(),
+                topic.autoRenewPeriod(),
+                EntityId.fromNum(topic.autoRenewAccountId().accountNum()));
     }
 }

@@ -46,7 +46,7 @@ public class TokenAssociationsDumpUtils {
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableTokenRelations =
-                    gatherTokenRelations(associations, TokenAssociationId::fromMono, TokenAssociation::fromMono);
+                    gatherTokenRelations(associations, BBMTokenAssociationId::fromMono, BBMTokenAssociation::fromMono);
             reportOnTokenAssociations(writer, dumpableTokenRelations);
             System.out.printf(
                     "=== mono token associations report is %d bytes at checkpoint %s%n",
@@ -56,13 +56,13 @@ public class TokenAssociationsDumpUtils {
 
     @NonNull
     private static <K extends VirtualKey, V extends VirtualValue>
-            Map<TokenAssociationId, TokenAssociation> gatherTokenRelations(
+            Map<BBMTokenAssociationId, BBMTokenAssociation> gatherTokenRelations(
                     @NonNull final VirtualMap<K, V> source,
-                    @NonNull final Function<K, TokenAssociationId> keyMapper,
-                    @NonNull final Function<V, TokenAssociation> valueMapper) {
-        final var r = new HashMap<TokenAssociationId, TokenAssociation>();
+                    @NonNull final Function<K, BBMTokenAssociationId> keyMapper,
+                    @NonNull final Function<V, BBMTokenAssociation> valueMapper) {
+        final var r = new HashMap<BBMTokenAssociationId, BBMTokenAssociation>();
         final var threadCount = 8;
-        final var tokenAssociations = new ConcurrentLinkedQueue<Pair<TokenAssociationId, TokenAssociation>>();
+        final var tokenAssociations = new ConcurrentLinkedQueue<Pair<BBMTokenAssociationId, BBMTokenAssociation>>();
         try {
             VirtualMapLike.from(source)
                     .extractVirtualMapData(
@@ -80,7 +80,7 @@ public class TokenAssociationsDumpUtils {
     }
 
     private static void reportOnTokenAssociations(
-            @NonNull final Writer writer, @NonNull final Map<TokenAssociationId, TokenAssociation> associations) {
+            @NonNull final Writer writer, @NonNull final Map<BBMTokenAssociationId, BBMTokenAssociation> associations) {
         writer.writeln(formatHeader());
         associations.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -95,34 +95,34 @@ public class TokenAssociationsDumpUtils {
 
     // spotless:off
     @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, TokenAssociation>>> fieldFormatters = List.of(
-            Pair.of("accountId", getFieldFormatter(TokenAssociation::accountId, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("tokenId", getFieldFormatter(TokenAssociation::tokenId, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("balance", getFieldFormatter(TokenAssociation::balance, Object::toString)),
-            Pair.of("isFrozen", getFieldFormatter(TokenAssociation::isFrozen, Object::toString)),
-            Pair.of("isKycGranted", getFieldFormatter(TokenAssociation::isKycGranted, Object::toString)),
-            Pair.of("isAutomaticAssociation", getFieldFormatter(TokenAssociation::isAutomaticAssociation, Object::toString)),
-            Pair.of("prev", getFieldFormatter(TokenAssociation::prev, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("next", getFieldFormatter(TokenAssociation::next, ThingsToStrings::toStringOfEntityId))
+    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMTokenAssociation>>> fieldFormatters = List.of(
+            Pair.of("accountId", getFieldFormatter(BBMTokenAssociation::accountId, ThingsToStrings::toStringOfEntityId)),
+            Pair.of("tokenId", getFieldFormatter(BBMTokenAssociation::tokenId, ThingsToStrings::toStringOfEntityId)),
+            Pair.of("balance", getFieldFormatter(BBMTokenAssociation::balance, Object::toString)),
+            Pair.of("isFrozen", getFieldFormatter(BBMTokenAssociation::isFrozen, Object::toString)),
+            Pair.of("isKycGranted", getFieldFormatter(BBMTokenAssociation::isKycGranted, Object::toString)),
+            Pair.of("isAutomaticAssociation", getFieldFormatter(BBMTokenAssociation::isAutomaticAssociation, Object::toString)),
+            Pair.of("prev", getFieldFormatter(BBMTokenAssociation::prev, ThingsToStrings::toStringOfEntityId)),
+            Pair.of("next", getFieldFormatter(BBMTokenAssociation::next, ThingsToStrings::toStringOfEntityId))
     );
     // spotless:on
 
     @NonNull
-    static <T> BiConsumer<FieldBuilder, TokenAssociation> getFieldFormatter(
-            @NonNull final Function<TokenAssociation, T> fun, @NonNull final Function<T, String> formatter) {
+    static <T> BiConsumer<FieldBuilder, BBMTokenAssociation> getFieldFormatter(
+            @NonNull final Function<BBMTokenAssociation, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, u) -> formatField(fb, u, fun, formatter);
     }
 
     static <T> void formatField(
             @NonNull final FieldBuilder fb,
-            @NonNull final TokenAssociation tokenAssociation,
-            @NonNull final Function<TokenAssociation, T> fun,
+            @NonNull final BBMTokenAssociation tokenAssociation,
+            @NonNull final Function<BBMTokenAssociation, T> fun,
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(tokenAssociation)));
     }
 
     private static void formatTokenAssociation(
-            @NonNull final Writer writer, @NonNull final TokenAssociation tokenAssociation) {
+            @NonNull final Writer writer, @NonNull final BBMTokenAssociation tokenAssociation) {
         final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
         fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, tokenAssociation));
         writer.writeln(fb);

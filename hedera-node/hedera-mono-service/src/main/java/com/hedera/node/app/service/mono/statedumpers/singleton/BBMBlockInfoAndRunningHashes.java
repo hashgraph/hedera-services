@@ -25,7 +25,7 @@ import com.swirlds.common.crypto.Hash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-record BlockInfoAndRunningHashes(
+public record BBMBlockInfoAndRunningHashes(
         long lastBlockNumber,
         @NonNull String blockHashes,
         @Nullable RichInstant consTimeOfLastHandledTxn,
@@ -37,12 +37,12 @@ record BlockInfoAndRunningHashes(
         @Nullable Hash nMinus2RunningHash,
         @Nullable Hash nMinus3RunningHash) {
 
-    public static BlockInfoAndRunningHashes combineFromMono(
+    public static BBMBlockInfoAndRunningHashes combineFromMono(
             @NonNull final MerkleNetworkContext merkleNetworkContext,
             @NonNull final RecordsRunningHashLeaf recordsRunningHashLeaf) {
         requireNonNull(merkleNetworkContext);
         requireNonNull(recordsRunningHashLeaf);
-        return new BlockInfoAndRunningHashes(
+        return new BBMBlockInfoAndRunningHashes(
                 merkleNetworkContext.getAlignmentBlockNo(),
                 merkleNetworkContext.stringifiedBlockHashes(),
                 RichInstant.fromJava(merkleNetworkContext.consensusTimeOfLastHandledTxn()),
