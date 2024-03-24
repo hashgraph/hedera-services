@@ -27,7 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
@@ -768,9 +767,6 @@ class ContractCreateTransitionLogicTest {
                         Bytes.of(bytecode),
                         txnCtx.consensusTime()))
                 .willReturn(result);
-        given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
-                .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
         given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
 
         // when:
@@ -796,9 +792,6 @@ class ContractCreateTransitionLogicTest {
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
-        given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
-                .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
         final var result = TransactionProcessingResult.successful(
                 null,
                 1234L,
@@ -836,7 +829,6 @@ class ContractCreateTransitionLogicTest {
         verify(worldState).resetHapiSenderCustomizer();
         verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
         verify(accountStore).loadAccount(senderAccount.getId());
-        verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
         // and:
         final var customizerUsed = captor.getValue();
         final var changes = customizerUsed.accountCustomizer().getChanges();
@@ -857,9 +849,6 @@ class ContractCreateTransitionLogicTest {
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
-        given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
-                .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
 
         final var output = Bytes.of(123);
         final var result = TransactionProcessingResult.successful(
@@ -900,7 +889,6 @@ class ContractCreateTransitionLogicTest {
         verify(worldState).resetHapiSenderCustomizer();
         verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
         verify(accountStore).loadAccount(senderAccount.getId());
-        verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
         // and:
         final var customizerUsed = captor.getValue();
         final var changes = customizerUsed.accountCustomizer().getChanges();
@@ -920,9 +908,6 @@ class ContractCreateTransitionLogicTest {
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
-        given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
-                .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
         final var output = Bytes.of(123);
         final var result = TransactionProcessingResult.successful(
                 null, 1234L, 0L, 124L, output, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
@@ -961,7 +946,6 @@ class ContractCreateTransitionLogicTest {
         verify(worldState).resetHapiSenderCustomizer();
         verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
         verify(accountStore).loadAccount(senderAccount.getId());
-        verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
         sidecarUtilsMockedStatic.verify(() -> SidecarUtils.createContractBytecodeSidecarFrom(
                 contractAccount.getId().asGrpcContract(), output.toArrayUnsafe()));
         // and:
@@ -984,9 +968,6 @@ class ContractCreateTransitionLogicTest {
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
         given(worldState.get(senderAccount.getId().asEvmAddress())).willReturn(worldSenderAccount);
         given(worldSenderAccount.getNonce()).willReturn(5644L);
-        given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
-                .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
         final var result = TransactionProcessingResult.successful(
                 null, 1234L, 0L, 124L, Bytes.EMPTY, create1ContractAddress, Map.of(), new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
@@ -1019,7 +1000,6 @@ class ContractCreateTransitionLogicTest {
         verify(worldState).resetHapiSenderCustomizer();
         verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
         verify(accountStore).loadAccount(senderAccount.getId());
-        verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
         // and:
         final var customizerUsed = captor.getValue();
         final var changes = customizerUsed.accountCustomizer().getChanges();
@@ -1040,9 +1020,6 @@ class ContractCreateTransitionLogicTest {
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
         given(worldState.get(senderAccount.getId().asEvmAddress())).willReturn(worldSenderAccount);
         given(worldSenderAccount.getNonce()).willReturn(5644L);
-        given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
-                .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
 
         final var output = Bytes.of(123);
         final var result = TransactionProcessingResult.successful(
@@ -1094,7 +1071,6 @@ class ContractCreateTransitionLogicTest {
         verify(worldState).resetHapiSenderCustomizer();
         verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
         verify(accountStore).loadAccount(senderAccount.getId());
-        verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
         verify(recordsHistorian)
                 .trackFirstFollowingChildRecord(
                         nextChildRecordSourceId, opBuilder, recordBuilder, List.of(sidecarRecord));
@@ -1121,9 +1097,6 @@ class ContractCreateTransitionLogicTest {
         given(txnCtx.accessor()).willReturn(accessor);
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
         given(worldState.getContractNonces()).willReturn(targetContractNonces);
-        given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
-                .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
         final var result = TransactionProcessingResult.successful(
                 null,
                 1234L,
@@ -1162,7 +1135,6 @@ class ContractCreateTransitionLogicTest {
         verify(worldState).resetHapiSenderCustomizer();
         verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
         verify(accountStore).loadAccount(senderAccount.getId());
-        verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
         // and:
         final var customizerUsed = captor.getValue();
         final var changes = customizerUsed.accountCustomizer().getChanges();

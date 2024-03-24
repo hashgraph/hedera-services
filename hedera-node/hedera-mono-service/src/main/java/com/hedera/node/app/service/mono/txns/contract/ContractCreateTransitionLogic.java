@@ -29,7 +29,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTEC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
@@ -167,13 +166,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         // https://github.com/hashgraph/hedera-services/issues/3037
         if (key.isEmpty()) {
             key = STANDIN_CONTRACT_ID_KEY;
-        }
-
-        if (op.hasAutoRenewAccountId()) {
-            final var autoRenewAccountId = Id.fromGrpcAccount(op.getAutoRenewAccountId());
-            final var autoRenewAccount =
-                    accountStore.loadAccountOrFailWith(autoRenewAccountId, INVALID_AUTORENEW_ACCOUNT);
-            validateFalse(autoRenewAccount.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
         }
 
         // --- Load the model objects ---
