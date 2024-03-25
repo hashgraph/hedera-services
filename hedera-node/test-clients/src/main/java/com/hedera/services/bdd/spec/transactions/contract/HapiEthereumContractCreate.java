@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSp
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
@@ -145,6 +146,9 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.permissiblePrechecks = contractCreate.getPermissiblePrechecks();
         this.payer = contractCreate.getPayer();
         this.fee = contractCreate.getFee();
+
+        // todo check if 5 hbars is proper value - copied from HapiEthereumCall
+        this.maxGasAllowance = Optional.of(FIVE_HBARS);
     }
 
     private Optional<Long> mapBalance(Optional<Long> balance) {
