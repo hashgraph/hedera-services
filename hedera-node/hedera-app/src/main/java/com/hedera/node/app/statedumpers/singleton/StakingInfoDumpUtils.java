@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.statedumpers.singleton;
 
+import static com.hedera.node.app.service.mono.statedumpers.singleton.StakingInfoDumpUtils.reportOnStakingInfo;
+
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
@@ -24,38 +26,14 @@ import com.hedera.node.app.service.mono.statedumpers.singleton.BBMStakingInfo;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
-import com.hedera.node.app.statedumpers.utils.FieldBuilder;
-import com.swirlds.base.utility.Pair;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class StakingInfoDumpUtils {
-
-    static final String FIELD_SEPARATOR = ";";
-
-    @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, BBMStakingInfo>>> fieldFormatters = List.of(
-            Pair.of("number", getFieldFormatter(BBMStakingInfo::number, Object::toString)),
-            Pair.of("minStake", getFieldFormatter(BBMStakingInfo::minStake, Object::toString)),
-            Pair.of("maxStake", getFieldFormatter(BBMStakingInfo::maxStake, Object::toString)),
-            Pair.of("stakeToReward", getFieldFormatter(BBMStakingInfo::stakeToReward, Object::toString)),
-            Pair.of("stakeToNotReward", getFieldFormatter(BBMStakingInfo::stakeToNotReward, Object::toString)),
-            Pair.of("stakeRewardStart", getFieldFormatter(BBMStakingInfo::stakeRewardStart, Object::toString)),
-            Pair.of(
-                    "unclaimedStakeRewardStart",
-                    getFieldFormatter(BBMStakingInfo::unclaimedStakeRewardStart, Object::toString)),
-            Pair.of("stake", getFieldFormatter(BBMStakingInfo::stake, Object::toString)),
-            Pair.of("rewardSumHistory", getFieldFormatter(BBMStakingInfo::rewardSumHistory, Arrays::toString)),
-            Pair.of("weight", getFieldFormatter(BBMStakingInfo::weight, Object::toString)));
 
     public static void dumpModStakingInfo(
             @NonNull final Path path,
@@ -70,7 +48,7 @@ public class StakingInfoDumpUtils {
         int reportSize;
         try (@NonNull final var writer = new Writer(path)) {
             reportSummary(writer, allBBMStakingInfo);
-            reportOnBBMStakingInfo(writer, allBBMStakingInfo);
+            reportOnStakingInfo(writer, allBBMStakingInfo);
             reportSize = writer.getSize();
         }
 
@@ -90,59 +68,6 @@ public class StakingInfoDumpUtils {
     static void reportSummary(@NonNull Writer writer, @NonNull Map<Long, BBMStakingInfo> BBMStakingInfo) {
         writer.writeln("=== %7d: staking info".formatted(BBMStakingInfo.size()));
         writer.writeln("");
-    }
-
-    static void reportOnBBMStakingInfo(@NonNull Writer writer, @NonNull Map<Long, BBMStakingInfo> BBMStakingInfo) {
-        writer.writeln(formatHeader());
-        BBMStakingInfo.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> formatBBMStakingInfo(writer, e.getValue()));
-        writer.writeln("");
-    }
-
-    static void formatBBMStakingInfo(@NonNull final Writer writer, @NonNull final BBMStakingInfo BBMStakingInfo) {
-        final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, BBMStakingInfo));
-        writer.writeln(fb);
-    }
-
-    @NonNull
-    static String formatHeader() {
-        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
-    }
-
-    static <T> BiConsumer<FieldBuilder, BBMStakingInfo> getFieldFormatter(
-            @NonNull final Function<BBMStakingInfo, T> fun, @NonNull final Function<T, String> formatter) {
-        return (fb, t) -> formatField(fb, t, fun, formatter);
-    }
-
-    static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
-        return t -> null != t ? formatter.apply(t) : "";
-    }
-
-    static <T> void formatField(
-            @NonNull final FieldBuilder fb,
-            @NonNull final BBMStakingInfo BBMStakingInfo,
-            @NonNull final Function<BBMStakingInfo, T> fun,
-            @NonNull final Function<T, String> formatter) {
-        fb.append(formatter.apply(fun.apply(BBMStakingInfo)));
-    }
-
-    static <T> Function<List<T>, String> getListFormatter(
-            @NonNull final Function<T, String> formatter, @NonNull final String subfieldSeparator) {
-        return lt -> {
-            if (!lt.isEmpty()) {
-                final var sb = new StringBuilder();
-                for (@NonNull final var e : lt) {
-                    final var v = formatter.apply(e);
-                    sb.append(v);
-                    sb.append(subfieldSeparator);
-                }
-                // Remove last subfield separator
-                if (sb.length() >= subfieldSeparator.length()) sb.setLength(sb.length() - subfieldSeparator.length());
-                return sb.toString();
-            } else return "";
-        };
     }
 
     public static BBMStakingInfo fromMod(@NonNull final StakingNodeInfo BBMStakingInfo) {

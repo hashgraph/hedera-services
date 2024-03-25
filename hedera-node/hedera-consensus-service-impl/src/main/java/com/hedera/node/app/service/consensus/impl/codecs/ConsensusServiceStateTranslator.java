@@ -69,8 +69,7 @@ public class ConsensusServiceStateTranslator {
         topicBuilder.autoRenewPeriod(monoTopic.getAutoRenewDurationSeconds());
         final var autoRenewAccountId = monoTopic.getAutoRenewAccountId();
         topicBuilder.autoRenewAccountId(autoRenewAccountId.toPbjAccountId());
-        topicBuilder.expirationSecond(
-                monoTopic.getExpirationTimestamp().toJava().toEpochMilli());
+        topicBuilder.expirationSecond(monoTopic.getExpirationTimestamp().getSeconds());
         topicBuilder.runningHash(Bytes.wrap(monoTopic.getRunningHash()));
         topicBuilder.sequenceNumber(monoTopic.getSequenceNumber());
         topicBuilder.deleted(monoTopic.isDeleted());

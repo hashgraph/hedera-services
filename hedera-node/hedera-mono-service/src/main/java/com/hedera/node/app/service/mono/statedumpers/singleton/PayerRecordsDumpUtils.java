@@ -37,7 +37,7 @@ public class PayerRecordsDumpUtils {
     static final String FIELD_SEPARATOR = ";";
 
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, BBMPayerRecord>>> fieldFormatters = List.of(
+    static List<Pair<String, BiConsumer<FieldBuilder, BBMPayerRecord>>> payerRecordFieldFormatters = List.of(
             Pair.of("txnId", getFieldFormatter(BBMPayerRecord::transactionId, Object::toString)),
             Pair.of(
                     "consensusTime",
@@ -63,7 +63,7 @@ public class PayerRecordsDumpUtils {
         return listTxnRecords;
     }
 
-    static void reportOnTxnRecords(@NonNull Writer writer, @NonNull List<BBMPayerRecord> records) {
+    public static void reportOnTxnRecords(@NonNull Writer writer, @NonNull List<BBMPayerRecord> records) {
         writer.writeln(formatHeader());
         records.stream()
                 .sorted(Comparator.comparing(BBMPayerRecord::consensusTime))
@@ -71,15 +71,15 @@ public class PayerRecordsDumpUtils {
         writer.writeln("");
     }
 
-    static void formatRecords(@NonNull final Writer writer, @NonNull final BBMPayerRecord record) {
+    public static void formatRecords(@NonNull final Writer writer, @NonNull final BBMPayerRecord record) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, record));
+        payerRecordFieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, record));
         writer.writeln(fb);
     }
 
     @NonNull
     static String formatHeader() {
-        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
+        return payerRecordFieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 
     private static <T> BiConsumer<FieldBuilder, BBMPayerRecord> getFieldFormatter(

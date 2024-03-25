@@ -62,22 +62,22 @@ public class TopicDumpUtils {
         return allTopics;
     }
 
-    private static void reportOnTopics(@NonNull Writer writer, @NonNull Map<Long, BBMTopic> topics) {
-        writer.writeln(formatHeader());
+    public static void reportOnTopics(@NonNull Writer writer, @NonNull Map<Long, BBMTopic> topics) {
+        writer.writeln(formatBBMTopicHeader());
         topics.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> formatTopic(writer, e.getValue()));
         writer.writeln("");
     }
 
     @NonNull
-    private static String formatHeader() {
-        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
+    public static String formatBBMTopicHeader() {
+        return bbmTopicFieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 
     @NonNull
-    private static List<Pair<String, BiConsumer<FieldBuilder, BBMTopic>>> fieldFormatters = List.of(
+    public static List<Pair<String, BiConsumer<FieldBuilder, BBMTopic>>> bbmTopicFieldFormatters = List.of(
             Pair.of("number", getFieldFormatter(BBMTopic::number, Object::toString)),
             Pair.of("memo", getFieldFormatter(BBMTopic::memo, csvQuote)),
-            Pair.of("expiry", getFieldFormatter(BBMTopic::expirationTimestamp, ThingsToStrings::toStringOfRichInstant)),
+            Pair.of("expiry", getFieldFormatter(BBMTopic::expirationSeconds, Object::toString)),
             Pair.of("deleted", getFieldFormatter(BBMTopic::deleted, booleanFormatter)),
             Pair.of(
                     "adminKey",
@@ -113,9 +113,9 @@ public class TopicDumpUtils {
         return t -> null != t ? formatter.apply(t) : "";
     }
 
-    private static void formatTopic(@NonNull final Writer writer, @NonNull final BBMTopic topic) {
+    public static void formatTopic(@NonNull final Writer writer, @NonNull final BBMTopic topic) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, topic));
+        bbmTopicFieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, topic));
         writer.writeln(fb);
     }
 }

@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.statedumpers.topics;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -27,7 +26,7 @@ import java.util.Objects;
 public record BBMTopic(
         int number,
         @NonNull String memo,
-        @NonNull RichInstant expirationTimestamp,
+        @NonNull long expirationSeconds,
         boolean deleted,
         @NonNull JKey adminKey,
         @NonNull JKey submitKey,
@@ -40,7 +39,7 @@ public record BBMTopic(
         this(
                 topic.getKey().intValue(),
                 topic.getMemo(),
-                topic.getExpirationTimestamp(),
+                topic.getExpirationTimestamp().getSeconds(),
                 topic.isDeleted(),
                 topic.getAdminKey(),
                 topic.getSubmitKey(),

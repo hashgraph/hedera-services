@@ -39,7 +39,7 @@ public class StakingInfoDumpUtils {
     static final String FIELD_SEPARATOR = ";";
 
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, BBMStakingInfo>>> fieldFormatters = List.of(
+    public static List<Pair<String, BiConsumer<FieldBuilder, BBMStakingInfo>>> stakingInfoFieldFormatters = List.of(
             Pair.of("number", getFieldFormatter(BBMStakingInfo::number, Object::toString)),
             Pair.of("minStake", getFieldFormatter(BBMStakingInfo::minStake, Object::toString)),
             Pair.of("maxStake", getFieldFormatter(BBMStakingInfo::maxStake, Object::toString)),
@@ -79,12 +79,12 @@ public class StakingInfoDumpUtils {
         return allStakingInfo;
     }
 
-    static void reportSummary(@NonNull Writer writer, @NonNull Map<Long, BBMStakingInfo> stakingInfo) {
+    public static void reportSummary(@NonNull Writer writer, @NonNull Map<Long, BBMStakingInfo> stakingInfo) {
         writer.writeln("=== %7d: staking info".formatted(stakingInfo.size()));
         writer.writeln("");
     }
 
-    static void reportOnStakingInfo(@NonNull Writer writer, @NonNull Map<Long, BBMStakingInfo> stakingInfo) {
+    public static void reportOnStakingInfo(@NonNull Writer writer, @NonNull Map<Long, BBMStakingInfo> stakingInfo) {
         writer.writeln(formatHeader());
         stakingInfo.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -94,16 +94,16 @@ public class StakingInfoDumpUtils {
 
     static void formatStakingInfo(@NonNull final Writer writer, @NonNull final BBMStakingInfo stakingInfo) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, stakingInfo));
+        stakingInfoFieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, stakingInfo));
         writer.writeln(fb);
     }
 
     @NonNull
     static String formatHeader() {
-        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
+        return stakingInfoFieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 
-    static <T> BiConsumer<FieldBuilder, BBMStakingInfo> getFieldFormatter(
+    public static <T> BiConsumer<FieldBuilder, BBMStakingInfo> getFieldFormatter(
             @NonNull final Function<BBMStakingInfo, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
     }

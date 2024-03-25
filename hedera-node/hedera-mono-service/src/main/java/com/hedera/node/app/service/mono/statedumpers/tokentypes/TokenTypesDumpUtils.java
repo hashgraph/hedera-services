@@ -49,7 +49,7 @@ public class TokenTypesDumpUtils {
     static Function<String, String> csvQuote = s -> ThingsToStrings.quoteForCsv(FIELD_SEPARATOR, s);
     // spotless:off
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, BBMToken>>> fieldFormatters = List.of(
+    public static List<Pair<String, BiConsumer<FieldBuilder, BBMToken>>> tokenTypeFieldFormatters = List.of(
             Pair.of("tokenType", getFieldFormatter(BBMToken::tokenType, com.hedera.node.app.service.evm.store.tokens.TokenType::name)),
             Pair.of("tokenSupplyType", getFieldFormatter(BBMToken::tokenSupplyType, TokenSupplyType::name)),
             Pair.of("tokenTypeId", getFieldFormatter(BBMToken::tokenTypeId, Object::toString)),
@@ -107,7 +107,7 @@ public class TokenTypesDumpUtils {
         return allTokens;
     }
 
-    private static void dump(@NonNull Writer writer, @NonNull Map<TokenType, Map<Long, BBMToken>> allTokens) {
+    public static void dump(@NonNull Writer writer, @NonNull Map<TokenType, Map<Long, BBMToken>> allTokens) {
         reportSummary(writer, allTokens);
 
         reportOnTokens(writer, "fungible", allTokens.get(TokenType.FUNGIBLE_COMMON));
@@ -128,7 +128,7 @@ public class TokenTypesDumpUtils {
         writer.writeln("");
     }
 
-    private static void reportOnTokens(
+    public static void reportOnTokens(
             @NonNull final Writer writer, @NonNull final String type, @NonNull final Map<Long, BBMToken> tokens) {
         writer.writeln("=== %s token types%n".formatted(type));
         writer.writeln(formatHeader());
@@ -179,7 +179,7 @@ public class TokenTypesDumpUtils {
     }
 
     @NonNull
-    static <T> BiConsumer<FieldBuilder, BBMToken> getFieldFormatter(
+    public static <T> BiConsumer<FieldBuilder, BBMToken> getFieldFormatter(
             @NonNull final Function<BBMToken, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);
     }
@@ -192,11 +192,11 @@ public class TokenTypesDumpUtils {
         fb.append(formatter.apply(fun.apply(token)));
     }
 
-    static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
+    public static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
         return t -> null != t ? formatter.apply(t) : "";
     }
 
-    static <T> Function<List<T>, String> getListFormatter(
+    public static <T> Function<List<T>, String> getListFormatter(
             @NonNull final Function<T, String> formatter, @NonNull final String subfieldSeparator) {
         return lt -> {
             if (!lt.isEmpty()) {
@@ -215,7 +215,7 @@ public class TokenTypesDumpUtils {
 
     static void formatToken(@NonNull final Writer writer, @NonNull final BBMToken token) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, token));
+        tokenTypeFieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, token));
         writer.writeln(fb);
     }
 
@@ -223,7 +223,8 @@ public class TokenTypesDumpUtils {
         return ot -> ot.isPresent() ? formatter.apply(ot.get()) : "";
     }
 
-    static Function<Optional<JKey>, String> getOptionalJKeyFormatter(@NonNull final Function<JKey, String> formatter) {
+    public static Function<Optional<JKey>, String> getOptionalJKeyFormatter(
+            @NonNull final Function<JKey, String> formatter) {
         return ot -> {
             if (ot.isPresent()) {
                 return ot.get().isValid() ? formatter.apply(ot.get()) : "<invalid-key>";
@@ -234,7 +235,7 @@ public class TokenTypesDumpUtils {
 
     @NonNull
     static String formatHeader() {
-        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
+        return tokenTypeFieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 
     public static boolean jkeyPresentAndOk(@NonNull Optional<JKey> ojkey) {

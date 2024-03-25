@@ -34,7 +34,7 @@ public class StakingRewardsDumpUtils {
     static Function<Boolean, String> booleanFormatter = b -> b ? "T" : "";
 
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, BBMStakingRewards>>> fieldFormatters = List.of(
+    static List<Pair<String, BiConsumer<FieldBuilder, BBMStakingRewards>>> stakingRewardFieldFormatters = List.of(
             Pair.of(
                     "stakingRewardsActivated",
                     getFieldFormatter(BBMStakingRewards::stakingRewardsActivated, booleanFormatter)),
@@ -64,15 +64,16 @@ public class StakingRewardsDumpUtils {
         writer.writeln("");
     }
 
-    static void formatStakingRewards(@NonNull final Writer writer, @NonNull final BBMStakingRewards stakingRewards) {
+    public static void formatStakingRewards(
+            @NonNull final Writer writer, @NonNull final BBMStakingRewards stakingRewards) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, stakingRewards));
+        stakingRewardFieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, stakingRewards));
         writer.writeln(fb);
     }
 
     @NonNull
-    static String formatHeader() {
-        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
+    public static String formatHeader() {
+        return stakingRewardFieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 
     static <T> BiConsumer<FieldBuilder, BBMStakingRewards> getFieldFormatter(
