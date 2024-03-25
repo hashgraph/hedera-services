@@ -111,7 +111,9 @@ public class ContractBytecodesDumpUtils {
             }
             return false;
         });
-        return Pair.of(new Contracts(knownContracts, contracts.deletedContracts(), contracts.registeredContractsCount()), zeroLengthContracts);
+        return Pair.of(
+                new Contracts(knownContracts, contracts.deletedContracts(), contracts.registeredContractsCount()),
+                zeroLengthContracts);
     }
 
     /** Returns all _unique_ contracts (by their bytecode) from the signed state.

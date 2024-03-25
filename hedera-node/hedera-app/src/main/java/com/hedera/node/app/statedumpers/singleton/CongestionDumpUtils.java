@@ -52,15 +52,15 @@ public class CongestionDumpUtils {
         final var gasThrottleUsageSnapshot = throttleUsageSnapshots.gasThrottle();
 
         // format the following two from `List<RichInstant>` to String
-        final var gasCongestionStarts = congestionLevelStarts.gasLevelStarts() != null ?
-                congestionLevelStarts.gasLevelStarts().stream()
-                .map(ThingsToStrings::toStringOfTimestamp)
-                .collect(Collectors.joining(", "))
+        final var gasCongestionStarts = congestionLevelStarts.gasLevelStarts() != null
+                ? congestionLevelStarts.gasLevelStarts().stream()
+                        .map(ThingsToStrings::toStringOfTimestamp)
+                        .collect(Collectors.joining(", "))
                 : "";
-        final var genericCongestionStarts =  congestionLevelStarts.genericLevelStarts() != null ?
-                congestionLevelStarts.genericLevelStarts().stream()
-                .map(ThingsToStrings::toStringOfTimestamp)
-                .collect(Collectors.joining(", "))
+        final var genericCongestionStarts = congestionLevelStarts.genericLevelStarts() != null
+                ? congestionLevelStarts.genericLevelStarts().stream()
+                        .map(ThingsToStrings::toStringOfTimestamp)
+                        .collect(Collectors.joining(", "))
                 : "";
 
         return new BBMCongestion(
