@@ -29,10 +29,12 @@ public class EventImplTest {
     @Test
     void validateEqualsHashCodeCompareTo() {
         final List<EventImpl> list = EqualsVerifier.generateObjects(
-                r -> TestingEventBuilder.builder()
-                        .setRandom(r)
-                        .setGeneration(r.nextLong(0, Long.MAX_VALUE))
-                        .buildEventImpl(),
+                random -> new EventImpl(
+                        TestingEventBuilder.builder(random)
+                                .setGeneration(random.nextLong(0, Long.MAX_VALUE))
+                                .build(),
+                        null,
+                        null),
                 new long[] {1, 1, 2});
         assertTrue(EqualsVerifier.verifyEqualsHashCode(list.get(0), list.get(1), list.get(2)));
         assertTrue(EqualsVerifier.verifyCompareTo(list.get(0), list.get(1), list.get(2)));
