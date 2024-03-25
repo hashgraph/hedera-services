@@ -88,6 +88,7 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
      *
      * @return the capacity available at this time
      */
+    @Override
     public double instantaneousPercentUsed() {
         if (lastDecisionTime == null) {
             return 0.0;
