@@ -25,6 +25,8 @@ public class InitialData {
 
     private static final Logger logger = LogManager.getLogger(InitialData.class);
 
+    private InitialData() {}
+
     /**
      * Populates seed data
      */

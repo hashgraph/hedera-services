@@ -22,9 +22,10 @@ import java.util.Map;
 
 /**
  * A service that supports crud operations for {@code <T>}
+ * Unless overridden, all operations throw {@link UnsupportedOperationException}
  * @param <T>
  */
-public class CrudService<T> {
+public abstract class CrudService<T> {
 
     private final Class<T> resultType;
 

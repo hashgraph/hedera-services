@@ -27,12 +27,3 @@ mainModuleInfo {
 }
 
 application.mainClass.set("com.swirlds.base.sample.BaseSampleMain")
-
-// IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
-tasks.withType<JavaExec> {
-    // Do not yet run things on the '--module-path'
-    modularity.inferModulePath.set(false)
-    if (name.endsWith("main()")) {
-        notCompatibleWithConfigurationCache("JavaExec created by IntelliJ")
-    }
-}

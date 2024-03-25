@@ -17,6 +17,7 @@
 package com.swirlds.base.sample.persistence;
 
 import com.swirlds.base.sample.domain.Item;
+import com.swirlds.base.sample.persistence.exception.EntityNotFoundException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;

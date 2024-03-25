@@ -22,7 +22,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import com.swirlds.base.sample.metrics.ApplicationMetrics;
-import com.swirlds.base.sample.persistence.EntityNotFoundException;
+import com.swirlds.base.sample.persistence.exception.EntityNotFoundException;
 import com.swirlds.base.sample.service.CrudService;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -117,7 +117,7 @@ public class AdapterHandler<T> implements HttpHandler {
         context.metrics().getOrCreate(ApplicationMetrics.REQUEST_TOTAL).increment();
         context.metrics().getOrCreate(ApplicationMetrics.REQUEST_AVG_TIME).update(duration);
         tps.count();
-        if (statusCode - 200 >= 100) {
+        if (statusCode >= 300) {
             context.metrics().getOrCreate(ApplicationMetrics.ERROR_TOTAL).increment();
         }
         exchange.sendResponseHeaders(statusCode, response.getBytes().length);
@@ -158,8 +158,7 @@ public class AdapterHandler<T> implements HttpHandler {
     }
 
     private @NonNull String getControllerName() {
-        return DataTransferUtils.urlToList(this.path)
-                .get(DataTransferUtils.urlToList(this.path).size() - 1);
+        return DataTransferUtils.urlToList(this.path).getLast();
     }
 
     @Override

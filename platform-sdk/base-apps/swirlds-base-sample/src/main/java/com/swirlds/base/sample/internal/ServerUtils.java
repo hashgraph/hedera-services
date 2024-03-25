@@ -37,14 +37,16 @@ import org.apache.logging.log4j.Logger;
 public class ServerUtils {
     private static final Logger logger = LogManager.getLogger(ServerUtils.class);
 
+    private ServerUtils() {}
+
     /**
      * Creates and starts a Http server with a set of defined handlers
      */
     public static void createServer(final @NonNull BaseApiConfig config, final @NonNull Context swirldsContext)
             throws IOException {
         // Create HTTP server instance
-        HttpServerProvider provider = HttpServerProvider.provider();
-        HttpServer server = provider.createHttpServer(new InetSocketAddress(config.host(), config.port()), 0);
+        final HttpServerProvider provider = HttpServerProvider.provider();
+        final HttpServer server = provider.createHttpServer(new InetSocketAddress(config.host(), config.port()), 0);
 
         final List<AdapterHandler<?>> handlers = createHandlers(config, swirldsContext, server);
 

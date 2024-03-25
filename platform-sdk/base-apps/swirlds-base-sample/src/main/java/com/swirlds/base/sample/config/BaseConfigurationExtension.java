@@ -36,8 +36,6 @@ public class BaseConfigurationExtension implements ConfigurationExtension {
     @NonNull
     public Set<Class<? extends Record>> getConfigDataTypes() {
 
-        // Please keep lists in this method alphabetized (enforced by unit test).
-
         // Load Configuration Definitions
         return Set.of(BaseApiConfig.class, BasicCommonConfig.class, MetricsConfig.class, PrometheusConfig.class);
     }

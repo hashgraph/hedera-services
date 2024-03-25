@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.sample.persistence;
+package com.swirlds.base.sample.persistence.exception;
 
 import com.swirlds.base.sample.domain.Item;
 
+/**
+ * Exception that indicates that the searched entity was not found in the system
+ */
 public class EntityNotFoundException extends RuntimeException {
     private final Class<Item> entityType;
     private final String id;

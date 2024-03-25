@@ -24,7 +24,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -112,16 +111,6 @@ public class DataTransferUtils {
     }
 
     /**
-     * Separate the requestUri into a list of components.
-     *
-     * @param exchange Http exchange
-     * @return the path components of the URL
-     */
-    public static @NonNull List<String> urlToList(final @NonNull HttpExchange exchange) {
-        return urlToList(exchange.getRequestURI().toString());
-    }
-
-    /**
      * Separate the path into a list of components.
      *
      * @param path the url
@@ -146,15 +135,11 @@ public class DataTransferUtils {
             String[] pairs = query.split("&");
             for (String pair : pairs) {
                 int idx = pair.indexOf("=");
-                try {
-                    String key = idx > 0 ? URLDecoder.decode(pair.substring(0, idx), "UTF-8") : pair;
-                    String value = idx > 0 && pair.length() > idx + 1
-                            ? URLDecoder.decode(pair.substring(idx + 1), "UTF-8")
-                            : null;
-                    params.put(key, value);
-                } catch (UnsupportedEncodingException e) {
-                    // Handle the exception as needed
-                }
+                String key = idx > 0 ? URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8) : pair;
+                String value = idx > 0 && pair.length() > idx + 1
+                        ? URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8)
+                        : null;
+                params.put(key, value);
             }
         }
         return params;
