@@ -193,15 +193,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
 
-        final var replacedOp = getReplacedOp();
-        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, spenderId);
-        final var tokenRel = writableTokenRelStore.get(tokenReceiverId, fungibleTokenId);
-        writableTokenRelStore.put(tokenRel.copyBuilder()
-                .kycGranted(true)
-                .accountId(tokenReceiverId)
-                .build());
-
-        assertThatThrownBy(() -> adjustFungibleTokenChangesStep.doIn(transferContext))
+        assertThatThrownBy(this::getReplacedOp)
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE));
     }

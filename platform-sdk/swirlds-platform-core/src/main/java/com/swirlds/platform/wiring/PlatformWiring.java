@@ -206,7 +206,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
 
-        //        futureEventBufferWiring = FutureEventBufferWiring.create(schedulers.futureEventBufferScheduler());
         gossipWiring = GossipWiring.create(model);
         eventWindowManagerWiring = EventWindowManagerWiring.create(model);
 

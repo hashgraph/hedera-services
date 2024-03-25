@@ -138,6 +138,21 @@ public interface RecordsHistorian {
 
     /**
      * Adds the given in-progress child record to the active transaction, where its synthetic
+     * consensus timestamp will come <i>after</i> that of the parent user transaction.
+     *
+     * @param sourceId the id of the child record source
+     * @param recordSoFar the in-progress child record
+     * @param syntheticBody the synthetic body for the child record
+     * @param sidecars the sidecar records associated with this child transaction
+     */
+    void trackFirstFollowingChildRecord(
+            int sourceId,
+            TransactionBody.Builder syntheticBody,
+            ExpirableTxnRecord.Builder recordSoFar,
+            List<TransactionSidecarRecord.Builder> sidecars);
+
+    /**
+     * Adds the given in-progress child record to the active transaction, where its synthetic
      * consensus timestamp will come <i>before</i> that of the parent user transaction.
      *
      * @param sourceId the id of the child record source

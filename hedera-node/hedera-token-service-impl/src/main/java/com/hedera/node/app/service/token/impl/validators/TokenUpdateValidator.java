@@ -62,6 +62,10 @@ public class TokenUpdateValidator {
         if (op.hasMemo()) {
             context.attributeValidator().validateMemo(op.memo());
         }
+        // validate metadata
+        if (op.hasMetadata()) {
+            validator.validateTokenMetadata(op.metadataOrThrow(), tokensConfig);
+        }
         // validate token symbol, if being changed
         if (op.symbol() != null && !op.symbol().isEmpty()) {
             validator.validateTokenSymbol(op.symbol(), tokensConfig);
@@ -78,7 +82,8 @@ public class TokenUpdateValidator {
                 op.hasSupplyKey(), op.supplyKey(),
                 op.hasFreezeKey(), op.freezeKey(),
                 op.hasFeeScheduleKey(), op.feeScheduleKey(),
-                op.hasPauseKey(), op.pauseKey());
+                op.hasPauseKey(), op.pauseKey(),
+                op.hasMetadataKey(), op.metadataKey());
 
         // Check whether there is change on the following properties in the transaction body
         // If no change occurred, no need to change them or validate them
@@ -107,7 +112,7 @@ public class TokenUpdateValidator {
         getIfUsable(resolvedAutoRenewId, readableAccountStore, expiryValidator, INVALID_AUTORENEW_ACCOUNT);
         // If token has an existing auto-renewal account, validate its expiration
         // FUTURE : Not sure why we should validate existing auto-renew account. Retained as in mono-service
-        if (!resolvedAutoRenewId.equals(AccountID.DEFAULT)) {
+        if (!resolvedAutoRenewId.equals(AccountID.DEFAULT) && existingAutoRenewId != null) {
             getIfUsable(existingAutoRenewId, readableAccountStore, expiryValidator, INVALID_AUTORENEW_ACCOUNT);
         }
     }

@@ -120,6 +120,14 @@ public class BaseHederaLedgerTestHelper {
             long nextId = NEXT_ID;
 
             @Override
+            public long getCurrentNum() {
+                return 0;
+            }
+
+            @Override
+            public void setCurrentNum(long num) {}
+
+            @Override
             public TopicID newTopicId(final AccountID sponsor) {
                 return TopicID.newBuilder().setTopicNum(nextId++).build();
             }

@@ -76,7 +76,7 @@ public class FilesDumpUtils {
     }
 
     @NonNull
-    private static Map<FileId, HederaFile> gatherModFiles(VirtualMap<OnDiskKey<FileID>, OnDiskValue<File>> source) {
+    public static Map<FileId, HederaFile> gatherModFiles(VirtualMap<OnDiskKey<FileID>, OnDiskValue<File>> source) {
         final var r = new HashMap<FileId, HederaFile>();
         final var threadCount = 8;
         final var files = new ConcurrentLinkedQueue<Pair<FileId, HederaFile>>();

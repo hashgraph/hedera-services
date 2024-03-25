@@ -17,14 +17,18 @@
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
@@ -270,6 +274,9 @@ public class HandleWorkflow {
             }
         }
 
+        // Update all throttle metrics once per round
+        throttleServiceManager.updateAllMetrics();
+
         // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
@@ -306,7 +313,7 @@ public class HandleWorkflow {
         final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
 
         // Setup record builder list
-        final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state);
+        final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state, platformState);
         final var recordListBuilder = new RecordListBuilder(consensusNow);
         final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
 
@@ -434,19 +441,14 @@ public class HandleWorkflow {
                     verifier,
                     preHandleResult,
                     readableStoreFactory,
-                    fees,
+                    networkUtilizationManager,
+                    context,
+                    dispatcher,
+                    stack,
                     platformEvent.getCreatorId().id());
 
             final var hasWaivedFees = authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody);
             if (validationResult.status() != SO_FAR_SO_GOOD) {
-                final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
-                if (sigVerificationFailed) {
-                    // If the signature status isn't ok, only work done will be fee charging
-                    // Note this is how it's implemented in mono (TopLevelTransition.java#L93), in future we may want to
-                    // not trackFeePayments() only for INVALID_SIGNATURE but for any preCheckResult.status() !=
-                    // SO_FAR_SO_GOOD
-                    networkUtilizationManager.trackFeePayments(payer, consensusNow, stack);
-                }
                 recordBuilder.status(validationResult.responseCodeEnum());
                 try {
                     // If the payer is authorized to waive fees, then we don't charge them
@@ -512,7 +514,6 @@ public class HandleWorkflow {
                     }
                     finalizeHollowAccounts(context, configuration, hollowAccounts, verifier, maybeEthTxVerification);
 
-                    networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
                     // If the payer is authorized to waive fees, then we don't charge them
                     if (!hasWaivedFees) {
                         // privileged transactions are not charged fees
@@ -588,14 +589,19 @@ public class HandleWorkflow {
             }
         }
 
+        if (isFirstTransaction || consensusNow.getEpochSecond() > consTimeOfLastHandledTxn.getEpochSecond()) {
+            handleWorkflowMetrics.switchConsensusSecond();
+        }
+
         // After a contract operation was handled (i.e., not throttled), update the
         // gas throttle by leaking any unused gas
         if (isGasThrottled(transactionInfo.functionality())
                 && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
                 && recordBuilder.hasContractResult()) {
+            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
+            handleWorkflowMetrics.addGasUsed(gasUsed);
             final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
             if (contractsConfig.throttleThrottleByGas()) {
-                final var gasUsed = recordBuilder.getGasUsedForContractTxn();
                 final var gasLimitForContractTx =
                         getGasLimitForContractTx(transactionInfo.txBody(), transactionInfo.functionality());
                 final var excessAmount = gasLimitForContractTx - gasUsed;
@@ -622,7 +628,7 @@ public class HandleWorkflow {
         blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
 
         final int handleDuration = (int) (System.nanoTime() - handleStart);
-        handleWorkflowMetrics.update(transactionInfo.functionality(), handleDuration);
+        handleWorkflowMetrics.updateTransactionDuration(transactionInfo.functionality(), handleDuration);
     }
 
     /**
@@ -779,102 +785,126 @@ public class HandleWorkflow {
             @NonNull final KeyVerifier verifier,
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final ReadableStoreFactory storeFactory,
-            @NonNull final Fees fees,
+            @NonNull final NetworkUtilizationManager utilizationManager,
+            @NonNull final HandleContextImpl context,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final HederaState state,
             final long nodeID) {
         if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
-            // We can stop immediately if the pre-handle result was a node due diligence failure
-            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
+            utilizationManager.trackFeePayments(consensusNow, state);
+            final var fees = dispatcher.dispatchComputeFees(context);
+            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode(), fees);
         }
 
-        final var txInfo = preHandleResult.txInfo();
-        final var payerID = txInfo.payerID();
+        final var txInfo = requireNonNull(preHandleResult.txInfo());
+        final var payerID = requireNonNull(txInfo.payerID());
         final var functionality = txInfo.functionality();
         final var txBody = txInfo.txBody();
         boolean isPayerHollow;
 
-        // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
-        // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
-        // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
-        // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
-        // and create an appropriate record to save in state and send to the record stream.
-        final var duplicateCheckResult = recordCache.hasDuplicate(txBody.transactionID(), nodeID);
-        if (duplicateCheckResult != NO_DUPLICATE) {
-            return new ValidationResult(
-                    duplicateCheckResult == SAME_NODE ? NODE_DUE_DILIGENCE_FAILURE : PRE_HANDLE_FAILURE,
-                    DUPLICATE_TRANSACTION);
-        }
-
-        // Check the status and solvency of the payer (assuming their signature is valid)
+        final Account payer;
         try {
-            final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
-            isPayerHollow = isHollow(payer);
-            // Check all signature verifications. This will also wait, if validation is still ongoing.
-            // If the payer is hollow the key will be null, so we skip the payer signature verification.
-            if (!isPayerHollow) {
-                final var payerKeyVerification = verifier.verificationFor(preHandleResult.getPayerKey());
-                if (payerKeyVerification.failed()) {
-                    return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
-                }
+            payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
+        } catch (PreCheckException e) {
+            throw new IllegalStateException("Missing payer should be a due diligence failure", e);
+        }
+        isPayerHollow = isHollow(payer);
+        // Check all signature verifications. This will also wait, if validation is still ongoing.
+        // If the payer is hollow the key will be null, so we skip the payer signature verification.
+        if (!isPayerHollow) {
+            final var payerKeyVerification = verifier.verificationFor(preHandleResult.getPayerKey());
+            if (payerKeyVerification.failed()) {
+                utilizationManager.trackFeePayments(consensusNow, state);
+                final var fees = dispatcher.dispatchComputeFees(context);
+                return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE, fees);
             }
-            solvencyPreCheck.checkSolvency(txInfo, payer, fees, false);
-        } catch (final InsufficientServiceFeeException e) {
-            return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode());
-        } catch (final InsufficientNonFeeDebitsException e) {
-            return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
-        } catch (final PreCheckException e) {
-            // Includes InsufficientNetworkFeeException
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
-        }
-
-        // Check the time box of the transaction
-        try {
-            checker.checkTimeBox(txBody, consensusNow, RequireMinValidLifetimeBuffer.NO);
-        } catch (final PreCheckException e) {
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
-        }
-
-        // Check if the payer has the required permissions
-        if (!authorizer.isAuthorized(payerID, functionality)) {
-            if (functionality == HederaFunctionality.SYSTEM_DELETE) {
-                return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.NOT_SUPPORTED);
-            }
-            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.UNAUTHORIZED);
-        }
-
-        // Check if pre-handle was successful
-        if (preHandleResult.status() != SO_FAR_SO_GOOD) {
-            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode());
-        }
-
-        // Check if the transaction is privileged and if the payer has the required privileges
-        final var privileges = authorizer.hasPrivilegedAuthorization(payerID, functionality, txBody);
-        if (privileges == SystemPrivilege.UNAUTHORIZED) {
-            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.AUTHORIZATION_FAILED);
-        }
-        if (privileges == SystemPrivilege.IMPERMISSIBLE) {
-            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
         }
 
         // verify all the keys
         for (final var key : preHandleResult.getRequiredKeys()) {
             final var verification = verifier.verificationFor(key);
             if (verification.failed()) {
-                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
+                utilizationManager.trackFeePayments(consensusNow, state);
+                final var fees = dispatcher.dispatchComputeFees(context);
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
             }
         }
         // If there are any hollow accounts whose signatures need to be verified, verify them
         for (final var hollowAccount : preHandleResult.getHollowAccounts()) {
             final var verification = verifier.verificationFor(hollowAccount.alias());
             if (verification.failed()) {
-                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
+                utilizationManager.trackFeePayments(consensusNow, state);
+                final var fees = dispatcher.dispatchComputeFees(context);
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
             }
         }
 
-        return new ValidationResult(SO_FAR_SO_GOOD, OK);
+        // Notice that above, we computed fees assuming network utilization for
+        // just a fee payment. Here we instead calculate fees based on tracking the
+        // user transaction. This is for mono-service fidelity, but does not have any
+        // particular priority and could be revisited later after diff testing
+        utilizationManager.trackTxn(txInfo, consensusNow, state);
+        final var fees = dispatcher.dispatchComputeFees(context);
+
+        // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
+        // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
+        // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
+        // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
+        // and create an appropriate record to save in state and send to the record stream.
+        final var duplicateCheckResult = recordCache.hasDuplicate(txBody.transactionIDOrThrow(), nodeID);
+        if (duplicateCheckResult != NO_DUPLICATE) {
+            return new ValidationResult(
+                    duplicateCheckResult == SAME_NODE ? NODE_DUE_DILIGENCE_FAILURE : PRE_HANDLE_FAILURE,
+                    DUPLICATE_TRANSACTION,
+                    fees);
+        }
+
+        // Check the status and solvency of the payer (assuming their signature is valid)
+        try {
+            solvencyPreCheck.checkSolvency(txInfo, payer, fees, false);
+        } catch (final InsufficientServiceFeeException e) {
+            return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode(), fees);
+        } catch (final InsufficientNonFeeDebitsException e) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode(), fees);
+        } catch (final PreCheckException e) {
+            // Includes InsufficientNetworkFeeException
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode(), fees);
+        }
+
+        // Check the time box of the transaction
+        try {
+            checker.checkTimeBox(txBody, consensusNow, RequireMinValidLifetimeBuffer.NO);
+        } catch (final PreCheckException e) {
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode(), fees);
+        }
+
+        // Check if the payer has the required permissions
+        if (!authorizer.isAuthorized(payerID, functionality)) {
+            if (functionality == HederaFunctionality.SYSTEM_DELETE) {
+                return new ValidationResult(PRE_HANDLE_FAILURE, NOT_SUPPORTED, fees);
+            }
+            return new ValidationResult(PRE_HANDLE_FAILURE, UNAUTHORIZED, fees);
+        }
+
+        // Check if pre-handle was successful
+        if (preHandleResult.status() != SO_FAR_SO_GOOD) {
+            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode(), fees);
+        }
+
+        // Check if the transaction is privileged and if the payer has the required privileges
+        final var privileges = authorizer.hasPrivilegedAuthorization(payerID, functionality, txBody);
+        if (privileges == SystemPrivilege.UNAUTHORIZED) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, AUTHORIZATION_FAILED, fees);
+        }
+        if (privileges == SystemPrivilege.IMPERMISSIBLE) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ENTITY_NOT_ALLOWED_TO_DELETE, fees);
+        }
+
+        return new ValidationResult(SO_FAR_SO_GOOD, OK, fees);
     }
 
     private record ValidationResult(
-            @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum) {}
+            @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum, @NonNull Fees fees) {}
 
     /**
      * Rolls back the stack and sets the status of the transaction in case of a failure.

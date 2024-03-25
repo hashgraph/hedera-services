@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.E
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
@@ -46,6 +47,7 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 public class CallEvmTxProcessor extends EvmTxProcessor {
     private final CodeCache codeCache;
     private final AliasManager aliasManager;
+    private final EntityIdSource entityIdSource;
 
     @Inject
     public CallEvmTxProcessor(
@@ -57,10 +59,12 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager,
-            final InHandleBlockMetaSource blockMetaSource) {
+            final InHandleBlockMetaSource blockMetaSource,
+            final EntityIdSource entityIdSource) {
         super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
+        this.entityIdSource = entityIdSource;
     }
 
     public TransactionProcessingResult execute(
@@ -72,7 +76,8 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final Instant consensusTime) {
         final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
 
-        return super.execute(
+        final var entityNumBefore = entityIdSource.getCurrentNum();
+        final var result = super.execute(
                 sender,
                 receiver,
                 gasPrice,
@@ -85,6 +90,10 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
                 null,
                 0,
                 null);
+        if (!result.isSuccessful()) {
+            entityIdSource.setCurrentNum(entityNumBefore);
+        }
+        return result;
     }
 
     public TransactionProcessingResult executeEth(

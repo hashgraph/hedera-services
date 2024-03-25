@@ -225,7 +225,9 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var transferContext =
                 new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
 
+        // (TEMPORARY) Remove this after diff testing
         transferContext.validateHbarAllowances();
+        transferContext.validateAccountIds();
 
         // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
@@ -362,7 +364,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // single account.
         for (final var accountAmount : transfers) {
             // Given an accountId, we need to look up the associated account.
-            final var accountId = validateAccountID(accountAmount.accountIDOrElse(AccountID.DEFAULT));
+            final var accountId = validateAccountID(accountAmount.accountIDOrElse(AccountID.DEFAULT), null);
             final var account = accountStore.getAccountById(accountId);
             final var isCredit = accountAmount.amount() > 0;
             final var isDebit = accountAmount.amount() < 0;
@@ -423,11 +425,11 @@ public class CryptoTransferHandler implements TransactionHandler {
             throws PreCheckException {
         for (final var nftTransfer : nftTransfersList) {
             final var senderId = nftTransfer.senderAccountIDOrElse(AccountID.DEFAULT);
-            validateAccountID(senderId);
+            validateAccountID(senderId, null);
             checkSender(senderId, nftTransfer, meta, accountStore);
 
             final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
-            validateAccountID(receiverId);
+            validateAccountID(receiverId, null);
             checkReceiver(receiverId, senderId, nftTransfer, meta, tokenMeta, op, accountStore);
         }
     }
