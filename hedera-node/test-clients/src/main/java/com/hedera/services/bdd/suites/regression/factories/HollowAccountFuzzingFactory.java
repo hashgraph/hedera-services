@@ -119,7 +119,8 @@ public class HollowAccountFuzzingFactory {
                             intPropOrElse("randomTokenHollow.bias", 0, props))
                     // expects invalid signature
                     .withOp(
-                            new RandomTokenAssociationHollowAccount(tokens, hollowAccounts, tokenRels, UNIQUE_PAYER_ACCOUNT)
+                            new RandomTokenAssociationHollowAccount(
+                                            tokens, hollowAccounts, tokenRels, UNIQUE_PAYER_ACCOUNT)
                                     .ceiling(intPropOrElse(
                                             "randomTokenAssociation.ceilingNum",
                                             RandomTokenAssociation.DEFAULT_CEILING_NUM,
