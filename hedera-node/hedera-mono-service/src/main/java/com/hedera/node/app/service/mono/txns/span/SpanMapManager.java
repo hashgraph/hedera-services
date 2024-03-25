@@ -330,9 +330,6 @@ public class SpanMapManager {
 
     public static void reCalculateXferMeta(final TxnAccessor accessor, final ImpliedTransfers impliedTransfers) {
         final var maybeAssessedCustomFees = impliedTransfers.getAssessedCustomFeeWrappers();
-        if (maybeAssessedCustomFees.isEmpty()) {
-            return;
-        }
         final var xferMeta = accessor.availXferUsageMeta();
 
         var customFeeTokenTransfers = 0;
