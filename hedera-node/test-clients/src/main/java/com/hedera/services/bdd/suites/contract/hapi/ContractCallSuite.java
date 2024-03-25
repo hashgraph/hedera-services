@@ -1730,6 +1730,7 @@ public class ContractCallSuite extends HapiSuite {
     @HapiTest
     HapiSpec payTestSelfDestructCall() {
         final var contract = "PayTestSelfDestruct";
+        final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
         return defaultHapiSpec(
                         "payTestSelfDestructCall",
@@ -1739,7 +1740,9 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(PAYER).balance(1_000_000_000_000L).logged(),
                         cryptoCreate(RECEIVER).balance(1_000L),
                         uploadInitCode(contract),
-                        contractCreate(contract))
+                    contractCreate(contract),
+                    getContractInfo(contract)
+                        .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))))
                 .when(withOpContext((spec, opLog) -> {
                     final var subop1 = contractCall(contract, DEPOSIT, BigInteger.valueOf(1_000L))
                             .payingWith(PAYER)
@@ -1752,8 +1755,7 @@ public class ContractCallSuite extends HapiSuite {
                             .gas(300_000L)
                             .via(GET_BALANCE);
 
-                    final var contractAccountId = asId(contract, spec);
-                    final var subop3 = contractCall(contract, KILL_ME, asHeadlongAddress(asAddress(contractAccountId)))
+                    final var subop3 = contractCall(contract, KILL_ME, tokenCreateContractAddress.get())
                             .payingWith(PAYER)
                             .gas(300_000L)
                             .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID);
