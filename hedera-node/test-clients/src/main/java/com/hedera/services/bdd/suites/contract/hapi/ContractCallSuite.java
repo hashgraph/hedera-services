@@ -731,6 +731,8 @@ public class ContractCallSuite extends HapiSuite {
                 .then();
     }
 
+    // refusingEthConversion because the minters contract has placeholders that the HapiEthereumContractCreate doesn't
+    // support
     @SuppressWarnings("java:S5669")
     @HapiTest
     final HapiSpec bitcarbonTestStillPasses() {
@@ -754,12 +756,14 @@ public class ContractCallSuite extends HapiSuite {
                         contractCreate(addressBook)
                                 .gas(1_000_000L)
                                 .exposingNumTo(num -> addressBookMirror.set(asHexedSolidityAddress(0, 0, num)))
-                                .payingWith(DEFAULT_CONTRACT_SENDER),
+                                .payingWith(DEFAULT_CONTRACT_SENDER)
+                                .refusingEthConversion(),
                         contractCreate(jurisdictions)
                                 .gas(1_000_000L)
                                 .exposingNumTo(num -> jurisdictionMirror.set(asHexedSolidityAddress(0, 0, num)))
                                 .withExplicitParams(() -> EXPLICIT_JURISDICTION_CONS_PARAMS)
-                                .payingWith(DEFAULT_CONTRACT_SENDER),
+                                .payingWith(DEFAULT_CONTRACT_SENDER)
+                                .refusingEthConversion(),
                         sourcing(() -> createLargeFile(
                                 DEFAULT_CONTRACT_SENDER,
                                 minters,
@@ -768,7 +772,8 @@ public class ContractCallSuite extends HapiSuite {
                                 .gas(2_000_000L)
                                 .withExplicitParams(
                                         () -> String.format(EXPLICIT_MINTER_CONS_PARAMS_TPL, jurisdictionMirror.get()))
-                                .payingWith(DEFAULT_CONTRACT_SENDER))
+                                .payingWith(DEFAULT_CONTRACT_SENDER)
+                                .refusingEthConversion())
                 .when(
                         contractCall(minters)
                                 .withExplicitParams(() ->
