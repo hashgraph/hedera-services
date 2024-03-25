@@ -53,7 +53,7 @@ public class EventWindowManagerTests {
         wiring.getOutputWire().solderTo("output", "event window", output::set);
 
         final NonAncientEventWindow eventWindow1 = mock(NonAncientEventWindow.class);
-        wiring.getInputWire(EventWindowManager::setEventWindow).inject(eventWindow1);
+        wiring.getInputWire(EventWindowManager::updateEventWindow).inject(eventWindow1);
         assertSame(eventWindow1, output.get());
 
         final NonAncientEventWindow eventWindow2 = mock(NonAncientEventWindow.class);

@@ -42,5 +42,5 @@ public interface EventWindowManager {
      * @return the {@link NonAncientEventWindow} that was set.
      */
     @InputWireLabel("override event window")
-    NonAncientEventWindow setEventWindow(@NonNull final NonAncientEventWindow eventWindow);
+    NonAncientEventWindow updateEventWindow(@NonNull final NonAncientEventWindow eventWindow);
 }

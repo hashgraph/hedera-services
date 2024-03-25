@@ -86,8 +86,6 @@ import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
-import com.swirlds.platform.wiring.components.EventStreamManagerWiring;
-import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.HashLoggerWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
@@ -805,7 +803,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         // Future work: this method can merge with consensusSnapshotOverride
         eventWindowManagerWiring
-                .getInputWire(EventWindowManager::setEventWindow)
+                .getInputWire(EventWindowManager::updateEventWindow)
                 .inject(nonAncientEventWindow);
 
         // Since there is asynchronous access to the shadowgraph, it's important to ensure that

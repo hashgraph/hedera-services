@@ -39,7 +39,7 @@ public class DefaultEventWindowManager implements EventWindowManager {
      */
     @Override
     @NonNull
-    public NonAncientEventWindow setEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public NonAncientEventWindow updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
         return eventWindow;
     }
 }
