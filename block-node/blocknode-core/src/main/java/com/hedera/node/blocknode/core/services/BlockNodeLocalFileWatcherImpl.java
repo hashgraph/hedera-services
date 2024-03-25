@@ -78,9 +78,9 @@ public class BlockNodeLocalFileWatcherImpl {
         this.configProvider = configProvider;
         this.fileSystemApi = fileSystemApi;
 
-        BlockNodeFileSystemConfig fileSystemConfig = configProvider.getConfiguration().getConfigData(BlockNodeFileSystemConfig.class);
-        Path blocksLocPath = Path.of(
-                System.getProperty("user.dir") + fileSystemConfig.blocksImportPath());
+        BlockNodeFileSystemConfig fileSystemConfig =
+                configProvider.getConfiguration().getConfigData(BlockNodeFileSystemConfig.class);
+        Path blocksLocPath = Path.of(System.getProperty("user.dir") + fileSystemConfig.blocksImportPath());
 
         final FileAlterationObserver observer = new FileAlterationObserver(blocksLocPath.toFile());
         observer.addListener(buildFileListener());
