@@ -187,7 +187,9 @@ public interface ConfigurationBuilder {
      *
      * @param extension the extension to load
      * @return the {@link ConfigurationBuilder} instance (for fluent API)
+     * @deprecated Avoid use of this method, this API will not be supported in the long term
      */
+    @Deprecated
     @NonNull
     ConfigurationBuilder loadExtension(@NonNull final ConfigurationExtension extension);
 }
