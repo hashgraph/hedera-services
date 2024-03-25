@@ -1,4 +1,4 @@
 datasources:
 - name: Loki
   type: loki
-  url: http://localhost:3100
+  url: http://loki:3100

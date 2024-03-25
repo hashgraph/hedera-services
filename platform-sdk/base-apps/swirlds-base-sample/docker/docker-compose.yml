@@ -5,27 +5,33 @@ services:
     image: prom/prometheus
     volumes:
       - ./prometheus:/etc/prometheus
+    environment:
+      - BASE_EXAMPLE_HOST=${BASE_EXAMPLE_HOST}
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     restart: always
     ports:
       - "9090:9090"
+    networks:
+      - base_sample_network
   grafana:
     image: grafana/grafana
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning/
+      - BASE_EXAMPLE_HOST=${BASE_EXAMPLE_HOST}
     volumes:
       - ./grafana/prometheus.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml
       - ./grafana/loki.yaml:/etc/grafana/provisioning/datasources/loki.yaml
       - ./grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
       - ./grafana/dashboards:/var/lib/grafana/dashboards
-    restart: always
     ports:
       - "3000:3000"
     depends_on:
       - prometheus
+    networks:
+      - base_sample_network
   loki:
     image: grafana/loki:latest
     ports:
@@ -33,4 +39,8 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - ./loki/:/etc/loki/
-    restart: always
+    networks:
+      - base_sample_network
+networks:
+  base_sample_network:
+    driver: bridge

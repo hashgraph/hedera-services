@@ -4,7 +4,7 @@ server:
   http_listen_port: 3100
 
 common:
-  instance_addr: 127.0.0.1
+  instance_addr: loki
   path_prefix: /loki
   storage:
     filesystem:
@@ -26,4 +26,4 @@ schema_config:
         period: 24h
 
 ruler:
-  alertmanager_url: http://localhost:9093
+  alertmanager_url: http://loki:9093
