@@ -24,7 +24,6 @@ import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -73,7 +72,6 @@ public class MigrationTestingToolMain implements SwirldMain {
         maximumTransactionsPerNode = Integer.parseInt(parameters[1]);
 
         generator = new TransactionGenerator(seed);
-        GuiModel.getInstance().setAbout(platform.getSelfId(), "MigrationTestingApp");
 
         // Initialize application statistics
         initAppStats();

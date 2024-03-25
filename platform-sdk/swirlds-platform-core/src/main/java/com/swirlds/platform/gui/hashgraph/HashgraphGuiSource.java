@@ -16,8 +16,10 @@
 
 package com.swirlds.platform.gui.hashgraph;
 
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.PlatformEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * Provides the {@code HashgraphGui} information it needs to render an image of the hashgraph
@@ -32,19 +34,19 @@ public interface HashgraphGuiSource {
     /**
      * Get events to be displayed by the GUI
      *
-     * @param startGeneration
-     * 		the start generation of events returned
-     * @param numGenerations
-     * 		the number of generations to be returned
+     * @param startGeneration the start generation of events returned
+     * @param numGenerations  the number of generations to be returned
      * @return an array of requested events
      */
-    PlatformEvent[] getEvents(final long startGeneration, final int numGenerations);
+    @NonNull
+    List<EventImpl> getEvents(final long startGeneration, final int numGenerations);
 
     /**
      * Get the Address Book
      *
      * @return AddressBook
      */
+    @NonNull
     AddressBook getAddressBook();
 
     /**

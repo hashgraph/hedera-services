@@ -18,6 +18,8 @@ package com.swirlds.config.impl.internal;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.api.ConfigurationExtension;
+import com.swirlds.config.api.ConfigurationExtension.ConverterPair;
 import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
@@ -26,8 +28,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ServiceLoader;
+import java.util.ServiceLoader.Provider;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -109,6 +114,27 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
             initializationLock.unlock();
         }
         return configuration;
+    }
+
+    @NonNull
+    @Override
+    public ConfigurationBuilder autoDiscoverExtensions() {
+        final ServiceLoader<ConfigurationExtension> serviceLoader = ServiceLoader.load(ConfigurationExtension.class);
+        final List<ConfigurationExtension> extensions =
+                serviceLoader.stream().map(Provider::get).toList();
+
+        for (final ConfigurationExtension extension : extensions) {
+            extension.getConverters().forEach(this::addConverter);
+            extension.getValidators().forEach(this::addValidator);
+            extension.getConfigDataTypes().forEach(this::addConfigDataType);
+            extension.getConfigSources().forEach(this::addConfigSource);
+        }
+
+        return this;
+    }
+
+    private <T> void addConverter(final ConverterPair<T> converterPair) {
+        addConverter(converterPair.type(), converterPair.converter());
     }
 
     @NonNull

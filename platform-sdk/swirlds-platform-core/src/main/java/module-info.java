@@ -1,3 +1,6 @@
+import com.swirlds.config.api.ConfigurationExtension;
+import com.swirlds.platform.config.PlatformConfigurationExtension;
+
 /**
  * The Swirlds public API module used by platform applications.
  */
@@ -80,7 +83,8 @@ module com.swirlds.platform.core {
             com.hedera.node.app.service.mono.test.fixtures;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.state.notifications to
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.iss to
@@ -121,6 +125,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.wiring.components;
     exports com.swirlds.platform.event.hashing;
     exports com.swirlds.platform.event.orphan;
+    exports com.swirlds.platform.publisher;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
@@ -145,4 +150,8 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
+    requires static com.google.auto.service;
+
+    provides ConfigurationExtension with
+            PlatformConfigurationExtension;
 }
