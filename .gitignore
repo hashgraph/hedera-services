@@ -1081,6 +1081,3 @@ gha-creds-*.json
 
 ### Temporary ignore for differential testing
 hedera-node/test-clients/rcdiff/diff.txt
-
-### Base sample app
-platform-sdk/base-apps/swirlds-base-sample/docker/prometheus/prometheus.yml
