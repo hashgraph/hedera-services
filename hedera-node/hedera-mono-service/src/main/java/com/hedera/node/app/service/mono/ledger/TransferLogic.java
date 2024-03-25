@@ -35,6 +35,7 @@ import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.fees.charging.FeeDistribution;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
@@ -75,6 +76,7 @@ public class TransferLogic {
     private final TransactionContext txnCtx;
     private final AliasManager aliasManager;
     private final FeeDistribution feeDistribution;
+    private final EntityIdSource entityIdSource;
     private final IntConsumer cryptoCreateThrottleReclaimer;
 
     @Inject
@@ -90,6 +92,7 @@ public class TransferLogic {
             final TransactionContext txnCtx,
             final AliasManager aliasManager,
             final FeeDistribution feeDistribution,
+            final EntityIdSource entityIdSource,
             IntConsumer cryptoCreateThrottleReclaimer) {
         this.tokenStore = tokenStore;
         this.nftsLedger = nftsLedger;
@@ -101,6 +104,7 @@ public class TransferLogic {
         this.txnCtx = txnCtx;
         this.aliasManager = aliasManager;
         this.feeDistribution = feeDistribution;
+        this.entityIdSource = entityIdSource;
         this.cryptoCreateThrottleReclaimer = cryptoCreateThrottleReclaimer;
 
         scopedCheck = new MerkleAccountScopedCheck(validator, nftsLedger);
@@ -114,6 +118,7 @@ public class TransferLogic {
         boolean failedAutoCreation = false;
         boolean hasSuccessfulAutoCreation = false;
         int numAutoCreationsSoFar = 0;
+        final var initialEntityNum = entityIdSource.getCurrentNum();
         for (final var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
@@ -182,6 +187,7 @@ public class TransferLogic {
                 autoCreationLogic.submitRecordsTo(recordsHistorian);
             }
         } else {
+            entityIdSource.setCurrentNum(initialEntityNum);
             dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
             if (autoCreationLogic != null && autoCreationLogic.reclaimPendingAliases()) {
                 accountsLedger.undoCreations();

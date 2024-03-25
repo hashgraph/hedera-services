@@ -170,7 +170,8 @@ public class OrderedComparison {
                             "Additional modular record found at "
                                     + secondEntries.get(i).consensusTime() + " for transactionID : "
                                     + secondEntries.get(i).txnRecord().getTransactionID() + " transBody : "
-                                    + secondEntries.get(i).body()));
+                                    + secondEntries.get(i).body()
+                                    + "\n -> \n" + secondEntries.get(i).txnRecord()));
                     continue;
                 }
                 final var secondEntry = entryWithMatchableRecord(secondEntries, i, firstEntry);
