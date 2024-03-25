@@ -17,6 +17,7 @@
 package com.hedera.node.blocknode.core.services;
 
 import com.hedera.node.blocknode.config.ConfigProvider;
+import com.hedera.node.blocknode.config.data.BlockNodeFileSystemConfig;
 import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
 import com.hedera.services.stream.v7.proto.Block;
 import java.io.File;
@@ -33,9 +34,6 @@ import org.apache.logging.log4j.Logger;
 public class BlockNodeLocalFileWatcherImpl {
     private static final Logger logger = LogManager.getLogger(BlockNodeLocalFileWatcherImpl.class);
 
-    private static final Path blocksLocPath = Path.of(
-            System.getProperty("user.dir") + "/hedera-node/hedera-app/build/node/data/block-streams/block0.0.3/");
-
     private final ConfigProvider configProvider;
 
     private final FileSystemApi fileSystemApi;
@@ -48,16 +46,8 @@ public class BlockNodeLocalFileWatcherImpl {
         return new FileAlterationListenerAdaptor() {
             @Override
             public void onFileCreate(File file) {
-                final Path newFilePath = file.toPath();
-                try {
-                    byte[] content = readCompressedFileBytes(newFilePath);
-                    Block block = Block.parseFrom(content);
-                    fileSystemApi.writeBlock(block);
-                    block.getItemsList().stream().toList().forEach(logger::info);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                logger.info("--- file create: " + newFilePath);
+                processFile(file);
+                logger.info("--- file create: " + file.toPath());
             }
 
             @Override
@@ -69,12 +59,28 @@ public class BlockNodeLocalFileWatcherImpl {
             public void onFileChange(File file) {
                 // no-op
             }
+
+            private void processFile(File file) {
+                final Path newFilePath = file.toPath();
+                try {
+                    byte[] content = readCompressedFileBytes(newFilePath);
+                    Block block = Block.parseFrom(content);
+                    fileSystemApi.writeBlock(block);
+                    block.getItemsList().stream().toList().forEach(logger::info);
+                } catch (IOException e) {
+                    logger.error("Error processing file {}", newFilePath, e);
+                }
+            }
         };
     }
 
     public BlockNodeLocalFileWatcherImpl(final ConfigProvider configProvider, final FileSystemApi fileSystemApi) {
         this.configProvider = configProvider;
         this.fileSystemApi = fileSystemApi;
+
+        BlockNodeFileSystemConfig fileSystemConfig = configProvider.getConfiguration().getConfigData(BlockNodeFileSystemConfig.class);
+        Path blocksLocPath = Path.of(
+                System.getProperty("user.dir") + fileSystemConfig.blocksImportPath());
 
         final FileAlterationObserver observer = new FileAlterationObserver(blocksLocPath.toFile());
         observer.addListener(buildFileListener());
@@ -84,7 +90,7 @@ public class BlockNodeLocalFileWatcherImpl {
         try {
             monitor.start();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Failed to start file monitoring", e);
         }
     }
 }
