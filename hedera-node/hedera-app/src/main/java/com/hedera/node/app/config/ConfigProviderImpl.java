@@ -100,7 +100,8 @@ public class ConfigProviderImpl extends ConfigProviderBase {
 
     private ConfigurationBuilder createConfigurationBuilder() {
         final ConfigurationBuilder builder = ConfigurationBuilder.create();
-        builder.autoDiscoverExtensions()
+
+        builder.loadExtension(new ServicesConfigExtension())
                 .withSource(SystemEnvironmentConfigSource.getInstance())
                 .withSource(SystemPropertiesConfigSource.getInstance())
                 .withSource(new PropertyConfigSource(SEMANTIC_VERSION_PROPERTIES_DEFAULT_PATH, 500));
