@@ -81,10 +81,10 @@ public class LocalFileSystem implements FileSystemApi {
     }
 
     private String extractBlockFileNameFromBlock(Block block) {
-       Optional<Long> blockNumber =  block.getItemsList().stream()
-               .filter(BlockItem::hasHeader)
-               .map(item -> item.getHeader().getNumber())
-               .findFirst();
+        Optional<Long> blockNumber = block.getItemsList().stream()
+                .filter(BlockItem::hasHeader)
+                .map(item -> item.getHeader().getNumber())
+                .findFirst();
         Long optionalBlockNumber = blockNumber.orElse(null);
 
         requireNonNull(optionalBlockNumber, "Block number can not be extracted.");
