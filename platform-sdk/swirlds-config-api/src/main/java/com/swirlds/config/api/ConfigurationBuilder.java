@@ -173,4 +173,14 @@ public interface ConfigurationBuilder {
     static ConfigurationBuilder create() {
         return ConfigurationProvider.getInstance().createBuilder();
     }
+
+    /**
+     * This method is used to automatically discover all extensions that are available in the classpath/modulepath.
+     * This is done by using SPI (Service Provider Interface) and the {@link java.util.ServiceLoader} to find all
+     * implementations of {@link ConfigurationExtension} and register all provided extensions.
+     *
+     * @return the {@link ConfigurationBuilder} instance (for fluent API)
+     */
+    @NonNull
+    ConfigurationBuilder autoDiscoverExtensions();
 }

@@ -25,7 +25,7 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.wires.input.Bindable;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ForkJoinPool;
@@ -45,7 +45,9 @@ class HeartbeatSchedulerTests {
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
-        final Bindable<Instant, Void> heartbeatBindable = scheduler.buildHeartbeatInputWire("heartbeat", 100);
+
+        final BindableInputWire<Instant, Void> heartbeatBindable = scheduler.buildInputWire("heartbeat");
+        model.buildHeartbeatWire(100).solderTo(heartbeatBindable);
 
         final AtomicLong counter = new AtomicLong(0);
         heartbeatBindable.bindConsumer((time) -> {
@@ -72,8 +74,9 @@ class HeartbeatSchedulerTests {
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
-        final Bindable<Instant, Void> heartbeatBindable =
-                scheduler.buildHeartbeatInputWire("heartbeat", Duration.ofMillis(10));
+
+        final BindableInputWire<Instant, Void> heartbeatBindable = scheduler.buildInputWire("heartbeat");
+        model.buildHeartbeatWire(Duration.ofMillis(10)).solderTo(heartbeatBindable);
 
         final AtomicLong counter = new AtomicLong(0);
         heartbeatBindable.bindConsumer((time) -> {
@@ -100,11 +103,14 @@ class HeartbeatSchedulerTests {
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
-        final Bindable<Instant, Void> heartbeatBindableA = scheduler.buildHeartbeatInputWire("heartbeatA", 100);
-        final Bindable<Instant, Void> heartbeatBindableB =
-                scheduler.buildHeartbeatInputWire("heartbeatB", Duration.ofMillis(5));
-        final Bindable<Instant, Void> heartbeatBindableC =
-                scheduler.buildHeartbeatInputWire("heartbeatC", Duration.ofMillis(50));
+
+        final BindableInputWire<Instant, Void> heartbeatBindableA = scheduler.buildInputWire("heartbeatA");
+        final BindableInputWire<Instant, Void> heartbeatBindableB = scheduler.buildInputWire("heartbeatB");
+        final BindableInputWire<Instant, Void> heartbeatBindableC = scheduler.buildInputWire("heartbeatC");
+
+        model.buildHeartbeatWire(100).solderTo(heartbeatBindableA);
+        model.buildHeartbeatWire(Duration.ofMillis(5)).solderTo(heartbeatBindableB);
+        model.buildHeartbeatWire(Duration.ofMillis(50)).solderTo(heartbeatBindableC);
 
         final AtomicLong counterA = new AtomicLong(0);
         heartbeatBindableA.bindConsumer((time) -> {

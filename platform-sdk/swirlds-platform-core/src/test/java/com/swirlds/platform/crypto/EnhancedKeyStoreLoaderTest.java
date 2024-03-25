@@ -22,7 +22,6 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -35,7 +34,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStoreException;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -196,8 +194,7 @@ class EnhancedKeyStoreLoaderTest {
      * @throws IOException if an I/O error occurs while loading the configuration file.
      */
     private Configuration configure(final Path keyDirectory) throws IOException {
-        ConfigurationBuilder builder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(builder, Set.of("com.swirlds"));
+        ConfigurationBuilder builder = ConfigurationBuilder.create().autoDiscoverExtensions();
         BootstrapUtils.setupConfigBuilder(builder, testDataDirectory.resolve("settings.txt"));
 
         builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());
