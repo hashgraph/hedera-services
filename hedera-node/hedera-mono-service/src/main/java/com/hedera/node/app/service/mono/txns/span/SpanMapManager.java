@@ -187,6 +187,7 @@ public class SpanMapManager {
             expandEthContext(accessor, workingState, spanMap, null);
             accessor.setRationalizedSpanMap(spanMap);
         }
+        accessor.countImplicitCreationsWith(aliasManager);
     }
 
     private boolean areChanged(final LinkedRefs linkedRefs) {
@@ -318,7 +319,7 @@ public class SpanMapManager {
         }
     }
 
-    private void expandImpliedTransfers(final TxnAccessor accessor) {
+    public void expandImpliedTransfers(final TxnAccessor accessor) {
         final var op = accessor.getTxn().getCryptoTransfer();
         final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
         reCalculateXferMeta(accessor, impliedTransfers);
@@ -328,12 +329,13 @@ public class SpanMapManager {
     }
 
     public static void reCalculateXferMeta(final TxnAccessor accessor, final ImpliedTransfers impliedTransfers) {
+        final var maybeAssessedCustomFees = impliedTransfers.getAssessedCustomFeeWrappers();
         final var xferMeta = accessor.availXferUsageMeta();
 
         var customFeeTokenTransfers = 0;
         var customFeeHbarTransfers = 0;
         final Set<EntityId> involvedTokens = new HashSet<>();
-        for (final var assessedFeeWrapper : impliedTransfers.getAssessedCustomFeeWrappers()) {
+        for (final var assessedFeeWrapper : maybeAssessedCustomFees) {
             if (assessedFeeWrapper.isForHbar()) {
                 customFeeHbarTransfers++;
             } else {
