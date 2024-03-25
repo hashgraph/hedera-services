@@ -407,6 +407,10 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return abi;
     }
 
+    public Optional<Object[]> getArgs() {
+        return args;
+    }
+
     public String getContract() {
         return contract;
     }

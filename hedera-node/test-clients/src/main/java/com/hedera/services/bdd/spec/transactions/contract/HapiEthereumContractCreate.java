@@ -280,8 +280,15 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var filePath = Utils.getResourcePath(bytecodeFile.get(), ".bin");
         final var fileContents = Utils.extractByteCode(filePath);
 
-        final byte[] callData =
-                Bytes.fromHexString(new String(fileContents.toByteArray())).toArray();
+        byte[] callData;
+        if (args.isPresent() && abi.isPresent()) {
+            final var bytecode = fileContents.concat(TxnUtils.constructorArgsToByteString(abi.get(), args.get()));
+            callData = Bytes.fromHexString(new String(bytecode.toByteArray())).toArray();
+        } else {
+            callData =
+                    Bytes.fromHexString(new String(fileContents.toByteArray())).toArray();
+        }
+
         final var gasPriceBytes = gasLongToBytes(gasPrice.longValueExact());
 
         final var maxFeePerGasBytes = gasLongToBytes(maxFeePerGas.longValueExact());

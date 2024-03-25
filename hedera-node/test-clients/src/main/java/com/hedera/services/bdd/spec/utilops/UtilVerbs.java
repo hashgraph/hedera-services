@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateInitCodeWithConstructorArgs;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate.getUpdated121;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -1622,6 +1623,14 @@ public class UtilVerbs {
             if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall()) {
                 convertedOps.add(new HapiEthereumCall(callOp));
             } else if (op instanceof HapiContractCreate callOp && callOp.isConvertableToEthCreate()) {
+                // if we have constructor args, we need to update the bytecode file with one containing the constructor
+                // args
+                if (callOp.getArgs().isPresent() && callOp.getAbi().isPresent()) {
+                    convertedOps.add(updateInitCodeWithConstructorArgs(
+                            callOp.getContract(),
+                            callOp.getAbi().get(),
+                            callOp.getArgs().get()));
+                }
                 convertedOps.add(new HapiEthereumContractCreate(callOp, privateKeyRef, adminKey, defaultGas));
             } else {
                 convertedOps.add(op);
