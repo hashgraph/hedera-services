@@ -33,7 +33,6 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.state.expiry.EntityAutoExpiry;
@@ -72,9 +71,6 @@ class StandardProcessLogicTest {
 
     @Mock
     private ExpiryManager expiries;
-
-    @Mock
-    private EntityIdSource idSource;
 
     @Mock
     private SpanMapManager spanMapManager;
@@ -149,8 +145,7 @@ class StandardProcessLogicTest {
                 workingView,
                 recordCache,
                 InitTrigger.GENESIS,
-                spanMapManager,
-                idSource);
+                spanMapManager);
     }
 
     @Test
