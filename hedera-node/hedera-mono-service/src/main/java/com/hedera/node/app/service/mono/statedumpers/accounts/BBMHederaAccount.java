@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.statedumpers.accounts;
 
+import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_ACCOUNT_ID;
+import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_NODE_ID;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
@@ -75,12 +78,24 @@ public record BBMHederaAccount(
         long stakedNodeAddressBookId) {
 
     private static final AccountID MISSING_ACCOUNT_ID = AccountID.DEFAULT;
-    public static final long ONE_HBAR_IN_TINYBARS = 100_000_000L;
     public static final BBMHederaAccount DUMMY_ACCOUNT = new BBMHederaAccount(
             null, null, null, 0, 0, "", false, 0, 0, null, false, false, null, null, 0, 0, 0, 0, 0, false, 0, 0, 0,
             null, 0, 0, null, null, null, 0, false, null, false, 0);
 
     public static BBMHederaAccount fromMono(OnDiskAccount account) {
+        final var stakedId = account.getStakedId() < 0
+                ? new OneOf<>(
+                        STAKED_NODE_ID,
+                        AccountID.newBuilder()
+                                .accountNum(-account.getStakedId() - 1L)
+                                .build())
+                : (account.getStakedId() == 0
+                        ? new OneOf<>(StakedIdOneOfType.UNSET, null)
+                        : new OneOf<>(
+                                STAKED_ACCOUNT_ID,
+                                AccountID.newBuilder()
+                                        .accountNum(account.getStakedId())
+                                        .build()));
         return new BBMHederaAccount(
                 AccountID.newBuilder().accountNum(account.getAccountNumber()).build(),
                 Bytes.wrap(account.getAlias().toByteArray()),
@@ -91,9 +106,7 @@ public record BBMHederaAccount(
                 account.isDeleted(),
                 account.getStakedToMe(),
                 account.getStakePeriodStart(),
-                account.getStakedId() < 0
-                        ? new OneOf<>(StakedIdOneOfType.STAKED_NODE_ID, account.getStakedId())
-                        : new OneOf<>(StakedIdOneOfType.STAKED_ACCOUNT_ID, account.getStakedId()),
+                stakedId,
                 account.isDeclineReward(),
                 account.isReceiverSigRequired(),
                 new TokenID(0, 0, account.getHeadTokenId()),
@@ -201,5 +214,15 @@ public record BBMHederaAccount(
             ints[i] = buf.getInt();
         }
         return ints;
+    }
+
+    public Long stakedIdLong() {
+        var id = -1L;
+        if (stakedId.kind() == STAKED_NODE_ID) {
+            id = -((AccountID) stakedId.value()).accountNum() - 1;
+        } else if (stakedId.kind() == STAKED_ACCOUNT_ID) {
+            id = ((AccountID) stakedId.value()).accountNum();
+        }
+        return id;
     }
 }
