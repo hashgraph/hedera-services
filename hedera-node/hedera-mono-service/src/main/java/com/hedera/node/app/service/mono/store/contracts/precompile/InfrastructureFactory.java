@@ -240,10 +240,10 @@ public class InfrastructureFactory {
                 recordsHistorian,
                 txnCtx,
                 aliasManager,
-                feeDistribution,
+                feeDistribution
                 // No-op, we won't have used any frontend throttle capacity for an auto-creation
                 // attempted during an EVM transaction
-                n -> {});
+                );
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(
