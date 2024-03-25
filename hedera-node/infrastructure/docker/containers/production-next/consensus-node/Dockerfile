@@ -3,7 +3,7 @@
 # Define Global Build Arguments
 #
 ########################################################################################################################
-ARG UBUNTU_TAG="lunar-20231128"
+ARG UBUNTU_TAG="mantic-20240216"
 ARG S6_OVERLAY_VERSION="3.1.6.2"
 ARG SOURCE_DATE_EPOCH="0"
 
@@ -264,8 +264,8 @@ ENV PATH ${JAVA_HOME}/bin:${PATH}
 ENV JAVA_HEAP_MIN ""
 ENV JAVA_HEAP_MAX ""
 ENV JAVA_OPTS ""
-ENV JAVA_MAIN_CLASS ""
-ENV JAVA_CLASS_PATH ""
+ENV JAVA_MAIN_CLASS "com.hedera.node.app.ServicesMain"
+ENV JAVA_CLASS_PATH "data/lib/*:data/apps/*"
 
 # Performance Tuning for Malloc
 ENV MALLOC_ARENA_MAX 4
