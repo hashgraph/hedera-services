@@ -91,6 +91,14 @@ on:
         required: true
       slack-webhook-url:
         required: true
+      jf-url:
+        required: true
+      jf-user-name:
+        required: true
+      jf-docker-registry:
+        required: true
+      jf-access-token:
+        required: true
       jenkins-integration-url:
         required: false
 
@@ -100,6 +108,9 @@ defaults:
 
 env:
   LC_ALL: C.UTF-8
+  DOCKER_MANIFEST_GENERATOR: .github/workflows/support/scripts/generate-docker-artifact-baseline.sh
+  DOCKER_MANIFEST_PATH: ${{ github.workspace }}/.manifests/docker
+  SKOPEO_VERSION: v1.14.0
 
 permissions:
   id-token: write
@@ -531,6 +542,151 @@ jobs:
 
           printf "\n\n" >> "${GITHUB_STEP_SUMMARY}"
 
+  gcp-production-image:
+    name: Publish Production Image
+    uses: ./.github/workflows/zxc-publish-production-image.yaml
+    needs:
+      - validate
+      - build-artifact
+    with:
+      version: ${{ needs.validate.outputs.version }}
+      version-policy: ${{ inputs.version-policy }}
+      dry-run-enabled: ${{ inputs.dry-run-enabled }}
+      registry-name: gcp
+      custom-job-name: "Publish Production Image (GCP)"
+    secrets:
+      jf-url: ${{ secrets.jf-url }}
+      jf-user-name: ${{ secrets.jf-user-name }}
+      jf-docker-registry: ${{ secrets.jf-docker-registry }}
+      jf-access-token: ${{ secrets.jf-access-token }}
+
+  jfr-production-image:
+    name: Publish Production Image
+    uses: ./.github/workflows/zxc-publish-production-image.yaml
+    needs:
+      - validate
+      - build-artifact
+    with:
+      version: ${{ needs.validate.outputs.version }}
+      version-policy: ${{ inputs.version-policy }}
+      dry-run-enabled: ${{ inputs.dry-run-enabled }}
+      registry-name: jfrog
+      custom-job-name: "Publish Production Image (JFrog)"
+    secrets:
+      jf-url: ${{ secrets.jf-url }}
+      jf-user-name: ${{ secrets.jf-user-name }}
+      jf-docker-registry: ${{ secrets.jf-docker-registry }}
+      jf-access-token: ${{ secrets.jf-access-token }}
+
+  validate-production-image:
+    name: Validate Production Image
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    needs:
+      - gcp-production-image
+      - jfr-production-image
+    if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
+          service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
+
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@d82fe26823e1f25529250895d5673f65b02af085 # v4.0.1
+        env:
+          JF_URL: ${{ secrets.jf-url }}
+          JF_ACCESS_TOKEN: ${{ secrets.jf-access-token }}
+
+      - name: Show JFrog Config
+        run: jfrog config show
+
+      - name: Verify JFrog Connectivity
+        run: jfrog rt ping
+
+      - name: Docker Login (GCP)
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        with:
+          registry: ${{ needs.gcp-production-image.outputs.docker-registry }}
+          username: oauth2accesstoken
+          password: ${{ steps.google-auth.outputs.access_token }}
+
+      - name: Docker Login (JFrog)
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        with:
+          registry: ${{ needs.jfr-production-image.outputs.docker-registry }}
+          username: ${{ secrets.jf-user-name }}
+          password: ${{ secrets.jf-access-token }}
+
+      - name: Create Manifest Directories
+        run: |
+          mkdir -p "${DOCKER_MANIFEST_PATH}/gcp"
+          mkdir -p "${DOCKER_MANIFEST_PATH}/jfrog"
+
+      - name: Generate GCP Manifest
+        id: gcp
+        env:
+          MANIFEST_PATH: ${{ env.DOCKER_MANIFEST_PATH }}/gcp
+          DOCKER_REGISTRY: ${{ needs.gcp-production-image.outputs.docker-image-prefix }}
+          DOCKER_TAG: ${{ needs.gcp-production-image.outputs.docker-image-tag }}
+        run: ${{ env.DOCKER_MANIFEST_GENERATOR }}
+
+      - name: Generate JFrog Manifest
+        id: jfrog
+        env:
+          MANIFEST_PATH: ${{ env.DOCKER_MANIFEST_PATH }}/jfrog
+          DOCKER_REGISTRY: ${{ needs.jfr-production-image.outputs.docker-image-prefix }}
+          DOCKER_TAG: ${{ needs.jfr-production-image.outputs.docker-image-tag }}
+        run: ${{ env.DOCKER_MANIFEST_GENERATOR }}
+
+      - name: Validate Layers (linux/amd64)
+        run: |
+          if ! diff -u "${{ steps.gcp.outputs.path }}/linux-amd64.layers.json" "${{ steps.jfrog.outputs.path }}/linux-amd64.layers.json" >/dev/null 2>&1; then
+           echo "::group::Layer Differences"
+           diff -u "${{ steps.gcp.outputs.path }}/linux-amd64.layers.json" "${{ steps.jfrog.outputs.path }}/linux-amd64.layers.json"
+           echo "::endgroup::"
+           exit 1
+          fi
+
+      - name: Validate Layers (linux/arm64)
+        run: |
+          if ! diff -u "${{ steps.gcp.outputs.path }}/linux-arm64.layers.json" "${{ steps.jfrog.outputs.path }}/linux-arm64.layers.json" >/dev/null 2>&1; then
+           echo "::group::Layer Differences"
+           diff -u "${{ steps.gcp.outputs.path }}/linux-arm64.layers.json" "${{ steps.jfrog.outputs.path }}/linux-arm64.layers.json"
+           echo "::endgroup::"
+           exit 1
+          fi
+
+      - name: Validate Full Manifest (linux/amd64)
+        run: |
+          if ! diff -u "${{ steps.gcp.outputs.path }}/linux-amd64.comparable.json" "${{ steps.jfrog.outputs.path }}/linux-amd64.comparable.json" >/dev/null 2>&1; then
+           echo "::group::Layer Differences"
+           diff -u "${{ steps.gcp.outputs.path }}/linux-amd64.comparable.json" "${{ steps.jfrog.outputs.path }}/linux-amd64.comparable.json"
+           echo "::endgroup::"
+           exit 1
+          fi
+
+      - name: Validate Full Manifest (linux/arm64)
+        run: |
+          if ! diff -u "${{ steps.gcp.outputs.path }}/linux-arm64.comparable.json" "${{ steps.jfrog.outputs.path }}/linux-arm64.comparable.json" >/dev/null 2>&1; then
+           echo "::group::Layer Differences"
+           diff -u "${{ steps.gcp.outputs.path }}/linux-arm64.comparable.json" "${{ steps.jfrog.outputs.path }}/linux-arm64.comparable.json"
+           echo "::endgroup::"
+           exit 1
+          fi
+
+      - name: Upload Manifests
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        if: ${{ (steps.gcp.outcome == 'success' || steps.jfrog.outcome == 'success') && !cancelled() && always() }}
+        with:
+          name: Production Image Manifests
+          path: ${{ env.DOCKER_MANIFEST_PATH }}
+
   evm-mc-publish:
     name: Publish EVM to Maven Central
     runs-on: [ self-hosted, Linux, large, ephemeral ]
@@ -792,6 +948,7 @@ jobs:
     needs:
       - validate
       - local-node-images
+      - validate-production-image
       - evm-mc-publish
       - sdk-publish
     if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
