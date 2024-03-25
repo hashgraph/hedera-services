@@ -100,55 +100,55 @@ public class TokenTypesDumpUtils {
 
     private static BBMToken fromMod(@NonNull final Token token) {
         BBMToken tokenRes = null;
-            final var adminKey = (JKey) fromPbjKey(token.adminKey()).orElse(null);
-            final var feeScheduleKey = (JKey) fromPbjKey(token.feeScheduleKey()).orElse(null);
-            final var freezeKey = (JKey) fromPbjKey(token.freezeKey()).orElse(null);
-            final var kycKey = (JKey) fromPbjKey(token.kycKey()).orElse(null);
-            final var pauseKey = (JKey) fromPbjKey(token.pauseKey()).orElse(null);
-            final var supplyKey = (JKey) fromPbjKey(token.supplyKey()).orElse(null);
-            final var wipeKey = (JKey) fromPbjKey(token.wipeKey()).orElse(null);
-            tokenRes = new BBMToken(
-                    com.hedera.node.app.service.evm.store.tokens.TokenType.valueOf(
-                            token.tokenType().protoName()),
-                    token.supplyType(),
-                    token.tokenId().tokenNum(),
-                    token.symbol(),
-                    token.name(),
-                    token.memo(),
-                    token.deleted(),
-                    token.paused(),
-                    token.decimals(),
-                    token.maxSupply(),
-                    token.totalSupply(),
-                    token.lastUsedSerialNumber(),
-                    token.expirationSecond(),
-                    token.autoRenewSeconds() == -1L ? Optional.empty() : Optional.of(token.autoRenewSeconds()),
-                    token.accountsFrozenByDefault(),
-                    token.accountsKycGrantedByDefault(),
-                    idFromMod(token.treasuryAccountId()),
-                    idFromMod(token.autoRenewAccountId()),
-                    customFeesFromMod(token.customFees()),
-                    adminKey == null ? Optional.empty() : Optional.of(adminKey),
-                    feeScheduleKey == null ? Optional.empty() : Optional.of(feeScheduleKey),
-                    freezeKey == null ? Optional.empty() : Optional.of(freezeKey),
-                    kycKey == null ? Optional.empty() : Optional.of(kycKey),
-                    pauseKey == null ? Optional.empty() : Optional.of(pauseKey),
-                    supplyKey == null ? Optional.empty() : Optional.of(supplyKey),
-                    wipeKey == null ? Optional.empty() : Optional.of(wipeKey));
+        final var adminKey = (JKey) fromPbjKey(token.adminKey()).orElse(null);
+        final var feeScheduleKey = (JKey) fromPbjKey(token.feeScheduleKey()).orElse(null);
+        final var freezeKey = (JKey) fromPbjKey(token.freezeKey()).orElse(null);
+        final var kycKey = (JKey) fromPbjKey(token.kycKey()).orElse(null);
+        final var pauseKey = (JKey) fromPbjKey(token.pauseKey()).orElse(null);
+        final var supplyKey = (JKey) fromPbjKey(token.supplyKey()).orElse(null);
+        final var wipeKey = (JKey) fromPbjKey(token.wipeKey()).orElse(null);
+        tokenRes = new BBMToken(
+                com.hedera.node.app.service.evm.store.tokens.TokenType.valueOf(
+                        token.tokenType().protoName()),
+                token.supplyType(),
+                token.tokenId().tokenNum(),
+                token.symbol(),
+                token.name(),
+                token.memo(),
+                token.deleted(),
+                token.paused(),
+                token.decimals(),
+                token.maxSupply(),
+                token.totalSupply(),
+                token.lastUsedSerialNumber(),
+                token.expirationSecond(),
+                token.autoRenewSeconds() == -1L ? Optional.empty() : Optional.of(token.autoRenewSeconds()),
+                token.accountsFrozenByDefault(),
+                token.accountsKycGrantedByDefault(),
+                idFromMod(token.treasuryAccountId()),
+                idFromMod(token.autoRenewAccountId()),
+                customFeesFromMod(token.customFees()),
+                adminKey == null ? Optional.empty() : Optional.of(adminKey),
+                feeScheduleKey == null ? Optional.empty() : Optional.of(feeScheduleKey),
+                freezeKey == null ? Optional.empty() : Optional.of(freezeKey),
+                kycKey == null ? Optional.empty() : Optional.of(kycKey),
+                pauseKey == null ? Optional.empty() : Optional.of(pauseKey),
+                supplyKey == null ? Optional.empty() : Optional.of(supplyKey),
+                wipeKey == null ? Optional.empty() : Optional.of(wipeKey));
 
-            Objects.requireNonNull(tokenRes.tokenType(), "tokenType");
-            Objects.requireNonNull(tokenRes.tokenSupplyType(), "tokenSupplyType");
-            Objects.requireNonNull(tokenRes.symbol(), "symbol");
-            Objects.requireNonNull(tokenRes.name(), "name");
-            Objects.requireNonNull(tokenRes.memo(), "memo");
-            Objects.requireNonNull(tokenRes.adminKey(), "adminKey");
-            Objects.requireNonNull(tokenRes.feeScheduleKey(), "feeScheduleKey");
-            Objects.requireNonNull(tokenRes.freezeKey(), "freezeKey");
-            Objects.requireNonNull(tokenRes.kycKey(), "kycKey");
-            Objects.requireNonNull(tokenRes.pauseKey(), "pauseKey");
-            Objects.requireNonNull(tokenRes.supplyKey(), "supplyKey");
-            Objects.requireNonNull(tokenRes.wipeKey(), "wipeKey");
-            return tokenRes;
+        Objects.requireNonNull(tokenRes.tokenType(), "tokenType");
+        Objects.requireNonNull(tokenRes.tokenSupplyType(), "tokenSupplyType");
+        Objects.requireNonNull(tokenRes.symbol(), "symbol");
+        Objects.requireNonNull(tokenRes.name(), "name");
+        Objects.requireNonNull(tokenRes.memo(), "memo");
+        Objects.requireNonNull(tokenRes.adminKey(), "adminKey");
+        Objects.requireNonNull(tokenRes.feeScheduleKey(), "feeScheduleKey");
+        Objects.requireNonNull(tokenRes.freezeKey(), "freezeKey");
+        Objects.requireNonNull(tokenRes.kycKey(), "kycKey");
+        Objects.requireNonNull(tokenRes.pauseKey(), "pauseKey");
+        Objects.requireNonNull(tokenRes.supplyKey(), "supplyKey");
+        Objects.requireNonNull(tokenRes.wipeKey(), "wipeKey");
+        return tokenRes;
     }
 
     private static EntityId idFromMod(@Nullable final AccountID accountId) {
