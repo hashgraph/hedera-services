@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
@@ -109,6 +110,48 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ALLOWANCE_OWNER_ID);
+    }
+
+    @Test
+    void cryptoApproveAllowanceFailsWithInvalidSpenderCrypto() throws PreCheckException {
+        readableAccounts =
+                emptyReadableAccountStateBuilder().value(payerId, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        final var allowance =
+                cryptoAllowance.copyBuilder().spender((AccountID) null).build();
+
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId, false, List.of(allowance), List.of(tokenAllowance), List.of(nftAllowance));
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ALLOWANCE_SPENDER_ID);
+    }
+
+    @Test
+    void cryptoApproveAllowanceFailsWithInvalidSpenderToken() throws PreCheckException {
+        readableAccounts =
+                emptyReadableAccountStateBuilder().value(payerId, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        final var allowance =
+                tokenAllowance.copyBuilder().spender((AccountID) null).build();
+
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId, false, List.of(cryptoAllowance), List.of(allowance), List.of(nftAllowance));
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ALLOWANCE_SPENDER_ID);
+    }
+
+    @Test
+    void cryptoApproveAllowanceFailsWithInvalidSpenderNFT() throws PreCheckException {
+        readableAccounts =
+                emptyReadableAccountStateBuilder().value(payerId, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        final var allowance =
+                nftAllowance.copyBuilder().spender((AccountID) null).build();
+
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(allowance));
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ALLOWANCE_SPENDER_ID);
     }
 
     @Test
