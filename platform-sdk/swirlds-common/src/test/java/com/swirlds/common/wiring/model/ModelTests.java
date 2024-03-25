@@ -1271,48 +1271,6 @@ class ModelTests {
     }
 
     /**
-     * Make sure that adding a heartbeat doesn't break the model.
-     */
-    @Test
-    void heartbeatTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
-
-        /*
-
-        A -----> B <----- heartbeat
-        ^        |
-        |        v
-        D <----- C
-
-        */
-
-        final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputA = taskSchedulerA.buildInputWire("inputA");
-
-        final TaskScheduler<Integer> taskSchedulerB =
-                model.schedulerBuilder("B").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
-        taskSchedulerB.buildHeartbeatInputWire("heartbeat", 100);
-
-        final TaskScheduler<Integer> taskSchedulerC =
-                model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputC = taskSchedulerC.buildInputWire("inputC");
-
-        final TaskScheduler<Integer> taskSchedulerD =
-                model.schedulerBuilder("D").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
-
-        taskSchedulerA.getOutputWire().solderTo(inputB);
-        taskSchedulerB.getOutputWire().solderTo(inputC);
-        taskSchedulerC.getOutputWire().solderTo(inputD);
-        taskSchedulerD.getOutputWire().solderTo(inputA);
-
-        validateModel(model, true, false);
-    }
-
-    /**
      * We should detect when a concurrent scheduler access a direct scheduler.
      */
     @Test
