@@ -24,7 +24,10 @@ import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 
@@ -122,6 +125,32 @@ public interface WiringModel extends Startable, Stoppable {
             @NonNull List<ModelEdgeSubstitution> substitutions,
             @NonNull List<ModelManualLink> manualLinks,
             boolean moreMystery);
+
+    /**
+     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
+     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
+     * factors.
+     *
+     * @param period the period of the heartbeat. For example, setting a period of 100ms will cause the heartbeat to be
+     *               sent at 10 hertz. Note that time is measured at millisecond precision, and so periods less than 1ms
+     *               are not supported.
+     * @return the output wire
+     * @throws IllegalStateException if start() has already been called
+     */
+    @NonNull
+    OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period);
+
+    /**
+     * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
+     * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
+     * factors.
+     *
+     * @param frequency the frequency of the heartbeat in hertz. Note that time is measured at millisecond precision,
+     *                  and so frequencies greater than 1000hz are not supported.
+     * @return the output wire
+     */
+    @NonNull
+    OutputWire<Instant> buildHeartbeatWire(final double frequency);
 
     /**
      * Start everything in the model that needs to be started. Performs static analysis of the wiring topology and

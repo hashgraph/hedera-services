@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.stream;
+package com.swirlds.platform.event.stream;
 
 import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EVENT_STREAM;
@@ -26,19 +26,27 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
-import com.swirlds.common.crypto.RunningHashable;
-import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.stream.EventStreamType;
+import com.swirlds.common.stream.HashCalculatorForStream;
+import com.swirlds.common.stream.MultiStream;
+import com.swirlds.common.stream.QueueThreadObjectStream;
+import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
+import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningHashCalculatorForStream;
+import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,30 +55,30 @@ import org.apache.logging.log4j.Logger;
  * This class is used for generating event stream files when enableEventStreaming is true, and for calculating
  * runningHash for consensus Events.
  */
-public class EventStreamManager<T extends StreamAligned & Timestamped & RunningHashable & SerializableHashable> {
+public class EventStreamManager {
     private static final Logger logger = LogManager.getLogger(EventStreamManager.class);
 
     /**
      * receives consensus events from ConsensusRoundHandler.addEvent(), then passes to hashQueueThread and
      * writeQueueThread
      */
-    private final MultiStream<T> multiStream;
+    private final MultiStream<EventImpl> multiStream;
     /**
      * check whether this event is the last event before restart
      */
-    private final Predicate<T> isLastEventInFreezeCheck;
+    private final Predicate<EventImpl> isLastEventInFreezeCheck;
     /**
      * receives consensus events from multiStream, then passes to hashCalculator
      */
-    private QueueThreadObjectStream<T> hashQueueThread;
+    private QueueThreadObjectStream<EventImpl> hashQueueThread;
     /**
      * receives consensus events from multiStream, then passes to streamFileWriter
      */
-    private QueueThreadObjectStream<T> writeQueueThread;
+    private QueueThreadObjectStream<EventImpl> writeQueueThread;
     /**
      * receives consensus events from writeQueueThread, serializes consensus events to event stream files
      */
-    private TimestampStreamFileWriter<T> streamFileWriter;
+    private TimestampStreamFileWriter<EventImpl> streamFileWriter;
     /**
      * initialHash loaded from signed state
      */
@@ -94,20 +102,29 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      * @param enableEventStreaming     whether write event stream files or not
      * @param eventsLogDir             eventStream files will be generated in this directory
      * @param eventsLogPeriod          period of generating eventStream file
+     * @param eventStreamQueueCapacity the capacity of the queue
      * @param isLastEventInFreezeCheck a predicate which checks whether this event is the last event before restart
      */
     public EventStreamManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
-            final ThreadManager threadManager,
-            final NodeId selfId,
-            final Signer signer,
-            final String nodeName,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final NodeId selfId,
+            @NonNull final Signer signer,
+            @NonNull final String nodeName,
             final boolean enableEventStreaming,
-            final String eventsLogDir,
+            @NonNull final String eventsLogDir,
             final long eventsLogPeriod,
             final int eventStreamQueueCapacity,
-            final Predicate<T> isLastEventInFreezeCheck) {
+            @NonNull final Predicate<EventImpl> isLastEventInFreezeCheck) {
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(time);
+        Objects.requireNonNull(threadManager);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(signer);
+        Objects.requireNonNull(nodeName);
+        Objects.requireNonNull(eventsLogDir);
+        Objects.requireNonNull(isLastEventInFreezeCheck);
 
         eventAfterFreezeLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
@@ -130,7 +147,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
                     false,
                     EventStreamType.getInstance());
 
-            writeQueueThread = new QueueThreadObjectStreamConfiguration<T>(threadManager)
+            writeQueueThread = new QueueThreadObjectStreamConfiguration<EventImpl>(threadManager)
                     .setNodeId(selfId)
                     .setComponent("event-stream")
                     .setThreadName("write-queue")
@@ -155,12 +172,12 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
                         .withUnit("count"));
 
         // receives consensus events from hashCalculator, calculates and set runningHash for this event
-        final RunningHashCalculatorForStream<T> runningHashCalculator = new RunningHashCalculatorForStream<>();
+        final RunningHashCalculatorForStream<EventImpl> runningHashCalculator = new RunningHashCalculatorForStream<>();
 
         // receives consensus events from hashQueueThread, calculates this event's Hash, then passes to
         // runningHashCalculator
-        final HashCalculatorForStream<T> hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
-        hashQueueThread = new QueueThreadObjectStreamConfiguration<T>(threadManager)
+        final HashCalculatorForStream<EventImpl> hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
+        hashQueueThread = new QueueThreadObjectStreamConfiguration<EventImpl>(threadManager)
                 .setNodeId(selfId)
                 .setComponent("event-stream")
                 .setThreadName("hash-queue")
@@ -183,11 +200,13 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      * @param isLastEventInFreezeCheck a predicate which checks whether this event is the last event before restart
      */
     public EventStreamManager(
-            @NonNull final Time time, final MultiStream<T> multiStream, final Predicate<T> isLastEventInFreezeCheck) {
-        eventAfterFreezeLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
-        this.multiStream = multiStream;
+            @NonNull final Time time,
+            @NonNull final MultiStream<EventImpl> multiStream,
+            @NonNull final Predicate<EventImpl> isLastEventInFreezeCheck) {
+        eventAfterFreezeLogger = new RateLimitedLogger(logger, Objects.requireNonNull(time), Duration.ofMinutes(1));
+        this.multiStream = Objects.requireNonNull(multiStream);
         multiStream.setRunningHash(initialHash);
-        this.isLastEventInFreezeCheck = isLastEventInFreezeCheck;
+        this.isLastEventInFreezeCheck = Objects.requireNonNull(isLastEventInFreezeCheck);
     }
 
     /**
@@ -208,7 +227,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      *
      * @param events the list of events to add
      */
-    public void addEvents(@NonNull final List<T> events) {
+    public void addEvents(@NonNull final List<EventImpl> events) {
         events.forEach(event -> {
             if (!freezePeriodStarted) {
                 multiStream.addObject(event);

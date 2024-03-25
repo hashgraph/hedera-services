@@ -29,7 +29,6 @@ testModuleInfo {
     requires("com.swirlds.merkledb")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.virtualmap")
-    requires("com.swirlds.config.api.test.fixtures")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")

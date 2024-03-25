@@ -682,16 +682,4 @@ public class Shadowgraph implements Clearable {
         // a new tree in the forest view of the graph.
         return InsertableStatus.INSERTABLE;
     }
-
-    /**
-     * @return all events stored in the shadowgraph
-     */
-    @SuppressWarnings("unchecked")
-    public EventImpl[] getAllEvents() {
-        final HashMap<Hash, ShadowEvent> clone;
-        synchronized (this) {
-            clone = (HashMap<Hash, ShadowEvent>) hashToShadowEvent.clone();
-        }
-        return clone.values().stream().map(ShadowEvent::getEvent).toArray(EventImpl[]::new);
-    }
 }

@@ -38,7 +38,6 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.AutoCloseableNonThrowing;
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -382,8 +381,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
     private Configuration buildConfiguration(@NonNull final List<Path> configurationPaths) {
         Objects.requireNonNull(configurationPaths, "configurationPaths");
 
-        final var builder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(builder, Set.of("com.swirlds"));
+        final var builder = ConfigurationBuilder.create().autoDiscoverExtensions();
 
         for (@NonNull final var path : configurationPaths) {
             Objects.requireNonNull(path, "path");

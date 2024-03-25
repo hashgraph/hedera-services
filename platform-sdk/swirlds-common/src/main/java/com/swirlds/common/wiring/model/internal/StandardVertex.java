@@ -65,21 +65,29 @@ public class StandardVertex implements ModelVertex {
     private final Set<String> substitutedInputs = new HashSet<>();
 
     /**
+     * The link to the documentation for this vertex. If null, no hyperlink will be generated.
+     */
+    private final String hyperlink;
+
+    /**
      * Constructor.
      *
      * @param name                the name of the vertex
      * @param type                the type of task scheduler that corresponds to this vertex
      * @param metaType            the meta-type of this vertex, used to generate a wiring diagram
+     * @param hyperlink           the link to the documentation for this vertex, ignored if null
      * @param insertionIsBlocking true if the insertion of this vertex may block until capacity is available
      */
     public StandardVertex(
             @NonNull final String name,
             @NonNull final TaskSchedulerType type,
             @NonNull final ModelVertexMetaType metaType,
+            @Nullable final String hyperlink,
             final boolean insertionIsBlocking) {
         this.name = Objects.requireNonNull(name);
         this.type = Objects.requireNonNull(type);
         this.metaType = Objects.requireNonNull(metaType);
+        this.hyperlink = hyperlink;
         this.insertionIsBlocking = insertionIsBlocking;
     }
 
@@ -99,6 +107,15 @@ public class StandardVertex implements ModelVertex {
     @Override
     public TaskSchedulerType getType() {
         return type;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Nullable
+    @Override
+    public String getHyperlink() {
+        return hyperlink;
     }
 
     /**
@@ -206,7 +223,14 @@ public class StandardVertex implements ModelVertex {
             }
         }
 
-        sb.append("\"").append(name);
+        sb.append("\"");
+        if (hyperlink != null) {
+            sb.append("<a href='").append(hyperlink).append("' style='color: #EEEEEE; text-decoration:none'>");
+        }
+        sb.append(name);
+        if (hyperlink != null) {
+            sb.append("</a>");
+        }
 
         if (!substitutedInputs.isEmpty()) {
             sb.append("<br />");

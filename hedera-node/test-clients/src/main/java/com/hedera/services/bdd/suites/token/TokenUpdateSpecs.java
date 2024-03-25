@@ -377,6 +377,21 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
+    public HapiSpec changeAutoRenewAccount() {
+        var account = "autoRenewAccount";
+
+        return defaultHapiSpec("AutoRenewAccountChange")
+                .given(
+                        newKeyNamed("adminKey"),
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        cryptoCreate(account).balance(0L))
+                .when(
+                        tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
+                        tokenUpdate("tbu").autoRenewPeriod(1_000_000_000).autoRenewAccount(account))
+                .then(getTokenInfo("tbu").hasAutoRenewAccount(account));
+    }
+
+    @HapiTest
     public HapiSpec nameChanges() {
         var hopefullyUnique = "ORIGINAL" + TxnUtils.randomUppercase(5);
 
