@@ -30,8 +30,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.zip.GZIPOutputStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class LocalFileSystem implements FileSystemApi {
+    private static final Logger logger = LogManager.getLogger(LocalFileSystem.class);
 
     private final BlockNodeFileSystemConfig fileSystemConfig;
 
@@ -57,12 +60,18 @@ public class LocalFileSystem implements FileSystemApi {
 
     @Override
     public void writeBlock(Block block) {
+        Path blockFilePath = null;
         try {
-            OutputStream out = Files.newOutputStream(blocksExportPath.resolve(extractBlockFileNameFromBlock(block)));
+            String blockFileName = extractBlockFileNameFromBlock(block);
+            blockFilePath = blocksExportPath.resolve(blockFileName);
+
+            OutputStream out = Files.newOutputStream(blockFilePath);
             block.writeTo(new GZIPOutputStream(out, 1024 * 256));
             out.close();
+
+            logger.info("Block successfully written to file: {}", blockFilePath);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error writing block to: {}", blockFilePath, e);
         }
     }
 

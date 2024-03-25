@@ -12,5 +12,6 @@ module com.hedera.storage.blocknode.filesystem.local {
     requires transitive com.hedera.storage.blocknode.config;
     requires transitive com.hedera.storage.blocknode.filesystem.api;
     requires transitive com.hedera.node.hapi;
+    requires org.apache.logging.log4j;
     requires com.swirlds.config.api;
 }
