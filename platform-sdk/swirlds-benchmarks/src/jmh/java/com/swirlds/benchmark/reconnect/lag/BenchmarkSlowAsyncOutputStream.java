@@ -23,6 +23,7 @@ import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
+import java.time.Duration;
 
 /**
  * This variant of the async output stream introduces an extra delay for every single
@@ -67,12 +68,14 @@ public class BenchmarkSlowAsyncOutputStream<T extends SelfSerializable> extends 
     }
 
     /**
-     * Busy sleep for a given number of microseconds.
+     * Sleep for a given number of microseconds.
      * @param micros time to sleep, in microseconds
      */
     private static void sleepMicros(final long micros) {
-        final long sleepUntil = System.nanoTime() + micros * 1000L;
-        while (System.nanoTime() < sleepUntil)
-            ;
+        try {
+            Thread.sleep(Duration.ofNanos(micros * 1000L));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
