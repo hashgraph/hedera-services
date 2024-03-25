@@ -511,11 +511,11 @@ public final class JrsTestReportGenerator {
         }
 
         if (aResult.status() == PASS) {
-            // For passing tests, give priority to the test with the most recent failure
+            // For passing tests, give priority to the test with the most recent test that did not pass
 
             int mostRecentFailureA = Integer.MAX_VALUE;
             for (int index = 1; index < a.tests().size(); index++) {
-                if (a.tests().get(index).status() == FAIL) {
+                if (a.tests().get(index).status() != PASS) {
                     mostRecentFailureA = index;
                     break;
                 }
@@ -523,7 +523,7 @@ public final class JrsTestReportGenerator {
 
             int mostRecentFailureB = Integer.MAX_VALUE;
             for (int index = 1; index < b.tests().size(); index++) {
-                if (b.tests().get(index).status() != FAIL) {
+                if (b.tests().get(index).status() != PASS) {
                     mostRecentFailureB = index;
                     break;
                 }
