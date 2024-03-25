@@ -109,39 +109,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        if (op.hasAdminKey()) {
-            context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
-        }
-        if (op.hasWipeKey()) {
-            context.requireKeyOrThrow(op.wipeKeyOrThrow(), INVALID_WIPE_KEY);
-        }
-        if (op.hasKycKey()) {
-            context.requireKeyOrThrow(op.kycKeyOrThrow(), INVALID_KYC_KEY);
-        }
-        if (op.hasSupplyKey()) {
-            context.requireKeyOrThrow(op.supplyKeyOrThrow(), INVALID_SUPPLY_KEY);
-        }
-        if (op.hasFreezeKey()) {
-            context.requireKeyOrThrow(op.freezeKeyOrThrow(), INVALID_FREEZE_KEY);
-        }
-        if (op.hasFeeScheduleKey()) {
-            context.requireKeyOrThrow(op.feeScheduleKeyOrThrow(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
-        }
-        if (op.hasPauseKey()) {
-            context.requireKeyOrThrow(op.pauseKeyOrThrow(), INVALID_PAUSE_KEY);
-        }
 
-        if (tokenMetadata.hasAdminKey()) {
-            context.requireKey(tokenMetadata.adminKey());
-
-            if (op.hasAutoRenewAccount()) {
-                context.requireKeyOrThrow(op.autoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
-            }
-            if (op.hasTreasury()) {
-                context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-            }
-        }
-
+        addRequiredSigners(context, op, tokenMetadata);
     }
 
     @Override
@@ -421,7 +390,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             validateTrue(originalToken.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
             builder.metadataKey(op.metadataKey());
         }
-        if (!isExpiryOnlyUpdateOp(op)) {
+        if (!isExpiryOnlyUpdateOp(op) && !isLowPriorityKeyUpdate(op)) {
             validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         }
         if (op.hasAdminKey()) {
@@ -430,6 +399,54 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 builder.adminKey((Key) null);
             } else {
                 builder.adminKey(newAdminKey);
+            }
+        }
+    }
+
+    /**
+     * Add all signature requirements for TokenUpdateTx
+     * note: those requirements drastically changed after HIP-540
+     * @param op token update transaction body
+     * @param originalToken original token
+     */
+    private void addRequiredSigners(
+            @NonNull PreHandleContext context,
+            @NonNull final TokenUpdateTransactionBody op,
+            @NonNull final ReadableTokenStore.TokenMetadata originalToken)
+            throws PreCheckException {
+        // keep old behaviour for signatures if we do not update any low priority key
+        if (!isLowPriorityKeyUpdate(op)) {
+            if (originalToken.hasAdminKey()) {
+                context.requireKey(originalToken.adminKey());
+            }
+        }
+
+        if (op.hasAdminKey()) {
+            context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
+        } else {
+            if (op.hasWipeKey()) {
+                context.requireKeyOrThrow(op.wipeKeyOrThrow(), INVALID_WIPE_KEY);
+            }
+            if (op.hasKycKey()) {
+                context.requireKeyOrThrow(op.kycKeyOrThrow(), INVALID_KYC_KEY);
+            }
+            if (op.hasSupplyKey()) {
+                context.requireKeyOrThrow(op.supplyKeyOrThrow(), INVALID_SUPPLY_KEY);
+            }
+            if (op.hasFreezeKey()) {
+                context.requireKeyOrThrow(op.freezeKeyOrThrow(), INVALID_FREEZE_KEY);
+            }
+            if (op.hasFeeScheduleKey()) {
+                context.requireKeyOrThrow(op.feeScheduleKeyOrThrow(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+            }
+            if (op.hasPauseKey()) {
+                context.requireKeyOrThrow(op.pauseKeyOrThrow(), INVALID_PAUSE_KEY);
+            }
+            if (op.hasAutoRenewAccount()) {
+                context.requireKeyOrThrow(op.autoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+            }
+            if (op.hasTreasury()) {
+                context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
             }
         }
     }
