@@ -212,8 +212,7 @@ public class TestingEventBuilder {
 
     /**
      * Set the other-parent of an event. If set to null, no other-parent will be used unless a generation is set, in
-     * which
-     * case, a other-parent descriptor will be created with the given generation.
+     * which case, an other-parent descriptor will be created with the given generation.
      *
      * @param otherParent the other-parent
      * @return this instance

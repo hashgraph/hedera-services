@@ -177,7 +177,7 @@ public class EventImplTests {
     }
 
     private TransactionData mixedTransactions() {
-        int numTransactions = 10_000;
+        final int numTransactions = 10_000;
         final ConsensusTransactionImpl[] mixedTransactions = new ConsensusTransactionImpl[numTransactions];
         final List<Integer> systemIndices = new ArrayList<>();
 

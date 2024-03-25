@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.graph;
 
+import static com.swirlds.platform.test.fixtures.event.EventImplTestUtils.createEventImpl;
+
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
@@ -92,37 +94,31 @@ public class SimpleGraphs {
      */
     public static List<EventImpl> graph9e3n(final Random random) {
         // generation 0
-        final EventImpl e0 = new EventImpl(
-                TestingEventBuilder.builder(random).setCreatorId(new NodeId(1)).build(), null, null);
+        final EventImpl e0 =
+                createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(1)), null, null);
         e0.setConsensus(true);
 
-        final EventImpl e1 = new EventImpl(
-                TestingEventBuilder.builder(random).setCreatorId(new NodeId(2)).build(), null, null);
+        final EventImpl e1 =
+                createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(2)), null, null);
         e1.setConsensus(true);
 
-        final EventImpl e2 = new EventImpl(
-                TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)).build(), null, null);
+        final EventImpl e2 =
+                createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)), null, null);
 
         // generation 1
-        final EventImpl e3 = new EventImpl(
-                TestingEventBuilder.builder(random).setCreatorId(new NodeId(1)).build(), e0, e1);
+        final EventImpl e3 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(1)), e0, e1);
 
-        final EventImpl e4 = new EventImpl(
-                TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)).build(), e2, null);
+        final EventImpl e4 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)), e2, null);
 
         // generation 2
-        final EventImpl e5 = new EventImpl(
-                TestingEventBuilder.builder(random).setCreatorId(new NodeId(1)).build(), e3, null);
+        final EventImpl e5 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(1)), e3, null);
 
-        final EventImpl e6 = new EventImpl(
-                TestingEventBuilder.builder(random).setCreatorId(new NodeId(2)).build(), e1, e3);
+        final EventImpl e6 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(2)), e1, e3);
 
-        final EventImpl e7 = new EventImpl(
-                TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)).build(), e4, e1);
+        final EventImpl e7 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)), e4, e1);
 
         // generation 3
-        final EventImpl e8 = new EventImpl(
-                TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)).build(), e7, e6);
+        final EventImpl e8 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)), e7, e6);
 
         return List.of(e0, e1, e2, e3, e4, e5, e6, e7, e8);
     }
