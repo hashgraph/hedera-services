@@ -68,7 +68,7 @@ public class FileServiceStateTranslator {
                 .realmNum(fileID.getRealmNum())
                 .shardNum(fileID.getShardNum()));
         fileBuilder.expirationSecond(metadata.getExpiry());
-        if (metadata.getWacl() != null) {
+        if (metadata.getWacl() != null && !metadata.getWacl().isEmpty()) {
             fileBuilder.keys(PbjConverter.asPbjKey(metadata.getWacl()).keyList());
         }
         if (data != null) {

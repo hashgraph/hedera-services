@@ -180,7 +180,7 @@ public record BBMHederaAccount(
     }
 
     public long totalStake() {
-        return tinybarBalance() / ONE_HBAR_IN_TINYBARS + stakedToMe();
+        return tinybarBalance() + stakedToMe();
     }
 
     public AccountID getProxy() {

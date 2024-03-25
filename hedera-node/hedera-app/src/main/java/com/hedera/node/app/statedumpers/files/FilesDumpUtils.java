@@ -86,10 +86,10 @@ public class FilesDumpUtils {
         if (value.fileId().fileNum() == 13704L) {
             System.out.println(value);
         }
+        final var key = Key.newBuilder().keyList(value.keys()).build();
         final var meta = new HFileMeta(
                 value.deleted(),
-                (JKey) fromPbjKey(Key.newBuilder().keyList(value.keys()).build())
-                        .orElse(null),
+                value.keys() != null ? (JKey) fromPbjKey(key).get() : null,
                 value.expirationSecond(),
                 value.memo());
         return new BBMHederaFile(

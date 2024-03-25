@@ -101,16 +101,17 @@ public class ContractBytecodesDumpUtils {
      * returned because some contracts known to accounts are not present in the file store.
      */
     @NonNull
-    private static Pair<Contracts, List<Integer>> getNonTrivialContracts(Contracts knownContracts) {
+    private static Pair<Contracts, List<Integer>> getNonTrivialContracts(Contracts contracts) {
         final var zeroLengthContracts = new ArrayList<Integer>(10000);
-        knownContracts.contracts().removeIf(contract -> {
+        final var knownContracts = new ArrayList<>(contracts.contracts());
+        knownContracts.removeIf(contract -> {
             if (0 == contract.bytecode().length) {
                 zeroLengthContracts.addAll(contract.ids());
                 return true;
             }
             return false;
         });
-        return Pair.of(knownContracts, zeroLengthContracts);
+        return Pair.of(new Contracts(knownContracts, contracts.deletedContracts(), contracts.registeredContractsCount()), zeroLengthContracts);
     }
 
     /** Returns all _unique_ contracts (by their bytecode) from the signed state.
