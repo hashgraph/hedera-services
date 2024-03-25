@@ -63,8 +63,9 @@ tasks.register<JMHTask>("jmhReconnect") {
     resultsFile.convention(layout.buildDirectory.file("results/jmh/results-reconnect.txt"))
 
     benchmarkParameters.put("numRecords", listProperty("1000"))
-    benchmarkParameters.put("numFiles", listProperty("10"))
-    benchmarkParameters.put("delayMilliseconds", listProperty("1"))
+    benchmarkParameters.put("numFiles", listProperty("100"))
+    benchmarkParameters.put("delayStorageMicroseconds", listProperty("100"))
+    benchmarkParameters.put("delayNetworkMicroseconds", listProperty("50"))
     benchmarkParameters.put("teacherAddProbability", listProperty("0.01"))
     benchmarkParameters.put("teacherRemoveProbability", listProperty("0.01"))
     benchmarkParameters.put("teacherModifyProbability", listProperty("0.01"))

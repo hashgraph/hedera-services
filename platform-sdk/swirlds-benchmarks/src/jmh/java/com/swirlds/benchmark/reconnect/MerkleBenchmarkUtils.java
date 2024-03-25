@@ -55,7 +55,8 @@ public class MerkleBenchmarkUtils {
     public static <T extends MerkleNode> T hashAndTestSynchronization(
             final MerkleNode startingTree,
             final MerkleNode desiredTree,
-            final int delayMilliseconds,
+            final long delayStorageMicroseconds,
+            final long delayNetworkMicroseconds,
             final Configuration configuration)
             throws Exception {
         System.out.println("------------");
@@ -70,7 +71,13 @@ public class MerkleBenchmarkUtils {
         if (desiredTree != null && desiredTree.getHash() == null) {
             MerkleCryptoFactory.getInstance().digestTreeSync(desiredTree);
         }
-        return testSynchronization(startingTree, desiredTree, delayMilliseconds, configuration, reconnectConfig);
+        return testSynchronization(
+                startingTree,
+                desiredTree,
+                delayStorageMicroseconds,
+                delayNetworkMicroseconds,
+                configuration,
+                reconnectConfig);
     }
 
     /**
@@ -80,7 +87,8 @@ public class MerkleBenchmarkUtils {
     private static <T extends MerkleNode> T testSynchronization(
             final MerkleNode startingTree,
             final MerkleNode desiredTree,
-            final int delayMilliseconds,
+            final long delayStorageMicroseconds,
+            final long delayNetworkMicroseconds,
             final Configuration configuration,
             final ReconnectConfig reconnectConfig)
             throws Exception {
@@ -88,7 +96,7 @@ public class MerkleBenchmarkUtils {
             final LearningSynchronizer learner;
             final TeachingSynchronizer teacher;
 
-            if (delayMilliseconds == 0) {
+            if (delayStorageMicroseconds == 0 && delayNetworkMicroseconds == 0) {
                 learner = new LearningSynchronizer(
                         getStaticThreadManager(),
                         streams.getLearnerInput(),
@@ -124,7 +132,8 @@ public class MerkleBenchmarkUtils {
                         streams.getLearnerInput(),
                         streams.getLearnerOutput(),
                         startingTree,
-                        delayMilliseconds,
+                        delayStorageMicroseconds,
+                        delayNetworkMicroseconds,
                         () -> {
                             try {
                                 streams.disconnect();
@@ -139,7 +148,8 @@ public class MerkleBenchmarkUtils {
                         streams.getTeacherInput(),
                         streams.getTeacherOutput(),
                         desiredTree,
-                        delayMilliseconds,
+                        delayStorageMicroseconds,
+                        delayNetworkMicroseconds,
                         () -> {
                             try {
                                 streams.disconnect();

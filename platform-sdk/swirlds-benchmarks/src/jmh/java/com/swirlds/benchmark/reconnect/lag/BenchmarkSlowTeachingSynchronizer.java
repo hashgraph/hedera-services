@@ -36,7 +36,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
 
-    private final int delayMilliseconds;
+    private final long delayStorageMicroseconds;
+    private final long delayNetworkMicroseconds;
 
     /**
      * Create a new teaching synchronizer with simulated latency.
@@ -46,7 +47,8 @@ public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
             final MerkleDataInputStream in,
             final MerkleDataOutputStream out,
             final MerkleNode root,
-            final int delayMilliseconds,
+            final long delayStorageMicroseconds,
+            final long delayNetworkMicroseconds,
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig) {
         super(
@@ -58,7 +60,8 @@ public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
                 root,
                 breakConnection,
                 reconnectConfig);
-        this.delayMilliseconds = delayMilliseconds;
+        this.delayStorageMicroseconds = delayStorageMicroseconds;
+        this.delayNetworkMicroseconds = delayNetworkMicroseconds;
     }
 
     /**
@@ -67,6 +70,7 @@ public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
     @Override
     protected <T> AsyncOutputStream<Lesson<T>> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new BenchmarkSlowAsyncOutputStream<>(out, workGroup, delayMilliseconds, reconnectConfig);
+        return new BenchmarkSlowAsyncOutputStream<>(
+                out, workGroup, delayStorageMicroseconds, delayNetworkMicroseconds, reconnectConfig);
     }
 }

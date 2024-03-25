@@ -33,7 +33,8 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
  */
 public class BenchmarkSlowLearningSynchronizer extends LearningSynchronizer {
 
-    private final int delayMilliseconds;
+    private final long delayStorageMicroseconds;
+    private final long delayNetworkMicroseconds;
 
     /**
      * Create a new learning synchronizer with simulated latency.
@@ -42,12 +43,14 @@ public class BenchmarkSlowLearningSynchronizer extends LearningSynchronizer {
             final MerkleDataInputStream in,
             final MerkleDataOutputStream out,
             final MerkleNode root,
-            final int delayMilliseconds,
+            final long delayStorageMicroseconds,
+            final long delayNetworkMicroseconds,
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig) {
         super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig);
 
-        this.delayMilliseconds = delayMilliseconds;
+        this.delayStorageMicroseconds = delayStorageMicroseconds;
+        this.delayNetworkMicroseconds = delayNetworkMicroseconds;
     }
 
     /**
@@ -56,6 +59,7 @@ public class BenchmarkSlowLearningSynchronizer extends LearningSynchronizer {
     @Override
     protected AsyncOutputStream<QueryResponse> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new BenchmarkSlowAsyncOutputStream<>(out, workGroup, delayMilliseconds, reconnectConfig);
+        return new BenchmarkSlowAsyncOutputStream<>(
+                out, workGroup, delayStorageMicroseconds, delayNetworkMicroseconds, reconnectConfig);
     }
 }

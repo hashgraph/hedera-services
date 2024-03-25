@@ -31,15 +31,18 @@ import java.io.IOException;
  */
 public class BenchmarkSlowAsyncOutputStream<T extends SelfSerializable> extends AsyncOutputStream<T> {
 
-    private final long delayMilliseconds;
+    private final long delayStorageMicroseconds;
+    private final long delayNetworkMicroseconds;
 
     public BenchmarkSlowAsyncOutputStream(
             final SerializableDataOutputStream out,
             final StandardWorkGroup workGroup,
-            final long delayMilliseconds,
+            final long delayStorageMicroseconds,
+            final long delayNetworkMicroseconds,
             final ReconnectConfig reconnectConfig) {
         super(out, workGroup, reconnectConfig);
-        this.delayMilliseconds = delayMilliseconds;
+        this.delayStorageMicroseconds = delayStorageMicroseconds;
+        this.delayNetworkMicroseconds = delayNetworkMicroseconds;
     }
 
     /**
@@ -50,6 +53,7 @@ public class BenchmarkSlowAsyncOutputStream<T extends SelfSerializable> extends 
         if (!isAlive()) {
             throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
         }
+        sleepMicros(delayStorageMicroseconds);
         getOutgoingMessages().put(message);
     }
 
@@ -58,11 +62,17 @@ public class BenchmarkSlowAsyncOutputStream<T extends SelfSerializable> extends 
      */
     @Override
     protected void serializeMessage(final T message) throws IOException {
-        try {
-            Thread.sleep(delayMilliseconds);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        sleepMicros(delayNetworkMicroseconds);
         message.serialize(getOutputStream());
+    }
+
+    /**
+     * Busy sleep for a given number of microseconds.
+     * @param micros time to sleep, in microseconds
+     */
+    private static void sleepMicros(final long micros) {
+        final long sleepUntil = System.nanoTime() + micros * 1000L;
+        while (System.nanoTime() < sleepUntil)
+            ;
     }
 }
