@@ -83,7 +83,7 @@ cat <<EOF
 ****************        ****************************************************************************************
 
 
-#### Starting Hedera Services Node Software ####
+#### Starting Hedera Consensus Node Software ####
 
 
 EOF
