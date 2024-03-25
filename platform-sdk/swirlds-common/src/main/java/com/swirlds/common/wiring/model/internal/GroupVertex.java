@@ -21,6 +21,7 @@ import static com.swirlds.common.wiring.model.internal.WiringFlowchart.TEXT_COLO
 
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -75,6 +76,15 @@ public class GroupVertex implements ModelVertex {
     @Override
     public TaskSchedulerType getType() {
         return TaskSchedulerType.DIRECT;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Nullable
+    @Override
+    public String getHyperlink() {
+        return null;
     }
 
     /**

@@ -25,10 +25,12 @@ mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
 testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
+    requires("com.swirlds.common")
+    requires("com.swirlds.config.api.test.fixtures")
+    runtimeOnly("com.swirlds.platform.core")
 }
 
 jmhModuleInfo {
-    requires("com.swirlds.common")
     requires("com.swirlds.config.api")
     requires("com.swirlds.config.extensions")
     requires("jmh.core")
