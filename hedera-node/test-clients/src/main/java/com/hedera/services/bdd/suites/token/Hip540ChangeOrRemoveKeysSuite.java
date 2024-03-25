@@ -17,11 +17,33 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.function.Function;
+
+import com.hederahashgraph.api.proto.java.Key;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
@@ -31,7 +53,8 @@ import org.junit.jupiter.api.Tag;
 public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(Hip540ChangeOrRemoveKeysSuite.class);
-
+    private static final Key allZeros = Key.newBuilder().setECDSASecp256K1(ByteString.fromHex("0000000000000000000000000000000000000000")).build();
+    private static final Key otherInvalidKey = Key.newBuilder().setECDSASecp256K1(ByteString.fromHex("00a9fF0a")).build();
     public static void main(String... args) {
         new Hip540ChangeOrRemoveKeysSuite().runSuiteSync();
     }
@@ -42,11 +65,44 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
     }
 
     private List<HapiSpec> positiveTests() {
-        return List.of();
+        return List.of(keysChange());
     }
 
     private List<HapiSpec> negativeTests() {
         return List.of();
+    }
+
+    @HapiTest
+    public HapiSpec keysChange() {
+        return defaultHapiSpec("keysChange")
+                .given(
+                        newKeyNamed("key"),
+                        newKeyNamed("newKey"),
+                        newKeyNamed("wipeKey"),
+                        cryptoCreate("admin").key("key").balance(ONE_HUNDRED_HBARS),
+                        //cryptoCreate("misc").key(allZeros).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate("misc").key(otherInvalidKey).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        tokenCreate("tbu")
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(10)
+                                .adminKey("key")
+                                .wipeKey("wipeKey"))
+                .when(
+                        tokenUpdate("tbu")
+                                .wipeKey("newKey")
+                                .signedBy("key")
+                                .payingWith("admin"))
+                .then(
+                        /*getTokenInfo("tbu").logged(),
+                        tokenUnfreeze("tbu", "misc").signedBy(GENESIS, "kycFreezeKey"),
+                        grantTokenKyc("tbu", "misc").signedBy(GENESIS, "freezeThenKycKey"),
+                        getAccountInfo("misc").logged(),
+                        cryptoTransfer(moving(5, "tbu").between(TOKEN_TREASURY, "misc")),
+                        mintToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
+                        burnToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
+                        wipeTokenAccount("tbu", "misc", 5).signedBy(GENESIS, "supplyThenWipeKey"),
+                        getAccountInfo(TOKEN_TREASURY).logged()*/);
     }
 
     @Override
