@@ -124,12 +124,19 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
                 serviceLoader.stream().map(Provider::get).toList();
 
         for (final ConfigurationExtension extension : extensions) {
-            extension.getConverters().forEach(this::addConverter);
-            extension.getValidators().forEach(this::addValidator);
-            extension.getConfigDataTypes().forEach(this::addConfigDataType);
-            extension.getConfigSources().forEach(this::addConfigSource);
+            loadExtension(extension);
         }
 
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public ConfigurationBuilder loadExtension(@NonNull final ConfigurationExtension extension) {
+        extension.getConverters().forEach(this::addConverter);
+        extension.getValidators().forEach(this::addValidator);
+        extension.getConfigDataTypes().forEach(this::addConfigDataType);
+        extension.getConfigSources().forEach(this::addConfigSource);
         return this;
     }
 
