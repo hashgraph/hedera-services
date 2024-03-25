@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.statedumpers.nfts;
 
-import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.getMaybeStringifyByteString;
+import static com.hedera.node.app.service.mono.statedumpers.nfts.UniqueTokenDumpUtils.reportOnUniques;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -28,24 +28,18 @@ import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.nfts.BBMUniqueToken;
 import com.hedera.node.app.service.mono.statedumpers.nfts.BBMUniqueTokenId;
-import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.statedumpers.utils.FieldBuilder;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class UniqueTokenDumpUtils {
     public static void dumpModUniqueTokens(
@@ -83,55 +77,6 @@ public class UniqueTokenDumpUtils {
             r.put(mapping.key(), mapping.value());
         }
         return r;
-    }
-
-    private static void reportOnUniques(
-            @NonNull final Writer writer, @NonNull final Map<BBMUniqueTokenId, BBMUniqueToken> uniques) {
-        writer.writeln(formatHeader());
-        uniques.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> formatUnique(writer, e.getKey(), e.getValue()));
-        writer.writeln("");
-    }
-
-    @NonNull
-    private static String formatHeader() {
-        return "nftId,nftSerial,"
-                + fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(Writer.FIELD_SEPARATOR));
-    }
-
-    // spotless:off
-    @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMUniqueToken>>> fieldFormatters = List.of(
-            Pair.of("owner", getFieldFormatter(BBMUniqueToken::owner, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("spender", getFieldFormatter(BBMUniqueToken::spender, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("creationTime", getFieldFormatter(BBMUniqueToken::creationTime, ThingsToStrings::toStringOfRichInstant)),
-            Pair.of("metadata", getFieldFormatter(BBMUniqueToken::metadata, getMaybeStringifyByteString(Writer.FIELD_SEPARATOR))),
-            Pair.of("prev", getFieldFormatter(BBMUniqueToken::previous, Object::toString)),
-            Pair.of("next", getFieldFormatter(BBMUniqueToken::next, Object::toString))
-    );
-    // spotless:on
-
-    @NonNull
-    static <T> BiConsumer<FieldBuilder, BBMUniqueToken> getFieldFormatter(
-            @NonNull final Function<BBMUniqueToken, T> fun, @NonNull final Function<T, String> formatter) {
-        return (fb, u) -> formatField(fb, u, fun, formatter);
-    }
-
-    static <T> void formatField(
-            @NonNull final FieldBuilder fb,
-            @NonNull final BBMUniqueToken unique,
-            @NonNull final Function<BBMUniqueToken, T> fun,
-            @NonNull final Function<T, String> formatter) {
-        fb.append(formatter.apply(fun.apply(unique)));
-    }
-
-    private static void formatUnique(
-            @NonNull final Writer writer, @NonNull final BBMUniqueTokenId id, @NonNull final BBMUniqueToken unique) {
-        final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
-        fb.append(id.toString());
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, unique));
-        writer.writeln(fb);
     }
 
     static BBMUniqueToken fromMod(@NonNull final OnDiskValue<Nft> wrapper) {

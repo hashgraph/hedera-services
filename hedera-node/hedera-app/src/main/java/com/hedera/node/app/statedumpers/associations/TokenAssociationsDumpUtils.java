@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.statedumpers.associations;
 
+import static com.hedera.node.app.service.mono.statedumpers.associations.TokenAssociationsDumpUtils.reportOnTokenAssociations;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.state.common.EntityIDPair;
@@ -25,23 +26,17 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.associations.BBMTokenAssociation;
 import com.hedera.node.app.service.mono.statedumpers.associations.BBMTokenAssociationId;
-import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.statedumpers.utils.FieldBuilder;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class TokenAssociationsDumpUtils {
     public static void dumpModTokenRelations(
@@ -50,7 +45,7 @@ public class TokenAssociationsDumpUtils {
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableTokenRelations = gatherTokenRelations(associations);
-            reportOnBBMTokenAssociations(writer, dumpableTokenRelations);
+            reportOnTokenAssociations(writer, dumpableTokenRelations);
             System.out.printf(
                     "=== mod token associations report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
@@ -95,55 +90,6 @@ public class TokenAssociationsDumpUtils {
                 value.automaticAssociation(),
                 tokenIdFromMod(value.previousToken()),
                 tokenIdFromMod(value.nextToken()));
-    }
-
-    private static void reportOnBBMTokenAssociations(
-            @NonNull final Writer writer, @NonNull final Map<BBMTokenAssociationId, BBMTokenAssociation> associations) {
-        writer.writeln(formatHeader());
-        associations.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> formatBBMTokenAssociation(writer, e.getValue()));
-        writer.writeln("");
-    }
-
-    @NonNull
-    private static String formatHeader() {
-        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(Writer.FIELD_SEPARATOR));
-    }
-
-    // spotless:off
-    @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMTokenAssociation>>> fieldFormatters = List.of(
-            Pair.of("accountId", getFieldFormatter(BBMTokenAssociation::accountId, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("tokenId", getFieldFormatter(BBMTokenAssociation::tokenId, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("balance", getFieldFormatter(BBMTokenAssociation::balance, Object::toString)),
-            Pair.of("isFrozen", getFieldFormatter(BBMTokenAssociation::isFrozen, Object::toString)),
-            Pair.of("isKycGranted", getFieldFormatter(BBMTokenAssociation::isKycGranted, Object::toString)),
-            Pair.of("isAutomaticAssociation", getFieldFormatter(BBMTokenAssociation::isAutomaticAssociation, Object::toString)),
-            Pair.of("prev", getFieldFormatter(BBMTokenAssociation::prev, ThingsToStrings::toStringOfEntityId)),
-            Pair.of("next", getFieldFormatter(BBMTokenAssociation::next, ThingsToStrings::toStringOfEntityId))
-    );
-    // spotless:on
-
-    @NonNull
-    static <T> BiConsumer<FieldBuilder, BBMTokenAssociation> getFieldFormatter(
-            @NonNull final Function<BBMTokenAssociation, T> fun, @NonNull final Function<T, String> formatter) {
-        return (fb, u) -> formatField(fb, u, fun, formatter);
-    }
-
-    static <T> void formatField(
-            @NonNull final FieldBuilder fb,
-            @NonNull final BBMTokenAssociation BBMTokenAssociation,
-            @NonNull final Function<BBMTokenAssociation, T> fun,
-            @NonNull final Function<T, String> formatter) {
-        fb.append(formatter.apply(fun.apply(BBMTokenAssociation)));
-    }
-
-    private static void formatBBMTokenAssociation(
-            @NonNull final Writer writer, @NonNull final BBMTokenAssociation BBMTokenAssociation) {
-        final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, BBMTokenAssociation));
-        writer.writeln(fb);
     }
 
     public static EntityId accountIdFromMod(@Nullable final com.hedera.hapi.node.base.AccountID accountId) {

@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.statedumpers.scheduledtransactions;
 
-import static com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings.quoteForCsv;
+import static com.hedera.node.app.service.mono.statedumpers.associations.BBMTokenAssociation.entityIdFrom;
+import static com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.ScheduledTransactionsDumpUtils.reportOnScheduledTransactionsById;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.ScheduleID;
@@ -24,16 +25,13 @@ import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledTransaction;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledTransactionId;
-import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.statedumpers.utils.FieldBuilder;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,13 +39,9 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class ScheduledTransactionsDumpUtils {
 
@@ -57,7 +51,7 @@ public class ScheduledTransactionsDumpUtils {
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableScheduledTransactions = gatherModScheduledTransactions(scheduledTransactions);
-            reportOnScheduledTransactions(writer, dumpableScheduledTransactions);
+            reportOnScheduledTransactionsById(writer, dumpableScheduledTransactions);
             System.out.printf(
                     "=== mod scheduled transactions report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
@@ -96,124 +90,6 @@ public class ScheduledTransactionsDumpUtils {
         return r;
     }
 
-    private static void reportOnScheduledTransactions(
-            @NonNull final Writer writer,
-            @NonNull final Map<BBMScheduledTransactionId, BBMScheduledTransaction> scheduledTransactions) {
-        writer.writeln(formatHeader());
-        scheduledTransactions.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> formatTokenAssociation(writer, e.getValue()));
-        writer.writeln("");
-    }
-
-    @NonNull
-    private static String formatHeader() {
-        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
-    }
-
-    static final String FIELD_SEPARATOR = ";";
-    static final String SUBFIELD_SEPARATOR = ",";
-    static Function<Boolean, String> booleanFormatter = b -> b ? "T" : "";
-    static Function<Object, String> csvQuote = s -> quoteForCsv(FIELD_SEPARATOR, (s == null) ? "" : s.toString());
-
-    static <T> Function<Optional<T>, String> getOptionalFormatter(@NonNull final Function<T, String> formatter) {
-        return ot -> ot.isPresent() ? formatter.apply(ot.get()) : "";
-    }
-
-    static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
-        return t -> null != t ? formatter.apply(t) : "";
-    }
-
-    static <T> Function<List<T>, String> getListFormatter(
-            @NonNull final Function<T, String> formatter, @NonNull final String subfieldSeparator) {
-        return lt -> {
-            if (!lt.isEmpty()) {
-                final var sb = new StringBuilder();
-                for (@NonNull final var e : lt) {
-                    final var v = formatter.apply(e);
-                    sb.append(v);
-                    sb.append(subfieldSeparator);
-                }
-                // Remove last subfield separator
-                if (sb.length() >= subfieldSeparator.length()) sb.setLength(sb.length() - subfieldSeparator.length());
-                return sb.toString();
-            } else return "";
-        };
-    }
-
-    // spotless:off
-    @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMScheduledTransaction>>> fieldFormatters = List.of(
-            Pair.of("number", getFieldFormatter(BBMScheduledTransaction::number, Object::toString)),
-            Pair.of(
-                    "adminKey",
-                    getFieldFormatter(
-                            BBMScheduledTransaction::adminKey, getOptionalFormatter(ThingsToStrings::toStringOfJKey))),
-            Pair.of("memo", getFieldFormatter(BBMScheduledTransaction::memo, csvQuote)),
-            Pair.of("isDeleted", getFieldFormatter(BBMScheduledTransaction::deleted, booleanFormatter)),
-            Pair.of("isExecuted", getFieldFormatter(BBMScheduledTransaction::executed, booleanFormatter)),
-            Pair.of(
-                    "calculatedWaitForExpiry",
-                    getFieldFormatter(BBMScheduledTransaction::calculatedWaitForExpiry, booleanFormatter)),
-            Pair.of(
-                    "waitForExpiryProvided",
-                    getFieldFormatter(BBMScheduledTransaction::waitForExpiryProvided, booleanFormatter)),
-            Pair.of("payer", getFieldFormatter(BBMScheduledTransaction::payer, ThingsToStrings::toStringOfEntityId)),
-            Pair.of(
-                    "schedulingAccount",
-                    getFieldFormatter(BBMScheduledTransaction::schedulingAccount, ThingsToStrings::toStringOfEntityId)),
-            Pair.of(
-                    "schedulingTXValidStart",
-                    getFieldFormatter(
-                            BBMScheduledTransaction::schedulingTXValidStart, ThingsToStrings::toStringOfRichInstant)),
-            Pair.of(
-                    "expirationTimeProvided",
-                    getFieldFormatter(
-                            BBMScheduledTransaction::expirationTimeProvided,
-                            getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
-            Pair.of(
-                    "calculatedExpirationTime",
-                    getFieldFormatter(
-                            BBMScheduledTransaction::calculatedExpirationTime,
-                            getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
-            Pair.of(
-                    "resolutionTime",
-                    getFieldFormatter(
-                            BBMScheduledTransaction::resolutionTime,
-                            getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
-            Pair.of(
-                    "bodyBytes",
-                    getFieldFormatter(BBMScheduledTransaction::bodyBytes, ThingsToStrings::toStringOfByteArray)),
-            Pair.of("ordinaryScheduledTxn", getFieldFormatter(BBMScheduledTransaction::ordinaryScheduledTxn, csvQuote)),
-            Pair.of("scheduledTxn", getFieldFormatter(BBMScheduledTransaction::scheduledTxn, csvQuote)),
-            Pair.of(
-                    "signatories",
-                    getFieldFormatter(
-                            BBMScheduledTransaction::signatories,
-                            getListFormatter(ThingsToStrings::toStringOfByteArray, SUBFIELD_SEPARATOR))));
-    // spotless:on
-
-    @NonNull
-    static <T> BiConsumer<FieldBuilder, BBMScheduledTransaction> getFieldFormatter(
-            @NonNull final Function<BBMScheduledTransaction, T> fun, @NonNull final Function<T, String> formatter) {
-        return (fb, u) -> formatField(fb, u, fun, formatter);
-    }
-
-    static <T> void formatField(
-            @NonNull final FieldBuilder fb,
-            @NonNull final BBMScheduledTransaction scheduledTransaction,
-            @NonNull final Function<BBMScheduledTransaction, T> fun,
-            @NonNull final Function<T, String> formatter) {
-        fb.append(formatter.apply(fun.apply(scheduledTransaction)));
-    }
-
-    private static void formatTokenAssociation(
-            @NonNull final Writer writer, @NonNull final BBMScheduledTransaction scheduledTransaction) {
-        final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, scheduledTransaction));
-        writer.writeln(fb);
-    }
-
     static BBMScheduledTransaction fromMod(@NonNull final Schedule value) throws InvalidKeyException {
         return new BBMScheduledTransaction(
                 value.scheduleId().scheduleNum(),
@@ -240,8 +116,8 @@ public class ScheduledTransactionsDumpUtils {
                 value.signatories().stream().map(k -> toPrimitiveKey(k)).toList());
     }
 
-    static EntityId entityIdFrom(long num) {
-        return new EntityId(0L, 0L, num);
+    static BBMScheduledTransactionId fromMod(@NonNull final ScheduleID scheduleID) {
+        return new BBMScheduledTransactionId(scheduleID.scheduleNum());
     }
 
     static byte[] toPrimitiveKey(com.hedera.hapi.node.base.Key key) {
@@ -252,9 +128,5 @@ public class ScheduledTransactionsDumpUtils {
         } else {
             return new byte[] {};
         }
-    }
-
-    static BBMScheduledTransactionId fromMod(@NonNull final ScheduleID scheduleID) {
-        return new BBMScheduledTransactionId(scheduleID.scheduleNum());
     }
 }

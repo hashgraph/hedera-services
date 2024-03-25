@@ -79,7 +79,7 @@ public class TokenAssociationsDumpUtils {
         return r;
     }
 
-    private static void reportOnTokenAssociations(
+    public static void reportOnTokenAssociations(
             @NonNull final Writer writer, @NonNull final Map<BBMTokenAssociationId, BBMTokenAssociation> associations) {
         writer.writeln(formatHeader());
         associations.entrySet().stream()

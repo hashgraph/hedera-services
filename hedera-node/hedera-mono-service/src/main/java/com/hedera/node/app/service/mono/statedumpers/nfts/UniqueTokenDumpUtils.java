@@ -79,7 +79,7 @@ public class UniqueTokenDumpUtils {
         return r;
     }
 
-    private static void reportOnUniques(
+    public static void reportOnUniques(
             @NonNull final Writer writer, @NonNull final Map<BBMUniqueTokenId, BBMUniqueToken> uniques) {
         writer.writeln(formatHeader());
         uniques.entrySet().stream()

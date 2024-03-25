@@ -60,7 +60,7 @@ public class ContractBytecodesDumpUtils {
         }
     }
 
-    private static StringBuilder generateReport(Contracts knownContracts) {
+    public static StringBuilder generateReport(Contracts knownContracts) {
         if (knownContracts.contracts().isEmpty()) {
             return new StringBuilder();
         }

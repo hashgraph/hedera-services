@@ -60,7 +60,7 @@ public record BBMTokenAssociation(
         return Pair.of(pat.left().getAccountNum(), pat.right().getTokenNum());
     }
 
-    static EntityId entityIdFrom(long num) {
+    public static EntityId entityIdFrom(long num) {
         return new EntityId(0L, 0L, num);
     }
 }

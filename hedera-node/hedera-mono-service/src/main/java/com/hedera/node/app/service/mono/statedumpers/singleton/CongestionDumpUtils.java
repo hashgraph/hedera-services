@@ -61,7 +61,7 @@ public class CongestionDumpUtils {
         System.out.printf("=== staking rewards report is %d bytes %n", reportSize);
     }
 
-    static void reportOnCongestion(@NonNull Writer writer, @NonNull BBMCongestion congestion) {
+    public static void reportOnCongestion(@NonNull Writer writer, @NonNull BBMCongestion congestion) {
         writer.writeln(formatHeader());
         formatCongestion(writer, congestion);
         writer.writeln("");

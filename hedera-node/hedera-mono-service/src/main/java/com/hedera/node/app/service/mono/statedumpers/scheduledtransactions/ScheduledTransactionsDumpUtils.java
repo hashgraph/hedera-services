@@ -93,7 +93,7 @@ public class ScheduledTransactionsDumpUtils {
         return r;
     }
 
-    private static void reportOnScheduledTransactionsById(
+    public static void reportOnScheduledTransactionsById(
             @NonNull final Writer writer,
             @NonNull final Map<BBMScheduledTransactionId, BBMScheduledTransaction> scheduledTransactions) {
         writer.writeln(formatHeader());

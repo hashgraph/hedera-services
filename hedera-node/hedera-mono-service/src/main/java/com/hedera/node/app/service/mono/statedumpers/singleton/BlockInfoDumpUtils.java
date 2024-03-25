@@ -74,7 +74,7 @@ public class BlockInfoDumpUtils {
         }
     }
 
-    private static void reportOnBlockInfo(
+    public static void reportOnBlockInfo(
             @NonNull final Writer writer,
             @NonNull final BBMBlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
         writer.writeln(formatHeaderForBlockInfo());
