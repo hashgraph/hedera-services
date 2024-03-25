@@ -10,7 +10,7 @@ module com.hedera.storage.blocknode.filesystem.local {
     // Require modules which are needed for compilation and should be available to all modules that depend on this
     // module (including tests and other source sets).
     requires transitive com.hedera.storage.blocknode.config;
-    requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.storage.blocknode.filesystem.api;
+    requires transitive com.hedera.node.hapi;
     requires com.swirlds.config.api;
 }
