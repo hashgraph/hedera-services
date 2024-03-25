@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.statedumpers.accounts;
 
+import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_ACCOUNT_ID;
+import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_NODE_ID;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
@@ -321,6 +323,7 @@ public class AccountDumpUtils {
 
     /** A mapping for all `long`-valued fields that takes the field name to the field extractor. */
     public static final List<Pair<String, Function<BBMHederaAccount, Long>>> longFieldsMapping = List.of(
+            Pair.of("#Balance", BBMHederaAccount::tinybarBalance),
             Pair.of("#NFT", BBMHederaAccount::numberOwnedNfts),
             Pair.of("ARS", BBMHederaAccount::autoRenewSeconds),
             Pair.of("B", a -> (long) a.numberPositiveBalances()),
@@ -329,7 +332,15 @@ public class AccountDumpUtils {
             Pair.of("HNTN", a -> a.headNftId().tokenId().tokenNum()),
             Pair.of("HTI", a -> a.headTokenId().tokenNum()),
             Pair.of("N", BBMHederaAccount::ethereumNonce),
-            Pair.of("SID", a -> (long) a.stakedId().value()),
+            Pair.of("SID", a -> {
+                if (a.stakedId().kind() == STAKED_NODE_ID) {
+                    return -(long) a.stakedId().value() - 1;
+                } else if (a.stakedId().kind() == STAKED_ACCOUNT_ID) {
+                    return (long) a.stakedId().value();
+                } else {
+                    return -1L;
+                }
+            }),
             Pair.of("SNID", BBMHederaAccount::stakedNodeAddressBookId),
             Pair.of("SPS", coerceMinus1ToBeDefault(BBMHederaAccount::stakePeriodStart)),
             Pair.of("STM", BBMHederaAccount::stakedToMe),

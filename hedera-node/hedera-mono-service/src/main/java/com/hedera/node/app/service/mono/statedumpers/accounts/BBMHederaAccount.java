@@ -86,12 +86,14 @@ public record BBMHederaAccount(
                 Bytes.wrap(account.getAlias().toByteArray()),
                 PbjConverter.asPbjKey(account.getKey()),
                 account.getExpiry(),
-                account.getBalance() * ONE_HBAR_IN_TINYBARS,
+                account.getBalance(),
                 account.getMemo(),
                 account.isDeleted(),
                 account.getStakedToMe(),
                 account.getStakePeriodStart(),
-                new OneOf<>(StakedIdOneOfType.STAKED_ACCOUNT_ID, account.getStakedId()),
+                account.getStakedId() < 0
+                        ? new OneOf<>(StakedIdOneOfType.STAKED_NODE_ID, account.getStakedId())
+                        : new OneOf<>(StakedIdOneOfType.STAKED_ACCOUNT_ID, account.getStakedId()),
                 account.isDeclineReward(),
                 account.isReceiverSigRequired(),
                 new TokenID(0, 0, account.getHeadTokenId()),
