@@ -18,6 +18,7 @@ package com.swirlds.platform.wiring;
 
 import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCommonHyperlink;
 import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.RunningEventHashUpdate;
@@ -150,6 +151,7 @@ public record PlatformSchedulers(
                         .withOffRamp(hashingObjectCounter)
                         .withExternalBackPressure(true)
                         .withUnhandledTaskMetricEnabled(true)
+                        .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                         .build()
                         .cast(),
                 model.schedulerBuilder("internalEventValidator")

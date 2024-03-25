@@ -74,60 +74,67 @@ public record TaskSchedulerConfiguration(
         Boolean flushingEnabled = null;
         Boolean squelchingEnabled = null;
 
-        try {
-            final String[] parts = string.split(" ");
-            for (final String part : parts) {
-                String strippedPart = part.strip();
-                if (strippedPart.isEmpty()) {
-                    continue;
-                }
-
-                try {
-                    // if the part can be parsed as a TaskSchedulerType, then it is the type
-                    type = TaskSchedulerType.valueOf(strippedPart);
-                    continue;
-                } catch (final IllegalArgumentException e) {
-                    // ignore
-                }
-
-                if (strippedPart.startsWith(TaskSchedulerConfigOption.CAPACITY)) {
-                    try {
-                        // parse a string in the form "CAPACITY(1234)"
-                        final int openParenIndex = strippedPart.indexOf('(');
-                        final int closeParenIndex = strippedPart.indexOf(')');
-                        if (openParenIndex == -1 || closeParenIndex == -1) {
-                            throw new IllegalArgumentException("Invalid capacity \"" + strippedPart + "\"");
-                        }
-                        final String capacityString = strippedPart.substring(openParenIndex + 1, closeParenIndex);
-                        unhandledTaskCapacity = Long.parseLong(capacityString);
-                        continue;
-                    } catch (final NumberFormatException e) {
-                        throw new IllegalArgumentException("Invalid capacity \"" + strippedPart + "\"", e);
-                    }
-                }
-
-                try {
-                    // All other values must be TaskSchedulerConfigOption values.
-                    boolean value = true;
-                    if (strippedPart.startsWith("!")) {
-                        value = false;
-                        strippedPart = strippedPart.substring(1);
-                    }
-
-                    final TaskSchedulerConfigOption option = TaskSchedulerConfigOption.valueOf(strippedPart);
-
-                    switch (option) {
-                        case UNHANDLED_TASK_METRIC -> unhandledTaskMetricEnabled = value;
-                        case BUSY_FRACTION_METRIC -> busyFractionMetricEnabled = value;
-                        case FLUSHABLE -> flushingEnabled = value;
-                        case SQUELCHABLE -> squelchingEnabled = value;
-                    }
-                } catch (final IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Invalid task scheduler configuration \"" + string + "\"", e);
-                }
+        final String[] parts = string.split(" ");
+        for (final String part : parts) {
+            final String strippedPart = part.strip();
+            if (strippedPart.isEmpty()) {
+                continue;
             }
-        } catch (final NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid configuration \"" + string + "\"", e);
+
+            final TaskSchedulerType parsedType = tryToParseTaskSchedulerType(strippedPart);
+            if (parsedType != null) {
+                if (type != null) {
+                    throw new IllegalStateException("Multiple task scheduler types specified: " + string);
+                }
+                type = parsedType;
+                continue;
+            }
+
+            final Long parsedCapacity = tryToParseCapacity(strippedPart);
+            if (parsedCapacity != null) {
+                if (unhandledTaskCapacity != null) {
+                    throw new IllegalStateException("Multiple capacities specified: " + string);
+                }
+                unhandledTaskCapacity = parsedCapacity;
+                continue;
+            }
+
+            final Boolean parsedUnhandledTaskMetric = tryToParseUnhandledTaskMetric(strippedPart);
+            if (parsedUnhandledTaskMetric != null) {
+                if (unhandledTaskMetricEnabled != null) {
+                    throw new IllegalStateException(
+                            "Multiple unhandled task metric configurations specified: " + string);
+                }
+                unhandledTaskMetricEnabled = parsedUnhandledTaskMetric;
+                continue;
+            }
+
+            final Boolean parsedBusyFractionMetric = tryToParseBusyFractionMetric(strippedPart);
+            if (parsedBusyFractionMetric != null) {
+                if (busyFractionMetricEnabled != null) {
+                    throw new IllegalStateException(
+                            "Multiple busy fraction metric configurations specified: " + string);
+                }
+                busyFractionMetricEnabled = parsedBusyFractionMetric;
+                continue;
+            }
+
+            final Boolean parsedFlushing = tryToParseFlushing(strippedPart);
+            if (parsedFlushing != null) {
+                if (flushingEnabled != null) {
+                    throw new IllegalStateException("Multiple flushing configurations specified: " + string);
+                }
+                flushingEnabled = parsedFlushing;
+                continue;
+            }
+
+            final Boolean parsedSquelching = tryToParseSquelching(strippedPart);
+            if (parsedSquelching != null) {
+                if (squelchingEnabled != null) {
+                    throw new IllegalStateException("Multiple squelching configurations specified: " + string);
+                }
+                squelchingEnabled = parsedSquelching;
+            }
         }
 
         return new TaskSchedulerConfiguration(
@@ -137,5 +144,106 @@ public record TaskSchedulerConfiguration(
                 busyFractionMetricEnabled,
                 flushingEnabled,
                 squelchingEnabled);
+    }
+
+    /**
+     * Try to parse a string as a {@link TaskSchedulerType}.
+     *
+     * @param string the string to parse
+     * @return the parsed type, or null if the string is not a valid type
+     */
+    @Nullable
+    private static TaskSchedulerType tryToParseTaskSchedulerType(@NonNull final String string) {
+        try {
+            return TaskSchedulerType.valueOf(string);
+        } catch (final IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Try to parse a string as a capacity.
+     *
+     * @param string the string to parse
+     * @return the parsed capacity, or null if the string is not a valid capacity
+     */
+    @Nullable
+    private static Long tryToParseCapacity(@NonNull final String string) {
+        if (string.startsWith(TaskSchedulerConfigOption.CAPACITY)) {
+
+            try {
+                // parse a string in the form "CAPACITY(1234)"
+                final int openParenIndex = string.indexOf('(');
+                final int closeParenIndex = string.indexOf(')');
+                if (openParenIndex == -1 || closeParenIndex == -1) {
+                    throw new IllegalArgumentException("Invalid capacity \"" + string + "\"");
+                }
+                final String capacityString = string.substring(openParenIndex + 1, closeParenIndex);
+                return Long.parseLong(capacityString);
+            } catch (final NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid capacity \"" + string + "\"", e);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Try to parse a string as an unhandled task metric configuration.
+     *
+     * @param string the string to parse
+     * @return the parsed configuration, or null if the string is not a valid configuration
+     */
+    private static Boolean tryToParseUnhandledTaskMetric(@NonNull final String string) {
+        if (string.equals(TaskSchedulerConfigOption.UNHANDLED_TASK_METRIC.toString())) {
+            return true;
+        } else if (string.equals("!" + TaskSchedulerConfigOption.UNHANDLED_TASK_METRIC)) {
+            return false;
+        }
+        return null;
+    }
+
+    /**
+     * Try to parse a string as a busy fraction metric configuration.
+     *
+     * @param string the string to parse
+     * @return the parsed configuration, or null if the string is not a valid configuration
+     */
+    private static Boolean tryToParseBusyFractionMetric(@NonNull final String string) {
+        if (string.equals(TaskSchedulerConfigOption.BUSY_FRACTION_METRIC.toString())) {
+            return true;
+        } else if (string.equals("!" + TaskSchedulerConfigOption.BUSY_FRACTION_METRIC)) {
+            return false;
+        }
+        return null;
+    }
+
+    /**
+     * Try to parse a string as a flushing configuration.
+     *
+     * @param string the string to parse
+     * @return the parsed configuration, or null if the string is not a valid configuration
+     */
+    private static Boolean tryToParseFlushing(@NonNull final String string) {
+        if (string.equals(TaskSchedulerConfigOption.FLUSHABLE.toString())) {
+            return true;
+        } else if (string.equals("!" + TaskSchedulerConfigOption.FLUSHABLE)) {
+            return false;
+        }
+        return null;
+    }
+
+    /**
+     * Try to parse a string as a squelching configuration.
+     *
+     * @param string the string to parse
+     * @return the parsed configuration, or null if the string is not a valid configuration
+     */
+    private static Boolean tryToParseSquelching(@NonNull final String string) {
+        if (string.equals(TaskSchedulerConfigOption.SQUELCHABLE.toString())) {
+            return true;
+        } else if (string.equals("!" + TaskSchedulerConfigOption.SQUELCHABLE)) {
+            return false;
+        }
+        return null;
     }
 }

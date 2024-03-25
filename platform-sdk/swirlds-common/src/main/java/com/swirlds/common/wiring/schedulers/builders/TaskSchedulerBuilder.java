@@ -59,7 +59,7 @@ public class TaskSchedulerBuilder<O> {
 
     private TaskSchedulerType type = TaskSchedulerType.SEQUENTIAL;
     private final String name;
-    private long unhandledTaskCapacity = UNLIMITED_CAPACITY;
+    private long unhandledTaskCapacity = 1;
     private boolean flushingEnabled = false;
     private boolean squelchingEnabled = false;
     private boolean externalBackPressure = false;
@@ -150,7 +150,7 @@ public class TaskSchedulerBuilder<O> {
     }
 
     /**
-     * Set the maximum number of permitted scheduled tasks. Default is unlimited.
+     * Set the maximum number of permitted scheduled tasks. Default is 1.
      *
      * @param unhandledTaskCapacity the maximum number of permitted unhandled tasks
      * @return this

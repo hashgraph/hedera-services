@@ -19,6 +19,7 @@ package com.swirlds.common.wiring.builders;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
@@ -112,5 +113,34 @@ class TaskSchedulerConfigurationTests {
             assertEquals(expectedFlushingEnabled, config.flushingEnabled());
             assertEquals(expectedSquelchingEnabled, config.squelchingEnabled());
         }
+    }
+
+    /**
+     * Test what happens if a configuration string contains multiple values for the same configuration option.
+     */
+    @Test
+    void doubleConfigurationTest() {
+        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("DIRECT DIRECT"));
+        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("DIRECT SEQUENTIAL"));
+        assertThrows(
+                IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("CAPACITY(1234) CAPACITY(1234)"));
+        assertThrows(
+                IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("CAPACITY(1234) CAPACITY(5678)"));
+        assertThrows(
+                IllegalStateException.class,
+                () -> TaskSchedulerConfiguration.parse("UNHANDLED_TASK_METRIC UNHANDLED_TASK_METRIC"));
+        assertThrows(
+                IllegalStateException.class,
+                () -> TaskSchedulerConfiguration.parse("UNHANDLED_TASK_METRIC !UNHANDLED_TASK_METRIC"));
+        assertThrows(
+                IllegalStateException.class,
+                () -> TaskSchedulerConfiguration.parse("BUSY_FRACTION_METRIC BUSY_FRACTION_METRIC"));
+        assertThrows(
+                IllegalStateException.class,
+                () -> TaskSchedulerConfiguration.parse("BUSY_FRACTION_METRIC !BUSY_FRACTION_METRIC"));
+        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("FLUSHABLE !FLUSHABLE"));
+        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("FLUSHABLE FLUSHABLE"));
+        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("SQUELCHABLE !SQUELCHABLE"));
+        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("SQUELCHABLE SQUELCHABLE"));
     }
 }
