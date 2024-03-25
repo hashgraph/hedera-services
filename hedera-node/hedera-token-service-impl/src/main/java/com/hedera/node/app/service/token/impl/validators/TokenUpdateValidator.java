@@ -75,6 +75,8 @@ public class TokenUpdateValidator {
             validator.validateTokenName(op.name(), tokensConfig);
         }
         // validate token keys, if any being changed
+
+        //TODO comment
         validator.validateTokenKeys(
                 op.hasAdminKey(), op.adminKey(),
                 op.hasKycKey(), op.kycKey(),
