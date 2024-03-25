@@ -86,15 +86,21 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
         chunkNextPessimisticPaths = new ConcurrentHashMap<>(chunkCount);
         for (int i = 0; i < chunkCount; i++) {
             final long p = firstPathInLeafParentRank + ((long) i << minChunkHeight);
+            final int startRank;
+            final long startPath;
+            final long chunkWidth;
             if (Path.getLeftChildPath(p) + (2L << minChunkHeight) <= reconnectFirstLeafPath) {
-                chunkStartPaths.put(i, Path.getLeftChildPath(p));
-                chunkWidths.put(i, 2L << minChunkHeight);
-                chunkStartRanks.put(i, leafParentRank + 1);
+                startRank = leafParentRank + 1;
+                startPath = Path.getLeftChildPath(p);
+                chunkWidth = 2L << minChunkHeight;
             } else {
-                chunkStartPaths.put(i, p);
-                chunkWidths.put(i, 1L << minChunkHeight);
-                chunkStartRanks.put(i, leafParentRank);
+                startRank = leafParentRank;
+                startPath = p;
+                chunkWidth = 1L << minChunkHeight;
             }
+            chunkStartPaths.put(i, startPath);
+            chunkStartRanks.put(i, startRank);
+            chunkWidths.put(i, chunkWidth);
             chunkNextToCheckPaths.set(i, new ConcurrentLinkedDeque<>());
             chunkNextPessimisticPaths.put(i, chunkStartPaths.get(i));
         }
@@ -109,7 +115,6 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
                 nodeCount.incrementRedundantLeafCount();
             }
         } else {
-            final int rank = Path.getRank(path);
             if (path != 0) {
                 assert chunkCount > 0;
                 final int chunk = getPathChunk(path);
@@ -219,7 +224,11 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
 
     private int getPathChunk(long path) {
         int rank = Path.getRank(path);
-        assert rank >= chunksTopRank;
+        if (rank < chunksTopRank) {
+            // This may happen if the whole chunk is clean
+            path = Path.getLeftGrandChildPath(path, chunksTopRank - rank);
+            rank = chunksTopRank;
+        }
         final long pathAtTopRank = Path.getGrandParentPath(path, rank - chunksTopRank);
         return (int) (pathAtTopRank - Path.getLeftGrandChildPath(0, chunksTopRank));
     }

@@ -28,7 +28,6 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
-import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -119,7 +118,6 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
 
         final AsyncOutputStream<PullVirtualTreeResponse> out =
                 new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig);
-//                new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig, 1);
         out.start();
 
         final AtomicBoolean allRequestsReceived = new AtomicBoolean(false);
