@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
@@ -129,9 +130,18 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.hasPauseKey()) {
             context.requireKeyOrThrow(op.pauseKeyOrThrow(), INVALID_PAUSE_KEY);
         }
-        if (op.hasTreasury()) {
-            context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+
+        if (tokenMetadata.hasAdminKey()) {
+            context.requireKey(tokenMetadata.adminKey());
+
+            if (op.hasAutoRenewAccount()) {
+                context.requireKeyOrThrow(op.autoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+            }
+            if (op.hasTreasury()) {
+                context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+            }
         }
+
     }
 
     @Override
