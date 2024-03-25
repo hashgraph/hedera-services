@@ -17,14 +17,11 @@
 package com.hedera.node.blocknode.core;
 
 import com.hedera.node.blocknode.config.ConfigProvider;
-import com.hedera.node.blocknode.config.data.BlockNodeFileSystemConfig;
-import com.hedera.node.blocknode.config.types.FileSystem;
 import com.hedera.node.blocknode.core.grpc.impl.BlockNodeNettyServerManager;
 import com.hedera.node.blocknode.core.services.BlockNodeLocalFileWatcherImpl;
 import com.hedera.node.blocknode.core.services.BlockNodeServicesRegistryImpl;
 import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
-import com.hedera.node.blocknode.filesystem.local.LocalFileSystem;
-import com.hedera.node.blocknode.filesystem.s3.S3FileSystem;
+
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,10 +38,7 @@ public class BlockNodeMain {
     public BlockNodeMain() {
         ConfigProvider configProvider = new ConfigProvider();
 
-        final var fileSystemConfig = configProvider.getConfiguration().getConfigData(BlockNodeFileSystemConfig.class);
-        FileSystemApi fileSystemApi = fileSystemConfig.fileSystem() == FileSystem.LOCAL
-                ? new LocalFileSystem(configProvider)
-                : new S3FileSystem();
+        FileSystemApi fileSystemApi = new FileSystemApiProvider().createFileSystem(configProvider);
 
         // Create all the service implementations
         logger.info("Registering services");

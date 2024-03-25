@@ -34,7 +34,7 @@ public class BlockNodeLocalFileWatcherImpl {
     private static final Logger logger = LogManager.getLogger(BlockNodeLocalFileWatcherImpl.class);
 
     private static final Path blocksLocPath = Path.of(
-            "/home/nikolay/Desktop/hedera-services-nick/hedera-node/hedera-app/build/node/hedera-node/data/block-streams/block0.0.3/");
+            System.getProperty("user.dir") + "/hedera-node/hedera-app/build/node/data/block-streams/block0.0.3/");
 
     private final ConfigProvider configProvider;
 

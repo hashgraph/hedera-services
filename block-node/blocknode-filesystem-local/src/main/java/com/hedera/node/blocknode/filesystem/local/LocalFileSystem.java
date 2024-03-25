@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.zip.GZIPOutputStream;
 
 public class LocalFileSystem implements FileSystemApi {
@@ -41,7 +42,7 @@ public class LocalFileSystem implements FileSystemApi {
     public LocalFileSystem(ConfigProvider configProvider) {
         this.fileSystemConfig = configProvider.getConfiguration().getConfigData(BlockNodeFileSystemConfig.class);
 
-        this.blocksExportPath = Path.of(fileSystemConfig.blocksExportPath());
+        this.blocksExportPath = Path.of(System.getProperty("user.dir") + fileSystemConfig.blocksExportPath());
         blocksExportPath.toFile().mkdirs();
     }
 
@@ -71,16 +72,14 @@ public class LocalFileSystem implements FileSystemApi {
     }
 
     private String extractBlockFileNameFromBlock(Block block) {
-        Long blockNumber = null;
-        for (BlockItem item : block.getItemsList()) {
-            if (item.hasHeader()) {
-                blockNumber = item.getHeader().getNumber();
-                break;
-            }
-        }
+       Optional<Long> blockNumber =  block.getItemsList().stream()
+               .filter(BlockItem::hasHeader)
+               .map(item -> item.getHeader().getNumber())
+               .findFirst();
+        Long optionalBlockNumber = blockNumber.orElse(null);
 
-        requireNonNull(blockNumber, "Block number can not be extracted.");
+        requireNonNull(optionalBlockNumber, "Block number can not be extracted.");
 
-        return String.format("%036d", blockNumber) + FILE_EXTENSION;
+        return String.format("%036d", optionalBlockNumber) + FILE_EXTENSION;
     }
 }

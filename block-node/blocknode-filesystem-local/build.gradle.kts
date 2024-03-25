@@ -15,3 +15,8 @@
  */
 
 plugins { id("com.hedera.hashgraph.blocknode.conventions") }
+
+mainModuleInfo {
+    runtimeOnly("com.hedera.storage.blocknode.filesystem.api")
+    runtimeOnly("com.hedera.storage.blocknode.config")
+}
