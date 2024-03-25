@@ -335,8 +335,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             if (useInvalidSupplyKey) {
                                 b.setFreezeKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
                             } else {
-                            newSupplyKey.ifPresent(
-                                    k -> b.setSupplyKey(spec.registry().getKey(k)));
+                                newSupplyKey.ifPresent(
+                                        k -> b.setSupplyKey(spec.registry().getKey(k)));
                             }
                             newSupplyKeySupplier.ifPresent(s -> b.setSupplyKey(s.get()));
                             if (useInvalidWipeKey) {
@@ -348,7 +348,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             if (useInvalidKycKey) {
                                 b.setFreezeKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
                             } else {
-                                newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
+                                newKycKey.ifPresent(
+                                        k -> b.setKycKey(spec.registry().getKey(k)));
                             }
                             if (useInvalidFeeScheduleKey) {
                                 b.setFeeScheduleKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
@@ -408,7 +409,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
 
-        //TODO comment
+        // TODO comment
         signers.add(spec -> {
             try {
                 return spec.registry().getAdminKey(token);

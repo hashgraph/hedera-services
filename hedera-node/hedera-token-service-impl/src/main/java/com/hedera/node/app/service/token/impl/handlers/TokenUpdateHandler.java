@@ -18,11 +18,15 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAUSE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
@@ -104,17 +108,29 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        if (tokenMetadata.hasAdminKey()) {
-            context.requireKey(tokenMetadata.adminKey());
+        if (op.hasAdminKey()) {
+            context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
         }
-        if (op.hasAutoRenewAccount()) {
-            context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
+        if (op.hasWipeKey()) {
+            context.requireKeyOrThrow(op.wipeKeyOrThrow(), INVALID_WIPE_KEY);
+        }
+        if (op.hasKycKey()) {
+            context.requireKeyOrThrow(op.kycKeyOrThrow(), INVALID_KYC_KEY);
+        }
+        if (op.hasSupplyKey()) {
+            context.requireKeyOrThrow(op.supplyKeyOrThrow(), INVALID_SUPPLY_KEY);
+        }
+        if (op.hasFreezeKey()) {
+            context.requireKeyOrThrow(op.freezeKeyOrThrow(), INVALID_FREEZE_KEY);
+        }
+        if (op.hasFeeScheduleKey()) {
+            context.requireKeyOrThrow(op.feeScheduleKeyOrThrow(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+        }
+        if (op.hasPauseKey()) {
+            context.requireKeyOrThrow(op.pauseKeyOrThrow(), INVALID_PAUSE_KEY);
         }
         if (op.hasTreasury()) {
-            context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_ACCOUNT_ID);
-        }
-        if (op.hasAdminKey()) {
-            context.requireKey(op.adminKeyOrThrow());
+            context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         }
     }
 
