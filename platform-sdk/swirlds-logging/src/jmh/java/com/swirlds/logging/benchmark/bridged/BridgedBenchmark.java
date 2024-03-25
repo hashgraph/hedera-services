@@ -30,7 +30,8 @@ import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
 import com.swirlds.logging.benchmark.log4j2.Log4JRunner;
-import com.swirlds.logging.benchmark.swirldslog.SwirldsLogLoggingBenchmarkConfig;
+import com.swirlds.logging.benchmark.swirldslog.plain.SwirldsLogConfig;
+import com.swirlds.logging.benchmark.util.LogFiles;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -68,16 +69,17 @@ public class BridgedBenchmark {
         config = new BridgedConfiguration();
 
         if (Objects.equals(loggingType, CONSOLE_TYPE)) {
-            swirldsConfig = new SwirldsLogLoggingBenchmarkConfig();
+            swirldsConfig = new SwirldsLogConfig();
             swirldsConfig.configureConsoleLogging();
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, FILE_TYPE)) {
-            swirldsConfig = new SwirldsLogLoggingBenchmarkConfig();
-            swirldsConfig.configureFileLogging();
+            swirldsConfig = new SwirldsLogConfig();
+            swirldsConfig.configureFileLogging(LogFiles.provideLogFilePath(Constants.LOG4J2, FILE_TYPE, ""));
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
-            swirldsConfig = new SwirldsLogLoggingBenchmarkConfig();
-            swirldsConfig.configureFileAndConsoleLogging();
+            swirldsConfig = new SwirldsLogConfig();
+            swirldsConfig.configureFileAndConsoleLogging(
+                    LogFiles.provideLogFilePath(Constants.LOG4J2, CONSOLE_AND_FILE_TYPE, ""));
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         }
         logRunner = new Log4JRunner(logger);
@@ -103,7 +105,7 @@ public class BridgedBenchmark {
     @TearDown(Level.Trial)
     public void tearDown() {
         LogManager.shutdown();
-        config.tierDown();
-        swirldsConfig.tierDown();
+        config.tearDown();
+        swirldsConfig.tearDown();
     }
 }
