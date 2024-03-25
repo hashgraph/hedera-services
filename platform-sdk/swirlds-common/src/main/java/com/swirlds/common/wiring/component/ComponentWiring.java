@@ -202,6 +202,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
      * @param <INPUT_TYPE> the input type
      * @return the input wire
      */
+    @NonNull
     public <INPUT_TYPE> InputWire<INPUT_TYPE> getInputWire(@NonNull final Consumer<COMPONENT_TYPE> handler) {
         Objects.requireNonNull(handler);
 
