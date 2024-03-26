@@ -62,13 +62,13 @@ public class FileServiceStateTranslator {
             @NonNull final com.hederahashgraph.api.proto.java.FileID fileID) {
         requireNonNull(metadata);
         requireNonNull(fileID);
-        final var fileBuilder = new File.Builder();
+        final var fileBuilder = File.newBuilder();
         fileBuilder.fileId(new FileID.Builder()
                 .fileNum(fileID.getFileNum())
                 .realmNum(fileID.getRealmNum())
                 .shardNum(fileID.getShardNum()));
         fileBuilder.expirationSecond(metadata.getExpiry());
-        if (metadata.getWacl() != null) {
+        if (metadata.getWacl() != null && !metadata.getWacl().isEmpty()) {
             fileBuilder.keys(PbjConverter.asPbjKey(metadata.getWacl()).keyList());
         }
         if (data != null) {

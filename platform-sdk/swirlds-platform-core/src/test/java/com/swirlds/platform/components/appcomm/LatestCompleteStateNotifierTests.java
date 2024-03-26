@@ -18,8 +18,10 @@ package com.swirlds.platform.components.appcomm;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -27,12 +29,13 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Basic sanity check tests for the {@link LatestCompleteStateNotifier} class
+ * Basic sanity check tests for the {@link DefaultLatestCompleteStateNotifier} class
  */
 public class LatestCompleteStateNotifierTests {
 
@@ -49,7 +52,7 @@ public class LatestCompleteStateNotifierTests {
         notificationEngine.register(NewSignedStateListener.class, n -> {
             numInvocations.incrementAndGet();
             try {
-                senderLatch.await();
+                assertThat(senderLatch.await(1, TimeUnit.SECONDS)).isTrue();
                 assertFalse(
                         n.getSwirldState().isDestroyed(),
                         "SwirldState should not be destroyed until the callback has completed");
@@ -60,14 +63,22 @@ public class LatestCompleteStateNotifierTests {
             }
         });
 
-        final LatestCompleteStateNotifier component = new LatestCompleteStateNotifier(notificationEngine);
-        component.latestCompleteStateHandler(signedState.reserve("testNewLatestCompleteStateEventNotification"));
+        final LatestCompleteStateNotifier component = new DefaultLatestCompleteStateNotifier();
+        final CompleteStateNotificationWithCleanup notificationWithCleanup = component.latestCompleteStateHandler(
+                signedState.reserve("testNewLatestCompleteStateEventNotification"));
+
+        assertNotEquals(null, notificationWithCleanup, "component output should not be null");
+
+        notificationEngine.dispatch(
+                NewSignedStateListener.class,
+                notificationWithCleanup.notification(),
+                notificationWithCleanup.cleanup());
 
         // Allow the notification callback to execute
         senderLatch.countDown();
 
         // Wait for the notification callback to complete
-        listenerLatch.await();
+        assertThat(listenerLatch.await(1, TimeUnit.SECONDS)).isTrue();
 
         // The notification listener has completed, but the post-listener callback may not have yet
         assertEventuallyEquals(

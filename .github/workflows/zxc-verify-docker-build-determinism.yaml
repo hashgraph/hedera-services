@@ -56,8 +56,8 @@ env:
   DOCKER_MANIFEST_GENERATOR: .github/workflows/support/scripts/generate-docker-artifact-baseline.sh
   DOCKER_MANIFEST_PATH: ${{ github.workspace }}/.manifests/docker
   DOCKER_REGISTRY: localhost:5000
-  DOCKER_IMAGE_NAME: main-network-node
-  DOCKER_CONTEXT_PATH: hedera-node/infrastructure/docker/containers/production-next/main-network-node
+  DOCKER_IMAGE_NAME: consensus-node
+  DOCKER_CONTEXT_PATH: hedera-node/infrastructure/docker/containers/production-next/consensus-node
   SKOPEO_VERSION: v1.14.0
 
 jobs:

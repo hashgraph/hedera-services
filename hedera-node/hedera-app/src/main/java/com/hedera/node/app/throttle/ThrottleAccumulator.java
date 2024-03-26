@@ -98,12 +98,15 @@ public class ThrottleAccumulator {
     private static final Logger log = LogManager.getLogger(ThrottleAccumulator.class);
     private static final Set<HederaFunctionality> GAS_THROTTLED_FUNCTIONS =
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
+    private static final Set<HederaFunctionality> AUTO_CREATE_FUNCTIONS =
+            EnumSet.of(CRYPTO_TRANSFER, ETHEREUM_TRANSACTION);
     private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
 
     private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
     private boolean lastTxnWasGasThrottled;
     private GasLimitDeterministicThrottle gasThrottle;
     private List<DeterministicThrottle> activeThrottles = emptyList();
+    private final ThrottleMetrics throttleMetrics;
 
     private final ConfigProvider configProvider;
     private final IntSupplier capacitySplitSource;
@@ -112,10 +115,12 @@ public class ThrottleAccumulator {
     public ThrottleAccumulator(
             @NonNull final IntSupplier capacitySplitSource,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final ThrottleType throttleType) {
+            @NonNull final ThrottleType throttleType,
+            @NonNull final ThrottleMetrics throttleMetrics) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.capacitySplitSource = requireNonNull(capacitySplitSource, "capacitySplitSource must not be null");
         this.throttleType = requireNonNull(throttleType, "throttleType must not be null");
+        this.throttleMetrics = requireNonNull(throttleMetrics, "throttleMetrics must not be null");
     }
 
     // For testing purposes, in practice the gas throttle is
@@ -125,14 +130,18 @@ public class ThrottleAccumulator {
             @NonNull final IntSupplier capacitySplitSource,
             @NonNull final ConfigProvider configProvider,
             @NonNull final ThrottleType throttleType,
+            @NonNull final ThrottleMetrics throttleMetrics,
             @NonNull final GasLimitDeterministicThrottle gasThrottle) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.capacitySplitSource = requireNonNull(capacitySplitSource, "capacitySplitSource must not be null");
         this.throttleType = requireNonNull(throttleType, "throttleType must not be null");
         this.gasThrottle = requireNonNull(gasThrottle, "gasThrottle must not be null");
+
+        this.throttleMetrics = throttleMetrics;
+        this.throttleMetrics.setupGasThrottleMetric(gasThrottle, configProvider.getConfiguration());
     }
 
-    /*
+    /**
      * Updates the throttle requirements for the given transaction and returns whether the transaction should be throttled.
      *
      * @param txnInfo the transaction to update the throttle requirements for
@@ -152,7 +161,7 @@ public class ThrottleAccumulator {
         return false;
     }
 
-    /*
+    /**
      * Updates the throttle requirements for the given query and returns whether the query should be throttled.
      *
      * @param queryFunction the functionality of the query
@@ -191,7 +200,7 @@ public class ThrottleAccumulator {
         return false;
     }
 
-    /*
+    /**
      * Updates the throttle requirements for given number of transactions of same functionality and returns whether they should be throttled.
      *
      * @param n the number of transactions to consider
@@ -214,7 +223,7 @@ public class ThrottleAccumulator {
         return false;
     }
 
-    /*
+    /**
      * Undoes the claimed capacity for a number of transactions of the same functionality.
      *
      * @param n the number of transactions to consider
@@ -225,7 +234,7 @@ public class ThrottleAccumulator {
         manager.undoClaimedReqsFor(n);
     }
 
-    /*
+    /**
      * Leaks the gas amount previously reserved for the given transaction.
      *
      * @param txnInfo the transaction to leak the gas for
@@ -241,7 +250,7 @@ public class ThrottleAccumulator {
         gasThrottle.leakUnusedGasPreviouslyReserved(value);
     }
 
-    /*
+    /**
      * Gets the current list of active throttles.
      *
      * @return the current list of active throttles
@@ -251,7 +260,7 @@ public class ThrottleAccumulator {
         return activeThrottles;
     }
 
-    /*
+    /**
      * Gets the current list of active throttles for the given functionality.
      *
      * @param function the functionality to get the active throttles for
@@ -267,7 +276,7 @@ public class ThrottleAccumulator {
         }
     }
 
-    /*
+    /**
      * Indicates whether the last transaction was throttled by gas.
      *
      * @return whether the last transaction was throttled by gas
@@ -276,7 +285,7 @@ public class ThrottleAccumulator {
         return lastTxnWasGasThrottled;
     }
 
-    /*
+    /**
      * Checks if the given functionality should be throttled by gas.
      *
      * @param function the functionality to check
@@ -286,7 +295,11 @@ public class ThrottleAccumulator {
         return GAS_THROTTLED_FUNCTIONS.contains(function);
     }
 
-    /*
+    public static boolean canAutoCreate(@NonNull final HederaFunctionality function) {
+        return AUTO_CREATE_FUNCTIONS.contains(function);
+    }
+
+    /**
      * Resets the usage for all underlying throttles.
      */
     public void resetUsage() {
@@ -295,13 +308,20 @@ public class ThrottleAccumulator {
         gasThrottle.resetUsage();
     }
 
-    /*
+    /**
      * Resets the usage for all snapshots.
      */
     public void resetUsageThrottlesTo(final List<DeterministicThrottle.UsageSnapshot> snapshots) {
         for (int i = 0, n = activeThrottles.size(); i < n; i++) {
             activeThrottles.get(i).resetUsageTo(snapshots.get(i));
         }
+    }
+
+    /**
+     * Updates all metrics for the active throttles and the gas throttle
+     */
+    public void updateAllMetrics() {
+        throttleMetrics.updateAllMetrics();
     }
 
     private boolean shouldThrottleTxn(
@@ -595,7 +615,7 @@ public class ThrottleAccumulator {
         }
     }
 
-    private int getImplicitCreationsCount(
+    public int getImplicitCreationsCount(
             @NonNull final TransactionBody txnBody, @NonNull final ReadableAccountStore accountStore) {
         int implicitCreationsCount = 0;
         if (txnBody.hasEthereumTransaction()) {
@@ -741,7 +761,7 @@ public class ThrottleAccumulator {
         return manager == null || !manager.allReqsMetAt(now, n, ONE_TO_ONE);
     }
 
-    /*
+    /**
      * Rebuilds the throttle requirements based on the given throttle definitions.
      *
      * @param defs the throttle definitions to rebuild the throttle requirements based on
@@ -777,10 +797,13 @@ public class ThrottleAccumulator {
         functionReqs = newFunctionReqs;
         activeThrottles = newActiveThrottles;
 
+        final var configuration = configProvider.getConfiguration();
+        throttleMetrics.setupThrottleMetrics(activeThrottles, configuration);
+
         logResolvedDefinitions(capacitySplitSource.getAsInt());
     }
 
-    /*
+    /**
      * Rebuilds the gas throttle based on the current configuration.
      */
     public void applyGasConfig() {
@@ -790,6 +813,7 @@ public class ThrottleAccumulator {
             log.warn("{} gas throttling enabled, but limited to 0 gas/sec", throttleType.name());
         }
         gasThrottle = new GasLimitDeterministicThrottle(contractsConfig.maxGasPerSec());
+        throttleMetrics.setupGasThrottleMetric(gasThrottle, configuration);
         log.info(
                 "Resolved {} gas throttle -\n {} gas/sec (throttling {})",
                 throttleType.name(),
@@ -824,7 +848,7 @@ public class ThrottleAccumulator {
         log.info("{}", () -> sb.toString().trim());
     }
 
-    /*
+    /**
      * Gets the gas throttle.
      */
     public @NonNull GasLimitDeterministicThrottle gasLimitThrottle() {

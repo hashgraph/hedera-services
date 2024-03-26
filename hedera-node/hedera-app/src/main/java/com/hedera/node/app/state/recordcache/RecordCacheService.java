@@ -97,6 +97,8 @@ public class RecordCacheService implements Service {
                                 .nanos(fromTransactionValidStart.getNanos());
                         var toTxnId = TransactionID.newBuilder()
                                 .accountID(fromTxnId.getPayerAccount().toPbjAccountId())
+                                .scheduled(fromTxnId.isScheduled())
+                                .nonce(fromTxnId.getNonce())
                                 .transactionValidStart(toTxnValidStart)
                                 .build();
                         var toConsensusTime = Timestamp.newBuilder()
