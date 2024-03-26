@@ -200,6 +200,13 @@ class ThrottleServiceManagerTest {
         inOrder.verify(congestionMultipliers).resetExpectations();
     }
 
+    @Test
+    void updateAllMetricsAsExpected() {
+        subject.updateAllMetrics();
+        verify(ingestThrottle).updateAllMetrics();
+        verify(backendThrottle).updateAllMetrics();
+    }
+
     private Instant[] asNullTerminatedInstants(Timestamp timestamp) {
         return new Instant[] {Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos()), null};
     }

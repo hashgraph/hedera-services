@@ -16,7 +16,7 @@
 
 package com.swirlds.logging.benchmark.bridged;
 
-import com.swirlds.logging.benchmark.log4j2.Log4JLoggingBenchmarkConfig;
+import com.swirlds.logging.benchmark.log4j2.plain.Log4JConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
@@ -26,7 +26,9 @@ import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.apache.logging.log4j.core.config.plugins.util.PluginManager;
 import org.apache.logging.log4j.spi.LoggerContext;
 
-public class BridgedConfiguration extends Log4JLoggingBenchmarkConfig {
+public class BridgedConfiguration extends Log4JConfig {
+    public static final String BRIDGE_APPENDER_NAME = "SwirldsAppender";
+
     @NonNull
     public LoggerContext configureBridgedLogging() {
         System.clearProperty("log4j2.contextSelector");
@@ -35,10 +37,9 @@ public class BridgedConfiguration extends Log4JLoggingBenchmarkConfig {
         builder.setStatusLevel(Level.DEBUG);
         builder.setConfigurationName("bridgeLoggingConfig");
         final AppenderComponentBuilder appenderBuilder =
-                builder.newAppender(Log4JLoggingBenchmarkConfig.BRIDGE_APPENDER_NAME, "SwirldsLoggingAppender");
+                builder.newAppender(BRIDGE_APPENDER_NAME, "SwirldsLoggingAppender");
         builder.add(appenderBuilder);
-        builder.add(builder.newRootLogger(Level.ALL)
-                .add(builder.newAppenderRef(Log4JLoggingBenchmarkConfig.BRIDGE_APPENDER_NAME)));
+        builder.add(builder.newRootLogger(Level.ALL).add(builder.newAppenderRef(BRIDGE_APPENDER_NAME)));
         return create(builder);
     }
 }

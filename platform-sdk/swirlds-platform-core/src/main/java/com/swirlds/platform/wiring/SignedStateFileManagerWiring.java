@@ -22,6 +22,7 @@ import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.StateDumpRequest;
@@ -38,6 +39,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param stateSavingResultOutputWire             the output wire for the state saving result
  * @param oldestMinimumGenerationOnDiskOutputWire the output wire for the oldest minimum generation on disk
  * @param stateWrittenToDiskOutputWire            the output wire for the state written to disk action
+ * @param stateWrittenToDiskNotificationOutput    the output wire for the state written to disk notification
  */
 public record SignedStateFileManagerWiring(
         @NonNull BindableInputWire<ReservedSignedState, StateSavingResult> saveStateToDisk,
@@ -45,7 +47,8 @@ public record SignedStateFileManagerWiring(
         @NonNull InputWire<StateDumpRequest> dumpStateToDisk,
         @NonNull OutputWire<StateSavingResult> stateSavingResultOutputWire,
         @NonNull OutputWire<Long> oldestMinimumGenerationOnDiskOutputWire,
-        @NonNull OutputWire<StateWrittenToDiskAction> stateWrittenToDiskOutputWire) {
+        @NonNull OutputWire<StateWrittenToDiskAction> stateWrittenToDiskOutputWire,
+        @NonNull OutputWire<StateWriteToDiskCompleteNotification> stateWrittenToDiskNotificationOutput) {
     /**
      * Create a new instance of this wiring
      *
@@ -81,7 +84,16 @@ public record SignedStateFileManagerWiring(
                         .buildTransformer(
                                 "toStateWrittenToDiskAction",
                                 "state saving result",
-                                ssr -> new StateWrittenToDiskAction(ssr.round(), ssr.freezeState())));
+                                ssr -> new StateWrittenToDiskAction(ssr.round(), ssr.freezeState())),
+                scheduler
+                        .getOutputWire()
+                        .buildTransformer(
+                                "toNotification",
+                                "StateSavingResult",
+                                stateSavingResult -> new StateWriteToDiskCompleteNotification(
+                                        stateSavingResult.round(),
+                                        stateSavingResult.consensusTimestamp(),
+                                        stateSavingResult.freezeState())));
     }
 
     /**
