@@ -266,7 +266,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         }
 
         // validate auto associations
-        if (builderAccount.maxAutoAssociations() != 0) {
+        if (op.hasMaxAutomaticTokenAssociations()) {
             final long newMax = builderAccount.maxAutoAssociations();
             validateFalse(
                     newMax < updateAccount.usedAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);

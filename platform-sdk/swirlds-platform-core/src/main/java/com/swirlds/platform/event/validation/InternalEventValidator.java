@@ -26,7 +26,9 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.config.TransactionConfig;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -79,6 +81,8 @@ public class InternalEventValidator {
     private final LongAccumulator invalidGenerationAccumulator;
     private final LongAccumulator invalidBirthRoundAccumulator;
 
+    final AncientMode ancientMode;
+
     /**
      * Constructor
      *
@@ -99,6 +103,10 @@ public class InternalEventValidator {
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         this.transactionConfig = platformContext.getConfiguration().getConfigData(TransactionConfig.class);
+        this.ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
 
         this.nullHashedDataLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.nullUnhashedDataLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
@@ -296,6 +304,11 @@ public class InternalEventValidator {
      */
     private boolean isEventBirthRoundValid(@NonNull final GossipEvent event) {
         final long eventBirthRound = event.getDescriptor().getBirthRound();
+
+        if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
+            // Don't validate birth rounds in generation mode.
+            return true;
+        }
 
         long maxParentBirthRound = ROUND_NEGATIVE_INFINITY;
         final EventDescriptor parent = event.getHashedData().getSelfParent();
