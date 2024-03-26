@@ -39,35 +39,38 @@ This doc covers these differences and describes the expected behavior.
 1. For addresses is range 0x0 - 0x2EE (0.0.0 - 0.0.750): fail with status `INVALID_SOLIDITY_ADDRESS`.
 2. For addresses is range 0x2EF - 0x3E8 (0.0.751 - 0.0.1000):
    - success, if account exists and has `receiverSigRequired` == false;
-   - success, if account exists and has `receiverSigRequired` == false and account is `sender`;
+   - success, if account exists and has `receiverSigRequired` == true and account is `sender`;
    - fail in some failing scenarios such as: beneficiary same as account-to-be-deleted, `receiverSigRequired` == true and signature provided, etc.
 3. For addresses above 0.0.1000: the same as 2. but a hollow account would be created if the beneficiary doesn't exist.
 
 ### Call operations (CallOp, DelegateCallOp, CallCodeOp, StaticCallOp)
+
 1. For address 0x0:
-   - **Ethereum:** fail, there is no contract on this address.
+   - **Ethereum:** success with no op. There is no contract on this address. It is often associated with token burn & mint/genesis events and used as a generic null address.
    - **Hedera:** success with no op.
 2. For address range 0x1 - 0x9:
    - **Ethereum:** success, the Ethereum precompiles exist on these addresses.
    - **Hedera:** success, the Ethereum precompiles exist on these addresses.
 3. For address range 0xA - 0x166 (0.0.10 - 0.0.358):
    - **Ethereum:**
-     - success, if the address is a contract and we are using the correct ABI;
-     - fail, if the address is a contract and we are **not** using the correct ABI;
-     - fail, if there is no contract.
+     - success, if the address is a contract, and we are using the correct ABI;
+     - success with no op, if there is no contract;
+     - fail, if the address is a contract, and we are **not** using the correct ABI.
    - **Hedera:** success with no op.
 4. For addresses 0x167, 0x168, 0x169 (0.0.359, 0.0.360, 0.0.361):
    - **Ethereum:**
-      - success, if the address is a contract and we are using the correct ABI;
-      - fail, if the address is a contract and we are **not** using the correct ABI;
-      - fail, if there is no contract.
+     - success, if the address is a contract, and we are using the correct ABI;
+     - success with no op, if there is no contract;
+     - fail, if the address is a contract, and we are **not** using the correct ABI.
    - **Hedera:** success, the HTS, ExchangeRate and PRNG precompiles exist on these addresses accordingly.
 5. For address range 0x16A - 0x3E8 (0.0.362 - 0.0.1000):
    - **Ethereum:**
-      - success, if the address is a contract and we are using the correct ABI;
-      - fail, if the address is a contract and we are **not** using the correct ABI;
-      - fail, if there is no contract.
+     - success, if the address is a contract, and we are using the correct ABI;
+     - success with no op, if there is no contract;
+     - fail, if the address is a contract, and we are **not** using the correct ABI.
    - **Hedera:** success with no op.
+
+_Please note that the expected behavior above is valid considering there is no `value` passed. If there is `value`, this falls in the next section._
 
 ### Transfer and send operations
 
