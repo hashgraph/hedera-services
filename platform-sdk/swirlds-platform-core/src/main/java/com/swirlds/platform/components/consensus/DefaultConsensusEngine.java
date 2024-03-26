@@ -84,20 +84,16 @@ public class DefaultConsensusEngine implements ConsensusEngine {
      */
     @Override
     @NonNull
-    public List<ConsensusRound> addEvent(@NonNull final EventImpl eventWrapper) {
-        Objects.requireNonNull(eventWrapper);
+    public List<ConsensusRound> addEvent(@NonNull final GossipEvent event) {
+        Objects.requireNonNull(event);
 
-        // Intentionally ignore the EventImpl wrapper passed into this method. As a follow
-        // up task, the input type of this method will be changed to GossipEvent.
-        final GossipEvent gossipEvent = eventWrapper.getBaseEvent();
-        final EventImpl event = eventStorage.linkEvent(gossipEvent);
-
-        if (event == null) {
+        final EventImpl linkedEvent = eventStorage.linkEvent(event);
+        if (linkedEvent == null) {
             // event storage discarded an ancient event
             return List.of();
         }
 
-        final List<ConsensusRound> consensusRounds = consensus.addEvent(event);
+        final List<ConsensusRound> consensusRounds = consensus.addEvent(linkedEvent);
 
         if (!consensusRounds.isEmpty()) {
             // If multiple rounds reach consensus at the same moment there is no need to pass in

@@ -400,11 +400,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring
                 .eventOutput()
                 .solderTo(pcesSequencerWiring.getInputWire(PcesSequencer::assignStreamSequenceNumber));
-        pcesSequencerWiring.getOutputWire().solderTo(inOrderLinkerWiring.eventInput());
         pcesSequencerWiring.getOutputWire().solderTo(pcesWriterWiring.eventInputWire());
-        inOrderLinkerWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+
+        pcesSequencerWiring.getOutputWire().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+
         inOrderLinkerWiring.eventOutput().solderTo(shadowgraphWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(futureEventBufferWiring.getInputWire(FutureEventBuffer::addEvent));
+        orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
 
         final OutputWire<GossipEvent> futureEventBufferSplitOutput = futureEventBufferWiring.getSplitOutput();
         futureEventBufferSplitOutput.solderTo(

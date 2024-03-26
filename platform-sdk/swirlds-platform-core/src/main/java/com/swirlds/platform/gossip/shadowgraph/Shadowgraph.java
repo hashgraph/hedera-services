@@ -123,7 +123,7 @@ public class Shadowgraph implements Clearable {
     public Shadowgraph(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
-            @NonNull final IntakeEventCounter intakeEventCounter) { // TODO make sure we flush this
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         ancientMode = platformContext
                 .getConfiguration()

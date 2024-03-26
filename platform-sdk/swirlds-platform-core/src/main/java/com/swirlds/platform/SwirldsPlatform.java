@@ -614,8 +614,7 @@ public class SwirldsPlatform implements Platform {
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
 
-        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(
-                platformContext, currentAddressBook, selfId); // TODO port fixes to intake event counter!!!
+        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, currentAddressBook, selfId);
 
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;

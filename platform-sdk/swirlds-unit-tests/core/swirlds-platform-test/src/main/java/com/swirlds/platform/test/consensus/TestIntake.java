@@ -119,9 +119,11 @@ public class TestIntake implements LoadableFromSignedState {
         hasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
         postHashCollectorWiring.getOutputWire().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
-        linkerWiring.eventOutput().solderTo("shadowgraph", "addEvent", shadowGraph::addEvent);
-        linkerWiring.eventOutput().solderTo("output", "eventAdded", output::eventAdded);
-        linkerWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+
+        // TODO linker stuff
+        //        linkerWiring.eventOutput().solderTo("shadowgraph", "addEvent", shadowGraph::addEvent);
+        //        linkerWiring.eventOutput().solderTo("output", "eventAdded", output::eventAdded);
+        //        linkerWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
         consensusRoundOutputWire.solderTo(eventWindowManagerWiring.consensusRoundInput());
@@ -166,7 +168,8 @@ public class TestIntake implements LoadableFromSignedState {
         if (!consensus.isExpired(event.getBaseEvent())) {
             shadowGraph.addEvent(event);
         }
-        consensusEngineWiring.getInputWire(ConsensusEngine::addEvent).put(event);
+        // TODO
+        //        consensusEngineWiring.getInputWire(ConsensusEngine::addEvent).put(event);
     }
 
     /**
