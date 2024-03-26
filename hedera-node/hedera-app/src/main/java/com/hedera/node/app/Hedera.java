@@ -606,7 +606,7 @@ public final class Hedera implements SwirldMain {
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
         try {
             switch (trigger) {
-                case GENESIS -> genesis(state, platformState);
+                case GENESIS -> genesis(state, platformState, metrics);
                 case RECONNECT -> reconnect(state, deserializedVersion, platformState, metrics);
                 case RESTART, EVENT_STREAM_RECOVERY -> restart(
                         state, deserializedVersion, trigger, platformState, metrics);
@@ -642,7 +642,8 @@ public final class Hedera implements SwirldMain {
     private void onMigrate(
             @NonNull final MerkleHederaState state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
-            @NonNull final InitTrigger trigger) {
+            @NonNull final InitTrigger trigger,
+            @NonNull final Metrics metrics) {
         final var currentVersion = version.getServicesVersion();
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getServicesVersion();
         logger.info(
@@ -658,7 +659,8 @@ public final class Hedera implements SwirldMain {
 
         final var migrator = new OrderedServiceMigrator(servicesRegistry);
         logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
-        migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
+        migrator.doMigrations(
+                state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo, metrics);
         if (shouldDump(trigger, MOD_POST_MIGRATION)) {
             dumpModChildrenFrom(state, MOD_POST_MIGRATION);
         }
@@ -947,10 +949,13 @@ public final class Hedera implements SwirldMain {
     /**
      * Implements the code flow for initializing the state of a new Hedera node with NO SAVED STATE.
      */
-    private void genesis(@NonNull final MerkleHederaState state, @NonNull final PlatformState platformState) {
+    private void genesis(
+            @NonNull final MerkleHederaState state,
+            @NonNull final PlatformState platformState,
+            @NonNull final Metrics metrics) {
         logger.debug("Genesis Initialization");
         // Create all the nodes in the merkle tree for all the services
-        onMigrate(state, null, GENESIS);
+        onMigrate(state, null, GENESIS, metrics);
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, GENESIS, platformState);
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
@@ -1022,7 +1027,7 @@ public final class Hedera implements SwirldMain {
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
         //       the config provider to the migration code and let it get the right version of config as it goes.
-        onMigrate(state, deserializedVersion, trigger);
+        onMigrate(state, deserializedVersion, trigger, metrics);
         if (trigger == EVENT_STREAM_RECOVERY) {
             // (FUTURE) Dump post-migration mod-service state
         }
