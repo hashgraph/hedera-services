@@ -33,10 +33,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.ValueReference;
-import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.manager.SignatureVerificationTestUtils;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;

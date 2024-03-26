@@ -34,7 +34,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
