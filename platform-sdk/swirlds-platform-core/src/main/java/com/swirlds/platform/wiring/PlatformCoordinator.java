@@ -21,7 +21,6 @@ import com.swirlds.platform.wiring.components.ApplicationTransactionPrehandlerWi
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventCreationManagerWiring;
 import com.swirlds.platform.wiring.components.EventHasherWiring;
-import com.swirlds.platform.wiring.components.FutureEventBufferWiring;
 import com.swirlds.platform.wiring.components.PostHashCollectorWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
@@ -46,7 +45,6 @@ public class PlatformCoordinator {
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ShadowgraphWiring shadowgraphWiring;
     private final ConsensusEngineWiring consensusEngineWiring;
-    private final FutureEventBufferWiring futureEventBufferWiring;
     private final EventCreationManagerWiring eventCreationManagerWiring;
     private final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
@@ -63,7 +61,6 @@ public class PlatformCoordinator {
      * @param inOrderLinkerWiring                    the in order linker wiring
      * @param shadowgraphWiring                      the shadowgraph wiring
      * @param consensusEngineWiring                  the consensus engine wiring
-     * @param futureEventBufferWiring                the future event buffer wiring
      * @param eventCreationManagerWiring             the event creation manager wiring
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
@@ -78,7 +75,6 @@ public class PlatformCoordinator {
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final ShadowgraphWiring shadowgraphWiring,
             @NonNull final ConsensusEngineWiring consensusEngineWiring,
-            @NonNull final FutureEventBufferWiring futureEventBufferWiring,
             @NonNull final EventCreationManagerWiring eventCreationManagerWiring,
             @NonNull final ApplicationTransactionPrehandlerWiring applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
@@ -92,7 +88,6 @@ public class PlatformCoordinator {
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
         this.shadowgraphWiring = Objects.requireNonNull(shadowgraphWiring);
         this.consensusEngineWiring = Objects.requireNonNull(consensusEngineWiring);
-        this.futureEventBufferWiring = Objects.requireNonNull(futureEventBufferWiring);
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
         this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
@@ -123,7 +118,6 @@ public class PlatformCoordinator {
         shadowgraphWiring.flushRunnable().run();
         consensusEngineWiring.flushRunnable().run();
         applicationTransactionPrehandlerWiring.flushRunnable().run();
-        futureEventBufferWiring.flushRunnable().run();
         eventCreationManagerWiring.flush();
     }
 
