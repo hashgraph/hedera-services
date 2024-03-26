@@ -16,6 +16,8 @@
 
 package com.swirlds.logging.benchmark.config;
 
+import com.swirlds.logging.benchmark.util.ConfigManagement;
+import com.swirlds.logging.benchmark.util.LogFiles;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -27,9 +29,10 @@ public interface LoggingBenchmarkConfig<T> {
 
     /**
      * Create an appender for File
+     * @param logFile
      */
     @NonNull
-    T configureFileLogging();
+    T configureFileLogging(final String logFile);
 
     /**
      * Create an appender for Console
@@ -39,12 +42,17 @@ public interface LoggingBenchmarkConfig<T> {
 
     /**
      * Create an appender for Console + File
+     * @param logFile
      */
     @NonNull
-    T configureFileAndConsoleLogging();
+    T configureFileAndConsoleLogging(final String logFile);
 
     /**
      * Performs the necessary operations to clean after the benchmark is done
      */
-    void tierDown();
+    default void tearDown() {
+        if (ConfigManagement.deleteOutputFolder()) {
+            LogFiles.tryDeleteDirAndContent();
+        }
+    }
 }

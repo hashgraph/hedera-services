@@ -33,7 +33,7 @@ import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.event.stream.EventStreamManager;
+import com.swirlds.platform.event.stream.DefaultEventStreamManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -192,7 +192,7 @@ public final class RecoveryTestUtils {
             final Random random, final Path destination, final int secondsPerFile, final List<EventImpl> events)
             throws NoSuchAlgorithmException, IOException {
 
-        final EventStreamManager eventEventStreamManager = new EventStreamManager(
+        final DefaultEventStreamManager eventStreamManager = new DefaultEventStreamManager(
                 TestPlatformContextBuilder.create().build(),
                 Time.getCurrent(),
                 getStaticThreadManager(),
@@ -225,7 +225,7 @@ public final class RecoveryTestUtils {
             wrappedEvents.add(wrappedEvent);
         }
 
-        eventEventStreamManager.addEvents(wrappedEvents);
+        eventStreamManager.addEvents(wrappedEvents);
 
         // Each event will be serialized twice. Once when it is hashed, and once when it is written to disk.
         assertEventuallyTrue(
@@ -233,7 +233,7 @@ public final class RecoveryTestUtils {
                 Duration.ofSeconds(10),
                 "event not serialized fast enough");
 
-        eventEventStreamManager.stop();
+        eventStreamManager.stop();
     }
 
     /**

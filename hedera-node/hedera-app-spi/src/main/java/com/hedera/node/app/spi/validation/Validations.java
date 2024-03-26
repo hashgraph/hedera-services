@@ -62,11 +62,13 @@ public final class Validations {
      * be thrown.
      */
     @NonNull
-    public static AccountID validateAccountID(@Nullable final AccountID subject) throws PreCheckException {
+    public static AccountID validateAccountID(@Nullable final AccountID subject, ResponseCodeEnum responseCodeEnum)
+            throws PreCheckException {
         final var result = validateNullableAccountID(subject);
         // Cannot be null
         if (result == null) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+            throw new PreCheckException(
+                    responseCodeEnum == null ? ResponseCodeEnum.INVALID_ACCOUNT_ID : responseCodeEnum);
         }
         return result;
     }
