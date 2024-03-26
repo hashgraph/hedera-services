@@ -103,7 +103,9 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                     new StateSignatureTransaction(
                             round,
                             buildFakeSignature(
-                                    addressBook.getAddress(addressBook.getNodeId(0)).getSigPublicKey(),
+                                    addressBook
+                                            .getAddress(addressBook.getNodeId(0))
+                                            .getSigPublicKey(),
                                     states.get(round).getState().getHash()),
                             states.get(round).getState().getHash()));
             manager.handlePreconsensusSignatureTransaction(
@@ -111,7 +113,9 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                     new StateSignatureTransaction(
                             round,
                             buildFakeSignature(
-                                    addressBook.getAddress(addressBook.getNodeId(2)).getSigPublicKey(),
+                                    addressBook
+                                            .getAddress(addressBook.getNodeId(2))
+                                            .getSigPublicKey(),
                                     states.get(round).getState().getHash()),
                             states.get(round).getState().getHash()));
 
@@ -122,7 +126,9 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                         new StateSignatureTransaction(
                                 round,
                                 buildFakeSignature(
-                                        addressBook.getAddress(addressBook.getNodeId(3)).getSigPublicKey(),
+                                        addressBook
+                                                .getAddress(addressBook.getNodeId(3))
+                                                .getSigPublicKey(),
                                         states.get(round).getState().getHash()),
                                 states.get(round).getState().getHash()));
             }

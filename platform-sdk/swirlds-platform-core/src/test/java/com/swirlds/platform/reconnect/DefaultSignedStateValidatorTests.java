@@ -20,8 +20,6 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -307,10 +305,10 @@ class DefaultSignedStateValidatorTests {
 
         final Hash stateHash = randomHash();
 
-        final SignatureVerifier signatureVerifier = (data, signature, key)-> {
+        final SignatureVerifier signatureVerifier = (data, signature, key) -> {
             // a signature with a 0 byte is always invalid
             // this is set in the nodeSigs() method
-            if(signature[0] == 0){
+            if (signature[0] == 0) {
                 return false;
             }
             final Hash hash = new Hash(data, stateHash.getDigestType());
@@ -334,7 +332,7 @@ class DefaultSignedStateValidatorTests {
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (final Node node : nodes) {
             final byte sigValid = node.validSignature ? (byte) 1 : (byte) 0;
-            signatures.put(node.id, new Signature(SignatureType.RSA, new byte[]{sigValid}));
+            signatures.put(node.id, new Signature(SignatureType.RSA, new byte[] {sigValid}));
         }
 
         return signatures;

@@ -105,8 +105,12 @@ public class StateProof implements SelfSerializable {
             @NonNull final AddressBook addressBook,
             @NonNull final Threshold threshold) {
 
-        return isValid(cryptography, addressBook, threshold, (signature, bytes, publicKey) ->
-                CryptoStatic.verifySignature(bytes, signature.getSignatureBytes(), publicKey));
+        return isValid(
+                cryptography,
+                addressBook,
+                threshold,
+                (signature, bytes, publicKey) ->
+                        CryptoStatic.verifySignature(bytes, signature.getSignatureBytes(), publicKey));
     }
 
     /**

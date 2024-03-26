@@ -408,7 +408,11 @@ public final class EventRecoveryWorkflow {
         }
 
         final ReservedSignedState signedState = new SignedState(
-                        platformContext, CryptoStatic::verifySignature, newState, "EventRecoveryWorkflow.handleNextRound()", isFreezeState)
+                        platformContext,
+                        CryptoStatic::verifySignature,
+                        newState,
+                        "EventRecoveryWorkflow.handleNextRound()",
+                        isFreezeState)
                 .reserve("recovery");
         previousState.close();
 

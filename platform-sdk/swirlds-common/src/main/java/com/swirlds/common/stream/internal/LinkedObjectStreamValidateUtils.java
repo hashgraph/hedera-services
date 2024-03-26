@@ -33,7 +33,6 @@ import com.swirlds.logging.legacy.payload.StreamParseErrorPayload;
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PublicKey;
 import java.util.Iterator;
 import java.util.List;
@@ -237,7 +236,7 @@ public final class LinkedObjectStreamValidateUtils {
             sig.initVerify(publicKey);
             sig.update(data);
             return sig.verify(signature.getSignatureBytes());
-        } catch (final Exception  e) {
+        } catch (final Exception e) {
             throw new RuntimeException(e);
         }
     }

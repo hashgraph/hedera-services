@@ -289,7 +289,11 @@ public class ConsensusRoundHandler {
 
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
         final SignedState signedState = new SignedState(
-                platformContext, CryptoStatic::verifySignature, immutableStateCons, "ConsensusRoundHandler.createSignedState()", freezeRoundReceived);
+                platformContext,
+                CryptoStatic::verifySignature,
+                immutableStateCons,
+                "ConsensusRoundHandler.createSignedState()",
+                freezeRoundReceived);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("round handler output");
         // make sure to create the first reservation before setting the garbage collector

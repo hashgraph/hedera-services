@@ -99,8 +99,12 @@ public final class SignedStateFileReader {
                     return new StateFileData(state, hash, sigSet);
                 });
 
-        final SignedState newSignedState =
-                new SignedState(platformContext, CryptoStatic::verifySignature, data.state(), "SignedStateFileReader.readStateFile()", false);
+        final SignedState newSignedState = new SignedState(
+                platformContext,
+                CryptoStatic::verifySignature,
+                data.state(),
+                "SignedStateFileReader.readStateFile()",
+                false);
 
         newSignedState.setSigSet(data.sigSet());
 

@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -281,9 +280,9 @@ class StateSigningTests {
                 .build();
         final ValueReference<Hash> stateHash = new ValueReference<>();
 
-        final SignatureVerifier signatureVerifier = (data, signature, key)-> {
+        final SignatureVerifier signatureVerifier = (data, signature, key) -> {
             // a signature with a 0 byte is always invalid
-            if(signature[0] == 0){
+            if (signature[0] == 0) {
                 return false;
             }
             final Hash hash = new Hash(data, stateHash.getValue().getDigestType());
@@ -312,7 +311,7 @@ class StateSigningTests {
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
         for (final Address ignored : nodes) {
-            signatures.add(new Signature(SignatureType.RSA, new byte[]{1}));
+            signatures.add(new Signature(SignatureType.RSA, new byte[] {1}));
         }
 
         for (int index = 0; index < nodeCount; index++) {
@@ -454,7 +453,7 @@ class StateSigningTests {
         for (final Address address : newAddressBook) {
             final PublicKey publicKey = mock(PublicKey.class);
             when(publicKey.getAlgorithm()).thenReturn("RSA");
-            when(publicKey.getEncoded()).thenReturn(new byte[]{1,2,3});
+            when(publicKey.getEncoded()).thenReturn(new byte[] {1, 2, 3});
             final X509Certificate certificate = mock(X509Certificate.class);
             when(certificate.getPublicKey()).thenReturn(publicKey);
             final Address newAddress = address.copySetSigCert(certificate);

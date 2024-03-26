@@ -170,7 +170,12 @@ public class SignedState implements SignedStateInfo {
             @NonNull final State state,
             @NonNull final String reason,
             final boolean freezeState) {
-        this(platformContext.getConfiguration().getConfigData(StateConfig.class), signatureVerifier, state, reason, freezeState);
+        this(
+                platformContext.getConfiguration().getConfigData(StateConfig.class),
+                signatureVerifier,
+                state,
+                reason,
+                freezeState);
     }
 
     /**
@@ -609,7 +614,8 @@ public class SignedState implements SignedStateInfo {
             return false;
         }
 
-        return signatureVerifier.verifySignature(state.getHash().getValue(), signature.getSignatureBytes(), address.getSigPublicKey());
+        return signatureVerifier.verifySignature(
+                state.getHash().getValue(), signature.getSignatureBytes(), address.getSigPublicKey());
     }
 
     /**

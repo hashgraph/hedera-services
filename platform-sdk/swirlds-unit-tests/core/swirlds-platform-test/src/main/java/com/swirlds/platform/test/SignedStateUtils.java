@@ -39,8 +39,12 @@ public class SignedStateUtils {
         root.setSwirldState(state);
         root.setPlatformState(randomPlatformState(random));
         boolean shouldSaveToDisk = random.nextBoolean();
-        SignedState signedState =
-                new SignedState(TestPlatformContextBuilder.create().build(), CryptoStatic::verifySignature, root, "test", shouldSaveToDisk);
+        SignedState signedState = new SignedState(
+                TestPlatformContextBuilder.create().build(),
+                CryptoStatic::verifySignature,
+                root,
+                "test",
+                shouldSaveToDisk);
         signedState.getState().setHash(RandomUtils.randomHash(random));
         return signedState;
     }

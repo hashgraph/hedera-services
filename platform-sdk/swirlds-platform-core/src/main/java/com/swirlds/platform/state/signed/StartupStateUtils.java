@@ -241,8 +241,12 @@ public final class StartupStateUtils {
         Objects.requireNonNull(initialSignedState);
 
         final State stateCopy = initialSignedState.getState().copy();
-        final SignedState signedStateCopy =
-                new SignedState(platformContext, CryptoStatic::verifySignature, stateCopy, "StartupStateUtils: copy initial state", false);
+        final SignedState signedStateCopy = new SignedState(
+                platformContext,
+                CryptoStatic::verifySignature,
+                stateCopy,
+                "StartupStateUtils: copy initial state",
+                false);
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 
         return signedStateCopy.reserve("Copied initial state");

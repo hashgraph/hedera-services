@@ -279,8 +279,8 @@ class SignedStateTests {
         final PlatformState platformState = mock(PlatformState.class);
         when(state.getPlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
-        final SignedState signedState =
-                new SignedState(TestPlatformContextBuilder.create().build(), CryptoStatic::verifySignature, state, "test", false);
+        final SignedState signedState = new SignedState(
+                TestPlatformContextBuilder.create().build(), CryptoStatic::verifySignature, state, "test", false);
 
         assertFalse(state.isDestroyed(), "state should not yet be destroyed");
 

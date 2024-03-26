@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.state.manager;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
@@ -42,9 +39,7 @@ public class SignatureVerificationTestUtils {
     }
 
     public static boolean verifySignature(
-            @NonNull final byte[] data,
-            @NonNull final byte[] signature,
-            @NonNull final PublicKey publicKey) {
+            @NonNull final byte[] data, @NonNull final byte[] signature, @NonNull final PublicKey publicKey) {
         return Arrays.equals(concat(publicKey.getEncoded(), data), signature);
     }
 

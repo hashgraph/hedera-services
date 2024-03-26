@@ -19,8 +19,6 @@ package com.swirlds.platform.state;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.spy;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;

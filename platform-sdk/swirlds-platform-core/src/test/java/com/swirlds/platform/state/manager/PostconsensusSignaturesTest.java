@@ -104,7 +104,9 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
                         new StateSignatureTransaction(
                                 round,
                                 buildFakeSignature(
-                                        addressBook.getAddress(addressBook.getNodeId(node)).getSigPublicKey(),
+                                        addressBook
+                                                .getAddress(addressBook.getNodeId(node))
+                                                .getSigPublicKey(),
                                         states.get(round).getState().getHash()),
                                 states.get(round).getState().getHash()));
             }
