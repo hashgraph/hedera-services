@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
@@ -62,7 +63,14 @@ public class ConsensusTestOrchestrator {
     @SuppressWarnings("unused") // useful for debugging
     public void runGui() {
         final ConsensusTestNode node = nodes.stream().findAny().orElseThrow();
-        new TestGuiSource(node.getEventEmitter().getGraphGenerator(), node.getIntake()).runGui();
+
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final AddressBook addressBook =
+                node.getEventEmitter().getGraphGenerator().getAddressBook();
+
+        new TestGuiSource(platformContext, addressBook, node.getEventEmitter().getGraphGenerator(), node.getIntake())
+                .runGui();
     }
 
     /** Generates all events defined in the input */

@@ -993,11 +993,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    public void reclaimPreviouslyReservedThrottle(int n, HederaFunctionality function) {
-        synchronizedThrottleAccumulator.leakUnusedThrottlePreviouslyReserved(n, function);
-    }
-
-    @Override
     public boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function) {
         return networkUtilizationManager.shouldThrottleNOfUnscaled(n, function, userTransactionConsensusTime);
     }
