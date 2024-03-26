@@ -35,7 +35,7 @@
   },
   "virtualMerkleConfig": {
 	"samplingProbability": 0,
-	"assorted": true,
+	"assorted": false,
 	"smartContractConfig": {
 	  "minKeyValuePairsDuringCreation": 100,
 	  "maxKeyValuePairsDuringCreation": 250,
