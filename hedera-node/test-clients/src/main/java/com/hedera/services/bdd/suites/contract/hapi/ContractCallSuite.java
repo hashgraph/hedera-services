@@ -1740,9 +1740,9 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(PAYER).balance(1_000_000_000_000L).logged(),
                         cryptoCreate(RECEIVER).balance(1_000L),
                         uploadInitCode(contract),
-                    contractCreate(contract),
-                    getContractInfo(contract)
-                        .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))))
+                        contractCreate(contract),
+                        getContractInfo(contract)
+                                .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))))
                 .when(withOpContext((spec, opLog) -> {
                     final var subop1 = contractCall(contract, DEPOSIT, BigInteger.valueOf(1_000L))
                             .payingWith(PAYER)

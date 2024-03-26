@@ -637,7 +637,8 @@ public class TxnUtils {
         return !isEndOfStakingPeriodRecord(record);
     }
 
-    public static ByteString constructorArgsToByteString(String abi, Object[] args) throws UnsupportedEncodingException {
+    public static ByteString constructorArgsToByteString(String abi, Object[] args)
+            throws UnsupportedEncodingException {
         var params = encodeParametersForConstructor(args, abi);
 
         var paramsAsHex = Bytes.wrap(params).toHexString();
