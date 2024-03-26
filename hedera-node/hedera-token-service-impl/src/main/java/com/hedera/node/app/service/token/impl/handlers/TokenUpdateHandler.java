@@ -43,6 +43,7 @@ import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstim
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.isKeyRemoval;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -394,12 +395,45 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         }
         if (op.hasAdminKey()) {
+            removeKeysIfNeeded(op, builder);
             final var newAdminKey = op.adminKey();
-            if (isKeyRemoval(newAdminKey)) {
-                builder.adminKey((Key) null);
-            } else {
+            if (!isKeyRemoval(newAdminKey)) {
                 builder.adminKey(newAdminKey);
             }
+        }
+    }
+
+    private void removeKeysIfNeeded(final TokenUpdateTransactionBody op, final Token.Builder builder) {
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.adminKey())) {
+            builder.adminKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.kycKey())) {
+            builder.kycKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.freezeKey())) {
+            builder.freezeKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.wipeKey())) {
+            builder.wipeKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.supplyKey())) {
+            builder.supplyKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.feeScheduleKey())) {
+            builder.feeScheduleKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.pauseKey())) {
+            builder.pauseKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.metadataKey())) {
+            builder.metadataKey((Key) null);
         }
     }
 

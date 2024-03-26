@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,21 @@
 package token;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import common.AbstractXTest;
 import common.BaseScaffoldingComponent;
-import java.util.function.Consumer;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AbstractTokenUpdateXTest extends AbstractXTest {
+
+    protected static final String TOKEN_TREASURY = "tokenTreasury";
+
     protected static final AccountID DEFAULT_PAYER_ID =
             AccountID.newBuilder().accountNum(2L).build();
+
     protected TokenScaffoldingComponent component;
 
     @BeforeEach
@@ -44,7 +48,9 @@ public abstract class AbstractTokenUpdateXTest extends AbstractXTest {
         return component;
     }
 
-    protected Consumer<TokenUpdateTransactionBody.Builder> sas() {
-        return null;
+    protected Map<AccountID, Account> initialAccounts() {
+        final var accounts = super.initialAccounts();
+        addNamedAccount(TOKEN_TREASURY, accounts);
+        return accounts;
     }
 }
