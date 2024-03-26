@@ -63,6 +63,12 @@
 /platform-sdk/swirlds-virtualmap/               @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/**/module-info.java               @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
+# Documentation
+/platform-sdk/docs/platformWiki.md              @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base
+/platform-sdk/docs/base                         @hashgraph/platform-base
+/platform-sdk/docs/components                   @hashgraph/platform-hashgraph
+/platform-sdk/docs/core                         @hashgraph/platform-hashgraph
+
 #########################
 #####  Core Files  ######
 #########################
