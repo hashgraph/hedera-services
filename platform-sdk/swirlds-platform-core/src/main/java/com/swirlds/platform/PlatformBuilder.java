@@ -101,7 +101,7 @@ public final class PlatformBuilder {
     /**
      * The path to the settings file (i.e. the path used to instantiate {@link Configuration}).
      */
-    private Path settingsPath = getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME);
+    private Path settingsPath;
 
     private Consumer<GossipEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
@@ -342,8 +342,15 @@ public final class PlatformBuilder {
     public Platform build() {
 
         if (platformContext == null) {
+            if (configurationBuilder == null) {
+                configurationBuilder = ConfigurationBuilder.create();
+            }
+            if (settingsPath == null) {
+                settingsPath = getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME);
+            }
             platformContext = buildPlatformContext(configurationBuilder, settingsPath, selfId);
         }
+
         final Configuration configuration = platformContext.getConfiguration();
 
         final boolean firstTimeSetup = doStaticSetup(configuration, configPath);
