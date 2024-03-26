@@ -66,6 +66,19 @@ final class StaticPlatformBuilder {
     private StaticPlatformBuilder() {}
 
     /**
+     * Setup global metrics.
+     *
+     * @param configuration the configuration for this node
+     */
+    static void setupGlobalMetrics(@NonNull final Configuration configuration) {
+        if (metricsProvider == null) {
+            metricsProvider = new DefaultMetricsProvider(configuration);
+            globalMetrics = metricsProvider.createGlobalMetrics();
+            CryptoMetrics.registerMetrics(globalMetrics);
+        }
+    }
+
+    /**
      * Setup static utilities. If running multiple platforms in the same JVM and this method is called more than once
      * then this method becomes a no-op.
      *
@@ -99,10 +112,6 @@ final class StaticPlatformBuilder {
 
         BootstrapUtils.performHealthChecks(configPath, configuration);
         writeSettingsUsed(configuration);
-
-        metricsProvider = new DefaultMetricsProvider(configuration);
-        globalMetrics = metricsProvider.createGlobalMetrics();
-        CryptoMetrics.registerMetrics(globalMetrics);
 
         // Initialize the thread dump generator, if enabled via settings
         startThreadDumpGenerator(configuration);
