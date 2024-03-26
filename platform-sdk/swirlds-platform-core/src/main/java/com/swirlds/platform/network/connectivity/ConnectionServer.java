@@ -22,18 +22,14 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.network.PeerInfo;
-import com.swirlds.platform.network.communication.handshake.HandshakeCompletedListenerImpl;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
-import javax.net.ssl.SSLSocket;
+import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,7 +46,7 @@ public class ConnectionServer implements InterruptableRunnable {
     /** responsible for creating and binding the server socket */
     private final SocketFactory socketFactory;
     /** handles newly established connections */
-    private final Consumer<Socket> newConnectionHandler;
+    private final BiConsumer<Socket, List<PeerInfo>> newConnectionHandler;
     /** a thread pool used to handle incoming connections */
     private final ExecutorService incomingConnPool;
 
@@ -66,15 +62,15 @@ public class ConnectionServer implements InterruptableRunnable {
             final ThreadManager threadManager,
             final int port,
             final SocketFactory socketFactory,
-            final Consumer<Socket> newConnectionHandler,
-            @NonNull final List<PeerInfo> peerInfoList) {
+            final BiConsumer<Socket, List<PeerInfo>> newConnectionHandler,
+            final List<PeerInfo> peerInfoList) {
         this.port = port;
         this.newConnectionHandler = newConnectionHandler;
         this.socketFactory = socketFactory;
         this.incomingConnPool = Executors.newCachedThreadPool(new ThreadConfiguration(threadManager)
                 .setThreadName("sync_server")
                 .buildFactory());
-        this.peerInfoList = Objects.requireNonNull(peerInfoList);
+        this.peerInfoList = peerInfoList;
     }
 
     @Override
@@ -96,10 +92,7 @@ public class ConnectionServer implements InterruptableRunnable {
         while (!serverSocket.isClosed()) {
             try {
                 final Socket clientSocket = serverSocket.accept(); // listen, waiting until someone connects
-                if (clientSocket instanceof final SSLSocket sslSocket) {
-                    sslSocket.addHandshakeCompletedListener(new HandshakeCompletedListenerImpl(peerInfoList));
-                }
-                incomingConnPool.submit(() -> newConnectionHandler.accept(clientSocket));
+                incomingConnPool.submit(() -> newConnectionHandler.accept(clientSocket, peerInfoList));
             } catch (final SocketTimeoutException expectedWithNonZeroSOTimeout) {
                 // A timeout is expected, so we won't log it
                 if (Thread.currentThread().isInterrupted()) {

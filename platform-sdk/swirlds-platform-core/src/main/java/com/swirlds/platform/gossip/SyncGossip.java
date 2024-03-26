@@ -199,8 +199,8 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final OutboundConnectionCreator connectionCreator =
                 new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
-        final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
-                platformContext, this, selfId, addressBook, connectionManagers::newConnection, time);
+        final InboundConnectionHandler inboundConnectionHandler =
+                new InboundConnectionHandler(platformContext, this, selfId, connectionManagers::newConnection, time);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
@@ -478,15 +478,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     public void connectionClosed(final boolean outbound, @NonNull final Connection conn) {
         Objects.requireNonNull(conn);
         networkMetrics.recordDisconnect(conn);
-    }
-
-    /**
-     * Should the network layer do a version check prior to initiating a connection?
-     *
-     * @return true if a version check should be done
-     */
-    protected boolean shouldDoVersionCheck() {
-        return false;
     }
 
     /**
