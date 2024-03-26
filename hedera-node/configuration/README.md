@@ -43,7 +43,7 @@ path is given, the file belongs in the top-level directory with the JAR.
   - For example, more permissive Netty HTTP/2 settings
 
 ## upgrade/throttles.json
-* If present, will be used, post-upgrade, as input to a yahcli `sysfiles upload throttles` command. It will not layer on top of other throttles, it will be exactly what is in this file. If not present it will use https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/resources/throttles.json.
+* If specified, this file serves as the sole input for the `yahcli sysfiles upload throttles` command post-upgrade, replacing any existing throttles with its contents. In its absence, the default is sourced from `:/hedera-node/hedera-file-service-impl/src/main/resources/genesis/throttles.json`.
 
 ## javaOptions
 * Script to start `HGCApp` with all needed options
