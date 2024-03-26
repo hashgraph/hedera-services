@@ -120,27 +120,36 @@ class TaskSchedulerConfigurationTests {
      */
     @Test
     void doubleConfigurationTest() {
-        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("DIRECT DIRECT"));
-        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("DIRECT SEQUENTIAL"));
+        assertThrows(IllegalArgumentException.class, () -> TaskSchedulerConfiguration.parse("DIRECT DIRECT"));
+        assertThrows(IllegalArgumentException.class, () -> TaskSchedulerConfiguration.parse("DIRECT SEQUENTIAL"));
         assertThrows(
-                IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("CAPACITY(1234) CAPACITY(1234)"));
+                IllegalArgumentException.class,
+                () -> TaskSchedulerConfiguration.parse("CAPACITY(1234) CAPACITY(1234)"));
         assertThrows(
-                IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("CAPACITY(1234) CAPACITY(5678)"));
+                IllegalArgumentException.class,
+                () -> TaskSchedulerConfiguration.parse("CAPACITY(1234) CAPACITY(5678)"));
         assertThrows(
-                IllegalStateException.class,
+                IllegalArgumentException.class,
                 () -> TaskSchedulerConfiguration.parse("UNHANDLED_TASK_METRIC UNHANDLED_TASK_METRIC"));
         assertThrows(
-                IllegalStateException.class,
+                IllegalArgumentException.class,
                 () -> TaskSchedulerConfiguration.parse("UNHANDLED_TASK_METRIC !UNHANDLED_TASK_METRIC"));
         assertThrows(
-                IllegalStateException.class,
+                IllegalArgumentException.class,
                 () -> TaskSchedulerConfiguration.parse("BUSY_FRACTION_METRIC BUSY_FRACTION_METRIC"));
         assertThrows(
-                IllegalStateException.class,
+                IllegalArgumentException.class,
                 () -> TaskSchedulerConfiguration.parse("BUSY_FRACTION_METRIC !BUSY_FRACTION_METRIC"));
-        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("FLUSHABLE !FLUSHABLE"));
-        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("FLUSHABLE FLUSHABLE"));
-        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("SQUELCHABLE !SQUELCHABLE"));
-        assertThrows(IllegalStateException.class, () -> TaskSchedulerConfiguration.parse("SQUELCHABLE SQUELCHABLE"));
+        assertThrows(IllegalArgumentException.class, () -> TaskSchedulerConfiguration.parse("FLUSHABLE !FLUSHABLE"));
+        assertThrows(IllegalArgumentException.class, () -> TaskSchedulerConfiguration.parse("FLUSHABLE FLUSHABLE"));
+        assertThrows(
+                IllegalArgumentException.class, () -> TaskSchedulerConfiguration.parse("SQUELCHABLE !SQUELCHABLE"));
+        assertThrows(IllegalArgumentException.class, () -> TaskSchedulerConfiguration.parse("SQUELCHABLE SQUELCHABLE"));
+    }
+
+    @Test
+    void unmatchedFieldTest() {
+        assertThrows(
+                IllegalArgumentException.class, () -> TaskSchedulerConfiguration.parse("DIRECT CAPACITY(100) QWERTY"));
     }
 }
