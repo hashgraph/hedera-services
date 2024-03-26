@@ -78,7 +78,6 @@ import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -626,8 +625,6 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.wireExternalComponents(platformStatusManager, transactionPool, latestCompleteState);
 
-        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
-
         // wire ISS output
         final IssHandler issHandler =
                 new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
@@ -676,7 +673,6 @@ public class SwirldsPlatform implements Platform {
                 stateSignatureCollector,
                 consensusRoundHandler,
                 eventStreamManager,
-                futureEventBuffer,
                 issDetector,
                 hashLogger,
                 latestCompleteStateNotifier);
