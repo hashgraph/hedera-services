@@ -458,6 +458,7 @@ public final class Hedera implements SwirldMain {
             if (uniqTokensFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
                 final var copy = uniqTokensFromState.copy();
+                copy.registerMetrics(metrics);
                 TOKEN_SERVICE.setNftsFromState(copy);
             }
 
@@ -467,6 +468,7 @@ public final class Hedera implements SwirldMain {
             if (tokenRelsFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
                 final var copy = tokenRelsFromState.copy();
+                copy.registerMetrics(metrics);
                 TOKEN_SERVICE.setTokenRelsFromState(copy);
             }
 
@@ -481,6 +483,7 @@ public final class Hedera implements SwirldMain {
             if (filesFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
                 final var copy = filesFromState.copy();
+                copy.registerMetrics(metrics);
                 FILE_SERVICE.setFs(() -> VirtualMapLike.from(copy));
 
                 // We also need to make this available to the contract service, so it can extract contract bytecode
@@ -493,6 +496,7 @@ public final class Hedera implements SwirldMain {
             if (acctsFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
                 final var copy = acctsFromState.copy();
+                copy.registerMetrics(metrics);
                 TOKEN_SERVICE.setAcctsFromState(copy);
             }
 
@@ -533,6 +537,7 @@ public final class Hedera implements SwirldMain {
             if (contractFromStorage != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
                 final var copy = contractFromStorage.copy();
+                copy.registerMetrics(metrics);
                 CONTRACT_SERVICE.setStorageFromState(VirtualMapLike.from(copy));
             }
 
