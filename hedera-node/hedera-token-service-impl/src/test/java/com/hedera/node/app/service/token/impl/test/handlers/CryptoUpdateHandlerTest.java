@@ -469,6 +469,21 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
+    void zeroAutoAssociationsLessThanExistingFails() {
+        final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(0).build();
+        givenTxnWith(txn);
+        // initially account has 10 auto association slots and 2 are used
+        assertEquals(2, writableStore.get(updateAccountId).usedAutoAssociations());
+        assertEquals(10, writableStore.get(updateAccountId).maxAutoAssociations());
+
+        // changing to less than 2 slots will fail
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT));
+        assertEquals(10, writableStore.get(updateAccountId).maxAutoAssociations());
+    }
+
+    @Test
     void maxAutoAssociationUpdateToMoreThanTokenAssociationLimitFails() {
         final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(12).build();
         givenTxnWith(txn);
