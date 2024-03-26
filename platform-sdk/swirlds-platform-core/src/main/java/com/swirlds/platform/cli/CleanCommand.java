@@ -25,6 +25,7 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -69,7 +70,9 @@ public final class CleanCommand extends AbstractCommand {
         Objects.requireNonNull(sdkPath);
 
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(
-                sdkPath.resolve(DEFAULT_SETTINGS_FILE_NAME), List.of(sdkPath.resolve(DEFAULT_CONFIG_FILE_NAME)));
+                ConfigurationBuilder.create(),
+                sdkPath.resolve(DEFAULT_SETTINGS_FILE_NAME),
+                List.of(sdkPath.resolve(DEFAULT_CONFIG_FILE_NAME)));
 
         // delete all logs
         FileUtils.deleteFiles(sdkPath, ".log");
