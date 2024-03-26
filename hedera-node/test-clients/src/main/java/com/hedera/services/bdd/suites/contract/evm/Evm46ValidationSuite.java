@@ -614,6 +614,7 @@ public class Evm46ValidationSuite extends HapiSuite {
                                         resultWith().createdContractIdsCount(0).gasUsed(24972))));
     }
 
+    // Adding refusingEthConversion() due to fee differences and not supported address type
     @HapiTest
     private HapiSpec internalCallToExistingMirrorAddressResultsInSuccessfulCall() {
 
@@ -622,8 +623,12 @@ public class Evm46ValidationSuite extends HapiSuite {
         return defaultHapiSpec("internalCallToExistingMirrorAddressResultsInSuccessfulCall")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT, INTERNAL_CALLEE_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
-                        contractCreate(INTERNAL_CALLEE_CONTRACT).exposingNumTo(calleeNum::set))
+                        contractCreate(INTERNAL_CALLER_CONTRACT)
+                                .balance(ONE_HBAR)
+                                .refusingEthConversion(),
+                        contractCreate(INTERNAL_CALLEE_CONTRACT)
+                                .exposingNumTo(calleeNum::set)
+                                .refusingEthConversion())
                 .when(withOpContext((spec, ignored) -> allRunFor(
                         spec,
                         contractCall(INTERNAL_CALLER_CONTRACT, CALL_EXTERNAL_FUNCTION, mirrorAddrWith(calleeNum.get()))
