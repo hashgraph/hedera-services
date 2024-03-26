@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.collections;
 
+import static com.swirlds.merkledb.collections.AbstractLongList.UNSAFE;
 import static com.swirlds.merkledb.utilities.HashTools.HASH_SIZE_BYTES;
 import static com.swirlds.merkledb.utilities.HashTools.byteBufferToHash;
 import static com.swirlds.merkledb.utilities.HashTools.hashToByteBuffer;
@@ -196,6 +197,12 @@ public final class HashListByteBuffer implements HashList, OffHeapUser {
     public void close() throws IOException {
         maxIndexThatCanBeStored.set(0);
         numberOfHashesStored.set(0);
+        if (offHeap) {
+            // Direct byte buffers
+            for (ByteBuffer buffer : data) {
+                UNSAFE.invokeCleaner(buffer);
+            }
+        }
         data.clear();
     }
 
