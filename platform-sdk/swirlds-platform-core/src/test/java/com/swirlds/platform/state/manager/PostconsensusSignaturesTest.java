@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildReallyFakeSignature;
+import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -39,7 +39,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link StateSignatureCollector#handlePostConsensusSignatures(List)}
+ * Tests for {@link StateSignatureCollector#handlePostconsensusSignatures(List)}
  */
 class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
 
@@ -103,7 +103,9 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
                         addressBook.getNodeId(node),
                         new StateSignatureTransaction(
                                 round,
-                                buildReallyFakeSignature(),
+                                buildFakeSignature(
+                                        addressBook.getAddress(addressBook.getNodeId(node)).getSigPublicKey(),
+                                        states.get(round).getState().getHash()),
                                 states.get(round).getState().getHash()));
             }
 

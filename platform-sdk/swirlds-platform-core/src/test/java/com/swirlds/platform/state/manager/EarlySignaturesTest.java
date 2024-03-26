@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildReallyFakeSignature;
+import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -102,13 +102,17 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                     addressBook.getNodeId(0),
                     new StateSignatureTransaction(
                             round,
-                            buildReallyFakeSignature(),
+                            buildFakeSignature(
+                                    addressBook.getAddress(addressBook.getNodeId(0)).getSigPublicKey(),
+                                    states.get(round).getState().getHash()),
                             states.get(round).getState().getHash()));
             manager.handlePreconsensusSignatureTransaction(
                     addressBook.getNodeId(2),
                     new StateSignatureTransaction(
                             round,
-                            buildReallyFakeSignature(),
+                            buildFakeSignature(
+                                    addressBook.getAddress(addressBook.getNodeId(2)).getSigPublicKey(),
+                                    states.get(round).getState().getHash()),
                             states.get(round).getState().getHash()));
 
             // Even numbered rounds have 3 sent very early.
@@ -117,7 +121,9 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                         addressBook.getNodeId(3),
                         new StateSignatureTransaction(
                                 round,
-                                buildReallyFakeSignature(),
+                                buildFakeSignature(
+                                        addressBook.getAddress(addressBook.getNodeId(3)).getSigPublicKey(),
+                                        states.get(round).getState().getHash()),
                                 states.get(round).getState().getHash()));
             }
         }

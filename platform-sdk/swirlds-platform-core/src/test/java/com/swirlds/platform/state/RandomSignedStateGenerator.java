@@ -20,7 +20,6 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 import com.swirlds.common.crypto.Hash;
@@ -31,8 +30,8 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.state.manager.SignatureVerificationTestUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -189,11 +188,8 @@ public class RandomSignedStateGenerator {
         platformState.setRoundsNonAncient(roundsNonAncientInstance);
         platformState.setSnapshot(consensusSnapshotInstance);
 
-        if(signatureVerifier == null){
-            signatureVerifier = (data, signature, key)-> {
-                final Hash hash = new Hash(data, stateHash.getDigestType());
-                return hash.equals(stateHash);
-            };
+        if (signatureVerifier == null) {
+            signatureVerifier = SignatureVerificationTestUtils::verifySignature;
         }
 
         final SignedState signedState = new SignedState(

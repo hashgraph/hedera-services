@@ -21,7 +21,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
-import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
+import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -454,6 +454,7 @@ class StateSigningTests {
         for (final Address address : newAddressBook) {
             final PublicKey publicKey = mock(PublicKey.class);
             when(publicKey.getAlgorithm()).thenReturn("RSA");
+            when(publicKey.getEncoded()).thenReturn(new byte[]{1,2,3});
             final X509Certificate certificate = mock(X509Certificate.class);
             when(certificate.getPublicKey()).thenReturn(publicKey);
             final Address newAddress = address.copySetSigCert(certificate);
