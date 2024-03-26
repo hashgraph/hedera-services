@@ -29,7 +29,8 @@ import static com.swirlds.logging.benchmark.config.Constants.WARMUP_TIME_IN_SECO
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
-import com.swirlds.logging.benchmark.swirldslog.SwirldsLogLoggingBenchmarkConfig;
+import com.swirlds.logging.benchmark.swirldslog.plain.SwirldsLogConfig;
+import com.swirlds.logging.benchmark.util.LogFiles;
 import com.swirlds.logging.benchmark.util.Throwables;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -71,16 +72,17 @@ public class BridgedFineGrainBenchmark {
     public void init() {
         config = new BridgedConfiguration();
         if (Objects.equals(loggingType, CONSOLE_TYPE)) {
-            swirldsConfig = new SwirldsLogLoggingBenchmarkConfig();
+            swirldsConfig = new SwirldsLogConfig();
             swirldsConfig.configureConsoleLogging();
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, FILE_TYPE)) {
-            swirldsConfig = new SwirldsLogLoggingBenchmarkConfig();
-            swirldsConfig.configureFileLogging();
+            swirldsConfig = new SwirldsLogConfig();
+            swirldsConfig.configureFileLogging(LogFiles.provideLogFilePath(Constants.LOG4J2, FILE_TYPE, ""));
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
-            swirldsConfig = new SwirldsLogLoggingBenchmarkConfig();
-            swirldsConfig.configureFileAndConsoleLogging();
+            swirldsConfig = new SwirldsLogConfig();
+            swirldsConfig.configureFileAndConsoleLogging(
+                    LogFiles.provideLogFilePath(Constants.LOG4J2, CONSOLE_AND_FILE_TYPE, ""));
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         }
     }
@@ -283,7 +285,7 @@ public class BridgedFineGrainBenchmark {
 
     @TearDown(Level.Iteration)
     public void tearDown() {
-        config.tierDown();
-        swirldsConfig.tierDown();
+        config.tearDown();
+        swirldsConfig.tearDown();
     }
 }

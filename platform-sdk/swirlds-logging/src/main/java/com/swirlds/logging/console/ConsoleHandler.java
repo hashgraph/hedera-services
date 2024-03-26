@@ -21,7 +21,7 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
-import com.swirlds.logging.buffer.BufferedOutputStream;
+import com.swirlds.logging.io.BufferedOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;
