@@ -37,6 +37,7 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.state.manager.SignatureVerificationTestUtils;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
@@ -278,29 +279,16 @@ class StateSigningTests {
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
                 .setSize(nodeCount)
                 .build();
-        final ValueReference<Hash> stateHash = new ValueReference<>();
-
-        final SignatureVerifier signatureVerifier = (data, signature, key) -> {
-            // a signature with a 0 byte is always invalid
-            if (signature[0] == 0) {
-                return false;
-            }
-            final Hash hash = new Hash(data, stateHash.getValue().getDigestType());
-
-            return hash.equals(stateHash.getValue());
-        };
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
                 .setAddressBook(addressBook)
                 .setSignatures(new HashMap<>())
-                .setSignatureVerifier(signatureVerifier)
                 .build();
 
         final Set<NodeId> signaturesAdded = new HashSet<>();
         long expectedWeight = 0;
 
         final SigSet sigSet = signedState.getSigSet();
-        stateHash.setValue(signedState.getState().getHash());
 
         // Randomize address order
         final List<Address> nodes = new ArrayList<>(addressBook.getSize());
@@ -310,8 +298,9 @@ class StateSigningTests {
         Collections.shuffle(nodes, random);
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
-        for (final Address ignored : nodes) {
-            signatures.add(new Signature(SignatureType.RSA, new byte[] {1}));
+        for (final Address address : nodes) {
+            signatures.add(SignatureVerificationTestUtils.buildFakeSignature(
+                    address.getSigPublicKey(), signedState.getState().getHash()));
         }
 
         for (int index = 0; index < nodeCount; index++) {

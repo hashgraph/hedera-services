@@ -19,31 +19,32 @@ package com.swirlds.platform.state.manager;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 import java.util.Arrays;
 
 /**
- * Utility methods for testing {@link StateSignatureCollector}
+ * Utility methods for testing signature verification.
  */
 public class SignatureVerificationTestUtils {
 
     /**
      * Build a fake signature. The signature acts like a correct signature for the given key/hash, and acts like an
-     * invalid signature for any other key/hash. If either the key or hash is set to null then the signature will always
-     * fail (this is sometimes desired).
+     * invalid signature for any other key/hash.
      */
-    public static Signature buildFakeSignature(final PublicKey key, final Hash hash) {
+    public static Signature buildFakeSignature(@NonNull final PublicKey key, @NonNull final Hash hash) {
         return new Signature(SignatureType.RSA, concat(key.getEncoded(), hash.getValue()));
     }
 
+    /**
+     * A {@link com.swirlds.platform.crypto.SignatureVerifier} to be used when using signatures built by {@link #buildFakeSignature(PublicKey, Hash)}
+     */
     public static boolean verifySignature(
             @NonNull final byte[] data, @NonNull final byte[] signature, @NonNull final PublicKey publicKey) {
         return Arrays.equals(concat(publicKey.getEncoded(), data), signature);
     }
 
-    private static byte[] concat(final byte[] first, final byte[] second) {
+    private static byte[] concat(@NonNull final byte[] first, @NonNull final byte[] second) {
         final byte[] result = Arrays.copyOf(first, first.length + second.length);
         System.arraycopy(second, 0, result, first.length, second.length);
         return result;

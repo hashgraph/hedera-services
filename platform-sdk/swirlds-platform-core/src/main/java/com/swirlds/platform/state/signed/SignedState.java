@@ -156,13 +156,14 @@ public class SignedState implements SignedStateInfo {
     /**
      * Instantiate a signed state.
      *
-     * @param platformContext the platform context
-     * @param state           a fast copy of the state resulting from all transactions in consensus order from all
-     *                        events with received rounds up through the round this SignedState represents
-     * @param reason          a short description of why this SignedState is being created. Each location where a
-     *                        SignedState is created should attempt to use a unique reason, as this makes debugging
-     *                        reservation bugs easier.
-     * @param freezeState     specifies whether this state is the last one saved before the freeze
+     * @param platformContext   the platform context
+     * @param signatureVerifier the signature verifier
+     * @param state             a fast copy of the state resulting from all transactions in consensus order from all
+     *                          events with received rounds up through the round this SignedState represents
+     * @param reason            a short description of why this SignedState is being created. Each location where a
+     *                          SignedState is created should attempt to use a unique reason, as this makes debugging
+     *                          reservation bugs easier.
+     * @param freezeState       specifies whether this state is the last one saved before the freeze
      */
     public SignedState(
             @NonNull final PlatformContext platformContext,
@@ -181,13 +182,14 @@ public class SignedState implements SignedStateInfo {
     /**
      * Instantiate a signed state.
      *
-     * @param stateConfig state configuration
-     * @param state       a fast copy of the state resulting from all transactions in consensus order from all events
-     *                    with received rounds up through the round this SignedState represents
-     * @param reason      a short description of why this SignedState is being created. Each location where a
-     *                    SignedState is created should attempt to use a unique reason, as this makes debugging
-     *                    reservation bugs easier.
-     * @param freezeState specifies whether this state is the last one saved before the freeze
+     * @param stateConfig       state configuration
+     * @param signatureVerifier the signature verifier
+     * @param state             a fast copy of the state resulting from all transactions in consensus order from all
+     *                          events with received rounds up through the round this SignedState represents
+     * @param reason            a short description of why this SignedState is being created. Each location where a
+     *                          SignedState is created should attempt to use a unique reason, as this makes debugging
+     *                          reservation bugs easier.
+     * @param freezeState       specifies whether this state is the last one saved before the freeze
      */
     public SignedState(
             @NonNull final StateConfig stateConfig,

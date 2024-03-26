@@ -399,6 +399,11 @@ public class RandomSignedStateGenerator {
         return this;
     }
 
+    /**
+     * Set the signature verifier.
+     *
+     * @return this object
+     */
     @NonNull
     public RandomSignedStateGenerator setSignatureVerifier(@NonNull final SignatureVerifier signatureVerifier) {
         this.signatureVerifier = signatureVerifier;
