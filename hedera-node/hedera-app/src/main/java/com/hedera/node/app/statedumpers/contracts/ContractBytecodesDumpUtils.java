@@ -63,9 +63,10 @@ public class ContractBytecodesDumpUtils {
     }
 
     @NonNull
-    public static Contracts gatherModContracts(VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts,
-                                               final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
-                                               final StateMetadata<AccountID, Account> stateMetadata) {
+    public static Contracts gatherModContracts(
+            VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts,
+            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
+            final StateMetadata<AccountID, Account> stateMetadata) {
         final var contractsToReturn = new ConcurrentLinkedQueue<BBMContract>();
         final var threadCount = 8;
         final var processed = new AtomicInteger();
@@ -85,17 +86,31 @@ public class ContractBytecodesDumpUtils {
         }
 
         final var contractArr = contractsToReturn.toArray(new BBMContract[0]);
+        final var deletedContracts = contractsToReturn.stream()
+                .filter(c -> c.validity() == Validity.DELETED)
+                .map(BBMContract::canonicalId)
+                .toList();
         System.out.printf("=== %d contracts iterated over (%d saved)%n", processed.get(), contractArr.length);
-        return new Contracts(List.of(contractArr), List.of(), contractArr.length);
+        return new Contracts(List.of(contractArr), deletedContracts, contractArr.length);
     }
 
-    public static BBMContract fromMod(OnDiskKey<ContractID> id, OnDiskValue<Bytecode> bytecode,
-                                      final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts, final StateMetadata<AccountID, Account> stateMetadata) {
-        final var isDeleted = accounts.get(new OnDiskKey<>(stateMetadata,
-                AccountID.newBuilder().accountNum(id.getKey().contractNum()).build())).getValue().deleted();
+    public static BBMContract fromMod(
+            OnDiskKey<ContractID> id,
+            OnDiskValue<Bytecode> bytecode,
+            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
+            final StateMetadata<AccountID, Account> stateMetadata) {
+        final var isDeleted = accounts.get(new OnDiskKey<>(
+                        stateMetadata,
+                        AccountID.newBuilder()
+                                .accountNum(id.getKey().contractNum())
+                                .build()))
+                .getValue()
+                .deleted();
 
-        final var c =
-                new BBMContract(new TreeSet<>(), bytecode.getValue().code().toByteArray(), isDeleted ? Validity.DELETED :Validity.ACTIVE);
+        final var c = new BBMContract(
+                new TreeSet<>(),
+                bytecode.getValue().code().toByteArray(),
+                isDeleted ? Validity.DELETED : Validity.ACTIVE);
         if (id.getKey().contractNum() != null) {
             c.ids().add(id.getKey().contractNum().intValue());
         }

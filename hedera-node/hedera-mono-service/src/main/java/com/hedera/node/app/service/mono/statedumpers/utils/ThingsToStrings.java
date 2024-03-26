@@ -525,7 +525,7 @@ public class ThingsToStrings {
     }
 
     public static boolean getMaybeStringifyByteString(@NonNull final StringBuilder sb, @Nullable final Bytes bytes) {
-        if (bytes == null) {
+        if (bytes == null || bytes == Bytes.EMPTY) {
             return false;
         }
         sb.append(toStringPossibleHumanReadableByteArray(";", bytes.toByteArray()));

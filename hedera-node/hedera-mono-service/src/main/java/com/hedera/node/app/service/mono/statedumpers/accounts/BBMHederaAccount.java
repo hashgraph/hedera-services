@@ -220,9 +220,6 @@ public record BBMHederaAccount(
             } else if (stakedId.kind() == STAKED_ACCOUNT_ID) {
                 id = ((AccountID) stakedId.value()).accountNum();
             }
-            if (accountId.accountNum() == 1294L) {
-                System.out.println("stakedIdLong" + id);
-            }
         } catch (Exception e) {
             e.printStackTrace();
         }

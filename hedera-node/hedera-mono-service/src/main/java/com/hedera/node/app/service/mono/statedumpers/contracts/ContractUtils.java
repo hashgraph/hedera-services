@@ -90,12 +90,12 @@ public class ContractUtils {
             final var vbk = new VirtualBlobKey(Type.CONTRACT_BYTECODE, cid);
             if (fileStore.containsKey(vbk)) {
                 final var blob = fileStore.get(vbk);
-                    final var c = new BBMContract(
-                            new TreeSet<>(),
-                            blob.getData(),
-                            deletedContractIds.contains(cid) ? Validity.DELETED : Validity.ACTIVE);
-                    c.ids().add(cid);
-                    codes.add(c);
+                final var c = new BBMContract(
+                        new TreeSet<>(),
+                        blob.getData(),
+                        deletedContractIds.contains(cid) ? Validity.DELETED : Validity.ACTIVE);
+                c.ids().add(cid);
+                codes.add(c);
             }
         }
         return codes;

@@ -145,8 +145,12 @@ public class StateDumper {
 
         final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> byteCodes = requireNonNull(state.getChild(
                 state.findNodeIndex(ContractService.NAME, InitialModServiceContractSchema.BYTECODE_KEY)));
-        dumpModContractBytecodes(Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES), byteCodes, accounts,
-                (StateMetadata<AccountID, Account>) state.getServices().get(TokenService.NAME).get(ACCOUNTS_KEY),
+        dumpModContractBytecodes(
+                Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
+                byteCodes,
+                accounts,
+                (StateMetadata<AccountID, Account>)
+                        state.getServices().get(TokenService.NAME).get(ACCOUNTS_KEY),
                 checkpoint);
 
         final VirtualMap<OnDiskKey<TopicID>, OnDiskValue<Topic>> topics = requireNonNull(
