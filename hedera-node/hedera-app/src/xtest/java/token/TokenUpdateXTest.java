@@ -17,6 +17,7 @@
 package token;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.key.KeyUtils.ALL_ZEROS_INVALID_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 
 import com.hedera.hapi.node.base.Key;
@@ -30,7 +31,8 @@ import java.util.Map;
 
 public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
 
-    protected static final String TOKEN_ID = "tokenId";
+    protected static final String TOKEN_REMOVE_KEYS_ID = "tokenRemoveKeysId";
+    protected static final String TOKEN_CHANGE_KEYS_ID = "tokenChangeKeysId";
 
     private static final Key DEFAULT_KEY = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
@@ -38,6 +40,9 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
 
     @Override
     protected void doScenarioOperations() {
+        // if a key is set to `IMMUTABILITY_SENTINEL_KEY` then it is considered to be "removed"
+
+        // remove freeze key
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
                 TransactionBody.newBuilder()
@@ -45,10 +50,11 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_ID))
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
                                 .freezeKey(IMMUTABILITY_SENTINEL_KEY))
                         .build(),
                 OK);
+        // remove kyc key
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
                 TransactionBody.newBuilder()
@@ -56,10 +62,11 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_ID))
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
                                 .kycKey(IMMUTABILITY_SENTINEL_KEY))
                         .build(),
                 OK);
+        // remove wipe key
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
                 TransactionBody.newBuilder()
@@ -67,10 +74,11 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_ID))
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
                                 .wipeKey(IMMUTABILITY_SENTINEL_KEY))
                         .build(),
                 OK);
+        // remove supply key
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
                 TransactionBody.newBuilder()
@@ -78,10 +86,11 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_ID))
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
                                 .supplyKey(IMMUTABILITY_SENTINEL_KEY))
                         .build(),
                 OK);
+        // remove fee schedule key
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
                 TransactionBody.newBuilder()
@@ -89,10 +98,11 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_ID))
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
                                 .feeScheduleKey(IMMUTABILITY_SENTINEL_KEY))
                         .build(),
                 OK);
+        // remove pause key
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
                 TransactionBody.newBuilder()
@@ -100,7 +110,7 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_ID))
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
                                 .pauseKey(IMMUTABILITY_SENTINEL_KEY))
                         .build(),
                 OK);
@@ -111,10 +121,11 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_ID))
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
                                 .metadataKey(IMMUTABILITY_SENTINEL_KEY))
                         .build(),
                 OK);
+        // remove admin key
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),
                 TransactionBody.newBuilder()
@@ -122,8 +133,94 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_ID))
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
                                 .adminKey(IMMUTABILITY_SENTINEL_KEY))
+                        .build(),
+                OK);
+
+        // change keys to an "invalid" key i.e `0x0000000000000000000000000000000000000000`
+        // change freeze key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder()
+                                .accountID(DEFAULT_PAYER_ID)
+                                .build())
+                        .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .freezeKey(ALL_ZEROS_INVALID_KEY))
+                        .build(),
+                OK);
+        // change kyc key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder()
+                                .accountID(DEFAULT_PAYER_ID)
+                                .build())
+                        .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .kycKey(ALL_ZEROS_INVALID_KEY))
+                        .build(),
+                OK);
+        // change wipe key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder()
+                                .accountID(DEFAULT_PAYER_ID)
+                                .build())
+                        .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .wipeKey(ALL_ZEROS_INVALID_KEY))
+                        .build(),
+                OK);
+        // change supply key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder()
+                                .accountID(DEFAULT_PAYER_ID)
+                                .build())
+                        .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .supplyKey(ALL_ZEROS_INVALID_KEY))
+                        .build(),
+                OK);
+        // change fee schedule key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder()
+                                .accountID(DEFAULT_PAYER_ID)
+                                .build())
+                        .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .feeScheduleKey(ALL_ZEROS_INVALID_KEY))
+                        .build(),
+                OK);
+        // change pause key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder()
+                                .accountID(DEFAULT_PAYER_ID)
+                                .build())
+                        .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
+                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .pauseKey(ALL_ZEROS_INVALID_KEY))
+                        .build(),
+                OK);
+        // change admin key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder()
+                                .accountID(DEFAULT_PAYER_ID)
+                                .build())
+                        .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
+                                .token(idOfNamedToken(TOKEN_CHANGE_KEYS_ID))
+                                .adminKey(ALL_ZEROS_INVALID_KEY))
                         .build(),
                 OK);
     }
@@ -135,7 +232,19 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
          */
         final var tokens = super.initialTokens();
         addNamedFungibleToken(
-                TOKEN_ID,
+                TOKEN_REMOVE_KEYS_ID,
+                b -> b.treasuryAccountId(idOfNamedAccount(TOKEN_TREASURY))
+                        .adminKey(DEFAULT_KEY)
+                        .freezeKey(DEFAULT_KEY)
+                        .supplyKey(DEFAULT_KEY)
+                        .kycKey(DEFAULT_KEY)
+                        .feeScheduleKey(DEFAULT_KEY)
+                        .metadataKey(DEFAULT_KEY)
+                        .wipeKey(DEFAULT_KEY)
+                        .pauseKey(DEFAULT_KEY),
+                tokens);
+        addNamedFungibleToken(
+                TOKEN_CHANGE_KEYS_ID,
                 b -> b.treasuryAccountId(idOfNamedAccount(TOKEN_TREASURY))
                         .adminKey(DEFAULT_KEY)
                         .freezeKey(DEFAULT_KEY)

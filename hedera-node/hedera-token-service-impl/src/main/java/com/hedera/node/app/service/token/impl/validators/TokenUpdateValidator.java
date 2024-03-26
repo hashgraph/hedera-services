@@ -77,7 +77,7 @@ public class TokenUpdateValidator {
         }
         // validate token keys, if any being changed
 
-        // TODO comment
+        // TODO protobuf field check
         validator.validateTokenKeys(
                 op.hasAdminKey(), op.adminKey(),
                 op.hasKycKey(), op.kycKey(),
