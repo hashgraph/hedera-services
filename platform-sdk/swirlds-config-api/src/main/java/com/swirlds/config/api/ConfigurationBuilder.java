@@ -65,7 +65,6 @@ public interface ConfigurationBuilder {
      * @param converter the converter that should be used for the configuration
      * @return the builder instance (useful for fluent API)
      * @throws IllegalStateException if this method is called after the config has been created
-     *
      * @deprecated Use {@link ConfigurationBuilder#withConverter(Class, ConfigConverter)}
      */
     @NonNull
@@ -77,7 +76,7 @@ public interface ConfigurationBuilder {
      * {@link #build()}) a {@link IllegalStateException} will be thrown.
      *
      * @param converterType the type to convert to
-     * @param converter the converter that should be used for the configuration
+     * @param converter     the converter that should be used for the configuration
      * @return the builder instance (useful for fluent API)
      * @throws IllegalStateException if this method is called after the config has been created
      */
@@ -92,7 +91,6 @@ public interface ConfigurationBuilder {
      * @param converters the converters that should be used for the configuration
      * @return the builder instance (useful for fluent API)
      * @throws IllegalStateException if this method is called after the config has been created
-     *
      * @deprecated Use {@link ConfigurationBuilder#withConverter(Class, ConfigConverter)}
      */
     @NonNull
@@ -175,12 +173,23 @@ public interface ConfigurationBuilder {
     }
 
     /**
-     * This method is used to automatically discover all extensions that are available in the classpath/modulepath.
-     * This is done by using SPI (Service Provider Interface) and the {@link java.util.ServiceLoader} to find all
+     * This method is used to automatically discover all extensions that are available in the classpath/modulepath. This
+     * is done by using SPI (Service Provider Interface) and the {@link java.util.ServiceLoader} to find all
      * implementations of {@link ConfigurationExtension} and register all provided extensions.
      *
      * @return the {@link ConfigurationBuilder} instance (for fluent API)
      */
     @NonNull
     ConfigurationBuilder autoDiscoverExtensions();
+
+    /**
+     * This method loads a configuration extension.
+     *
+     * @param extension the extension to load
+     * @return the {@link ConfigurationBuilder} instance (for fluent API)
+     * @deprecated Avoid use of this method, this API will not be supported in the long term
+     */
+    @Deprecated
+    @NonNull
+    ConfigurationBuilder loadExtension(@NonNull final ConfigurationExtension extension);
 }

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -34,6 +35,7 @@ import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.function.IntConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -55,6 +57,7 @@ public class ServicesTxnManager {
     private final MigrationRecordsManager migrationRecordsManager;
     private final RecordStreaming recordStreaming;
     private final BlockManager blockManager;
+    private final IntConsumer cryptoCreateThrottleReclaimer;
     private final RewardCalculator rewardCalculator;
     private final BootstrapProperties bootstrapProperties;
     private final BlocklistAccountCreator blocklistAccountCreator;
@@ -71,6 +74,7 @@ public class ServicesTxnManager {
             final MigrationRecordsManager migrationRecordsManager,
             final RecordStreaming recordStreaming,
             final BlockManager blockManager,
+            final IntConsumer cryptoCreateThrottleReclaimer,
             final RewardCalculator rewardCalculator,
             final @NonNull BootstrapProperties bootstrapProperties,
             final @NonNull BlocklistAccountCreator blocklistAccountCreator) {
@@ -84,6 +88,7 @@ public class ServicesTxnManager {
         this.migrationRecordsManager = migrationRecordsManager;
         this.scopedTriggeredProcessing = scopedTriggeredProcessing;
         this.blockManager = blockManager;
+        this.cryptoCreateThrottleReclaimer = cryptoCreateThrottleReclaimer;
         this.rewardCalculator = rewardCalculator;
         this.bootstrapProperties = Objects.requireNonNull(bootstrapProperties);
         this.blocklistAccountCreator = Objects.requireNonNull(blocklistAccountCreator);
@@ -120,6 +125,9 @@ public class ServicesTxnManager {
             } else {
                 scopedProcessing.run();
             }
+            if (representsFailedAutoCreation(accessor) && txnCtx.isSelfSubmitted()) {
+                cryptoCreateThrottleReclaimer.accept(accessor.getNumImplicitCreations());
+            }
         } catch (Exception processFailure) {
             processFailed = true;
             logContextualizedError(processFailure, "txn processing");
@@ -134,6 +142,10 @@ public class ServicesTxnManager {
                 attemptRecordStreaming();
             }
         }
+    }
+
+    private boolean representsFailedAutoCreation(TxnAccessor accessor) {
+        return txnCtx.status() != SUCCESS && accessor.getNumImplicitCreations() > 0;
     }
 
     private void attemptRecordStreaming() {

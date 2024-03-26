@@ -187,6 +187,7 @@ public class SpanMapManager {
             expandEthContext(accessor, workingState, spanMap, null);
             accessor.setRationalizedSpanMap(spanMap);
         }
+        accessor.countImplicitCreationsWith(aliasManager);
     }
 
     private boolean areChanged(final LinkedRefs linkedRefs) {
