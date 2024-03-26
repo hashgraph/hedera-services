@@ -96,7 +96,6 @@ public class S3FileSystem implements FileSystemApi {
 
         this.client.putObject(
                 objectRequest, RequestBody.fromByteBuffer(block.toByteString().asReadOnlyByteBuffer()));
-        readBlock(5);
     }
 
     @Override
