@@ -2225,6 +2225,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .has(contractWith().balance(10_000L - 50L))));
     }
 
+    // Adding refusingEthConversion() due to fee differences
     @HapiTest
     final HapiSpec sendHbarsToCallerFromDifferentAddresses() {
         return defaultHapiSpec(
@@ -2252,10 +2253,12 @@ public class ContractCallSuite extends HapiSuite {
 
                     final var nestedTransferringUpload =
                             uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_TRANSFER_CONTRACT);
-                    final var createFirstNestedContract =
-                            contractCustomCreate(NESTED_TRANSFER_CONTRACT, "1").balance(10_000L);
-                    final var createSecondNestedContract =
-                            contractCustomCreate(NESTED_TRANSFER_CONTRACT, "2").balance(10_000L);
+                    final var createFirstNestedContract = contractCustomCreate(NESTED_TRANSFER_CONTRACT, "1")
+                            .balance(10_000L)
+                            .refusingEthConversion();
+                    final var createSecondNestedContract = contractCustomCreate(NESTED_TRANSFER_CONTRACT, "2")
+                            .balance(10_000L)
+                            .refusingEthConversion();
                     final var transfer2 = cryptoTransfer(
                             TokenMovement.movingHbar(10_000_000L).between(GENESIS, DEFAULT_CONTRACT_RECEIVER));
                     final var saveSnapshot = getAccountInfo(DEFAULT_CONTRACT_RECEIVER)
@@ -2280,7 +2283,8 @@ public class ContractCallSuite extends HapiSuite {
                                         asHeadlongAddress(
                                                 getNestedContractAddress(NESTED_TRANSFER_CONTRACT + "2", spec)))
                                 .balance(10_000L)
-                                .payingWith(GENESIS),
+                                .payingWith(GENESIS)
+                                .refusingEthConversion(),
                         contractCall(
                                         NESTED_TRANSFERRING_CONTRACT,
                                         "transferToCallerFromDifferentAddresses",
