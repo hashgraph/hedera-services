@@ -23,7 +23,7 @@ import com.swirlds.common.utility.IntReference;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.system.events.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -118,10 +118,10 @@ public class RoundElections {
     }
 
     /**
-     * @return create a {@link MinGenInfo} instance for this round
+     * @return create a {@link MinimumJudgeInfo} instance for this round
      */
-    public @NonNull MinGenInfo creatMinGenInfo() {
-        return new MinGenInfo(round, getMinGeneration());
+    public @NonNull MinimumJudgeInfo createMinimumJudgeInfo() {
+        return new MinimumJudgeInfo(round, getMinGeneration());
     }
 
     /**

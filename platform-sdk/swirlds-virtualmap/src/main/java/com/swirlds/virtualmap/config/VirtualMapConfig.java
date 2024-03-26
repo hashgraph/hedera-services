@@ -94,7 +94,7 @@ public record VirtualMapConfig(
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "50.0")
                 double percentHashThreads, // FUTURE WORK: We need to add min/max support for double values
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numHashThreads,
-        @Min(1) @Max(64) @ConfigProperty(defaultValue = "6") int virtualHasherChunkHeight,
+        @Min(1) @Max(64) @ConfigProperty(defaultValue = "3") int virtualHasherChunkHeight,
 //        @ConfigProperty(defaultValue = "push") String reconnectMode,
 //        @ConfigProperty(defaultValue = "pullTopToBottom") String reconnectMode,
 //        @ConfigProperty(defaultValue = "pullTwoPhaseParents") String reconnectMode,

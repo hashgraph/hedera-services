@@ -60,7 +60,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class EndOfStakingPeriodUpdaterTest {
+public class EndOfStakingPeriodUpdaterTest {
     private ReadableAccountStore accountStore;
 
     private EndOfStakingPeriodUpdater subject;
@@ -171,7 +171,7 @@ class EndOfStakingPeriodUpdaterTest {
     }
 
     @Test
-    void deletedNodesgetsZeroPendingRewards() {
+    void deletedNodesGetsZeroPendingRewards() {
         final var context = mock(TokenContext.class);
         given(context.consensusTime()).willReturn(Instant.now());
 
@@ -342,13 +342,13 @@ class EndOfStakingPeriodUpdaterTest {
     private static final List<Long> REWARD_SUM_HISTORY_1 = List.of(8L, 7L, 2L);
     private static final List<Long> REWARD_SUM_HISTORY_2 = List.of(5L, 5L, 4L);
     private static final List<Long> REWARD_SUM_HISTORY_3 = List.of(4L, 2L, 1L);
-    private static final EntityNumber NODE_NUM_1 =
+    public static final EntityNumber NODE_NUM_1 =
             EntityNumber.newBuilder().number(1).build();
-    private static final EntityNumber NODE_NUM_2 =
+    public static final EntityNumber NODE_NUM_2 =
             EntityNumber.newBuilder().number(2).build();
-    private static final EntityNumber NODE_NUM_3 =
+    public static final EntityNumber NODE_NUM_3 =
             EntityNumber.newBuilder().number(3).build();
-    private static final StakingNodeInfo STAKING_INFO_1 = StakingNodeInfo.newBuilder()
+    public static final StakingNodeInfo STAKING_INFO_1 = StakingNodeInfo.newBuilder()
             .nodeNumber(NODE_NUM_1.number())
             .minStake(MIN_STAKE)
             .maxStake(MAX_STAKE)
@@ -361,7 +361,7 @@ class EndOfStakingPeriodUpdaterTest {
             .deleted(false)
             .weight(0)
             .build();
-    private static final StakingNodeInfo STAKING_INFO_2 = StakingNodeInfo.newBuilder()
+    public static final StakingNodeInfo STAKING_INFO_2 = StakingNodeInfo.newBuilder()
             .nodeNumber(NODE_NUM_2.number())
             .minStake(MIN_STAKE)
             .maxStake(MAX_STAKE)
@@ -374,7 +374,7 @@ class EndOfStakingPeriodUpdaterTest {
             .deleted(false)
             .weight(0)
             .build();
-    private static final StakingNodeInfo STAKING_INFO_3 = StakingNodeInfo.newBuilder()
+    public static final StakingNodeInfo STAKING_INFO_3 = StakingNodeInfo.newBuilder()
             .nodeNumber(NODE_NUM_3.number())
             .minStake(MIN_STAKE)
             .maxStake(MAX_STAKE)

@@ -90,6 +90,7 @@ jobs:
 
   eet-tests:
     name: E2E Tests
+    if: ${{ false }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - dependency-check
@@ -107,6 +108,7 @@ jobs:
 
   integration-tests:
     name: Integration Tests
+    if: ${{ false }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - dependency-check

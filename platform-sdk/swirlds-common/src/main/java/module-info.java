@@ -66,6 +66,7 @@ module com.swirlds.common {
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
+    exports com.swirlds.common.wiring.component;
     exports com.swirlds.common.wiring.counters;
     exports com.swirlds.common.wiring.model;
     exports com.swirlds.common.wiring.schedulers;

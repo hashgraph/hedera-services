@@ -187,7 +187,7 @@ public class LogLevelTest {
 
         // then
         assertThat(result).isTrue();
-        assertThat(systemErrProvider.getLines()).anyMatch(s -> s.contains("Null parameter: handler"));
+        assertThat(systemErrProvider.getLines()).anyMatch(s -> s.contains("Null parameter: name"));
     }
 
     @Test

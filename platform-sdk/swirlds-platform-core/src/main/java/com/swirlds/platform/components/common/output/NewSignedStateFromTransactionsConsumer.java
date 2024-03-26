@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components.common.output;
 
-import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -29,7 +29,7 @@ public interface NewSignedStateFromTransactionsConsumer {
      * A new signed state has been created. The state holds a single reservation. It is the responsibility of the
      * consumer to release the reservation when appropriate.
      *
-     * @param signedState the newly created signed state
+     * @param stateAndRound the newly created signed state, with its associated round
      */
-    void newSignedStateFromTransactions(@NonNull final ReservedSignedState signedState);
+    void newSignedStateFromTransactions(@NonNull final StateAndRound stateAndRound);
 }

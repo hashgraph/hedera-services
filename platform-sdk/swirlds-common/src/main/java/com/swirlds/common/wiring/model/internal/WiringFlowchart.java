@@ -37,17 +37,18 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A readable wiring flowchart.
  */
 public class WiringFlowchart {
 
-    public static final String SCHEDULER_COLOR = "ff9";
-    public static final String DIRECT_SCHEDULER_COLOR = "ccc";
+    public static final String SCHEDULER_COLOR = "135f12";
+    public static final String DIRECT_SCHEDULER_COLOR = "12305f";
     public static final String TEXT_COLOR = "000";
     public static final String GROUP_COLOR = "9cf";
-    public static final String SUBSTITUTION_COLOR = "f88";
+    public static final String SUBSTITUTION_COLOR = "5f1212";
 
     private final MermaidNameShortener nameProvider = new MermaidNameShortener();
     private final MermaidStyleManager styleManager = new MermaidStyleManager();
@@ -94,8 +95,12 @@ public class WiringFlowchart {
             if (!(vertex instanceof StandardVertex)) {
                 throw new IllegalStateException("Encountered a vertex that is not a StandardVertex");
             }
-            final StandardVertex vertexCopy =
-                    new StandardVertex(vertex.getName(), vertex.getType(), SCHEDULER, vertex.isInsertionIsBlocking());
+            final StandardVertex vertexCopy = new StandardVertex(
+                    vertex.getName(),
+                    vertex.getType(),
+                    SCHEDULER,
+                    vertex.getHyperlink(),
+                    vertex.isInsertionIsBlocking());
 
             copy.put(vertex.getName(), vertexCopy);
         }
@@ -155,7 +160,7 @@ public class WiringFlowchart {
     private void substituteEdge(@NonNull final ModelEdgeSubstitution substitution) {
         // First, create a new vertex that will represent the destination of the substitution.
         final StandardVertex substitutedVertex =
-                new StandardVertex(substitution.substitution(), DIRECT, SUBSTITUTION, true);
+                new StandardVertex(substitution.substitution(), DIRECT, SUBSTITUTION, null, true);
         vertexMap.put(substitution.substitution(), substitutedVertex);
 
         // Next, cause all substituted edges to point to this new vertex.
@@ -238,9 +243,17 @@ public class WiringFlowchart {
         final List<ModelEdge> edges = collectEdges();
         final List<ModelVertex> groupVertices = collectGroupVertices(group);
 
+        final Set<String> hyperlinks = new HashSet<>();
+        for (final ModelVertex vertex : groupVertices) {
+            if (vertex.getHyperlink() != null) {
+                hyperlinks.add(vertex.getHyperlink());
+            }
+        }
+        final String hyperlink = hyperlinks.size() == 1 ? hyperlinks.iterator().next() : null;
+
         final TaskSchedulerType schedulerType = getSchedulerTypeOfCollapsedGroup(groupVertices);
 
-        final StandardVertex newVertex = new StandardVertex(group.getName(), schedulerType, SCHEDULER, true);
+        final StandardVertex newVertex = new StandardVertex(group.getName(), schedulerType, SCHEDULER, hyperlink, true);
 
         // Assign all vertices with a source that is collapsed to the new vertex.
         // Redirect all vertices with a destination that is collapsed to the new vertex.
@@ -381,7 +394,17 @@ public class WiringFlowchart {
         final StringBuilder sb = new StringBuilder();
         sb.append(
                 """
-                %%{init: {'flowchart': {'defaultRenderer': 'elk'}}}%%
+                %%{
+                    init: {
+                        'flowchart': {'defaultRenderer': 'elk'},
+                        'theme': 'base',
+                        'themeVariables': {
+                            'primaryColor': '#454545',
+                            'primaryTextColor': '#EEEEEE',
+                            'lineColor': '#C0C0C0'
+                        }
+                    }
+                }%%
                 flowchart TD
                 """);
 

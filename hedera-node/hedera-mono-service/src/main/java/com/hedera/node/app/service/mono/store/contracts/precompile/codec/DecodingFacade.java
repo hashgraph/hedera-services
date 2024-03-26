@@ -217,7 +217,7 @@ public class DecodingFacade {
             // otherwise default to false in order to preserve the existing behaviour.
             // The isApproval parameter only exists in the new form of cryptoTransfer
             final boolean isApproval = (transfer.size() > 2) && (boolean) transfer.get(2);
-            addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, isApproval);
+            addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, isApproval, false);
         }
         return fungibleTransfers;
     }
@@ -250,8 +250,9 @@ public class DecodingFacade {
             final TokenID tokenType,
             final AccountID accountID,
             final long amount,
-            final boolean isApproval) {
-        if (amount > 0) {
+            final boolean isApproval,
+            final boolean zeroAmountIsReceiver) {
+        if (amount > 0 || (amount == 0 && zeroAmountIsReceiver)) {
             fungibleTransfers.add(
                     new SyntheticTxnFactory.FungibleTokenTransfer(amount, isApproval, tokenType, null, accountID));
         } else {

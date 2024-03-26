@@ -17,6 +17,7 @@
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,17 +40,10 @@ class TestStringCodec implements Codec<String> {
 
     @NonNull
     @Override
-    public String parse(final @NonNull ReadableSequentialData input) {
+    public String parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth) {
         Objects.requireNonNull(input);
         final var len = input.readInt();
         return len == 0 ? "" : input.readBytes(len).asUtf8String();
-    }
-
-    @NonNull
-    @Override
-    public String parseStrict(final @NonNull ReadableSequentialData dataInput) {
-        Objects.requireNonNull(dataInput);
-        return parse(dataInput);
     }
 
     @Override
@@ -67,7 +61,8 @@ class TestStringCodec implements Codec<String> {
     }
 
     @Override
-    public boolean fastEquals(final @NonNull String value, final @NonNull ReadableSequentialData input) {
+    public boolean fastEquals(final @NonNull String value, final @NonNull ReadableSequentialData input)
+            throws ParseException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(input);
         return value.equals(parse(input));

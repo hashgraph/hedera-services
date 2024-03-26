@@ -81,6 +81,11 @@ public class NetworkInfoImpl implements NetworkInfo {
                 .toList();
     }
 
+    @Override
+    public boolean containsNode(long nodeId) {
+        return platform.getAddressBook().contains(new NodeId(nodeId));
+    }
+
     @Nullable
     @Override
     public NodeInfo nodeInfo(long nodeId) {

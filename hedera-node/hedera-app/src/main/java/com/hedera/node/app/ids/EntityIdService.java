@@ -82,7 +82,7 @@ public class EntityIdService implements Service {
                 final var entityIdState = ctx.newStates().getSingleton(ENTITY_ID_STATE_KEY);
                 final var config = ctx.configuration().getConfigData(HederaConfig.class);
 
-                final var isGenesis = ctx.previousStates().isEmpty();
+                final var isGenesis = ctx.previousVersion() == null;
                 if (isGenesis) {
                     // Set the initial entity id to the first user entity minus one
                     final var entityNum = config.firstUserEntity() - 1;

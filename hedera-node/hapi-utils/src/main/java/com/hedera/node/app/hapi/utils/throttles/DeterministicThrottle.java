@@ -190,6 +190,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
      *
      * @return the percent usage at the time of the last throttling decision
      */
+    @Override
     public double instantaneousPercentUsed() {
         if (lastDecisionTime == null) {
             return 0.0;

@@ -53,7 +53,6 @@ class SwirldStateManagerTests {
                 platformContext,
                 addressBook,
                 new NodeId(0L),
-                (a, b) -> {},
                 mock(SwirldStateMetrics.class),
                 mock(StatusActionSubmitter.class),
                 initialState,

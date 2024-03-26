@@ -31,7 +31,7 @@ public interface SignedStateValidator {
      * @param signedState       the signed state to validate
      * @param addressBook       the address book used for this signed state
      * @param previousStateData A {@link SignedStateValidationData} containing data from the
-     *        {@link com.swirlds.platform.state.PlatformData} in the state before the signed state to be validated.
+     *        {@link com.swirlds.platform.state.PlatformState} in the state before the signed state to be validated.
      *        This may be used to ensure signed state is usable and valid, and also contains useful information for
      *        diagnostics produced when the signed state is not considered valid.
      * @throws SignedStateInvalidException if the signed state is not valid

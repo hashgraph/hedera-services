@@ -49,7 +49,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
@@ -59,7 +58,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.headlongFromHexed;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
@@ -698,12 +696,11 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
-        return defaultHapiSpec("revertedAutoCreationRollsBackEvenIfTopLevelSucceeds")
+        return defaultHapiSpec(
+                        "revertedAutoCreationRollsBackEvenIfTopLevelSucceeds",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
                 .given(
-                        snapshotMode(
-                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),

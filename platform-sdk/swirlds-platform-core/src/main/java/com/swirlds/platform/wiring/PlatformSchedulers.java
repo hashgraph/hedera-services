@@ -16,19 +16,47 @@
 
 package com.swirlds.platform.wiring;
 
+import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCommonHyperlink;
+import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.EventCreationManager;
+import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.linking.InOrderLinker;
+import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
+import com.swirlds.platform.event.preconsensus.PcesReplayer;
+import com.swirlds.platform.event.preconsensus.PcesSequencer;
+import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.stream.EventStreamManager;
+import com.swirlds.platform.event.validation.EventSignatureValidator;
+import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.TransactionPrehandler;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.iss.IssDetector;
+import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedStateFileManager;
+import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSavingResult;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.util.HashLogger;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -57,8 +85,10 @@ import java.util.List;
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
  * @param futureEventBufferScheduler                the scheduler for the future event buffer
  * @param issDetectorScheduler                      the scheduler for the iss detector
+ * @param issHandlerScheduler                       the scheduler for the iss handler
  * @param hashLoggerScheduler                       the scheduler for the hash logger
- * @param latestCompleteStateScheduler              the scheduler for the latest complete state notifier
+ * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
+ * @param stateHasherScheduler                      the scheduler for the state hasher
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
@@ -79,13 +109,15 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> applicationTransactionPrehandlerScheduler,
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
-        @NonNull TaskScheduler<Void> consensusRoundHandlerScheduler,
+        @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
         @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
         @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler,
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
+        @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> hashLoggerScheduler,
-        @NonNull TaskScheduler<Void> latestCompleteStateScheduler) {
+        @NonNull TaskScheduler<Void> latestCompleteStateNotifierScheduler,
+        @NonNull TaskScheduler<StateAndRound> stateHasherScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
@@ -108,6 +140,7 @@ public record PlatformSchedulers(
                         .withOnRamp(hashingObjectCounter)
                         .withExternalBackPressure(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(EventHasher.class))
                         .build()
                         .cast(),
                 // don't define a capacity for the postHashCollector, so that the postHashCollector will not apply
@@ -124,6 +157,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.internalEventValidatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(InternalEventValidator.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventDeduplicator")
@@ -131,6 +165,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.eventDeduplicatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(EventDeduplicator.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventSignatureValidator")
@@ -138,6 +173,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.eventSignatureValidatorUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(EventSignatureValidator.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("orphanBuffer")
@@ -145,6 +181,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.orphanBufferUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(OrphanBuffer.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("inOrderLinker")
@@ -152,6 +189,7 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.inOrderLinkerUnhandledCapacity())
                         .withFlushingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(InOrderLinker.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("consensusEngine")
@@ -160,6 +198,7 @@ public record PlatformSchedulers(
                         .withFlushingEnabled(true)
                         .withSquelchingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(ConsensusEngine.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventCreationManager")
@@ -168,46 +207,54 @@ public record PlatformSchedulers(
                         .withFlushingEnabled(true)
                         .withSquelchingEnabled(true)
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(EventCreationManager.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("signedStateFileManager")
                         .withType(config.signedStateFileManagerSchedulerType())
                         .withUnhandledTaskCapacity(config.signedStateFileManagerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(SignedStateFileManager.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("stateSigner")
                         .withType(config.stateSignerSchedulerType())
                         .withUnhandledTaskCapacity(config.stateSignerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(StateSigner.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("pcesReplayer")
                         .withType(TaskSchedulerType.DIRECT)
+                        .withHyperlink(platformCoreHyperlink(PcesReplayer.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("pcesWriter")
                         .withType(config.pcesWriterSchedulerType())
                         .withUnhandledTaskCapacity(config.pcesWriterUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(PcesWriter.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("pcesSequencer")
                         .withType(config.pcesSequencerSchedulerType())
                         .withUnhandledTaskCapacity(config.pcesSequencerUnhandledTaskCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(PcesSequencer.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventDurabilityNexus")
                         .withType(config.eventDurabilityNexusSchedulerType())
                         .withUnhandledTaskCapacity(config.eventDurabilityNexusUnhandledTaskCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(EventDurabilityNexus.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("applicationTransactionPrehandler")
                         .withType(config.applicationTransactionPrehandlerSchedulerType())
                         .withUnhandledTaskCapacity(config.applicationTransactionPrehandlerUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(TransactionPrehandler.class))
                         .withFlushingEnabled(true)
                         .build()
                         .cast(),
@@ -215,6 +262,7 @@ public record PlatformSchedulers(
                         .withType(config.stateSignatureCollectorSchedulerType())
                         .withUnhandledTaskCapacity(config.stateSignatureCollectorUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(StateSignatureCollector.class))
                         .withFlushingEnabled(true)
                         .build()
                         .cast(),
@@ -222,6 +270,7 @@ public record PlatformSchedulers(
                         .withType(config.shadowgraphSchedulerType())
                         .withUnhandledTaskCapacity(config.shadowgraphUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(Shadowgraph.class))
                         .withFlushingEnabled(true)
                         .build()
                         .cast(),
@@ -235,10 +284,12 @@ public record PlatformSchedulers(
                                 .withBusyFractionMetricsEnabled(true))
                         .withFlushingEnabled(true)
                         .withSquelchingEnabled(true)
+                        .withHyperlink(platformCoreHyperlink(ConsensusRoundHandler.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventStreamManager")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                        .withHyperlink(platformCommonHyperlink(EventStreamManager.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("runningHashUpdate")
@@ -250,24 +301,40 @@ public record PlatformSchedulers(
                         .withUnhandledTaskCapacity(config.futureEventBufferUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                         .withFlushingEnabled(true)
+                        .withHyperlink(platformCoreHyperlink(FutureEventBuffer.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("issDetector")
                         .withType(config.issDetectorSchedulerType())
                         .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(IssDetector.class))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("issHandler")
+                        .withType(TaskSchedulerType.DIRECT)
+                        .withHyperlink(platformCoreHyperlink(IssHandler.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("hashLogger")
                         .withType(config.hashLoggerSchedulerType())
                         .withUnhandledTaskCapacity(config.hashLoggerUnhandledTaskCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(HashLogger.class))
                         .build()
                         .cast(),
-                model.schedulerBuilder("latestCompleteStateScheduler")
+                model.schedulerBuilder("latestCompleteStateNotifier")
                         .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
                         .withUnhandledTaskCapacity(config.completeStateNotifierUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .build()
+                        .cast(),
+                model.schedulerBuilder("stateHasher")
+                        .withType(config.stateHasherSchedulerType())
+                        .withUnhandledTaskCapacity(config.stateHasherUnhandledCapacity())
+                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
+                        .withHyperlink(platformCoreHyperlink(SignedStateHasher.class))
+                        .withFlushingEnabled(true)
                         .build()
                         .cast());
     }

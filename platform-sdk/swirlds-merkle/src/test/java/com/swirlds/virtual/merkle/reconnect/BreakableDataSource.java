@@ -52,6 +52,8 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = leafRecordsToAddOrUpdate.toList();
 
         if (builder.numTimesBroken < builder.numTimesToBreak) {
+            // Syncronization block is not required here, as this code is never called in parallel
+            // (though from different threads). `volatile` modifier is sufficient to ensure visibility.
             builder.numCalls += leaves.size();
             if (builder.numCalls > builder.numCallsBeforeThrow) {
                 builder.numCalls = 0;

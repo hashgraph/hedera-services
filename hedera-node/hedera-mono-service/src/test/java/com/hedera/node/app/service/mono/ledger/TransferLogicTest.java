@@ -171,8 +171,7 @@ class TransferLogicTest {
                 recordsHistorian,
                 txnCtx,
                 aliasManager,
-                feeDistribution,
-                cryptoCreateThrottleReclaimer);
+                feeDistribution);
     }
 
     @Test
@@ -197,8 +196,7 @@ class TransferLogicTest {
                 recordsHistorian,
                 txnCtx,
                 aliasManager,
-                feeDistribution,
-                cryptoCreateThrottleReclaimer);
+                feeDistribution);
 
         final var triggerList = List.of(inappropriateTrigger);
         assertThrows(IllegalStateException.class, () -> subject.doZeroSum(triggerList));

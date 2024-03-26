@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.service.token.records;
 
+import static java.util.Collections.emptySet;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * This class is used to "finalize" hbar and token transfers for the parent transaction record.
@@ -41,6 +44,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * for the parent record (excluding changes from child transaction records)
  */
 public interface ParentRecordFinalizer {
+    default void finalizeParentRecord(
+            @NonNull AccountID payer,
+            @NonNull FinalizeContext context,
+            HederaFunctionality functionality,
+            @NonNull Set<AccountID> explicitRewardReceivers) {
+        finalizeParentRecord(payer, context, functionality, explicitRewardReceivers, emptySet());
+    }
+
     void finalizeParentRecord(
-            @NonNull AccountID payer, @NonNull FinalizeContext context, final HederaFunctionality functionality);
+            @NonNull AccountID payer,
+            @NonNull FinalizeContext context,
+            HederaFunctionality functionality,
+            @NonNull Set<AccountID> explicitRewardReceivers,
+            @NonNull Set<AccountID> prePaidRewardReceivers);
 }
