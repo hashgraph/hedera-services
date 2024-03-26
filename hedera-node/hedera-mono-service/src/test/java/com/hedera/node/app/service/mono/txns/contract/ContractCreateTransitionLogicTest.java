@@ -1090,8 +1090,7 @@ class ContractCreateTransitionLogicTest {
         verify(accountStore).loadAccount(senderAccount.getId());
         verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
         verify(recordsHistorian)
-                .trackFirstFollowingChildRecord(
-                        nextChildRecordSourceId, opBuilder, recordBuilder, List.of(sidecarRecord));
+                .trackFollowingChildRecord(nextChildRecordSourceId, opBuilder, recordBuilder, List.of(sidecarRecord));
 
         // and:
         final var customizerUsed = captor.getValue();

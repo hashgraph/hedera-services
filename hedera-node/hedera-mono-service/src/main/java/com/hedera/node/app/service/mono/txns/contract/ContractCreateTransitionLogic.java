@@ -389,7 +389,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         sideEffects.trackNewContract(newContractId, Address.wrap(Bytes.wrap(newContractAddress)));
         final var childRecord = entityCreator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 
-        recordsHistorian.trackFirstFollowingChildRecord(
+        recordsHistorian.trackFollowingChildRecord(
                 childRecordId,
                 syntheticOp,
                 childRecord,
