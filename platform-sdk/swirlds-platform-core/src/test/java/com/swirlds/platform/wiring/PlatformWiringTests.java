@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
@@ -96,6 +97,7 @@ class PlatformWiringTests {
                 mock(LatestCompleteStateNexus.class),
                 mock(SavedStateController.class),
                 mock(SignedStateHasher.class),
+                mock(AppNotifier.class),
                 mock(PlatformPublisher.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());

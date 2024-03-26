@@ -25,6 +25,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
@@ -68,7 +69,7 @@ public class ValidateAddressBookStateCommand extends AbstractCommand {
 
     @Override
     public Integer call() throws IOException, ExecutionException, InterruptedException, ParseException {
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         BootstrapUtils.setupConstructableRegistry();
 
         final PlatformContext platformContext = new DefaultPlatformContext(
