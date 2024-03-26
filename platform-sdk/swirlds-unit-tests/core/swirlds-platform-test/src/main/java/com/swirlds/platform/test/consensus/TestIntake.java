@@ -32,8 +32,8 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
-import com.swirlds.platform.components.ConsensusEngine;
-import com.swirlds.platform.components.DefaultConsensusEngine;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
+import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
@@ -107,8 +107,8 @@ public class TestIntake implements LoadableFromSignedState {
         linkerWiring = InOrderLinkerWiring.create(directScheduler("linker"));
         linkerWiring.bind(linker);
 
-        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(
-                platformContext, selfId, () -> consensus, shadowGraph, intakeEventCounter, output::staleEvent);
+        final ConsensusEngine consensusEngine =
+                new DefaultConsensusEngine(platformContext, selfId, consensus); // TODO stale events
 
         consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, directScheduler("consensusEngine"));
         consensusEngineWiring.bind(consensusEngine);

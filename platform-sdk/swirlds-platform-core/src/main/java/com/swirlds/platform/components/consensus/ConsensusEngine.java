@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.platform.components.consensus;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.Consensus;
