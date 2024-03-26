@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.Utilities;
+import com.swirlds.platform.crypto.CryptoArgsProvider;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.SocketConfig;
@@ -160,6 +162,44 @@ class SocketFactoryTest {
         testSocketsBoth(
                 NetworkUtils.createSocketFactory(node1, addressBook, keysAndCerts1, TLS_IP_TOS_CONFIG),
                 NetworkUtils.createSocketFactory(node2, addressBook, keysAndCerts2, TLS_IP_TOS_CONFIG));
+    }
+
+    @ParameterizedTest
+    @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
+    void tlsFactoryTestDynamicPeers(final AddressBook addressBook, final Map<NodeId, KeysAndCerts> keysAndCerts)
+            throws Throwable {
+        assertTrue(addressBook.getSize() > 1, "Address book must contain at least 2 nodes");
+        // choose 2 random nodes to test
+        final Random random = new Random();
+        final List<Integer> nodeIndexes = random.ints(0, addressBook.getSize())
+                .distinct()
+                .limit(2)
+                .boxed()
+                .toList();
+        final NodeId node1 = addressBook.getNodeId(nodeIndexes.get(0));
+        final NodeId node2 = addressBook.getNodeId(nodeIndexes.get(1));
+
+        final KeysAndCerts keysAndCerts1 = keysAndCerts.get(node1);
+        final KeysAndCerts keysAndCerts2 = keysAndCerts.get(node2);
+        final SocketFactory socketFactory1 =
+                NetworkUtils.createSocketFactory(node1, addressBook, keysAndCerts1, TLS_NO_IP_TOS_CONFIG);
+        final SocketFactory socketFactory2 =
+                NetworkUtils.createSocketFactory(node2, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
+        // create server and client sockets from factory
+        // make them talk to each other
+        testSockets(socketFactory1, socketFactory2);
+
+        // re-initialize SSLContext for socketfactory1 using a new peerList
+        AddressBook dynamicAddressBook = CryptoArgsProvider.createAddressBook(3);
+        socketFactory1.handlePeerListUpdate(Utilities.createPeerInfoList(dynamicAddressBook, node1));
+
+        // assert they can still connect to each other
+        testSockets(socketFactory1, socketFactory2);
+
+        // this test is limited, but sufficient for this proof of concept.
+        // In production, clients from socketFactory2
+        // wouldn't successfully handshake with server from socketFactory1 as
+        // socketFactory1's peerList now excludes all addresses in socketFactory2
     }
 
     @Test

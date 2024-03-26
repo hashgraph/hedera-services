@@ -39,23 +39,23 @@ public class CryptoArgsProvider {
      */
     static Stream<Arguments> basicTestArgs() throws Exception {
         Instant start = Instant.now();
-        final AddressBook loadedAB = createAddressBook();
+        final AddressBook loadedAB = createAddressBook(NUMBER_OF_ADDRESSES);
         final Map<NodeId, KeysAndCerts> loadedC =
                 CryptoStatic.loadKeysAndCerts(loadedAB, ResourceLoader.getFile("preGeneratedKeysAndCerts/"), PASSWORD);
         System.out.println(
                 "Key loading took " + Duration.between(start, Instant.now()).toMillis());
 
         start = Instant.now();
-        final AddressBook genAB = createAddressBook();
+        final AddressBook genAB = createAddressBook(NUMBER_OF_ADDRESSES);
         final Map<NodeId, KeysAndCerts> genC = CryptoStatic.generateKeysAndCerts(genAB);
         System.out.println(
                 "Key generating took " + Duration.between(start, Instant.now()).toMillis());
         return Stream.of(Arguments.of(loadedAB, loadedC), Arguments.of(genAB, genC));
     }
 
-    private static AddressBook createAddressBook() {
+    public static AddressBook createAddressBook(int size) {
         final AddressBook addresses = new RandomAddressBookGenerator()
-                .setSize(NUMBER_OF_ADDRESSES)
+                .setSize(size)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 

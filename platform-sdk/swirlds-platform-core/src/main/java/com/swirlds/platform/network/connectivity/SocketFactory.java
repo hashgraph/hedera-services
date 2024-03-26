@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.network.connectivity;
 
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -23,6 +24,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -126,4 +128,13 @@ public interface SocketFactory {
      */
     @NonNull
     Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException;
+
+    /**
+     * A convenient handler for executing logic on dynamic peers
+     * e.g. it could be used to re-initialize certificate keystore, or ask peers to re-authenticate
+     *
+     * @param peerInfoList
+     *  the updated list of peers
+     */
+    void handlePeerListUpdate(List<PeerInfo> peerInfoList);
 }

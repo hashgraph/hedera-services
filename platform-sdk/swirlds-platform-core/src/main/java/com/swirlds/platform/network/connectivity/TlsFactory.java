@@ -21,6 +21,7 @@ import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
+import com.swirlds.platform.system.PlatformConstructionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -52,6 +53,10 @@ public class TlsFactory implements SocketFactory {
     private final SSLServerSocketFactory sslServerSocketFactory;
     private final SSLSocketFactory sslSocketFactory;
 
+    private final Certificate agrCert;
+    private final PrivateKey agrKey;
+    private final CryptoConfig cryptoConfig;
+    private final SSLContext sslContext;
     /**
      * Construct this object to create and receive TLS connections.
      * @param agrCert the TLS certificate to use
@@ -66,37 +71,16 @@ public class TlsFactory implements SocketFactory {
             @NonNull final List<PeerInfo> peers,
             @NonNull final SocketConfig socketConfig,
             @NonNull final CryptoConfig cryptoConfig)
-            throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, KeyManagementException,
-                    CertificateException, IOException {
-        Objects.requireNonNull(agrCert);
-        Objects.requireNonNull(agrKey);
-        Objects.requireNonNull(peers);
+            throws NoSuchAlgorithmException {
+        this.agrCert = Objects.requireNonNull(agrCert);
+        this.agrKey = Objects.requireNonNull(agrKey);
         this.socketConfig = Objects.requireNonNull(socketConfig);
-        Objects.requireNonNull(cryptoConfig);
+        this.cryptoConfig = Objects.requireNonNull(cryptoConfig);
+        this.sslContext = SSLContext.getInstance(CryptoConstants.SSL_VERSION);
 
-        final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(peers);
+        Objects.requireNonNull(peers);
 
-        final char[] password = cryptoConfig.keystorePassword().toCharArray();
-        /* nondeterministic CSPRNG */
-        final SecureRandom nonDetRandom = CryptoStatic.getNonDetRandom();
-
-        // the agrKeyStore should contain an entry with both agrKeyPair.getPrivate() and agrCert
-        // PKCS12 uses file extension .p12 or .pfx
-        final KeyStore agrKeyStore = KeyStore.getInstance(CryptoConstants.KEYSTORE_TYPE);
-        agrKeyStore.load(null, null); // initialize
-        agrKeyStore.setKeyEntry("key", agrKey, password, new Certificate[] {agrCert});
-
-        // "PKIX" may be more interoperable than KeyManagerFactory.getDefaultAlgorithm or
-        // TrustManagerFactory.getDefaultAlgorithm(), which was "SunX509" on one system tested
-        final KeyManagerFactory keyManagerFactory =
-                KeyManagerFactory.getInstance(CryptoConstants.KEY_MANAGER_FACTORY_TYPE);
-        keyManagerFactory.init(agrKeyStore, password);
-        final TrustManagerFactory trustManagerFactory =
-                TrustManagerFactory.getInstance(CryptoConstants.TRUST_MANAGER_FACTORY_TYPE);
-        trustManagerFactory.init(signingTrustStore);
-        final SSLContext sslContext = SSLContext.getInstance(CryptoConstants.SSL_VERSION);
-        SSLContext.setDefault(sslContext);
-        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), nonDetRandom);
+        handlePeerListUpdate(peers);
         sslServerSocketFactory = sslContext.getServerSocketFactory();
         sslSocketFactory = sslContext.getSocketFactory();
     }
@@ -122,5 +106,40 @@ public class TlsFactory implements SocketFactory {
         SocketFactory.configureAndConnect(clientSocket, socketConfig, hostname, port);
         clientSocket.startHandshake();
         return clientSocket;
+    }
+
+    @Override
+    public void handlePeerListUpdate(List<PeerInfo> peers) {
+        try {
+            final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(peers);
+
+            final char[] password = cryptoConfig.keystorePassword().toCharArray();
+            /* nondeterministic CSPRNG */
+            final SecureRandom nonDetRandom = CryptoStatic.getNonDetRandom();
+
+            // the agrKeyStore should contain an entry with both agrKeyPair.getPrivate() and agrCert
+            // PKCS12 uses file extension .p12 or .pfx
+            final KeyStore agrKeyStore = KeyStore.getInstance(CryptoConstants.KEYSTORE_TYPE);
+            agrKeyStore.load(null, null); // initialize
+            agrKeyStore.setKeyEntry("key", agrKey, password, new Certificate[] {agrCert});
+
+            // "PKIX" may be more interoperable than KeyManagerFactory.getDefaultAlgorithm or
+            // TrustManagerFactory.getDefaultAlgorithm(), which was "SunX509" on one system tested
+            final KeyManagerFactory keyManagerFactory =
+                    KeyManagerFactory.getInstance(CryptoConstants.KEY_MANAGER_FACTORY_TYPE);
+            keyManagerFactory.init(agrKeyStore, password);
+            final TrustManagerFactory trustManagerFactory =
+                    TrustManagerFactory.getInstance(CryptoConstants.TRUST_MANAGER_FACTORY_TYPE);
+            trustManagerFactory.init(signingTrustStore);
+            SSLContext.setDefault(sslContext);
+            sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), nonDetRandom);
+        } catch (final NoSuchAlgorithmException
+                | UnrecoverableKeyException
+                | KeyStoreException
+                | KeyManagementException
+                | CertificateException
+                | IOException e) {
+            throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
+        }
     }
 }
