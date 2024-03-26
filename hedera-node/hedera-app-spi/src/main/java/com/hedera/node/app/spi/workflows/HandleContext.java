@@ -667,14 +667,6 @@ public interface HandleContext {
     void revertRecordsFrom(@NonNull RecordListCheckPoint recordListCheckPoint);
 
     /**
-     * Reclaim the capacity for a number of transactions of the same functionality.
-     *
-     * @param n the number of transactions to consider
-     * @param function the functionality type of the transactions
-     */
-    void reclaimPreviouslyReservedThrottle(int n, HederaFunctionality function);
-
-    /**
      * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
      * given function at the given time. (The time matters because we want to consider how much
      * will have leaked between now and that time.)

@@ -80,10 +80,6 @@ public class SynchronizedThrottleAccumulator {
         return frontendThrottle.shouldThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
     }
 
-    public void leakUnusedThrottlePreviouslyReserved(int n, HederaFunctionality function) {
-        frontendThrottle.leakCapacityForNOfUnscaled(n, function);
-    }
-
     private void setDecisionTime(@NonNull final Instant time) {
         lastDecisionTime = time.isBefore(lastDecisionTime) ? lastDecisionTime : time;
     }
