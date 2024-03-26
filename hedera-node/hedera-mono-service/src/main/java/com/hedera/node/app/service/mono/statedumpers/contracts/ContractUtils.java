@@ -54,10 +54,10 @@ public class ContractUtils {
      * Returns all contracts known via Hedera accounts, by their contract id (lowered to an Integer)
      */
     @NonNull
-    private static Set</*@NonNull*/ Integer> getAllKnownContracts(AccountStorageAdapter accounts) {
+    private static Set<Integer> getAllKnownContracts(AccountStorageAdapter accounts) {
         final var ids = new HashSet<Integer>(ESTIMATED_NUMBER_OF_CONTRACTS);
         accounts.forEach((k, v) -> {
-            if (null != k && null != v && v.isSmartContract()) {
+            if (v.isSmartContract()) {
                 ids.add(k.intValue());
             }
         });
@@ -66,10 +66,10 @@ public class ContractUtils {
 
     /** Returns the ids of all deleted contracts ("self-destructed") */
     @NonNull
-    private static Set</*@NonNull*/ Integer> getAllDeletedContracts(AccountStorageAdapter accounts) {
+    private static Set<Integer> getAllDeletedContracts(AccountStorageAdapter accounts) {
         final var ids = new HashSet<Integer>(ESTIMATED_NUMBER_OF_DELETED_CONTRACTS);
         accounts.forEach((k, v) -> {
-            if (null != k && null != v && v.isSmartContract() && v.isDeleted()) {
+            if (v.isSmartContract() && v.isDeleted()) {
                 ids.add(k.intValue());
             }
         });
@@ -78,10 +78,10 @@ public class ContractUtils {
 
     /** Returns the bytecodes for all the requested contracts */
     @NonNull
-    private static Collection</*@NonNull*/ BBMContract> getAllContractContents(
+    private static Collection<BBMContract> getAllContractContents(
             @NonNull final VirtualMap<VirtualBlobKey, VirtualBlobValue> fileStore,
-            @NonNull final Collection</*@NonNull*/ Integer> contractIds,
-            @NonNull final Collection</*@NonNull*/ Integer> deletedContractIds) {
+            @NonNull final Collection<Integer> contractIds,
+            @NonNull final Collection<Integer> deletedContractIds) {
         Objects.requireNonNull(contractIds);
         Objects.requireNonNull(deletedContractIds);
 
@@ -90,14 +90,12 @@ public class ContractUtils {
             final var vbk = new VirtualBlobKey(Type.CONTRACT_BYTECODE, cid);
             if (fileStore.containsKey(vbk)) {
                 final var blob = fileStore.get(vbk);
-                if (null != blob) {
                     final var c = new BBMContract(
                             new TreeSet<>(),
                             blob.getData(),
                             deletedContractIds.contains(cid) ? Validity.DELETED : Validity.ACTIVE);
                     c.ids().add(cid);
                     codes.add(c);
-                }
             }
         }
         return codes;
