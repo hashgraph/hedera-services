@@ -1083,8 +1083,11 @@ class TipsetEventCreatorTests {
                     assertEquals(ROUND_FIRST, birthRound);
                 } else {
                     final long birthRound = event.getHashedData().getBirthRound();
-                    // assertEquals(pendingConsensusRound, birthRound); // FUTURE WORK: re-enable this check
-                    assertEquals(ROUND_FIRST, birthRound);
+                    if (useBirthRoundForAncient) {
+                        assertEquals(pendingConsensusRound, birthRound);
+                    } else {
+                        assertEquals(ROUND_FIRST, birthRound);
+                    }
                 }
             }
         }
