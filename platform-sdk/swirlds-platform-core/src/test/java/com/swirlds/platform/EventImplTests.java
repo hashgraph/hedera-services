@@ -17,6 +17,7 @@
 package com.swirlds.platform;
 
 import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+import static com.swirlds.platform.test.fixtures.event.EventImplTestUtils.createEventImpl;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -57,8 +58,8 @@ public class EventImplTests {
     void testNoSystemTransaction() {
         final SwirldTransaction[] transactions = TransactionUtils.incrementingSwirldTransactions(100);
 
-        final EventImpl event = new EventImpl(
-                testingEventBuilder.setDefaults().setTransactions(transactions).build(), null, null);
+        final EventImpl event =
+                createEventImpl(testingEventBuilder.setDefaults().setTransactions(transactions), null, null);
 
         assertDoesNotThrow(
                 event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
@@ -73,8 +74,8 @@ public class EventImplTests {
     @Test
     @DisplayName("findSystemTransactions() no transactions")
     void testTransaction() {
-        final EventImpl event = new EventImpl(
-                testingEventBuilder.setDefaults().setNumberOfAppTransactions(0).build(), null, null);
+        final EventImpl event =
+                createEventImpl(testingEventBuilder.setDefaults().setNumberOfAppTransactions(0), null, null);
 
         assertDoesNotThrow(
                 event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
@@ -88,13 +89,8 @@ public class EventImplTests {
     void testFindSystemTransactions() {
         final TransactionData data = mixedTransactions();
 
-        final EventImpl event = new EventImpl(
-                testingEventBuilder
-                        .setDefaults()
-                        .setTransactions(data.transactions())
-                        .build(),
-                null,
-                null);
+        final EventImpl event =
+                createEventImpl(testingEventBuilder.setDefaults().setTransactions(data.transactions()), null, null);
 
         verifySystemIterator(data, event);
         assertEquals(
@@ -108,13 +104,8 @@ public class EventImplTests {
     void testConsensusTransactionIterator() {
         final TransactionData data = mixedTransactions();
 
-        final EventImpl event = new EventImpl(
-                testingEventBuilder
-                        .setDefaults()
-                        .setTransactions(data.transactions())
-                        .build(),
-                null,
-                null);
+        final EventImpl event =
+                createEventImpl(testingEventBuilder.setDefaults().setTransactions(data.transactions()), null, null);
 
         final Iterator<ConsensusTransaction> iter = event.consensusTransactionIterator();
         final Set<ConsensusTransaction> transactionSet = new HashSet<>();
@@ -135,13 +126,8 @@ public class EventImplTests {
     void testTransactionIterator() {
         final TransactionData data = mixedTransactions();
 
-        final EventImpl event = new EventImpl(
-                testingEventBuilder
-                        .setDefaults()
-                        .setTransactions(data.transactions())
-                        .build(),
-                null,
-                null);
+        final EventImpl event =
+                createEventImpl(testingEventBuilder.setDefaults().setTransactions(data.transactions()), null, null);
 
         final Iterator<Transaction> iter = event.transactionIterator();
 
@@ -236,13 +222,8 @@ public class EventImplTests {
         mixedTransactions[4] = TransactionUtils.incrementingSystemTransaction();
 
         final Instant eventConsTime = Instant.now();
-        final EventImpl event = new EventImpl(
-                testingEventBuilder
-                        .setDefaults()
-                        .setTransactions(mixedTransactions)
-                        .build(),
-                null,
-                null);
+        final EventImpl event =
+                createEventImpl(testingEventBuilder.setDefaults().setTransactions(mixedTransactions), null, null);
 
         event.setConsensusOrder(3L);
         event.setConsensusTimestamp(eventConsTime);
