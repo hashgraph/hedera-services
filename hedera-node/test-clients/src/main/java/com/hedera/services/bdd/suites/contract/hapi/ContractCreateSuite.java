@@ -658,7 +658,8 @@ public class ContractCreateSuite extends HapiSuite {
                         NONDETERMINISTIC_NONCE)
                 .given(
                         uploadInitCode(contract),
-                        contractCreate(contract).adminKey(THRESHOLD),
+                        // refuse eth conversion because ethereum transaction is missing admin key
+                        contractCreate(contract).adminKey(THRESHOLD).refusingEthConversion(),
                         getContractInfo(contract).saveToRegistry(PARENT_INFO))
                 .when(
                         contractCall(contract, "create").gas(1_000_000L).via("createChildTxn"),

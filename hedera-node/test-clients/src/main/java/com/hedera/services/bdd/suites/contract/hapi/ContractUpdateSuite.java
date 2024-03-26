@@ -113,7 +113,12 @@ public class ContractUpdateSuite extends HapiSuite {
         return defaultHapiSpec("updateStakingFieldsWorks", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).declinedReward(true).stakedNodeId(0),
+                        // refuse eth conversion because ethereum transaction is missing staking fields to map
+                        // (isDeclinedReward)
+                        contractCreate(CONTRACT)
+                                .declinedReward(true)
+                                .stakedNodeId(0)
+                                .refusingEthConversion(),
                         getContractInfo(CONTRACT)
                                 .has(contractWith()
                                         .isDeclinedReward(true)
@@ -137,7 +142,12 @@ public class ContractUpdateSuite extends HapiSuite {
                                         .noStakingNodeId()
                                         .noStakedAccountId())
                                 .logged(),
-                        contractCreate(CONTRACT).declinedReward(true).stakedNodeId(0),
+                        // refuse eth conversion because ethereum transaction is missing staking fields to map
+                        // (isDeclinedReward)
+                        contractCreate(CONTRACT)
+                                .declinedReward(true)
+                                .stakedNodeId(0)
+                                .refusingEthConversion(),
                         getContractInfo(CONTRACT)
                                 .has(contractWith()
                                         .isDeclinedReward(true)
@@ -289,7 +299,11 @@ public class ContractUpdateSuite extends HapiSuite {
                         cryptoCreate(autoRenewAccount),
                         cryptoCreate(newAutoRenewAccount),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY).autoRenewAccountId(autoRenewAccount),
+                        // refuse eth conversion because ethereum transaction is missing admin key and autoRenewAccount
+                        contractCreate(CONTRACT)
+                                .adminKey(ADMIN_KEY)
+                                .autoRenewAccountId(autoRenewAccount)
+                                .refusingEthConversion(),
                         getContractInfo(CONTRACT)
                                 .has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
                                 .logged())
@@ -383,10 +397,13 @@ public class ContractUpdateSuite extends HapiSuite {
                         uploadInitCode(contract))
                 .when(
                         contractCreate(contract).payingWith(payer).omitAdminKey(),
+                        // refuse eth conversion because ethereum transaction is missing admin key and memo is same as
+                        // parent
                         contractCustomCreate(contract, suffix)
                                 .payingWith(payer)
                                 .adminKey(INITIAL_ADMIN_KEY)
-                                .entityMemo(INITIAL_MEMO),
+                                .entityMemo(INITIAL_MEMO)
+                                .refusingEthConversion(),
                         getContractInfo(contract + suffix)
                                 .payingWith(payer)
                                 .logged()
