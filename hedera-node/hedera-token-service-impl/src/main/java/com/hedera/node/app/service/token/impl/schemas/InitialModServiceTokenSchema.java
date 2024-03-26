@@ -49,7 +49,6 @@ import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
 import com.hedera.node.app.service.mono.state.migration.NftStateTranslator;
@@ -271,13 +270,8 @@ public class InitialModServiceTokenSchema extends Schema {
                                 entry -> {
                                     var fromTokenRel = entry.right();
                                     var key = fromTokenRel.getKey();
-                                    var translated = TokenRelationStateTranslator.tokenRelationFromMerkleTokenRelStatus(
-                                            new MerkleTokenRelStatus(
-                                                    fromTokenRel.getBalance(),
-                                                    fromTokenRel.isFrozen(),
-                                                    fromTokenRel.isKycGranted(),
-                                                    fromTokenRel.isAutomaticAssociation(),
-                                                    fromTokenRel.getNumbers()));
+                                    var translated = TokenRelationStateTranslator.tokenRelationFromOnDiskTokenRelStatus(
+                                            fromTokenRel);
                                     var newPair = EntityIDPair.newBuilder()
                                             .accountId(AccountID.newBuilder()
                                                     .accountNum(key.getHiOrderAsLong())
