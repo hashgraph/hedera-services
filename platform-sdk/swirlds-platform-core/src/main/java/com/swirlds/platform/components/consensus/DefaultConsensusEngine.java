@@ -19,6 +19,7 @@ package com.swirlds.platform.components.consensus;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
@@ -27,6 +28,9 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.metrics.ConsensusMetrics;
+import com.swirlds.platform.metrics.ConsensusMetricsImpl;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -53,15 +57,17 @@ public class DefaultConsensusEngine implements ConsensusEngine {
      * Constructor
      *
      * @param platformContext the platform context
+     * @param addressBook     the current address book
      * @param selfId          the ID of the node
-     * @param consensus       executes the hashgraph consensus algorithm
      */
     public DefaultConsensusEngine(
             @NonNull final PlatformContext platformContext,
-            @NonNull final NodeId selfId,
-            @NonNull final Consensus consensus) {
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId) {
 
-        this.consensus = Objects.requireNonNull(consensus);
+        final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(selfId, platformContext.getMetrics());
+        consensus = new ConsensusImpl(platformContext, consensusMetrics, addressBook);
+
         eventStorage = new ConsensusEventStorage(platformContext, selfId);
         ancientMode = platformContext
                 .getConfiguration()

@@ -27,6 +27,7 @@ import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -108,12 +109,21 @@ public class Shadowgraph implements Clearable {
     private NonAncientEventWindow eventWindow;
 
     /**
+     * For each peer, track the number of events in the intake pipeline prior to the shadowgraph.
+     */
+    private final IntakeEventCounter intakeEventCounter;
+
+    /**
      * Constructor.
      *
-     * @param platformContext the platform context
-     * @param addressBook     the address book
+     * @param platformContext    the platform context
+     * @param addressBook        the address book
+     * @param intakeEventCounter tracks events in the intake pipeline
      */
-    public Shadowgraph(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
+    public Shadowgraph(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
+            @NonNull final IntakeEventCounter intakeEventCounter) { // TODO make sure we flush this
 
         ancientMode = platformContext
                 .getConfiguration()
@@ -122,6 +132,7 @@ public class Shadowgraph implements Clearable {
 
         this.metrics = new ShadowgraphMetrics(platformContext);
         this.numberOfNodes = addressBook.getSize();
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
         oldestUnexpiredIndicator = ancientMode.getGenesisIndicator();
         tips = new HashSet<>();
@@ -498,52 +509,56 @@ public class Shadowgraph implements Clearable {
      * @throws ShadowgraphInsertionException if the event was unable to be added to the shadowgraph
      */
     public synchronized boolean addEvent(final EventImpl e) throws ShadowgraphInsertionException {
-        final InsertableStatus status = insertable(e);
+        try {
+            final InsertableStatus status = insertable(e);
 
-        if (status == InsertableStatus.INSERTABLE) {
-            final int tipsBefore = tips.size();
-            final ShadowEvent s = insert(e);
-            tips.add(s);
-            tips.remove(s.getSelfParent());
+            if (status == InsertableStatus.INSERTABLE) {
+                final int tipsBefore = tips.size();
+                final ShadowEvent s = insert(e);
+                tips.add(s);
+                tips.remove(s.getSelfParent());
 
-            if (numberOfNodes > 0 && tips.size() > numberOfNodes && tips.size() > tipsBefore) {
-                // It is possible that we have more tips than nodes even if there is no fork.
-                // Explained in: sync-protocol.md
-                logger.info(
-                        SYNC_INFO.getMarker(),
-                        "tips size is {} after adding {}. Esp null:{} Ssp null:{}\n"
-                                + "eventWindow.getExpiredThreshold: {} oldestUnexpiredIndicator: {}\n"
-                                + "current tips:{}",
-                        tips::size,
-                        () -> EventStrings.toMediumString(e),
-                        () -> e.getSelfParent() == null,
-                        () -> s.getSelfParent() == null,
-                        () -> eventWindow.getExpiredThreshold(),
-                        () -> oldestUnexpiredIndicator,
-                        () -> tips.stream()
-                                .map(sh -> EventStrings.toShortString(sh.getEvent()))
-                                .collect(Collectors.joining(",")));
-            }
+                if (numberOfNodes > 0 && tips.size() > numberOfNodes && tips.size() > tipsBefore) {
+                    // It is possible that we have more tips than nodes even if there is no fork.
+                    // Explained in: sync-protocol.md
+                    logger.info(
+                            SYNC_INFO.getMarker(),
+                            "tips size is {} after adding {}. Esp null:{} Ssp null:{}\n"
+                                    + "eventWindow.getExpiredThreshold: {} oldestUnexpiredIndicator: {}\n"
+                                    + "current tips:{}",
+                            tips::size,
+                            () -> EventStrings.toMediumString(e),
+                            () -> e.getSelfParent() == null,
+                            () -> s.getSelfParent() == null,
+                            () -> eventWindow.getExpiredThreshold(),
+                            () -> oldestUnexpiredIndicator,
+                            () -> tips.stream()
+                                    .map(sh -> EventStrings.toShortString(sh.getEvent()))
+                                    .collect(Collectors.joining(",")));
+                }
 
-            return true;
-        } else {
-            // Every event received should be insertable, so throw an exception if that is not the case
-            if (status == InsertableStatus.EXPIRED_EVENT) {
-                throw new ShadowgraphInsertionException(
-                        String.format(
-                                "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
-                                status, EventStrings.toMediumString(e), oldestUnexpiredIndicator),
-                        status);
-            } else if (status == InsertableStatus.NULL_EVENT) {
-                throw new ShadowgraphInsertionException(
-                        String.format("`addEvent`: did not insert, status is %s", status), status);
+                return true;
             } else {
-                throw new ShadowgraphInsertionException(
-                        String.format(
-                                "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
-                                status, EventStrings.toMediumString(e), oldestUnexpiredIndicator),
-                        status);
+                // Every event received should be insertable, so throw an exception if that is not the case
+                if (status == InsertableStatus.EXPIRED_EVENT) {
+                    throw new ShadowgraphInsertionException(
+                            String.format(
+                                    "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
+                                    status, EventStrings.toMediumString(e), oldestUnexpiredIndicator),
+                            status);
+                } else if (status == InsertableStatus.NULL_EVENT) {
+                    throw new ShadowgraphInsertionException(
+                            String.format("`addEvent`: did not insert, status is %s", status), status);
+                } else {
+                    throw new ShadowgraphInsertionException(
+                            String.format(
+                                    "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
+                                    status, EventStrings.toMediumString(e), oldestUnexpiredIndicator),
+                            status);
+                }
             }
+        } finally {
+            intakeEventCounter.eventExitedIntakePipeline(e.getBaseEvent().getSenderId());
         }
     }
 
