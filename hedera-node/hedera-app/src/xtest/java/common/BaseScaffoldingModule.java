@@ -65,9 +65,7 @@ import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
-import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.*;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
@@ -89,6 +87,7 @@ import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.DummyPreHandleDispatcher;
+import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.query.QueryContextImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -312,6 +311,28 @@ public interface BaseScaffoldingModule {
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
                     platformState.getPlatformState());
+        };
+    }
+
+    @Provides
+    @Singleton
+    static Function<TransactionBody, PreHandleContext> providePreHandleContextCreator(
+            @NonNull final Configuration configuration,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final HederaState state,
+            @NonNull final PlatformStateAccessor platformState) {
+        platformState.setPlatformState(new PlatformState());
+        return body -> {
+            try {
+                return new PreHandleContextImpl(
+                            new ReadableStoreFactory(state),
+                            body,
+                            configuration,
+                            dispatcher
+                        );
+            } catch (PreCheckException e) {
+                throw new RuntimeException(e);
+            }
         };
     }
 
