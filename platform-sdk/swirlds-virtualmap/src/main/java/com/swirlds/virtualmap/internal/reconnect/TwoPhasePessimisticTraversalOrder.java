@@ -20,13 +20,13 @@ import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.virtualmap.internal.Path;
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
@@ -52,6 +52,8 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
     private int lastSentPathChunk;
     private AtomicReferenceArray<Deque<Long>> chunkNextToCheckPaths;
     private Map<Integer, Long> chunkNextPessimisticPaths;
+
+    private final AtomicInteger totalChunkResponsesExpected = new AtomicInteger(0);
 
     // Used during phase 2
     private long lastLeafPath = Path.INVALID_PATH;
@@ -118,6 +120,7 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
             if (path != 0) {
                 assert chunkCount > 0;
                 final int chunk = getPathChunk(path);
+                totalChunkResponsesExpected.decrementAndGet();
                 if (isClean) {
                     cleanNodes.add(path);
                     cleanNodes.remove(Path.getLeftChildPath(path));
@@ -145,6 +148,7 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
     @Override
     public long getNextPathToSend() throws InterruptedException {
         long result = -1;
+        final int wasLastSentPathChunk = lastSentPathChunk;
         if (lastLeafPath == -1) {
             for (int i = 0; i < chunkCount; i++) {
                 final int chunk = (lastSentPathChunk + 1 + i) % chunkCount;
@@ -172,8 +176,17 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
             }
         }
         if (result == -1) {
+            if (lastLeafPath != Path.INVALID_PATH) {
+                if (totalChunkResponsesExpected.get() > chunkCount) {
+                    Thread.sleep(1);
+                }
+            }
             result = getNextLeafPath();
         } else {
+            final int responsesExpected = totalChunkResponsesExpected.incrementAndGet();
+            if ((responsesExpected > chunkCount) && (lastSentPathChunk < wasLastSentPathChunk)) {
+                Thread.sleep(1);
+            }
             view.applySendBackpressure();
         }
         if (sent.contains(result)) {
