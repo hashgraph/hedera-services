@@ -41,7 +41,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,9 +49,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HevmStaticTransactionFactoryTest {
-    @Mock
-    private GasCalculator gasCalculator;
-
     @Mock
     private QueryContext context;
 
@@ -65,7 +61,7 @@ class HevmStaticTransactionFactoryTest {
     void setUp() {
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
         given(context.payer()).willReturn(SENDER_ID);
-        subject = new HevmStaticTransactionFactory(context, gasCalculator);
+        subject = new HevmStaticTransactionFactory(context);
     }
 
     @Test

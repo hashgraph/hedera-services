@@ -33,7 +33,6 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
  * A factory that creates a {@link HederaEvmTransaction} for static calls.
@@ -47,11 +46,9 @@ public class HevmStaticTransactionFactory {
     private final AccountID payerId;
 
     @Inject
-    public HevmStaticTransactionFactory(
-            @NonNull final QueryContext context, @NonNull final GasCalculator gasCalculator) {
+    public HevmStaticTransactionFactory(@NonNull final QueryContext context) {
         this.context = requireNonNull(context);
         this.contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
-        this.gasCalculator = requireNonNull(gasCalculator);
         this.payerId = requireNonNull(context.payer());
     }
 
