@@ -1938,9 +1938,12 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(TRANSFERRING_CONTRACT),
                         contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
+                        // refuse eth conversion because we can't call contract by contract num
+                        // when it has EVM address alias (isNotPriority check fails)
                         contractCustomCreate(TRANSFERRING_CONTRACT, to)
                                 .balance(10_000L)
-                                .payingWith(ACCOUNT),
+                                .payingWith(ACCOUNT)
+                                .refusingEthConversion(),
                         getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry(CONTRACT_FROM),
                         getContractInfo(TRANSFERRING_CONTRACT + to).saveToRegistry("contract_to"),
                         getAccountInfo(ACCOUNT).savingSnapshot(ACCOUNT_INFO))

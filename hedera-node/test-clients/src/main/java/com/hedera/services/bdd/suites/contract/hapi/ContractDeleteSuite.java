@@ -312,8 +312,13 @@ public class ContractDeleteSuite extends HapiSuite {
                 .given(
                         fileCreate(tbdFile),
                         fileDelete(tbdFile),
-                        createDefaultContract(tbdContract).bytecode(tbdFile).hasKnownStatus(FILE_DELETED))
-                .when(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                        // refuse eth conversion because we can't set invalid bytecode to callData in ethereum
+                        // transaction + trying to delete immutable contract
+                        createDefaultContract(tbdContract)
+                                .bytecode(tbdFile)
+                                .hasKnownStatus(FILE_DELETED)
+                                .refusingEthConversion())
+                .when(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
                 .then(
                         contractDelete(CONTRACT)
                                 .claimingPermanentRemoval()

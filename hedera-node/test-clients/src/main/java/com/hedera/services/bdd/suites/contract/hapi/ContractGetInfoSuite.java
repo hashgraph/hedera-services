@@ -68,10 +68,13 @@ public class ContractGetInfoSuite extends HapiSuite {
                 .given(
                         newKeyNamed("adminKey"),
                         uploadInitCode(contract),
+                        // refuse eth conversion because ethereum transaction is missing admin key and memo is same as
+                        // parent
                         contractCreate(contract)
                                 .adminKey("adminKey")
                                 .entityMemo(MEMO)
-                                .autoRenewSecs(6999999L))
+                                .autoRenewSecs(6999999L)
+                                .refusingEthConversion())
                 .when()
                 .then(withTargetLedgerId(ledgerId -> getContractInfo(contract)
                         .hasEncodedLedgerId(ledgerId)
