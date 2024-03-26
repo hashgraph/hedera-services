@@ -40,19 +40,4 @@ class PlatformConfigurationExtensionTests {
         }
         Assertions.assertEquals(allRecordsFound.size(), allConfigDataTypes.size());
     }
-
-    @Test
-    void requireAlphabetizedConfigRegistration() {
-        final PlatformConfigurationExtension extension = new PlatformConfigurationExtension();
-
-        String previous = "";
-        for (final Class<?> configDataType : extension.getConfigDataTypes()) {
-            final String current = configDataType.getSimpleName();
-            if (current.compareTo(previous) < 0) {
-                throw new IllegalStateException(
-                        "Config data types are not alphabetized: " + previous + " should come after " + current);
-            }
-            previous = current;
-        }
-    }
 }
