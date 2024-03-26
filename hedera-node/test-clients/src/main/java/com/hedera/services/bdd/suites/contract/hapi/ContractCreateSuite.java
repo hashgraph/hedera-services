@@ -409,6 +409,8 @@ public class ContractCreateSuite extends HapiSuite {
                         getAccountBalance(bBeneficiary).logged());
     }
 
+    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec createFailsIfMissingSigs() {
         final var shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
@@ -422,11 +424,13 @@ public class ContractCreateSuite extends HapiSuite {
                         contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                                 .adminKeyShape(shape)
                                 .sigControl(forKey(EMPTY_CONSTRUCTOR_CONTRACT, invalidSig))
-                                .hasKnownStatus(INVALID_SIGNATURE),
+                                .hasKnownStatus(INVALID_SIGNATURE)
+                                .refusingEthConversion(),
                         contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                                 .adminKeyShape(shape)
                                 .sigControl(forKey(EMPTY_CONSTRUCTOR_CONTRACT, validSig))
-                                .hasKnownStatus(SUCCESS));
+                                .hasKnownStatus(SUCCESS)
+                                .refusingEthConversion());
     }
 
     @HapiTest

@@ -1475,15 +1475,8 @@ public class ContractCallSuite extends HapiSuite {
                 }));
     }
 
-    // TODO: in ContractDeleteHandler.preHandle we have a check:
-    /*
-    validateFalsePreCheck(
-            adminKey.hasContractID() ||
-                adminKey.hasDelegatableContractId(), MODIFYING_IMMUTABLE_CONTRACT);
-
-    when we convert this test to Eth we have adminKey.hasContractID as true and this check fails. Maybe should
-    ignore for now and see what will be the verdict of ApproveAllowanceSuite since the error there is similar
-     */
+    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+    // since we have CONTRACT_ID key
     @HapiTest
     HapiSpec depositDeleteSuccess() {
         final var initBalance = 7890L;
@@ -1740,9 +1733,9 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(PAYER).balance(1_000_000_000_000L).logged(),
                         cryptoCreate(RECEIVER).balance(1_000L),
                         uploadInitCode(contract),
-                    contractCreate(contract),
-                    getContractInfo(contract)
-                        .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))))
+                        contractCreate(contract),
+                        getContractInfo(contract)
+                                .exposingEvmAddress(cb -> tokenCreateContractAddress.set(asHeadlongAddress(cb))))
                 .when(withOpContext((spec, opLog) -> {
                     final var subop1 = contractCall(contract, DEPOSIT, BigInteger.valueOf(1_000L))
                             .payingWith(PAYER)

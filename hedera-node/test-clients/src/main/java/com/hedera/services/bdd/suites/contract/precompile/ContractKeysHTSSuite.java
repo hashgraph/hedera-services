@@ -470,7 +470,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCreate(
-                                outerContract, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
+                                        outerContract,
+                                        asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec)))
+                                .refusingEthConversion(),
                         tokenAssociate(outerContract, VANILLA_TOKEN),
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
