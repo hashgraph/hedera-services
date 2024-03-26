@@ -22,7 +22,12 @@ import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("blockNodeFileSystem")
 public record BlockNodeFileSystemConfig(
-        @ConfigProperty(defaultValue = "LOCAL") FileSystem fileSystem,
+        @ConfigProperty(defaultValue = "S3") FileSystem fileSystem,
         @ConfigProperty(defaultValue = "/block-node/blocknode-core/build/blocks/") String blocksExportPath,
         @ConfigProperty(defaultValue = "/hedera-node/hedera-app/build/node/data/block-streams/block0.0.3/")
-                String blocksImportPath) {}
+                String blocksImportPath,
+        @ConfigProperty(defaultValue = "bucket1") String s3BucketName,
+        @ConfigProperty(defaultValue = "us-east-1") String s3Region,
+        @ConfigProperty(defaultValue = "http://localhost:9090") String s3Uri,
+        @ConfigProperty(defaultValue = "valid-test-key-id") String s3AccessKeyId,
+        @ConfigProperty(defaultValue = "1234567890") String s3SecretAccessKey) {}

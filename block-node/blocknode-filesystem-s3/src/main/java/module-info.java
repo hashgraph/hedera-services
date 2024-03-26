@@ -11,4 +11,7 @@ module com.hedera.storage.blocknode.filesystem.s3 {
     // module (including tests and other source sets).
     requires transitive com.hedera.storage.blocknode.filesystem.api;
     requires transitive com.hedera.node.hapi;
+    requires com.hedera.storage.blocknode.config;
+    requires software.amazon.awssdk.services.s3;
+    requires software.amazon.awssdk.http.urlconnection;
 }
