@@ -84,11 +84,7 @@ public record BBMHederaAccount(
 
     public static BBMHederaAccount fromMono(OnDiskAccount account) {
         final var stakedId = account.getStakedId() < 0
-                ? new OneOf<>(
-                        STAKED_NODE_ID,
-                        AccountID.newBuilder()
-                                .accountNum(-account.getStakedId() - 1L)
-                                .build())
+                ? new OneOf<>(STAKED_NODE_ID, -account.getStakedId() - 1L)
                 : (account.getStakedId() == 0
                         ? new OneOf<>(StakedIdOneOfType.UNSET, null)
                         : new OneOf<>(
@@ -203,7 +199,7 @@ public record BBMHederaAccount(
     }
 
     public int[] getFirstUint256Key() {
-        return toInts(firstContractStorageKey);
+        return firstContractStorageKey == Bytes.EMPTY ? null : toInts(firstContractStorageKey);
     }
 
     private static int[] toInts(Bytes bytes) {
@@ -218,11 +214,19 @@ public record BBMHederaAccount(
 
     public Long stakedIdLong() {
         var id = -1L;
-        if (stakedId.kind() == STAKED_NODE_ID) {
-            id = -((AccountID) stakedId.value()).accountNum() - 1;
-        } else if (stakedId.kind() == STAKED_ACCOUNT_ID) {
-            id = ((AccountID) stakedId.value()).accountNum();
+        try {
+            if (stakedId.kind() == STAKED_NODE_ID) {
+                id = -((Long) stakedId.value()) - 1;
+            } else if (stakedId.kind() == STAKED_ACCOUNT_ID) {
+                id = ((AccountID) stakedId.value()).accountNum();
+            }
+            if (accountId.accountNum() == 1294L) {
+                System.out.println("stakedIdLong" + id);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
         return id;
     }
 }
