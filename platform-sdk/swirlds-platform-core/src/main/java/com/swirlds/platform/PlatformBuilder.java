@@ -132,6 +132,14 @@ public final class PlatformBuilder {
         StaticSoftwareVersion.setSoftwareVersion(softwareVersion);
     }
 
+    /**
+     * Set the platform context to use. If not provided then one is generated when the platform is built.
+     *
+     * @param platformContext the platform context to use
+     * @return this
+     * @throws IllegalStateException if {@link #withConfigurationBuilder(ConfigurationBuilder)} has been called or if
+     *                               {@link #withSettingsPath(Path)} has been called
+     */
     @NonNull
     public PlatformBuilder withPlatformContext(@NonNull final PlatformContext platformContext) {
         if (configurationBuilder != null) {
