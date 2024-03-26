@@ -48,23 +48,27 @@
 	"sequential": [
 	  {
 		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
-		"amount": 100000
+		"amount": 200000
 	  },
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_CREATE_SMART_CONTRACT",
+			"amount": 15000
+		},
 	  {
 		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
-		"amount": 100000
+		"amount": 20000
 	  },
 	  {
 		"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-		"amount": 100000
+		"amount": 50000
 	  },
 	  {
 		"type": "TYPE_VIRTUAL_MERKLE_CREATE_SMART_CONTRACT",
-		"amount": 15000
+		"amount": 5000
 	  },
 	  {
 		"type": "TYPE_VIRTUAL_MERKLE_SMART_CONTRACT_METHOD_EXECUTION",
-		"amount": 15000
+		"amount": 10000
 	  }
 	]
   },
