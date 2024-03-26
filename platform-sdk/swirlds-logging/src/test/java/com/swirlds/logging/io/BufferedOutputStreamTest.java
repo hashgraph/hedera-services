@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.buffer;
+package com.swirlds.logging.io;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;

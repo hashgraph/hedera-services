@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import com.swirlds.metrics.api.Metric;
-import com.swirlds.platform.config.BasicConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -43,8 +42,6 @@ public class Chart extends JPanel {
     private final Color LIGHT_GRAY = new Color(0.9f, 0.9f, 0.9f);
 
     private final ChartLabelModel model;
-
-    private final BasicConfig basicConfig;
 
     /** {@link Metric} of this chart */
     private final transient Metric metric;
@@ -69,19 +66,11 @@ public class Chart extends JPanel {
      *
      * @param width       width of the panel in pixels
      * @param height      height of the panel in pixels
-     * @param basicConfig
      * @param allHistory  is this all of history (as opposed to only recent)?
      * @param metric      {@link Metric} of this chart
      */
-    public Chart(
-            @NonNull ChartLabelModel model,
-            int width,
-            int height,
-            @NonNull BasicConfig basicConfig,
-            boolean allHistory,
-            final Metric metric) {
+    public Chart(@NonNull ChartLabelModel model, int width, int height, boolean allHistory, final Metric metric) {
         this.model = Objects.requireNonNull(model, "model must not be null");
-        this.basicConfig = Objects.requireNonNull(basicConfig, "basicConfig must not be null");
         this.setPreferredSize(new Dimension(width, height));
         this.allHistory = allHistory;
         this.metric = metric;
@@ -274,7 +263,7 @@ public class Chart extends JPanel {
             String title = metric.getName() + " vs. time for " + (allHistory ? "all" : "recent") + " history";
 
             if (buffer.numBins() == 0) {
-                final String s = String.format("Skipping the first %,.0f seconds ...", basicConfig.statsSkipSeconds());
+                final String s = "Skipping the first 60 seconds ...";
                 final int w = g.getFontMetrics().stringWidth(s);
                 g.drawString(s, (minXs + maxXs - w) / 2, (minYs + maxYs) / 2);
                 g.drawLine(minXs, maxYs, maxXs, maxYs); // x axis

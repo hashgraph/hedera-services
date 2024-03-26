@@ -88,7 +88,7 @@ import java.util.List;
  * @param issDetectorScheduler                      the scheduler for the iss detector
  * @param issHandlerScheduler                       the scheduler for the iss handler
  * @param hashLoggerScheduler                       the scheduler for the hash logger
- * @param latestCompleteStateNotificationScheduler  the scheduler for the latest complete state notifier
+ * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
  * @param stateHasherScheduler                      the scheduler for the state hasher
  */
 public record PlatformSchedulers(
@@ -117,7 +117,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> hashLoggerScheduler,
-        @NonNull TaskScheduler<Void> latestCompleteStateNotificationScheduler,
+        @NonNull TaskScheduler<Void> latestCompleteStateNotifierScheduler,
         @NonNull TaskScheduler<StateAndRound> stateHasherScheduler) {
 
     /**
@@ -321,7 +321,7 @@ public record PlatformSchedulers(
                         .withHyperlink(platformCoreHyperlink(HashLogger.class))
                         .build()
                         .cast(),
-                model.schedulerBuilder("latestCompleteStateNotification")
+                model.schedulerBuilder("latestCompleteStateNotifier")
                         .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
                         .withUnhandledTaskCapacity(config.completeStateNotifierUnhandledCapacity())
                         .withUnhandledTaskMetricEnabled(true)

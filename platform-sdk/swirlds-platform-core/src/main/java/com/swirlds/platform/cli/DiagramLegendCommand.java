@@ -31,6 +31,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
@@ -54,7 +55,7 @@ public final class DiagramLegendCommand extends AbstractCommand {
     @Override
     public Integer call() throws IOException {
 
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         BootstrapUtils.setupConstructableRegistry();
 
         final PlatformContext platformContext = new DefaultPlatformContext(

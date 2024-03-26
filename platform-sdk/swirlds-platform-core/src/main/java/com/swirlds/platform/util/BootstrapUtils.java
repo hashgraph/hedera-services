@@ -60,7 +60,6 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.Dimension;
-import java.awt.GraphicsEnvironment;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -114,7 +113,7 @@ public final class BootstrapUtils {
     /**
      * Perform health all health checks
      *
-     * @param configPath     the path to the config.txt file
+     * @param configPath    the path to the config.txt file
      * @param configuration the configuration
      */
     public static void performHealthChecks(@NonNull final Path configPath, @NonNull final Configuration configuration) {
@@ -136,14 +135,12 @@ public final class BootstrapUtils {
             throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException,
                     IllegalAccessException {
         // discover the inset size and set the look and feel
-        if (!GraphicsEnvironment.isHeadless()) {
-            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            final JFrame jframe = new JFrame();
-            jframe.setPreferredSize(new Dimension(200, 200));
-            jframe.pack();
-            WindowConfig.setInsets(jframe.getInsets());
-            jframe.dispose();
-        }
+        UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+        final JFrame jframe = new JFrame();
+        jframe.setPreferredSize(new Dimension(200, 200));
+        jframe.pack();
+        WindowConfig.setInsets(jframe.getInsets());
+        jframe.dispose();
     }
 
     /**
