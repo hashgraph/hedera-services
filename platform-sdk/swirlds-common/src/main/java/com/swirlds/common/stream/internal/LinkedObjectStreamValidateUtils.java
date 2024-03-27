@@ -236,8 +236,8 @@ public final class LinkedObjectStreamValidateUtils {
             sig.initVerify(publicKey);
             sig.update(data);
             return sig.verify(signature.getSignatureBytes());
-        } catch (final Exception e) {
-            throw new RuntimeException(e);
+        } catch (final Exception ignored) {
         }
+        return false;
     }
 }
