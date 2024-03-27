@@ -19,7 +19,6 @@ package com.swirlds.platform.wiring;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.platform.components.ConsensusEngine;
-import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -54,7 +53,6 @@ public class PlatformCoordinator {
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ShadowgraphWiring shadowgraphWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
-    private final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring;
     private final ComponentWiring<EventCreationManager, GossipEvent> eventCreationManagerWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
@@ -72,7 +70,6 @@ public class PlatformCoordinator {
      * @param inOrderLinkerWiring                    the in order linker wiring
      * @param shadowgraphWiring                      the shadowgraph wiring
      * @param consensusEngineWiring                  the consensus engine wiring
-     * @param futureEventBufferWiring                the future event buffer wiring
      * @param eventCreationManagerWiring             the event creation manager wiring
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
@@ -88,7 +85,6 @@ public class PlatformCoordinator {
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final ShadowgraphWiring shadowgraphWiring,
             @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
-            @NonNull final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring,
             @NonNull final ComponentWiring<EventCreationManager, GossipEvent> eventCreationManagerWiring,
             @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
@@ -103,7 +99,6 @@ public class PlatformCoordinator {
         this.inOrderLinkerWiring = Objects.requireNonNull(inOrderLinkerWiring);
         this.shadowgraphWiring = Objects.requireNonNull(shadowgraphWiring);
         this.consensusEngineWiring = Objects.requireNonNull(consensusEngineWiring);
-        this.futureEventBufferWiring = Objects.requireNonNull(futureEventBufferWiring);
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
         this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
@@ -135,7 +130,6 @@ public class PlatformCoordinator {
         shadowgraphWiring.flushRunnable().run();
         consensusEngineWiring.flush();
         applicationTransactionPrehandlerWiring.flush();
-        futureEventBufferWiring.flush();
         eventCreationManagerWiring.flush();
     }
 
@@ -182,7 +176,6 @@ public class PlatformCoordinator {
         orphanBufferWiring.clearInput().inject(new ClearTrigger());
         inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
         stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
-        futureEventBufferWiring.getInputWire(FutureEventBuffer::clear).inject(new ClearTrigger());
         eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(new ClearTrigger());
     }
 }
