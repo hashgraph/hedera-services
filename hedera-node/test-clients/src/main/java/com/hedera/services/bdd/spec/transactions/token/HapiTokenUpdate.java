@@ -91,6 +91,24 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private boolean useInvalidFreezeKey = false;
     private boolean useInvalidFeeScheduleKey = false;
     private boolean useInvalidPauseKey = false;
+    private DeletedOrInvalidKeyTypes deletedOrInvalidKey = null;
+
+    private enum DeletedOrInvalidKeyTypes {
+        DELETED_ADMIN_KEY,
+        INVALID_ADMIN_KEY,
+        DELETED_WIPE_KEY,
+        INVALID_WIPE_KEY,
+        DELETED_KYC_KEY,
+        INVALID_KYC_KEY,
+        DELETED_SUPPLY_KEY,
+        INVALID_SUPPLY_KEY,
+        DELETED_FREEZE_KEY,
+        INVALID_FREEZE_KEY,
+        DELETED_FEE_SCHEDULE_KEY,
+        INVALID_FEE_SCHEDULE_KEY,
+        DELETED_PAUSE_KEY,
+        INVALID_PAUSE_KEY,
+    }
 
     private Optional<String> contractKeyName = Optional.empty();
     private Set<TokenKeyType> contractKeyAppliedTo = Set.of();
@@ -409,7 +427,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
 
-        // TODO comment
         signers.add(spec -> {
             try {
                 return spec.registry().getAdminKey(token);
