@@ -40,10 +40,10 @@ import org.openjdk.jmh.annotations.TearDown;
 @State(Scope.Benchmark)
 public class SwirldsLogBaseBenchmark {
 
-    @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
+    @Param({FILE_TYPE})
     public String loggingType;
 
-    @Param({MODE_NOT_ROLLING, MODE_ROLLING})
+    @Param({MODE_ROLLING})
     public String mode;
 
     private static final String LOGGER_NAME = Constants.SWIRLDS + "Benchmark";
@@ -70,5 +70,6 @@ public class SwirldsLogBaseBenchmark {
     @TearDown(Level.Trial)
     public void tearDown() {
         config.tearDown();
+        loggingSystem.stopAndFinalize();
     }
 }
