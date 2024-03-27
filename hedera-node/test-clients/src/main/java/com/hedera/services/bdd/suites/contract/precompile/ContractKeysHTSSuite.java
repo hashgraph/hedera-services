@@ -274,7 +274,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN_USAGE, 49))
                 .then(
                         newKeyNamed(CONTRACT_KEY).shape(contractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
-                        tokenUpdate(TOKEN_USAGE).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(TOKEN_USAGE).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
                                 .via(BURN_WITH_CONTRACT_KEY)
                                 .gas(GAS_TO_OFFER),
@@ -777,7 +777,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         spec,
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ORDINARY_CALLS_CONTRACT))),
-                        tokenUpdate(TYPE_OF_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(TYPE_OF_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(
                                         ORDINARY_CALLS_CONTRACT,
                                         "mintTokenCall",
@@ -2450,7 +2450,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .via(CREATION_TX))))
                 .when(
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
-                        tokenUpdate(TOKEN_USAGE).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(TOKEN_USAGE).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
                                 .via(BURN_WITH_CONTRACT_KEY)
                                 .gas(GAS_TO_OFFER),

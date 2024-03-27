@@ -174,7 +174,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         // Create a key with shape contract and the contractId of HTSCalls contract
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(HTS_CALLS)),
                         // Update the token supply key to with the created threshold key
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 1: Signer paying and signing a token mint transaction, where the token
                         // will be minted in the token treasury account
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
@@ -239,7 +239,9 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         // Create a key with thresh 1/2 with sigs:  new ed25519 key, contractId of HTSCalls contract
                         newKeyNamed(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
                                 .shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, HTS_CALLS))),
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
+                        tokenUpdate(FUNGIBLE_TOKEN)
+                                .supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Update the transaction signer to have the new threshold key - the newly generated
                         // ed25519 key from the threshold key will be set as the public key of the updated account
                         cryptoUpdate(SIGNER).key(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
@@ -306,7 +308,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         spec,
                         // Create a key with shape contract and the contractId of HTSCalls contract
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(HTS_CALLS)),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 1: Signer paying and signing a token mint transaction, where the token
                         // will be minted in the token treasury account
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
@@ -365,7 +367,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 .refusingEthConversion()
                                 .hasRetryPrecheckFrom(BUSY),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(3 * amount),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         // Assert that the token is minted - total supply should be increased
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(3 * amount),
                         // Assert the token is mined in the token treasury account
@@ -373,7 +375,9 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         // Create a key with thresh 1/2 with sigs:  new ed25519 key, contractId of HTSCalls contract
                         newKeyNamed(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
                                 .shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, HTS_CALLS))),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Update the transaction signer to have the new threshold key - the newly generated
                         // ed25519 key from the threshold key will be set as the public key of the updated account
                         cryptoUpdate(SIGNER).key(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
@@ -466,7 +470,9 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         // Update the signer of the transaction to have the threshold key with the wotng contract id
                         cryptoUpdate(SIGNER).key(TRESHOLD_KEY_WITH_SIGNER_KEY),
                         // Update the token's supply to have the threshold key witht he wrong contract id
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_WITH_SIGNER_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN)
+                                .supplyKey(TRESHOLD_KEY_WITH_SIGNER_KEY)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 2: Signer paying and signing a token mint transaction, when the token
                         // is expected to  be minted in the token treasury account
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
@@ -492,7 +498,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         // Here the key has the contract`id of the correct contract
                         newKeyNamed(THRESHOLD_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, HTS_CALLS))),
                         // Set the token's supply key to the initial one
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(TOKEN_TREASURY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(TOKEN_TREASURY).signedByPayerAnd(TOKEN_TREASURY),
                         // Update the Signer with the correct threshold key
                         cryptoUpdate(SIGNER).key(THRESHOLD_KEY),
                         // Test Case 3: Signer paying and signing a token mint transaction, when the token
@@ -580,7 +586,9 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         // Update the signer of the transaction to have the threshold key with the wotng contract id
                         cryptoUpdate(SIGNER).key(TRESHOLD_KEY_WITH_SIGNER_KEY),
                         // Update the token's supply to have the threshold key with he wrong contract id
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_WITH_SIGNER_KEY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(TRESHOLD_KEY_WITH_SIGNER_KEY)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 2: Signer paying and signing a token mint transaction, when the token
                         // is expected to  be minted in the token treasury account
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
@@ -603,7 +611,9 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         // Assert the token is NOT mined in the token treasury account
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L),
                         // Set the token's supply key to the initial one
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TOKEN_TREASURY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(TOKEN_TREASURY)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Update the Signer with the correct threshold key
                         cryptoUpdate(SIGNER).key(THRESHOLD_KEY),
                         // Test Case 3: Signer paying and signing a token mint transaction, when the token
@@ -663,8 +673,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(MINT_TOKEN_VIA_DELEGATE_CALL)),
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 1: Treasury account paying and signing a FUNGIBLE token mint transaction, when the
                         // token
                         // is expected to  be minted in the token treasury account
@@ -716,7 +726,9 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         newKeyNamed(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
                                 .shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MINT_TOKEN_VIA_DELEGATE_CALL))),
                         // Update the token's supply to have the threshold key with he wrong contract id
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Update the signer of the transaction to have the threshold key with the wotng contract id
                         cryptoUpdate(SIGNER).key(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
                         // Test Case 3: A Signer paying and signing a NON FUNGIBLE token mint transaction, when the
@@ -742,7 +754,9 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(0),
                         // Assert the token is NOT mined in the token treasury account
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 4: A Signer paying and signing a FUNGIBLE token mint transaction, when the token
                         // is expected to  be minted in the token treasury account
                         // SIGNER → call → CONTRACT → delegatecall → PRECOMPILE
@@ -817,7 +831,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                                 MINT_TOKEN_VIA_NESTED_STATIC_CALL,
                                 asHeadlongAddress(getNestedContractAddress(SERVICE_CONTRACT, spec))),
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(MINT_TOKEN_VIA_NESTED_STATIC_CALL)),
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 1: Treasury account paying and signing a fungible TOKEN MINT TRANSACTION,
                         // when the token is expected to be minted in the token treasury account
                         // fails with the mintTokenStaticCall function revert message in the receipt
@@ -900,7 +914,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         spec,
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MINT_TOKEN_VIA_CALLCODE))),
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         cryptoUpdate(TOKEN_TREASURY).key(CONTRACT_KEY),
                         // Test Case 1: Treasury account paying and signing a fungible TOKEN MINT TRANSACTION,
                         // when the token is expected to be minted in the token treasury account
@@ -929,7 +943,7 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(0),
                         // Assert the token is NOT mined in the token treasury account
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 0L),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 2: Treasury account paying and signing a non fungible TOKEN MINT TRANSACTION,
                         // when the token is expected to be minted in the token treasury account
                         // SIGNER -> call -> CONTRACT -> callcode -> PRECOMPILE

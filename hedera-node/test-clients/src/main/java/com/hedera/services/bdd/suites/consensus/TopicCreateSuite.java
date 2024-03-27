@@ -152,12 +152,13 @@ public class TopicCreateSuite extends HapiSuite {
         return defaultHapiSpec("SigningRequirementsEnforced")
                 .given(
                         newKeyNamed("adminKey"),
+                        newKeyNamed("contractAdminKey"),
                         newKeyNamed("submitKey"),
                         newKeyNamed("wrongKey"),
                         cryptoCreate("payer").balance(PAYER_BALANCE),
                         cryptoCreate("autoRenewAccount"),
                         // This will have an admin key
-                        createDefaultContract(contractWithAdminKey),
+                        createDefaultContract(contractWithAdminKey).adminKey("contractAdminKey"),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         // And this won't
                         contractCreate(PAY_RECEIVABLE_CONTRACT).omitAdminKey())
@@ -203,7 +204,8 @@ public class TopicCreateSuite extends HapiSuite {
                         // In hedera-app, we'll allow contracts with admin keys to be auto-renew accounts
                         createTopic("withContractAutoRenew")
                                 .adminKeyName("adminKey")
-                                .autoRenewAccountId(contractWithAdminKey))
+                                .autoRenewAccountId(contractWithAdminKey)
+                                .signedBy("payer", "adminKey", contractWithAdminKey))
                 .then(
                         createTopic("noAdminKeyNoAutoRenewAccount"),
                         getTopicInfo("noAdminKeyNoAutoRenewAccount")
