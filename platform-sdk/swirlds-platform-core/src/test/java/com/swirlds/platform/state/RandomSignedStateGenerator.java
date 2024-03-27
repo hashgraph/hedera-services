@@ -223,7 +223,10 @@ public class RandomSignedStateGenerator {
             signaturesInstance = new HashMap<>();
 
             for (final NodeId nodeID : signingNodeIdsInstance) {
-                signaturesInstance.put(nodeID, randomSignature(random));
+                signaturesInstance.put(nodeID, SignatureVerificationTestUtils.buildFakeSignature(
+                        addressBookInstance.getAddress(nodeID).getSigPublicKey(),
+                        stateInstance.getHash()
+                ));
             }
         } else {
             signaturesInstance = signatures;
