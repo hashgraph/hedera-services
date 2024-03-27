@@ -64,6 +64,20 @@ public class ReconnectBench extends VirtualMapBaseBench {
     @Param({"0.05"})
     public double teacherModifyProbability;
 
+    /**
+     * Emulated delay for sendAsync() calls in both Teaching- and Learning-Synchronizers,
+     * or zero for no delay. This emulates slow disk I/O when reading data.
+     */
+    @Param({"0"})
+    public long delayStorageMicroseconds;
+
+    /**
+     * Emulated delay for serializeMessage() calls in both Teaching- and Learning-Synchronizers,
+     * or zero for no delay. This emulates slow network I/O when sending data.
+     */
+    @Param({"0"})
+    public long delayNetworkMicroseconds;
+
     private VirtualMap<BenchmarkKey, BenchmarkValue> teacherMap;
     private VirtualMap<BenchmarkKey, BenchmarkValue> learnerMap;
     private MerkleInternal teacherTree;
@@ -197,6 +211,7 @@ public class ReconnectBench extends VirtualMapBaseBench {
 
     @Benchmark
     public void reconnect() throws Exception {
-        node = MerkleBenchmarkUtils.hashAndTestSynchronization(learnerTree, teacherTree, configuration);
+        node = MerkleBenchmarkUtils.hashAndTestSynchronization(
+                learnerTree, teacherTree, delayStorageMicroseconds, delayNetworkMicroseconds, configuration);
     }
 }

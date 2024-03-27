@@ -34,6 +34,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorage
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
+import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -295,7 +296,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             context.attributeValidator().validateMemo(op.memo());
         }
         // Empty key list is allowed and is used for immutable entities (e.g. system accounts)
-        if (op.hasKey() && !context.attributeValidator().isImmutableKey(op.key())) {
+        if (op.hasKey() && !isImmutableKey(op.key())) {
             context.attributeValidator().validateKey(op.key());
         }
 
