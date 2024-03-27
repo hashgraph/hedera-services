@@ -100,6 +100,7 @@ import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -151,6 +152,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final ParentRecordFinalizer parentRecordFinalizer;
     private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final Metrics metrics;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
@@ -215,7 +217,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final ParentRecordFinalizer parentRecordFinalizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final PlatformState platformState) {
+            @NonNull final PlatformState platformState,
+            @NonNull final Metrics metrics) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -244,9 +247,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
 
+        this.metrics = requireNonNull(metrics, "metrics must not be null");
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
-        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
-        this.serviceApiFactory = new ServiceApiFactory(stack, configuration);
+        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope, configuration, metrics);
+        this.serviceApiFactory = new ServiceApiFactory(stack, configuration, metrics);
 
         if (payerKey == null) {
             this.feeCalculatorCreator = ignore -> NoOpFeeCalculator.INSTANCE;
@@ -360,7 +364,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     @Override
     public long newEntityNum() {
-        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME, configuration, metrics);
         return entityIdsFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
     }
 
@@ -369,7 +373,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     @Override
     public long peekAtNewEntityNum() {
-        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME, configuration, metrics);
         return entityIdsFactory.getStore(WritableEntityIdStore.class).peekAtNextNumber();
     }
 
@@ -746,7 +750,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 parentRecordFinalizer,
                 networkUtilizationManager,
                 synchronizedThrottleAccumulator,
-                platformState);
+                platformState,
+                metrics);
 
         // in order to work correctly isSuperUser(), we need to keep track of top level payer in child context
         childContext.setTopLevelPayer(topLevelPayer);
@@ -775,7 +780,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (childCategory == SCHEDULED) {
             final var finalizeContext = new TriggeredFinalizeContext(
                     new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    new WritableStoreFactory(childStack, TokenService.NAME, configuration, metrics),
                     childRecordBuilder,
                     consensusNow(),
                     configuration);
@@ -791,7 +796,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         } else {
             final var finalizeContext = new ChildFinalizeContextImpl(
                     new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    new WritableStoreFactory(childStack, TokenService.NAME, configuration, metrics),
                     childRecordBuilder);
             childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
         }
@@ -801,7 +806,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (childCategory == SCHEDULED) {
             final var finalizeContext = new TriggeredFinalizeContext(
                     new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    new WritableStoreFactory(childStack, TokenService.NAME, configuration, metrics),
                     childRecordBuilder,
                     consensusNow(),
                     configuration);
@@ -817,7 +822,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         } else {
             final var finalizeContext = new ChildFinalizeContextImpl(
                     new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    new WritableStoreFactory(childStack, TokenService.NAME, configuration, metrics),
                     childRecordBuilder);
             childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
         }

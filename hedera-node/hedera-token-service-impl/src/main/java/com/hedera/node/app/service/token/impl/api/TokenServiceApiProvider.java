@@ -27,6 +27,7 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -44,8 +45,10 @@ public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceAp
 
     @Override
     public TokenServiceApi newInstance(
-            @NonNull final Configuration configuration, @NonNull final WritableStates writableStates) {
-        return new TokenServiceApiImpl(configuration, stakingValidator, writableStates, op -> {
+            @NonNull final Configuration configuration,
+            @NonNull Metrics metrics,
+            @NonNull final WritableStates writableStates) {
+        return new TokenServiceApiImpl(configuration, metrics, stakingValidator, writableStates, op -> {
             final var assessor = new CustomFeeAssessmentStep(op);
             try {
                 final var result = assessor.assessFees(
