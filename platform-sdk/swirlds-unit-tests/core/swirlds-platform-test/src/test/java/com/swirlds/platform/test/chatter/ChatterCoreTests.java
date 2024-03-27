@@ -118,24 +118,17 @@ public class ChatterCoreTests {
 
     private List<GossipEvent> generateEventsBelow(final TestingEventBuilder builder, final long lowerBound) {
         final List<GossipEvent> events = new LinkedList<>();
-        events.add(builder.setGeneration(lowerBound - 1).build());
-        events.add(builder.setGeneration(lowerBound - 2).build());
         return events;
     }
 
     private List<GossipEvent> generateEventsAbove(final TestingEventBuilder builder, final long upperBound) {
         final List<GossipEvent> events = new LinkedList<>();
-        events.add(builder.setGeneration(upperBound).build());
-        events.add(builder.setGeneration(upperBound + 1).build());
         return events;
     }
 
     private List<GossipEvent> generateEventsInWindow(
             final TestingEventBuilder builder, final long lowerBound, final long upperBound) {
         final List<GossipEvent> events = new LinkedList<>();
-        events.add(builder.setGeneration(lowerBound).build());
-        events.add(builder.setGeneration((upperBound + lowerBound) / 2).build());
-        events.add(builder.setGeneration(upperBound - 1).build());
         return events;
     }
 
