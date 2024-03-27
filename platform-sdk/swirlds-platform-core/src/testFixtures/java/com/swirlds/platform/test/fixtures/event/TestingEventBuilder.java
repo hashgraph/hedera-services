@@ -46,7 +46,7 @@ public class TestingEventBuilder {
     private static final NodeId DEFAULT_CREATOR_ID = new NodeId(0);
     private static final int DEFAULT_APP_TRANSACTION_COUNT = 2;
     private static final int DEFAULT_SYSTEM_TRANSACTION_COUNT = 0;
-    private static final int DEFAULT_TRANSACTION_BYTES = 4;
+    private static final int DEFAULT_TRANSACTION_SIZE = 4;
 
     private final Random random;
 
@@ -61,7 +61,7 @@ public class TestingEventBuilder {
     /**
      * The time created of the event.
      * <p>
-     * If not set, defaults to the time created as the self parent, plus a random number of milliseconds between
+     * If not set, defaults to the time created of the self parent, plus a random number of milliseconds between
      * 1 and 99 inclusive. If the self parent is not set, defaults to {@link #DEFAULT_TIMESTAMP}.
      */
     private Instant timeCreated;
@@ -83,7 +83,7 @@ public class TestingEventBuilder {
     /**
      * The size in bytes of each transaction.
      * <p>
-     * If not set, defaults to {@link #DEFAULT_TRANSACTION_BYTES}.
+     * If not set, defaults to {@link #DEFAULT_TRANSACTION_SIZE}.
      */
     private Integer transactionSize;
 
@@ -95,12 +95,12 @@ public class TestingEventBuilder {
     private ConsensusTransactionImpl[] transactions;
 
     /**
-     * The self parent of the event. May be null.
+     * The self parent of the event.
      */
     private GossipEvent selfParent;
 
     /**
-     * The other parent of the event. May be null.
+     * The other parent of the event.
      * <p>
      * Future work: add support for multiple other parents.
      */
@@ -174,7 +174,7 @@ public class TestingEventBuilder {
     /**
      * Set the time created of an event.
      * <p>
-     * If not set, defaults to the time created as the self parent, plus a random number of milliseconds between
+     * If not set, defaults to the time created of the self parent, plus a random number of milliseconds between
      * 1 and 99 inclusive. If the self parent is not set, defaults to {@link #DEFAULT_TIMESTAMP}.
      *
      * @param timeCreated the time created
@@ -210,7 +210,7 @@ public class TestingEventBuilder {
      * @param numberOfSystemTransactions the number of system transactions
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setNumberOfSystemTransactions(final int numberOfSystemTransactions) {
+    public @NonNull TestingEventBuilder setSystemTransactionCount(final int numberOfSystemTransactions) {
         if (transactions != null) {
             throw new IllegalStateException("Cannot set system transaction count when transactions are explicitly set");
         }
@@ -341,7 +341,7 @@ public class TestingEventBuilder {
                 new ConsensusTransactionImpl[appTransactionCount + systemTransactionCount];
 
         if (transactionSize == null) {
-            transactionSize = DEFAULT_TRANSACTION_BYTES;
+            transactionSize = DEFAULT_TRANSACTION_SIZE;
         }
 
         for (int i = 0; i < appTransactionCount; ++i) {
@@ -369,7 +369,12 @@ public class TestingEventBuilder {
     @Nullable
     private EventDescriptor createDescriptorFromParent(
             @Nullable final GossipEvent parent, @Nullable final Long generationOverride) {
+
         if (parent == null) {
+            if (generationOverride != null) {
+                throw new IllegalArgumentException("Cannot override generation on a parent that doesn't exist");
+            }
+
             return null;
         }
 
