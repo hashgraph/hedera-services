@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.processors;
 
+import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
 import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REMAINING_GAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.isSameResult;
@@ -196,7 +197,7 @@ class CustomMessageCallProcessorTest {
     }
 
     @Test
-    void haltsIfPrecompileGasRequirementExceedsRemaining() {
+    void haltsAndTracesInsufficientGasIfPrecompileGasRequirementExceedsRemaining() {
         final var isHalted = new AtomicBoolean();
         givenHaltableFrame(isHalted);
         givenEvmPrecompileCall();
@@ -206,6 +207,7 @@ class CustomMessageCallProcessorTest {
         subject.start(frame, operationTracer);
 
         verifyHalt(INSUFFICIENT_GAS, false);
+        verify(operationTracer).tracePrecompileResult(frame, PRECOMPILE);
     }
 
     @Test
