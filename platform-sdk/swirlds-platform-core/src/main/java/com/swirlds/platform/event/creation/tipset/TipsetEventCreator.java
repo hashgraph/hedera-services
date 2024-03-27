@@ -28,6 +28,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
@@ -436,7 +437,9 @@ public class TipsetEventCreator implements EventCreator {
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                nonAncientEventWindow.getPendingConsensusRound(),
+                nonAncientEventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
+                        ? nonAncientEventWindow.getPendingConsensusRound()
+                        : ConsensusConstants.ROUND_FIRST,
                 timeCreated,
                 transactionSupplier.getTransactions());
         cryptography.digestSync(hashedData);
