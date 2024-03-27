@@ -83,7 +83,7 @@ public class DissociatePrecompileSuite extends HapiSuite {
     }
 
     List<HapiSpec> negativeSpecs() {
-        return List.of();
+        return List.of(dissociateTokensNegativeScenarios(), dissociateTokenNegativeScenarios());
     }
 
     @HapiTest
