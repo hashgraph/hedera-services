@@ -24,6 +24,7 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
@@ -78,6 +79,7 @@ public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
 
     @Override
     public void startTeacherTasks(
+            final TeachingSynchronizer teachingSynchronizer,
             final Time time,
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,
@@ -86,7 +88,7 @@ public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
         final AsyncInputStream<QueryResponse> in =
                 new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
         final AsyncOutputStream<Lesson<NodeToSend>> out =
-                new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig);
+                teachingSynchronizer.buildOutputStream(workGroup, outputStream);
 
         in.start();
         out.start();

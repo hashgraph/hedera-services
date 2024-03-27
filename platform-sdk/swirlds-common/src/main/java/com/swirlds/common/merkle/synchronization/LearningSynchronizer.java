@@ -20,11 +20,14 @@ import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
@@ -277,7 +280,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
 
         final AtomicReference<T> reconstructedRoot = new AtomicReference<>();
 
-        view.startLearnerTasks(workGroup, inputStream, outputStream, rootsToReceive, reconstructedRoot, this);
+        view.startLearnerTasks(this, workGroup, inputStream, outputStream, rootsToReceive, reconstructedRoot, this);
         InterruptedException interruptException = null;
         try {
             workGroup.waitForTermination();
@@ -324,6 +327,14 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         viewsToInitialize.addFirst(view);
 
         return view.getMerkleRoot(reconstructedRoot.get());
+    }
+
+    /**
+     * Build the output stream. Exposed to allow unit tests to override implementation to simulate latency.
+     */
+    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
+            final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
+        return new AsyncOutputStream<>(out, workGroup, reconnectConfig);
     }
 
     /**

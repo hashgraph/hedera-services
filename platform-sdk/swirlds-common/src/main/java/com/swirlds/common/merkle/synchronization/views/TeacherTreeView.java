@@ -20,6 +20,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -42,12 +43,14 @@ public interface TeacherTreeView<T>
      * new custom tree views are encountered, they must be added to {@code subtrees}, although it isn't
      * currently supported by virtual tree views, as nested virtual maps are not supported.
      *
+     * @param teachingSynchronizer the teacher synchronizer
      * @param workGroup the work group to run teaching task(s) in
      * @param inputStream the input stream to read data from learner
      * @param outputStream the output stream to write data to learner
      * @param subtrees if custom tree views are encountered, they must be added to this queue
      */
     void startTeacherTasks(
+            final TeachingSynchronizer teachingSynchronizer,
             final Time time,
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,

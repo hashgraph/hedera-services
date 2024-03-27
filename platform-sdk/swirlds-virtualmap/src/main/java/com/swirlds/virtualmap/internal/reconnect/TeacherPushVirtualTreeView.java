@@ -27,6 +27,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
@@ -131,6 +132,7 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
 
     @Override
     public void startTeacherTasks(
+            final TeachingSynchronizer teachingSynchronizer,
             final Time time,
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,
@@ -139,7 +141,7 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
         final AsyncInputStream<QueryResponse> in =
                 new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
         in.start();
-        final AsyncOutputStream<Lesson<Long>> out = new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig);
+        final AsyncOutputStream<Lesson<Long>> out = teachingSynchronizer.buildOutputStream(workGroup, outputStream);
         out.start();
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);

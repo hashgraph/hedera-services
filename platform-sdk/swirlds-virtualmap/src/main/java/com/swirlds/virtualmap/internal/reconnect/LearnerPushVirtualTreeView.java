@@ -27,6 +27,7 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
@@ -143,6 +144,7 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
 
     @Override
     public void startLearnerTasks(
+            final LearningSynchronizer learningSynchronizer,
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,
@@ -151,7 +153,7 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final ReconnectNodeCount nodeCount) {
         in = new AsyncInputStream<>(inputStream, workGroup, () -> new Lesson<>(this), reconnectConfig);
         in.start();
-        AsyncOutputStream<QueryResponse> out = new AsyncOutputStream<>(outputStream, workGroup, reconnectConfig);
+        final AsyncOutputStream<QueryResponse> out = learningSynchronizer.buildOutputStream(workGroup, outputStream);
         out.start();
 
         final LearnerPushTask<Long> learnerThread =

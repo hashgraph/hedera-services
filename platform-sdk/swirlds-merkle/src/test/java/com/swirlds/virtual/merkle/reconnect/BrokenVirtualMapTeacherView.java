@@ -21,6 +21,7 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -60,12 +61,13 @@ public class BrokenVirtualMapTeacherView implements TeacherTreeView<Long> {
 
     @Override
     public void startTeacherTasks(
+            final TeachingSynchronizer teachingSynchronizer,
             final Time time,
             final StandardWorkGroup workGroup,
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,
             final Queue<TeacherSubtree> subtrees) {
-        baseView.startTeacherTasks(time, workGroup, inputStream, outputStream, subtrees);
+        baseView.startTeacherTasks(teachingSynchronizer, time, workGroup, inputStream, outputStream, subtrees);
     }
 
     @Override

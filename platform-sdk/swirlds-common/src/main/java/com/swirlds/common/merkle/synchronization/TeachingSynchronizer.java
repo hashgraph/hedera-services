@@ -19,10 +19,13 @@ package com.swirlds.common.merkle.synchronization;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
@@ -171,7 +174,7 @@ public class TeachingSynchronizer {
                     return false;
                 });
 
-        view.startTeacherTasks(time, workGroup, inputStream, outputStream, subtrees);
+        view.startTeacherTasks(this, time, workGroup, inputStream, outputStream, subtrees);
 
         workGroup.waitForTermination();
 
@@ -186,5 +189,13 @@ public class TeachingSynchronizer {
         }
 
         logger.info(RECONNECT.getMarker(), "finished sending tree");
+    }
+
+    /**
+     * Build the output stream. Exposed to allow unit tests to override implementation to simulate latency.
+     */
+    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
+            final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
+        return new AsyncOutputStream<>(out, workGroup, reconnectConfig);
     }
 }
