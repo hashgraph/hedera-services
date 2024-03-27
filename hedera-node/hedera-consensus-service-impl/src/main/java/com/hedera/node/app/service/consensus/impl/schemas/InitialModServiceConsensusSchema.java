@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusService
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.MigrationContext;
@@ -70,10 +71,8 @@ public class InitialModServiceConsensusSchema extends Schema {
             final var numTopicInsertions = new AtomicLong();
             final var topicStoreRef = new AtomicReference<>(ctx.newStates().<TopicID, Topic>get(TOPICS_KEY));
             log.info("BBM: running consensus migration...");
-
-            fs.keySet().stream().sorted().forEach(k -> {
-                final var topic = fs.get(k);
-                final var pbjTopic = stateToPbj(topic);
+            MerkleMapLike.from(fs).forEachNode((k, v) -> {
+                final var pbjTopic = stateToPbj(v);
                 topicStoreRef.get().put(pbjTopic.topicId(), pbjTopic);
                 if (numTopicInsertions.incrementAndGet() % 10_000 == 0) {
                     // Make sure we are flushing data to disk as we go
