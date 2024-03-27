@@ -26,9 +26,9 @@ For security purposes, an EOA account sender must also sign the transaction.  If
 
 The `hbarAllowance` function will be used to retrieve information about allowance granted to a spender and will have the following signature:
 
-| Hash       | Signature                      | Response                                                                  | Implementation Class       |
-|------------|--------------------------------|---------------------------------------------------------------------------|----------------------------|
-| 0xbbee989e | hbarAllowance(address spender) | (ResponseCode, int256 - amount of hbar allowances granted to the spender) | GetHbarAllowanceTranslator |
+| Hash       | Signature                      | Response                                                                   | Implementation Class       |
+|------------|--------------------------------|----------------------------------------------------------------------------|----------------------------|
+| 0xbbee989e | hbarAllowance(address spender) | (ResponseCode, uint256 - amount of hbar allowances granted to the spender) | GetHbarAllowanceTranslator |
 
 - The `GetHbarAllowanceTranslator` class will be responsible for recognizing the `hbarAllowance` function signature and processing the call.  It will decode the parameters and look up the allowance information from the Account store and return the requested information.  
 
@@ -36,9 +36,9 @@ The `hbarAllowance` function will be used to retrieve information about allowanc
 
 The `hbarApprove` function will allow the sender to grant to the `spender` an allowance of `amount` hbars and will have the following signature:
 
-| Hash       | Signature                                   | Response     | Implementation Classes                             |
-|------------|---------------------------------------------|--------------|----------------------------------------------------|
-| 0x86aff07c | hbarApprove(spender address, amount int256) | ResponseCode | GrantHbarApprovalTranslator, GrantHbarApprovalCall |
+| Hash       | Signature                                    | Response     | Implementation Classes                             |
+|------------|----------------------------------------------|--------------|----------------------------------------------------|
+| 0x76f17392 | hbarApprove(spender address, amount uint256) | ResponseCode | GrantHbarApprovalTranslator, GrantHbarApprovalCall |
 
 - The `GrantHbarApprovalTranslator` class will be responsible for recognizing the `hbarApprove` function signature and processing the call.  It will decode the parameters and create a `TransactionBody` object to be used by the `GrantHbarApprovalCall` class.
 - The `GrantHbarApprovalChbar_approveall` class will be responsible for dispatching the transaction to the Token Service Module for processing.  It will also be responsible for miscellaneous tasks such as checking for sufficient gas and encoding the response.
