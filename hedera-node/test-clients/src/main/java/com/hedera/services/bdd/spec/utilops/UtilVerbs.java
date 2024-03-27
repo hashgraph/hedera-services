@@ -16,6 +16,9 @@
 
 package com.hedera.services.bdd.spec.utilops;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -1617,25 +1620,61 @@ public class UtilVerbs {
     }
 
     public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(
-            final List<HapiSpecOperation> ops, final String privateKeyRef, final Key adminKey, final long defaultGas) {
+            final List<HapiSpecOperation> ops,
+            final String privateKeyRef,
+            final Key adminKey,
+            final long defaultGas,
+            final HapiSpec spec) {
         final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
         for (final var op : ops) {
             if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall()) {
+                // if we have function params, try to swap the long zero address with the EVM address
+                if (callOp.getParams().length > 0 && callOp.getAbi() != null) {
+                    var convertedParams = tryToSwapLongZeroToEVMAddresses(callOp.getParams(), spec);
+                    callOp.setParams(convertedParams);
+                }
+
                 convertedOps.add(new HapiEthereumCall(callOp));
             } else if (op instanceof HapiContractCreate callOp && callOp.isConvertableToEthCreate()) {
                 // if we have constructor args, update the bytecode file with one containing the args
                 if (callOp.getArgs().isPresent() && callOp.getAbi().isPresent()) {
+                    var convertedArgs =
+                            tryToSwapLongZeroToEVMAddresses(callOp.getArgs().get(), spec);
+                    callOp.setArgs(Optional.of(convertedArgs));
+
                     convertedOps.add(updateInitCodeWithConstructorArgs(
                             callOp.getContract(),
                             callOp.getAbi().get(),
                             callOp.getArgs().get()));
                 }
+                // create the contract
                 convertedOps.add(new HapiEthereumContractCreate(callOp, privateKeyRef, adminKey, defaultGas));
+                // save the EVM address to the registry
+                convertedOps.add(getContractInfo(callOp.getContract()).saveEVMAddressToRegistry(callOp.getContract()));
             } else {
                 convertedOps.add(op);
             }
         }
         return convertedOps;
+    }
+
+    private static Object[] tryToSwapLongZeroToEVMAddresses(Object[] args, HapiSpec spec) {
+        return Arrays.stream(args)
+                .map(arg -> {
+                    if (arg instanceof Address address) {
+                        var explicitFromHeadlong = explicitFromHeadlong(address);
+                        if (isLongZeroAddress(explicitFromHeadlong)) {
+                            var contractNum = numberOfLongZero(explicitFromHeadlong(address));
+                            if (spec.registry().hasEVMAddress(String.valueOf(contractNum))) {
+                                return HapiParserUtil.asHeadlongAddress(
+                                        spec.registry().getEVMAddress(String.valueOf(contractNum)));
+                            }
+                        }
+                        return arg;
+                    }
+                    return arg;
+                })
+                .toArray();
     }
 
     public static byte[] getPrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {

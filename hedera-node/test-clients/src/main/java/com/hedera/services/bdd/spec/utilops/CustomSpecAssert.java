@@ -53,7 +53,8 @@ public class CustomSpecAssert extends UtilOp {
                 ops,
                 SECP_256K1_SOURCE_KEY,
                 spec.registry().getKey(SECP_256K1_SOURCE_KEY),
-                spec.setup().defaultCreateGas());
+                spec.setup().defaultCreateGas(),
+                spec);
         for (final var op : convertedOps) {
             handleExec(spec, op);
         }

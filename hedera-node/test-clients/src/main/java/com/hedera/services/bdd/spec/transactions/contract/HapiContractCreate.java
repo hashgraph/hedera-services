@@ -450,4 +450,8 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
     public Optional<Long> getFee() {
         return fee;
     }
+
+    public void setArgs(Optional<Object[]> args) {
+        this.args = args;
+    }
 }
