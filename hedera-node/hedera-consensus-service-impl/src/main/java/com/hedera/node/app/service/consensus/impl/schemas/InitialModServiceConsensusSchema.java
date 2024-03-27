@@ -71,8 +71,9 @@ public class InitialModServiceConsensusSchema extends Schema {
             final var topicStoreRef = new AtomicReference<>(ctx.newStates().<TopicID, Topic>get(TOPICS_KEY));
             log.info("BBM: running consensus migration...");
 
-            fs.forEach((k, v) -> {
-                final var pbjTopic = stateToPbj(v);
+            fs.keySet().stream().sorted().forEach(k -> {
+                final var topic = fs.get(k);
+                final var pbjTopic = stateToPbj(topic);
                 topicStoreRef.get().put(pbjTopic.topicId(), pbjTopic);
                 if (numTopicInsertions.incrementAndGet() % 10_000 == 0) {
                     // Make sure we are flushing data to disk as we go
