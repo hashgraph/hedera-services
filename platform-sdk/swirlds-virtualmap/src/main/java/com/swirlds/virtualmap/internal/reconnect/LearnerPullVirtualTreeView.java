@@ -77,8 +77,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
 
     private final ReconnectConfig reconnectConfig;
 
-    private AsyncInputStream<PullVirtualTreeResponse> in;
-
     /**
      * Handles removal of old nodes.
      */
@@ -150,8 +148,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final ReconnectNodeCount nodeCount) {
         this.nodeCount = nodeCount;
 
-        in = new AsyncInputStream<>(inputStream, workGroup, () -> new PullVirtualTreeResponse(this), reconnectConfig);
-        in.start();
         final AsyncOutputStream<PullVirtualTreeRequest> out =
                 learningSynchronizer.buildOutputStream(workGroup, outputStream);
         out.start();
@@ -160,18 +156,13 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         final CountDownLatch rootResponseReceived = new CountDownLatch(1);
 
         final LearnerPullVirtualTreeReceiveTask learnerReceiveTask = new LearnerPullVirtualTreeReceiveTask(
-                workGroup, in, this, senderIsFinished, expectedResponses, rootResponseReceived);
+                workGroup, inputStream, this, senderIsFinished, expectedResponses, rootResponseReceived);
         learnerReceiveTask.exec();
         reconstructedRoot.set(0L);
         assert traversalOrder != null;
         final LearnerPullVirtualTreeSendTask learnerSendTask = new LearnerPullVirtualTreeSendTask(
                 workGroup, out, this, traversalOrder, senderIsFinished, rootResponseReceived);
         learnerSendTask.exec();
-    }
-
-    @Override
-    public void abort() {
-        in.abort();
     }
 
     private boolean isLeaf(long path) {
@@ -215,7 +206,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public void anticipateMesssage() {
         expectedResponses.incrementAndGet();
-        in.anticipateMessage();
     }
 
     @Override

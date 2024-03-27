@@ -63,8 +63,6 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
 
     private final ReconnectConfig reconnectConfig;
 
-    private AsyncInputStream<PullVirtualTreeRequest> in;
-
     /**
      * The {@link RecordAccessor} used for accessing the original map state.
      */
@@ -115,8 +113,6 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,
             final Queue<TeacherSubtree> subtrees) {
-        in = new AsyncInputStream<>(inputStream, workGroup, () -> new PullVirtualTreeRequest(this), reconnectConfig);
-        in.start();
         final AsyncOutputStream<PullVirtualTreeResponse> out =
                 teachingSynchronizer.buildOutputStream(workGroup, outputStream);
         out.start();
@@ -124,16 +120,11 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
         final AtomicBoolean allRequestsReceived = new AtomicBoolean(false);
 
         final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
-                time, reconnectConfig, workGroup, in, out, this, allRequestsReceived);
+                time, reconnectConfig, workGroup, inputStream, out, this, allRequestsReceived);
         teacherReceiveTask.exec();
         final TeacherPullVirtualTreeSendTask teacherSendTask = new TeacherPullVirtualTreeSendTask(
                 reconnectConfig, workGroup, out, this, allRequestsReceived);
         teacherSendTask.exec();
-    }
-
-    @Override
-    public void abort() {
-        in.abort();
     }
 
     private boolean isLeaf(final long path) {
