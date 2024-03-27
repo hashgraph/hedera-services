@@ -21,8 +21,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -68,27 +68,35 @@ public final class TokenRelationStateTranslator {
         return builder.build();
     }
 
-    @NonNull
-    /**
-     * Translates a {@link TokenRelation} to a{@link  com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus}.
-     * @param accountID - the accountID of the token relation
-     * @param tokenID - the tokenID of the token relation
-     * @param readableTokenRelationStore - the {@link ReadableTokenRelationStore} to be used to get the token relation
-     * @return {@link  com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus}
-     */
-    public static com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus
-            merkleTokenRelStatusFromTokenRelation(
-                    @NonNull AccountID accountID,
-                    @NonNull TokenID tokenID,
-                    @NonNull ReadableTokenRelationStore readableTokenRelationStore) {
-        requireNonNull(accountID);
-        requireNonNull(tokenID);
-        requireNonNull(readableTokenRelationStore);
-        final var optionalTokenRelation = readableTokenRelationStore.get(accountID, tokenID);
-        if (optionalTokenRelation == null) {
-            throw new IllegalArgumentException("Token relation not found");
+    public static TokenRelation tokenRelationFromOnDiskTokenRelStatus(@NonNull final OnDiskTokenRel onDiskTokenRel) {
+        requireNonNull(onDiskTokenRel);
+        final var builder = TokenRelation.newBuilder()
+                .balance(onDiskTokenRel.getBalance())
+                .frozen(onDiskTokenRel.isFrozen())
+                .kycGranted(onDiskTokenRel.isKycGranted())
+                .automaticAssociation(onDiskTokenRel.isAutomaticAssociation());
+
+        final long prevToken = onDiskTokenRel.getPrev();
+        if (prevToken > 0) {
+            builder.previousToken(TokenID.newBuilder().tokenNum(prevToken).build());
         }
-        return merkleTokenRelStatusFromTokenRelation(optionalTokenRelation);
+
+        final long nextToken = onDiskTokenRel.getNext();
+        if (nextToken > 0) {
+            builder.nextToken(TokenID.newBuilder().tokenNum(nextToken).build());
+        }
+
+        final long account = onDiskTokenRel.getKey().getHiOrderAsLong();
+        if (account > 0) {
+            builder.accountId(AccountID.newBuilder().accountNum(account).build());
+        }
+
+        final long token = onDiskTokenRel.getKey().getLowOrderAsLong();
+        if (token > 0) {
+            builder.tokenId(TokenID.newBuilder().tokenNum(token).build());
+        }
+
+        return builder.build();
     }
 
     @NonNull
