@@ -50,15 +50,6 @@ public class LocalFileSystem implements FileSystemApi {
     }
 
     @Override
-    public void doSomething() {
-        final DummyCoreSpi dummyCoreSpi = () -> {
-            // Do nothing.
-        };
-
-        dummyCoreSpi.doSomething();
-    }
-
-    @Override
     public void writeBlock(Block block) {
         Path blockFilePath = null;
         try {

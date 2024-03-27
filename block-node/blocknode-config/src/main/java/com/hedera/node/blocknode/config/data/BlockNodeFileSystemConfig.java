@@ -25,7 +25,7 @@ public record BlockNodeFileSystemConfig(
         @ConfigProperty(defaultValue = "S3") FileSystem fileSystem,
         @ConfigProperty(defaultValue = "/block-node/blocknode-core/build/blocks/") String blocksExportPath,
         @ConfigProperty(defaultValue = "/hedera-node/hedera-app/build/node/data/block-streams/block0.0.3/")
-                String blocksImportPath,
+        String blocksImportPath,
         @ConfigProperty(defaultValue = "bucket1") String s3BucketName,
         @ConfigProperty(defaultValue = "us-east-1") String s3Region,
         @ConfigProperty(defaultValue = "http://localhost:9090") String s3Uri,
