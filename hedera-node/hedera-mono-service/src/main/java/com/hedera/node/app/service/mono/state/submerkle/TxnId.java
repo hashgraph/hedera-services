@@ -162,4 +162,12 @@ public class TxnId implements SelfSerializable {
 
         return grpc.build();
     }
+
+    public int getNonce() {
+        return nonce;
+    }
+
+    public boolean isScheduled() {
+        return scheduled;
+    }
 }
