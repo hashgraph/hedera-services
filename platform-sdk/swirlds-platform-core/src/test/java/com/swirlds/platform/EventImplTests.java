@@ -50,7 +50,7 @@ public class EventImplTests {
     @BeforeEach
     void setUp() {
         random = RandomUtils.getRandomPrintSeed();
-        testingEventBuilder = TestingEventBuilder.builder(random);
+        testingEventBuilder = new TestingEventBuilder(random);
     }
 
     @Test

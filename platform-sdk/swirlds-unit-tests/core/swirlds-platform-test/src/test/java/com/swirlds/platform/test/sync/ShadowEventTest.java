@@ -41,7 +41,7 @@ class ShadowEventTest {
     @BeforeEach
     void setUp() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        builder = TestingEventBuilder.builder(random);
+        builder = new TestingEventBuilder(random);
     }
 
     @Test

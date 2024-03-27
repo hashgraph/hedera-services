@@ -31,9 +31,7 @@ public class EventImplTest {
     void validateEqualsHashCodeCompareTo() {
         final List<EventImpl> list = EqualsVerifier.generateObjects(
                 random -> createEventImpl(
-                        TestingEventBuilder.builder(random).setGeneration(random.nextLong(0, Long.MAX_VALUE)),
-                        null,
-                        null),
+                        new TestingEventBuilder(random).setGeneration(random.nextLong(0, Long.MAX_VALUE)), null, null),
                 new long[] {1, 1, 2});
         assertTrue(EqualsVerifier.verifyEqualsHashCode(list.get(0), list.get(1), list.get(2)));
         assertTrue(EqualsVerifier.verifyCompareTo(list.get(0), list.get(1), list.get(2)));

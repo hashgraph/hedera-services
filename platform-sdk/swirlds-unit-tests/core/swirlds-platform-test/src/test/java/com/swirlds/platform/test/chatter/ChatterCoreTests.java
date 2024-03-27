@@ -62,7 +62,7 @@ public class ChatterCoreTests {
         chatterCore.newPeerInstance(new NodeId(0L), e -> {});
         chatterCore.newPeerInstance(new NodeId(1L), e -> {});
 
-        final TestingEventBuilder builder = TestingEventBuilder.builder(random);
+        final TestingEventBuilder builder = new TestingEventBuilder(random);
 
         long minGen = 100;
         final long windowSize = 100;

@@ -79,15 +79,14 @@ public class TestingEventBuilder {
      */
     private Long fakeGeneration;
 
-    private TestingEventBuilder(@NonNull final Random random) {
-        this.random = Objects.requireNonNull(random);
-    }
-
     /**
-     * @return a new instance of the builder with default settings
+     * Constructor
+     *
+     * @param random a source of randomness
      */
-    public static @NonNull TestingEventBuilder builder(@NonNull final Random random) {
-        return new TestingEventBuilder(random).setDefaults();
+    public TestingEventBuilder(@NonNull final Random random) {
+        this.random = Objects.requireNonNull(random);
+        setDefaults();
     }
 
     /**
