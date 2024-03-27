@@ -181,6 +181,9 @@ Configure your file handlers with these properties to control logging behavior:
 
 - **File Path (`logging.handler.NAME.file`)**: Specifies the file to write logs to.
 - **Append Mode (`logging.handler.NAME.append`)**: If `true` (default), logs are appended to the file; if `false`, the file is overwritten on new logs.
+- **Timestamp format (`logging.handler.NAME.append`)**: If `true` (default), timestamps gets formatted; if `false`, the timestamp is printed as long.
+- **File rolling file size (`logging.handler.NAME.file-rolling.maxFileSize`)**: If set (default is `null`), the file will be rolled over when it reaches the specified size.
+- **Max rolling files (`logging.handler.NAME.file-rolling.maxRollover`)**: If set (default is `null`), the maximum number of rolled files will be kept.
 
 **Examples:**
 ```yaml
