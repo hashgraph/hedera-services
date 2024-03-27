@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -89,6 +90,17 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     private Optional<String> expectedWipeKey = Optional.empty();
     private Optional<String> expectedFeeScheduleKey = Optional.empty();
     private Optional<String> expectedPauseKey = Optional.empty();
+    private boolean emptyPauseKey = false;
+
+    private boolean emptyAdminKeyList = false;
+
+    private boolean emptyFreezeKey = false;
+
+    private boolean emptyKycKey = true;
+
+    private boolean emptySupplyKey = true;
+
+    private boolean emptyWipeKey = true;
 
     @Nullable
     private String expectedLockKey = null;
@@ -299,6 +311,36 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasEmptyAdminKey() {
+        emptyAdminKeyList = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptyPauseKey() {
+        emptyPauseKey = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptyFreezeKey() {
+        emptyFreezeKey = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptyKycKey() {
+        emptyKycKey = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptySupplyKey() {
+        emptySupplyKey = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptyWipeKey() {
+        emptyWipeKey = true;
+        return this;
+    }
+
     @Override
     @SuppressWarnings("java:S5960")
     protected void assertExpectationsGiven(HapiSpec spec) {
@@ -412,12 +454,71 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
                 "Wrong token fee schedule key!",
                 registry);
 
-        assertFor(
-                actualInfo.getPauseKey(),
-                expectedPauseKey,
-                (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getPauseKey(n),
-                "Wrong token pause key!",
-                registry);
+        if (emptyAdminKeyList) {
+            Assertions.assertEquals(Key.getDefaultInstance(), actualInfo.getAdminKey());
+        } else {
+            assertFor(
+                    actualInfo.getAdminKey(),
+                    expectedAdminKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getAdminKey(n),
+                    "Wrong token admin key!",
+                    registry);
+        }
+
+        if (emptyPauseKey) {
+            Assertions.assertEquals(Key.getDefaultInstance(), actualInfo.getPauseKey());
+        } else {
+            assertFor(
+                    actualInfo.getPauseKey(),
+                    expectedPauseKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getPauseKey(n),
+                    "Wrong token pause key!",
+                    registry);
+        }
+
+        if (emptyFreezeKey) {
+            Assertions.assertEquals(Key.getDefaultInstance(), actualInfo.getFreezeKey());
+        } else {
+            assertFor(
+                    actualInfo.getFreezeKey(),
+                    expectedFreezeKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFreezeKey(n),
+                    "Wrong token freeze key!",
+                    registry);
+        }
+
+        if (emptyKycKey) {
+            Assertions.assertEquals(Key.getDefaultInstance(), actualInfo.getKycKey());
+        } else {
+            assertFor(
+                    actualInfo.getKycKey(),
+                    expectedKycKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getKycKey(n),
+                    "Wrong token kyc key!",
+                    registry);
+        }
+
+        if (emptySupplyKey) {
+            Assertions.assertEquals(Key.getDefaultInstance(), actualInfo.getSupplyKey());
+        } else {
+            assertFor(
+                    actualInfo.getSupplyKey(),
+                    expectedSupplyKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getSupplyKey(n),
+                    "Wrong token supply key!",
+                    registry);
+        }
+
+        if (emptyWipeKey) {
+            Assertions.assertEquals(Key.getDefaultInstance(), actualInfo.getWipeKey());
+        } else {
+            assertFor(
+                    actualInfo.getWipeKey(),
+                    expectedWipeKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getWipeKey(n),
+                    "Wrong token wipe key!",
+                    registry);
+        }
 
         assertFor(
                 actualInfo.getMetadataKey(),

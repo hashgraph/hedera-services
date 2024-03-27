@@ -409,37 +409,37 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     private void removeKeysIfNeeded(final TokenUpdateTransactionBody op, final Token.Builder builder) {
-        if (IMMUTABILITY_SENTINEL_KEY.equals(op.adminKey())) {
+        if (isKeyRemoval(op.adminKey())) {
             builder.adminKey((Key) null);
         }
 
-        if (IMMUTABILITY_SENTINEL_KEY.equals(op.kycKey())) {
+        if (isKeyRemoval(op.kycKey())) {
             builder.kycKey((Key) null);
         }
 
-        if (IMMUTABILITY_SENTINEL_KEY.equals(op.freezeKey())) {
+        if (isKeyRemoval(op.freezeKey())) {
             builder.freezeKey((Key) null);
         }
 
-        if (IMMUTABILITY_SENTINEL_KEY.equals(op.wipeKey())) {
+        if (isKeyRemoval(op.wipeKey())) {
             builder.wipeKey((Key) null);
         }
 
-        if (IMMUTABILITY_SENTINEL_KEY.equals(op.supplyKey())) {
+        if (isKeyRemoval(op.supplyKey())) {
             builder.supplyKey((Key) null);
         }
 
-        if (IMMUTABILITY_SENTINEL_KEY.equals(op.feeScheduleKey())) {
+        if (isKeyRemoval(op.feeScheduleKey())) {
             builder.feeScheduleKey((Key) null);
         }
 
-        if (IMMUTABILITY_SENTINEL_KEY.equals(op.pauseKey())) {
+        if (isKeyRemoval(op.pauseKey())) {
             builder.pauseKey((Key) null);
         }
+    }
 
-        if (IMMUTABILITY_SENTINEL_KEY.equals(op.metadataKey())) {
-            builder.metadataKey((Key) null);
-        }
+    private boolean isKeyRemoval(Key key) {
+        return IMMUTABILITY_SENTINEL_KEY.equals(key);
     }
 
     /**

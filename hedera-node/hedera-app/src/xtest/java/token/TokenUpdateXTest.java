@@ -112,17 +112,6 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
                                 .token(idOfNamedToken(TOKEN_ID))
-                                .metadataKey(IMMUTABILITY_SENTINEL_KEY))
-                        .build(),
-                OK);
-        handleAndCommitSingleTransaction(
-                component.tokenUpdateHandler(),
-                TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder()
-                                .accountID(DEFAULT_PAYER_ID)
-                                .build())
-                        .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_ID))
                                 .adminKey(IMMUTABILITY_SENTINEL_KEY))
                         .build(),
                 OK);
@@ -142,7 +131,6 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                         .supplyKey(DEFAULT_KEY)
                         .kycKey(DEFAULT_KEY)
                         .feeScheduleKey(DEFAULT_KEY)
-                        .metadataKey(DEFAULT_KEY)
                         .wipeKey(DEFAULT_KEY)
                         .pauseKey(DEFAULT_KEY),
                 tokens);
