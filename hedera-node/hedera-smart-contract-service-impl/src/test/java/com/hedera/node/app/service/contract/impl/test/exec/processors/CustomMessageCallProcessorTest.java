@@ -151,6 +151,7 @@ class CustomMessageCallProcessorTest {
         verify(prngPrecompile).computeFully(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
         verify(operationTracer).tracePrecompileCall(frame, GAS_REQUIREMENT, OUTPUT_DATA);
         verifyHalt(INSUFFICIENT_GAS, false);
+        verify(operationTracer).tracePrecompileResult(frame, SYSTEM);
     }
 
     @Test

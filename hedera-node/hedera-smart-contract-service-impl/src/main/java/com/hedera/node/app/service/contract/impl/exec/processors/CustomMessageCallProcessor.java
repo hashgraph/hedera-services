@@ -203,14 +203,16 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         final var fullResult = systemContract.computeFully(frame.getInputData(), frame);
         final var gasRequirement = fullResult.gasRequirement();
         tracer.tracePrecompileCall(frame, gasRequirement, fullResult.output());
+        final PrecompileContractResult result;
         if (frame.getRemainingGas() < gasRequirement) {
-            doHalt(frame, INSUFFICIENT_GAS);
+            result = PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INSUFFICIENT_GAS));
         } else {
             if (!fullResult.isRefundGas()) {
                 frame.decrementRemainingGas(gasRequirement);
             }
-            finishPrecompileExecution(frame, fullResult.result(), SYSTEM, (ActionSidecarContentTracer) tracer);
+            result = fullResult.result();
         }
+        finishPrecompileExecution(frame, result, SYSTEM, (ActionSidecarContentTracer) tracer);
     }
 
     private void finishPrecompileExecution(
