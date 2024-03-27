@@ -235,8 +235,12 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         sleepFor(1_500L))
                 .then(
                         tokenCreate(notToBe).autoRenewAccount(notDetachedAccount),
-                        tokenUpdate(tokenWithDetachedAsAutoRenew).autoRenewAccount(civilian).signedByPayerAnd(adminKey),
-                        tokenUpdate(tokenSansDetachedAsAutoRenew).autoRenewAccount(notDetachedAccount).signedByPayerAnd(adminKey),
+                        tokenUpdate(tokenWithDetachedAsAutoRenew)
+                                .autoRenewAccount(civilian)
+                                .signedByPayerAnd(adminKey),
+                        tokenUpdate(tokenSansDetachedAsAutoRenew)
+                                .autoRenewAccount(notDetachedAccount)
+                                .signedByPayerAnd(adminKey),
                         getTokenInfo(tokenSansDetachedAsAutoRenew).hasAutoRenewAccount(notDetachedAccount),
                         getTokenInfo(tokenWithDetachedAsAutoRenew).hasAutoRenewAccount(civilian));
     }
@@ -294,7 +298,9 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         grantTokenKyc(tokenAlreadyAssociated, notDetachedAccount),
                         revokeTokenKyc(tokenAlreadyAssociated, notDetachedAccount),
                         tokenAssociate(notDetachedAccount, tokenNotYetAssociated),
-                        tokenUpdate(tokenNotYetAssociated).treasury(notDetachedAccount).signedByPayerAnd(tokenMultiKey),
+                        tokenUpdate(tokenNotYetAssociated)
+                                .treasury(notDetachedAccount)
+                                .signedByPayerAnd(tokenMultiKey),
                         tokenDissociate(notDetachedAccount, tokenAlreadyAssociated)
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }

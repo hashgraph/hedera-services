@@ -381,7 +381,9 @@ public class ContractMintHTSSuite extends HapiSuite {
                         newKeyNamed(DELEGATE_CONTRACT_KEY_NAME)
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, NESTED_MINT_CONTRACT))),
                         cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(DELEGATE_CONTRACT_KEY_NAME).signedByPayerAnd(MULTI_KEY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(DELEGATE_CONTRACT_KEY_NAME)
+                                .signedByPayerAnd(MULTI_KEY),
                         contractCall(
                                         NESTED_MINT_CONTRACT,
                                         "sendNFTAfterMint",

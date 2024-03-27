@@ -296,7 +296,10 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         // mark the detached account as expired-and-pending-removal
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
-                        tokenUpdate(aToken).treasury(civilian).signedByPayerAnd(tokenMultiKey).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+                        tokenUpdate(aToken)
+                                .treasury(civilian)
+                                .signedByPayerAnd(tokenMultiKey)
+                                .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         mintToken(aToken, 1L).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         burnToken(aToken, 1L).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         getTokenInfo(aToken).hasTreasury(detachedAccount),
@@ -341,7 +344,8 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         tokenAssociate(detachedAccount, tokenNotYetAssociated)
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         tokenUpdate(tokenNotYetAssociated)
-                                .treasury(detachedAccount).signedByPayerAnd(tokenMultiKey)
+                                .treasury(detachedAccount)
+                                .signedByPayerAnd(tokenMultiKey)
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         tokenDissociate(detachedAccount, tokenAlreadyAssociated)
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));

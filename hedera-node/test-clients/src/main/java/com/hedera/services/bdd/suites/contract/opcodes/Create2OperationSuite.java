@@ -915,7 +915,9 @@ public class Create2OperationSuite extends HapiSuite {
                                 .initialSupply(0L)
                                 .supplyKey(multiKey),
                         mintToken(nft, List.of(ByteString.copyFromUtf8("PRICELESS"))),
-                        tokenUpdate(nft).supplyKey(() -> aliasContractIdKey(userAliasAddr.get())).signedByPayerAnd(multiKey))
+                        tokenUpdate(nft)
+                                .supplyKey(() -> aliasContractIdKey(userAliasAddr.get()))
+                                .signedByPayerAnd(multiKey))
                 .when(withOpContext((spec, opLog) -> {
                     final var registry = spec.registry();
                     final var ftType = registry.getTokenID(ft);
@@ -1017,7 +1019,9 @@ public class Create2OperationSuite extends HapiSuite {
 
                         // https://github.com/hashgraph/hedera-services/issues/2876 (mint via
                         // delegatable_contract_id)
-                        tokenUpdate(nft).supplyKey(() -> aliasDelegateContractKey(userAliasAddr.get())).signedByPayerAnd(multiKey),
+                        tokenUpdate(nft)
+                                .supplyKey(() -> aliasDelegateContractKey(userAliasAddr.get()))
+                                .signedByPayerAnd(multiKey),
                         sourcing(() -> contractCallWithFunctionAbi(
                                         userAliasAddr.get(),
                                         getABIFor(FUNCTION, "mintNftViaDelegate", userContract),
