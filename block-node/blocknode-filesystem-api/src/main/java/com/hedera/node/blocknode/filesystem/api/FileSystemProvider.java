@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.blocknode.conventions") }
+package com.hedera.node.blocknode.filesystem.api;
 
-mainModuleInfo {
-    runtimeOnly("com.hedera.storage.blocknode.filesystem.api")
-    runtimeOnly("com.hedera.storage.blocknode.config")
+public interface FileSystemProvider {
+    FileSystemApi getFileSystem();
 }

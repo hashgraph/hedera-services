@@ -19,26 +19,35 @@ package com.hedera.node.blocknode.filesystem.api.test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.hedera.node.blocknode.filesystem.api.DummyFileSystemApi;
+import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
+import com.hedera.services.stream.v7.proto.Block;
 import org.junit.jupiter.api.Test;
 
-class DummyFileSystemApiTest {
+class FileSystemApiTest {
 
     @Test
     void dummySpiNullCheck() {
-        final DummyFileSystemApi dummyFileSystemApi = null;
-        assertNull(dummyFileSystemApi);
+        final FileSystemApi fileSystemApi = null;
+        assertNull(fileSystemApi);
     }
 
     @Test
     void dummySpiDoSomethingCheck() {
-        final DummyFileSystemApi dummyFileSystemApi = new DummyFileSystemApi() {
+        final FileSystemApi fileSystemApi = new FileSystemApi() {
             @Override
             public void doSomething() {
                 // Do nothing.
             }
+
+            @Override
+            public void writeBlock(Block block) {}
+
+            @Override
+            public Block readBlock(long number) {
+                return null;
+            }
         };
 
-        assertDoesNotThrow(dummyFileSystemApi::doSomething);
+        assertDoesNotThrow(fileSystemApi::doSomething);
     }
 }

@@ -17,9 +17,10 @@
 package com.hedera.node.blocknode.filesystem.s3;
 
 import com.hedera.node.blocknode.core.spi.DummyCoreSpi;
-import com.hedera.node.blocknode.filesystem.api.DummyFileSystemApi;
+import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
+import com.hedera.services.stream.v7.proto.Block;
 
-public class S3FileSystem implements DummyFileSystemApi {
+public class S3FileSystem implements FileSystemApi {
     @Override
     public void doSomething() {
         final DummyCoreSpi dummyCoreSpi = () -> {
@@ -27,5 +28,13 @@ public class S3FileSystem implements DummyFileSystemApi {
         };
 
         dummyCoreSpi.doSomething();
+    }
+
+    @Override
+    public void writeBlock(Block block) {}
+
+    @Override
+    public Block readBlock(long number) {
+        return null;
     }
 }

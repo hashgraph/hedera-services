@@ -14,9 +14,16 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.blocknode.conventions") }
+package com.hedera.node.blocknode.filesystem.local;
 
-mainModuleInfo {
-    runtimeOnly("com.hedera.storage.blocknode.filesystem.api")
-    runtimeOnly("com.hedera.storage.blocknode.config")
+import com.hedera.node.blocknode.config.ConfigProvider;
+import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
+import com.hedera.node.blocknode.filesystem.api.FileSystemProvider;
+
+public class LocalFileSystemProvider implements FileSystemProvider {
+
+    @Override
+    public FileSystemApi getFileSystem() {
+        return new LocalFileSystem(new ConfigProvider());
+    }
 }

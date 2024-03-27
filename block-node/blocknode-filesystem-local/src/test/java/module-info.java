@@ -6,4 +6,5 @@ module com.hedera.storage.blocknode.filesystem.local.test {
     // Require other modules needed for the unit tests to compile.
     requires com.hedera.storage.blocknode.filesystem.local;
     requires org.junit.jupiter.api;
+    requires transitive com.hedera.node.hapi;
 }

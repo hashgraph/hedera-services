@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.blocknode.conventions") }
+package com.hedera.node.blocknode.filesystem.api;
 
-mainModuleInfo {
-    runtimeOnly("com.hedera.storage.blocknode.filesystem.api")
-    runtimeOnly("com.hedera.storage.blocknode.config")
+import com.hedera.services.stream.v7.proto.Block;
+
+public interface FileSystemApi {
+    void doSomething();
+
+    void writeBlock(Block block);
+
+    Block readBlock(long number);
 }
