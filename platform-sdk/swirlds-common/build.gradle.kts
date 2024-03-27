@@ -25,6 +25,7 @@ mainModuleInfo {
 
     runtimeOnly("resource.loader")
     runtimeOnly("com.sun.jna")
+    runtimeOnly("com.swirlds.logging.log4j.appender")
 }
 
 testModuleInfo {
