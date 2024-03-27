@@ -28,7 +28,7 @@ public class Constants {
     public static final String SWIRLDS = "SWIRLDS";
     public static final String LOG4J2 = "LOG4J2";
 
-    public static final int WARMUP_ITERATIONS = 10;
+    public static final int WARMUP_ITERATIONS = 100;
 
     public static final int WARMUP_TIME_IN_SECONDS_PER_ITERATION = 20;
 
