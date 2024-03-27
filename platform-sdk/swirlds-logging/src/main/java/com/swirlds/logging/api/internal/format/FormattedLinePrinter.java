@@ -27,7 +27,6 @@ import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
@@ -66,7 +65,7 @@ public class FormattedLinePrinter {
      * @param appendable Non-null appendable. Destination to write into.
      * @param event      Non-null event to write.
      */
-    public void print(@NonNull final Appendable appendable, @NonNull final LogEvent event) {
+    public void print(@NonNull final StringBuilder appendable, @NonNull final LogEvent event) {
         if (appendable == null) {
             EMERGENCY_LOGGER.logNPE("printer");
             return;
@@ -92,12 +91,11 @@ public class FormattedLinePrinter {
         }
     }
 
-    private void printConditional(final @NonNull Appendable appendable, final @NonNull LogEvent event)
-            throws IOException {
+    private void printConditional(final @NonNull StringBuilder appendable, final @NonNull LogEvent event) {
         if (formatTimestamp) {
             appendable.append(EpochFormatUtils.timestampAsString(event.timestamp()));
         } else {
-            appendable.append(Long.toString(event.timestamp()));
+            appendable.append(event.timestamp());
         }
         dataAndLevel(appendable, event);
 
@@ -111,15 +109,12 @@ public class FormattedLinePrinter {
         final Map<String, String> context = event.context();
         if (context != null && !context.isEmpty()) {
             appendable.append(" - ");
-            appendable.append(context.toString());
+            appendable.append(context);
         }
         appendable.append(System.lineSeparator());
-
-
     }
 
-    private static void dataAndLevel(final @NonNull Appendable appendable, final @NonNull LogEvent event)
-            throws IOException {
+    private static void dataAndLevel(final @NonNull StringBuilder appendable, final @NonNull LogEvent event) {
         appendable.append(' ');
         appendable.append(asString(event.level()));
         appendable.append(" [");
@@ -130,8 +125,7 @@ public class FormattedLinePrinter {
         appendable.append(asString(event.message()));
     }
 
-    private void printAll(@NonNull final Appendable appendable,
-            @NonNull final LogEvent event) throws IOException {
+    private void printAll(@NonNull final StringBuilder appendable, @NonNull final LogEvent event) {
         appendable.append(EpochFormatUtils.timestampAsString(event.timestamp()));
         dataAndLevel(appendable, event);
         appendable.append(" - [");
@@ -139,7 +133,7 @@ public class FormattedLinePrinter {
         appendable.append("]");
         if (!event.context().isEmpty()) {
             appendable.append(" - ");
-            appendable.append(event.context().toString());
+            appendable.append(event.context());
         }
         appendable.append(System.lineSeparator());
     }

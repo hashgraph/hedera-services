@@ -46,14 +46,12 @@ public class StackTracePrinter {
      * @param throwable       The Throwable object whose stack trace is to be printed.
      * @param alreadyPrinted  A Set of Throwable objects that have already been printed.
      * @param enclosingTrace  An array of StackTraceElement representing the current call stack.
-     * @throws IOException    If an I/O error occurs.
      */
     private static void print(
-            @NonNull final Appendable writer,
+            @NonNull final StringBuilder writer,
             @NonNull Throwable throwable,
             @NonNull final Set<Throwable> alreadyPrinted,
-            @NonNull final StackTraceElement[] enclosingTrace)
-            throws IOException {
+            @NonNull final StackTraceElement[] enclosingTrace) {
         if (writer == null) {
             EMERGENCY_LOGGER.logNPE("printWriter");
             return;
@@ -76,11 +74,13 @@ public class StackTracePrinter {
         innerPrinter(writer, throwable, alreadyPrinted, enclosingTrace);
     }
 
-    private static void innerPrinter(final @NonNull Appendable writer, final @NonNull Throwable throwable,
-            final @NonNull Set<Throwable> alreadyPrinted, final @NonNull StackTraceElement[] enclosingTrace)
-            throws IOException {
+    private static void innerPrinter(
+            final @NonNull StringBuilder writer,
+            final @NonNull Throwable throwable,
+            final @NonNull Set<Throwable> alreadyPrinted,
+            final @NonNull StackTraceElement[] enclosingTrace) {
         if (alreadyPrinted.contains(throwable)) {
-            writer.append("[CIRCULAR REFERENCE: ").append(String.valueOf(throwable)).append("]");
+            writer.append("[CIRCULAR REFERENCE: ").append(throwable).append("]");
             return;
         }
         alreadyPrinted.add(throwable);
@@ -120,13 +120,13 @@ public class StackTracePrinter {
             writer.append(methodName);
             writer.append("(");
             writer.append(fileName);
-            writer.append(Integer.toString(line));
+            writer.append(line);
             writer.append(")");
             writer.append(System.lineSeparator());
         }
         if (skippedFrames != 0) {
             writer.append("\t... ");
-            writer.append(Integer.toString(skippedFrames));
+            writer.append(skippedFrames);
             writer.append(" more");
             writer.append(System.lineSeparator());
         }
@@ -144,7 +144,7 @@ public class StackTracePrinter {
      * @param throwable The Throwable object whose stack trace is to be printed.
      * @throws IOException If an I/O error occurs.
      */
-    public static void print(@NonNull final Appendable writer, @NonNull Throwable throwable) throws IOException {
+    public static void print(@NonNull final StringBuilder writer, @NonNull Throwable throwable) throws IOException {
         print(writer, throwable, new HashSet<>(), new StackTraceElement[0]);
     }
 }
