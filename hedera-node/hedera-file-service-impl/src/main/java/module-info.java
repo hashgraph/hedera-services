@@ -2,7 +2,8 @@ module com.hedera.node.app.service.file.impl {
     requires com.fasterxml.jackson.databind;
     requires com.swirlds.base;
     requires com.swirlds.common;
-    requires com.swirlds.config.api;
+    requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.metrics.api;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires transitive com.hedera.node.app.hapi.fees;

@@ -11,7 +11,8 @@ module com.hedera.node.app.service.consensus.impl {
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.config;
-    requires com.swirlds.config.api;
+    requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.metrics.api;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated

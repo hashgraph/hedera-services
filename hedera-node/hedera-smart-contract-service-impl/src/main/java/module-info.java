@@ -23,6 +23,7 @@ module com.hedera.node.app.service.contract.impl {
     requires com.google.common;
     requires com.swirlds.base;
     requires com.swirlds.common;
+    requires transitive com.swirlds.metrics.api;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
