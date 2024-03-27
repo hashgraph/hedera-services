@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -34,6 +35,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -91,7 +93,11 @@ public class TokenMetadataSpecs extends HapiSuite {
                 rejectsMetadataTooLong(),
                 creationRequiresAppropriateSigsHappyPath(),
                 creationDoesNotHaveRequiredSigs(),
-                fungibleCreationHappyPath());
+                fungibleCreationHappyPath(),
+                updatingMetadataWorksWithMetadataKey(),
+                updatingMetadataWorksWithAdminKey(),
+                cannotUpdateMetadataOnImmutableToken(),
+                cannotUpdateMetadataWithoutAdminOrMetadataKeySignature());
     }
 
     @Override
@@ -261,5 +267,129 @@ public class TokenMetadataSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(NON_FUNGIBLE_UNIQUE_FINITE)
                                         .balance(0)
                                         .kyc(TokenKycStatus.Granted)));
+    }
+
+    @HapiTest
+    private HapiSpec updatingMetadataWorksWithMetadataKey() {
+        String memo = "JUMP";
+        String metadata = "metadata";
+        String saltedName = salted(PRIMARY);
+
+        return defaultHapiSpec("updatingMetadataOnTokenNeedsAdminOrMetadataKey", NONDETERMINISTIC_TOKEN_NAMES)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).balance(100L),
+                        newKeyNamed(ADMIN_KEY),
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY))
+                .when(
+                        tokenCreate(PRIMARY)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .entityMemo(memo)
+                                .name(saltedName)
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .adminKey(ADMIN_KEY)
+                                .metadataKey(METADATA_KEY)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .metaData(metadata),
+                        getTokenInfo(PRIMARY).hasMetadata(metadata).logged())
+                .then(
+                        tokenUpdate(PRIMARY).newMetadata("newMetadata").signedBy(GENESIS, METADATA_KEY),
+                        getTokenInfo(PRIMARY).hasMetadata("newMetadata").logged());
+    }
+
+    @HapiTest
+    private HapiSpec updatingMetadataWorksWithAdminKey() {
+        String memo = "JUMP";
+        String metadata = "metadata";
+        String saltedName = salted(PRIMARY);
+
+        return defaultHapiSpec("updatingMetadataOnTokenNeedsAdminOrMetadataKey", NONDETERMINISTIC_TOKEN_NAMES)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).balance(100L),
+                        newKeyNamed(ADMIN_KEY),
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY))
+                .when(
+                        tokenCreate(PRIMARY)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .entityMemo(memo)
+                                .name(saltedName)
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .adminKey(ADMIN_KEY)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .metaData(metadata),
+                        getTokenInfo(PRIMARY).hasMetadata(metadata).logged())
+                .then(
+                        tokenUpdate(PRIMARY).newMetadata("newMetadata").signedBy(GENESIS, ADMIN_KEY),
+                        getTokenInfo(PRIMARY).hasMetadata("newMetadata").logged());
+    }
+
+    @HapiTest
+    private HapiSpec cannotUpdateMetadataWithoutAdminOrMetadataKeySignature() {
+        String memo = "JUMP";
+        String metadata = "metadata";
+        String saltedName = salted(PRIMARY);
+
+        return defaultHapiSpec("updatingMetadataOnTokenNeedsAdminOrMetadataKey", NONDETERMINISTIC_TOKEN_NAMES)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).balance(100L),
+                        newKeyNamed(ADMIN_KEY),
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY))
+                .when(
+                        tokenCreate(PRIMARY)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .entityMemo(memo)
+                                .name(saltedName)
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .adminKey(ADMIN_KEY)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .metaData(metadata),
+                        getTokenInfo(PRIMARY).logged(),
+                        tokenUpdate(PRIMARY)
+                                .newMetadata("newMetadata")
+                                .signedBy(GENESIS)
+                                .hasKnownStatus(INVALID_SIGNATURE))
+                .then();
+    }
+
+    @HapiTest
+    private HapiSpec cannotUpdateMetadataOnImmutableToken() {
+        String memo = "JUMP";
+        String metadata = "metadata";
+        String saltedName = salted(PRIMARY);
+
+        return defaultHapiSpec("updatingMetadataOnTokenNeedsAdminOrMetadataKey", NONDETERMINISTIC_TOKEN_NAMES)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).balance(100L),
+                        newKeyNamed(ADMIN_KEY),
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY))
+                .when(
+                        tokenCreate(PRIMARY)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .entityMemo(memo)
+                                .name(saltedName)
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .metaData(metadata),
+                        getTokenInfo(PRIMARY).logged(),
+                        tokenUpdate(PRIMARY)
+                                .newMetadata("newMetadata")
+                                .signedBy(GENESIS)
+                                .hasKnownStatus(TOKEN_IS_IMMUTABLE))
+                .then();
     }
 }

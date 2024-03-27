@@ -45,7 +45,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -68,6 +70,8 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -102,11 +106,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var tokenId = op.tokenOrThrow();
 
         final var tokenStore = context.createStore(ReadableTokenStore.class);
-        final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
-        if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        if (tokenMetadata.hasAdminKey()) {
-            context.requireKey(tokenMetadata.adminKey());
-        }
+        final var token = tokenStore.get(tokenId);
+        if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
+
         if (op.hasAutoRenewAccount()) {
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
@@ -115,6 +117,27 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         }
         if (op.hasAdminKey()) {
             context.requireKey(op.adminKeyOrThrow());
+        }
+        // To update metadata either admin key or metadata key should sign.
+        // For updating any other fields admin key should sign.
+        if (isMetadataOnlyUpdateOp(op) && (token.hasAdminKey() || token.hasMetadataKey())) {
+            final List<Key> keys = new ArrayList<>();
+            if (token.hasAdminKey()) {
+                keys.add(token.adminKey());
+            }
+            if (token.hasMetadataKey()) {
+                keys.add(token.metadataKey());
+            }
+            final Key threshKey = Key.newBuilder()
+                    .thresholdKey(ThresholdKey.newBuilder()
+                            .keys(KeyList.newBuilder().keys(keys).build())
+                            .threshold(1)
+                            .build())
+                    .build();
+            context.requireKey(threshKey);
+        } else if (token.hasAdminKey() && !isExpiryOnlyUpdateOp(op)) {
+            // For expiry only op admin key is not required
+            context.requireKey(token.adminKey());
         }
     }
 
@@ -174,6 +197,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 // If it is non-fungible token transfer the ownership of the NFTs from old treasury to new treasury
                 transferTokensToNewTreasury(existingTreasury, newTreasury, token, tokenRelStore, accountStore);
             }
+        }
+        // It is required for the token to have an admin Key or metadata key to update metadata
+        if (isMetadataOnlyUpdateOp(op)) {
+            validateTrue(token.hasAdminKey() || token.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
         }
 
         final var tokenBuilder = customizeToken(token, resolvedExpiry, op);
