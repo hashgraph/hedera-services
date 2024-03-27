@@ -18,6 +18,7 @@ package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
+import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.mockito.Mockito.mock;
 
@@ -33,6 +34,8 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.DefaultConsensusEngine;
+import com.swirlds.platform.components.DefaultEventWindowManager;
+import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
@@ -52,7 +55,6 @@ import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.wiring.InOrderLinkerWiring;
 import com.swirlds.platform.wiring.OrphanBufferWiring;
-import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -112,7 +114,9 @@ public class TestIntake implements LoadableFromSignedState {
         consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, directScheduler("consensusEngine"));
         consensusEngineWiring.bind(consensusEngine);
 
-        final EventWindowManagerWiring eventWindowManagerWiring = EventWindowManagerWiring.create(model);
+        final ComponentWiring<EventWindowManager, NonAncientEventWindow> eventWindowManagerWiring =
+                new ComponentWiring<>(model, EventWindowManager.class, directScheduler("eventWindowManager"));
+        eventWindowManagerWiring.bind(new DefaultEventWindowManager());
 
         hasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
         postHashCollectorWiring.getOutputWire().solderTo(orphanBufferWiring.eventInput());
@@ -122,15 +126,12 @@ public class TestIntake implements LoadableFromSignedState {
         linkerWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
-        consensusRoundOutputWire.solderTo(eventWindowManagerWiring.consensusRoundInput());
+        consensusRoundOutputWire.solderTo(
+                eventWindowManagerWiring.getInputWire(EventWindowManager::extractEventWindow));
         consensusRoundOutputWire.solderTo("consensusOutputTestTool", "round output", output::consensusRound);
 
-        eventWindowManagerWiring
-                .nonAncientEventWindowOutput()
-                .solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
-        eventWindowManagerWiring
-                .nonAncientEventWindowOutput()
-                .solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
+        eventWindowManagerWiring.getOutputWire().solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
+        eventWindowManagerWiring.getOutputWire().solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
 
         // Ensure unsoldered wires are created.
         hasherWiring.getInputWire(EventHasher::hashEvent);
@@ -194,7 +195,7 @@ public class TestIntake implements LoadableFromSignedState {
 
     @Override
     public void loadFromSignedState(@NonNull final SignedState signedState) {
-        consensus.loadFromSignedState(signedState);
+        consensus.loadSnapshot(signedState.getState().getPlatformState().getSnapshot());
         shadowGraph.clear();
     }
 
@@ -235,7 +236,7 @@ public class TestIntake implements LoadableFromSignedState {
     }
 
     public void reset() {
-        consensus.reset();
+        consensus.loadSnapshot(GENESIS_SNAPSHOT);
         shadowGraph.clear();
         output.clear();
     }

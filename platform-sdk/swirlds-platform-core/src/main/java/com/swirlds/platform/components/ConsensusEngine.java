@@ -18,6 +18,7 @@ package com.swirlds.platform.components;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,6 +37,13 @@ public interface ConsensusEngine {
     @NonNull
     @InputWireLabel("EventImpl")
     List<ConsensusRound> addEvent(@NonNull EventImpl event);
+
+    /**
+     * Perform an out-of-band snapshot update. This happens at restart/reconnect boundaries.
+     *
+     * @param snapshot the snapshot to adopt
+     */
+    void outOfBandSnapshotUpdate(@NonNull ConsensusSnapshot snapshot);
 
     /**
      * Extract a list of consensus events from a consensus round

@@ -23,6 +23,7 @@ plugins {
 
 mainModuleInfo {
     annotationProcessor("com.swirlds.config.processor")
+    annotationProcessor("com.google.auto.service.processor")
     runtimeOnly("com.swirlds.config.impl")
 }
 
@@ -40,7 +41,6 @@ testModuleInfo {
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.config.api.test.fixtures")
     requires("com.swirlds.platform.core")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.assertj.core")

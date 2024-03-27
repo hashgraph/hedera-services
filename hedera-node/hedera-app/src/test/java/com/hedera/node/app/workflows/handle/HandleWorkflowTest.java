@@ -901,6 +901,7 @@ class HandleWorkflowTest extends AppTestBase {
         verify(blockRecordManager, never()).advanceConsensusClock(any(), any());
         verify(blockRecordManager, never()).startUserTransaction(any(), any(), any());
         verify(blockRecordManager, never()).endUserTransaction(any(), any());
+        verify(throttleServiceManager).updateAllMetrics();
     }
 
     @Test
@@ -922,6 +923,7 @@ class HandleWorkflowTest extends AppTestBase {
         verify(platformStateUpdateFacility).handleTxBody(any(), any(), any());
         verify(handleWorkflowMetrics)
                 .updateTransactionDuration(eq(HederaFunctionality.CRYPTO_TRANSFER), intThat(i -> i > 0));
+        verify(throttleServiceManager).updateAllMetrics();
     }
 
     @Nested

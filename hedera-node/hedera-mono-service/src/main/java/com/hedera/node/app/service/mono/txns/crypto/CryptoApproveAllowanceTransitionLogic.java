@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.store.AccountStore;
@@ -82,13 +83,16 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
     private ResponseCodeEnum validate(TransactionBody cryptoAllowanceTxn) {
         final AccountID payer = cryptoAllowanceTxn.getTransactionID().getAccountID();
         final var op = cryptoAllowanceTxn.getCryptoApproveAllowance();
-        final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
-
-        return allowanceChecks.allowancesValidation(
-                op.getCryptoAllowancesList(),
-                op.getTokenAllowancesList(),
-                op.getNftAllowancesList(),
-                payerAccount,
-                workingView);
+        try {
+            final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
+            return allowanceChecks.allowancesValidation(
+                    op.getCryptoAllowancesList(),
+                    op.getTokenAllowancesList(),
+                    op.getNftAllowancesList(),
+                    payerAccount,
+                    workingView);
+        } catch (InvalidTransactionException e) {
+            return e.getResponseCode();
+        }
     }
 }

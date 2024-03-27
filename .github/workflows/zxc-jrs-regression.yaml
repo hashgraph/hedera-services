@@ -534,7 +534,8 @@ jobs:
           -Dlog4j.configurationFile="log4j2-fsts-enhanced.xml" \
           -Dspring.output.ansi.enabled=ALWAYS \
           com.swirlds.fsts.Main ${JRS_ARGUMENTS} -en "Github Actions" "${CONFIG_PATH}"
-
+          # echo exit code
+          echo "Test Exit Code: $?"
       - name: Show JRS Folder Structures
         if: ${{ inputs.enable-workflow-debug && always() }}
         run: |
