@@ -234,14 +234,14 @@ jobs:
           check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/test/TEST-*.xml"
-      
+
       - name: Upload Unit Test Report Artifacts
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: unit-test-report
           path: "**/build/test-results/test/TEST-*.xml"
-            
+
       - name: Setup Docker BuildX
         uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
@@ -271,7 +271,7 @@ jobs:
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: integration-test-report
-          path: "**/build/test-results/itest/TEST-*.xml"  
+          path: "**/build/test-results/itest/TEST-*.xml"
 
       - name: Publish Integration Test Network Logs
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
@@ -335,7 +335,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-crypto && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: hapi-test-crypto-report
-          path: "**/build/test-results/hapiTestCrypto/TEST-*.xml"  
+          path: "**/build/test-results/hapiTestCrypto/TEST-*.xml"
 
       - name: Publish HAPI Test (crypto) Network Logs
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
@@ -367,7 +367,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-token && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: hapi-test-token-report
-          path: "**/build/test-results/hapiTestToken/TEST-*.xml"  
+          path: "**/build/test-results/hapiTestToken/TEST-*.xml"
 
       - name: Publish HAPI Test (Token) Network Logs
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
@@ -399,7 +399,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-smart-contract && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: hapi-test-smart-contract-report
-          path: "**/build/test-results/hapiTestSmartContract/TEST-*.xml"  
+          path: "**/build/test-results/hapiTestSmartContract/TEST-*.xml"
 
       - name: Publish HAPI Test (Smart Contract) Network Logs
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
@@ -431,7 +431,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: hapi-test-time-consuming-report
-          path: "**/build/test-results/hapiTestTimeConsuming/TEST-*.xml" 
+          path: "**/build/test-results/hapiTestTimeConsuming/TEST-*.xml"
 
       - name: Publish HAPI Test (Time Consuming) Network Logs
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
@@ -463,7 +463,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests-restart && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: hapi-test-restart-report
-          path: "**/build/test-results/hapiTestRestart/TEST-*.xml"           
+          path: "**/build/test-results/hapiTestRestart/TEST-*.xml"
 
       - name: Publish HAPI Test (Restart) Network Logs
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
@@ -490,13 +490,13 @@ jobs:
           check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/hapiTestNDReconnect/TEST-*.xml"
-          
+
       - name: Upload HAPI Test (Node Death Reconnect) Report Artifacts
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         if: ${{ inputs.enable-hapi-tests-nd-reconnect && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: hapi-test-node-death-reconnect-report
-          path: "**/build/test-results/hapiTestNDReconnect/TEST-*.xml" 
+          path: "**/build/test-results/hapiTestNDReconnect/TEST-*.xml"
 
       - name: Publish HAPI Test (Node Death Reconnect) Network Logs
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
@@ -526,7 +526,7 @@ jobs:
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: e2e-test-report
-          path: "**/build/test-results/eet/TEST-*.xml" 
+          path: "**/build/test-results/eet/TEST-*.xml"
 
       - name: Publish E2E Test Network Logs
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
