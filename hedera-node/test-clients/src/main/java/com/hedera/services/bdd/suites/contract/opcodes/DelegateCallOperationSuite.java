@@ -77,7 +77,6 @@ public class DelegateCallOperationSuite extends HapiSuite {
                             allRunFor(spec, contractCall);
                         }));
     }
-
     @Override
     protected Logger getResultsLogger() {
         return log;
