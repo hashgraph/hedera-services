@@ -41,6 +41,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.junit.HapiTestEngine;
@@ -57,6 +58,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
@@ -636,9 +638,17 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 Assertions.assertEquals(
                         expected,
                         actual,
-                        "Mismatched values, expected '" + expected + "', got '" + actual + "' - "
+                        "Mismatched values, expected '" + readable(expected) + "', got '" + readable(actual) + "' - "
                                 + mismatchContext.get());
             }
+        }
+    }
+
+    private static String readable(Object o) {
+        if (o instanceof ByteString bs) {
+            return CommonUtils.hex(bs.toByteArray());
+        } else {
+            return o.toString();
         }
     }
 

@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.tokenFreeStatusFor;
-import static com.hedera.node.app.service.mono.context.primitives.StateView.tokenKycStatusFor;
 import static com.hedera.node.app.service.mono.context.primitives.StateView.tokenPauseStatusOf;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
@@ -32,7 +31,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,15 +81,13 @@ public class EvmTokenUtil {
         final var kycCandidate = token.kycKey();
         kycCandidate.ifPresentOrElse(
                 k -> {
-                    info.setDefaultKycStatus(tokenKycStatusFor(token.accountsKycGrantedByDefault())
-                                    .getNumber()
-                            == 1);
+                    info.setDefaultKycStatus(token.accountsKycGrantedByDefault());
                     final var key = asKeyUnchecked(k);
                     info.setKycKey(convertToEvmKey(key));
                 },
                 () -> {
                     info.setKycKey(new EvmKey());
-                    info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable.getNumber() == 1);
+                    info.setDefaultKycStatus(true);
                 });
 
         final var supplyCandidate = token.supplyKey();
