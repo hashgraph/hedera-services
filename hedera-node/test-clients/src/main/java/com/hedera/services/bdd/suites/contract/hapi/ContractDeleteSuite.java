@@ -230,13 +230,13 @@ public class ContractDeleteSuite extends HapiSuite {
                 .when(
                         contractDelete(selfDestructCallable + "1").hasKnownStatus(ACCOUNT_IS_TREASURY),
                         tokenAssociate(selfDestructCallable + "2", someToken),
-                        tokenUpdate(someToken).treasury(selfDestructCallable + "2"),
+                        tokenUpdate(someToken).treasury(selfDestructCallable + "2").signedByPayerAnd(multiKey),
                         contractDelete(selfDestructCallable + "1"),
                         contractCall(selfDestructCallable + "2", CONTRACT_DESTROY)
                                 .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
                                 .payingWith(beneficiary),
                         tokenAssociate(escapeRoute, someToken),
-                        tokenUpdate(someToken).treasury(escapeRoute))
+                        tokenUpdate(someToken).treasury(escapeRoute).signedByPayerAnd(multiKey))
                 .then(contractCall(selfDestructCallable + "2", CONTRACT_DESTROY).payingWith(beneficiary));
     }
 

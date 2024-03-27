@@ -235,8 +235,8 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         sleepFor(1_500L))
                 .then(
                         tokenCreate(notToBe).autoRenewAccount(notDetachedAccount),
-                        tokenUpdate(tokenWithDetachedAsAutoRenew).autoRenewAccount(civilian),
-                        tokenUpdate(tokenSansDetachedAsAutoRenew).autoRenewAccount(notDetachedAccount),
+                        tokenUpdate(tokenWithDetachedAsAutoRenew).autoRenewAccount(civilian).signedByPayerAnd(adminKey),
+                        tokenUpdate(tokenSansDetachedAsAutoRenew).autoRenewAccount(notDetachedAccount).signedByPayerAnd(adminKey),
                         getTokenInfo(tokenSansDetachedAsAutoRenew).hasAutoRenewAccount(notDetachedAccount),
                         getTokenInfo(tokenWithDetachedAsAutoRenew).hasAutoRenewAccount(civilian));
     }
@@ -260,7 +260,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         tokenAssociate(civilian, aToken),
                         sleepFor(1_500L))
                 .then(
-                        tokenUpdate(aToken).treasury(civilian),
+                        tokenUpdate(aToken).treasury(civilian).signedByPayerAnd(tokenMultiKey),
                         mintToken(aToken, 1L),
                         burnToken(aToken, 1L),
                         getTokenInfo(aToken).hasTreasury(civilian),
@@ -294,7 +294,7 @@ public class NoGprIfNoAutoRenewSuite extends HapiSuite {
                         grantTokenKyc(tokenAlreadyAssociated, notDetachedAccount),
                         revokeTokenKyc(tokenAlreadyAssociated, notDetachedAccount),
                         tokenAssociate(notDetachedAccount, tokenNotYetAssociated),
-                        tokenUpdate(tokenNotYetAssociated).treasury(notDetachedAccount),
+                        tokenUpdate(tokenNotYetAssociated).treasury(notDetachedAccount).signedByPayerAnd(tokenMultiKey),
                         tokenDissociate(notDetachedAccount, tokenAlreadyAssociated)
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }

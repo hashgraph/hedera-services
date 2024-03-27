@@ -167,7 +167,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         spec,
                         newKeyNamed(CONTRACT_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_CONTRACT))),
                         cryptoUpdate(SIGNER).key(CONTRACT_KEY),
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 1: Account paying and signing a fungible TOKEN ASSOCIATE TRANSACTION,
                         // when signer has a threshold key
                         // associating ACCOUNT to the token
@@ -189,7 +189,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         // when signer has a threshold key
                         // associating ACCOUNT to the token
                         // SIGNER → call → CONTRACT A → call → HTS
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         contractCall(
                                         ASSOCIATE_CONTRACT,
                                         "tokenAssociate",
@@ -206,9 +206,9 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         // Test Case 3: Account paying and signing a multiple TOKENS ASSOCIATE TRANSACTION,
                         // when signer has a threshold key
                         // SIGNER → call → CONTRACT A → call → HTS
-                        tokenUpdate(FROZEN_TOKEN).supplyKey(CONTRACT_KEY),
-                        tokenUpdate(UNFROZEN_TOKEN).supplyKey(CONTRACT_KEY),
-                        tokenUpdate(KYC_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(FROZEN_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
+                        tokenUpdate(UNFROZEN_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
+                        tokenUpdate(KYC_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         contractCall(
                                         ASSOCIATE_CONTRACT,
                                         "tokensAssociate",
@@ -382,7 +382,7 @@ public class AssociatePrecompileV2SecurityModelSuite extends HapiSuite {
                         // SIGNER → call → CONTRACT A → call → HTS
                         newKeyNamed(CONTRACT_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MINT_TOKEN_CONTRACT))),
                         cryptoUpdate(SIGNER).key(CONTRACT_KEY),
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         contractCall(
                                         ASSOCIATE_CONTRACT,
                                         "tokenAssociate",
