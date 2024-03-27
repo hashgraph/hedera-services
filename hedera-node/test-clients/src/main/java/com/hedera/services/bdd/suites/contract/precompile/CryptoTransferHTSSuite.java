@@ -356,8 +356,10 @@ public class CryptoTransferHTSSuite extends HapiSuite {
         final var UPPER_BOUND_SYSTEM_ADDRESS = 750L;
         final var ADDRESS_ONE = 1L;
         final var NON_EXISTING_SYSTEM_ADDRESS = 345L;
+        final var NON_EXISTING_SYSTEM_ADDRESS_360 = 360L;
         final var TXN_TO_FIRST_ADDRESS = "TXN_TO_FIRST_ADDRESS";
         final var TXN_TO_NON_EXISTING_ADDRESS = "TXN_TO_NON_EXISTING_ADDRESS";
+        final var TXN_TO_SYSTEM_ADDRESS_360 = "TXN_TO_SYSTEM_ADDRESS_360";
         final var TXN_TO_UPPER_BOUND_ADDRESS = "TXN_TO_UPPER_BOUND_ADDRESS";
 
         final var allowance = 10L;
@@ -422,6 +424,21 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .via(TXN_TO_NON_EXISTING_ADDRESS)
                                 .gas(100_000_00L)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        // transfer to system account 0.0.360
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(AccountID.newBuilder()
+                                                .setAccountNum(NON_EXISTING_SYSTEM_ADDRESS_360)
+                                                .build())),
+                                        BigInteger.valueOf(allowance / 2))
+                                .via(TXN_TO_SYSTEM_ADDRESS_360)
+                                .gas(100_000_00L)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // transfer to system account 0.0.0 lower bound
                         contractCall(
                                         HTS_TRANSFER_FROM_CONTRACT,
@@ -444,6 +461,10 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)),
                         childRecordsCheck(
                                 TXN_TO_FIRST_ADDRESS,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)),
+                        childRecordsCheck(
+                                TXN_TO_SYSTEM_ADDRESS_360,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)),
                         childRecordsCheck(
