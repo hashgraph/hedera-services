@@ -87,8 +87,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         validateFalsePreCheck(topic.deleted(), INVALID_TOPIC_ID);
         // If a submit key is specified on the topic, then only those transactions signed by that key can be
         // submitted to the topic. If there is no submit key, then it is not required on the transaction.
-        final var submitKey = topic.submitKey();
-        if (submitKey != null) context.requireKeyOrThrow(submitKey, INVALID_SUBMIT_KEY);
+        if (topic.hasSubmitKey()) {
+            context.requireKeyOrThrow(topic.submitKeyOrThrow(), INVALID_SUBMIT_KEY);
+        }
     }
 
     /**
@@ -106,6 +107,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));
+
         /* Validate all needed fields in the transaction */
         final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);

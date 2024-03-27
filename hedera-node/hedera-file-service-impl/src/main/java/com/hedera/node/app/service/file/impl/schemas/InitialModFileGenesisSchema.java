@@ -98,7 +98,7 @@ public class InitialModFileGenesisSchema extends Schema {
     private static final int MAX_FILES_HINT = 50_000_000;
 
     private final ConfigProvider configProvider;
-    private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss;
+    private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fileFromState;
     private Map<com.hederahashgraph.api.proto.java.FileID, byte[]> fileContents;
     private Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs;
 
@@ -136,7 +136,7 @@ public class InitialModFileGenesisSchema extends Schema {
     }
 
     public void setFs(@Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
-        this.fss = fss;
+        this.fileFromState = fss;
         var blobStore = new FcBlobsBytesStore(fss);
         this.fileContents = DataMapFactory.dataMapFrom(blobStore);
         this.fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
@@ -161,11 +161,11 @@ public class InitialModFileGenesisSchema extends Schema {
             createGenesisSoftwareUpdateFiles(bootstrapConfig, hederaConfig, filesConfig, files);
         }
 
-        if (fss != null && fss.get() != null) {
-            var ts = ctx.newStates().<FileID, File>get(BLOBS_KEY);
+        if (fileFromState != null && fileFromState.get() != null) {
+            var toBlobsState = ctx.newStates().<FileID, File>get(BLOBS_KEY);
 
             logger.info("BBM: Running file service migration...");
-            var allFileIds = extractFileIds(fss.get());
+            var allFileIds = extractFileIds(fileFromState.get());
             var migratedFileIds = new ArrayList<Long>();
             allFileIds.forEach(fromFileIdRaw -> {
                 var fromFileId = com.hederahashgraph.api.proto.java.FileID.newBuilder()
@@ -177,19 +177,20 @@ public class InitialModFileGenesisSchema extends Schema {
                 if (fromFileMeta != null) {
                     File toFile = FileServiceStateTranslator.stateToPbj(
                             fileContents.get(fromFileId), fromFileMeta, fromFileId);
-                    ts.put(FileID.newBuilder().fileNum(fromFileId.getFileNum()).build(), toFile);
+                    toBlobsState.put(
+                            FileID.newBuilder().fileNum(fromFileId.getFileNum()).build(), toFile);
                     migratedFileIds.add(fromFileIdRaw);
                 }
             });
 
-            if (ts.isModified()) ((WritableKVStateBase) ts).commit();
+            if (toBlobsState.isModified()) ((WritableKVStateBase) toBlobsState).commit();
 
             logger.info("BBM: finished file service migration. Migrated fileIds are : " + migratedFileIds);
         } else {
             logger.warn("BBM: no file 'from' state found");
         }
 
-        fss = null;
+        fileFromState = null;
         fileContents = null;
         fileAttrs = null;
     }
@@ -199,9 +200,7 @@ public class InitialModFileGenesisSchema extends Schema {
         try {
             fileStorage.extractVirtualMapData(
                     AdHocThreadManager.getStaticThreadManager(),
-                    entry -> {
-                        fileIds.add((long) entry.left().getEntityNumCode());
-                    },
+                    entry -> fileIds.add((long) entry.left().getEntityNumCode()),
                     1);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

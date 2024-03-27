@@ -19,7 +19,6 @@ package com.swirlds.platform.event.creation;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -56,9 +55,7 @@ public interface EventCreationManager {
 
     /**
      * Clear the internal state of the event creation manager.
-     *
-     * @param ignored the trigger on the wire that causes us to clear, ignored
      */
     @InputWireLabel("clear")
-    void clear(@NonNull ClearTrigger ignored);
+    void clear();
 }

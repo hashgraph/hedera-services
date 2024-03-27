@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -119,7 +120,10 @@ public class AddressBookTestingToolMain implements SwirldMain {
         // Preload configuration so that we can change the software version on the fly
         final Configuration configuration;
         try {
-            configuration = DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"), List.of());
+            final ConfigurationBuilder configurationBuilder =
+                    ConfigurationBuilder.create().withConfigDataType(AddressBookTestingToolConfig.class);
+            configuration = DefaultConfiguration.buildBasicConfiguration(
+                    configurationBuilder, getAbsolutePath("settings.txt"), List.of());
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to load settings.txt", e);
         }

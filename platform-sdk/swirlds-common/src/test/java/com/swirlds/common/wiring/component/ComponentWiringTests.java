@@ -53,6 +53,8 @@ public class ComponentWiringTests {
         @NonNull
         Long triggerQux();
 
+        void triggerCorge();
+
         @InputWireLabel("data to be transformed")
         @SchedulerLabel("transformer")
         @NonNull
@@ -95,6 +97,11 @@ public class ComponentWiringTests {
         public Long triggerQux() {
             runningValue -= 1;
             return runningValue;
+        }
+
+        @Override
+        public void triggerCorge() {
+            runningValue *= 1.5;
         }
 
         public long getRunningValue() {
@@ -158,11 +165,9 @@ public class ComponentWiringTests {
                 new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
 
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x, y) -> 0L));
-
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x, y) -> {}));
-
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x) -> 1L));
-
+        assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x) -> {}));
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getTransformedOutput((x, y) -> 0L));
     }
 
@@ -203,6 +208,8 @@ public class ComponentWiringTests {
         assertEquals("handleBaz", bazInput.getName());
         final InputWire<Void> triggerQux = fooBarBazWiring.getInputWire(FooBarBaz::triggerQux);
         assertEquals("trigger", triggerQux.getName());
+        final InputWire<Void> triggerCorge = fooBarBazWiring.getInputWire(FooBarBaz::triggerCorge);
+        assertEquals("triggerCorge", triggerCorge.getName());
 
         final OutputWire<Long> output = fooBarBazWiring.getOutputWire();
 
@@ -218,6 +225,7 @@ public class ComponentWiringTests {
         assertSame(barInput, fooBarBazWiring.getInputWire(FooBarBaz::handleBar));
         assertSame(bazInput, fooBarBazWiring.getInputWire(FooBarBaz::handleBaz));
         assertSame(triggerQux, fooBarBazWiring.getInputWire(FooBarBaz::triggerQux));
+        assertSame(triggerCorge, fooBarBazWiring.getInputWire(FooBarBaz::triggerCorge));
 
         // Getting the output wire multiple times should yield the same instance
         assertSame(output, fooBarBazWiring.getOutputWire());
@@ -228,25 +236,29 @@ public class ComponentWiringTests {
 
         long expectedRunningValue = 0;
         for (int i = 0; i < 1000; i++) {
-            if (i % 4 == 0) {
+            if (i % 5 == 0) {
                 expectedRunningValue += i;
                 fooInput.put(i);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals(expectedRunningValue, outputValue.get());
-            } else if (i % 4 == 1) {
+            } else if (i % 5 == 1) {
                 final boolean choice = i % 7 == 0;
                 expectedRunningValue *= choice ? 1 : -1;
                 barInput.put(choice);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals(expectedRunningValue, outputValue.get());
-            } else if (i % 4 == 2) {
+            } else if (i % 5 == 2) {
                 final String value = "value" + i;
                 expectedRunningValue *= value.hashCode();
                 bazInput.put(value);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
-            } else {
+            } else if (i % 5 == 3) {
                 expectedRunningValue -= 1;
                 triggerQux.put(null);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            } else {
+                expectedRunningValue *= 1.5;
+                triggerCorge.put(null);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             }
         }
@@ -280,6 +292,7 @@ public class ComponentWiringTests {
         final InputWire<Boolean> barInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBar);
         final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
         final InputWire<Void> triggerQux = fooBarBazWiring.getInputWire(FooBarBaz::triggerQux);
+        final InputWire<Void> triggerCorge = fooBarBazWiring.getInputWire(FooBarBaz::triggerCorge);
 
         final OutputWire<String> output = fooBarBazWiring.getTransformedOutput(FooBarBaz::transformer);
 
@@ -295,27 +308,31 @@ public class ComponentWiringTests {
 
         long expectedRunningValue = 0;
         for (int i = 0; i < 1000; i++) {
-            if (i % 4 == 0) {
+            if (i % 5 == 0) {
                 expectedRunningValue += i;
                 fooInput.put(i);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals("" + expectedRunningValue, outputValue.get());
-            } else if (i % 4 == 1) {
+            } else if (i % 5 == 1) {
                 final boolean choice = i % 7 == 0;
                 expectedRunningValue *= choice ? 1 : -1;
                 barInput.put(choice);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals("" + expectedRunningValue, outputValue.get());
-            } else if (i % 4 == 2) {
+            } else if (i % 5 == 2) {
                 final String value = "value" + i;
                 expectedRunningValue *= value.hashCode();
                 bazInput.put(value);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
-            } else {
+            } else if (i % 5 == 3) {
                 expectedRunningValue -= 1;
                 triggerQux.put(null);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals("" + expectedRunningValue, outputValue.get());
+            } else {
+                expectedRunningValue *= 1.5;
+                triggerCorge.put(null);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             }
         }
     }
@@ -348,6 +365,7 @@ public class ComponentWiringTests {
         final InputWire<Boolean> barInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBar);
         final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
         final InputWire<Void> triggerQux = fooBarBazWiring.getInputWire(FooBarBaz::triggerQux);
+        final InputWire<Void> triggerCorge = fooBarBazWiring.getInputWire(FooBarBaz::triggerCorge);
 
         final OutputWire<Long> output = fooBarBazWiring.getFilteredOutput(FooBarBaz::filter);
 
@@ -364,28 +382,32 @@ public class ComponentWiringTests {
         long expectedRunningValue = 0;
         for (int i = 0; i < 1000; i++) {
             outputValue.set(null);
-            if (i % 4 == 0) {
+            if (i % 5 == 0) {
                 expectedRunningValue += i;
                 fooInput.put(i);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
                 assertEquals(expectedValue, outputValue.get());
-            } else if (i % 4 == 1) {
+            } else if (i % 5 == 1) {
                 final boolean choice = i % 7 == 0;
                 expectedRunningValue *= choice ? 1 : -1;
                 barInput.put(choice);
                 final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
                 assertEquals(expectedValue, outputValue.get());
-            } else if (i % 4 == 2) {
+            } else if (i % 5 == 2) {
                 final String value = "value" + i;
                 expectedRunningValue *= value.hashCode();
                 bazInput.put(value);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
-            } else {
+            } else if (i % 5 == 3) {
                 expectedRunningValue -= 1;
                 triggerQux.put(null);
                 final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
                 assertEquals(expectedValue, outputValue.get());
+            } else {
+                expectedRunningValue *= 1.5;
+                triggerCorge.put(null);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             }
         }
     }
