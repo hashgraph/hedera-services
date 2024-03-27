@@ -171,9 +171,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
         if (op.hasAutoRenewAccountId()) {
             final var autoRenewAccountId = Id.fromGrpcAccount(op.getAutoRenewAccountId());
-            final var autoRenewAccount =
-                    accountStore.loadAccountOrFailWith(autoRenewAccountId, INVALID_AUTORENEW_ACCOUNT);
-            validateFalse(autoRenewAccount.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
+            accountStore.loadAccountOrFailWith(autoRenewAccountId, INVALID_AUTORENEW_ACCOUNT);
         }
 
         // --- Load the model objects ---

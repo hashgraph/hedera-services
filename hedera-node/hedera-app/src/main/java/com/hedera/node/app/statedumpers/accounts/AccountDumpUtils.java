@@ -82,7 +82,7 @@ public class AccountDumpUtils {
     }
 
     public static BBMHederaAccount fromMod(OnDiskValue<Account> account) {
-        final var aa = new BBMHederaAccount(
+        return new BBMHederaAccount(
                 account.getValue().accountId(),
                 account.getValue().alias(),
                 account.getValue().key(),
@@ -117,7 +117,5 @@ public class AccountDumpUtils {
                 account.getValue().firstContractStorageKey(),
                 account.isImmutable(),
                 account.getValue().hasStakedNodeId() ? account.getValue().stakedNodeId() : -1);
-
-        return aa;
     }
 }
