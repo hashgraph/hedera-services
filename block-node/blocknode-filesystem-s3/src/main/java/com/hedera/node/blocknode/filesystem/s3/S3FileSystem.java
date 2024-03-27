@@ -16,12 +16,16 @@
 
 package com.hedera.node.blocknode.filesystem.s3;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import static java.util.Objects.requireNonNull;
+import static software.amazon.awssdk.http.SdkHttpConfigurationOption.TRUST_ALL_CERTIFICATES;
+
 import com.hedera.node.blocknode.config.ConfigProvider;
 import com.hedera.node.blocknode.config.data.BlockNodeFileSystemConfig;
 import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
 import com.hedera.services.stream.v7.proto.Block;
 import com.hedera.services.stream.v7.proto.BlockItem;
+import java.io.ByteArrayInputStream;
+import java.net.URI;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -29,23 +33,8 @@ import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.utils.AttributeMap;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.zip.GZIPOutputStream;
-
-import static java.util.Objects.requireNonNull;
-import static software.amazon.awssdk.http.SdkHttpConfigurationOption.TRUST_ALL_CERTIFICATES;
 
 public class S3FileSystem implements FileSystemApi {
 
@@ -110,52 +99,38 @@ public class S3FileSystem implements FileSystemApi {
     @Override
     public void writeBlock(Block block) {
         byte[] serializedData = block.toByteArray();
+        ByteArrayInputStream compressedInputStream = new ByteArrayInputStream(serializedData);
+        RequestBody requestBody = RequestBody.fromInputStream(compressedInputStream, serializedData.length);
 
+        PutObjectRequest objectRequest = PutObjectRequest.builder()
+                .bucket(fileSystemConfig.s3BucketName())
+                .key(extractBlockFileNameFromBlock(block))
+                .build();
 
-        try {
-            ByteArrayOutputStream compressedOutputStream = new ByteArrayOutputStream();
-
-            try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(compressedOutputStream)) {
-                gzipOutputStream.write(serializedData);
-            }
-            byte[] compressedBytes = compressedOutputStream.toByteArray();
-
-            ByteArrayInputStream compressedInputStream = new ByteArrayInputStream(compressedBytes);
-            RequestBody requestBody = RequestBody.fromInputStream(compressedInputStream, compressedBytes.length);
-
-            PutObjectRequest objectRequest = PutObjectRequest.builder()
-                    .bucket(fileSystemConfig.s3BucketName())
-                    .key(extractBlockFileNameFromBlock(block))
-                    .build();
-
-            this.client.putObject(objectRequest, requestBody);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this.client.putObject(objectRequest, requestBody);
     }
-
 
     @Override
     public Block readBlock(long number) {
-//        String key = blockNumberToKey(number);
-//        GetObjectRequest objectRequest = GetObjectRequest.builder()
-//                .bucket(fileSystemConfig.s3BucketName())
-//                .key(key)
-//                .build();
-//
-//        try {
-//            byte[] data = this.client.getObject(objectRequest).readAllBytes();
-//            OutputStream out = Files.newOutputStream(Path.of(String.format("/home/ivo/projects/hedera/blocks-fs/%s", key)));
-//            out.write(data);
-//            out.close();
-////
-////            Block block = Block.parseFrom(data);
-////            return block;
-//        }
-//        catch(IOException e) {
-//            e.printStackTrace();
-//        }
+        //        String key = blockNumberToKey(number);
+        //        GetObjectRequest objectRequest = GetObjectRequest.builder()
+        //                .bucket(fileSystemConfig.s3BucketName())
+        //                .key(key)
+        //                .build();
+        //
+        //        try {
+        //            byte[] data = this.client.getObject(objectRequest).readAllBytes();
+        //            OutputStream out =
+        // Files.newOutputStream(Path.of(String.format("/home/ivo/projects/hedera/blocks-fs/%s", key)));
+        //            out.write(data);
+        //            out.close();
+        ////
+        ////            Block block = Block.parseFrom(data);
+        ////            return block;
+        //        }
+        //        catch(IOException e) {
+        //            e.printStackTrace();
+        //        }
 
         return null;
     }

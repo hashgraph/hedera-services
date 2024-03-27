@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.hedera.node.blocknode.config.ConfigProvider;
 import com.hedera.node.blocknode.filesystem.s3.S3FileSystem;
 import org.junit.jupiter.api.Test;
 
@@ -33,8 +34,7 @@ class S3FileSystemTest {
 
     @Test
     void localFileSystemDoSomethingCheck() {
-        final S3FileSystem s3FileSystem = new S3FileSystem();
+        final S3FileSystem s3FileSystem = new S3FileSystem(new ConfigProvider());
         assertNotNull(s3FileSystem);
-        assertDoesNotThrow(s3FileSystem::doSomething);
     }
 }
