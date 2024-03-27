@@ -63,7 +63,9 @@ import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.DefaultAppNotifier;
 import com.swirlds.platform.components.DefaultConsensusEngine;
+import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.DefaultSavedStateController;
+import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
@@ -570,6 +572,8 @@ public class SwirldsPlatform implements Platform {
                 initialState.getState(),
                 appVersion);
 
+        final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
+
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
@@ -661,6 +665,7 @@ public class SwirldsPlatform implements Platform {
                 eventCreationManager,
                 stateSignatureCollector,
                 transactionPrehandler,
+                eventWindowManager,
                 consensusRoundHandler,
                 eventStreamManager,
                 issDetector,
