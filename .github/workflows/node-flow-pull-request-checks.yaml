@@ -288,7 +288,7 @@ jobs:
       custom-job-name: "Network Error Tests"
       branch-name: ${{ github.head_ref || github.ref_name }}
       hedera-tests-enabled: true
-      use-branch-for-slack-channel: true
+      use-branch-for-slack-channel: false
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-NetError-4N-1C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
