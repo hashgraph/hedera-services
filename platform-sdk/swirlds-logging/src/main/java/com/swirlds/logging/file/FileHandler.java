@@ -18,11 +18,13 @@ package com.swirlds.logging.file;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractLogHandler;
 import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
 import com.swirlds.logging.io.OutputStreamFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -56,6 +58,11 @@ public class FileHandler extends AbstractLogHandler {
     private static final int EVENT_LOG_PRINTER_SIZE = 4 * 1024;
     private final OutputStream outputStream;
     private final FormattedLinePrinter format;
+
+    @Override
+    public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
+        return super.isEnabled(name, level, marker);
+    }
 
     /**
      * Creates a new file handler.

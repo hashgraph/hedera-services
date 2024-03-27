@@ -23,7 +23,6 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * This configuration class enables the customization of logging levels for loggers, allowing users to specify levels for either packages or individual classes. The configuration is read from the {@link Configuration} object.
+ * This configuration class enables the customization of logging levels for loggers, allowing users to specify levels
+ * for either packages or individual classes. The configuration is read from the {@link Configuration} object.
  * <p>
  * Like for example in spring boot a configuration like this can be used:
  * <p>
@@ -200,11 +200,11 @@ public class HandlerLoggingLevelConfig {
             final ConfigLevel level =
                     configuration.getValue(configPropertyName, ConfigLevel.class, ConfigLevel.UNDEFINED);
             if (level != ConfigLevel.UNDEFINED) {
-                    result.put(name, level);
-                //if (containsUpperCase(name)) {
-                //} else {
+                result.put(name, level);
+                // if (containsUpperCase(name)) {
+                // } else {
                 //    result.put(PROPERTY_PACKAGE_LEVEL.formatted(name), level);
-                //}
+                // }
             }
         });
 
@@ -234,16 +234,22 @@ public class HandlerLoggingLevelConfig {
         }
         if (marker != null) {
             final List<String> allMarkerNames = marker.getAllMarkerNames();
-            boolean isEnabled=true;
+            boolean isEnabled = false;
+            boolean found = false;
             final Map<String, MarkerState> stringMarkerStateMap = markerConfigCache.get();
-            for (String markerName:allMarkerNames){
+            for (String markerName : allMarkerNames) {
                 final MarkerState markerState = stringMarkerStateMap.get(markerName);
-                if(MarkerState.DISABLED.equals(markerState)){
-                    isEnabled=false;
+                if (MarkerState.ENABLED.equals(markerState)) {
+                    isEnabled = true;
+                    found = true;
                     break;
+                } else if (MarkerState.DISABLED.equals(markerState)) {
+                    found = true;
                 }
             }
-            return isEnabled;
+            if (found) {
+                return isEnabled;
+            }
         }
 
         final ConfigLevel enabledLevel = levelCache.computeIfAbsent(name.trim(), this::getConfiguredLevel);
@@ -254,18 +260,21 @@ public class HandlerLoggingLevelConfig {
     private ConfigLevel getConfiguredLevel(@NonNull final String name) {
         final Map<String, ConfigLevel> stringConfigLevelMap = levelConfigProperties.get();
         ConfigLevel configLevel = stringConfigLevelMap.get(name);
-        if(configLevel!=null)
+        if (configLevel != null) {
             return configLevel;
+        }
 
         final StringBuilder buffer = new StringBuilder(name);
-        for (int i= buffer.length()-1; i>0;i--){
-            if('.' == buffer.charAt(i)){
-                configLevel = stringConfigLevelMap.get(buffer.substring(0, i ));
-                if(configLevel!=null)
+        for (int i = buffer.length() - 1; i > 0; i--) {
+            if ('.' == buffer.charAt(i)) {
+                buffer.setLength(i);
+                configLevel = stringConfigLevelMap.get(buffer.toString());
+                if (configLevel != null) {
                     return configLevel;
+                }
             }
         }
-        return  stringConfigLevelMap.get("");
+        return stringConfigLevelMap.get("");
     }
 
     /**
