@@ -16,9 +16,9 @@
 
 plugins {
     id("com.hedera.hashgraph.hapi")
-    id("com.hedera.hashgraph.evm-maven-publish")
-    @Suppress("DSL_SCOPE_VIOLATION") alias(libs.plugins.pbj)
+    id("com.hedera.hashgraph.services.publish")
     id("com.hedera.hashgraph.java-test-fixtures")
+    alias(libs.plugins.pbj)
 }
 
 description = "Hedera API"

@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+plugins {
+    id("com.hedera.hashgraph.services.java")
+    id("com.hedera.hashgraph.services.publish")
+}
 
 description = "Default Hedera Network Admin Service Implementation"
 

@@ -15,7 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
+    id("com.hedera.hashgraph.services.java")
+    id("com.hedera.hashgraph.services.publish")
     id("com.hedera.hashgraph.benchmark-conventions")
     id("com.hedera.hashgraph.java-test-fixtures")
 }
