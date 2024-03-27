@@ -398,10 +398,11 @@ public class BaseTokenHandler {
      * @return true if the given token update op is an expiry-only update op
      */
     public static boolean isExpiryOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
-        final var defaultOp = TokenUpdateTransactionBody.DEFAULT;
-        final var copyDefaultWithExpiry =
-                defaultOp.copyBuilder().expiry(op.expiry()).token(op.token()).build();
-        return op.equals(copyDefaultWithExpiry);
+        final var defaultWithExpiry = TokenUpdateTransactionBody.newBuilder()
+                .expiry(op.expiry())
+                .token(op.token())
+                .build();
+        return op.equals(defaultWithExpiry);
     }
 
     /**
@@ -413,13 +414,11 @@ public class BaseTokenHandler {
      * @return true if the given token update op is an metadata-only update op
      */
     public static boolean isMetadataOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
-        final var defaultOp = TokenUpdateTransactionBody.DEFAULT;
-        final var copyDefaultWithMetadata = defaultOp
-                .copyBuilder()
+        final var defaultWithMetadata = TokenUpdateTransactionBody.newBuilder()
                 .metadata(op.metadata())
                 .token(op.token())
                 .build();
-        return op.equals(copyDefaultWithMetadata);
+        return op.equals(defaultWithMetadata);
     }
 
     @NonNull
