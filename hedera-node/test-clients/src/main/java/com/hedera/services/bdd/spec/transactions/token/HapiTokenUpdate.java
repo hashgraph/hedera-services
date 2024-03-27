@@ -364,16 +364,12 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             }
                             newMetadataKey.ifPresent(
                                     k -> b.setMetadataKey(spec.registry().getKey(k)));
-                            try {
-                                if (newMetadata.isPresent()) {
-                                    var metadataValue = BytesValue.newBuilder()
-                                            .setValue(ByteString.copyFrom(
-                                                    newMetadata.orElseThrow().getBytes()))
-                                            .build();
-                                    b.setMetadata(metadataValue);
-                                }
-                            } catch (Exception e) {
-                                log.warn("Failed to parse metadata", e);
+                            if (newMetadata.isPresent()) {
+                                var metadataValue = BytesValue.newBuilder()
+                                        .setValue(ByteString.copyFrom(
+                                                newMetadata.orElseThrow().getBytes()))
+                                        .build();
+                                b.setMetadata(metadataValue);
                             }
                         });
         return b -> b.setTokenUpdate(opBody);
