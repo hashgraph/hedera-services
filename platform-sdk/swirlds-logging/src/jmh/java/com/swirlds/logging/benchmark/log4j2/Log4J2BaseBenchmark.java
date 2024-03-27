@@ -42,10 +42,10 @@ import org.openjdk.jmh.annotations.TearDown;
 public class Log4J2BaseBenchmark {
     private static final String LOGGER_NAME = Constants.LOG4J2 + "Benchmark";
 
-    @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
+    @Param({FILE_TYPE})
     public String loggingType;
 
-    @Param({MODE_NOT_ROLLING, MODE_ROLLING})
+    @Param({MODE_ROLLING})
     public String mode;
 
     protected Logger logger;
