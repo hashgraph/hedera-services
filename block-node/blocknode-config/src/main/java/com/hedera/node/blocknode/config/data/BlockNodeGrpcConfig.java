@@ -21,14 +21,6 @@ import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.validation.annotation.Max;
 import com.swirlds.config.api.validation.annotation.Min;
 
-/**
- * @param port    The port for plain grpc traffic. Must be non-negative. A value of 0 indicates an ephemeral port should be
- *                automatically selected by the computer. Must not be the same value as {@link #tlsPort()} unless both are
- *                0. Must be a value between 0 and 65535, inclusive.
- * @param tlsPort The port for tls-encrypted grpc traffic. Must be non-negative. A value of 0 indicates an ephemeral
- *                port should be automatically selected by the computer. Must not be the same value as {@link #port()}
- *                unless both are 0. Must be a value between 0 and 65535, inclusive.
- */
 @ConfigData("blockNodeGrpc")
 public record BlockNodeGrpcConfig(
         @ConfigProperty(defaultValue = "50601") @Min(0) @Max(65535) int port,
