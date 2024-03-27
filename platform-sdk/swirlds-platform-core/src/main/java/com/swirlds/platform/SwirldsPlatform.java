@@ -76,9 +76,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.DefaultFutureEventBuffer;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -622,8 +620,6 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.wireExternalComponents(platformStatusManager, transactionPool);
 
-        final FutureEventBuffer futureEventBuffer = new DefaultFutureEventBuffer(platformContext);
-
         final IssHandler issHandler =
                 new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
 
@@ -667,7 +663,6 @@ public class SwirldsPlatform implements Platform {
                 transactionPrehandler,
                 consensusRoundHandler,
                 eventStreamManager,
-                futureEventBuffer,
                 issDetector,
                 issHandler,
                 hashLogger,

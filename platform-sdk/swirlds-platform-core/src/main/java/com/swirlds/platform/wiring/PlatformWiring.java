@@ -44,7 +44,6 @@ import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -135,7 +134,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
-    private final ComponentWiring<FutureEventBuffer, List<GossipEvent>> futureEventBufferWiring;
     private final GossipWiring gossipWiring;
     private final EventWindowManagerWiring eventWindowManagerWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
@@ -227,8 +225,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
         consensusEngineWiring =
                 new ComponentWiring<>(model, ConsensusEngine.class, schedulers.consensusEngineScheduler());
-        futureEventBufferWiring =
-                new ComponentWiring<>(model, FutureEventBuffer.class, schedulers.futureEventBufferScheduler());
         eventCreationManagerWiring =
                 new ComponentWiring<>(model, EventCreationManager.class, schedulers.eventCreationManagerScheduler());
         pcesSequencerWiring = new ComponentWiring<>(model, PcesSequencer.class, schedulers.pcesSequencerScheduler());
@@ -257,7 +253,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 inOrderLinkerWiring,
                 shadowgraphWiring,
                 consensusEngineWiring,
-                futureEventBufferWiring,
                 eventCreationManagerWiring,
                 applicationTransactionPrehandlerWiring,
                 stateSignatureCollectorWiring,
@@ -354,8 +349,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         nonAncientEventWindowOutputWire.solderTo(
                 eventCreationManagerWiring.getInputWire(EventCreationManager::setNonAncientEventWindow), INJECT);
         nonAncientEventWindowOutputWire.solderTo(shadowgraphWiring.eventWindowInput(), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(
-                futureEventBufferWiring.getInputWire(FutureEventBuffer::updateEventWindow), INJECT);
     }
 
     /**
@@ -404,11 +397,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesSequencerWiring.getOutputWire().solderTo(pcesWriterWiring.eventInputWire());
         inOrderLinkerWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
         inOrderLinkerWiring.eventOutput().solderTo(shadowgraphWiring.eventInput());
-        orphanBufferWiring.eventOutput().solderTo(futureEventBufferWiring.getInputWire(FutureEventBuffer::addEvent));
-
-        final OutputWire<GossipEvent> futureEventBufferSplitOutput = futureEventBufferWiring.getSplitOutput();
-        futureEventBufferSplitOutput.solderTo(
-                eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
+        orphanBufferWiring
+                .eventOutput()
+                .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
 
         final double eventCreationHeartbeatFrequency = platformContext
                 .getConfiguration()
@@ -526,7 +517,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     private void buildUnsolderedWires() {
         eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear);
-        futureEventBufferWiring.getInputWire(FutureEventBuffer::clear);
         consensusEngineWiring.getInputWire(ConsensusEngine::outOfBandSnapshotUpdate);
         if (publishSnapshotOverrides) {
             platformPublisherWiring.getInputWire(PlatformPublisher::publishSnapshotOverride);
@@ -592,7 +582,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param transactionPrehandler     the transaction prehandler to bind
      * @param consensusRoundHandler     the consensus round handler to bind
      * @param eventStreamManager        the event stream manager to bind
-     * @param futureEventBuffer         the future event buffer to bind
      * @param issDetector               the ISS detector to bind
      * @param issHandler                the ISS handler to bind
      * @param hashLogger                the hash logger to bind
@@ -626,7 +615,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final TransactionPrehandler transactionPrehandler,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final EventStreamManager eventStreamManager,
-            @NonNull final FutureEventBuffer futureEventBuffer,
             @NonNull final IssDetector issDetector,
             @NonNull final IssHandler issHandler,
             @NonNull final HashLogger hashLogger,
@@ -658,7 +646,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         applicationTransactionPrehandlerWiring.bind(transactionPrehandler);
         consensusRoundHandlerWiring.bind(consensusRoundHandler);
         eventStreamManagerWiring.bind(eventStreamManager);
-        futureEventBufferWiring.bind(futureEventBuffer);
         issDetectorWiring.bind(issDetector);
         issHandlerWiring.bind(issHandler);
         hashLoggerWiring.bind(hashLogger);
