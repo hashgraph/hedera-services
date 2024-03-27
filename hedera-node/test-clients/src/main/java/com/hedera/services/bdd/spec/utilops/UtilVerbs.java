@@ -1633,24 +1633,32 @@ public class UtilVerbs {
                     var convertedParams = tryToSwapLongZeroToEVMAddresses(callOp.getParams(), spec);
                     callOp.setParams(convertedParams);
                 }
-
                 convertedOps.add(new HapiEthereumCall(callOp));
+
             } else if (op instanceof HapiContractCreate callOp && callOp.isConvertableToEthCreate()) {
                 // if we have constructor args, update the bytecode file with one containing the args
                 if (callOp.getArgs().isPresent() && callOp.getAbi().isPresent()) {
                     var convertedArgs =
                             tryToSwapLongZeroToEVMAddresses(callOp.getArgs().get(), spec);
                     callOp.setArgs(Optional.of(convertedArgs));
-
                     convertedOps.add(updateInitCodeWithConstructorArgs(
                             callOp.getContract(),
                             callOp.getAbi().get(),
                             callOp.getArgs().get()));
                 }
-                // create the contract
-                convertedOps.add(new HapiEthereumContractCreate(callOp, privateKeyRef, adminKey, defaultGas));
-                // save the EVM address to the registry
-                convertedOps.add(getContractInfo(callOp.getContract()).saveEVMAddressToRegistry(callOp.getContract()));
+
+                var createEthereum = withOpContext((spec1, logger) -> {
+                    var createTxn = new HapiEthereumContractCreate(callOp, privateKeyRef, adminKey, defaultGas);
+                    allRunFor(spec1, createTxn);
+                    // if create was successful, save the EVM address to the registry, so we can use it in future calls
+                    if (spec1.registry().hasContractId(callOp.getContract())) {
+                        allRunFor(
+                                spec1,
+                                getContractInfo(callOp.getContract()).saveEVMAddressToRegistry(callOp.getContract()));
+                    }
+                });
+                convertedOps.add(createEthereum);
+
             } else {
                 convertedOps.add(op);
             }
