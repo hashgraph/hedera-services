@@ -2,7 +2,7 @@
 set -o pipefail
 set +e
 
-readonly DOCKER_IMAGE_NAME="main-network-node"
+readonly DOCKER_IMAGE_NAME="consensus-node"
 
 GROUP_ACTIVE="false"
 
@@ -115,13 +115,24 @@ start_group "Configuring Environment"
     fi
   end_task "DONE (Found: ${DOCKER})"
 
+  start_task "Resolving the Docker Client Configuration"
+    SKOPEO_BIND_MOUNT=""
+    SKOPEO_CREDENTIAL_OPTS=""
+    DOCKER_CONFIG_DIR="${HOME}/.docker"
+    if [[ -d "${DOCKER_CONFIG_DIR}" ]]; then
+      SKOPEO_BIND_MOUNT="--volume ${DOCKER_CONFIG_DIR}:/tmp/docker"
+      SKOPEO_CREDENTIAL_OPTS="--authfile /tmp/docker/config.json"
+    fi
+    export SKOPEO_BIND_MOUNT SKOPEO_CREDENTIAL_OPTS
+  end_task "DONE"
+
   start_task "Checking for the SKOPEO command"
     if command -v skopeo >/dev/null 2>&1; then
       SKOPEO="$(command -v skopeo)" || fail "ERROR (Exit Code: ${?})" "${?}"
       export SKOPEO
     else
       ${DOCKER} pull "${SKOPEO_IMAGE_NAME}" >/dev/null 2>&1 || fail "ERROR (Exit Code: ${?})" "${?}"
-      SKOPEO="${DOCKER} run --rm --network host ${SKOPEO_IMAGE_NAME}"
+      SKOPEO="${DOCKER} run ${SKOPEO_BIND_MOUNT} --rm --network host ${SKOPEO_IMAGE_NAME}"
       export SKOPEO
     fi
   end_task "DONE (Found: ${SKOPEO})"
@@ -155,15 +166,15 @@ start_group "Prepare the Docker Image Information"
 end_group
 
 start_group "Generate Docker Image Manifest (linux/amd64)"
-  ${SKOPEO} --override-os linux --override-arch amd64 inspect --tls-verify=false "docker://${FQ_IMAGE_NAME}" | tee "${TEMP_DIR}/linux-amd64.manifest.json" || fail "SKOPEO ERROR (Exit Code: ${?})" "${?}"
+  ${SKOPEO} --override-os linux --override-arch amd64 inspect ${SKOPEO_CREDENTIAL_OPTS} --tls-verify=false "docker://${FQ_IMAGE_NAME}" | tee "${TEMP_DIR}/linux-amd64.manifest.json" || fail "SKOPEO ERROR (Exit Code: ${?})" "${?}"
   ${JQ} -r '.Layers[]' "${TEMP_DIR}/linux-amd64.manifest.json" | tee "${TEMP_DIR}/linux-amd64.layers.json" >/dev/null 2>&1 || fail "JQ LAYER ERROR (Exit Code: ${?})" "${?}"
-  ${JQ} -r 'del(.RepoTags) | del(.LayersData) | del(.Digest)' "${TEMP_DIR}/linux-amd64.manifest.json" | tee "${TEMP_DIR}/linux-amd64.comparable.json" >/dev/null 2>&1 || fail "JQ COMP ERROR (Exit Code: ${?})" "${?}"
+  ${JQ} -r 'del(.RepoTags) | del(.LayersData) | del(.Digest) | del(.Name)' "${TEMP_DIR}/linux-amd64.manifest.json" | tee "${TEMP_DIR}/linux-amd64.comparable.json" >/dev/null 2>&1 || fail "JQ COMP ERROR (Exit Code: ${?})" "${?}"
 end_group
 
 start_group "Generate Docker Image Manifest (linux/arm64)"
-  ${SKOPEO} --override-os linux --override-arch arm64 inspect --tls-verify=false "docker://${FQ_IMAGE_NAME}" | tee "${TEMP_DIR}/linux-arm64.manifest.json" || fail "SKOPEO ERROR (Exit Code: ${?})" "${?}"
+  ${SKOPEO} --override-os linux --override-arch arm64 inspect ${SKOPEO_CREDENTIAL_OPTS} --tls-verify=false "docker://${FQ_IMAGE_NAME}" | tee "${TEMP_DIR}/linux-arm64.manifest.json" || fail "SKOPEO ERROR (Exit Code: ${?})" "${?}"
   ${JQ} -r '.Layers[]' "${TEMP_DIR}/linux-arm64.manifest.json" | tee "${TEMP_DIR}/linux-arm64.layers.json" >/dev/null 2>&1 || fail "JQ LAYER ERROR (Exit Code: ${?})" "${?}"
-  ${JQ} -r 'del(.RepoTags) | del(.LayersData) | del(.Digest)' "${TEMP_DIR}/linux-arm64.manifest.json" | tee "${TEMP_DIR}/linux-arm64.comparable.json" >/dev/null 2>&1 || fail "JQ COMP ERROR (Exit Code: ${?})" "${?}"
+  ${JQ} -r 'del(.RepoTags) | del(.LayersData) | del(.Digest) | del(.Name)' "${TEMP_DIR}/linux-arm64.manifest.json" | tee "${TEMP_DIR}/linux-arm64.comparable.json" >/dev/null 2>&1 || fail "JQ COMP ERROR (Exit Code: ${?})" "${?}"
 end_group
 
 start_group "Generating Final Release Manifests"

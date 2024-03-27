@@ -70,3 +70,7 @@ jobs:
       sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
       sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
       slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
+      jf-url: ${{ vars.JF_URL }}
+      jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
+      jf-user-name: ${{ vars.JF_USER_NAME }}
+      jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}

@@ -1,0 +1,264 @@
+##
+# Copyright (C) 2024 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "ZXC: Publish Production Image"
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Version:"
+        type: string
+        required: true
+      # Valid version policies are as follows: specified, branch-commit, adhoc-commit
+      version-policy:
+        description: "Version Policy:"
+        type: string
+        required: true
+      # Valid registry names are as follows: gcp, jfrog
+      registry-name:
+        description: "Registry Name (gcp or jfrog):"
+        type: string
+        required: true
+      dry-run-enabled:
+        description: "Perform Dry Run"
+        type: boolean
+        required: false
+        default: false
+      custom-job-name:
+        description: "Custom Job Name:"
+        required: false
+        type: string
+        default: "Publish Production Image (GCP)"
+    outputs:
+      docker-registry:
+        description: "Docker Registry"
+        value: ${{ jobs.publish-image.outputs.docker-registry }}
+      docker-image:
+        description: "Docker Image"
+        value: ${{ jobs.publish-image.outputs.docker-image }}
+      docker-image-prefix:
+        description: "Docker Image Prefix"
+        value: ${{ jobs.publish-image.outputs.docker-image-prefix }}
+      docker-image-tag:
+        description: "Docker Image Tag"
+        value: ${{ jobs.publish-image.outputs.docker-image-tag }}
+    secrets:
+      jf-url:
+        required: true
+      jf-user-name:
+        required: true
+      jf-docker-registry:
+        required: true
+      jf-access-token:
+        required: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  LC_ALL: C.UTF-8
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish-image:
+    name: ${{ inputs.custom-job-name || 'Publish Production Image (GCP)' }}
+    runs-on: [self-hosted, Linux, large, ephemeral]
+    outputs:
+      docker-registry: ${{ steps.set-registry.outputs.docker-registry }}
+      docker-image: ${{ steps.set-registry.outputs.docker-tag-base }}/consensus-node:${{ inputs.version }}
+      docker-image-prefix: ${{ steps.set-registry.outputs.docker-tag-base }}
+      docker-image-tag: ${{ inputs.version }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Restore Build Artifacts
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          fail-on-cache-miss: true
+          path: ~/artifact-build
+          key: node-build-artifacts-${{ inputs.version }}-${{ github.sha }}
+
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        if: ${{ inputs.dry-run-enabled != true && inputs.registry-name == 'gcp' && !cancelled() && !failure() }}
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
+          service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
+
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@d82fe26823e1f25529250895d5673f65b02af085 # v4.0.1
+        if: ${{ inputs.dry-run-enabled != true && inputs.registry-name == 'jfrog' && !cancelled() && !failure() }}
+        env:
+          JF_URL: ${{ secrets.jf-url }}
+          JF_ACCESS_TOKEN: ${{ secrets.jf-access-token }}
+
+      - name: Show JFrog Config
+        if: ${{ inputs.dry-run-enabled != true && inputs.registry-name == 'jfrog' && !cancelled() && !failure() }}
+        run: jfrog config show
+
+      - name: Verify JFrog Connectivity
+        if: ${{ inputs.dry-run-enabled != true && inputs.registry-name == 'jfrog' && !cancelled() && !failure() }}
+        run: jfrog rt ping
+
+      - name: Commit Information
+        id: commit
+        run: |
+          echo "source-date=$(git log -1 --pretty=%ct)" >> "${GITHUB_OUTPUT}"
+
+      - name: Set Image Registry
+        id: set-registry
+        run: |
+          DOCKER_REGISTRY="gcr.io"
+          [[ "${{ inputs.version-policy }}" == "branch-commit" && "${{ inputs.registry-name }}" == "gcp" ]] && DOCKER_REGISTRY="us-docker.pkg.dev"
+          [[ "${{ inputs.registry-name }}" == "jfrog" ]] && DOCKER_REGISTRY="artifacts.swirldslabs.io"
+          echo "docker-registry=${DOCKER_REGISTRY}" >>"${GITHUB_OUTPUT}"
+
+          DOCKER_TAG_BASE="gcr.io/hedera-registry"
+          [[ "${{ inputs.registry-name }}" == "jfrog" ]] && DOCKER_TAG_BASE="artifacts.swirldslabs.io/consensus-node-docker-release"
+
+          if [[ "${{ inputs.version-policy }}" == "branch-commit" && "${{ inputs.dry-run-enabled }}" != true ]]; then
+             [[ "${{ inputs.registry-name }}" == "gcp" ]] && DOCKER_TAG_BASE="us-docker.pkg.dev/swirlds-registry/docker-adhoc-commits"
+             [[ "${{ inputs.registry-name }}" == "jfrog" ]] && DOCKER_TAG_BASE="artifacts.swirldslabs.io/consensus-node-docker-dev"
+          elif [[ "${{ inputs.dry-run-enabled }}" == true ]]; then
+             DOCKER_TAG_BASE="localhost:5000"
+          fi
+
+          echo "docker-tag-base=${DOCKER_TAG_BASE}" >>"${GITHUB_OUTPUT}"
+
+      - name: Install KillAll
+        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends psmisc
+
+      - name: Create Docker Working Directory
+        run: |
+          USER="$(id -un)"
+          GROUP="$(id -gn)"
+          sudo mkdir -p /x
+          sudo chown -vR ${USER}:${GROUP} /x
+          sudo ls -lah /x
+
+      - name: Remove Docker from Self Hosted Runners
+        run: |
+          set -x
+          sudo killall dockerd || true
+          sudo killall containerd || true
+          sudo rm -rvf /usr/bin/*containerd* || true
+          sudo rm -rvf /usr/bin/docker* || true
+          sudo rm -rvf /usr/local/bin/docker* || true
+          sudo rm -rvf /usr/local/bin/*lima* || true
+
+      - name: Setup Containerd Support
+        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
+        with:
+          containerd-version: v1.7.2
+
+      - name: Setup Docker Support
+        uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0
+        env:
+          HOME: /x
+        with:
+          version: v24.0.7
+
+      - name: Configure Default Docker Context
+        run: |
+          set -x
+          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
+            docker context rm -f setup-docker-action
+          fi
+
+          DOCKER_CONTEXT_PATH="$(sudo find /x -name docker.sock | tr -d '[:space:]')"
+          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
+          docker context use setup-docker-action
+
+      - name: Setup QEmu Support
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+
+      - name: Setup Docker Buildx Support
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        with:
+          version: v0.12.0
+          driver-opts: network=host
+
+      - name: Setup Local Docker Registry
+        if: ${{ inputs.dry-run-enabled == true && !cancelled() && !failure() }}
+        run: docker run -d -p 5000:5000 --restart=always --name registry registry:latest
+
+      - name: Docker Login (GCP)
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        if: ${{ inputs.dry-run-enabled != true && inputs.registry-name == 'gcp' && !cancelled() && !failure() }}
+        with:
+          registry: ${{ steps.set-registry.outputs.docker-registry }}
+          username: oauth2accesstoken
+          password: ${{ steps.google-auth.outputs.access_token }}
+
+      - name: Docker Login (JFrog)
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        if: ${{ inputs.dry-run-enabled != true && inputs.registry-name == 'jfrog' && !cancelled() && !failure() }}
+        with:
+          registry: ${{ steps.set-registry.outputs.docker-registry }}
+          username: ${{ secrets.jf-user-name }}
+          password: ${{ secrets.jf-access-token }}
+
+      - name: Stage SDK Artifacts
+        run: |
+          mkdir -p hedera-node/infrastructure/docker/containers/production-next/consensus-node/sdk
+          cp -rvf ~/artifact-build/* hedera-node/infrastructure/docker/containers/production-next/consensus-node/sdk/
+
+      - name: Build Consensus Node Image
+        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
+        env:
+          SOURCE_DATE_EPOCH: ${{ steps.commit.outputs.source-date }}
+        with:
+          push: true
+          no-cache: true
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            SOURCE_DATE_EPOCH=${{ steps.commit.outputs.source-date }}
+          context: hedera-node/infrastructure/docker/containers/production-next/consensus-node
+          tags: ${{ steps.set-registry.outputs.docker-tag-base }}/consensus-node:${{ inputs.version }}
+
+      - name: Render Job Summary
+        run: |
+          CONSENSUS_NODE_LINK="Not Applicable"
+
+          if [[ "${{ inputs.dry-run-enabled }}" != true ]]; then
+             CONSENSUS_NODE_LINK="[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/consensus-node:${{ inputs.version }})"
+             if [[ "${{ inputs.registry-name }}" == "jfrog" ]]; then
+                if [[ "${{ inputs.version-policy }}" == "branch-commit" ]]; then
+                   CONSENSUS_NODE_LINK="[Artifactory](https://artifacts.swirldslabs.io/ui/native/consensus-node-docker-dev)"
+                else
+                   CONSENSUS_NODE_LINK="[Artifactory](https://artifacts.swirldslabs.io/ui/native/consensus-node-docker-release)"
+                fi
+            fi
+          fi
+
+          printf "### Published Docker Images\n" >> "${GITHUB_STEP_SUMMARY}"
+          printf "| Image Name | Version | URL | Supported Architectures |\n" >> "${GITHUB_STEP_SUMMARY}"
+          printf "| ---------- | ------- | --- | ----------------------- |\n" >> "${GITHUB_STEP_SUMMARY}"
+
+          printf "| %s | %s | %s | %s |\n" \
+            "${{ steps.set-registry.outputs.docker-tag-base }}/consensus-node" \
+            "${{ inputs.version }}" \
+            "${CONSENSUS_NODE_LINK}" \
+            "linux/amd64, linux/arm64" >> "${GITHUB_STEP_SUMMARY}"
+
+          printf "\n\n" >> "${GITHUB_STEP_SUMMARY}"
