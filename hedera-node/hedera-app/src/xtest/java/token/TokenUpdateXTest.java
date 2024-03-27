@@ -22,6 +22,7 @@ import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenKeyValidation;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
@@ -147,7 +148,8 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .token(idOfNamedToken(TOKEN_CHANGE_KEYS_ID))
+                                .keyVerificationMode(TokenKeyValidation.NO_VALIDATION)
                                 .freezeKey(ALL_ZEROS_INVALID_KEY))
                         .build(),
                 OK);
@@ -159,7 +161,8 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .token(idOfNamedToken(TOKEN_CHANGE_KEYS_ID))
+                                .keyVerificationMode(TokenKeyValidation.NO_VALIDATION)
                                 .kycKey(ALL_ZEROS_INVALID_KEY))
                         .build(),
                 OK);
@@ -171,7 +174,8 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .token(idOfNamedToken(TOKEN_CHANGE_KEYS_ID))
+                                .keyVerificationMode(TokenKeyValidation.NO_VALIDATION)
                                 .wipeKey(ALL_ZEROS_INVALID_KEY))
                         .build(),
                 OK);
@@ -183,7 +187,8 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .token(idOfNamedToken(TOKEN_CHANGE_KEYS_ID))
+                                .keyVerificationMode(TokenKeyValidation.NO_VALIDATION)
                                 .supplyKey(ALL_ZEROS_INVALID_KEY))
                         .build(),
                 OK);
@@ -195,7 +200,8 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .token(idOfNamedToken(TOKEN_CHANGE_KEYS_ID))
+                                .keyVerificationMode(TokenKeyValidation.NO_VALIDATION)
                                 .feeScheduleKey(ALL_ZEROS_INVALID_KEY))
                         .build(),
                 OK);
@@ -207,7 +213,8 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .accountID(DEFAULT_PAYER_ID)
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                                .token(idOfNamedToken(TOKEN_REMOVE_KEYS_ID))
+                                .token(idOfNamedToken(TOKEN_CHANGE_KEYS_ID))
+                                .keyVerificationMode(TokenKeyValidation.NO_VALIDATION)
                                 .pauseKey(ALL_ZEROS_INVALID_KEY))
                         .build(),
                 OK);
@@ -220,6 +227,7 @@ public class TokenUpdateXTest extends AbstractTokenUpdateXTest {
                                 .build())
                         .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
                                 .token(idOfNamedToken(TOKEN_CHANGE_KEYS_ID))
+                                .keyVerificationMode(TokenKeyValidation.NO_VALIDATION)
                                 .adminKey(ALL_ZEROS_INVALID_KEY))
                         .build(),
                 OK);
