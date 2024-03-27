@@ -135,7 +135,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                             .build())
                     .build();
             context.requireKey(threshKey);
-        } else if (token.hasAdminKey() && !isExpiryOnlyUpdateOp(op)) {
+        } else if (!isExpiryOnlyUpdateOp(op) && token.hasAdminKey()) {
             // For expiry only op admin key is not required
             context.requireKey(token.adminKey());
         }
@@ -198,11 +198,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 transferTokensToNewTreasury(existingTreasury, newTreasury, token, tokenRelStore, accountStore);
             }
         }
-        // It is required for the token to have an admin Key or metadata key to update metadata
-        if (isMetadataOnlyUpdateOp(op)) {
-            validateTrue(token.hasAdminKey() || token.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
-        }
-
         final var tokenBuilder = customizeToken(token, resolvedExpiry, op);
         tokenStore.put(tokenBuilder.build());
         recordBuilder.tokenType(token.tokenType());
