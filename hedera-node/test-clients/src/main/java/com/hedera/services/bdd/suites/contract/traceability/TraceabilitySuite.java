@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.traceability;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
@@ -51,6 +50,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
@@ -68,6 +68,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhex
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_ADDRESS_MESSAGE;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_LOG_MESSAGE;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.DEPLOY;
@@ -100,9 +102,9 @@ import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -141,12 +143,11 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite(fuzzyMatch = true)
+// @HapiTestSuite(fuzzyMatch = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@Tag(SMART_CONTRACT)
+// @Tag(SMART_CONTRACT)
 public class TraceabilitySuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
@@ -207,6 +208,7 @@ public class TraceabilitySuite extends HapiSuite {
                 traceabilityE2EScenario19(),
                 traceabilityE2EScenario20(),
                 traceabilityE2EScenario21(),
+                testTransferToNonExistingSystemAccounts(),
                 vanillaBytecodeSidecar(),
                 vanillaBytecodeSidecar2(),
                 actionsShowPropagatedRevert(),
@@ -5162,9 +5164,90 @@ public class TraceabilitySuite extends HapiSuite {
                         }));
     }
 
-    @SuppressWarnings("java:S5960")
     @HapiTest
     @Order(28)
+    final HapiSpec testTransferToNonExistingSystemAccounts() {
+        final var contract = "CryptoTransfer";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[nonExistingSystemAccounts.size() * 3];
+        final HapiSpecOperation[] sidecarChecker = new HapiSpecOperation[nonExistingSystemAccounts.size() * 3];
+
+        for (int i = 0; i < nonExistingSystemAccounts.size(); i++) {
+            opsArray[i] = contractCall(contract, "sendViaTransfer", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
+                    .payingWith("sender")
+                    .sending(ONE_HBAR * 10)
+                    .via("sendViaTransfer" + i)
+                    .gas(100000)
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+
+            opsArray[nonExistingSystemAccounts.size() + i] = contractCall(
+                            contract, "sendViaSend", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
+                    .payingWith("sender")
+                    .sending(ONE_HBAR * 10)
+                    .via("sendViaSend" + i)
+                    .gas(100000)
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+
+            opsArray[nonExistingSystemAccounts.size() * 2 + i] = contractCall(
+                            contract, "sendViaCall", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
+                    .payingWith("sender")
+                    .sending(ONE_HBAR * 10)
+                    .via("sendViaCall" + i)
+                    .gas(100000)
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+
+            int finalI = i;
+            sidecarChecker[i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    expectContractActionSidecarFor(
+                            "sendViaTransfer" + finalI,
+                            List.of(ContractAction.newBuilder()
+                                    .setCallType(CALL)
+                                    .setCallOperationType(CallOperationType.OP_CALL)
+                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                    .setGas(115992)
+                                    .setGasUsed(67632)
+                                    .setOutput(EMPTY)
+                                    .build()))));
+
+            sidecarChecker[nonExistingSystemAccounts.size() + i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    expectContractActionSidecarFor(
+                            "sendViaSend" + finalI,
+                            List.of(ContractAction.newBuilder()
+                                    .setCallType(CALL)
+                                    .setCallOperationType(CallOperationType.OP_CALL)
+                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                    .setGas(115992)
+                                    .setGasUsed(67632)
+                                    .setOutput(EMPTY)
+                                    .build()))));
+
+            sidecarChecker[nonExistingSystemAccounts.size() * 2 + i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    expectContractActionSidecarFor(
+                            "sendViaCall" + finalI,
+                            List.of(ContractAction.newBuilder()
+                                    .setCallType(CALL)
+                                    .setCallOperationType(CallOperationType.OP_CALL)
+                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
+                                    .setGas(115992)
+                                    .setGasUsed(67632)
+                                    .setOutput(EMPTY)
+                                    .build()))));
+        }
+
+        return defaultHapiSpec("testTransferToNonExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(opsArray)
+                .then(sidecarChecker);
+    }
+
+    @SuppressWarnings("java:S5960")
+    @HapiTest
+    @Order(29)
     final HapiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
                 .given(

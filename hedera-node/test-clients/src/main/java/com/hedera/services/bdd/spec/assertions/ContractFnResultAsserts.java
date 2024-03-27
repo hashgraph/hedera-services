@@ -101,6 +101,23 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         };
     }
 
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isEqualOrGreaterThan(
+            BigInteger expected) {
+        return ignore -> actualObjs -> {
+            try {
+                if (actualObjs[0] instanceof BigInteger actual) {
+                    assertTrue(
+                            actual.compareTo(expected) >= 0,
+                            "Expected " + actual + " to be equal or greater than" + expected);
+                    assertEquals(1, actualObjs.length, "Expected a single object");
+                }
+            } catch (Exception e) {
+                return Optional.of(e);
+            }
+            return Optional.empty();
+        };
+    }
+
     public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isRandomResult(Object[] objs) {
         return ignore -> actualObjs -> validateRandomResult(objs, actualObjs);
     }
