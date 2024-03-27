@@ -293,10 +293,10 @@ public class TokenMetadataSpecs extends HapiSuite {
                                 .initialSupply(500)
                                 .decimals(1)
                                 .metaData(metadata),
-                        getTokenInfo(PRIMARY).hasMetadata(metadata).logged())
+                        getTokenInfo(PRIMARY).hasMetadata(metadata))
                 .then(
-                        tokenUpdate(PRIMARY).newMetadata("newMetadata").signedBy(GENESIS, METADATA_KEY),
-                        getTokenInfo(PRIMARY).hasMetadata("newMetadata").logged());
+                        tokenUpdate(PRIMARY).newMetadata("newMetadata").signedBy(DEFAULT_PAYER, METADATA_KEY),
+                        getTokenInfo(PRIMARY).hasMetadata("newMetadata"));
     }
 
     @HapiTest
@@ -323,10 +323,10 @@ public class TokenMetadataSpecs extends HapiSuite {
                                 .initialSupply(500)
                                 .decimals(1)
                                 .metaData(metadata),
-                        getTokenInfo(PRIMARY).hasMetadata(metadata).logged())
+                        getTokenInfo(PRIMARY).hasMetadata(metadata))
                 .then(
-                        tokenUpdate(PRIMARY).newMetadata("newMetadata").signedBy(GENESIS, ADMIN_KEY),
-                        getTokenInfo(PRIMARY).hasMetadata("newMetadata").logged());
+                        tokenUpdate(PRIMARY).newMetadata("newMetadata").signedBy(DEFAULT_PAYER, ADMIN_KEY),
+                        getTokenInfo(PRIMARY).hasMetadata("newMetadata"));
     }
 
     @HapiTest
@@ -356,7 +356,7 @@ public class TokenMetadataSpecs extends HapiSuite {
                         getTokenInfo(PRIMARY).logged(),
                         tokenUpdate(PRIMARY)
                                 .newMetadata("newMetadata")
-                                .signedBy(GENESIS)
+                                .signedBy(DEFAULT_PAYER)
                                 .hasKnownStatus(INVALID_SIGNATURE))
                 .then();
     }
@@ -387,7 +387,7 @@ public class TokenMetadataSpecs extends HapiSuite {
                         getTokenInfo(PRIMARY).logged(),
                         tokenUpdate(PRIMARY)
                                 .newMetadata("newMetadata")
-                                .signedBy(GENESIS)
+                                .signedBy(DEFAULT_PAYER)
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE))
                 .then();
     }
