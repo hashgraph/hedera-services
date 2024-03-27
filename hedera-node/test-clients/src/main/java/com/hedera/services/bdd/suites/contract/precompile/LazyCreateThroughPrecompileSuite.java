@@ -200,17 +200,23 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 IntStream.range(0, n)
                                         .mapToObj(i -> ByteString.copyFromUtf8(ONE_TIME + i))
                                         .toList()))
-                .when(sourcing(() -> contractCall(
-                                AUTO_CREATION_MODES,
-                                "createSeveralDirectly",
-                                headlongFromHexed(nftMirrorAddr.get()),
-                                nCopiesOfSender(n, mirrorAddrWith(civilianId.get())),
-                                nNonMirrorAddressFrom(n, civilianId.get() + 3_050_000),
-                                LongStream.iterate(1L, l -> l + 1).limit(n).toArray())
-                        .via(creationAttempt)
-                        .gas(GAS_TO_OFFER)
-                        .alsoSigningWithFullPrefix(CIVILIAN)
-                        .hasKnownStatusFrom(MAX_CHILD_RECORDS_EXCEEDED, CONTRACT_REVERT_EXECUTED)))
+                .when(
+                        cryptoApproveAllowance()
+                                .payingWith(CIVILIAN)
+                                .addNftAllowance(CIVILIAN, nft, AUTO_CREATION_MODES, true, List.of()),
+                        sourcing(() -> contractCall(
+                                        AUTO_CREATION_MODES,
+                                        "createSeveralDirectly",
+                                        headlongFromHexed(nftMirrorAddr.get()),
+                                        nCopiesOfSender(n, mirrorAddrWith(civilianId.get())),
+                                        nNonMirrorAddressFrom(n, civilianId.get() + 3_050_000),
+                                        LongStream.iterate(1L, l -> l + 1)
+                                                .limit(n)
+                                                .toArray())
+                                .via(creationAttempt)
+                                .gas(GAS_TO_OFFER)
+                                .alsoSigningWithFullPrefix(CIVILIAN)
+                                .hasKnownStatusFrom(MAX_CHILD_RECORDS_EXCEEDED, CONTRACT_REVERT_EXECUTED)))
                 .then(
                         // mono-service did not do an "orderly shutdown" of the EVM transaction when it hit
                         // a resource limit exception like MAX_CHILD_RECORDS_EXCEEDED, instead throwing an
@@ -257,17 +263,21 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(
                                         idLit -> nftMirrorAddr.set(asHexedSolidityAddress(asToken(idLit)))),
                         mintToken(nft, List.of(ByteString.copyFromUtf8(ONE_TIME))))
-                .when(sourcing(() -> contractCall(
-                                AUTO_CREATION_MODES,
-                                CREATE_DIRECTLY,
-                                headlongFromHexed(nftMirrorAddr.get()),
-                                mirrorAddrWith(civilianId.get()),
-                                mirrorAddrWith(civilianId.get() + 1_000_001),
-                                1L,
-                                false)
-                        .via(creationAttempt)
-                        .gas(GAS_TO_OFFER)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .when(
+                        cryptoApproveAllowance()
+                                .payingWith(CIVILIAN)
+                                .addNftAllowance(CIVILIAN, nft, AUTO_CREATION_MODES, true, List.of()),
+                        sourcing(() -> contractCall(
+                                        AUTO_CREATION_MODES,
+                                        CREATE_DIRECTLY,
+                                        headlongFromHexed(nftMirrorAddr.get()),
+                                        mirrorAddrWith(civilianId.get()),
+                                        mirrorAddrWith(civilianId.get() + 1_000_001),
+                                        1L,
+                                        false)
+                                .via(creationAttempt)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .then(childRecordsCheck(
                         creationAttempt, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ALIAS_KEY)));
     }
