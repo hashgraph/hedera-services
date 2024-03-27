@@ -96,6 +96,8 @@ public class ContractHTSSuite extends HapiSuite {
         return List.of();
     }
 
+    // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+    // since we have CONTRACT_ID key
     @HapiTest
     final HapiSpec nonZeroTransfersFail() {
         final var theSecondReceiver = "somebody2";
@@ -115,12 +117,13 @@ public class ContractHTSSuite extends HapiSuite {
                                 .initialSupply(TOTAL_SUPPLY)
                                 .treasury(TOKEN_TREASURY),
                         uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
-                        contractCreate(FEE_DISTRIBUTOR),
+                        contractCreate(FEE_DISTRIBUTOR).refusingEthConversion(),
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                        VERSATILE_TRANSFERS,
-                                        asHeadlongAddress(getNestedContractAddress(FEE_DISTRIBUTOR, spec))))),
+                                                VERSATILE_TRANSFERS,
+                                                asHeadlongAddress(getNestedContractAddress(FEE_DISTRIBUTOR, spec)))
+                                        .refusingEthConversion())),
                         tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(A_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(A_TOKEN)),

@@ -50,6 +50,7 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.domain.ParsedItem;
 import com.hedera.services.bdd.spec.utilops.domain.RecordSnapshot;
 import com.hedera.services.bdd.spec.utilops.domain.SuiteSnapshots;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -718,7 +719,12 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         om.writeValue(fout, suiteSnapshots);
     }
 
-    private static Path resourceLocOf(@NonNull final String snapshotLoc, @NonNull final String suiteName) {
+    private static Path resourceLocOf(@NonNull final String snapshotLoc, @NonNull String suiteName) {
+        // If we start a test with Ethereum context we are adding a "_Eth" suffix to test name.
+        // Before we start a test we need to remove this suffix to get the correct snapshot file name.
+        if (suiteName.endsWith(HapiSuite.ETH_SUFFIX)) {
+            suiteName = suiteName.replace(HapiSuite.ETH_SUFFIX, "");
+        }
         return Paths.get(snapshotLoc, suiteName + ".json");
     }
 

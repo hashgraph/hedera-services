@@ -357,4 +357,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     protected MoreObjects.ToStringHelper toStringHelper() {
         return super.toStringHelper().add("contract", contract).add("abi", abi).add("params", Arrays.toString(params));
     }
+
+    public void setParams(Object[] params) {
+        this.params = params;
+    }
 }

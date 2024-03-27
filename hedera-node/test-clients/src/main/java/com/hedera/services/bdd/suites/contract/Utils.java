@@ -367,6 +367,15 @@ public class Utils {
             final var numRecords = response.getChildTransactionRecordsCount();
             int numExpectedChildren = givenNumExpectedChildren;
             int childOfInterest = givenChildOfInterest;
+
+            // if we use ethereum transaction for contract creation, we have one additional child record
+            var creation2ContractId =
+                    lookup.getResponseRecord().getContractCreateResult().getContractID();
+            if (spec.registry().hasEVMAddress(String.valueOf(creation2ContractId.getContractNum()))) {
+                numExpectedChildren++;
+                childOfInterest++;
+            }
+
             if (numRecords == numExpectedChildren + 1
                     && TxnUtils.isEndOfStakingPeriodRecord(response.getChildTransactionRecords(0))) {
                 // This transaction may have had a preceding record for the end-of-day

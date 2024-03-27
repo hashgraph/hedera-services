@@ -198,6 +198,7 @@ public class HevmTransactionFactory {
             @NonNull final AccountID senderId,
             @NonNull final EthTxData ethTxData,
             final long maxGasAllowance) {
+        validateTrue(ethTxData.getAmount() >= 0, CONTRACT_NEGATIVE_VALUE);
         return new HederaEvmTransaction(
                 senderId,
                 relayerId,

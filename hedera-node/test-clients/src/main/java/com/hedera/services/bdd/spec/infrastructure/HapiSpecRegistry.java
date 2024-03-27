@@ -362,6 +362,18 @@ public class HapiSpecRegistry {
         put(token + "Name", name, String.class);
     }
 
+    public void saveEVMAddress(String name, String address) {
+        put(name + "-EVMAddress", address, String.class);
+    }
+
+    public String getEVMAddress(String name) {
+        return get(name + "-EVMAddress", String.class);
+    }
+
+    public boolean hasEVMAddress(String name) {
+        return has(name + "-EVMAddress", String.class);
+    }
+
     public void saveMemo(String entity, String memo) {
         put(entity + "Memo", memo, String.class);
     }

@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSp
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
@@ -111,7 +112,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.contract = contractCreate.contract;
         this.key = contractCreate.key;
         this.autoRenewPeriodSecs = contractCreate.autoRenewPeriodSecs;
-        this.balance = contractCreate.balance;
+        this.balance = mapBalance(contractCreate.balance);
         this.adminKeyControl = contractCreate.adminKeyControl;
         this.adminKeyType = contractCreate.adminKeyType;
         this.memo = contractCreate.memo;
@@ -143,6 +144,25 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.retryLimits = contractCreate.getRetryLimits();
         this.permissibleStatuses = contractCreate.getPermissibleStatuses();
         this.permissiblePrechecks = contractCreate.getPermissiblePrechecks();
+        this.payer = contractCreate.getPayer();
+        this.fee = contractCreate.getFee();
+
+        // todo check if 5 hbars is proper value - copied from HapiEthereumCall
+        this.maxGasAllowance = Optional.of(FIVE_HBARS);
+    }
+
+    private Optional<Long> mapBalance(Optional<Long> balance) {
+        if (balance.isEmpty()) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(WEIBARS_TO_TINYBARS
+                    .multiply(BigInteger.valueOf(balance.get()))
+                    .longValueExact());
+        } catch (ArithmeticException e) {
+            return Optional.of(Long.MAX_VALUE);
+        }
     }
 
     public HapiEthereumContractCreate(
@@ -264,8 +284,15 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var filePath = Utils.getResourcePath(bytecodeFile.get(), ".bin");
         final var fileContents = Utils.extractByteCode(filePath);
 
-        final byte[] callData =
-                Bytes.fromHexString(new String(fileContents.toByteArray())).toArray();
+        byte[] callData;
+        if (args.isPresent() && abi.isPresent()) {
+            final var bytecode = fileContents.concat(TxnUtils.constructorArgsToByteString(abi.get(), args.get()));
+            callData = Bytes.fromHexString(new String(bytecode.toByteArray())).toArray();
+        } else {
+            callData =
+                    Bytes.fromHexString(new String(fileContents.toByteArray())).toArray();
+        }
+
         final var gasPriceBytes = gasLongToBytes(gasPrice.longValueExact());
 
         final var maxFeePerGasBytes = gasLongToBytes(maxFeePerGas.longValueExact());
@@ -318,7 +345,12 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                             ethFileID.ifPresent(builder::setCallData);
                             maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
                         });
-        return b -> b.setEthereumTransaction(opBody);
+
+        return b -> {
+            this.fee.ifPresent(b::setTransactionFee);
+            this.memo.ifPresent(b::setMemo);
+            b.setEthereumTransaction(opBody);
+        };
     }
 
     @Override
