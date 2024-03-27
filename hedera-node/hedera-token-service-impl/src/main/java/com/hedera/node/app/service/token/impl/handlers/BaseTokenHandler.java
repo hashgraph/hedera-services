@@ -398,6 +398,9 @@ public class BaseTokenHandler {
      * @return true if the given token update op is an expiry-only update op
      */
     public static boolean isExpiryOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
+        if (!op.hasExpiry()) {
+            return false;
+        }
         final var defaultWithExpiry = TokenUpdateTransactionBody.newBuilder()
                 .expiry(op.expiry())
                 .token(op.token())
@@ -414,6 +417,9 @@ public class BaseTokenHandler {
      * @return true if the given token update op is an metadata-only update op
      */
     public static boolean isMetadataOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
+        if (!op.hasMetadata()) {
+            return false;
+        }
         final var defaultWithMetadata = TokenUpdateTransactionBody.newBuilder()
                 .metadata(op.metadata())
                 .token(op.token())
