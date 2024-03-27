@@ -30,6 +30,7 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 
 /**
  * Interface to avoid duplicating the exact same {@link org.hyperledger.besu.evm.operation.AbstractCallOperation#execute(MessageFrame, EVM)}
@@ -91,6 +92,11 @@ public interface BasicCustomCallOperation {
         requireNonNull(evm);
         requireNonNull(frame);
         try {
+            final long cost = cost(frame);
+            if (frame.getRemainingGas() < cost) {
+                return new OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            }
+
             final var address = to(frame);
             if (contractRequired(frame, address, featureFlags())
                     && addressChecks().isNeitherSystemNorPresent(address, frame)) {

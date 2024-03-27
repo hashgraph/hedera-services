@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -80,6 +79,7 @@ class CustomCallCodeOperationTest {
 
     @Test
     void catchesUnderflowWhenStackIsEmpty() {
+        givenWellKnownFrameWithNoGasCalc(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
         given(frame.getStackItem(1)).willThrow(UnderflowException.class);
         final var expected = new Operation.OperationResult(0L, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         assertSameResult(expected, subject.execute(frame, evm));
@@ -102,15 +102,15 @@ class CustomCallCodeOperationTest {
     @Test
     void permitsSystemAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
-            givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
+            givenWellKnownFrameWith(1L, SYSTEM_ADDRESS, 2L);
             given(frame.stackSize()).willReturn(7);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
-            final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
+            final var expected = new Operation.OperationResult(REQUIRED_GAS, null);
             assertSameResult(expected, subject.execute(frame, evm));
         }
     }
 
-    private void givenWellKnownFrameWith(final long value, final Address to, final long gas) {
+    private void givenWellKnownFrameWithNoGasCalc(final long value, final Address to, final long gas) {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getStackItem(0)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(gas)));
         given(frame.getStackItem(1)).willReturn(to);
@@ -119,6 +119,11 @@ class CustomCallCodeOperationTest {
         given(frame.getStackItem(4)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(4)));
         given(frame.getStackItem(5)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(5)));
         given(frame.getStackItem(6)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(6)));
+    }
+
+    private void givenWellKnownFrameWith(final long value, final Address to, final long gas) {
+        givenWellKnownFrameWithNoGasCalc(value, to, gas);
+        given(frame.getRemainingGas()).willReturn(REQUIRED_GAS);
         given(gasCalculator.callOperationGasCost(
                         any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(REQUIRED_GAS);

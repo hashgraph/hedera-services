@@ -80,6 +80,7 @@ class CustomStaticCallOperationTest {
 
     @Test
     void catchesUnderflowWhenStackIsEmpty() {
+        givenWellKnownFrameWithNoGasCalc(1, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
         given(frame.getStackItem(1)).willThrow(UnderflowException.class);
         final var expected = new Operation.OperationResult(0L, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         assertSameResult(expected, subject.execute(frame, evm));
@@ -102,15 +103,18 @@ class CustomStaticCallOperationTest {
     @Test
     void permitsSystemAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
-            givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
-            given(frame.stackSize()).willReturn(6);
+            givenWellKnownFrameWith(1L, SYSTEM_ADDRESS, 2L);
+            given(frame.getRemainingGas()).willReturn(0L);
+            given(gasCalculator.callOperationGasCost(
+                            any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                    .willReturn(REQUIRED_GAS);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
         }
     }
 
-    private void givenWellKnownFrameWith(final long value, final Address to, final long gas) {
+    private void givenWellKnownFrameWithNoGasCalc(final long value, final Address to, final long gas) {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getStackItem(0)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(gas)));
         given(frame.getStackItem(1)).willReturn(to);
@@ -118,6 +122,11 @@ class CustomStaticCallOperationTest {
         given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
         given(frame.getStackItem(4)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(4)));
         given(frame.getStackItem(5)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(5)));
+    }
+
+    private void givenWellKnownFrameWith(final long value, final Address to, final long gas) {
+        givenWellKnownFrameWithNoGasCalc(value, to, gas);
+        given(frame.getRemainingGas()).willReturn(REQUIRED_GAS);
         given(gasCalculator.callOperationGasCost(
                         any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(REQUIRED_GAS);
