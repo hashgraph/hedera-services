@@ -39,6 +39,7 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -417,9 +418,13 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             validateTrue(originalToken.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
             builder.metadataKey(op.metadataKey());
         }
-        if (!isExpiryOnlyUpdateOp(op)) {
-            validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
+
+        if (isMetadataOnlyUpdateOp(op)) {
+            validateTrue(originalToken.hasAdminKey() || originalToken.hasMetadataKey(), TOKEN_IS_IMMUTABLE);
+        } else if (!isExpiryOnlyUpdateOp(op)) {
+            validateFalse(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         }
+
         if (op.hasAdminKey()) {
             final var newAdminKey = op.adminKey();
             if (isKeyRemoval(newAdminKey)) {

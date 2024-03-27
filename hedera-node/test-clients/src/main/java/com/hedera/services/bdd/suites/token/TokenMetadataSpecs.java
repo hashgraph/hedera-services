@@ -275,7 +275,7 @@ public class TokenMetadataSpecs extends HapiSuite {
         String metadata = "metadata";
         String saltedName = salted(PRIMARY);
 
-        return defaultHapiSpec("updatingMetadataOnTokenNeedsAdminOrMetadataKey", NONDETERMINISTIC_TOKEN_NAMES)
+        return defaultHapiSpec("updatingMetadataWorksWithMetadataKey", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(100L),
                         newKeyNamed(ADMIN_KEY),
@@ -288,7 +288,6 @@ public class TokenMetadataSpecs extends HapiSuite {
                                 .name(saltedName)
                                 .treasury(TOKEN_TREASURY)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .adminKey(ADMIN_KEY)
                                 .metadataKey(METADATA_KEY)
                                 .maxSupply(1000)
                                 .initialSupply(500)
@@ -306,7 +305,7 @@ public class TokenMetadataSpecs extends HapiSuite {
         String metadata = "metadata";
         String saltedName = salted(PRIMARY);
 
-        return defaultHapiSpec("updatingMetadataOnTokenNeedsAdminOrMetadataKey", NONDETERMINISTIC_TOKEN_NAMES)
+        return defaultHapiSpec("updatingMetadataWorksWithAdminKey", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(100L),
                         newKeyNamed(ADMIN_KEY),
@@ -336,7 +335,7 @@ public class TokenMetadataSpecs extends HapiSuite {
         String metadata = "metadata";
         String saltedName = salted(PRIMARY);
 
-        return defaultHapiSpec("updatingMetadataOnTokenNeedsAdminOrMetadataKey", NONDETERMINISTIC_TOKEN_NAMES)
+        return defaultHapiSpec("cannotUpdateMetadataWithoutAdminOrMetadataKeySignature", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(100L),
                         newKeyNamed(ADMIN_KEY),
@@ -368,7 +367,7 @@ public class TokenMetadataSpecs extends HapiSuite {
         String metadata = "metadata";
         String saltedName = salted(PRIMARY);
 
-        return defaultHapiSpec("updatingMetadataOnTokenNeedsAdminOrMetadataKey", NONDETERMINISTIC_TOKEN_NAMES)
+        return defaultHapiSpec("cannotUpdateMetadataOnImmutableToken", NONDETERMINISTIC_TOKEN_NAMES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(100L),
                         newKeyNamed(ADMIN_KEY),
