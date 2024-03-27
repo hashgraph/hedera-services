@@ -18,7 +18,8 @@ module com.swirlds.base {
             com.swirlds.config.exceptions,
             com.swirlds.config.extensions.test.fixtures,
             com.swirlds.logging,
-            com.swirlds.logging.test.fixtures;
+            com.swirlds.logging.test.fixtures,
+            com.swirlds.common;
 
     requires static com.github.spotbugs.annotations;
 }

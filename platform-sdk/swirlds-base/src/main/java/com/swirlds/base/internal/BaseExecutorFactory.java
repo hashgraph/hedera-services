@@ -17,6 +17,7 @@
 package com.swirlds.base.internal;
 
 import com.swirlds.base.internal.impl.BaseExecutorFactoryImpl;
+import com.swirlds.base.internal.impl.BaseScheduledExecutorService;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -102,5 +103,9 @@ public interface BaseExecutorFactory {
     @NonNull
     static BaseExecutorFactory getInstance() {
         return BaseExecutorFactoryImpl.getInstance();
+    }
+
+    static void addObserver(@NonNull BaseExecutorObserver observer) {
+        BaseScheduledExecutorService.getInstance().addObserver(observer);
     }
 }
