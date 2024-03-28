@@ -1,7 +1,40 @@
 # System accounts
 
-There are some differences when calling operations on system accounts in Hedera and in Ethereum.
+## Definition
+The Hedera network reserves the first 1000 entity numbers for its own uses, and any account with a number in this reserved range is referred to as a system account.
+
+The following addresses are reserved for the Hedera precompiled contracts:
+- 0x167 (0.0.359) - HTS precompile;
+- 0x168 (0.0.360) - ExchangeRate precompile;
+- 0x169 (0.0.361) - PRNG precompile.
+
+Some of the system accounts exist today and more can be created in the future. Certain system accounts have predefined roles in the network. These include:
+- 0.0.2 - treasury account;
+- 0.0.50 - system admin;
+- 0.0.55 - address book admin;
+- 0.0.57 - exchange rates admin;
+- 0.0.58 - freeze admin;
+- 0.0.59 - system delete admin;
+- 0.0.60 - system undelete admin;
+- 0.0.800 - staking reward account;
+- 0.0.801 - node reward account.
+
+Addresses in range 1 → 9 are special addresses on which the Ethereum precompiled contracts exist. This is valid for both Ethereum and Hedera.
+
+Lastly, the system accounts can be divided in these two groups:
+- addresses in range 0 → 750 - accounts that reject hbar transfers. An exception is the HTS precompiled contract that can receive transfers.
+- addresses in range 751 → 1000 - accounts which may receive transfers.
+
+## Rationale
+As a result of the specifics of the system accounts in Hedera described in the section above there are some differences when calling operations on system accounts in Hedera and in Ethereum via smart contract executions.
 This doc covers these differences and describes the expected behavior.
+
+## Operations
+
+Legend of the symbols used in the tables below:
+- ✅ - the operation was successful;
+- ❌ - the operation failed;
+- ❗ - something specific to note when executing an operation.
 
 ### ExtCode operations
 
@@ -9,27 +42,27 @@ This doc covers these differences and describes the expected behavior.
 
 **Ethereum:** Get size of an account’s code. If there’s no code, it returns 0.
 
-**Hedera:** For addresses in range 0x0 - 0x3E8 (0.0.0 - 0.0.1000) it returns 0.
+**Hedera:** For addresses in range 0x0 → 0x3E8 (0.0.0 → 0.0.1000) it returns 0.
 
 `ExtCodeCopy`
 
 **Ethereum:** Copy an account’s code to memory. If a contract doesn’t exist on the address, it copies empty bytes.
 
-**Hedera:** For addresses in range 0x0 - 0x3E8 (0.0.0 - 0.0.1000) it copies empty bytes.
+**Hedera:** For addresses in range 0x0 → 0x3E8 (0.0.0 → 0.0.1000) it copies empty bytes.
 
 `ExtCodeHash`
 
 **Ethereum:** Hash of the chosen account's code, the empty hash (0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470) if the account has no code, or 0 if the account does not exist or has been destroyed.
 
-**Hedera:** For addresses in range 0x0 - 0x3E8 (0.0.0 - 0.0.1000) it returns the empty hash.
+**Hedera:** For addresses in range 0x0 → 0x3E8 (0.0.0 → 0.0.1000) it returns the empty hash.
 
 ### Balance operation
 
 **Ethereum:** Returns balance or 0 if an account or contract doesn’t exist on the address. This is valid for any address.
 
 **Hedera:**
-1. For addresses in range 0x0 - 0x2EE (0.0.0 - 0.0.750): returns 0 as if account doesn’t exist.
-2. For addresses in range 0x2EF - 0x3E8 (0.0.751 - 0.0.1000): returns balance or 0 if an account or contract doesn’t exist on the address. This behavior is the same for addresses above 0.0.1000.
+1. For addresses in range 0x0 → 0x2EE (0.0.0 → 0.0.750): returns 0 as if account doesn’t exist.
+2. For addresses in range 0x2EF → 0x3E8 (0.0.751 → 0.0.1000): returns balance or 0 if an account or contract doesn’t exist on the address. This behavior is the same for addresses above 0.0.1000.
 
 | Address                            | in Ethereum                                                                   | in Hedera                                                                     |
 |------------------------------------|-------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
@@ -47,34 +80,39 @@ This doc covers these differences and describes the expected behavior.
 **Ethereum:** success for any address. If the beneficiary is the same as contract address, it burns the eth and destructs the contract.
 
 **Hedera:**
-1. For addresses in range 0x0 - 0x2EE (0.0.0 - 0.0.750): fail with status `INVALID_SOLIDITY_ADDRESS`.
-2. For addresses in range 0x2EF - 0x3E8 (0.0.751 - 0.0.1000):
+1. For addresses in range 0x0 → 0x2EE (0.0.0 → 0.0.750): fail with status `INVALID_SOLIDITY_ADDRESS`.
+2. For addresses in range 0x2EF → 0x3E8 (0.0.751 → 0.0.1000):
    - success, if account exists and has `receiverSigRequired` == false;
    - success, if account exists and has `receiverSigRequired` == true and account is `sender`;
-   - fail in some failing scenarios such as: beneficiary same as account-to-be-deleted, `receiverSigRequired` == true and signature provided, etc.
+   - fail in some failing scenarios such as: 
+     - beneficiary same as account-to-be-deleted - fail with status `SELF_DESTRUCT_TO_SELF`;
+     - contract-to-be-deleted is a token treasury - fail with status `CONTRACT_IS_TREASURY`;
+     - contract-to-be-deleted has a positive balance - fail with status `TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES`;
+     - contract-to-be-deleted owns NFTs - fail with status `CONTRACT_STILL_OWNS_NFTS`;
+     - beneficiary has `receiverSigRequired` == true, they are not the sender in the message frame - fail with status `INVALID_SIGNATURE`.
 3. For addresses above 0.0.1000: the same as 2. but a hollow account would be created if the beneficiary doesn't exist.
 
-| Address                              |                in Ethereum                 | in Hedera                                                                                                                                                                                                                                                                                     |
-|--------------------------------------|:------------------------------------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 0x0                                  |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                                                                                                                  |
-| 0x1 → 0x9                            |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                                                                                                                  |
-| 0xA → 0x166                          |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                                                                                                                  |
-| 0x167 (0.0.359)                      |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                                                                                                                  |
-| 0x168, 0x169 (0.0.360, 0.0.361)      |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                                                                                                                  |
-| 0x16a → 0x2EE (0.0.362 → 0.0.750)    |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                                                                                                                  |
-| 0x2EF → 0x3E8 (0.0.751 → 0.0.1000)   |                     ✅                      | ✅ - if account exists [0.0.800-0.0.999]<br/>❌ - INVALID_SOLIDITY_ADDRESS if account does not exist [0.0.751 - 0.0.799]<br/>❌ - some failing scenarios (beneficiary same as account-to-be-deleted, receiverSigRequired and no signature provided, etc)                                     |
-| 0x3E8 → ♾️                           |                     ✅                      | ✅ - if account exists and has receiverSigRequired = false<br/>✅ - if (account exists) and (account has receiverSigRequired = true) and (account is sender)<br/>❌ - some failing scenarios (beneficiary same as account-to-be-deleted, receiverSigRequired and no signature provided, etc) |
-| beneficiary same as contract address | ✅ burns the eth and destructs the contract | ❌ - fails with SELF_DESTRUCT_TO_SELF                                                                                                                                                                                                                                                          |
+| Address                              |                in Ethereum                 | in Hedera                                                                                                                                                                                                  |
+|--------------------------------------|:------------------------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0x0                                  |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                               |
+| 0x1 → 0x9                            |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                               |
+| 0xA → 0x166                          |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                               |
+| 0x167 (0.0.359)                      |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                               |
+| 0x168, 0x169 (0.0.360, 0.0.361)      |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                               |
+| 0x16a → 0x2EE (0.0.362 → 0.0.750)    |                     ✅                      | ❌ - INVALID_SOLIDITY_ADDRESS                                                                                                                                                                               |
+| 0x2EF → 0x3E8 (0.0.751 → 0.0.1000)   |                     ✅                      | ✅ - if account exists [0.0.800-0.0.999]<br/>❌ - INVALID_SOLIDITY_ADDRESS if account does not exist [0.0.751 - 0.0.799]<br/>❌ - some failing scenarios described above                                      |
+| 0x3E8 → ♾️                           |                     ✅                      | ✅ - if account exists and has receiverSigRequired = false<br/>✅ - if (account exists) and (account has receiverSigRequired = true) and (account is sender)<br/>❌ - some failing scenarios described above |
+| beneficiary same as contract address | ✅ burns the eth and destructs the contract | ❌ - fails with SELF_DESTRUCT_TO_SELF                                                                                                                                                                       |
 
 ### Call operations (CallOp, DelegateCallOp, CallCodeOp, StaticCallOp)
 
 1. For address 0x0:
    - **Ethereum:** success with no op. There is no contract on this address. It is often associated with token burn & mint/genesis events and used as a generic null address.
    - **Hedera:** success with no op.
-2. For address range 0x1 - 0x9:
+2. For address range 0x1 → 0x9:
    - **Ethereum:** success, the Ethereum precompiles exist on these addresses.
    - **Hedera:** success, the Ethereum precompiles exist on these addresses.
-3. For address range 0xA - 0x166 (0.0.10 - 0.0.358):
+3. For address range 0xA → 0x166 (0.0.10 → 0.0.358):
    - **Ethereum:**
      - success, if the address is a contract, and we are using the correct ABI;
      - success with no op, if there is no contract;
@@ -86,7 +124,7 @@ This doc covers these differences and describes the expected behavior.
      - success with no op, if there is no contract;
      - fail, if the address is a contract, and we are **not** using the correct ABI.
    - **Hedera:** success, the HTS, ExchangeRate and PRNG precompiles exist on these addresses accordingly.
-5. For address range 0x16A - 0x3E8 (0.0.362 - 0.0.1000):
+5. For address range 0x16A → 0x3E8 (0.0.362 → 0.0.1000):
    - **Ethereum:**
      - success, if the address is a contract, and we are using the correct ABI;
      - success with no op, if there is no contract;
@@ -95,21 +133,21 @@ This doc covers these differences and describes the expected behavior.
 
 _Please note that the expected behavior above is valid considering there is no `value` passed. If there is `value`, this falls in the next section._
 
-| Address                            | Calls in Ethereum (ABI)                                                                                                                                                            | Calls in Hedera (ABI)                                                                                                    |
-|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| 0x0                                | ✅ - success with no op, there is no contract on this address                                                                                                                       | ✅ - success with no op                                                                                                   |
-| 0x1 → 0x9                          | ✅ - Ethereum precompiles                                                                                                                                                           | ✅ - Ethereum precompiles                                                                                                 |
-| 0xA → 0x166 (0.0.10 → 0.0.358)     | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract<br/>❌ - if address is a contract and we’re not using the correct ABI | ✅ - success with no op                                                                                                   |
-| 0x167 (0.0.359)                    | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract<br/>❌ - if address is a contract and we’re not using the correct ABI | ✅ - HTS Precompile                                                                                                       |
-| 0x168, 0x169 (0.0.360, 0.0.361)    | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract<br/>❌ - if address is a contract and we’re not using the correct ABI | ✅ - ExchangeRate and PRNG Precompiles                                                                                    |
-| 0x16a → 0x2EE (0.0.362 → 0.0.750)  | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract<br/>❌ - if address is a contract and we’re not using the correct ABI | ✅ - success with no op                                                                                                   |
-| 0x2EF → 0x3E8 (0.0.751 → 0.0.1000) | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract<br/>❌ - if address is a contract and we’re not using the correct ABI | ✅ - success with no op                                                                                                   |
-| 0x3E8 → ♾️ | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract                                                                 | ✅ - if a contract exists and we’re using the correct ABI<br/>❌ - INVALID_SOLIDITY_ADDRESS if a contract does not exist |
+| Address                            | Calls in Ethereum (ABI)                                                                                                                                                            | Calls in Hedera (ABI)                                                                                                  |
+|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| 0x0                                | ✅ - success with no op, there is no contract on this address                                                                                                                       | ✅ - success with no op                                                                                                 |
+| 0x1 → 0x9                          | ✅ - Ethereum precompiles                                                                                                                                                           | ✅ - Ethereum precompiles                                                                                               |
+| 0xA → 0x166 (0.0.10 → 0.0.358)     | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract<br/>❌ - if address is a contract and we’re not using the correct ABI | ✅ - success with no op                                                                                                 |
+| 0x167 (0.0.359)                    | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract<br/>❌ - if address is a contract and we’re not using the correct ABI | ✅ - HTS Precompile                                                                                                     |
+| 0x168, 0x169 (0.0.360, 0.0.361)    | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract<br/>❌ - if address is a contract and we’re not using the correct ABI | ✅ - ExchangeRate and PRNG Precompiles                                                                                  |
+| 0x16a → 0x2EE (0.0.362 → 0.0.750)  | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract<br/>❌ - if address is a contract and we’re not using the correct ABI | ✅ - success with no op                                                                                                 |
+| 0x2EF → 0x3E8 (0.0.751 → 0.0.1000) | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract<br/>❌ - if address is a contract and we’re not using the correct ABI | ✅ - success with no op                                                                                                 |
+| 0x3E8 → ♾️ | ✅ - if address is a contract and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract                                                                 | ✅ - if a contract exists and we’re using the correct ABI<br/>✅ - success with no op, if there is no contract |
 
 ### Transfer and send operations
 
 **Ethereum:**
-1. For addresses in range 0x0 - 0x9: success, value is locked.
+1. For addresses in range 0x0 → 0x9: success, value is locked.
 2. For addresses 0xA and above: 
     - success, if address is a payable contract;
     - success, if address is an account;
@@ -117,10 +155,10 @@ _Please note that the expected behavior above is valid considering there is no `
     - fail, if address is a non-payable contract.
 
 **Hedera:**
-1. For addresses in range 0x0 - 0x2EE (0.0.0 - 0.0.750):
+1. For addresses in range 0x0 → 0x2EE (0.0.0 → 0.0.750):
     - Transfers using `.send` and `.transfer`: fail with status `INVALID_FEE_SUBMITTED`. Exception: `tokenCreate` to address 0x167 which is successful.
     - Transfer of HTS tokens through the HTS precompile: fail with status `INVALID_RECEIVING_NODE_ACCOUNT`.
-2. For addresses in range 0x2EF - 0x3E8 (0.0.751 - 0.0.1000):
+2. For addresses in range 0x2EF → 0x3E8 (0.0.751 → 0.0.1000):
     - success, if account exists and has `receiverSigRequired` == false;
     - success, if account exists and has `receiverSigRequired` == false and account is `sender`;
    
