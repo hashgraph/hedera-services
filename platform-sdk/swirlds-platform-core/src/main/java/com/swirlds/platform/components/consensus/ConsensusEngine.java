@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.platform.components.consensus;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,8 +36,8 @@ public interface ConsensusEngine {
      * @return a list of rounds that came to consensus as a result of adding the event
      */
     @NonNull
-    @InputWireLabel("EventImpl")
-    List<ConsensusRound> addEvent(@NonNull EventImpl event);
+    @InputWireLabel("GossipEvent")
+    List<ConsensusRound> addEvent(@NonNull GossipEvent event);
 
     /**
      * Perform an out-of-band snapshot update. This happens at restart/reconnect boundaries.

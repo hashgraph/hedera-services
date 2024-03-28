@@ -50,7 +50,7 @@ public record InOrderLinkerWiring(
      */
     public static InOrderLinkerWiring create(@NonNull final TaskScheduler<EventImpl> taskScheduler) {
         return new InOrderLinkerWiring(
-                taskScheduler.buildInputWire("unlinked events"),
+                taskScheduler.buildInputWire("events to gossip"),
                 taskScheduler.buildInputWire("non-ancient event window"),
                 taskScheduler.buildInputWire("clear"),
                 taskScheduler.getOutputWire(),

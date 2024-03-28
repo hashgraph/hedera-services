@@ -45,7 +45,7 @@ public record ShadowgraphWiring(
     public static ShadowgraphWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
 
         return new ShadowgraphWiring(
-                taskScheduler.buildInputWire("events to gossip"),
+                taskScheduler.buildInputWire("EventImpl"),
                 taskScheduler.buildInputWire("non-ancient event window"),
                 taskScheduler::flush);
     }

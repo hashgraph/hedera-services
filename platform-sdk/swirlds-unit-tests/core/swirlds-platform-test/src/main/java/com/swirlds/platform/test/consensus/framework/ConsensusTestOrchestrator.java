@@ -134,7 +134,7 @@ public class ConsensusTestOrchestrator {
      * restart, it discards all non-consensus events.
      */
     public void restartAllNodes() {
-        final long lastRoundDecided = nodes.get(0).getConsensus().getLastRoundDecided();
+        final long lastRoundDecided = nodes.getFirst().getLatestRound();
         if (lastRoundDecided < EventConstants.MINIMUM_ROUND_CREATED) {
             System.out.println("Cannot restart, no consensus reached yet");
             return;

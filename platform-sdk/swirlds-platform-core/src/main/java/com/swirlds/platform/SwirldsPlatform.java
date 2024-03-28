@@ -60,15 +60,15 @@ import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.components.AppNotifier;
-import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.DefaultAppNotifier;
-import com.swirlds.platform.components.DefaultConsensusEngine;
 import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
+import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.TransactionConfig;
@@ -118,8 +118,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
-import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -183,7 +181,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -194,11 +191,13 @@ public class SwirldsPlatform implements Platform {
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
 
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
+
     /**
      * the ID of the member running this. Since a node can be a main node or a mirror node, the ID is not a primitive
      * value
      */
     private final NodeId selfId;
+
     /**
      * The shadow graph manager. This wraps a shadow graph, which is an Event graph that adds child pointers to the
      * Hashgraph Event graph. Used for gossiping.
@@ -206,17 +205,17 @@ public class SwirldsPlatform implements Platform {
     private final Shadowgraph shadowGraph;
 
     /**
-     * the object used to calculate consensus. it is volatile because the whole object is replaced when reading a state
-     * from disk or getting it through reconnect
+     * the current nodes in the network and their information
      */
-    private final AtomicReference<Consensus> consensusRef = new AtomicReference<>();
-    /** the current nodes in the network and their information */
     private final AddressBook currentAddressBook;
 
     private final Metrics metrics;
 
-    /** the object that contains all key pairs and CSPRNG state for this member */
+    /**
+     * t he object that contains all key pairs and CSPRNG state for this member
+     */
     private final KeysAndCerts keysAndCerts;
+
     /**
      * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from a
      * genesis state, this is 0.
@@ -238,11 +237,20 @@ public class SwirldsPlatform implements Platform {
     private final SignedStateNexus latestImmutableStateNexus = new LockFreeStateNexus();
 
     private final TransactionPool transactionPool;
-    /** Handles all interaction with {@link SwirldState} */
+
+    /**
+     * Handles all interaction with {@link SwirldState}
+     */
     private final SwirldStateManager swirldStateManager;
-    /** Checks the validity of transactions and submits valid ones to the transaction pool */
+
+    /**
+     * Checks the validity of transactions and submits valid ones to the transaction pool
+     */
     private final SwirldTransactionSubmitter transactionSubmitter;
-    /** clears all pipelines to prepare for a reconnect */
+
+    /**
+     * clears all pipelines to prepare for a reconnect
+     */
     private final Clearable clearAllPipelines;
 
     /**
@@ -281,9 +289,14 @@ public class SwirldsPlatform implements Platform {
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
-    /** Manages emergency recovery */
+    /**
+     * Manages emergency recovery
+     */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
-    /** Controls which states are saved to disk */
+
+    /**
+     * Controls which states are saved to disk
+     */
     private final SavedStateController savedStateController;
 
     private final SignedStateGarbageCollector signedStateGarbageCollector;
@@ -396,12 +409,17 @@ public class SwirldsPlatform implements Platform {
 
         registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
-        final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
-
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        this.shadowGraph = new Shadowgraph(platformContext, currentAddressBook);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        final IntakeEventCounter intakeEventCounter;
+        if (syncConfig.waitForEventsInIntake()) {
+            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
+        } else {
+            intakeEventCounter = new NoOpIntakeEventCounter();
+        }
+        this.shadowGraph = new Shadowgraph(platformContext, currentAddressBook, intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
@@ -585,14 +603,6 @@ public class SwirldsPlatform implements Platform {
 
         final PcesSequencer sequencer = new DefaultPcesSequencer();
 
-        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
-        final IntakeEventCounter intakeEventCounter;
-        if (syncConfig.waitForEventsInIntake()) {
-            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
-        } else {
-            intakeEventCounter = new NoOpIntakeEventCounter();
-        }
-
         final InternalEventValidator internalEventValidator = new DefaultInternalEventValidator(
                 platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
         final EventDeduplicator eventDeduplicator = new StandardEventDeduplicator(platformContext, intakeEventCounter);
@@ -606,8 +616,8 @@ public class SwirldsPlatform implements Platform {
                 intakeEventCounter);
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
         final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
-        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(
-                platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter, e -> {});
+
+        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, currentAddressBook, selfId);
 
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
@@ -733,8 +743,6 @@ public class SwirldsPlatform implements Platform {
                 this::clearAllPipelines,
                 intakeEventCounter,
                 () -> emergencyState.getState("emergency reconnect")) {};
-
-        consensusRef.set(new ConsensusImpl(platformContext, consensusMetrics, getAddressBook()));
 
         latestImmutableStateNexus.setState(initialState.reserve("set latest immutable to initial state"));
 
