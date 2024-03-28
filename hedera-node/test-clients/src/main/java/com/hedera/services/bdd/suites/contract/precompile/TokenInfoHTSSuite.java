@@ -155,7 +155,10 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 getInfoOnDeletedFungibleTokenWorks(),
                 getInfoOnInvalidFungibleTokenFails(),
                 getInfoOnDeletedNonFungibleTokenWorks(),
-                getInfoOnInvalidNonFungibleTokenFails());
+                getInfoOnInvalidNonFungibleTokenFails(),
+                getInfoForFungibleTokenByNFTTokenAddressFails(),
+                getInfoForNFTByFungibleTokenAddressFails(),
+                getInfoForTokenByAccountAddressFails());
     }
 
     List<HapiSpec> positiveSpecs() {
