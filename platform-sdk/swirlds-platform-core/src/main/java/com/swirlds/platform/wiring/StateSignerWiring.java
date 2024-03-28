@@ -42,7 +42,7 @@ public record StateSignerWiring(
      * @return the new wiring instance
      */
     public static StateSignerWiring create(@NonNull final TaskScheduler<StateSignatureTransaction> scheduler) {
-        return new StateSignerWiring(scheduler.buildInputWire("sign a state"), scheduler.getOutputWire());
+        return new StateSignerWiring(scheduler.buildInputWire("state to sign"), scheduler.getOutputWire());
     }
 
     /**

@@ -132,10 +132,15 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      */
     public void synchronize() throws InterruptedException {
         try {
+            logger.info(RECONNECT.getMarker(), "learner calls receiveTree()");
             receiveTree();
+            logger.info(RECONNECT.getMarker(), "learner calls initialize()");
             initialize();
+            logger.info(RECONNECT.getMarker(), "learner calls hash()");
             hash();
+            logger.info(RECONNECT.getMarker(), "learner calls logStatistics()");
             logStatistics();
+            logger.info(RECONNECT.getMarker(), "learner is done synchronizing");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "synchronization interrupted");
             Thread.currentThread().interrupt();
@@ -289,9 +294,23 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         InterruptedException interruptException = null;
         try {
             workGroup.waitForTermination();
+
+            logger.info(
+                    RECONNECT.getMarker(),
+                    "received tree rooted at {} with route {}",
+                    root == null ? "(unknown)" : root.getClass().getName(),
+                    root == null ? "[]" : root.getRoute());
         } catch (final InterruptedException e) { // NOSONAR: Exception is rethrown below after cleanup.
             interruptException = e;
             logger.warn(RECONNECT.getMarker(), "interrupted while waiting for work group termination");
+        } catch (final Throwable t) {
+            logger.info(
+                    RECONNECT.getMarker(),
+                    "caught exception while receiving tree rooted at {} with route {}",
+                    root == null ? "(unknown)" : root.getClass().getName(),
+                    root == null ? "[]" : root.getRoute(),
+                    t);
+            throw t;
         }
 
         if (interruptException != null || workGroup.hasExceptions()) {

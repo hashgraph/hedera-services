@@ -1,3 +1,6 @@
+import com.hedera.node.app.config.ServicesConfigExtension;
+import com.swirlds.config.api.ConfigurationExtension;
+
 module com.hedera.node.app {
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.consensus.impl;
@@ -45,58 +48,41 @@ module com.hedera.node.app {
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires static com.google.auto.service;
     requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app to
-            com.swirlds.platform.core,
             com.hedera.node.test.clients;
     exports com.hedera.node.app.state to
-            com.swirlds.common,
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle to
-            com.hedera.node.services.cli,
-            com.swirlds.common;
+            com.hedera.node.services.cli;
     exports com.hedera.node.app.state.merkle.disk to
-            com.swirlds.common,
             com.hedera.node.services.cli;
     exports com.hedera.node.app.state.merkle.memory to
-            com.hedera.node.services.cli,
-            com.swirlds.common;
-    exports com.hedera.node.app.state.merkle.singleton to
-            com.swirlds.common;
-    exports com.hedera.node.app.authorization to
-            com.swirlds.platform.core;
-    exports com.hedera.node.app.fees to
-            com.swirlds.platform.core;
-    exports com.hedera.node.app.fees.congestion to
-            com.swirlds.platform.core;
-    exports com.hedera.node.app.throttle to
-            com.swirlds.platform.core;
+            com.hedera.node.services.cli;
     exports com.hedera.node.app.workflows.dispatcher;
     exports com.hedera.node.app.config;
     exports com.hedera.node.app.workflows.handle.validation;
-    exports com.hedera.node.app.state.recordcache to
-            com.swirlds.common;
-    exports com.hedera.node.app.services to
-            com.swirlds.platform.core;
     exports com.hedera.node.app.signature to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.info to
-            com.hedera.node.app.test.fixtures,
-            com.swirlds.common,
-            com.swirlds.platform.core;
+            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.handle to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.handle.record to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle.queue to
-            com.swirlds.common,
             com.swirlds.platform;
     exports com.hedera.node.app.version to
             com.hedera.node.app.test.fixtures,
-            com.swirlds.common,
             com.swirlds.platform;
     exports com.hedera.node.app.validation;
+    exports com.hedera.node.app.state.listeners to
+            com.hedera.node.app.test.fixtures;
+
+    provides ConfigurationExtension with
+            ServicesConfigExtension;
 }

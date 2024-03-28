@@ -258,6 +258,38 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             Mockito.verify(schema, Mockito.times(0)).migrate(Mockito.any());
         }
 
+        @Test
+        @DisplayName("Considered as Restart of schema version is before current software version")
+        void considersAsRestartIfSchemaVersionIsBeforeCurrentVersion() {
+            // Given a schema
+            final var schema = Mockito.spy(new TestSchema(versions[1]));
+
+            // When it is registered twice and migrate is called
+            schemaRegistry.register(schema);
+            schemaRegistry.migrate(
+                    merkleTree, versions[1], versions[5], config, networkInfo, mock(WritableEntityIdStore.class));
+
+            // Then migration doesn't happen but restart is called
+            Mockito.verify(schema, Mockito.times(0)).migrate(Mockito.any());
+            Mockito.verify(schema, Mockito.times(1)).restart(Mockito.any());
+        }
+
+        @Test
+        @DisplayName("Considered as Migration if previous version is null")
+        void considersAsMigrationIfPreviousVersionIsNull() {
+            // Given a schema
+            final var schema = Mockito.spy(new TestSchema(versions[1]));
+
+            // When it is registered twice and migrate is called
+            schemaRegistry.register(schema);
+            schemaRegistry.migrate(
+                    merkleTree, null, versions[5], config, networkInfo, mock(WritableEntityIdStore.class));
+
+            // Then migration doesn't happen but restart is called
+            Mockito.verify(schema, Mockito.times(1)).migrate(Mockito.any());
+            Mockito.verify(schema, Mockito.times(1)).restart(Mockito.any());
+        }
+
         @ParameterizedTest(name = "From ({0}, {1}]")
         @CsvSource(
                 textBlock =
@@ -374,7 +406,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @Override
                     public void migrate(@NonNull final MigrationContext ctx) {
                         assertThat(ctx).isNotNull();
-                        assertThat(ctx.previousStates().isEmpty()).isTrue();
+                        assertThat(ctx.previousVersion()).isNull();
                         assertThat(ctx.newStates().size()).isEqualTo(1);
                         final WritableKVState<String, String> fruit =
                                 ctx.newStates().get(FRUIT_STATE_KEY);

@@ -158,7 +158,6 @@ class TopicCreateTransitionLogicTest {
         given(transactionContext.accessor()).willReturn(accessor);
         given(accessor.getTxn()).willReturn(transactionBody);
         given(accountStore.loadAccountOrFailWith(any(), any())).willReturn(autoRenew);
-        given(autoRenew.isSmartContract()).willReturn(false);
         given(validator.isValidAutoRenewPeriod(Duration.newBuilder()
                         .setSeconds(VALID_AUTORENEW_PERIOD_SECONDS)
                         .build()))
@@ -269,7 +268,6 @@ class TopicCreateTransitionLogicTest {
                         .build()))
                 .willReturn(true);
         given(accountStore.loadAccountOrFailWith(any(), any())).willReturn(autoRenew);
-        given(autoRenew.isSmartContract()).willReturn(false);
 
         assertFailsWith(() -> subject.doStateTransition(), AUTORENEW_ACCOUNT_NOT_ALLOWED);
 

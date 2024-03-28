@@ -31,7 +31,9 @@ import java.io.IOException;
 public class MonoSpecialFilesAdapterCodec implements Codec<MerkleSpecialFiles> {
     @NonNull
     @Override
-    public MerkleSpecialFiles parse(final @NonNull ReadableSequentialData input) throws ParseException {
+    public MerkleSpecialFiles parse(
+            final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+            throws ParseException {
         try {
             final var length = input.readInt();
             final var javaIn = new byte[length];

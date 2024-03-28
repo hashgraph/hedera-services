@@ -118,7 +118,7 @@ public class DataFileCollection<D> implements Snapshotable {
     private static final FieldDefinition FIELD_FILECOLLECTION_MAXVALIDKEY =
             new FieldDefinition("maxValidKey", FieldType.UINT64, false, true, false, 2);
 
-    private final MerkleDbConfig config;
+    private final MerkleDbConfig dbConfig;
 
     /** The directory to store data files */
     private final Path storeDir;
@@ -214,7 +214,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * metadata file exist with the legacy store name prefix, they will be processed by this file
      * collection. New data files will be written with {@code storeName} as the prefix.
      *
-     * @param config MerkleDb config
+     * @param dbConfig MerkleDb dbConfig
      * @param storeDir The directory to store data files
      * @param storeName Base name for the data files, allowing more than one DataFileCollection to
      *     share a directory
@@ -228,7 +228,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws IOException If there was a problem creating new data set or opening existing one
      */
     public DataFileCollection(
-            final MerkleDbConfig config,
+            final MerkleDbConfig dbConfig,
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
@@ -236,7 +236,7 @@ public class DataFileCollection<D> implements Snapshotable {
             final LoadedDataCallback<D> loadedDataCallback)
             throws IOException {
         this(
-                config,
+                dbConfig,
                 storeDir,
                 storeName,
                 legacyStoreName,
@@ -251,7 +251,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * will be processed by this file collection. New data files will be written with {@code
      * storeName} as the prefix.
      *
-     * @param config MerkleDb config
+     * @param dbConfig MerkleDb dbConfig
      * @param storeDir The directory to store data files
      * @param storeName Base name for the data files, allowing more than one DataFileCollection to
      *     share a directory
@@ -267,7 +267,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws IOException If there was a problem creating new data set or opening existing one
      */
     protected DataFileCollection(
-            final MerkleDbConfig config,
+            final MerkleDbConfig dbConfig,
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
@@ -276,7 +276,7 @@ public class DataFileCollection<D> implements Snapshotable {
             final Function<List<DataFileReader<D>>, ImmutableIndexedObjectList<DataFileReader<D>>>
                     indexedObjectListConstructor)
             throws IOException {
-        this.config = config;
+        this.dbConfig = dbConfig;
         this.storeDir = storeDir;
         this.storeName = storeName;
         this.legacyStoreName = legacyStoreName;
@@ -373,7 +373,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws IOException If there was a problem opening a new data file
      */
     public void startWriting() throws IOException {
-        startWriting(config.usePbj());
+        startWriting(dbConfig.usePbj());
     }
 
     // Future work: remove this method, once JDB is no longer supported
@@ -699,8 +699,8 @@ public class DataFileCollection<D> implements Snapshotable {
     DataFileReader<D> addNewDataFileReader(final Path filePath, final DataFileMetadata metadata, final boolean usePbj)
             throws IOException {
         final DataFileReader<D> newDataFileReader = usePbj
-                ? new DataFileReaderPbj<>(filePath, dataItemSerializer, metadata)
-                : new DataFileReaderJdb<>(filePath, dataItemSerializer, (DataFileMetadataJdb) metadata);
+                ? new DataFileReaderPbj<>(dbConfig, filePath, dataItemSerializer, metadata)
+                : new DataFileReaderJdb<>(dbConfig, filePath, dataItemSerializer, (DataFileMetadataJdb) metadata);
         dataFiles.getAndUpdate(currentFileList -> {
             try {
                 return (currentFileList == null)
@@ -765,7 +765,7 @@ public class DataFileCollection<D> implements Snapshotable {
         // write metadata, this will be incredibly fast, and we need to capture min and max key
         // while in save lock
         final KeyRange keyRange = validKeyRange;
-        if (config.usePbj()) {
+        if (dbConfig.usePbj()) {
             final Path metadataFile = directory.resolve(storeName + METADATA_FILENAME_SUFFIX);
             try (final OutputStream fileOut = Files.newOutputStream(metadataFile)) {
                 final WritableSequentialData out = new WritableStreamingData(fileOut);
@@ -806,8 +806,8 @@ public class DataFileCollection<D> implements Snapshotable {
             try {
                 for (int i = 0; i < fullWrittenFilePaths.length; i++) {
                     dataFileReaders[i] = fullWrittenFilePaths[i].toString().endsWith(FILE_EXTENSION)
-                            ? new DataFileReaderPbj<>(fullWrittenFilePaths[i], dataItemSerializer)
-                            : new DataFileReaderJdb<>(fullWrittenFilePaths[i], dataItemSerializer);
+                            ? new DataFileReaderPbj<>(dbConfig, fullWrittenFilePaths[i], dataItemSerializer)
+                            : new DataFileReaderJdb<>(dbConfig, fullWrittenFilePaths[i], dataItemSerializer);
                 }
                 // sort the readers into data file index order
                 Arrays.sort(dataFileReaders);

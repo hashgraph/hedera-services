@@ -18,10 +18,10 @@ package com.hedera.node.app.service.schedule.impl;
 
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -32,7 +32,7 @@ public final class ScheduleStoreUtility {
     // @todo('7773') This requires rebuilding the equality virtual map on migration,
     //      because it's different from ScheduleVirtualValue (and must be, due to PBJ shift)
     @SuppressWarnings("UnstableApiUsage")
-    public static String calculateStringHash(@NonNull final Schedule scheduleToHash) {
+    public static Bytes calculateBytesHash(@NonNull final Schedule scheduleToHash) {
         Objects.requireNonNull(scheduleToHash);
         final Hasher hasher = Hashing.sha256().newHasher();
         if (scheduleToHash.memo() != null) {
@@ -49,7 +49,7 @@ public final class ScheduleStoreUtility {
         //               differential testing completes
         hasher.putLong(scheduleToHash.providedExpirationSecond());
         hasher.putBoolean(scheduleToHash.waitForExpiry());
-        return hasher.hash().toString();
+        return Bytes.wrap(hasher.hash().asBytes());
     }
 
     @SuppressWarnings("UnstableApiUsage")
@@ -57,13 +57,6 @@ public final class ScheduleStoreUtility {
         final byte[] keyBytes = Key.PROTOBUF.toBytes(keyToAdd).toByteArray();
         hasher.putInt(keyBytes.length);
         hasher.putBytes(keyBytes);
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
-    private static void addToHash(final Hasher hasher, final AccountID accountToAdd) {
-        final byte[] accountIdBytes = AccountID.PROTOBUF.toBytes(accountToAdd).toByteArray();
-        hasher.putInt(accountIdBytes.length);
-        hasher.putBytes(accountIdBytes);
     }
 
     @SuppressWarnings("UnstableApiUsage")

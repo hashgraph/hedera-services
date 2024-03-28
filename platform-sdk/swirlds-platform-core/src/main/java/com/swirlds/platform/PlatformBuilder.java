@@ -29,7 +29,6 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -47,15 +46,17 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
@@ -63,10 +64,12 @@ import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -97,6 +100,9 @@ public final class PlatformBuilder {
      */
     private Path settingsPath = getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME);
 
+    private Consumer<GossipEvent> preconsensusEventConsumer;
+    private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
+
     /**
      * Create a new platform builder.
      *
@@ -119,6 +125,8 @@ public final class PlatformBuilder {
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.genesisStateBuilder = Objects.requireNonNull(genesisStateBuilder);
         this.selfId = Objects.requireNonNull(selfId);
+
+        StaticSoftwareVersion.setSoftwareVersion(softwareVersion);
     }
 
     /**
@@ -162,6 +170,69 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Provide the platform with the class ID of the previous software version. Needed at migration boundaries if the
+     * class ID of the software version has changed.
+     *
+     * @param previousSoftwareVersionClassId the class ID of the previous software version
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withPreviousSoftwareVersionClassId(final long previousSoftwareVersionClassId) {
+        final Set<Long> softwareVersions = new HashSet<>();
+        softwareVersions.add(softwareVersion.getClassId());
+        softwareVersions.add(previousSoftwareVersionClassId);
+        StaticSoftwareVersion.setSoftwareVersion(softwareVersions);
+        return this;
+    }
+
+    /**
+     * Registers a callback that is called for each valid non-ancient preconsensus event in topological order (i.e.
+     * after each event exits the orphan buffer). Useful for scenarios where access to this internal stream of events is
+     * useful (e.g. UI hashgraph visualizers).
+     *
+     * <p>
+     * Among all callbacks in the following list, it is guaranteed that callbacks will not be called concurrently, and
+     * that there will be a happens-before relationship between each of the callbacks.
+     *
+     * <ul>
+     *     <li>{@link #withPreconsensusEventCallback(Consumer)} (i.e. this callback)</li>
+     *     <li>{@link #withConsensusSnapshotOverrideCallback(Consumer)}</li>
+     * </ul>
+     *
+     * @param preconsensusEventConsumer the callback to register
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withPreconsensusEventCallback(
+            @NonNull final Consumer<GossipEvent> preconsensusEventConsumer) {
+        this.preconsensusEventConsumer = Objects.requireNonNull(preconsensusEventConsumer);
+        return this;
+    }
+
+    /**
+     * Registers a callback that is called when the consensus snapshot is specified by an out of band operation (i.e.
+     * restart or reconnect). Useful for scenarios where access to this internal stream of data is useful (e.g. UI
+     * hashgraph visualizers).
+     *
+     * <p>
+     * Among all callbacks in the following list, it is guaranteed that callbacks will not be called concurrently, and
+     * that there will be a happens-before relationship between each of the callbacks.
+     *
+     * <ul>
+     *     <li>{@link #withPreconsensusEventCallback(Consumer)}</li>
+     *     <li>{@link #withConsensusSnapshotOverrideCallback(Consumer)} (i.e. this callback)</li>
+     * </ul>
+     *
+     * @return
+     */
+    @NonNull
+    public PlatformBuilder withConsensusSnapshotOverrideCallback(
+            @NonNull final Consumer<ConsensusSnapshot> snapshotOverrideConsumer) {
+        this.snapshotOverrideConsumer = Objects.requireNonNull(snapshotOverrideConsumer);
+        return this;
+    }
+
+    /**
      * Build the configuration for the node.
      *
      * @return the configuration
@@ -172,7 +243,6 @@ public final class PlatformBuilder {
             configurationBuilder = ConfigurationBuilder.create();
         }
 
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
         rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configurationBuilder, settingsPath));
 
         final Configuration configuration = configurationBuilder.build();
@@ -229,8 +299,8 @@ public final class PlatformBuilder {
         // time this class is used.
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                stateConfig, new Shutdown()::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
+        final EmergencyRecoveryManager emergencyRecoveryManager =
+                new EmergencyRecoveryManager(stateConfig, basicConfig.getEmergencyRecoveryFileLoadDir());
 
         try (final ReservedSignedState initialState = getInitialState(
                 platformContext,
@@ -286,7 +356,9 @@ public final class PlatformBuilder {
                     swirldName,
                     softwareVersion,
                     initialState.get(),
-                    emergencyRecoveryManager);
+                    emergencyRecoveryManager,
+                    preconsensusEventConsumer,
+                    snapshotOverrideConsumer);
 
             if (firstTimeSetup) {
                 MetricsDocUtils.writeMetricsDocumentToFile(getGlobalMetrics(), getPlatforms(), configuration);

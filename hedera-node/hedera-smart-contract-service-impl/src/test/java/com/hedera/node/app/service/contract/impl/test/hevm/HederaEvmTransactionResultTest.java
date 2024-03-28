@@ -178,7 +178,7 @@ class HederaEvmTransactionResultTest {
         assertEquals(GAS_LIMIT / 2, protoResult.gasUsed());
         assertEquals(bloomForAll(BESU_LOGS), protoResult.bloom());
         assertEquals(OUTPUT_DATA, protoResult.contractCallResult());
-        assertNull(protoResult.errorMessage());
+        assertEquals("", protoResult.errorMessage());
         assertNull(protoResult.senderId());
         assertEquals(CALLED_CONTRACT_ID, protoResult.contractID());
         assertEquals(pbjLogsFrom(BESU_LOGS), protoResult.logInfo());
@@ -217,7 +217,7 @@ class HederaEvmTransactionResultTest {
         assertEquals(GAS_LIMIT / 2, protoResult.gasUsed());
         assertEquals(bloomForAll(BESU_LOGS), protoResult.bloom());
         assertEquals(OUTPUT_DATA, protoResult.contractCallResult());
-        assertNull(protoResult.errorMessage());
+        assertEquals("", protoResult.errorMessage());
         assertEquals(CALLED_CONTRACT_ID, protoResult.contractID());
         assertEquals(pbjLogsFrom(BESU_LOGS), protoResult.logInfo());
         assertEquals(createdIds, protoResult.createdContractIDs());
@@ -267,7 +267,7 @@ class HederaEvmTransactionResultTest {
         assertEquals(GAS_LIMIT / 2, queryResult.gasUsed());
         assertEquals(bloomForAll(BESU_LOGS), queryResult.bloom());
         assertEquals(OUTPUT_DATA, queryResult.contractCallResult());
-        assertNull(queryResult.errorMessage());
+        assertEquals("", queryResult.errorMessage());
         assertNull(queryResult.senderId());
         assertEquals(CALLED_CONTRACT_ID, queryResult.contractID());
         assertEquals(pbjLogsFrom(BESU_LOGS), queryResult.logInfo());

@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +39,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -1080,10 +1080,14 @@ class TipsetEventCreatorTests {
 
                 if (eventIndex == 0) {
                     final long birthRound = event.getHashedData().getBirthRound();
-                    assertEquals(ConsensusConstants.ROUND_FIRST, birthRound);
+                    assertEquals(ROUND_FIRST, birthRound);
                 } else {
                     final long birthRound = event.getHashedData().getBirthRound();
-                    assertEquals(pendingConsensusRound, birthRound);
+                    if (useBirthRoundForAncient) {
+                        assertEquals(pendingConsensusRound, birthRound);
+                    } else {
+                        assertEquals(ROUND_FIRST, birthRound);
+                    }
                 }
             }
         }

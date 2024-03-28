@@ -20,11 +20,11 @@ import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.consensus.AncestorSearch;
 import com.swirlds.platform.consensus.CandidateWitness;
-import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.ConsensusRounds;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -34,14 +34,13 @@ import com.swirlds.platform.consensus.CountingVote;
 import com.swirlds.platform.consensus.InitJudges;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.consensus.RoundElections;
-import com.swirlds.platform.consensus.SequentialRingBuffer;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -52,7 +51,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -144,8 +142,6 @@ import org.apache.logging.log4j.Logger;
 public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus {
 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
-    /** consensus configuration */
-    private final ConsensusConfig config;
     /** the only address book currently, until address book changes are implemented */
     private final AddressBook addressBook;
     /** metrics related to consensus */
@@ -195,40 +191,32 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     /**
      * Constructs an empty object (no events) to keep track of elections and calculate consensus.
      *
-     * @param config consensus configuration
+     * @param platformContext  the platform context containing configuration
      * @param consensusMetrics metrics related to consensus
-     * @param addressBook the global address book, which never changes
-     * @param ancientMode describes how we are currently computing "ancientness" of events
+     * @param addressBook      the global address book, which never changes
      */
     public ConsensusImpl(
-            @NonNull final ConsensusConfig config,
+            @NonNull final PlatformContext platformContext,
             @NonNull final ConsensusMetrics consensusMetrics,
-            @NonNull final AddressBook addressBook,
-            @NonNull final AncientMode ancientMode) {
-        super(config, new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2));
-        this.config = config;
+            @NonNull final AddressBook addressBook) {
+        super(platformContext);
         this.consensusMetrics = consensusMetrics;
 
         // until we implement address book changes, we will just use the use this address book
         this.addressBook = addressBook;
 
         this.rounds = new ConsensusRounds(config, getStorage(), addressBook);
-        this.ancientMode = Objects.requireNonNull(ancientMode);
-    }
-
-    @Override
-    public void loadFromSignedState(@NonNull final SignedState signedState) {
-        reset();
-        loadSnapshot(signedState.getState().getPlatformState().getSnapshot());
+        this.ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
     }
 
     /**
      * Load consensus from a snapshot. This will continue consensus from the round of the snapshot
      * once all the required events are provided.
-     *
-     * <p>NOTE: once the snapshot starts being saved in the signed state, {@link
-     * #loadFromSignedState(SignedState)} will call into this method
      */
+    @Override
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {
         reset();
         initJudges = new InitJudges(snapshot.round(), new HashSet<>(snapshot.judgeHashes()));
@@ -239,7 +227,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     }
 
     /** Reset this instance to a state of a newly created instance */
-    public void reset() {
+    private void reset() {
         recentEvents.clear();
         rounds.reset();
         numConsensus = 0;
@@ -664,8 +652,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
         // Future work: prior to enabling a birth round based ancient mode, we need to use real values for
         // previousRoundNonAncient and previousRoundNonExpired. This is currently a place holder.
-        final long previousRoundNonAncient = 0;
-        final long previousRoundNonExpired = 0;
+        final long previousRoundNonAncient = ConsensusConstants.ROUND_FIRST;
+        final long previousRoundNonExpired = ConsensusConstants.ROUND_FIRST;
 
         final long nonAncientThreshold = ancientMode.selectIndicator(
                 getMinGenerationNonAncient(),

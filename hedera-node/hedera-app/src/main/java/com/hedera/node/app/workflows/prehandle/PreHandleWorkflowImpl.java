@@ -53,7 +53,7 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -356,7 +356,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         }
         // If not, bootstrap the expanded signature pairs by grabbing all prefixes that are "full" keys already
         final var originals = txInfo.signatureMap().sigPairOrElse(emptyList());
-        final var expanded = new HashSet<ExpandedSignaturePair>();
+        final var expanded = new LinkedHashSet<ExpandedSignaturePair>();
         signatureExpander.expand(originals, expanded);
         // Expand the payer account key signatures if it is not a hollow account
         if (payerIsHollow == PayerIsHollow.NO) {

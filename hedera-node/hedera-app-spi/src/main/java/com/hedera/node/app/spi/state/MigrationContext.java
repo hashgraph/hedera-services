@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.spi.state;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Provides the context for a migration of state from one {@link Schema} version to another.
@@ -88,4 +90,11 @@ public interface MigrationContext {
      * @param stateKey the key of the state to copy and release
      */
     void copyAndReleaseOnDiskState(String stateKey);
+
+    /**
+     * Provides the previous version of the schema. This is useful to know if this is genesis restart
+     * @return the previous version of the schema. Previous version will be null if this is genesis restart
+     */
+    @Nullable
+    SemanticVersion previousVersion();
 }
