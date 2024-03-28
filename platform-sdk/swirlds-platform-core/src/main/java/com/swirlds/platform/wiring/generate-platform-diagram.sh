@@ -38,9 +38,9 @@ pcli diagram \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Transaction Prehandling:applicationTransactionPrehandler,🔮' \
-    -g 'Signature Management:State Signature Collection,stateSigner,🖋️' \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,postHandler_getRoundNumber,postHandler_stateReserver' \
     -g 'State Hasher:stateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
+    -g 'Consensus:Consensus Engine,🚽,🌀' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
