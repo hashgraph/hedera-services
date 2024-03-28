@@ -17,9 +17,13 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.sequence.set.SequenceSet;
+import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,8 +37,11 @@ import java.util.List;
 public class ConsensusOutput implements Clearable {
     private final Time time;
     private final LinkedList<ConsensusRound> consensusRounds;
-    private final LinkedList<EventImpl> addedEvents;
-    private final LinkedList<EventImpl> staleEvents;
+    private final LinkedList<GossipEvent> addedEvents;
+    private final LinkedList<GossipEvent> staleEvents;
+
+    private final SequenceSet<GossipEvent> nonAncientEvents;
+    private final SequenceSet<EventDescriptor> nonAncientConsensusEvents;
 
     /**
      * Creates a new instance.
@@ -45,10 +52,15 @@ public class ConsensusOutput implements Clearable {
         addedEvents = new LinkedList<>();
         consensusRounds = new LinkedList<>();
         staleEvents = new LinkedList<>();
+
+        // FUTURE WORK: birth round compatibility
+        nonAncientEvents = new StandardSequenceSet<>(0, 1024, true, GossipEvent::getGeneration);
+        nonAncientConsensusEvents = new StandardSequenceSet<>(0, 1024, true, EventDescriptor::getGeneration);
     }
 
-    public void eventAdded(@NonNull final EventImpl event) {
+    public void eventAdded(@NonNull final GossipEvent event) {
         addedEvents.add(event);
+        nonAncientEvents.add(event);
     }
 
     public void consensusRound(@NonNull final ConsensusRound consensusRound) {
@@ -57,16 +69,24 @@ public class ConsensusOutput implements Clearable {
             event.setReachedConsTimestamp(time.now());
         }
         consensusRounds.add(consensusRound);
-    }
 
-    public void staleEvent(@NonNull final EventImpl event) {
-        staleEvents.add(event);
+        // Look for stale events
+        for (final EventImpl consensusEvent : consensusRound.getConsensusEvents()) {
+            nonAncientConsensusEvents.add(consensusEvent.getBaseEvent().getDescriptor());
+        }
+        final long ancientThreshold = consensusRound.getNonAncientEventWindow().getAncientThreshold();
+        nonAncientEvents.shiftWindow(ancientThreshold, e -> {
+            if (!nonAncientConsensusEvents.contains(e.getDescriptor())) {
+                staleEvents.add(e);
+            }
+        });
+        nonAncientConsensusEvents.shiftWindow(ancientThreshold);
     }
 
     /**
      * @return a queue of all events that have been marked as stale
      */
-    public @NonNull LinkedList<EventImpl> getStaleEvents() {
+    public @NonNull LinkedList<GossipEvent> getStaleEvents() {
         return staleEvents;
     }
 
@@ -77,15 +97,15 @@ public class ConsensusOutput implements Clearable {
         return consensusRounds;
     }
 
-    public @NonNull LinkedList<EventImpl> getAddedEvents() {
+    public @NonNull LinkedList<GossipEvent> getAddedEvents() {
         return addedEvents;
     }
 
-    public @NonNull List<EventImpl> sortedAddedEvents() {
-        final List<EventImpl> sortedEvents = new ArrayList<>(addedEvents);
-        sortedEvents.sort(Comparator.comparingLong(EventImpl::getGeneration)
-                .thenComparingLong(e -> e.getCreatorId().id())
-                .thenComparing(EventImpl::getBaseHash));
+    public @NonNull List<GossipEvent> sortedAddedEvents() {
+        final List<GossipEvent> sortedEvents = new ArrayList<>(addedEvents);
+        sortedEvents.sort(Comparator.comparingLong(GossipEvent::getGeneration)
+                .thenComparingLong(e -> e.getHashedData().getCreatorId().id())
+                .thenComparing(e -> e.getHashedData().getHash()));
         return sortedEvents;
     }
 

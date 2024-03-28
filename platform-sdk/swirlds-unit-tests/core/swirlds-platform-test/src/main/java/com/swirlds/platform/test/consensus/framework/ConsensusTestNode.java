@@ -105,7 +105,7 @@ public class ConsensusTestNode {
      */
     public void addEvents(final long numberOfEvents) {
         for (int i = 0; i < numberOfEvents; i++) {
-            intake.addLinkedEvent(eventEmitter.emitEvent());
+            intake.addEvent(eventEmitter.emitEvent().getBaseEvent());
         }
     }
 

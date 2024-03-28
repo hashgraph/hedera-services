@@ -17,7 +17,6 @@
 package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
-import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.mockito.Mockito.mock;
@@ -41,19 +40,15 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
-import com.swirlds.platform.wiring.InOrderLinkerWiring;
 import com.swirlds.platform.wiring.OrphanBufferWiring;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -67,12 +62,10 @@ import java.util.concurrent.ForkJoinPool;
  */
 public class TestIntake implements LoadableFromSignedState {
     private final ConsensusImpl consensus;
-    private final Shadowgraph shadowGraph;
     private final ConsensusOutput output;
 
     private final ComponentWiring<EventHasher, GossipEvent> hasherWiring;
     private final OrphanBufferWiring orphanBufferWiring;
-    private final InOrderLinkerWiring linkerWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final WiringModel model;
 
@@ -89,8 +82,6 @@ public class TestIntake implements LoadableFromSignedState {
         // TODO we don't use this any more...
         consensus = new ConsensusImpl(platformContext, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook);
 
-        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
-
         model = WiringModel.create(platformContext, time, mock(ForkJoinPool.class));
 
         hasherWiring = new ComponentWiring<>(model, EventHasher.class, directScheduler("eventHasher"));
@@ -105,12 +96,7 @@ public class TestIntake implements LoadableFromSignedState {
         orphanBufferWiring = OrphanBufferWiring.create(directScheduler("orphanBuffer"));
         orphanBufferWiring.bind(orphanBuffer);
 
-        final InOrderLinker linker = new InOrderLinker(platformContext, time, intakeEventCounter);
-        linkerWiring = InOrderLinkerWiring.create(directScheduler("linker"));
-        linkerWiring.bind(linker);
-
-        final ConsensusEngine consensusEngine =
-                new DefaultConsensusEngine(platformContext, addressBook, selfId); // TODO stale events
+        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, addressBook, selfId);
 
         consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, directScheduler("consensusEngine"));
         consensusEngineWiring.bind(consensusEngine);
@@ -121,12 +107,8 @@ public class TestIntake implements LoadableFromSignedState {
 
         hasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
         postHashCollectorWiring.getOutputWire().solderTo(orphanBufferWiring.eventInput());
-        orphanBufferWiring.eventOutput().solderTo(linkerWiring.eventInput());
-
-        // TODO linker stuff
-        //        linkerWiring.eventOutput().solderTo("shadowgraph", "addEvent", shadowGraph::addEvent);
-        //        linkerWiring.eventOutput().solderTo("output", "eventAdded", output::eventAdded);
-        //        linkerWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+        orphanBufferWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+        orphanBufferWiring.eventOutput().solderTo("output", "eventAdded", output::eventAdded);
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
         consensusRoundOutputWire.solderTo(
@@ -134,7 +116,6 @@ public class TestIntake implements LoadableFromSignedState {
         consensusRoundOutputWire.solderTo("consensusOutputTestTool", "round output", output::consensusRound);
 
         eventWindowManagerWiring.getOutputWire().solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
-        eventWindowManagerWiring.getOutputWire().solderTo(linkerWiring.nonAncientEventWindowInput(), INJECT);
 
         // Ensure unsoldered wires are created.
         hasherWiring.getInputWire(EventHasher::hashEvent);
@@ -161,29 +142,10 @@ public class TestIntake implements LoadableFromSignedState {
     }
 
     /**
-     * Same as {@link #addEvent(GossipEvent)} but skips the linking and inserts this instance
-     */
-    public void addLinkedEvent(@NonNull final EventImpl event) {
-        output.eventAdded(event);
-        if (!consensus.isExpired(event.getBaseEvent())) {
-            shadowGraph.addEvent(event);
-        }
-        // TODO
-        //        consensusEngineWiring.getInputWire(ConsensusEngine::addEvent).put(event);
-    }
-
-    /**
      * @return the consensus used by this intake
      */
     public @NonNull Consensus getConsensus() {
         return consensus;
-    }
-
-    /**
-     * @return the shadowgraph used by this intake
-     */
-    public @NonNull Shadowgraph getShadowGraph() {
-        return shadowGraph;
     }
 
     /**
@@ -200,7 +162,6 @@ public class TestIntake implements LoadableFromSignedState {
     @Override
     public void loadFromSignedState(@NonNull final SignedState signedState) {
         consensus.loadSnapshot(signedState.getState().getPlatformState().getSnapshot());
-        shadowGraph.clear();
     }
 
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {
@@ -216,23 +177,10 @@ public class TestIntake implements LoadableFromSignedState {
                         consensus.getMinGenerationNonAncient(),
                         consensus.getMinRoundGeneration(),
                         GENERATION_THRESHOLD));
-        linkerWiring
-                .nonAncientEventWindowInput()
-                .put(new NonAncientEventWindow(
-                        consensus.getLastRoundDecided(),
-                        consensus.getMinGenerationNonAncient(),
-                        consensus.getMinRoundGeneration(),
-                        GENERATION_THRESHOLD));
 
-        shadowGraph.clear();
-
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                ROUND_FIRST,
-                consensus.getMinGenerationNonAncient(),
-                consensus.getMinGenerationNonAncient(),
-                GENERATION_THRESHOLD);
-
-        shadowGraph.startWithEventWindow(eventWindow);
+        consensusEngineWiring
+                .getInputWire(ConsensusEngine::outOfBandSnapshotUpdate)
+                .put(snapshot);
     }
 
     public @NonNull ConsensusOutput getOutput() {
@@ -241,7 +189,6 @@ public class TestIntake implements LoadableFromSignedState {
 
     public void reset() {
         consensus.loadSnapshot(GENESIS_SNAPSHOT);
-        shadowGraph.clear();
         output.clear();
     }
 
