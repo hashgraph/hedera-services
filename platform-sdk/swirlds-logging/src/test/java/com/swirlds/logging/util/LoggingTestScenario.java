@@ -19,7 +19,7 @@ package com.swirlds.logging.util;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Level;
-import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
+import com.swirlds.logging.api.internal.LoggingSystem;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -86,18 +86,18 @@ public final class LoggingTestScenario {
         }
     }
 
-    public void verifyAssertionRules(HandlerLoggingLevelConfig config) {
+    public void verifyAssertionRules(LoggingSystem system) {
         for (AssertionRule rule : this.assertionsRules) {
-            rule.performAssert(this.scenarioName, config);
+            rule.performAssert(this.scenarioName, system);
         }
     }
 
     private record AssertionRule(String propertyName, Level level, Boolean expectedResult) {
-        public void performAssert(final String scenarioName, final HandlerLoggingLevelConfig config) {
+        public void performAssert(final String scenarioName, final LoggingSystem system) {
             if (this.expectedResult() != null) {
                 Assertions.assertEquals(
                         this.expectedResult(),
-                        config.isEnabled(this.propertyName(), this.level(), null),
+                        system.isEnabled(this.propertyName(), this.level(), null),
                         String.format(
                                 "Scenario %s: AssertionRule %s: but actual was:%s%n",
                                 scenarioName, this, !this.expectedResult()));
