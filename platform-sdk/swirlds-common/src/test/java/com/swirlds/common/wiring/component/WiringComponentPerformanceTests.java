@@ -16,7 +16,6 @@
 
 package com.swirlds.common.wiring.component;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -52,8 +51,8 @@ class WiringComponentPerformanceTests {
 
     @NonNull
     private InputWire<Long> buildOldStyleComponent(@NonNull final SimpleComponent component) {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         final TaskScheduler scheduler = model.schedulerBuilder("test")
                 .withType(TaskSchedulerType.DIRECT)
@@ -68,8 +67,8 @@ class WiringComponentPerformanceTests {
     @NonNull
     private InputWire<Long> buildAutomaticComponent(@NonNull final SimpleComponent component) {
 
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         final TaskScheduler<Void> scheduler = model.schedulerBuilder("test")
                 .withType(TaskSchedulerType.DIRECT)

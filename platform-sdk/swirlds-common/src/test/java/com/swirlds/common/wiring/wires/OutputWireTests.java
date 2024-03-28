@@ -20,7 +20,6 @@ import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMI
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -52,7 +51,7 @@ public class OutputWireTests {
     void orderedSolderToTest(final int count) {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
 
         final TaskScheduler<Integer> intForwarder = model.schedulerBuilder("intForwarder")
                 .withType(TaskSchedulerType.DIRECT)
@@ -108,7 +107,7 @@ public class OutputWireTests {
     void orderedSolderToThrows() {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
 
         final TaskScheduler<Integer> schedulerA = model.schedulerBuilder("schedulerA")
                 .withType(TaskSchedulerType.DIRECT)

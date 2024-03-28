@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -37,8 +36,8 @@ public class EventWindowManagerTests {
     @Test
     void WiringInputTest() {
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
         final ComponentWiring<EventWindowManager, NonAncientEventWindow> wiring = new ComponentWiring<>(
                 model,
                 EventWindowManager.class,

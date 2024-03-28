@@ -194,7 +194,7 @@ class EnhancedKeyStoreLoaderTest {
      * @throws IOException if an I/O error occurs while loading the configuration file.
      */
     private Configuration configure(final Path keyDirectory) throws IOException {
-        ConfigurationBuilder builder = ConfigurationBuilder.create().autoDiscoverExtensions();
+        final ConfigurationBuilder builder = ConfigurationBuilder.create();
         BootstrapUtils.setupConfigBuilder(builder, testDataDirectory.resolve("settings.txt"));
 
         builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());

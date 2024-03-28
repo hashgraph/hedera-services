@@ -61,7 +61,7 @@ public final class DiagramLegendCommand extends AbstractCommand {
         final PlatformContext platformContext = new DefaultPlatformContext(
                 configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
-        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
 
         final TaskScheduler<Integer> sequentialScheduler = model.schedulerBuilder("SequentialScheduler")
                 .withType(TaskSchedulerType.SEQUENTIAL)

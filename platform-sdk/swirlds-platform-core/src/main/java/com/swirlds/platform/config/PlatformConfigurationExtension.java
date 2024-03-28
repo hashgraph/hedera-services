@@ -25,6 +25,7 @@ import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
@@ -87,5 +88,11 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
                 TransactionConfig.class,
                 UptimeConfig.class,
                 VirtualMapConfig.class);
+    }
+
+    @NonNull
+    @Override
+    public Set<ConverterPair<?>> getConverters() {
+        return Set.of(new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse));
     }
 }
