@@ -17,6 +17,7 @@
 package com.swirlds.common.stream.internal;
 
 import static com.swirlds.common.stream.internal.StreamValidationResult.PARSE_STREAM_FILE_FAIL;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.OBJECT_STREAM;
 
@@ -32,8 +33,11 @@ import com.swirlds.common.stream.StreamType;
 import com.swirlds.logging.legacy.payload.StreamParseErrorPayload;
 import java.io.File;
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PublicKey;
+import java.security.SignatureException;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -236,7 +240,14 @@ public final class LinkedObjectStreamValidateUtils {
             sig.initVerify(publicKey);
             sig.update(data);
             return sig.verify(signature.getSignatureBytes());
-        } catch (final Exception ignored) {
+        } catch (final NoSuchAlgorithmException
+                       | NoSuchProviderException
+                       | InvalidKeyException
+                       | SignatureException e) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    () -> "Failed to verify Signature: %s, PublicKey: %s".formatted(signature, hex(publicKey.getEncoded())),
+                    e);
         }
         return false;
     }
