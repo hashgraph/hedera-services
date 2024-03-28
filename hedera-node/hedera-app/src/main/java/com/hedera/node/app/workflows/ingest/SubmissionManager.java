@@ -73,6 +73,7 @@ public class SubmissionManager {
     private static final String SPEEDOMETER_FORMAT = "%,13.2f";
     private static final Bytes MAIN_NET_LEDGER_ID = Bytes.fromHex("00");
     private static final Bytes TEST_NET_LEDGER_ID = Bytes.fromHex("01");
+    private static final Bytes PREVIEW_NET_LEDGER_ID = Bytes.fromHex("02");
 
     // FUTURE Consider adding a metric to keep track of the number of duplicate transactions submitted by users.
 
@@ -138,7 +139,8 @@ public class SubmissionManager {
             final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
             if (hederaConfig.activeProfile() == Profile.PROD
                     || MAIN_NET_LEDGER_ID.equals(ledgerConfig.id())
-                    || TEST_NET_LEDGER_ID.equals(ledgerConfig.id())) {
+                    || TEST_NET_LEDGER_ID.equals(ledgerConfig.id())
+                    || PREVIEW_NET_LEDGER_ID.equals(ledgerConfig.id())) {
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
 
