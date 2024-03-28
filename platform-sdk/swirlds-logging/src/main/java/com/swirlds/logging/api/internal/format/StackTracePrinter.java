@@ -79,11 +79,10 @@ public class StackTracePrinter {
             final @NonNull Throwable throwable,
             final @NonNull Set<Throwable> alreadyPrinted,
             final @NonNull StackTraceElement[] enclosingTrace) {
-        if (alreadyPrinted.contains(throwable)) {
+        if (!alreadyPrinted.add(throwable)) {
             writer.append("[CIRCULAR REFERENCE: ").append(throwable).append("]");
             return;
         }
-        alreadyPrinted.add(throwable);
         if (alreadyPrinted.size() > 1) {
             writer.append("Cause: ");
         }
