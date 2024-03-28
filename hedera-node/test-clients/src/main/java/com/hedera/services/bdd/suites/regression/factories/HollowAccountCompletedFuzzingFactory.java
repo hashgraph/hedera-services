@@ -70,6 +70,7 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTok
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenMint;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenTransfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUnfreeze;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenUpdate;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -208,10 +209,9 @@ public class HollowAccountCompletedFuzzingFactory {
                     .withOp(
                             new RandomTokenBurn(tokenRels, emptyCustomOutcomes),
                             intPropOrElse("randomTokenBurn.bias", 0, props))
-                    // bug
-                    //                    .withOp(
-                    //                            new RandomTokenUpdate(keys, tokens, accounts),
-                    //                            intPropOrElse("randomTokenUpdate.bias", 0, props))
+                    .withOp(
+                            new RandomTokenUpdate(keys, tokens, accounts),
+                            intPropOrElse("randomTokenUpdate.bias", 0, props))
                     .withOp(
                             new RandomTokenAccountWipe(tokenRels, emptyCustomOutcomes),
                             intPropOrElse("randomTokenAccountWipe.bias", 0, props))

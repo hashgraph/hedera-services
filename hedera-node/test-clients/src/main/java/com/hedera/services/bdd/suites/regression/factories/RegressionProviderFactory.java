@@ -39,6 +39,7 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAc
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountDeletion;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountInfo;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountRecords;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountUpdate;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomTransfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.files.RandomAppend;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.files.RandomContents;
@@ -143,9 +144,9 @@ public class RegressionProviderFactory {
                                             RandomTransfer.DEFAULT_RECORD_PROBABILITY,
                                             props)),
                             intPropOrElse("randomTransfer.bias", 0, props))
-                    //                    .withOp(
-                    //                            new RandomAccountUpdate(keys, unstableAccounts),
-                    //                            intPropOrElse("randomAccountUpdate.bias", 0, props))
+                    .withOp(
+                            new RandomAccountUpdate(keys, allAccounts),
+                            intPropOrElse("randomAccountUpdate.bias", 0, props))
                     .withOp(
                             new RandomAccountDeletion(allAccounts, customOutcomes),
                             intPropOrElse("randomAccountDeletion.bias", 0, props))
