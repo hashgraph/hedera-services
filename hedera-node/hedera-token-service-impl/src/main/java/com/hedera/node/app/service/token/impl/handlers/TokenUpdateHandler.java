@@ -37,6 +37,7 @@ import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -399,13 +400,46 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         }
         if (op.hasAdminKey()) {
+            removeKeysIfNeeded(op, builder);
             final var newAdminKey = op.adminKey();
-            if (isKeyRemoval(newAdminKey)) {
-                builder.adminKey((Key) null);
-            } else {
+            if (!isKeyRemoval(newAdminKey)) {
                 builder.adminKey(newAdminKey);
             }
         }
+    }
+
+    private void removeKeysIfNeeded(final TokenUpdateTransactionBody op, final Token.Builder builder) {
+        if (isKeyRemoval(op.adminKey())) {
+            builder.adminKey((Key) null);
+        }
+
+        if (isKeyRemoval(op.kycKey())) {
+            builder.kycKey((Key) null);
+        }
+
+        if (isKeyRemoval(op.freezeKey())) {
+            builder.freezeKey((Key) null);
+        }
+
+        if (isKeyRemoval(op.wipeKey())) {
+            builder.wipeKey((Key) null);
+        }
+
+        if (isKeyRemoval(op.supplyKey())) {
+            builder.supplyKey((Key) null);
+        }
+
+        if (isKeyRemoval(op.feeScheduleKey())) {
+            builder.feeScheduleKey((Key) null);
+        }
+
+        if (isKeyRemoval(op.pauseKey())) {
+            builder.pauseKey((Key) null);
+        }
+    }
+
+    private boolean isKeyRemoval(Key key) {
+        return IMMUTABILITY_SENTINEL_KEY.equals(key);
     }
 
     /**

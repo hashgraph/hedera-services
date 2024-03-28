@@ -143,25 +143,25 @@ public class TokenAttributesValidator {
         if (hasAdminKey && !isKeyRemoval(adminKey)) {
             validateTrue(isValid(adminKey), INVALID_ADMIN_KEY);
         }
-        if (hasKycKey) {
+        if (hasKycKey && !isKeyRemoval(kycKey)) {
             validateTrue(isValid(kycKey), INVALID_KYC_KEY);
         }
-        if (hasWipeKey) {
+        if (hasWipeKey && !isKeyRemoval(wipeKey)) {
             validateTrue(isValid(wipeKey), INVALID_WIPE_KEY);
         }
-        if (hasSupplyKey) {
+        if (hasSupplyKey && !isKeyRemoval(supplyKey)) {
             validateTrue(isValid(supplyKey), INVALID_SUPPLY_KEY);
         }
-        if (hasFreezeKey) {
+        if (hasFreezeKey && !isKeyRemoval(freezeKey)) {
             validateTrue(isValid(freezeKey), INVALID_FREEZE_KEY);
         }
-        if (hasFeeScheduleKey) {
+        if (hasFeeScheduleKey && !isKeyRemoval(feeScheduleKey)) {
             validateTrue(isValid(feeScheduleKey), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
         }
-        if (hasPauseKey) {
+        if (hasPauseKey && !isKeyRemoval(pauseKey)) {
             validateTrue(isValid(pauseKey), INVALID_PAUSE_KEY);
         }
-        if (hasMetadataKey) {
+        if (hasMetadataKey && !isKeyRemoval(metadataKey)) {
             validateTrue(isValid(metadataKey), INVALID_METADATA_KEY);
         }
     }

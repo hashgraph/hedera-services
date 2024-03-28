@@ -85,6 +85,12 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private Optional<Function<HapiSpec, String>> newNameFn = Optional.empty();
     private boolean useImproperEmptyKey = false;
     private boolean useEmptyAdminKeyList = false;
+    private boolean useEmptyWipeKey = false;
+    private boolean useEmptyKycKey = false;
+    private boolean useEmptySupplyKey = false;
+    private boolean useEmptyFreezeKey = false;
+    private boolean useEmptyPauseKey = false;
+    private boolean useEmptyFeeScheduleKey = false;
     private boolean useInvalidFeeScheduleKey = false;
     private Optional<String> contractKeyName = Optional.empty();
     private Set<TokenKeyType> contractKeyAppliedTo = Set.of();
@@ -215,6 +221,36 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         return this;
     }
 
+    public HapiTokenUpdate properlyEmptyingWipeKey() {
+        useEmptyWipeKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingKycKey() {
+        useEmptyKycKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingSupplyKey() {
+        useEmptySupplyKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingFreezeKey() {
+        useEmptyFreezeKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingPauseKey() {
+        useEmptyPauseKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingFeeScheduleKey() {
+        useEmptyFeeScheduleKey = true;
+        return this;
+    }
+
     public HapiTokenUpdate usingInvalidFeeScheduleKey() {
         useInvalidFeeScheduleKey = true;
         return this;
@@ -301,22 +337,45 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                         a -> b.setAdminKey(spec.registry().getKey(a)));
                             }
                             newTreasury.ifPresent(a -> b.setTreasury(asId(a, spec)));
-                            newSupplyKey.ifPresent(
-                                    k -> b.setSupplyKey(spec.registry().getKey(k)));
-                            newSupplyKeySupplier.ifPresent(s -> b.setSupplyKey(s.get()));
-                            newWipeKey.ifPresent(
-                                    k -> b.setWipeKey(spec.registry().getKey(k)));
-                            newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
+                            if (useEmptySupplyKey) {
+                                b.setSupplyKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newSupplyKey.ifPresent(
+                                        k -> b.setSupplyKey(spec.registry().getKey(k)));
+                                newSupplyKeySupplier.ifPresent(s -> b.setSupplyKey(s.get()));
+                            }
+                            if (useEmptyWipeKey) {
+                                b.setWipeKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newWipeKey.ifPresent(
+                                        k -> b.setWipeKey(spec.registry().getKey(k)));
+                            }
+                            if (useEmptyKycKey) {
+                                b.setKycKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newKycKey.ifPresent(
+                                        k -> b.setKycKey(spec.registry().getKey(k)));
+                            }
                             if (useInvalidFeeScheduleKey) {
                                 b.setFeeScheduleKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+                            } else if (useEmptyFeeScheduleKey) {
+                                b.setFeeScheduleKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
                                 newFeeScheduleKey.ifPresent(
                                         k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
                             }
-                            newFreezeKey.ifPresent(
-                                    k -> b.setFreezeKey(spec.registry().getKey(k)));
-                            newPauseKey.ifPresent(
-                                    k -> b.setPauseKey(spec.registry().getKey(k)));
+                            if (useEmptyFreezeKey) {
+                                b.setFreezeKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newFreezeKey.ifPresent(
+                                        k -> b.setFreezeKey(spec.registry().getKey(k)));
+                            }
+                            if (useEmptyPauseKey) {
+                                b.setPauseKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newPauseKey.ifPresent(
+                                        k -> b.setPauseKey(spec.registry().getKey(k)));
+                            }
                             if (autoRenewAccount.isPresent()) {
                                 var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
                                 b.setAutoRenewAccount(autoRenewId);
