@@ -35,9 +35,11 @@ public class RandomCall implements OpProvider {
 
     private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(CONTRACT_DELETED);
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_CONTRACT_ID, CONTRACT_DELETED);
+    private final ResponseCodeEnum[] customOutcomes;
 
-    public RandomCall(EntityNameProvider<ActionableContractCall> calls) {
+    public RandomCall(EntityNameProvider<ActionableContractCall> calls, ResponseCodeEnum[] customOutcomes) {
         this.calls = calls;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
@@ -54,7 +56,7 @@ public class RandomCall implements OpProvider {
 
         HapiContractCall op = contractCallFrom(call.get())
                 .hasPrecheckFrom(permissiblePrechecks)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
 
         return Optional.of(op);
     }

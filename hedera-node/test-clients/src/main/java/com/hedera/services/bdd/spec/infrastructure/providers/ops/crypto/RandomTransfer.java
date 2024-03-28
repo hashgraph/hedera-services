@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -48,14 +49,16 @@ public class RandomTransfer implements OpProvider {
     public static final double DEFAULT_RECORD_PROBABILITY = 0.0;
 
     private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(ACCOUNT_DELETED, INSUFFICIENT_ACCOUNT_BALANCE);
+            standardOutcomesAnd(ACCOUNT_DELETED, INSUFFICIENT_ACCOUNT_BALANCE, PAYER_ACCOUNT_DELETED);
+    private final ResponseCodeEnum[] customOutcomes;
 
     private int numStableAccounts = DEFAULT_NUM_STABLE_ACCOUNTS;
     public double recordProb = DEFAULT_RECORD_PROBABILITY;
     private final SplittableRandom r = new SplittableRandom();
     private final EntityNameProvider<AccountID> accounts;
 
-    public RandomTransfer(EntityNameProvider<AccountID> accounts) {
+    public RandomTransfer(EntityNameProvider<AccountID> accounts, ResponseCodeEnum[] customOutcomes) {
+        this.customOutcomes = customOutcomes;
         this.accounts = accounts;
     }
 
@@ -103,9 +106,10 @@ public class RandomTransfer implements OpProvider {
         String from = involved.get().getKey(), to = involved.get().getValue();
 
         HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromTo(from, to, amount))
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes)
-                .payingWith(UNIQUE_PAYER_ACCOUNT);
+                .payingWith(from)
+                .signedBy(from)
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
 
         return Optional.of(op);
     }

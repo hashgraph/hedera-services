@@ -34,8 +34,12 @@ import org.apache.commons.lang3.tuple.Pair;
 public class RandomTokenDissociation implements OpProvider {
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
 
-    public RandomTokenDissociation(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
+    private final ResponseCodeEnum[] customOutcomes;
+
+    public RandomTokenDissociation(
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels, ResponseCodeEnum[] customOutcomes) {
         this.tokenRels = tokenRels;
+        this.customOutcomes = customOutcomes;
     }
 
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
@@ -55,8 +59,10 @@ public class RandomTokenDissociation implements OpProvider {
         var implicitRel = relToDissociate.get();
         var rel = explicit(implicitRel);
         var op = tokenDissociate(rel.getLeft(), rel.getRight())
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .payingWith(rel.getLeft())
+                .signedBy(rel.getLeft())
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         return Optional.of(op);
     }
 
