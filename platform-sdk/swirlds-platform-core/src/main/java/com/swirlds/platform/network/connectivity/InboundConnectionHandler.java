@@ -34,14 +34,12 @@ import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConnection;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.Socket;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,8 +54,6 @@ public class InboundConnectionHandler {
     private final AddressBook addressBook;
     private final InterruptableConsumer<Connection> newConnectionConsumer;
     private final SocketConfig socketConfig;
-    private final boolean doVersionCheck;
-    private final SoftwareVersion softwareVersion;
     /** Rate Limited Logger for SocketExceptions */
     private final RateLimitedLogger socketExceptionLogger;
 
@@ -69,16 +65,12 @@ public class InboundConnectionHandler {
             @NonNull final NodeId selfId,
             @NonNull final AddressBook addressBook,
             @NonNull final InterruptableConsumer<Connection> newConnectionConsumer,
-            final boolean doVersionCheck,
-            @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Time time) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.selfId = Objects.requireNonNull(selfId);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.newConnectionConsumer = Objects.requireNonNull(newConnectionConsumer);
-        this.doVersionCheck = doVersionCheck;
-        this.softwareVersion = Objects.requireNonNull(softwareVersion);
         Objects.requireNonNull(time);
         this.socketExceptionLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         this.socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
@@ -89,7 +81,8 @@ public class InboundConnectionHandler {
      *
      * @param clientSocket the newly created socket
      */
-    public void handle(final Socket clientSocket) {
+    public void handle(@NonNull final Socket clientSocket) {
+        Objects.requireNonNull(clientSocket);
         SerializableDataInputStream dis = null;
         SerializableDataOutputStream dos = null;
         NodeId otherId = null;
@@ -106,19 +99,6 @@ public class InboundConnectionHandler {
 
             dis = new SerializableDataInputStream(sis);
             dos = new SerializableDataOutputStream(sos);
-
-            if (doVersionCheck) {
-                dos.writeSerializable(softwareVersion, true);
-                dos.flush();
-
-                final SoftwareVersion otherVersion = dis.readSerializable(Set.of(softwareVersion.getClassId()));
-                if (otherVersion == null
-                        || otherVersion.getClass() != softwareVersion.getClass()
-                        || otherVersion.compareTo(softwareVersion) != 0) {
-                    throw new IOException("This node has software version " + softwareVersion
-                            + " but the other node has software version " + otherVersion + ". Closing connection.");
-                }
-            }
 
             final String otherKey = dis.readUTF();
 
@@ -139,7 +119,7 @@ public class InboundConnectionHandler {
             newConnectionConsumer.accept(sc);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
-            String formattedException = NetworkUtils.formatException(e);
+            final String formattedException = NetworkUtils.formatException(e);
             logger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Inbound connection from {} to {} was interrupted: {}",
@@ -148,7 +128,7 @@ public class InboundConnectionHandler {
                     formattedException);
             NetworkUtils.close(dis, dos, clientSocket);
         } catch (final IOException e) {
-            String formattedException = NetworkUtils.formatException(e);
+            final String formattedException = NetworkUtils.formatException(e);
             socketExceptionLogger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Inbound connection from {} to {} had IOException: {}",
