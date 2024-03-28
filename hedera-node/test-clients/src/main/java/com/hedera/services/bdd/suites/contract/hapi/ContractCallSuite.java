@@ -290,6 +290,8 @@ public class ContractCallSuite extends HapiSuite {
     @HapiTest
     final HapiSpec insufficientGasToPrecompileFailsWithInterpretableActionSidecars() {
         final var contract = "LowLevelCall";
+        // A real-world payload for a call to the altbn128 pairing precompile, for
+        // completeness; c.f. https://hashscan.io/testnet/transaction/1711397022.025030483
         final var payload = unhex(
                 "1d19ea4313c1943e9d66830b1e05f54895b9743810ad24d831b1186a32c15fe83000fdae8d8e064d5db6ef2b9bd63baa748da3ac6c2f5b4ea372a0f16f844797198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c21800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed275dc4a288d1afb3cbb1ac09187524c7db36395df7be3b99e673b13a075a65ec1d9befcd05a5323e6da4d435f3b617cdb3af83285c2df711ef39c01571827f9d2e1aca507b1e6203bddd296bb9b5a2021850bf2fe51011efd7ea2ef559df305727c5b75c764a9eb1f38f05fb732c3a738ebd02b01eade2a3ff4f065eebb96cf70ef864561faf2e2d8ab64de6f2403cd4335860945d2259681d9fc47508786bae186a54489576bced52e7a986603846c314b59164d18591323a739752634f40482f6e185aecd100dde233463f21e06c2aa0d61c046bebb729b891f8d4660c6cbf2f1f2e789e7364c70ecb38087cc90810c3789ef30c0dd973f0f1a572a089f81c");
         final AtomicReference<Address> someTokenAddress = new AtomicReference<>();
