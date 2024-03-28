@@ -256,7 +256,7 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
@@ -283,12 +283,12 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       custom-job-name: "Network Error Tests"
       branch-name: ${{ github.head_ref || github.ref_name }}
       hedera-tests-enabled: true
-      use-branch-for-slack-channel: true
+      use-branch-for-slack-channel: false
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-NetError-4N-1C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -308,7 +308,7 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -327,7 +327,7 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: temurin
@@ -342,7 +342,7 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: temurin

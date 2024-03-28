@@ -179,12 +179,15 @@ public class AccountStateTranslator {
                                 .realmNum(StaticProperties.getRealm())
                                 .shardNum(StaticProperties.getShard()))
                         .serialNumber(account.getHeadNftSerialNum()))
-                .autoRenewAccountId(AccountID.newBuilder()
-                        .accountNum(Optional.ofNullable(account.getAutoRenewAccount())
-                                .map(EntityId::num)
-                                .orElse(0L))
-                        .realmNum(StaticProperties.getRealm())
-                        .shardNum(StaticProperties.getShard()))
+                .autoRenewAccountId(
+                        account.hasAutoRenewAccount()
+                                ? AccountID.newBuilder()
+                                        .realmNum(StaticProperties.getRealm())
+                                        .shardNum(StaticProperties.getShard())
+                                        .accountNum(
+                                                account.getAutoRenewAccount().num())
+                                        .build()
+                                : null)
                 .expiredAndPendingRemoval(account.isExpiredAndPendingRemoval());
 
         if (stakedAccountId != null) acntBuilder.stakedAccountId(stakedAccountId);

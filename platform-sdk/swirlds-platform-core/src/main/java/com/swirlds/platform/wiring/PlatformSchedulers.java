@@ -27,7 +27,6 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.ConsensusEngine;
-import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -83,11 +82,10 @@ import java.util.List;
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
- * @param futureEventBufferScheduler                the scheduler for the future event buffer
  * @param issDetectorScheduler                      the scheduler for the iss detector
  * @param issHandlerScheduler                       the scheduler for the iss handler
  * @param hashLoggerScheduler                       the scheduler for the hash logger
- * @param latestCompleteStateNotificationScheduler  the scheduler for the latest complete state notifier
+ * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
  * @param stateHasherScheduler                      the scheduler for the state hasher
  */
 public record PlatformSchedulers(
@@ -112,11 +110,10 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
         @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
-        @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler,
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> hashLoggerScheduler,
-        @NonNull TaskScheduler<Void> latestCompleteStateNotificationScheduler,
+        @NonNull TaskScheduler<Void> latestCompleteStateNotifierScheduler,
         @NonNull TaskScheduler<StateAndRound> stateHasherScheduler) {
 
     /**
@@ -296,14 +293,6 @@ public record PlatformSchedulers(
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                         .build()
                         .cast(),
-                model.schedulerBuilder("futureEventBuffer")
-                        .withType(config.futureEventBufferSchedulerType())
-                        .withUnhandledTaskCapacity(config.futureEventBufferUnhandledCapacity())
-                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
-                        .withFlushingEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(FutureEventBuffer.class))
-                        .build()
-                        .cast(),
                 model.schedulerBuilder("issDetector")
                         .withType(config.issDetectorSchedulerType())
                         .withUnhandledTaskCapacity(config.issDetectorUnhandledCapacity())
@@ -323,7 +312,7 @@ public record PlatformSchedulers(
                         .withHyperlink(platformCoreHyperlink(HashLogger.class))
                         .build()
                         .cast(),
-                model.schedulerBuilder("latestCompleteStateNotification")
+                model.schedulerBuilder("latestCompleteStateNotifier")
                         .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
                         .withUnhandledTaskCapacity(config.completeStateNotifierUnhandledCapacity())
                         .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
