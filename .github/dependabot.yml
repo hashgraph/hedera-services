@@ -15,3 +15,73 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+
+  - package-ecosystem: docker
+    directory: /hedera-node/docker
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hedera-node/infrastructure/docker/containers/local-node/main-network-node
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hedera-node/infrastructure/docker/containers/local-node/network-node-base
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hedera-node/infrastructure/docker/containers/local-node/network-node-haveged
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hedera-node/infrastructure/docker/containers/production-next/consensus-node
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hedera-node/infrastructure/docker/containers/production/jrs-ar-network-node
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hedera-node/infrastructure/docker/containers/production/jrs-network-node
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hedera-node/infrastructure/docker/containers/production/main-network-node
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hedera-node/infrastructure/docker/containers/production/network-node-base
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hedera-node/infrastructure/docker/containers/production/network-node-haveged
+    schedule:
+      interval: daily
+
+  - package-ecosystem: pip
+    directory: /hedera-node/test-clients/scripts/diff-testing
+    schedule:
+      interval: daily
+
+  - package-ecosystem: gomod
+    directory: /hedera-node/test-clients/uniswap-go-clients
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hedera-node/test-clients/validation-scenarios
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /hedera-node/test-clients/yahcli
+    schedule:
+      interval: daily

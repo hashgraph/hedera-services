@@ -29,6 +29,11 @@ jobs:
     name: Trigger Daily Run
     runs-on: [ self-hosted, Linux, small, scheduler, ephemeral ]
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Display Branch Information
         run: |
           printf "Ref: \t\t${{ github.ref }}"

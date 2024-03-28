@@ -5,7 +5,7 @@
 ##  * Logs at /opt/hedera/services/output; and,
 ##  * Saved states under /opt/hedera/services/output
 ## Ideally we'd use a much lighter (perhaps CoreOS) base, but this will do for now.
-FROM ubuntu:22.04 AS openjdk-builder
+FROM ubuntu:22.04@sha256:77906da86b60585ce12215807090eb327e7386c8fafb5402369e421f44eff17e AS openjdk-builder
 
 # Define Standard Environment Variables
 ENV LC_ALL=C.UTF-8
@@ -52,7 +52,7 @@ RUN set -eux; \
     	  ; \
     rm -f /tmp/openjdk.tar.gz /usr/local/java/lib/src.zip;
 
-FROM ubuntu:22.04 AS base-runtime
+FROM ubuntu:22.04@sha256:77906da86b60585ce12215807090eb327e7386c8fafb5402369e421f44eff17e AS base-runtime
 RUN apt-get update && \
     apt-get install --yes --no-install-recommends dos2unix openssl libsodium23 bind9-host libnetty-tcnative-jni && \
     apt-get autoclean && \
