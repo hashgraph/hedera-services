@@ -35,6 +35,7 @@ import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.system.SwirldState;
@@ -148,43 +149,58 @@ public class SignedState implements SignedStateInfo {
     private final ReferenceCounter reservations = new ReferenceCounter(this::destroy, this::onReferenceCountException);
 
     /**
+     * The signature verifier used to verify signatures.
+     */
+    private final SignatureVerifier signatureVerifier;
+
+    /**
      * Instantiate a signed state.
      *
-     * @param platformContext the platform context
-     * @param state           a fast copy of the state resulting from all transactions in consensus order from all
-     *                        events with received rounds up through the round this SignedState represents
-     * @param reason          a short description of why this SignedState is being created. Each location where a
-     *                        SignedState is created should attempt to use a unique reason, as this makes debugging
-     *                        reservation bugs easier.
-     * @param freezeState     specifies whether this state is the last one saved before the freeze
+     * @param platformContext   the platform context
+     * @param signatureVerifier the signature verifier
+     * @param state             a fast copy of the state resulting from all transactions in consensus order from all
+     *                          events with received rounds up through the round this SignedState represents
+     * @param reason            a short description of why this SignedState is being created. Each location where a
+     *                          SignedState is created should attempt to use a unique reason, as this makes debugging
+     *                          reservation bugs easier.
+     * @param freezeState       specifies whether this state is the last one saved before the freeze
      */
     public SignedState(
             @NonNull final PlatformContext platformContext,
+            @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final State state,
             @NonNull final String reason,
             final boolean freezeState) {
-        this(platformContext.getConfiguration().getConfigData(StateConfig.class), state, reason, freezeState);
+        this(
+                platformContext.getConfiguration().getConfigData(StateConfig.class),
+                signatureVerifier,
+                state,
+                reason,
+                freezeState);
     }
 
     /**
      * Instantiate a signed state.
      *
-     * @param stateConfig state configuration
-     * @param state       a fast copy of the state resulting from all transactions in consensus order from all events
-     *                    with received rounds up through the round this SignedState represents
-     * @param reason      a short description of why this SignedState is being created. Each location where a
-     *                    SignedState is created should attempt to use a unique reason, as this makes debugging
-     *                    reservation bugs easier.
-     * @param freezeState specifies whether this state is the last one saved before the freeze
+     * @param stateConfig       state configuration
+     * @param signatureVerifier the signature verifier
+     * @param state             a fast copy of the state resulting from all transactions in consensus order from all
+     *                          events with received rounds up through the round this SignedState represents
+     * @param reason            a short description of why this SignedState is being created. Each location where a
+     *                          SignedState is created should attempt to use a unique reason, as this makes debugging
+     *                          reservation bugs easier.
+     * @param freezeState       specifies whether this state is the last one saved before the freeze
      */
     public SignedState(
             @NonNull final StateConfig stateConfig,
+            @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final State state,
             @NonNull final String reason,
             final boolean freezeState) {
 
         state.reserve();
 
+        this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.state = state;
 
         if (stateConfig.stateHistoryEnabled()) {
@@ -600,7 +616,8 @@ public class SignedState implements SignedStateInfo {
             return false;
         }
 
-        return signature.verifySignature(state.getHash().getValue(), address.getSigPublicKey());
+        return signatureVerifier.verifySignature(
+                state.getHash().getValue(), signature.getSignatureBytes(), address.getSigPublicKey());
     }
 
     /**
