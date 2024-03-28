@@ -39,7 +39,6 @@ public class BlockNodeMain {
 
         FileSystemApi fileSystemApi = new FileSystemApiProvider().createFileSystem(configProvider);
 
-        // Create all the service implementations
         logger.info("Registering services");
         BLOCK_NODE_LOCAL_FILE_WATCHER = new BlockNodeLocalFileWatcherImpl(configProvider, fileSystemApi);
         this.servicesRegistry = new BlockNodeServicesRegistryImpl();

@@ -112,26 +112,6 @@ public class S3FileSystem implements FileSystemApi {
 
     @Override
     public Block readBlock(long number) {
-        //        String key = blockNumberToKey(number);
-        //        GetObjectRequest objectRequest = GetObjectRequest.builder()
-        //                .bucket(fileSystemConfig.s3BucketName())
-        //                .key(key)
-        //                .build();
-        //
-        //        try {
-        //            byte[] data = this.client.getObject(objectRequest).readAllBytes();
-        //            OutputStream out =
-        // Files.newOutputStream(Path.of(String.format("/home/ivo/projects/hedera/blocks-fs/%s", key)));
-        //            out.write(data);
-        //            out.close();
-        ////
-        ////            Block block = Block.parseFrom(data);
-        ////            return block;
-        //        }
-        //        catch(IOException e) {
-        //            e.printStackTrace();
-        //        }
-
         return null;
     }
 }

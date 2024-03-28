@@ -22,8 +22,6 @@ import com.hedera.node.blocknode.config.ConfigProvider;
 import com.hedera.node.blocknode.config.data.BlockNodeGrpcConfig;
 import com.hedera.node.blocknode.core.GrpcBlockNodeServerManager;
 import com.hedera.node.blocknode.core.services.BlockNodeServicesRegistryImpl;
-import com.hedera.node.config.data.NettyConfig;
-import com.hedera.node.config.types.Profile;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import io.grpc.Server;
@@ -56,7 +54,6 @@ public class BlockNodeNettyServerManager implements GrpcBlockNodeServerManager {
      * The supported protocols for TLS
      */
     private static final List<String> SUPPORTED_PROTOCOLS = List.of("TLSv1.2", "TLSv1.3");
-
     /**
      * The set of {@link ServiceDescriptor}s for services that the gRPC server will expose
      */
@@ -90,12 +87,7 @@ public class BlockNodeNettyServerManager implements GrpcBlockNodeServerManager {
         logger.info("Starting gRPC servers");
         final var grpcConfig = configProvider.getConfiguration().getConfigData(BlockNodeGrpcConfig.class);
         final var port = grpcConfig.port();
-        //        final var profile = configProvider
-        //                .getConfiguration()
-        //                .getConfigData(BlockNodeConfig.class)
-        //                .activeProfile();
 
-        // Start the plain-port server
         logger.info("Starting gRPC server on port {}", port);
         var nettyBuilder = NettyServerBuilder.forPort(port);
         plainServer = startServerWithRetry(nettyBuilder, 3, 1000);
@@ -191,45 +183,6 @@ public class BlockNodeNettyServerManager implements GrpcBlockNodeServerManager {
     }
 
     /**
-     * Utility for setting up various shared configuration settings between both servers
-     */
-    //    private NettyServerBuilder builderFor(
-    //            final int port, @NonNull final NettyConfig config, @NonNull final Profile activeProfile) {
-    //        NettyServerBuilder builder = null;
-    //        try {
-    //            builder = withConfigForActiveProfile(NettyServerBuilder.forPort(port), config, activeProfile)
-    //                    .channelType(EpollServerSocketChannel.class)
-    //                    .bossEventLoopGroup(new EpollEventLoopGroup())
-    //                    .workerEventLoopGroup(new EpollEventLoopGroup());
-    //            logger.info("Using Epoll for gRPC server");
-    //        } catch (final UnsatisfiedLinkError | NoClassDefFoundError ignored) {
-    //            // If we can't use Epoll, then just use NIO
-    //            logger.info("Epoll not available, using NIO");
-    //            builder = withConfigForActiveProfile(NettyServerBuilder.forPort(port), config, activeProfile);
-    //        } catch (final Exception unexpected) {
-    //            logger.info("Unexpected exception initializing Netty", unexpected);
-    //        }
-    //        return builder;
-    //    }
-
-    private NettyServerBuilder withConfigForActiveProfile(
-            @NonNull final NettyServerBuilder builder,
-            @NonNull final NettyConfig config,
-            @NonNull final Profile activeProfile) {
-        if (activeProfile != Profile.DEV) {
-            builder.keepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
-                    .permitKeepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
-                    .keepAliveTimeout(config.prodKeepAliveTimeout(), TimeUnit.SECONDS)
-                    .maxConnectionAge(config.prodMaxConnectionAge(), TimeUnit.SECONDS)
-                    .maxConnectionAgeGrace(config.prodMaxConnectionAgeGrace(), TimeUnit.SECONDS)
-                    .maxConnectionIdle(config.prodMaxConnectionIdle(), TimeUnit.SECONDS)
-                    .maxConcurrentCallsPerConnection(config.prodMaxConcurrentCalls())
-                    .flowControlWindow(config.prodFlowControlWindow());
-        }
-        return builder.directExecutor();
-    }
-
-    /**
      * Terminates the given server
      *
      * @param server the server to terminate
@@ -239,9 +192,7 @@ public class BlockNodeNettyServerManager implements GrpcBlockNodeServerManager {
             return;
         }
 
-        // final var nettyConfig = configProvider.getConfiguration().getConfigData(NettyConfig.class);
         final var terminationTimeout = 100000;
-
         try {
             server.shutdownNow();
             server.awaitTermination(terminationTimeout, TimeUnit.SECONDS);
