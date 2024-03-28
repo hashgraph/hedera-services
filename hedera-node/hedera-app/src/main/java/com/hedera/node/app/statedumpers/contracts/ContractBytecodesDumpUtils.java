@@ -19,14 +19,17 @@ package com.hedera.node.app.statedumpers.contracts;
 import static com.hedera.node.app.service.mono.statedumpers.contracts.ContractBytecodesDumpUtils.generateReport;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.contracts.BBMContract;
 import com.hedera.node.app.service.mono.statedumpers.contracts.Contracts;
 import com.hedera.node.app.service.mono.statedumpers.contracts.Validity;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
+import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -46,8 +49,10 @@ public class ContractBytecodesDumpUtils {
     public static void dumpModContractBytecodes(
             @NonNull final Path path,
             @NonNull final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts,
+            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
+            final StateMetadata<AccountID, Account> stateMetadata,
             @NonNull final DumpCheckpoint checkpoint) {
-        final var dumpableAccounts = gatherModContracts(contracts);
+        final var dumpableAccounts = gatherModContracts(contracts, accounts, stateMetadata);
         final var sb = generateReport(dumpableAccounts);
         try (@NonNull final var writer = new Writer(path)) {
             writer.writeln(sb.toString());
@@ -58,7 +63,10 @@ public class ContractBytecodesDumpUtils {
     }
 
     @NonNull
-    public static Contracts gatherModContracts(VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts) {
+    public static Contracts gatherModContracts(
+            VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts,
+            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
+            final StateMetadata<AccountID, Account> stateMetadata) {
         final var contractsToReturn = new ConcurrentLinkedQueue<BBMContract>();
         final var threadCount = 8;
         final var processed = new AtomicInteger();
@@ -69,7 +77,7 @@ public class ContractBytecodesDumpUtils {
                             getStaticThreadManager(),
                             p -> {
                                 processed.incrementAndGet();
-                                contractsToReturn.add(fromMod(p.left(), p.right()));
+                                contractsToReturn.add(fromMod(p.left(), p.right(), accounts, stateMetadata));
                             },
                             threadCount);
         } catch (final InterruptedException ex) {
@@ -78,13 +86,31 @@ public class ContractBytecodesDumpUtils {
         }
 
         final var contractArr = contractsToReturn.toArray(new BBMContract[0]);
+        final var deletedContracts = contractsToReturn.stream()
+                .filter(c -> c.validity() == Validity.DELETED)
+                .map(BBMContract::canonicalId)
+                .toList();
         System.out.printf("=== %d contracts iterated over (%d saved)%n", processed.get(), contractArr.length);
-        return new Contracts(List.of(contractArr), List.of(), contractArr.length);
+        return new Contracts(List.of(contractArr), deletedContracts, contractArr.length - deletedContracts.size());
     }
 
-    public static BBMContract fromMod(OnDiskKey<ContractID> id, OnDiskValue<Bytecode> bytecode) {
-        final var c =
-                new BBMContract(new TreeSet<>(), bytecode.getValue().code().toByteArray(), Validity.ACTIVE);
+    public static BBMContract fromMod(
+            OnDiskKey<ContractID> id,
+            OnDiskValue<Bytecode> bytecode,
+            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
+            final StateMetadata<AccountID, Account> stateMetadata) {
+        final var isDeleted = accounts.get(new OnDiskKey<>(
+                        stateMetadata,
+                        AccountID.newBuilder()
+                                .accountNum(id.getKey().contractNum())
+                                .build()))
+                .getValue()
+                .deleted();
+
+        final var c = new BBMContract(
+                new TreeSet<>(),
+                bytecode.getValue().code().toByteArray(),
+                isDeleted ? Validity.DELETED : Validity.ACTIVE);
         if (id.getKey().contractNum() != null) {
             c.ids().add(id.getKey().contractNum().intValue());
         }
