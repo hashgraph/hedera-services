@@ -328,6 +328,7 @@ public class TestingEventBuilder {
      *
      * @return the generated transactions
      */
+    @NonNull
     private ConsensusTransactionImpl[] generateTransactions() {
         if (appTransactionCount == null) {
             appTransactionCount = DEFAULT_APP_TRANSACTION_COUNT;
