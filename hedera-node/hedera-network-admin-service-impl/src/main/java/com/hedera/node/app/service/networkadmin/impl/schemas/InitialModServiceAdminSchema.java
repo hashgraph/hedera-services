@@ -19,13 +19,11 @@ package com.hedera.node.app.service.networkadmin.impl.schemas;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class InitialModServiceAdminSchema extends Schema {
     private static final Logger log = LogManager.getLogger(InitialModServiceAdminSchema.class);
-    private static MerkleNetworkContext mnc;
+    private static boolean merkleNetworkContextExists;
 
     public InitialModServiceAdminSchema(@NonNull final SemanticVersion version) {
         super(version);
@@ -65,15 +63,15 @@ public class InitialModServiceAdminSchema extends Schema {
                 ctx.newStates().<ProtoBytes>getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY);
         final var freezeTimeKeyState = ctx.newStates().<Timestamp>getSingleton(FreezeServiceImpl.FREEZE_TIME_KEY);
 
-        if (isGenesis || mnc != null) {
+        if (isGenesis || merkleNetworkContextExists) {
             upgradeFileHashKeyState.put(ProtoBytes.DEFAULT);
             freezeTimeKeyState.put(Timestamp.DEFAULT);
         }
-        mnc = null;
+
         log.info("BBM: finished migrating Admin service");
     }
 
-    public static void setFs(@Nullable final MerkleNetworkContext mn) {
-        mnc = mn;
+    public static void setFs(final boolean networkContextExists) {
+        merkleNetworkContextExists = networkContextExists;
     }
 }
