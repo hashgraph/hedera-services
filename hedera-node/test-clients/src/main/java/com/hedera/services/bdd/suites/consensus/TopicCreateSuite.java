@@ -146,7 +146,7 @@ public class TopicCreateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec signingRequirementsEnforced() {
-        long PAYER_BALANCE = 1_999_999_999L;
+        long PAYER_BALANCE = 3_999_999_999L;
         final var contractWithAdminKey = "nonCryptoAccount";
 
         return defaultHapiSpec("SigningRequirementsEnforced")
