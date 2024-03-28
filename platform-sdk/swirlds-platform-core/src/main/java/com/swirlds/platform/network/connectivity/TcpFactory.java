@@ -28,13 +28,15 @@ import java.util.Objects;
  */
 public class TcpFactory implements SocketFactory {
     private final SocketConfig socketConfig;
+    private final int port;
 
-    public TcpFactory(@NonNull final SocketConfig socketConfig) {
+    public TcpFactory(@NonNull final SocketConfig socketConfig, final int port) {
         this.socketConfig = Objects.requireNonNull(socketConfig);
+        this.port = port;
     }
 
     @Override
-    public @NonNull ServerSocket createServerSocket(final int port) throws IOException {
+    public @NonNull ServerSocket createServerSocket() throws IOException {
         final ServerSocket serverSocket = new ServerSocket();
         SocketFactory.configureAndBind(serverSocket, socketConfig, port);
         return serverSocket;

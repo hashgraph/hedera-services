@@ -52,6 +52,8 @@ public class TlsFactory implements SocketFactory {
     private final SSLServerSocketFactory sslServerSocketFactory;
     private final SSLSocketFactory sslSocketFactory;
 
+    private final int port;
+
     /**
      * Construct this object to create and receive TLS connections.
      * @param agrCert the TLS certificate to use
@@ -65,7 +67,8 @@ public class TlsFactory implements SocketFactory {
             @NonNull final PrivateKey agrKey,
             @NonNull final List<PeerInfo> peers,
             @NonNull final SocketConfig socketConfig,
-            @NonNull final CryptoConfig cryptoConfig)
+            @NonNull final CryptoConfig cryptoConfig,
+            final int port)
             throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, KeyManagementException,
                     CertificateException, IOException {
         Objects.requireNonNull(agrCert);
@@ -73,6 +76,7 @@ public class TlsFactory implements SocketFactory {
         Objects.requireNonNull(peers);
         this.socketConfig = Objects.requireNonNull(socketConfig);
         Objects.requireNonNull(cryptoConfig);
+        this.port = port;
 
         final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(peers);
 
@@ -102,7 +106,7 @@ public class TlsFactory implements SocketFactory {
     }
 
     @Override
-    public @NonNull ServerSocket createServerSocket(final int port) throws IOException {
+    public @NonNull ServerSocket createServerSocket() throws IOException {
         final SSLServerSocket serverSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
         serverSocket.setEnabledCipherSuites(new String[] {CryptoConstants.TLS_SUITE});
         serverSocket.setWantClientAuth(true);

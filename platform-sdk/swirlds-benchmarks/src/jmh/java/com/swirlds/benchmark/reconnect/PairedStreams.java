@@ -48,7 +48,7 @@ public class PairedStreams implements AutoCloseable {
 
     public PairedStreams(final SocketConfig socketConfig) throws IOException {
 
-        server = new TcpFactory(socketConfig).createServerSocket(0);
+        server = new TcpFactory(socketConfig, 0).createServerSocket();
         teacherSocket = new Socket("127.0.0.1", server.getLocalPort());
         learnerSocket = server.accept();
 

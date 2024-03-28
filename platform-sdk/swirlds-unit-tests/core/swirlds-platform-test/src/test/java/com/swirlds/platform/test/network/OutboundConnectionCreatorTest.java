@@ -24,9 +24,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -41,7 +38,6 @@ import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
-import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
@@ -60,10 +56,7 @@ import org.mockito.Mockito;
 
 class OutboundConnectionCreatorTest {
     @Test
-    void createConnectionTest() throws IOException, ConstructableRegistryException {
-
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(BasicSoftwareVersion.class, BasicSoftwareVersion::new));
+    void createConnectionTest() throws IOException {
 
         final int numNodes = 10;
         final Random r = new Random();
@@ -91,7 +84,6 @@ class OutboundConnectionCreatorTest {
 
         final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
-        out.writeSerializable(new BasicSoftwareVersion(1), true);
         out.writeInt(ByteConstants.COMM_CONNECT);
         out.close();
 
@@ -106,13 +98,7 @@ class OutboundConnectionCreatorTest {
                 .build();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
-                platformContext,
-                thisNode,
-                mock(ConnectionTracker.class),
-                socketFactory,
-                addressBook,
-                true,
-                new BasicSoftwareVersion(1));
+                platformContext, thisNode, mock(ConnectionTracker.class), socketFactory, addressBook);
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");
@@ -125,7 +111,6 @@ class OutboundConnectionCreatorTest {
         // test exceptions
         final ByteArrayOutputStream byteOut2 = new ByteArrayOutputStream();
         final SerializableDataOutputStream out2 = new SerializableDataOutputStream(byteOut2);
-        out2.writeSerializable(new BasicSoftwareVersion(1), true);
         out2.writeInt(0);
         out2.close();
 
@@ -157,72 +142,8 @@ class OutboundConnectionCreatorTest {
     }
 
     @Test
-    @DisplayName("Mismatched Version Test")
-    void mismatchedVersionTest() throws IOException, ConstructableRegistryException {
-
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(BasicSoftwareVersion.class, BasicSoftwareVersion::new));
-
-        final int numNodes = 10;
-        final Random r = new Random();
-        final AddressBook addressBook = new RandomAddressBookGenerator(r)
-                .setSize(numNodes)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .build();
-        final int thisNodeIndex = r.nextInt(numNodes);
-        final int otherNodeIndex = r.nextInt(numNodes);
-        final NodeId thisNode = addressBook.getNodeId(thisNodeIndex);
-        final NodeId otherNode = addressBook.getNodeId(otherNodeIndex);
-
-        final AtomicBoolean connected = new AtomicBoolean(true);
-        final Socket socket = mock(Socket.class);
-        doAnswer(i -> connected.get()).when(socket).isConnected();
-        doAnswer(i -> connected.get()).when(socket).isBound();
-        doAnswer(i -> !connected.get()).when(socket).isClosed();
-        doAnswer(i -> {
-                    connected.set(false);
-                    return null;
-                })
-                .when(socket)
-                .close();
-
-        final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-        final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
-        out.writeSerializable(new BasicSoftwareVersion(1), true);
-        out.writeInt(ByteConstants.COMM_CONNECT);
-        out.close();
-
-        final ByteArrayInputStream inputStream = new ByteArrayInputStream(byteOut.toByteArray());
-        doAnswer(i -> inputStream).when(socket).getInputStream();
-        doAnswer(i -> mock(OutputStream.class)).when(socket).getOutputStream();
-        final SocketFactory socketFactory = mock(SocketFactory.class);
-        doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
-
-        final PlatformContext platformContext = TestPlatformContextBuilder.create()
-                .withConfiguration(getConfig())
-                .build();
-
-        final OutboundConnectionCreator occ = new OutboundConnectionCreator(
-                platformContext,
-                thisNode,
-                mock(ConnectionTracker.class),
-                socketFactory,
-                addressBook,
-                true,
-                new BasicSoftwareVersion(2));
-
-        Connection connection = occ.createConnection(otherNode);
-
-        assertTrue(connection instanceof NotConnectedConnection, "the connection should have failed");
-    }
-
-    @Test
     @DisplayName("Mismatched Version Ignored Test")
-    void mismatchedVersionIgnoredTest() throws IOException, ConstructableRegistryException {
-
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(BasicSoftwareVersion.class, BasicSoftwareVersion::new));
+    void mismatchedVersionIgnoredTest() throws IOException {
 
         final int numNodes = 10;
         final Random r = new Random();
@@ -264,13 +185,7 @@ class OutboundConnectionCreatorTest {
                 .build();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
-                platformContext,
-                thisNode,
-                mock(ConnectionTracker.class),
-                socketFactory,
-                addressBook,
-                false,
-                new BasicSoftwareVersion(2));
+                platformContext, thisNode, mock(ConnectionTracker.class), socketFactory, addressBook);
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");

@@ -34,7 +34,6 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -77,9 +76,10 @@ import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.wiring.NetworkWiring;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -184,8 +184,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
 
         Objects.requireNonNull(time);
 
-        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
-
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
         topology = new StaticTopology(addressBook, selfId, basicConfig.numConnections());
@@ -193,29 +191,21 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final SocketFactory socketFactory =
                 NetworkUtils.createSocketFactory(selfId, addressBook, keysAndCerts, platformContext.getConfiguration());
         // create an instance that can create new outbound connections
-        final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
-                platformContext, selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
+        final OutboundConnectionCreator connectionCreator =
+                new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
-                platformContext,
-                this,
-                selfId,
-                addressBook,
-                connectionManagers::newConnection,
-                shouldDoVersionCheck(),
-                appVersion,
-                time);
+                platformContext, this, selfId, addressBook, connectionManagers::newConnection, time);
+
         // allow other members to create connections to me
-        final Address address = addressBook.getAddress(selfId);
-        final ConnectionServer connectionServer = new ConnectionServer(
-                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle);
-        thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
-                .setPriority(threadConfig.threadPrioritySync())
-                .setNodeId(selfId)
-                .setComponent(PLATFORM_THREAD_POOL_NAME)
-                .setThreadName("connectionServer")
-                .setWork(connectionServer)
-                .build());
+        final ConnectionServer connectionServer = new ConnectionServer(socketFactory);
+
+        final NetworkWiring networkWiring = new NetworkWiring(platformContext);
+
+        networkWiring.bind(connectionServer);
+        networkWiring.bindExternalComponents(inboundConnectionHandler);
+
+        thingsToStart.add(networkWiring);
 
         fallenBehindManager = buildFallenBehindManager();
 
@@ -310,6 +300,8 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                 eventConfig);
 
         thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
+        // this should be put on schedule. The wiring framework has a scheduler
+        networkWiring.getConnectionServerInputWire().put(NoInput.getInstance());
     }
 
     private void buildSyncProtocolThreads(
@@ -482,15 +474,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     public void connectionClosed(final boolean outbound, @NonNull final Connection conn) {
         Objects.requireNonNull(conn);
         networkMetrics.recordDisconnect(conn);
-    }
-
-    /**
-     * Should the network layer do a version check prior to initiating a connection?
-     *
-     * @return true if a version check should be done
-     */
-    protected boolean shouldDoVersionCheck() {
-        return false;
     }
 
     /**

@@ -16,57 +16,54 @@
 
 package com.swirlds.platform.test.network;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.network.SocketConfig;
+import com.swirlds.platform.network.SocketConfig_;
 import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.SocketFactory;
+import com.swirlds.platform.network.connectivity.TcpFactory;
+import com.swirlds.platform.wiring.NoInput;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class ConnectionServerTest {
+
     @Test
-    void createConnectionTest() throws IOException, InterruptedException {
-        final Socket socket = mock(Socket.class);
-        final ServerSocket serverSocket = mock(ServerSocket.class);
-        final AtomicBoolean serverSocketClosed = new AtomicBoolean(false);
-        doAnswer(i -> serverSocketClosed.get()).when(serverSocket).isClosed();
-        doAnswer(i -> {
-                    // unbind the socket after calling accept
-                    serverSocketClosed.set(true);
-                    return socket;
-                })
-                .when(serverSocket)
-                .accept();
-        final SocketFactory socketFactory = mock(SocketFactory.class);
-        doAnswer(i -> serverSocket).when(socketFactory).createServerSocket(anyInt());
-        final AtomicReference<Socket> connectionHandler = new AtomicReference<>(null);
+    void listenOverTCP_NoClientConnectsTest() {
+        final Configuration configurationNoIpTos =
+                new TestConfigBuilder().withValue(SocketConfig_.IP_TOS, "-1").getOrCreateConfig();
+        final SocketConfig NO_IP_TOS = configurationNoIpTos.getConfigData(SocketConfig.class);
+        final SocketFactory socketFactory = new TcpFactory(NO_IP_TOS, 31_000);
 
-        final ConnectionServer server =
-                new ConnectionServer(getStaticThreadManager(), 0, socketFactory, connectionHandler::set);
+        final ConnectionServer connectionServer = new ConnectionServer(socketFactory);
 
-        server.run();
-        Assertions.assertSame(
-                socket,
-                connectionHandler.get(),
-                "the socket provided by accept() should have been passed to the connection handler");
+        final Socket socket = connectionServer.listen(NoInput.getInstance());
+        Assertions.assertNull(socket);
+        connectionServer.stop();
+    }
 
-        // test interrupt
-        serverSocketClosed.set(false);
-        doAnswer(i -> {
-                    throw new SocketTimeoutException();
-                })
-                .when(serverSocket)
-                .accept();
-        Thread.currentThread().interrupt();
-        Assertions.assertThrows(InterruptedException.class, server::run);
+    @Test
+    void listenOverTCP_ClientConnectsTest() throws IOException {
+        final int PORT = 40_000;
+        final Configuration configurationNoIpTos =
+                new TestConfigBuilder().withValue(SocketConfig_.IP_TOS, "-1").getOrCreateConfig();
+        final SocketConfig NO_IP_TOS = configurationNoIpTos.getConfigData(SocketConfig.class);
+        final SocketFactory serverFactory = new TcpFactory(NO_IP_TOS, PORT);
+
+        final ConnectionServer connectionServer = new ConnectionServer(serverFactory);
+        final Thread connServerThread = new Thread(() -> {
+            final Socket serverSocket = connectionServer.listen(NoInput.getInstance());
+            Assertions.assertTrue(serverSocket.isConnected());
+        });
+        connServerThread.start();
+
+        final SocketFactory clientFactory = new TcpFactory(NO_IP_TOS, PORT);
+        try (final Socket clientSocket = clientFactory.createClientSocket("127.0.0.1", PORT)) {
+            Assertions.assertTrue(clientSocket.isConnected());
+        }
+        connectionServer.stop();
     }
 }

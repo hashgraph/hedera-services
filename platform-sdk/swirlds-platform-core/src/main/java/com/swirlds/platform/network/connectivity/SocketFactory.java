@@ -29,14 +29,8 @@ import java.util.Objects;
  * Creates, binds and connects server and client sockets
  */
 public interface SocketFactory {
-    /** The IPv4 address to listen all interface: [0.0.0.0]. */
-    byte[] ALL_INTERFACES = new byte[] {0, 0, 0, 0};
-
-    int IP_TOP_MIN = 0;
-    int IP_TOP_MAX = 255;
-
     static boolean isIpTopInRange(final int ipTos) {
-        return IP_TOP_MIN <= ipTos && ipTos <= IP_TOP_MAX;
+        return 0 <= ipTos && ipTos <= 255;
     }
 
     /**
@@ -60,7 +54,9 @@ public interface SocketFactory {
             // set the IP_TOS option
             serverSocket.setOption(java.net.StandardSocketOptions.IP_TOS, socketConfig.ipTos());
         }
-        final InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByAddress(ALL_INTERFACES), port);
+        /* The IPv4 address to listen all interface: [0.0.0.0]. */
+        final byte[] allInterfaces = new byte[] {0, 0, 0, 0};
+        final InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByAddress(allInterfaces), port);
         serverSocket.bind(endpoint); // try to grab a port on this computer
         serverSocket.setReuseAddress(true);
         // do NOT do clientSocket.setSendBufferSize or clientSocket.setReceiveBufferSize
@@ -104,14 +100,12 @@ public interface SocketFactory {
     /**
      * Create a new ServerSocket, then binds it to the given port on all interfaces
      *
-     * @param port
-     * 		the port to bind to
      * @return a new server socket
      * @throws IOException
      * 		if the socket cannot be created
      */
     @NonNull
-    ServerSocket createServerSocket(final int port) throws IOException;
+    ServerSocket createServerSocket() throws IOException;
 
     /**
      * Create a new Socket, then connect to the given ip and port.

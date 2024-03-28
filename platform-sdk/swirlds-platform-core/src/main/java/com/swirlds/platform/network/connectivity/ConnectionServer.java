@@ -18,88 +18,75 @@ package com.swirlds.platform.network.connectivity;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.threading.interrupt.InterruptableRunnable;
-import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.platform.wiring.NoInput;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Listens on a server socket for incoming connections. All new connections are passed on to the supplied handler.
  */
-public class ConnectionServer implements InterruptableRunnable {
-    /** number of milliseconds to sleep when a server socket binds fails until trying again */
-    private static final int SLEEP_AFTER_BIND_FAILED_MS = 100;
+public class ConnectionServer {
+
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(ConnectionServer.class);
-    /** the port that this server listens on for establishing new connections */
-    private final int port;
-    /** responsible for creating and binding the server socket */
-    private final SocketFactory socketFactory;
-    /** handles newly established connections */
-    private final Consumer<Socket> newConnectionHandler;
-    /** a thread pool used to handle incoming connections */
-    private final ExecutorService incomingConnPool;
+
+    private final ServerSocket serverSocket;
 
     /**
-     *  @param threadManager
-     *  		responsible for managing thread lifecycles
-     * @param port
-     * 		the port ot use
-     * @param socketFactory
-     * 		responsible for creating new sockets
-     * @param newConnectionHandler
-     * 		handles a new connection after it has been created
+     * @param socketFactory        responsible for creating new sockets
      */
-    public ConnectionServer(
-            final ThreadManager threadManager,
-            final int port,
-            final SocketFactory socketFactory,
-            final Consumer<Socket> newConnectionHandler) {
-        this.port = port;
-        this.newConnectionHandler = newConnectionHandler;
-        this.socketFactory = socketFactory;
-        this.incomingConnPool = Executors.newCachedThreadPool(new ThreadConfiguration(threadManager)
-                .setThreadName("sync_server")
-                .buildFactory());
+    public ConnectionServer(@NonNull final SocketFactory socketFactory) {
+        this.serverSocket = Objects.requireNonNull(createServerSocket(Objects.requireNonNull(socketFactory)));
     }
 
-    @Override
-    public void run() throws InterruptedException {
-        try (ServerSocket serverSocket = socketFactory.createServerSocket(port)) {
-            listen(serverSocket);
+    /**
+     * listens and blocks until either a peer connection is made, or timeout is reached
+     * @param noInput dummy input to signal the handler. Not used
+     *
+     * @return the connected peer's socket or null if timed-out
+     * */
+    public Socket listen(@NonNull final NoInput noInput) {
+        // check for serversocket bound, if not, try to bind
+        Socket clientSocket = null;
+        try {
+            serverSocket.setSoTimeout(50_000);
+            clientSocket = serverSocket.accept();
         } catch (final RuntimeException | IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Cannot bind ServerSocket", e);
+            // timeout, no connection. Ignore
         }
-        // if the above fails, sleep a while before trying again
-        Thread.sleep(SLEEP_AFTER_BIND_FAILED_MS);
+        return clientSocket;
     }
 
     /**
-     * listens for incoming connections until interrupted or socket is closed
+     * Attempts to close this connection, in effect, stopping this server
      */
-    private void listen(final ServerSocket serverSocket) throws InterruptedException {
-        // Handle incoming connections
-        while (!serverSocket.isClosed()) {
+    public void stop() {
+        if (!serverSocket.isClosed()) {
             try {
-                final Socket clientSocket = serverSocket.accept(); // listen, waiting until someone connects
-                incomingConnPool.submit(() -> newConnectionHandler.accept(clientSocket));
-            } catch (final SocketTimeoutException expectedWithNonZeroSOTimeout) {
-                // A timeout is expected, so we won't log it
-                if (Thread.currentThread().isInterrupted()) {
-                    // since accept() cannot be interrupted, we check the interrupted status on a timeout and throw
-                    throw new InterruptedException();
-                }
-            } catch (final RuntimeException | IOException e) {
-                logger.error(EXCEPTION.getMarker(), "SyncServer serverSocket.accept() error", e);
+                serverSocket.close();
+            } catch (final IOException e) {
+                logger.warn(EXCEPTION.getMarker(), "ConnectionServer unable to close server socket", e);
             }
         }
+    }
+
+    /**
+     * create the server socket
+     *
+     * @return the created socket if successful, or null otherwise
+     * */
+    private static ServerSocket createServerSocket(final SocketFactory socketFactory) {
+        ServerSocket ss = null;
+        try {
+            ss = socketFactory.createServerSocket();
+        } catch (final IOException e) {
+            logger.error(EXCEPTION.getMarker(), "Error creating server socket", e);
+        }
+        return ss;
     }
 }
