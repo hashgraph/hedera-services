@@ -83,13 +83,15 @@ public class FilesDumpUtils {
 
     static BBMHederaFile fromMod(@NonNull final OnDiskValue<File> wrapper) {
         final var value = wrapper.getValue();
-        if (value.fileId().fileNum() == 13704L) {
-            System.out.println(value);
+        JKey key;
+        try{
+            key = JKey.mapKey(Key.newBuilder().keyList(value.keys()).build());
+        }catch(Exception e){
+            key = null;
         }
-        final var key = Key.newBuilder().keyList(value.keys()).build();
         final var meta = new HFileMeta(
                 value.deleted(),
-                value.keys() != null ? (JKey) fromPbjKey(key).get() : null,
+                key,
                 value.expirationSecond(),
                 value.memo());
         return new BBMHederaFile(

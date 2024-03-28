@@ -91,7 +91,7 @@ public class ContractBytecodesDumpUtils {
                 .map(BBMContract::canonicalId)
                 .toList();
         System.out.printf("=== %d contracts iterated over (%d saved)%n", processed.get(), contractArr.length);
-        return new Contracts(List.of(contractArr), deletedContracts, contractArr.length);
+        return new Contracts(List.of(contractArr), deletedContracts, contractArr.length - deletedContracts.size());
     }
 
     public static BBMContract fromMod(

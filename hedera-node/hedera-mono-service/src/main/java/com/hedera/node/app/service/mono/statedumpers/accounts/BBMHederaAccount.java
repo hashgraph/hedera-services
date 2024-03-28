@@ -94,7 +94,7 @@ public record BBMHederaAccount(
                                         .build()));
         return new BBMHederaAccount(
                 AccountID.newBuilder().accountNum(account.getAccountNumber()).build(),
-                Bytes.wrap(account.getAlias().toByteArray()),
+                account.hasAlias() ? Bytes.wrap(account.getAlias().toByteArray()) : Bytes.EMPTY,
                 PbjConverter.asPbjKey(account.getKey()),
                 account.getExpiry(),
                 account.getBalance(),
