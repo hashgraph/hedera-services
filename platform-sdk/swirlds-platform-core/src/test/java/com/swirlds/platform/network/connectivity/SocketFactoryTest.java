@@ -72,10 +72,8 @@ class SocketFactoryTest {
     /**
      * Calls {@link #testSockets(SocketFactory, SocketFactory)} twice, to test both factories as server and as client
      *
-     * @param socketFactory1
-     * 		a factory for both server and client sockets
-     * @param socketFactory2
-     * 		a factory for both server and client sockets
+     * @param socketFactory1 a factory for both server and client sockets
+     * @param socketFactory2 a factory for both server and client sockets
      */
     private static void testSocketsBoth(final SocketFactory socketFactory1, final SocketFactory socketFactory2)
             throws Throwable {
@@ -84,15 +82,11 @@ class SocketFactoryTest {
     }
 
     /**
-     * - establishes a connection using the provided factories
-     * - transfers some data
-     * - verifies the transferred data is correct
-     * - closes the sockets
+     * - establishes a connection using the provided factories - transfers some data - verifies the transferred data is
+     * correct - closes the sockets
      *
-     * @param serverFactory
-     * 		factory to create the server socket
-     * @param clientFactory
-     * 		factory to create the client socket
+     * @param serverFactory factory to create the server socket
+     * @param clientFactory factory to create the client socket
      */
     private static void testSockets(final SocketFactory serverFactory, final SocketFactory clientFactory)
             throws Throwable {
@@ -134,12 +128,9 @@ class SocketFactoryTest {
     /**
      * Tests the functionality {@link KeysAndCerts} are currently used for, signing and establishing TLS connections.
      *
-     * @param addressBook
-     * 		the address book of the network
-     * @param keysAndCerts
-     * 		keys and certificates to use for testing
-     * @throws Throwable
-     * 		if anything goes wrong
+     * @param addressBook  the address book of the network
+     * @param keysAndCerts keys and certificates to use for testing
+     * @throws Throwable if anything goes wrong
      */
     @ParameterizedTest
     @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})

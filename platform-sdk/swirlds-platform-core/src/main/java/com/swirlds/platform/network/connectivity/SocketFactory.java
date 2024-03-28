@@ -32,7 +32,7 @@ import java.util.Objects;
  */
 public interface SocketFactory {
     /** The IPv4 address to listen all interface: [0.0.0.0]. */
-    byte[] ALL_INTERFACES = new byte[] {0, 0, 0, 0};
+    byte[] ALL_INTERFACES = new byte[]{0, 0, 0, 0};
 
     int IP_TOP_MIN = 0;
     int IP_TOP_MAX = 255;
@@ -44,14 +44,10 @@ public interface SocketFactory {
     /**
      * Configures and binds the provided ServerSocket
      *
-     * @param serverSocket
-     * 		the socket to configure and bind
-     * @param socketConfig
-     * 		the configuration for the socket
-     * @param port
-     * 		the TCP port to bind
-     * @throws IOException
-     * 		if the bind is unsuccessful
+     * @param serverSocket the socket to configure and bind
+     * @param socketConfig the configuration for the socket
+     * @param port         the TCP port to bind
+     * @throws IOException if the bind is unsuccessful
      */
     static void configureAndBind(
             @NonNull final ServerSocket serverSocket, @NonNull final SocketConfig socketConfig, final int port)
@@ -74,16 +70,11 @@ public interface SocketFactory {
     /**
      * Configures and connects the provided client Socket
      *
-     * @param clientSocket
-     * 		the socket to configure and connect
-     * @param socketConfig
-     * 		the configuration for the socket
-     * @param hostname
-     * 		the address to connect to
-     * @param port
-     * 		the TCP port to connect to
-     * @throws IOException
-     * 		if the connections fails
+     * @param clientSocket the socket to configure and connect
+     * @param socketConfig the configuration for the socket
+     * @param hostname     the address to connect to
+     * @param port         the TCP port to connect to
+     * @throws IOException if the connections fails
      */
     static void configureAndConnect(
             @NonNull final Socket clientSocket,
@@ -106,11 +97,9 @@ public interface SocketFactory {
     /**
      * Create a new ServerSocket, then binds it to the given port on all interfaces
      *
-     * @param port
-     * 		the port to bind to
+     * @param port the port to bind to
      * @return a new server socket
-     * @throws IOException
-     * 		if the socket cannot be created
+     * @throws IOException if the socket cannot be created
      */
     @NonNull
     ServerSocket createServerSocket(final int port) throws IOException;
@@ -118,23 +107,19 @@ public interface SocketFactory {
     /**
      * Create a new Socket, then connect to the given ip and port.
      *
-     * @param hostname
-     * 		the address to connect to
-     * @param port
-     * 		the port to connect to
+     * @param hostname the address to connect to
+     * @param port     the port to connect to
      * @return the new socket
-     * @throws IOException
-     * 		if the connection cannot be made
+     * @throws IOException if the connection cannot be made
      */
     @NonNull
     Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException;
 
     /**
-     * A convenient handler for executing logic on dynamic peers
-     * e.g. it could be used to re-initialize certificate keystore, or ask peers to re-authenticate
+     * A convenient handler for executing logic on dynamic peers e.g. it could be used to re-initialize certificate
+     * keystore, or ask peers to re-authenticate
      *
-     * @param peerInfoList
-     *  the updated list of peers
+     * @param peerInfoList the updated list of peers
      */
     void handlePeerListUpdate(List<PeerInfo> peerInfoList);
 }
