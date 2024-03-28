@@ -241,12 +241,13 @@ public final class LinkedObjectStreamValidateUtils {
             sig.update(data);
             return sig.verify(signature.getSignatureBytes());
         } catch (final NoSuchAlgorithmException
-                       | NoSuchProviderException
-                       | InvalidKeyException
-                       | SignatureException e) {
+                | NoSuchProviderException
+                | InvalidKeyException
+                | SignatureException e) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    () -> "Failed to verify Signature: %s, PublicKey: %s".formatted(signature, hex(publicKey.getEncoded())),
+                    () -> "Failed to verify Signature: %s, PublicKey: %s"
+                            .formatted(signature, hex(publicKey.getEncoded())),
                     e);
         }
         return false;
