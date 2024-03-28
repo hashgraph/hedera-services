@@ -47,13 +47,15 @@ public class RandomTransfer implements OpProvider {
     public static final int DEFAULT_NUM_STABLE_ACCOUNTS = 200;
     public static final double DEFAULT_RECORD_PROBABILITY = 0.0;
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
+    public double recordProb = DEFAULT_RECORD_PROBABILITY;
+
+    protected final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(ACCOUNT_DELETED, INSUFFICIENT_ACCOUNT_BALANCE);
 
+    protected final EntityNameProvider<AccountID> accounts;
+
     private int numStableAccounts = DEFAULT_NUM_STABLE_ACCOUNTS;
-    public double recordProb = DEFAULT_RECORD_PROBABILITY;
     private final SplittableRandom r = new SplittableRandom();
-    private final EntityNameProvider<AccountID> accounts;
 
     public RandomTransfer(EntityNameProvider<AccountID> accounts) {
         this.accounts = accounts;

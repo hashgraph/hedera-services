@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
-import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.hollowAccountFuzzingWith;
-import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.initOperations;
+import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.hollowAccountFuzzingTest;
+import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.initOperations;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -30,34 +30,32 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Fuzz test, testing the completion of hollow accounts, by running a set of random operations for a period of time
- */
 @HapiTestSuite
-public class HollowAccountCompletionFuzzing extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(HollowAccountCompletionFuzzing.class);
+public class HollowAccountFuzzing extends HapiSuite {
 
-    private static final String PROPERTIES = "hollow-account-completion-fuzzing.properties";
+    private static final Logger log = LogManager.getLogger(HollowAccountFuzzing.class);
+
+    private static final String PROPERTIES = "hollow-account-fuzzing.properties";
 
     public static void main(String... args) {
-        new HollowAccountCompletionFuzzing().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(hollowAccountCompletionFuzzing());
+        new HollowAccountFuzzing().runSuiteSync();
     }
 
     @HapiTest
-    final HapiSpec hollowAccountCompletionFuzzing() {
-        return defaultHapiSpec("HollowAccountCompletionFuzzing")
+    final HapiSpec hollowAccountFuzzing() {
+        return defaultHapiSpec("HollowAccountFuzzing")
                 .given(initOperations())
                 .when()
-                .then(runWithProvider(hollowAccountFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(hollowAccountFuzzingTest(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
     }
 
     @Override
     protected Logger getResultsLogger() {
         return log;
+    }
+
+    @Override
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(hollowAccountFuzzing());
     }
 }
