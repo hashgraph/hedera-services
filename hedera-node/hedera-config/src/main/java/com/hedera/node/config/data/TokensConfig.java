@@ -50,7 +50,7 @@ public record TokensConfig(
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty
                 boolean autoCreationsIsEnabled,
         @ConfigProperty(value = "maxMetadataBytes", defaultValue = "100") @NetworkProperty int tokensMaxMetadataBytes,
-        @ConfigProperty(value = "balancesInQueries.enabled", defaultValue = "true") @NetworkProperty
+        @ConfigProperty(value = "balancesInQueries.enabled", defaultValue = "false") @NetworkProperty
                 boolean balancesInQueriesEnabled,
         @ConfigProperty(value = "nfts.maxBatchSizeUpdate", defaultValue = "10") @NetworkProperty
                 int nftsMaxBatchSizeUpdate) {}

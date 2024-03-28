@@ -27,7 +27,6 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.ConsensusEngine;
-import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -83,7 +82,6 @@ import java.util.List;
  * @param shadowgraphScheduler                      the scheduler for the shadowgraph
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
- * @param futureEventBufferScheduler                the scheduler for the future event buffer
  * @param issDetectorScheduler                      the scheduler for the iss detector
  * @param issHandlerScheduler                       the scheduler for the iss handler
  * @param hashLoggerScheduler                       the scheduler for the hash logger
@@ -112,7 +110,6 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
         @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
-        @NonNull TaskScheduler<List<GossipEvent>> futureEventBufferScheduler,
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> hashLoggerScheduler,
@@ -294,14 +291,6 @@ public record PlatformSchedulers(
                         .cast(),
                 model.schedulerBuilder("runningHashUpdate")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("futureEventBuffer")
-                        .withType(config.futureEventBufferSchedulerType())
-                        .withUnhandledTaskCapacity(config.futureEventBufferUnhandledCapacity())
-                        .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
-                        .withFlushingEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(FutureEventBuffer.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("issDetector")
