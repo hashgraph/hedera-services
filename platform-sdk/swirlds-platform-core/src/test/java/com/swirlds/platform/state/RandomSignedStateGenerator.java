@@ -18,6 +18,7 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -222,10 +223,7 @@ public class RandomSignedStateGenerator {
             signaturesInstance = new HashMap<>();
 
             for (final NodeId nodeID : signingNodeIdsInstance) {
-                signaturesInstance.put(
-                        nodeID,
-                        SignatureVerificationTestUtils.buildFakeSignature(
-                                addressBookInstance.getAddress(nodeID).getSigPublicKey(), stateInstance.getHash()));
+                signaturesInstance.put(nodeID, randomSignature(random));
             }
         } else {
             signaturesInstance = signatures;
