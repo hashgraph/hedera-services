@@ -19,7 +19,6 @@ package com.swirlds.platform.test.consensus.framework;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
@@ -117,10 +116,10 @@ public class ConsensusTestNode {
     }
 
     /**
-     * @return the consensus instance
+     * Get the latest round that has reached consensus.
      */
-    public @NonNull Consensus getConsensus() {
-        return intake.getConsensus();
+    public long getLatestRound() {
+        return intake.getOutput().getLatestRound();
     }
 
     /**

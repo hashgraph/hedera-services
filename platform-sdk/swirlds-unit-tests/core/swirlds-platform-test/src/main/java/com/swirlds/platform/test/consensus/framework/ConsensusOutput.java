@@ -20,6 +20,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -31,8 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Stores all output of consensus used in testing. This output can be used to validate consensus
- * results.
+ * Stores all output of consensus used in testing. This output can be used to validate consensus results.
  */
 public class ConsensusOutput implements Clearable {
     private final Time time;
@@ -43,8 +44,14 @@ public class ConsensusOutput implements Clearable {
     private final SequenceSet<GossipEvent> nonAncientEvents;
     private final SequenceSet<EventDescriptor> nonAncientConsensusEvents;
 
+    private long latestRound;
+
+    private NonAncientEventWindow eventWindow =
+            NonAncientEventWindow.getGenesisNonAncientEventWindow(AncientMode.GENERATION_THRESHOLD);
+
     /**
      * Creates a new instance.
+     *
      * @param time the time to use for marking events
      */
     public ConsensusOutput(@NonNull final Time time) {
@@ -81,6 +88,8 @@ public class ConsensusOutput implements Clearable {
             }
         });
         nonAncientConsensusEvents.shiftWindow(ancientThreshold);
+
+        eventWindow = consensusRound.getNonAncientEventWindow();
     }
 
     /**
@@ -109,10 +118,32 @@ public class ConsensusOutput implements Clearable {
         return sortedEvents;
     }
 
+    /**
+     * Get the latest round that reached consensus.
+     *
+     * @return the latest round that reached consensus
+     */
+    public long getLatestRound() {
+        return latestRound;
+    }
+
+    /**
+     * Get the current event window.
+     * @return the current event window
+     */
+    @NonNull
+    public NonAncientEventWindow getEventWindow() {
+        return eventWindow;
+    }
+
     @Override
     public void clear() {
         addedEvents.clear();
         consensusRounds.clear();
         staleEvents.clear();
+        nonAncientEvents.clear();
+        nonAncientConsensusEvents.clear();
+        latestRound = 0;
+        eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(AncientMode.GENERATION_THRESHOLD);
     }
 }

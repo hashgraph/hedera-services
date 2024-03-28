@@ -29,8 +29,6 @@ import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.platform.Consensus;
-import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
@@ -44,8 +42,6 @@ import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.state.signed.LoadableFromSignedState;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
@@ -60,8 +56,7 @@ import java.util.concurrent.ForkJoinPool;
 /**
  * Event intake with consensus and shadowgraph, used for testing
  */
-public class TestIntake implements LoadableFromSignedState {
-    private final ConsensusImpl consensus;
+public class TestIntake {
     private final ConsensusOutput output;
 
     private final ComponentWiring<EventHasher, GossipEvent> hasherWiring;
@@ -78,9 +73,6 @@ public class TestIntake implements LoadableFromSignedState {
 
         final Time time = Time.getCurrent();
         output = new ConsensusOutput(time);
-
-        // TODO we don't use this any more...
-        consensus = new ConsensusImpl(platformContext, ConsensusUtils.NOOP_CONSENSUS_METRICS, addressBook);
 
         model = WiringModel.create(platformContext, time, mock(ForkJoinPool.class));
 
@@ -120,6 +112,9 @@ public class TestIntake implements LoadableFromSignedState {
         // Ensure unsoldered wires are created.
         hasherWiring.getInputWire(EventHasher::hashEvent);
 
+        // Make sure this unsoldered wire is properly built
+        consensusEngineWiring.getInputWire(ConsensusEngine::outOfBandSnapshotUpdate);
+
         model.start();
     }
 
@@ -142,13 +137,6 @@ public class TestIntake implements LoadableFromSignedState {
     }
 
     /**
-     * @return the consensus used by this intake
-     */
-    public @NonNull Consensus getConsensus() {
-        return consensus;
-    }
-
-    /**
      * @return a queue of all rounds that have reached consensus
      */
     public @NonNull Deque<ConsensusRound> getConsensusRounds() {
@@ -159,25 +147,19 @@ public class TestIntake implements LoadableFromSignedState {
         return output.getConsensusRounds().pollLast();
     }
 
-    @Override
-    public void loadFromSignedState(@NonNull final SignedState signedState) {
-        consensus.loadSnapshot(signedState.getState().getPlatformState().getSnapshot());
-    }
-
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {
-        consensus.loadSnapshot(snapshot);
 
         // FUTURE WORK: remove the fourth variable setting useBirthRound to false when we switch from comparing
         // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
         // production.
-        orphanBufferWiring
-                .nonAncientEventWindowInput()
-                .put(new NonAncientEventWindow(
-                        consensus.getLastRoundDecided(),
-                        consensus.getMinGenerationNonAncient(),
-                        consensus.getMinRoundGeneration(),
-                        GENERATION_THRESHOLD));
 
+        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+                snapshot.round(),
+                snapshot.getMinimumGenerationNonAncient(26), // TODO
+                snapshot.getMinimumGenerationNonAncient(26),
+                GENERATION_THRESHOLD);
+
+        orphanBufferWiring.nonAncientEventWindowInput().put(eventWindow);
         consensusEngineWiring
                 .getInputWire(ConsensusEngine::outOfBandSnapshotUpdate)
                 .put(snapshot);
@@ -188,7 +170,7 @@ public class TestIntake implements LoadableFromSignedState {
     }
 
     public void reset() {
-        consensus.loadSnapshot(GENESIS_SNAPSHOT);
+        loadSnapshot(GENESIS_SNAPSHOT);
         output.clear();
     }
 
