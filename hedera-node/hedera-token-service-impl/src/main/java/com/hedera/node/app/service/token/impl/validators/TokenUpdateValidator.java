@@ -24,6 +24,7 @@ import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenKeyValidation;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -57,6 +58,7 @@ public class TokenUpdateValidator {
         // If the token has an empty admin key it can't be updated
         if (isEmpty(token.adminKey())) {
             validateTrue(BaseTokenHandler.isExpiryOnlyUpdateOp(op), TOKEN_IS_IMMUTABLE);
+            validateTrue(BaseTokenHandler.isLowPriorityKeyUpdate(op), TOKEN_IS_IMMUTABLE);
         }
         // validate memo
         if (op.hasMemo()) {
@@ -75,15 +77,17 @@ public class TokenUpdateValidator {
             validator.validateTokenName(op.name(), tokensConfig);
         }
         // validate token keys, if any being changed
-        validator.validateTokenKeys(
-                op.hasAdminKey(), op.adminKey(),
-                op.hasKycKey(), op.kycKey(),
-                op.hasWipeKey(), op.wipeKey(),
-                op.hasSupplyKey(), op.supplyKey(),
-                op.hasFreezeKey(), op.freezeKey(),
-                op.hasFeeScheduleKey(), op.feeScheduleKey(),
-                op.hasPauseKey(), op.pauseKey(),
-                op.hasMetadataKey(), op.metadataKey());
+        if (op.keyVerificationMode() == TokenKeyValidation.FULL_VALIDATION) {
+            validator.validateTokenKeys(
+                    op.hasAdminKey(), op.adminKey(),
+                    op.hasKycKey(), op.kycKey(),
+                    op.hasWipeKey(), op.wipeKey(),
+                    op.hasSupplyKey(), op.supplyKey(),
+                    op.hasFreezeKey(), op.freezeKey(),
+                    op.hasFeeScheduleKey(), op.feeScheduleKey(),
+                    op.hasPauseKey(), op.pauseKey(),
+                    op.hasMetadataKey(), op.metadataKey());
+        }
 
         // Check whether there is change on the following properties in the transaction body
         // If no change occurred, no need to change them or validate them

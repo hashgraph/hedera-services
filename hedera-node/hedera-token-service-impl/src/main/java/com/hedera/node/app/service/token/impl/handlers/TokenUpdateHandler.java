@@ -16,27 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -45,7 +31,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -68,6 +56,8 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -102,20 +92,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var tokenId = op.tokenOrThrow();
 
         final var tokenStore = context.createStore(ReadableTokenStore.class);
-        final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
-        if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        if (tokenMetadata.hasAdminKey()) {
-            context.requireKey(tokenMetadata.adminKey());
-        }
-        if (op.hasAutoRenewAccount()) {
-            context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
-        }
-        if (op.hasTreasury()) {
-            context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_ACCOUNT_ID);
-        }
-        if (op.hasAdminKey()) {
-            context.requireKey(op.adminKeyOrThrow());
-        }
+        final var token = tokenStore.get(tokenId);
+        if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
+
+        addRequiredSigners(context, op, token);
     }
 
     @Override
@@ -395,15 +375,121 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             validateTrue(originalToken.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
             builder.metadataKey(op.metadataKey());
         }
-        if (!isExpiryOnlyUpdateOp(op)) {
+        if (!isExpiryOnlyUpdateOp(op) && !isLowPriorityKeyUpdate(op)) {
             validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         }
         if (op.hasAdminKey()) {
+            removeKeysIfNeeded(op, builder);
             final var newAdminKey = op.adminKey();
-            if (isKeyRemoval(newAdminKey)) {
-                builder.adminKey((Key) null);
-            } else {
+            if (!isKeyRemoval(newAdminKey)) {
                 builder.adminKey(newAdminKey);
+            }
+        }
+    }
+
+    private void removeKeysIfNeeded(final TokenUpdateTransactionBody op, final Token.Builder builder) {
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.adminKey())) {
+            builder.adminKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.kycKey())) {
+            builder.kycKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.freezeKey())) {
+            builder.freezeKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.wipeKey())) {
+            builder.wipeKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.supplyKey())) {
+            builder.supplyKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.feeScheduleKey())) {
+            builder.feeScheduleKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.pauseKey())) {
+            builder.pauseKey((Key) null);
+        }
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.metadataKey())) {
+            builder.metadataKey((Key) null);
+        }
+    }
+
+    /**
+     * Add all signature requirements for TokenUpdateTx
+     * note: those requirements drastically changed after HIP-540
+     * @param context pre handle context
+     * @param op token update transaction body
+     * @param originalToken original token
+     */
+    private void addRequiredSigners(
+            @NonNull PreHandleContext context,
+            @NonNull final TokenUpdateTransactionBody op,
+            @NonNull final Token originalToken)
+            throws PreCheckException {
+        if (op.hasAdminKey()) {
+            context.requireKey(op.adminKeyOrThrow());
+        }
+        if (op.hasTreasury()) {
+            context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_ACCOUNT_ID);
+        }
+        if (op.hasAutoRenewAccount()) {
+            context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
+        }
+
+        if (originalToken.hasAdminKey()) {
+            // if we update any of the low priority keys, we should allow either admin key
+            // or the respective low priority key to sign.
+            if (isLowPriorityKeyUpdate(op)) {
+                List<Key> lowPriorityKeys = new ArrayList<>();
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys, originalToken.hasWipeKey(), originalToken.wipeKey(), op.hasWipeKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys, originalToken.hasKycKey(), originalToken.kycKey(), op.hasKycKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys, originalToken.hasSupplyKey(), originalToken.supplyKey(), op.hasSupplyKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys, originalToken.hasFreezeKey(), originalToken.freezeKey(), op.hasFreezeKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys,
+                        originalToken.hasFeeScheduleKey(),
+                        originalToken.feeScheduleKey(),
+                        op.hasFeeScheduleKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys, originalToken.hasPauseKey(), originalToken.pauseKey(), op.hasPauseKey());
+
+                final Key lowPriorityKeyList = Key.newBuilder()
+                        .keyList(KeyList.newBuilder().keys(lowPriorityKeys).build())
+                        .build();
+                final List<Key> keysRequired = List.of(lowPriorityKeyList, originalToken.adminKey());
+                final Key threshKey = Key.newBuilder()
+                        .thresholdKey(ThresholdKey.newBuilder()
+                                .keys(KeyList.newBuilder().keys(keysRequired).build())
+                                .threshold(1)
+                                .build())
+                        .build();
+                context.requireKey(threshKey);
+            } else {
+                // if we update any other field, we need the current admin key to sign
+                context.requireKey(originalToken.adminKey());
+            }
+        }
+    }
+
+    private void addRequiredLowPrioritySigner(
+            @NonNull List<Key> lowPriorityKeys,
+            final boolean originalTokenHasKey,
+            @NonNull final Key originalKey,
+            final boolean tokenUpdateHasKey) {
+        if (tokenUpdateHasKey) {
+            if (originalTokenHasKey) {
+                lowPriorityKeys.add(originalKey);
             }
         }
     }

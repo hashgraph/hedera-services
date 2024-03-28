@@ -170,7 +170,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         cryptoCreate("neverToBe").balance(0L),
                         tokenCreate(mutableForNow).adminKey("initialAdmin"))
                 .when(
-                        tokenUpdate(mutableForNow).improperlyEmptyingAdminKey().hasPrecheck(INVALID_ADMIN_KEY),
+                        tokenUpdate(mutableForNow).usingInvalidAdminKey().hasPrecheck(INVALID_ADMIN_KEY),
                         tokenUpdate(mutableForNow).properlyEmptyingAdminKey())
                 .then(
                         getTokenInfo(mutableForNow),
