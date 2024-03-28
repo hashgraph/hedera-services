@@ -16,13 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPriorityId;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
-import static org.apache.tuweni.bytes.Bytes.EMPTY;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
@@ -34,7 +33,6 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
  * A factory that creates a {@link HederaEvmTransaction} for static calls.
@@ -43,18 +41,14 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
  */
 @QueryScope
 public class HevmStaticTransactionFactory {
-    private static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
     private final ContractsConfig contractsConfig;
-    private final GasCalculator gasCalculator;
     private final QueryContext context;
     private final AccountID payerId;
 
     @Inject
-    public HevmStaticTransactionFactory(
-            @NonNull final QueryContext context, @NonNull final GasCalculator gasCalculator) {
+    public HevmStaticTransactionFactory(@NonNull final QueryContext context) {
         this.context = requireNonNull(context);
         this.contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
-        this.gasCalculator = requireNonNull(gasCalculator);
         this.payerId = requireNonNull(context.payer());
     }
 
@@ -87,9 +81,7 @@ public class HevmStaticTransactionFactory {
     }
 
     private void assertValidCall(@NonNull final ContractCallLocalQuery body) {
-        final var minGasLimit =
-                Math.max(INTRINSIC_GAS_LOWER_BOUND, gasCalculator.transactionIntrinsicGasCost(EMPTY, false));
-        validateTrue(body.gas() >= minGasLimit, INSUFFICIENT_GAS);
+        validateTrue(body.gas() >= 0, CONTRACT_NEGATIVE_GAS);
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
     }
 }

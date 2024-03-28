@@ -41,7 +41,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,9 +49,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HevmStaticTransactionFactoryTest {
-    @Mock
-    private GasCalculator gasCalculator;
-
     @Mock
     private QueryContext context;
 
@@ -65,14 +61,14 @@ class HevmStaticTransactionFactoryTest {
     void setUp() {
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
         given(context.payer()).willReturn(SENDER_ID);
-        subject = new HevmStaticTransactionFactory(context, gasCalculator);
+        subject = new HevmStaticTransactionFactory(context);
     }
 
     @Test
     void fromQueryWorkWithSenderAndUsesPriorityAddress() {
         final var query = Query.newBuilder()
                 .contractCallLocal(callLocalWith(b -> {
-                    b.gas(21_000L);
+                    b.gas(100L);
                     b.senderId(SENDER_ID);
                     b.contractID(CALLED_CONTRACT_ID);
                     b.functionParameters(CALL_DATA);
@@ -88,7 +84,7 @@ class HevmStaticTransactionFactoryTest {
         assertThat(transaction.payload()).isEqualTo(CALL_DATA);
         assertThat(transaction.chainId()).isNull();
         assertThat(transaction.value()).isZero();
-        assertThat(transaction.gasLimit()).isEqualTo(21_000L);
+        assertThat(transaction.gasLimit()).isEqualTo(100L);
         assertThat(transaction.offeredGasPrice()).isEqualTo(1L);
         assertThat(transaction.maxGasAllowance()).isZero();
         assertThat(transaction.hapiCreation()).isNull();
@@ -154,8 +150,8 @@ class HevmStaticTransactionFactoryTest {
     }
 
     @Test
-    void fromQueryFailsWithGasBelowFixedLowerBound() {
-        assertCallFailsWith(ResponseCodeEnum.INSUFFICIENT_GAS, builder -> builder.gas(20_999L));
+    void fromQueryFailsWithNegativeGas() {
+        assertCallFailsWith(ResponseCodeEnum.CONTRACT_NEGATIVE_GAS, builder -> builder.gas(-5L));
     }
 
     @Test
