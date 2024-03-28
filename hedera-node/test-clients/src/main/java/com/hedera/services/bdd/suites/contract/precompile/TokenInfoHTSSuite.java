@@ -876,7 +876,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN_NAME))))
                                 .via(FUNGIBLE_TOKEN_INFO_TXN)
                                 .gas(1_000_000L))))
-                .then(getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN)
+                .then(getTxnRecord(FUNGIBLE_TOKEN_INFO_TXN)
                         .andAllChildRecords()
                         .logged(),
                         childRecordsCheck(
