@@ -241,6 +241,7 @@ public class InfrastructureFactory {
                 txnCtx,
                 aliasManager,
                 feeDistribution,
+                ids,
                 // No-op, we won't have used any frontend throttle capacity for an auto-creation
                 // attempted during an EVM transaction
                 n -> {});

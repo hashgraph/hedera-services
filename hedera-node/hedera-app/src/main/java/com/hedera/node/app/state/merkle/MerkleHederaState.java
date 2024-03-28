@@ -133,6 +133,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     private final HederaLifecycles lifecycles;
 
+    public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
+        return services;
+    }
+
     private Metrics metrics;
 
     /**

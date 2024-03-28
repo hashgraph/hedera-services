@@ -46,6 +46,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.fees.charging.FeeDistribution;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.backing.HashMapBackingAccounts;
+import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
@@ -149,6 +150,9 @@ class TransferLogicTest {
     private AliasManager aliasManager;
 
     @Mock
+    private EntityIdSource entityIdSource;
+
+    @Mock
     private IntConsumer cryptoCreateThrottleReclaimer;
 
     private final FeeDistribution feeDistribution = new FeeDistribution(accountNums, dynamicProperties);
@@ -172,6 +176,7 @@ class TransferLogicTest {
                 txnCtx,
                 aliasManager,
                 feeDistribution,
+                entityIdSource,
                 cryptoCreateThrottleReclaimer);
     }
 
@@ -198,6 +203,7 @@ class TransferLogicTest {
                 txnCtx,
                 aliasManager,
                 feeDistribution,
+                entityIdSource,
                 cryptoCreateThrottleReclaimer);
 
         final var triggerList = List.of(inappropriateTrigger);

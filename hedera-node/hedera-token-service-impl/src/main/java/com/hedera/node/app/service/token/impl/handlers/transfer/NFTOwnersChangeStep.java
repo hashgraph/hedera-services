@@ -201,6 +201,5 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         tokenRelStore.put(senderRelCopy.balance(fromTokenRelBalance - 1).build());
         tokenRelStore.put(receiverRelCopy.balance(toTokenRelBalance + 1).build());
         nftStore.put(nftCopy.build());
-        // TODO: make sure finalize is capturing all these in transfer list
     }
 }

@@ -24,14 +24,18 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep.validateSpenderHasAllowance;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -177,13 +181,28 @@ public class TransferContextImpl implements TransferContext {
     }
 
     @Override
-    public void validateHbarAllowances() {
+    public void validateTopLevelAllowances() {
         final var topLevelPayer = context.payer();
         final var op = context.body().cryptoTransferOrThrow();
         for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
             if (aa.isApproval() && aa.amount() < 0L) {
                 maybeValidateHbarAllowance(
                         accountStore.get(aa.accountIDOrElse(AccountID.DEFAULT)), topLevelPayer, aa.amount());
+            }
+        }
+        final var nftStore = context.readableStore(ReadableNftStore.class);
+        for (final var tokenTransfers : op.tokenTransfersOrElse(emptyList())) {
+            final var tokenId = tokenTransfers.tokenOrElse(TokenID.DEFAULT);
+            for (final var oc : tokenTransfers.nftTransfersOrElse(emptyList())) {
+                if (oc.isApproval()) {
+                    final var maybeOwner = accountStore.get(oc.senderAccountIDOrElse(AccountID.DEFAULT));
+                    if (maybeOwner != null) {
+                        final var maybeNft = nftStore.get(new NftID(tokenId, oc.serialNumber()));
+                        if (maybeNft != null) {
+                            validateSpenderHasAllowance(maybeOwner, topLevelPayer, tokenId, maybeNft);
+                        }
+                    }
+                }
             }
         }
     }

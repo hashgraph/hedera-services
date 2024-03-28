@@ -59,6 +59,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import java.time.Instant;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,7 +94,11 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Mock
     private FeeAccumulator feeAccumulator;
 
+    @Mock
+    private Metrics metrics;
+
     private WritableTopicStore topicStore;
+    private Configuration config;
     private ConsensusCreateTopicHandler subject;
 
     private TransactionBody newCreateTxn(Key adminKey, Key submitKey, boolean hasAutoRenewAccount) {
@@ -118,10 +124,10 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @BeforeEach
     void setUp() {
         subject = new ConsensusCreateTopicHandler();
-        topicStore = new WritableTopicStore(writableStates);
-        final var config = HederaTestConfigBuilder.create()
+        config = HederaTestConfigBuilder.create()
                 .withValue("topics.maxNumber", 10L)
                 .getOrCreateConfig();
+        topicStore = new WritableTopicStore(writableStates, config, metrics);
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class))
@@ -407,7 +413,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var writableState = writableTopicStateWithOneKey();
 
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
-        final var topicStore = new WritableTopicStore(writableStates);
+        final var topicStore = new WritableTopicStore(writableStates, config, metrics);
         assertEquals(1, topicStore.sizeOfState());
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
 
@@ -436,7 +442,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
-        final var topicStore = new WritableTopicStore(writableStates);
+        final var topicStore = new WritableTopicStore(writableStates, config, metrics);
         assertEquals(1, topicStore.sizeOfState());
 
         given(handleContext.readableStore(any())).willReturn(accountStore);
