@@ -32,6 +32,7 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
@@ -48,6 +49,7 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkUtils;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.ProtocolNegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
@@ -189,26 +191,20 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
         topology = new StaticTopology(addressBook, selfId, basicConfig.numConnections());
+        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
 
         final SocketFactory socketFactory =
                 NetworkUtils.createSocketFactory(selfId, addressBook, keysAndCerts, platformContext.getConfiguration());
         // create an instance that can create new outbound connections
-        final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
-                platformContext, selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
+        final OutboundConnectionCreator connectionCreator =
+                new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
-        final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
-                platformContext,
-                this,
-                selfId,
-                addressBook,
-                connectionManagers::newConnection,
-                shouldDoVersionCheck(),
-                appVersion,
-                time);
+        final InboundConnectionHandler inboundConnectionHandler =
+                new InboundConnectionHandler(platformContext, this, selfId, connectionManagers::newConnection, time);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
-                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle);
+                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle, peers);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(threadConfig.threadPrioritySync())
                 .setNodeId(selfId)
@@ -482,15 +478,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     public void connectionClosed(final boolean outbound, @NonNull final Connection conn) {
         Objects.requireNonNull(conn);
         networkMetrics.recordDisconnect(conn);
-    }
-
-    /**
-     * Should the network layer do a version check prior to initiating a connection?
-     *
-     * @return true if a version check should be done
-     */
-    protected boolean shouldDoVersionCheck() {
-        return false;
     }
 
     /**
