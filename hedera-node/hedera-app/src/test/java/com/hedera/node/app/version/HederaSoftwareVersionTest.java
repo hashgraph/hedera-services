@@ -81,8 +81,6 @@ final class HederaSoftwareVersionTest {
 
         assertEquals(0, v1.compareTo(v2));
 
-        System.out.println(v1);
-
         final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
         out.writeSerializable(v1, true);
