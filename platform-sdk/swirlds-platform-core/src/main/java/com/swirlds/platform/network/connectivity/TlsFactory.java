@@ -109,7 +109,8 @@ public class TlsFactory implements SocketFactory {
     }
 
     @Override
-    public void handlePeerListUpdate(List<PeerInfo> peers) {
+    public void handlePeerListUpdate(final @NonNull List<PeerInfo> peers) {
+        Objects.requireNonNull(peers);
         try {
             final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(peers);
 

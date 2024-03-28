@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.Utilities;
@@ -170,7 +171,7 @@ class SocketFactoryTest {
             throws Throwable {
         assertTrue(addressBook.getSize() > 1, "Address book must contain at least 2 nodes");
         // choose 2 random nodes to test
-        final Random random = new Random();
+        final Random random = RandomUtils.getRandomPrintSeed();
         final List<Integer> nodeIndexes = random.ints(0, addressBook.getSize())
                 .distinct()
                 .limit(2)
@@ -190,7 +191,7 @@ class SocketFactoryTest {
         testSockets(socketFactory1, socketFactory2);
 
         // re-initialize SSLContext for socketfactory1 using a new peerList
-        AddressBook dynamicAddressBook = CryptoArgsProvider.createAddressBook(3);
+        final AddressBook dynamicAddressBook = CryptoArgsProvider.createAddressBook(3);
         socketFactory1.handlePeerListUpdate(Utilities.createPeerInfoList(dynamicAddressBook, node1));
 
         // assert they can still connect to each other
