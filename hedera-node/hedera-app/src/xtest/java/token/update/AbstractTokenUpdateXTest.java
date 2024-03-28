@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
  * Copyright (C) 2024 Hedera Hashgraph, LLC
-=======
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
->>>>>>> 83f18956db (feat: enable admin key to be able to remove other keys)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +14,9 @@
  * limitations under the License.
  */
 
-package token;
+package token.update;
 
 import com.hedera.hapi.node.base.AccountID;
-
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -29,6 +24,8 @@ import common.AbstractXTest;
 import common.BaseScaffoldingComponent;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import token.DaggerTokenScaffoldingComponent;
+import token.TokenScaffoldingComponent;
 
 public abstract class AbstractTokenUpdateXTest extends AbstractXTest {
 

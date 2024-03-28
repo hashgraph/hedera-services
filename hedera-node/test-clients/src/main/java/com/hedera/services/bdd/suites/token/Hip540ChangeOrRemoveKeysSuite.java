@@ -22,9 +22,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -59,8 +58,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                 tokenUpdateFeeScheduleKey(),
                 tokenUpdateKycKey(),
                 tokenUpdateWipeKey(),
-                tokenUpdatePauseKey()
-        );
+                tokenUpdatePauseKey());
     }
 
     private List<HapiSpec> negativeTests() {
@@ -127,15 +125,12 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .adminKey(adminKey)
                                 .supplyKey(supplyKey)
                                 .freezeKey(freezeKey)
-                                .withCustom(fixedHbarFee(origHbarFee, HBAR_COLLECTOR)
-                        ).payingWith(admin)
-                )
-                .when(
-                        tokenUpdate(tokenName)
-                                .freezeKey(freezeKey2)
-                                .signedBy(freezeKey, freezeKey2)
-                                .payingWith(freeze)
-                )
+                                .withCustom(fixedHbarFee(origHbarFee, HBAR_COLLECTOR))
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .freezeKey(freezeKey2)
+                        .signedBy(freezeKey, freezeKey2)
+                        .payingWith(freeze))
                 .then(getTokenInfo(tokenName)
                         .searchKeysGlobally()
                         .hasAdminKey(adminKey)
@@ -177,18 +172,12 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .adminKey(adminKey)
                                 .supplyKey(supplyKey)
                                 .freezeKey(freezeKey)
-                                .payingWith(admin)
-                )
-                .when(
-                        tokenUpdate(tokenName)
-                                .freezeKey(freezeKey2)
-                                .signedBy(freezeKey2, freezeKey)
-                                .payingWith(freeze)
-                )
-                .then(
-                        getTokenInfo(tokenName)
-                        .searchKeysGlobally()
-                        .hasFreezeKey(freezeKey2));
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .freezeKey(freezeKey2)
+                        .signedBy(freezeKey2, freezeKey)
+                        .payingWith(freeze))
+                .then(getTokenInfo(tokenName).searchKeysGlobally().hasFreezeKey(freezeKey2));
     }
 
     @HapiTest
@@ -224,18 +213,12 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .adminKey(adminKey)
                                 .supplyKey(supplyKey)
                                 .freezeKey(freezeKey)
-                                .payingWith(supply)
-                )
-                .when(
-                        tokenUpdate(tokenName)
-                                .supplyKey(supplyKey2)
-                                .signedBy(supplyKey2, supplyKey)
-                                .payingWith(supply)
-                )
-                .then(
-                        getTokenInfo(tokenName)
-                                .searchKeysGlobally()
-                                .hasSupplyKey(supplyKey2));
+                                .payingWith(supply))
+                .when(tokenUpdate(tokenName)
+                        .supplyKey(supplyKey2)
+                        .signedBy(supplyKey2, supplyKey)
+                        .payingWith(supply))
+                .then(getTokenInfo(tokenName).searchKeysGlobally().hasSupplyKey(supplyKey2));
     }
 
     @HapiTest
@@ -272,20 +255,16 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .adminKey(adminKey)
                                 .supplyKey(supplyKey)
                                 .feeScheduleKey(feeScheduleKey)
-                                .payingWith(admin)
-                )
-                .when(
-                        tokenUpdate(tokenName)
-                                .feeScheduleKey(feeScheduleKey2)
-                                .signedBy(feeScheduleKey2, feeScheduleKey)
-                                .payingWith(feeSchedule)
-                )
-                .then(
-                        getTokenInfo(tokenName)
-                                .searchKeysGlobally()
-                                .hasAdminKey(adminKey)
-                                .hasSupplyKey(supplyKey)
-                                .hasFeeScheduleKey(feeScheduleKey2));
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .feeScheduleKey(feeScheduleKey2)
+                        .signedBy(feeScheduleKey2, feeScheduleKey)
+                        .payingWith(feeSchedule))
+                .then(getTokenInfo(tokenName)
+                        .searchKeysGlobally()
+                        .hasAdminKey(adminKey)
+                        .hasSupplyKey(supplyKey)
+                        .hasFeeScheduleKey(feeScheduleKey2));
     }
 
     @HapiTest
@@ -321,20 +300,16 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .adminKey(adminKey)
                                 .supplyKey(supplyKey)
                                 .kycKey(kycKey)
-                                .payingWith(admin)
-                )
-                .when(
-                        tokenUpdate(tokenName)
-                                .kycKey(kycKey2)
-                                .signedBy(kycKey2, kycKey)
-                                .payingWith(kyc)
-                )
-                .then(
-                        getTokenInfo(tokenName)
-                                .searchKeysGlobally()
-                                .hasAdminKey(adminKey)
-                                .hasSupplyKey(supplyKey)
-                                .hasKycKey(kycKey2));
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .kycKey(kycKey2)
+                        .signedBy(kycKey2, kycKey)
+                        .payingWith(kyc))
+                .then(getTokenInfo(tokenName)
+                        .searchKeysGlobally()
+                        .hasAdminKey(adminKey)
+                        .hasSupplyKey(supplyKey)
+                        .hasKycKey(kycKey2));
     }
 
     @HapiTest
@@ -367,20 +342,16 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .adminKey(adminKey)
                                 .supplyKey(supplyKey)
                                 .wipeKey(wipeKey)
-                                .payingWith(admin)
-                )
-                .when(
-                        tokenUpdate(tokenName)
-                                .wipeKey(wipeKey2)
-                                .signedBy(wipeKey2, wipeKey)
-                                .payingWith(wipe)
-                )
-                .then(
-                        getTokenInfo(tokenName)
-                                .searchKeysGlobally()
-                                .hasAdminKey(adminKey)
-                                .hasSupplyKey(supplyKey)
-                                .hasWipeKey(wipeKey2));
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .wipeKey(wipeKey2)
+                        .signedBy(wipeKey2, wipeKey)
+                        .payingWith(wipe))
+                .then(getTokenInfo(tokenName)
+                        .searchKeysGlobally()
+                        .hasAdminKey(adminKey)
+                        .hasSupplyKey(supplyKey)
+                        .hasWipeKey(wipeKey2));
     }
 
     @HapiTest
@@ -413,20 +384,16 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .adminKey(adminKey)
                                 .supplyKey(supplyKey)
                                 .pauseKey(pauseKey)
-                                .payingWith(admin)
-                )
-                .when(
-                        tokenUpdate(tokenName)
-                                .pauseKey(pauseKey2)
-                                .signedBy(pauseKey2, pauseKey)
-                                .payingWith(pause)
-                )
-                .then(
-                        getTokenInfo(tokenName)
-                                .searchKeysGlobally()
-                                .hasAdminKey(adminKey)
-                                .hasSupplyKey(supplyKey)
-                                .hasPauseKey(pauseKey2));
+                                .payingWith(admin))
+                .when(tokenUpdate(tokenName)
+                        .pauseKey(pauseKey2)
+                        .signedBy(pauseKey2, pauseKey)
+                        .payingWith(pause))
+                .then(getTokenInfo(tokenName)
+                        .searchKeysGlobally()
+                        .hasAdminKey(adminKey)
+                        .hasSupplyKey(supplyKey)
+                        .hasPauseKey(pauseKey2));
     }
 
     @Override
