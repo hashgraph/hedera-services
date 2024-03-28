@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.systemContractGasCalculatorOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.HTS_PRECOMPILE_MIRROR_ID;
@@ -30,6 +31,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy.Decision;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
@@ -38,7 +40,6 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -75,8 +76,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
         requireNonNull(frame);
 
         // compute the gas requirement
-        gasRequirement =
-                calculateGas(Instant.ofEpochSecond(frame.getBlockValues().getTimestamp()));
+        gasRequirement = calculateGas(frame);
 
         // get the contract ID
         final ContractID contractID = asEvmContractId(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS));
@@ -179,11 +179,13 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
         return entropy.slice(0, 32);
     }
 
-    long calculateGas(@NonNull final Instant now) {
-        // @future('8094') Update gas calculations once the fee calculator classes are available
-        // final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
-        // final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(now, ContractCall);
-        // return feesInTinyCents / currentGasPriceInTinyCents;
-        return 0;
+    long calculateGas(@NonNull final MessageFrame frame) {
+        final var gasCalculator = systemContractGasCalculatorOf(frame);
+        if (frame.isStatic()) {
+            return gasCalculator.viewGasRequirement();
+        }
+
+        return Math.max(
+                gasCalculator.canonicalGasRequirement(DispatchType.UTIL_PRNG), gasCalculator.viewGasRequirement());
     }
 }
