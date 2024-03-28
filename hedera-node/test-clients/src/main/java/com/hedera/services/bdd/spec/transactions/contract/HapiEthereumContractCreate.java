@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_TO_TINYBARS;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -56,7 +57,8 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEthereumContractCreate> {
     private EthTxData.EthTransactionType type;
-    private long nonce;
+    private long nonce = 0L;
+    private boolean useSpecNonce = true;
     private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
     private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
     private long maxPriorityGas = 20_000L;
@@ -93,6 +95,54 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         super(contract);
         this.payer = Optional.of(RELAYER);
         super.omitAdminKey = true;
+    }
+
+    public HapiEthereumContractCreate(
+            HapiContractCreate contractCreate, String privateKeyRef, Key adminKey, long defaultGas) {
+        super(contractCreate.contract);
+        this.adminKey = adminKey;
+        this.privateKeyRef = privateKeyRef;
+        this.type = EthTransactionType.EIP1559;
+        this.omitAdminKey = contractCreate.omitAdminKey;
+        this.makeImmutable = contractCreate.makeImmutable;
+        this.advertiseCreation = contractCreate.advertiseCreation;
+        this.shouldAlsoRegisterAsAccount = contractCreate.shouldAlsoRegisterAsAccount;
+        this.useDeprecatedAdminKey = contractCreate.useDeprecatedAdminKey;
+        this.contract = contractCreate.contract;
+        this.key = contractCreate.key;
+        this.autoRenewPeriodSecs = contractCreate.autoRenewPeriodSecs;
+        this.balance = contractCreate.balance;
+        this.adminKeyControl = contractCreate.adminKeyControl;
+        this.adminKeyType = contractCreate.adminKeyType;
+        this.memo = contractCreate.memo;
+        this.bytecodeFile = contractCreate.bytecodeFile;
+        this.bytecodeFileFn = contractCreate.bytecodeFileFn;
+        this.successCb = contractCreate.successCb;
+        this.abi = contractCreate.abi;
+        this.args = contractCreate.args;
+        this.gasObserver = contractCreate.gasObserver;
+        this.newNumObserver = contractCreate.newNumObserver;
+        this.proxy = contractCreate.proxy;
+        this.explicitHexedParams = contractCreate.explicitHexedParams;
+        this.stakedAccountId = contractCreate.stakedAccountId;
+        this.stakedNodeId = contractCreate.stakedNodeId;
+        this.isDeclinedReward = contractCreate.isDeclinedReward;
+        final var gas = contractCreate.gas.isPresent() ? contractCreate.gas.getAsLong() : defaultGas;
+        this.gas(gas);
+        this.shouldRegisterTxn = true;
+        this.deferStatusResolution = contractCreate.getDeferStatusResolution();
+        this.txnName = contractCreate.getTxnName();
+        this.expectedStatus = Optional.of(contractCreate.getExpectedStatus());
+        this.expectedPrecheck = Optional.of(contractCreate.getExpectedPrecheck());
+        this.fiddler = contractCreate.getFiddler();
+        this.submitDelay = contractCreate.getSubmitDelay();
+        this.validDurationSecs = contractCreate.getValidDurationSecs();
+        this.customTxnId = contractCreate.getCustomTxnId();
+        this.node = contractCreate.getNode();
+        this.usdFee = contractCreate.getUsdFee();
+        this.retryLimits = contractCreate.getRetryLimits();
+        this.permissibleStatuses = contractCreate.getPermissibleStatuses();
+        this.permissiblePrechecks = contractCreate.getPermissiblePrechecks();
     }
 
     public HapiEthereumContractCreate(
@@ -171,6 +221,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
     public HapiEthereumContractCreate nonce(long nonce) {
         this.nonce = nonce;
+        useSpecNonce = false;
         return this;
     }
 
@@ -220,6 +271,10 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var maxFeePerGasBytes = gasLongToBytes(maxFeePerGas.longValueExact());
         final var maxPriorityGasBytes = gasLongToBytes(maxPriorityGas);
 
+        if (useSpecNonce) {
+            nonce = spec.getNonce(privateKeyRef);
+            spec.incrementNonce(privateKeyRef);
+        }
         final var ethTxData = new EthTxData(
                 null,
                 type,
