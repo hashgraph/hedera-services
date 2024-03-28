@@ -40,13 +40,20 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WI
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_SUPPLY_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
@@ -145,12 +152,23 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     void tokenUpdateWithSupplyKeyedToken() throws PreCheckException {
         final var txn = txnFrom(UPDATE_WITH_SUPPLY_KEYED_TOKEN);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
+        final var lowPriorityKeyList = Key.newBuilder()
+                .keyList(KeyList.newBuilder().keys(TOKEN_SUPPLY_KT.asPbjKey()).build())
+                .build();
+        final var thresholdKey = Key.newBuilder()
+                .thresholdKey(ThresholdKey.newBuilder()
+                        .keys(KeyList.newBuilder()
+                                .keys(lowPriorityKeyList, TOKEN_ADMIN_KT.asPbjKey())
+                                .build())
+                        .threshold(1)
+                        .build())
+                .build();
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertThat(context.requiredNonPayerKeys(), contains(thresholdKey));
     }
 
     @Test
@@ -159,10 +177,21 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
+        final var lowPriorityKeyList = Key.newBuilder()
+                .keyList(KeyList.newBuilder().keys(TOKEN_KYC_KT.asPbjKey()).build())
+                .build();
+        final var thresholdKey = Key.newBuilder()
+                .thresholdKey(ThresholdKey.newBuilder()
+                        .keys(KeyList.newBuilder()
+                                .keys(lowPriorityKeyList, TOKEN_ADMIN_KT.asPbjKey())
+                                .build())
+                        .threshold(1)
+                        .build())
+                .build();
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertThat(context.requiredNonPayerKeys(), contains(thresholdKey));
     }
 
     @Test
@@ -171,10 +200,21 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
+        final var lowPriorityKeyList = Key.newBuilder()
+                .keyList(KeyList.newBuilder().keys(TOKEN_FREEZE_KT.asPbjKey()).build())
+                .build();
+        final var thresholdKey = Key.newBuilder()
+                .thresholdKey(ThresholdKey.newBuilder()
+                        .keys(KeyList.newBuilder()
+                                .keys(lowPriorityKeyList, TOKEN_ADMIN_KT.asPbjKey())
+                                .build())
+                        .threshold(1)
+                        .build())
+                .build();
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertThat(context.requiredNonPayerKeys(), contains(thresholdKey));
     }
 
     @Test
@@ -183,10 +223,21 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
+        final var lowPriorityKeyList = Key.newBuilder()
+                .keyList(KeyList.newBuilder().keys(TOKEN_WIPE_KT.asPbjKey()).build())
+                .build();
+        final var thresholdKey = Key.newBuilder()
+                .thresholdKey(ThresholdKey.newBuilder()
+                        .keys(KeyList.newBuilder()
+                                .keys(lowPriorityKeyList, TOKEN_ADMIN_KT.asPbjKey())
+                                .build())
+                        .threshold(1)
+                        .build())
+                .build();
 
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_ADMIN_KT.asPbjKey()));
+        assertThat(context.requiredNonPayerKeys(), contains(thresholdKey));
     }
 
     @Test

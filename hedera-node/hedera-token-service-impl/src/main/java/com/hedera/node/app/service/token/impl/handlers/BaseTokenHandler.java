@@ -404,6 +404,19 @@ public class BaseTokenHandler {
         return op.equals(copyDefaultWithExpiry);
     }
 
+    /**
+     * Check if TokenUpdateOp wants to update one of the low priority keys
+     * wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey or pauseKey
+     */
+    public static boolean isLowPriorityKeyUpdate(@NonNull final TokenUpdateTransactionBody op) {
+        return op.hasWipeKey()
+                || op.hasKycKey()
+                || op.hasSupplyKey()
+                || op.hasFreezeKey()
+                || op.hasFeeScheduleKey()
+                || op.hasPauseKey();
+    }
+
     @NonNull
     public static TokenID asToken(final long num) {
         return TokenID.newBuilder().tokenNum(num).build();
