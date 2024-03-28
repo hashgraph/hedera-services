@@ -146,7 +146,7 @@ public class TopicCreateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec signingRequirementsEnforced() {
-        long PAYER_BALANCE = 3_999_999_999L;
+        long PAYER_BALANCE = 1_999_999_999L;
         final var contractWithAdminKey = "nonCryptoAccount";
 
         return defaultHapiSpec("SigningRequirementsEnforced")
@@ -202,6 +202,7 @@ public class TopicCreateSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         // In hedera-app, we'll allow contracts with admin keys to be auto-renew accounts
                         createTopic("withContractAutoRenew")
+                                .payingWith("payer")
                                 .adminKeyName("adminKey")
                                 .autoRenewAccountId(contractWithAdminKey))
                 .then(
