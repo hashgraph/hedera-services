@@ -24,6 +24,9 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.data.TopicsConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import java.util.Set;
@@ -43,11 +46,20 @@ public class WritableTopicStore {
      * Create a new {@link WritableTopicStore} instance.
      *
      * @param states The state to use.
+     * @param configuration The configuration used to read the maximum capacity.
+     * @param metrics The metrics-API used to report utilization.
      */
-    public WritableTopicStore(@NonNull final WritableStates states) {
+    public WritableTopicStore(
+            @NonNull final WritableStates states,
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics) {
         requireNonNull(states);
+        requireNonNull(metrics);
 
         this.topicState = states.get(TOPICS_KEY);
+
+        final long maxCapacity = configuration.getConfigData(TopicsConfig.class).maxNumber();
+        topicState.setupMetrics(metrics, "topics", maxCapacity);
     }
 
     /**
