@@ -35,11 +35,6 @@ class FileSystemApiTest {
     void dummySpiDoSomethingCheck() {
         final FileSystemApi fileSystemApi = new FileSystemApi() {
             @Override
-            public void doSomething() {
-                // Do nothing.
-            }
-
-            @Override
             public void writeBlock(Block block) {}
 
             @Override
@@ -47,7 +42,5 @@ class FileSystemApiTest {
                 return null;
             }
         };
-
-        assertDoesNotThrow(fileSystemApi::doSomething);
     }
 }

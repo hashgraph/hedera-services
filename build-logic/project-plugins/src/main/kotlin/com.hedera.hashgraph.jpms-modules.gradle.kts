@@ -285,4 +285,43 @@ extraJavaModuleInfo {
     module("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
     module("org.testcontainers:testcontainers", "org.testcontainers")
     module("org.mockito:mockito-junit-jupiter", "org.mockito.junit.jupiter")
+    module("software.amazon.awssdk:s3", "software.amazon.awssdk.services.s3")
+    module(
+        "software.amazon.awssdk:url-connection-client",
+        "software.amazon.awssdk.http.urlconnection"
+    )
+    module("software.amazon.awssdk:apache-client", "software.amazon.awssdk.http.apache")
+    module("software.amazon.awssdk:netty-nio-client", "software.amazon.awssdk.http.nio.netty")
+    module("software.amazon.awssdk:aws-xml-protocol", "software.amazon.awssdk.protocols.xml")
+    module("software.amazon.awssdk:protocol-core", "software.amazon.awssdk.protocols.core")
+    module("software.amazon.awssdk:arns", "software.amazon.awssdk.arns")
+    module("software.amazon.awssdk:profiles", "software.amazon.awssdk.profiles")
+    module("software.amazon.awssdk:crt-core", "software.amazon.awssdk.crtcore")
+    module("software.amazon.awssdk:http-auth", "software.amazon.awssdk.http.auth")
+    module("software.amazon.awssdk:identity-spi", "software.amazon.awssdk.identity.spi")
+    module("software.amazon.awssdk:http-auth-spi", "software.amazon.awssdk.http.auth.spi")
+    module("software.amazon.awssdk:http-auth-aws", "software.amazon.awssdk.http.auth.aws")
+    module("software.amazon.awssdk:checksums", "software.amazon.awssdk.checksums")
+    module("software.amazon.awssdk:checksums-spi", "software.amazon.awssdk.checksums.spi")
+    module("software.amazon.awssdk:sdk-core", "software.amazon.awssdk.core")
+    module("software.amazon.awssdk:auth", "software.amazon.awssdk.auth")
+    module("software.amazon.awssdk:http-client-spi", "software.amazon.awssdk.http")
+    module("software.amazon.awssdk:regions", "software.amazon.awssdk.regions")
+    module("software.amazon.awssdk:annotations", "software.amazon.awssdk.annotations")
+    module("software.amazon.awssdk:utils", "software.amazon.awssdk.utils")
+    module("software.amazon.awssdk:aws-core", "software.amazon.awssdk.awscore")
+    module("software.amazon.awssdk:metrics-spi", "software.amazon.awssdk.metrics")
+    module("software.amazon.awssdk:json-utils", "software.amazon.awssdk.protocols.jsoncore")
+    module("software.amazon.awssdk:endpoints-spi", "software.amazon.awssdk.endpoints")
+    module("software.amazon.awssdk:aws-query-protocol", "software.amazon.awssdk.protocols.query")
+    module("software.amazon.eventstream:eventstream", "software.amazon.eventstream")
+    module(
+        "software.amazon.awssdk:third-party-jackson-core",
+        "software.amazon.awssdk.thirdparty.jackson.core"
+    )
+
+    module("org.reactivestreams:reactive-streams", "org.reactivestreams")
+    module("org.apache.httpcomponents:httpclient", "org.apache.httpcomponents.httpclient")
+    module("commons-logging:commons-logging", "org.apache.commons.logging")
+    module("org.apache.httpcomponents:httpcore", "org.apache.httpcomponents.httpcore")
 }

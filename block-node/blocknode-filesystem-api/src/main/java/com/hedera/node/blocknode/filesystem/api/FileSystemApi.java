@@ -19,7 +19,6 @@ package com.hedera.node.blocknode.filesystem.api;
 import com.hedera.services.stream.v7.proto.Block;
 
 public interface FileSystemApi {
-    void doSomething();
 
     void writeBlock(Block block);
 

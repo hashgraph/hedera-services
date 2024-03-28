@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.blocknode.config.ConfigProvider;
 import com.hedera.node.blocknode.config.data.BlockNodeFileSystemConfig;
-import com.hedera.node.blocknode.core.spi.DummyCoreSpi;
 import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
 import com.hedera.services.stream.v7.proto.Block;
 import com.hedera.services.stream.v7.proto.BlockItem;
@@ -47,15 +46,6 @@ public class LocalFileSystem implements FileSystemApi {
 
         this.blocksExportPath = Path.of(System.getProperty("user.dir") + fileSystemConfig.blocksExportPath());
         blocksExportPath.toFile().mkdirs();
-    }
-
-    @Override
-    public void doSomething() {
-        final DummyCoreSpi dummyCoreSpi = () -> {
-            // Do nothing.
-        };
-
-        dummyCoreSpi.doSomething();
     }
 
     @Override

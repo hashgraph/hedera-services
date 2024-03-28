@@ -6,4 +6,5 @@ module com.hedera.storage.blocknode.filesystem.s3.test {
     // Require other modules needed for the unit tests to compile.
     requires com.hedera.storage.blocknode.filesystem.s3;
     requires org.junit.jupiter.api;
+    requires com.hedera.storage.blocknode.config;
 }
