@@ -284,7 +284,10 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                                 .wipeKey(WIPE_KEY),
                         tokenAssociate(NEW_TOKEN_TREASURY, NFTdeleted),
                         // can update before NFT is deleted
-                        tokenUpdate(NFTdeleted).entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                        tokenUpdate(NFTdeleted)
+                                .entityMemo(ZERO_BYTE_MEMO)
+                                .signedByPayerAnd(ADMIN_KEY)
+                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         tokenUpdate(NFTdeleted)
                                 .name(NEW_SALTED_NAME)
                                 .entityMemo(SECOND_MEMO)
@@ -295,6 +298,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                                 .kycKey(NEW_KYC_KEY)
                                 .supplyKey(NEW_SUPPLY_KEY)
                                 .wipeKey(NEW_WIPE_KEY)
+                                .signedByPayerAnd(ADMIN_KEY, NEW_TOKEN_TREASURY, NEW_AUTO_RENEW_ACCT)
                                 .hasKnownStatus(SUCCESS))
                 .when(tokenDelete(NFTdeleted))
                 .then(
@@ -302,17 +306,23 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                         tokenUpdate(NFTdeleted)
                                 .name(NEW_SALTED_NAME)
                                 .entityMemo(SECOND_MEMO)
+                                .signedByPayerAnd(ADMIN_KEY)
                                 .hasKnownStatus(TOKEN_WAS_DELETED),
-                        tokenUpdate(NFTdeleted).treasury(NEW_TOKEN_TREASURY).hasKnownStatus(TOKEN_WAS_DELETED),
+                        tokenUpdate(NFTdeleted)
+                                .treasury(NEW_TOKEN_TREASURY)
+                                .signedByPayerAnd(ADMIN_KEY, NEW_TOKEN_TREASURY)
+                                .hasKnownStatus(TOKEN_WAS_DELETED),
                         tokenUpdate(NFTdeleted)
                                 .autoRenewAccount(NEW_AUTO_RENEW_ACCT)
                                 .autoRenewPeriod(102)
+                                .signedByPayerAnd(ADMIN_KEY, NEW_AUTO_RENEW_ACCT)
                                 .hasKnownStatus(TOKEN_WAS_DELETED),
                         tokenUpdate(NFTdeleted)
                                 .freezeKey(NEW_FREEZE_KEY)
                                 .kycKey(NEW_KYC_KEY)
                                 .supplyKey(NEW_SUPPLY_KEY)
                                 .wipeKey(NEW_WIPE_KEY)
+                                .signedByPayerAnd(ADMIN_KEY)
                                 .hasKnownStatus(TOKEN_WAS_DELETED));
     }
 

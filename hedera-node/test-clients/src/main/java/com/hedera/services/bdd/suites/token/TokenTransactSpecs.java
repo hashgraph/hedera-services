@@ -958,7 +958,10 @@ public class TokenTransactSpecs extends HapiSuite {
                         mintToken(A_TOKEN, List.of(copyFromUtf8("memo"))),
                         mintToken(B_TOKEN, List.of(copyFromUtf8("memo2"))),
                         tokenAssociate(NEW_TREASURY, A_TOKEN, B_TOKEN),
-                        tokenUpdate(B_TOKEN).treasury(NEW_TREASURY).hasKnownStatus(SUCCESS))
+                        tokenUpdate(B_TOKEN)
+                                .treasury(NEW_TREASURY)
+                                .signedByPayerAnd(SUPPLY_KEY, NEW_TREASURY)
+                                .hasKnownStatus(SUCCESS))
                 .when(cryptoTransfer(movingUnique(A_TOKEN, 1).between(OLD_TREASURY, NEW_TREASURY))
                         .via("cryptoTransferTxn"))
                 .then(

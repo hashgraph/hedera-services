@@ -257,7 +257,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .via(negativeBurnFungible)
                                 .logged()),
                         newKeyNamed(CONTRACT_KEY).shape(KeyShape.CONTRACT.signedWith(NEGATIVE_BURN_CONTRACT)),
-                        tokenUpdate(NFT).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(NFT).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         sourcing(() -> contractCall(
                                         NEGATIVE_BURN_CONTRACT, "burnNFTNegativeLong", nftAddress.get(), new long[] {
                                             1L, 2L
@@ -311,7 +311,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .via(fungibleExtremeAmount)
                                 .logged()),
                         newKeyNamed(CONTRACT_KEY).shape(KeyShape.CONTRACT.signedWith(NEGATIVE_BURN_CONTRACT)),
-                        tokenUpdate(NFT).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(NFT).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         sourcing(() -> contractCall(
                                         NEGATIVE_BURN_CONTRACT,
                                         "burnNFTWithExtremeAmounts",

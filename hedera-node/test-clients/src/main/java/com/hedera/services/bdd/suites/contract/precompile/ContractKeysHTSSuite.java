@@ -254,7 +254,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .via(CREATION_TX))))
                 .when(
                         newKeyNamed(DELEGATE_KEY).shape(delegateContractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
-                        tokenUpdate(TOKEN_USAGE).supplyKey(DELEGATE_KEY),
+                        tokenUpdate(TOKEN_USAGE).supplyKey(DELEGATE_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
                                 .via("burn with delegate contract key")
                                 .gas(GAS_TO_OFFER),
@@ -274,7 +274,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN_USAGE, 49))
                 .then(
                         newKeyNamed(CONTRACT_KEY).shape(contractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
-                        tokenUpdate(TOKEN_USAGE).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(TOKEN_USAGE).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
                                 .via(BURN_WITH_CONTRACT_KEY)
                                 .gas(GAS_TO_OFFER),
@@ -320,7 +320,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         contractCreate(
                                 OUTER_CONTRACT, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(SUPPLY_KEY),
                         contractCall(
                                         OUTER_CONTRACT,
                                         "burnDelegateCall",
@@ -370,7 +370,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         contractCreate(
                                 OUTER_CONTRACT, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(SUPPLY_KEY),
                         contractCall(
                                         OUTER_CONTRACT,
                                         "mintDelegateCall",
@@ -515,7 +515,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         contractCreate(
                                 outerContract, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
-                        tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(SUPPLY_KEY),
                         contractCall(
                                         outerContract,
                                         "burnStaticCall",
@@ -556,7 +556,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         contractCreate(
                                 outerContract, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
-                        tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(SUPPLY_KEY),
                         contractCall(
                                         outerContract,
                                         "mintStaticCall",
@@ -653,7 +653,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 outerContract, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
                         newKeyNamed(DELEGATE_KEY)
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
-                        tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
+                        tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY).signedByPayerAnd(SUPPLY_KEY),
                         contractCall(
                                         outerContract,
                                         "burnStaticCall",
@@ -696,7 +696,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 outerContract, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
                         newKeyNamed(DELEGATE_KEY)
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
-                        tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
+                        tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY).signedByPayerAnd(SUPPLY_KEY),
                         contractCall(
                                         outerContract,
                                         "mintStaticCall",
@@ -777,7 +777,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         spec,
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ORDINARY_CALLS_CONTRACT))),
-                        tokenUpdate(TYPE_OF_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(TYPE_OF_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(
                                         ORDINARY_CALLS_CONTRACT,
                                         "mintTokenCall",
@@ -834,7 +834,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         spec,
                         newKeyNamed(DELEGATE_KEY)
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ORDINARY_CALLS_CONTRACT))),
-                        tokenUpdate(TYPE_OF_TOKEN).supplyKey(DELEGATE_KEY),
+                        tokenUpdate(TYPE_OF_TOKEN).supplyKey(DELEGATE_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(
                                         ORDINARY_CALLS_CONTRACT,
                                         "mintTokenCall",
@@ -1240,7 +1240,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .via(CREATION_TX))))
                 .when(
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
-                        tokenUpdate(TOKEN_USAGE).supplyKey(DELEGATE_KEY),
+                        tokenUpdate(TOKEN_USAGE).supplyKey(DELEGATE_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
                                 .via(BURN_WITH_CONTRACT_KEY)
                                 .gas(GAS_TO_OFFER),
@@ -2450,7 +2450,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .via(CREATION_TX))))
                 .when(
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
-                        tokenUpdate(TOKEN_USAGE).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(TOKEN_USAGE).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
                                 .via(BURN_WITH_CONTRACT_KEY)
                                 .gas(GAS_TO_OFFER),

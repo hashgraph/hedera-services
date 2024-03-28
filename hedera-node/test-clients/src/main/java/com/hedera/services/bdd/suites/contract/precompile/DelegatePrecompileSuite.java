@@ -193,7 +193,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
                         contractCreate(
                                 OUTER_CONTRACT, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
+                        tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY).signedByPayerAnd(SUPPLY_KEY),
                         contractCall(
                                         OUTER_CONTRACT,
                                         "burnDelegateCall",
@@ -244,7 +244,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
                         contractCreate(
                                 OUTER_CONTRACT, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
+                        tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY).signedByPayerAnd(SUPPLY_KEY),
                         contractCall(
                                         OUTER_CONTRACT,
                                         "mintDelegateCall",

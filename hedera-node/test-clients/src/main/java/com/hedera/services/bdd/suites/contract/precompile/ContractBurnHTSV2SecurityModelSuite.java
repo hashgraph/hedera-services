@@ -146,7 +146,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // Create a key with shape contract and the contractId of MIXED_BURN_TOKEN contract
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(MIXED_BURN_TOKEN)),
                         // Update the token supply key to with the created key
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 1: Signer paying and signing a token burn transaction
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
                         // The signer will have a key with the contractId (key type CONTRACT)
@@ -185,7 +185,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         newKeyNamed(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
                                 .shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MIXED_BURN_TOKEN))),
                         // Update the token supply key to with the created key
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
+                        tokenUpdate(FUNGIBLE_TOKEN)
+                                .supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 4: Signer paying and signing a token burn transaction.
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
                         // The signer will have a key with the contractId (key type TRESHOLD_KEY)
@@ -248,7 +250,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // Create a key with shape contract and the contractId of burnToken contract
                         newKeyNamed(DELEGATE_CONTRACT_KEY_NAME)
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, MIXED_BURN_TOKEN))),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(DELEGATE_CONTRACT_KEY_NAME),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(DELEGATE_CONTRACT_KEY_NAME)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 1: Treasury account is paying and signing a token burn transaction, where the token
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
                         // The signer will have a key with the contractId (key type CONTRACT)
@@ -337,7 +341,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // Update the signer of the transaction to have the threshold key with the wrong contract id
                         cryptoUpdate(SIGNER).key(TRESHOLD_KEY_WITH_SIGNER_KEY),
                         // Update the token's supply to have the threshold key with the wrong contract id
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_WITH_SIGNER_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN)
+                                .supplyKey(TRESHOLD_KEY_WITH_SIGNER_KEY)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 2: Signer paying and signing a token burn transaction, when the token
                         // is expected to  be burned by the token treasury
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
@@ -359,7 +365,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // Here the key has the contract`id of the correct contract
                         newKeyNamed(THRESHOLD_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MIXED_BURN_TOKEN))),
                         // Set the token's supply key to the initial one
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(TOKEN_TREASURY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(TOKEN_TREASURY).signedByPayerAnd(TOKEN_TREASURY),
                         // Update the Signer with the correct threshold key
                         cryptoUpdate(SIGNER).key(THRESHOLD_KEY),
                         // Test Case 3: Signer paying and signing a token burn transaction, when the token
@@ -439,7 +445,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // Update the signer of the transaction to have the threshold key with the wrong contract id
                         cryptoUpdate(SIGNER).key(TRESHOLD_KEY_WITH_SIGNER_KEY),
                         // Update the token's supply to have the threshold key with the wrong contract id
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_WITH_SIGNER_KEY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(TRESHOLD_KEY_WITH_SIGNER_KEY)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 2: Signer paying and signing a token burn transaction, when the token
                         // is expected to  be burned by the token treasury account
                         // SIGNER → call → CONTRACT → call → PRECOMPILE
@@ -461,7 +469,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         // Here the key has the contract`id of the correct contract
                         newKeyNamed(THRESHOLD_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MIXED_BURN_TOKEN))),
                         // Set the token's supply key to the initial one
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TOKEN_TREASURY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(TOKEN_TREASURY)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Update the Signer with the correct threshold key
                         cryptoUpdate(SIGNER).key(THRESHOLD_KEY),
                         // Test Case 3: Signer paying and signing a token burn transaction, when the token
@@ -514,7 +524,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 HapiParserUtil.asHeadlongAddress(
                                         asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)))),
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(MIXED_BURN_TOKEN)),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 1: Treasury account paying and signing a NON FUNGIBLE token burn transaction
                         // SIGNER → call → CONTRACT → delegatecall → PRECOMPILE
                         // The token has updated key
@@ -541,7 +551,9 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                         newKeyNamed(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
                                 .shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, MIXED_BURN_TOKEN))),
                         // Update the token's supply to have the threshold key wit the wrong contract id
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(TRESHOLD_KEY_CORRECT_CONTRACT_ID)
+                                .signedByPayerAnd(TOKEN_TREASURY),
                         // Update the signer of the transaction to have the threshold key with the wrong contract id
                         cryptoUpdate(SIGNER).key(TRESHOLD_KEY_CORRECT_CONTRACT_ID),
                         // Test Case 2: A Signer paying and signing a NON FUNGIBLE token burn transaction,
@@ -600,7 +612,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                 HapiParserUtil.asHeadlongAddress(
                                         asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)))),
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(MIXED_BURN_TOKEN)),
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         // Test Case 1: Treasury account paying and signing a FUNGIBLE token burn transaction
                         // SIGNER → call → CONTRACT → delegatecall → PRECOMPILE
                         // The token has updated key

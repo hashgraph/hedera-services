@@ -151,7 +151,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                             allRunFor(spec, creation);
                         }),
                         newKeyNamed(newSupplyKey).shape(KeyShape.CONTRACT.signedWith(contract)),
-                        tokenUpdate(ticketToken).supplyKey(newSupplyKey))
+                        tokenUpdate(ticketToken).supplyKey(newSupplyKey).signedByPayerAnd(adminKey))
                 .then(
                         /* Take a ticket */
                         contractCall(contract, "takeTicket")
@@ -410,7 +410,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                                 .gas(gasToOffer)
                                 .refusingEthConversion()),
                         newKeyNamed("contractControl").shape(KeyShape.CONTRACT.signedWith(farm)),
-                        tokenUpdate(sauce).supplyKey("contractControl"),
+                        tokenUpdate(sauce).supplyKey("contractControl").signedByPayerAnd(adminKey),
                         sourcing(() -> contractCallWithFunctionAbi(
                                         farm, depositAbi, BigInteger.ZERO, BigInteger.valueOf(100_000))
                                 .sending(ONE_HUNDRED_HBARS)

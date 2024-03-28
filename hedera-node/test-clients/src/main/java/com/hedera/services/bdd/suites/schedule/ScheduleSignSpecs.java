@@ -590,7 +590,7 @@ public class ScheduleSignSpecs extends HapiSuite {
                         newKeyNamed("newMint"),
                         tokenCreate(TOKEN_A).adminKey(ADMIN).supplyKey("mint"),
                         scheduleCreate("tokenMintScheduled", txnBody))
-                .when(tokenUpdate(TOKEN_A).supplyKey("newMint"))
+                .when(tokenUpdate(TOKEN_A).supplyKey("newMint").signedByPayerAnd(ADMIN))
                 .then(
                         scheduleSign("tokenMintScheduled")
                                 .alsoSigningWith("mint")
