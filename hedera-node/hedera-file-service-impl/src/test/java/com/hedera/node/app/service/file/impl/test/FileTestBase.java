@@ -49,7 +49,9 @@ import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -134,6 +136,9 @@ public class FileTestBase {
     @Mock(strictness = LENIENT)
     protected SignatureVerification signatureVerification;
 
+    @Mock
+    private Metrics metrics;
+
     protected MapReadableKVState<FileID, File> readableFileState;
     protected MapWritableKVState<FileID, File> writableFileState;
 
@@ -172,7 +177,8 @@ public class FileTestBase {
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(readableUpgradeFileStates);
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates);
-        writableStore = new WritableFileStore(writableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableFileStore(writableStates, configuration, metrics);
         readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 
@@ -196,7 +202,8 @@ public class FileTestBase {
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(readableUpgradeFileStates);
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates);
-        writableStore = new WritableFileStore(writableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableFileStore(writableStates, configuration, metrics);
         readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 
