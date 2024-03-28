@@ -31,7 +31,7 @@ each HederaTransaction Type, where Dagger provided the operations and gas calcul
 Second, the dagger injection will be done via a map of providers, keyed by a text string corresponding to the advertised
 version of the EVM. Using a provider will result in just-in-time construction of the object and will not cause multiple
 versions of the EVM to exist in-memory.  (Done via `@IntoMap` bindings for the EVM and injected
-as `Map&lt;String, Provider&lt;EVM>>`).
+as `Map<String, Provider>EVM>>`).
 
 Finally, the required differences will be populated into separate submodules, using a version appropriate dagger
 qualifier.
@@ -41,7 +41,7 @@ qualifier.
 A standard dynamic property will be used to configure the EVM at startup (`contracts.evm.version`) and will be defaulted
 to the last activated version on mainnet in the event the value is not set.
 
-EVM versions will follow the format `v&lt;major>.&lt;minor>`, corresponding to the released version of Hedera. For
+EVM versions will follow the format `v<major>.<minor>`, corresponding to the released version of Hedera. For
 example, the earliest version supported by this regime is `v0.30` with a planned update for `v0.32`. Not every Hedera
 version will have a new EVM version. Only when EVM compatibility is impacted for object replay will a new version be
 set.
@@ -49,12 +49,13 @@ set.
 It is expected that there will be a new version for each major Ethereum Mainnet hard fork. A table will be kept here to
 document which major hardfork corresponds to each internal version.
 
-| Hedera Version | Ethereum Fork                                                                                                     | Comments                                                                                                                                                                  |
-|---------------:|:------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Hedera Version | Ethereum Fork     | Comments                                                                                                                                                                  |
+|---------------:|:------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |        `v0.30` | [London](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md)     |                                                                                                                                                                           |
-|        `v0.34` | [Paris](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md)       | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses. Adds lazy creation (hollow account creation) capabilities in the EVM as per HIP-583. |
-|        `v0.38` | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md) | Adds `PUSH0` opcode needed for solidity compatibility                                                                                                                     |
-|        `v0.46` | Shanghai                                                                                                          | Change to non-existing call behavior for EVM Equivalence                                                                                                                  |
+|        `v0.34` | [Paris](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md)      | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses. Adds lazy creation (hollow account creation) capabilities in the EVM as per HIP-583. |
+|        `v0.38` | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md)   | Adds `PUSH0` opcode needed for solidity compatibility                                                                                                                     |
+|        `v0.46` | Shanghai          | Change to non-existing call behavior for EVM Equivalence                                                                                                                  |
+|        `v0.49` | [Cancun](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/cancun.md)     | Adds opcodes `TSTORE`, `TLOAD`, and `MCOPY` opcodes, non-implementation of blobs, KZG precompile; new `SELFDESTRUCT` semantics  (HIPS-865 through -868)                   |
 
 ## Open Questions
 

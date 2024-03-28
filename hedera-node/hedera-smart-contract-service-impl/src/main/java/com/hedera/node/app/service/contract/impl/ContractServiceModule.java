@@ -20,12 +20,14 @@ import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VE
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_034;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_046;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_049;
 import static org.hyperledger.besu.evm.internal.EvmConfiguration.WorldUpdaterMode.JOURNALED;
 
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV030;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV034;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV038;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV046;
+import com.hedera.node.app.service.contract.impl.annotations.ServicesV049;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesVersionKey;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
@@ -36,6 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.v030.V030Module;
 import com.hedera.node.app.service.contract.impl.exec.v034.V034Module;
 import com.hedera.node.app.service.contract.impl.exec.v038.V038Module;
 import com.hedera.node.app.service.contract.impl.exec.v046.V046Module;
+import com.hedera.node.app.service.contract.impl.exec.v049.V049Module;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -53,7 +56,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * first EVM version we explicitly support (which is {@code v0.30}).
  */
 @Module(
-        includes = {V030Module.class, V034Module.class, V038Module.class, V046Module.class, ProcessorModule.class},
+        includes = {V030Module.class, V034Module.class, V038Module.class, V046Module.class, V049Module.class, ProcessorModule.class},
         subcomponents = {TransactionComponent.class, QueryComponent.class})
 public interface ContractServiceModule {
     @Binds
@@ -89,4 +92,10 @@ public interface ContractServiceModule {
     @Singleton
     @ServicesVersionKey(VERSION_046)
     TransactionProcessor bindV046Processor(@ServicesV046 @NonNull final TransactionProcessor processor);
+
+    @Binds
+    @IntoMap
+    @Singleton
+    @ServicesVersionKey(VERSION_049)
+    TransactionProcessor bindV049Processor(@ServicesV049 @NonNull final TransactionProcessor processor);
 }
