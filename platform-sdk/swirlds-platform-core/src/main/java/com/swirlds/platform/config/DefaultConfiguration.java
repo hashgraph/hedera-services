@@ -49,44 +49,52 @@ public class DefaultConfiguration {
      * Build a basic configuration with the default configuration sources and paths. Reads configuration form
      * "settings.txt". Registers the configuration to the {@link ConfigurationHolder}.
      *
+     * @param configurationBuilder the configuration builder that will be used to build the configuration
      * @return the configuration object
      * @throws IOException if there is an error reading the configuration files
      */
     @NonNull
-    public static Configuration buildBasicConfiguration() throws IOException {
-        return buildBasicConfiguration(getAbsolutePath("settings.txt"), Collections.emptyList());
+    public static Configuration buildBasicConfiguration(@NonNull final ConfigurationBuilder configurationBuilder)
+            throws IOException {
+        return buildBasicConfiguration(configurationBuilder, getAbsolutePath("settings.txt"), Collections.emptyList());
     }
 
     /**
      * Build a basic configuration with the default configuration sources and paths. Registers the configuration to the
      * {@link ConfigurationHolder}.
      *
-     * @param settingsPath the path to the settings.txt file
+     * @param configurationBuilder the configuration builder that will be used to build the configuration
+     * @param settingsPath         the path to the settings.txt file
      * @return the configuration object
      * @throws IOException if there is an error reading the configuration files
      */
     @NonNull
-    public static Configuration buildBasicConfiguration(@NonNull final Path settingsPath) throws IOException {
-        return buildBasicConfiguration(settingsPath, Collections.emptyList());
+    public static Configuration buildBasicConfiguration(
+            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath)
+            throws IOException {
+        return buildBasicConfiguration(configurationBuilder, settingsPath, Collections.emptyList());
     }
 
     /**
      * Build a basic configuration with the default configuration sources. Registers the configuration to the
      * {@link ConfigurationHolder}.
      *
-     * @param settingsPath       the path to the settings.txt file
-     * @param configurationPaths additional paths to configuration files
+     * @param configurationBuilder the configuration builder that will be used to build the configuration
+     * @param settingsPath         the path to the settings.txt file
+     * @param configurationPaths   additional paths to configuration files
      * @return the configuration object
      * @throws IOException if there is an error reading the configuration files
      */
     @NonNull
     public static Configuration buildBasicConfiguration(
-            @NonNull final Path settingsPath, @NonNull final List<Path> configurationPaths) throws IOException {
+            @NonNull final ConfigurationBuilder configurationBuilder,
+            @NonNull final Path settingsPath,
+            @NonNull final List<Path> configurationPaths)
+            throws IOException {
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
-        final ConfigurationBuilder configurationBuilder =
-                ConfigurationBuilder.create().autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
+        configurationBuilder.autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
 
         for (final Path configurationPath : configurationPaths) {
             logger.info(LogMarker.CONFIG.getMarker(), "Loading configuration from {}", configurationPath);

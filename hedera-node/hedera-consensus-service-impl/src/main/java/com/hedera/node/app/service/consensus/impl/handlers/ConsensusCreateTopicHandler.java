@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -97,7 +98,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var builder = new Topic.Builder();
 
         /* Validate admin and submit keys and set them. Empty key list is allowed and is used for immutable entities */
-        if (op.hasAdminKey() && !handleContext.attributeValidator().isImmutableKey(op.adminKey())) {
+        if (op.hasAdminKey() && !isImmutableKey(op.adminKey())) {
             handleContext.attributeValidator().validateKey(op.adminKey());
             builder.adminKey(op.adminKey());
         }

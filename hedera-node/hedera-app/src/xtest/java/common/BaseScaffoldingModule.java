@@ -98,6 +98,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.PlatformState;
 import contract.ContractScaffoldingComponent;
 import dagger.Binds;
 import dagger.Module;
@@ -271,6 +272,7 @@ public interface BaseScaffoldingModule {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var parentRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
+        platformState.setPlatformState(new PlatformState());
         return body -> {
             // TODO: Temporary solution, better to simplify HandleContextImpl
             final HederaFunctionality function;
