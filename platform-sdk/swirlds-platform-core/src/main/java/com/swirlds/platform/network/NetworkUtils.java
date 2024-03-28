@@ -33,11 +33,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.Closeable;
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.util.Objects;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
@@ -162,12 +158,7 @@ public final class NetworkUtils {
                     Utilities.createPeerInfoList(addressBook, selfId),
                     socketConfig,
                     cryptoConfig);
-        } catch (final NoSuchAlgorithmException
-                | UnrecoverableKeyException
-                | KeyStoreException
-                | KeyManagementException
-                | CertificateException
-                | IOException e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
         }
     }
