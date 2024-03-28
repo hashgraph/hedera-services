@@ -39,7 +39,7 @@ class VariableTimeDelayTest {
     void testPeerKnows() {
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final GossipEvent event = TestingEventBuilder.builder(random).build();
+        final GossipEvent event = new TestingEventBuilder(random).build();
         state.setPeerKnows(event.getDescriptor());
         final VariableTimeDelay<GossipEvent> eventTimeDelay =
                 new VariableTimeDelay<>(() -> Duration.ofMillis(100), state, now::get);
@@ -50,7 +50,7 @@ class VariableTimeDelayTest {
     void testVariableDelay() {
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final GossipEvent event = TestingEventBuilder.builder(random).build();
+        final GossipEvent event = new TestingEventBuilder(random).build();
 
         final AtomicInteger numCalls = new AtomicInteger(0);
         final VariableTimeDelay<GossipEvent> eventTimeDelay = new VariableTimeDelay<>(

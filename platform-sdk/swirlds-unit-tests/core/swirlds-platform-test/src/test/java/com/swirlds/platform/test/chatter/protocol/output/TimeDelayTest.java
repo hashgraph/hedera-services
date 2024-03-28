@@ -39,7 +39,7 @@ class TimeDelayTest {
     void testPeerKnows() {
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final GossipEvent event = TestingEventBuilder.builder(random).build();
+        final GossipEvent event = new TestingEventBuilder(random).build();
         state.setPeerKnows(event.getDescriptor());
         Assertions.assertEquals(SendAction.DISCARD, eventTimeDelay.shouldSend(event));
     }
@@ -48,7 +48,7 @@ class TimeDelayTest {
     void testDelay() {
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final GossipEvent event = TestingEventBuilder.builder(random).build();
+        final GossipEvent event = new TestingEventBuilder(random).build();
         now.set(event.getTimeReceived().plus(Duration.ofMillis(50)));
         Assertions.assertEquals(SendAction.WAIT, eventTimeDelay.shouldSend(event));
     }
@@ -57,7 +57,7 @@ class TimeDelayTest {
     void testSend() {
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final GossipEvent event = TestingEventBuilder.builder(random).build();
+        final GossipEvent event = new TestingEventBuilder(random).build();
         now.set(event.getTimeReceived().plus(Duration.ofMillis(200)));
         Assertions.assertEquals(SendAction.SEND, eventTimeDelay.shouldSend(event));
     }

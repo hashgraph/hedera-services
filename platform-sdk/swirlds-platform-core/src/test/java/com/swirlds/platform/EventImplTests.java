@@ -45,12 +45,10 @@ import org.junit.jupiter.api.Test;
 
 public class EventImplTests {
     private Random random;
-    private TestingEventBuilder testingEventBuilder;
 
     @BeforeEach
     void setUp() {
         random = RandomUtils.getRandomPrintSeed();
-        testingEventBuilder = TestingEventBuilder.builder(random);
     }
 
     @Test
@@ -59,7 +57,7 @@ public class EventImplTests {
         final SwirldTransaction[] transactions = TransactionUtils.incrementingSwirldTransactions(100);
 
         final EventImpl event =
-                createEventImpl(testingEventBuilder.setDefaults().setTransactions(transactions), null, null);
+                createEventImpl(new TestingEventBuilder(random).setTransactions(transactions), null, null);
 
         assertDoesNotThrow(
                 event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
@@ -74,8 +72,7 @@ public class EventImplTests {
     @Test
     @DisplayName("findSystemTransactions() no transactions")
     void testTransaction() {
-        final EventImpl event =
-                createEventImpl(testingEventBuilder.setDefaults().setNumberOfAppTransactions(0), null, null);
+        final EventImpl event = createEventImpl(new TestingEventBuilder(random).setAppTransactionCount(0), null, null);
 
         assertDoesNotThrow(
                 event::systemTransactionIterator, "Getting the system transaction iterator should never throw.");
@@ -90,7 +87,7 @@ public class EventImplTests {
         final TransactionData data = mixedTransactions();
 
         final EventImpl event =
-                createEventImpl(testingEventBuilder.setDefaults().setTransactions(data.transactions()), null, null);
+                createEventImpl(new TestingEventBuilder(random).setTransactions(data.transactions()), null, null);
 
         verifySystemIterator(data, event);
         assertEquals(
@@ -105,7 +102,7 @@ public class EventImplTests {
         final TransactionData data = mixedTransactions();
 
         final EventImpl event =
-                createEventImpl(testingEventBuilder.setDefaults().setTransactions(data.transactions()), null, null);
+                createEventImpl(new TestingEventBuilder(random).setTransactions(data.transactions()), null, null);
 
         final Iterator<ConsensusTransaction> iter = event.consensusTransactionIterator();
         final Set<ConsensusTransaction> transactionSet = new HashSet<>();
@@ -127,7 +124,7 @@ public class EventImplTests {
         final TransactionData data = mixedTransactions();
 
         final EventImpl event =
-                createEventImpl(testingEventBuilder.setDefaults().setTransactions(data.transactions()), null, null);
+                createEventImpl(new TestingEventBuilder(random).setTransactions(data.transactions()), null, null);
 
         final Iterator<Transaction> iter = event.transactionIterator();
 
@@ -223,7 +220,7 @@ public class EventImplTests {
 
         final Instant eventConsTime = Instant.now();
         final EventImpl event =
-                createEventImpl(testingEventBuilder.setDefaults().setTransactions(mixedTransactions), null, null);
+                createEventImpl(new TestingEventBuilder(random).setTransactions(mixedTransactions), null, null);
 
         event.setConsensusOrder(3L);
         event.setConsensusTimestamp(eventConsTime);

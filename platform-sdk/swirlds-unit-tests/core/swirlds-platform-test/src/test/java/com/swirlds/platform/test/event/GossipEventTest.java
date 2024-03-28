@@ -55,7 +55,7 @@ class GossipEventTest {
     void serializeDeserialize() throws IOException, ConstructableRegistryException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final GossipEvent gossipEvent = TestingEventBuilder.builder(random).build();
+        final GossipEvent gossipEvent = new TestingEventBuilder(random).build();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final GossipEvent copy = SerializationUtils.serializeDeserialize(gossipEvent);
         assertEquals(gossipEvent, copy, "deserialized version should be the same");
@@ -63,7 +63,6 @@ class GossipEventTest {
 
     @Test
     void validateEqualsHashCode() {
-        assertTrue(EqualsVerifier.verify(
-                random -> TestingEventBuilder.builder(random).build()));
+        assertTrue(EqualsVerifier.verify(random -> new TestingEventBuilder(random).build()));
     }
 }
