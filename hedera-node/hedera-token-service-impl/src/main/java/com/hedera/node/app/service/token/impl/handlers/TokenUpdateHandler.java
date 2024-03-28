@@ -422,7 +422,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (isMetadataOnlyUpdateOp(op)) {
             validateTrue(originalToken.hasAdminKey() || originalToken.hasMetadataKey(), TOKEN_IS_IMMUTABLE);
         } else if (!isExpiryOnlyUpdateOp(op)) {
-            validateFalse(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
+            validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         }
 
         if (op.hasAdminKey()) {
