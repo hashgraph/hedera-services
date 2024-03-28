@@ -144,58 +144,55 @@ public class ExtantCryptoContext {
             return new ExtantCryptoContext(this);
         }
 
-        public ExtantCryptoContext.Builder setCurrentNumTokenRels(final int currentNumTokenRels) {
+        public Builder setCurrentNumTokenRels(final int currentNumTokenRels) {
             this.currentNumTokenRels = currentNumTokenRels;
             mask |= TOKEN_RELS_MASK;
             return this;
         }
 
-        public ExtantCryptoContext.Builder setCurrentExpiry(final long currentExpiry) {
+        public Builder setCurrentExpiry(final long currentExpiry) {
             this.currentExpiry = currentExpiry;
             mask |= EXPIRY_MASK;
             return this;
         }
 
-        public ExtantCryptoContext.Builder setCurrentMemo(final String currentMemo) {
+        public Builder setCurrentMemo(final String currentMemo) {
             this.currentMemo = currentMemo;
             mask |= MEMO_MASK;
             return this;
         }
 
-        public ExtantCryptoContext.Builder setCurrentKey(final Key currentKey) {
+        public Builder setCurrentKey(final Key currentKey) {
             this.currentKey = currentKey;
             mask |= KEY_MASK;
             return this;
         }
 
-        public ExtantCryptoContext.Builder setCurrentlyHasProxy(final boolean currentlyHasProxy) {
+        public Builder setCurrentlyHasProxy(final boolean currentlyHasProxy) {
             this.currentlyHasProxy = currentlyHasProxy;
             mask |= HAS_PROXY_MASK;
             return this;
         }
 
-        public ExtantCryptoContext.Builder setCurrentMaxAutomaticAssociations(
-                final int currentMaxAutomaticAssociations) {
+        public Builder setCurrentMaxAutomaticAssociations(final int currentMaxAutomaticAssociations) {
             this.currentMaxAutomaticAssociations = currentMaxAutomaticAssociations;
             mask |= MAX_AUTO_ASSOCIATIONS_MASK;
             return this;
         }
 
-        public ExtantCryptoContext.Builder setCurrentCryptoAllowances(final Map<Long, Long> currentCryptoAllowances) {
+        public Builder setCurrentCryptoAllowances(final Map<Long, Long> currentCryptoAllowances) {
             this.currentCryptoAllowances = currentCryptoAllowances;
             mask |= CRYPTO_ALLOWANCES_MASK;
             return this;
         }
 
-        public ExtantCryptoContext.Builder setCurrentTokenAllowances(
-                final Map<AllowanceId, Long> currentTokenAllowances) {
+        public Builder setCurrentTokenAllowances(final Map<AllowanceId, Long> currentTokenAllowances) {
             this.currentTokenAllowances = currentTokenAllowances;
             mask |= TOKEN_ALLOWANCES_MASK;
             return this;
         }
 
-        public ExtantCryptoContext.Builder setCurrentApproveForAllNftAllowances(
-                final Set<AllowanceId> currentApproveForAllNftAllowances) {
+        public Builder setCurrentApproveForAllNftAllowances(final Set<AllowanceId> currentApproveForAllNftAllowances) {
             this.currentApproveForAllNftAllowances = currentApproveForAllNftAllowances;
             mask |= NFT_ALLOWANCES_MASK;
             return this;

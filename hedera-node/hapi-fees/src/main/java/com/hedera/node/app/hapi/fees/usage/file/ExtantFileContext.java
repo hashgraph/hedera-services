@@ -84,25 +84,25 @@ public class ExtantFileContext {
             return new ExtantFileContext(this);
         }
 
-        public ExtantFileContext.Builder setCurrentSize(final long currentSize) {
+        public Builder setCurrentSize(final long currentSize) {
             this.currentSize = currentSize;
             mask |= SIZE_MASK;
             return this;
         }
 
-        public ExtantFileContext.Builder setCurrentExpiry(final long currentExpiry) {
+        public Builder setCurrentExpiry(final long currentExpiry) {
             this.currentExpiry = currentExpiry;
             mask |= EXPIRY_MASK;
             return this;
         }
 
-        public ExtantFileContext.Builder setCurrentMemo(final String currentMemo) {
+        public Builder setCurrentMemo(final String currentMemo) {
             this.currentMemo = currentMemo;
             mask |= MEMO_MASK;
             return this;
         }
 
-        public ExtantFileContext.Builder setCurrentWacl(final KeyList currentWacl) {
+        public Builder setCurrentWacl(final KeyList currentWacl) {
             this.currentWacl = currentWacl;
             mask |= WACL_MASK;
             return this;

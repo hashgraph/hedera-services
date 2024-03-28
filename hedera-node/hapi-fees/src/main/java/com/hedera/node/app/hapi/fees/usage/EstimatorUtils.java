@@ -44,13 +44,14 @@ public interface EstimatorUtils {
         return expiry - now;
     }
 
-    default long changeInBsUsage(long oldB, long oldLifetimeSecs, long newB, long newLifetimeSecs) {
-        oldLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, oldLifetimeSecs);
-        newLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, newLifetimeSecs);
+    default long changeInBsUsage(
+            final long oldB, final long oldLifetimeSecs, final long newB, final long newLifetimeSecs) {
+        final long minOldLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, oldLifetimeSecs);
+        final long minNewLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, newLifetimeSecs);
 
-        newLifetimeSecs = Math.max(oldLifetimeSecs, newLifetimeSecs);
-        long oldBs = oldB * oldLifetimeSecs;
-        long newBs = newB * newLifetimeSecs;
+        final long maxLifetimeSecs = Math.max(minOldLifetimeSecs, minNewLifetimeSecs);
+        final long oldBs = oldB * minOldLifetimeSecs;
+        final long newBs = newB * maxLifetimeSecs;
         return Math.max(0, newBs - oldBs);
     }
 

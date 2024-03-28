@@ -26,7 +26,7 @@ import java.util.List;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-/** Metadata for CryptoDeleteAllowance */
+/** Metadata for CryptoDeleteAllowance. */
 public class CryptoDeleteAllowanceMeta {
     private final long effectiveNow;
     private final long msgBytesUsed;
