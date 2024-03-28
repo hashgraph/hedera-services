@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.reconnect.emergency;
 
+import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -31,7 +32,9 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -147,8 +150,15 @@ public class EmergencySignedStateValidatorTests {
         final SignedState laterState = new RandomSignedStateGenerator()
                 .setAddressBook(addressBook)
                 .setRound(EMERGENCY_ROUND + 1)
-                .setSigningNodeIds(majorityWeightNodes)
+                .setSignatures(Map.of())
                 .build();
+        for (final NodeId nodeId : majorityWeightNodes) {
+            laterState.addSignature(
+                    nodeId,
+                    buildFakeSignature(
+                            addressBook.getAddress(nodeId).getSigPublicKey(),
+                            laterState.getState().getHash()));
+        }
 
         final Hash emergencyHash = RandomUtils.randomHash(random);
         laterState.getState().getPlatformState().setEpochHash(emergencyHash);
