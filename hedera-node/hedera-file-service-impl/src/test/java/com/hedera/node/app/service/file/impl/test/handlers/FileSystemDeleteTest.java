@@ -56,6 +56,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -98,6 +99,9 @@ class FileSystemDeleteTest extends FileTestBase {
     @Mock
     private FileFeeBuilder usageEstimator;
 
+    @Mock
+    private Metrics metrics;
+
     protected Configuration testConfig;
 
     @BeforeEach
@@ -107,8 +111,8 @@ class FileSystemDeleteTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates);
         testConfig = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableFileStore(writableStates, testConfig, metrics);
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
         when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
@@ -134,7 +138,7 @@ class FileSystemDeleteTest extends FileTestBase {
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates);
+        writableStore = new WritableFileStore(writableStates, testConfig, metrics);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -164,7 +168,7 @@ class FileSystemDeleteTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates);
+        writableStore = new WritableFileStore(writableStates, testConfig, metrics);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));

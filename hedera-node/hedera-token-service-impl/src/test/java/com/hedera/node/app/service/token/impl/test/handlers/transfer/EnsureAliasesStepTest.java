@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
@@ -44,6 +45,7 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Metrics;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -330,7 +332,7 @@ class EnsureAliasesStepTest extends StepsBase {
         writableAliases = writableBuilder.build();
 
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        writableAccountStore = new WritableAccountStore(writableStates);
+        writableAccountStore = new WritableAccountStore(writableStates, configuration, mock(Metrics.class));
 
         writableAccountStore.put(account.copyBuilder()
                 .accountId(hbarReceiverId)

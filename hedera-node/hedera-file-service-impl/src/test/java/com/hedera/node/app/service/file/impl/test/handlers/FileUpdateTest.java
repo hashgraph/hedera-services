@@ -31,6 +31,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
@@ -63,10 +64,10 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
-import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -127,7 +128,6 @@ class FileUpdateTest extends FileTestBase {
     protected Configuration testConfig;
 
     private FileUpdateHandler subject;
-    private FilesConfig config;
 
     @BeforeEach
     void setUp() {
@@ -257,7 +257,8 @@ class FileUpdateTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableFileStore(writableStates, configuration, mock(Metrics.class));
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         given(handleContext.body()).willReturn(txBody);
