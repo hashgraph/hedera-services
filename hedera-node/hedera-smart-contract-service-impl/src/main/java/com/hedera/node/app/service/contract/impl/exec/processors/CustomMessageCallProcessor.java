@@ -174,8 +174,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         } else {
             frame.decrementRemainingGas(gasRequirement);
             result = precompile.computePrecompile(frame.getInputData(), frame);
-            // NOTE: the tracePrecompileCall() callback is a no-op with the current tracer
-            tracer.tracePrecompileCall(frame, gasRequirement, result.getOutput());
             if (result.isRefundGas()) {
                 frame.incrementRemainingGas(gasRequirement);
             }
@@ -202,7 +200,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final OperationTracer tracer) {
         final var fullResult = systemContract.computeFully(frame.getInputData(), frame);
         final var gasRequirement = fullResult.gasRequirement();
-        tracer.tracePrecompileCall(frame, gasRequirement, fullResult.output());
         final PrecompileContractResult result;
         if (frame.getRemainingGas() < gasRequirement) {
             result = PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INSUFFICIENT_GAS));
