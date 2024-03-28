@@ -166,7 +166,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         // This is called by the platform when printing information on saved states to logs
         return "HederaSoftwareVersion{" + "hapiVersion="
                 + HapiUtils.toString(hapiVersion) + ", servicesVersion="
-                + HapiUtils.toString(servicesVersion) + '}';
+                + HapiUtils.toString(servicesVersion) + (configVersion == 0 ? "" : "-c" + configVersion) + '}';
     }
 
     /**
