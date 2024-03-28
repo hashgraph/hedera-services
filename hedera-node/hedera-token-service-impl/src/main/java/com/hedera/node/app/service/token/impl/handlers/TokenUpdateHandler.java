@@ -483,13 +483,16 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                         .keyList(KeyList.newBuilder().keys(lowPriorityKeys).build())
                         .build();
                 final List<Key> keysRequired = List.of(lowPriorityKeyList, originalToken.adminKey());
-                final Key threshKey = Key.newBuilder()
+                // with this we will require either admin key signature or all low priority keys signatures
+                // (we can update several low priority keys with one TokenUpdate, so we will require all of these keys
+                // to sign)
+                final Key thresholdKey = Key.newBuilder()
                         .thresholdKey(ThresholdKey.newBuilder()
                                 .keys(KeyList.newBuilder().keys(keysRequired).build())
                                 .threshold(1)
                                 .build())
                         .build();
-                context.requireKey(threshKey);
+                context.requireKey(thresholdKey);
             } else {
                 // if we update any other field, we need the current admin key to sign
                 context.requireKey(originalToken.adminKey());
