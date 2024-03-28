@@ -515,20 +515,23 @@ class MerkleTopicUpdateTransitionLogicTest {
 
     private void givenTransactionWithInvalidAutoRenewAccount() {
         givenTransaction(getBasicValidTransactionBodyBuilder().setAutoRenewAccount(MISSING_ACCOUNT));
-        given(validator.queryableAccountStatus(eq(MISSING_ACCOUNT), any())).willReturn(INVALID_ACCOUNT_ID);
+        given(validator.queryableAccountOrContractStatus(eq(EntityNum.fromAccountId(MISSING_ACCOUNT)), any()))
+                .willReturn(INVALID_ACCOUNT_ID);
     }
 
     private void givenTransactionWithAutoRenewAccountClearingAdminKey() {
         givenTransaction(getBasicValidTransactionBodyBuilder()
                 .setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()))
                 .setAutoRenewAccount(MISC_ACCOUNT));
-        given(validator.queryableAccountStatus(eq(MISC_ACCOUNT), any())).willReturn(OK);
+        given(validator.queryableAccountOrContractStatus(eq(EntityNum.fromAccountId(MISC_ACCOUNT)), any()))
+                .willReturn(OK);
         given(validator.hasGoodEncoding(any())).willReturn(true);
     }
 
     private void givenTransactionWithAutoRenewAccountNotClearingAdminKey() {
         givenTransaction(getBasicValidTransactionBodyBuilder().setAutoRenewAccount(MISC_ACCOUNT));
-        given(validator.queryableAccountStatus(eq(MISC_ACCOUNT), any())).willReturn(OK);
+        given(validator.queryableAccountOrContractStatus(eq(EntityNum.fromAccountId(MISC_ACCOUNT)), any()))
+                .willReturn(OK);
         given(validator.hasGoodEncoding(any())).willReturn(true);
     }
 
@@ -552,7 +555,8 @@ class MerkleTopicUpdateTransitionLogicTest {
         var clearKey = Key.newBuilder().setKeyList(KeyList.getDefaultInstance());
         givenTransaction(
                 getBasicValidTransactionBodyBuilder().setAdminKey(clearKey).setSubmitKey(clearKey));
-        given(validator.queryableAccountStatus(eq(MISC_ACCOUNT), any())).willReturn(OK);
+        given(validator.queryableAccountOrContractStatus(eq(EntityNum.fromAccountId(MISC_ACCOUNT)), any()))
+                .willReturn(OK);
         given(validator.hasGoodEncoding(any())).willReturn(true);
     }
 
@@ -569,7 +573,8 @@ class MerkleTopicUpdateTransitionLogicTest {
         given(validator.hasGoodEncoding(updatedAdminKey)).willReturn(true);
         given(validator.hasGoodEncoding(updatedSubmitKey)).willReturn(true);
         given(validator.isValidExpiry(any())).willReturn(true);
-        given(validator.queryableAccountStatus(eq(MISC_ACCOUNT), any())).willReturn(OK);
+        given(validator.queryableAccountOrContractStatus(eq(EntityNum.fromAccountId(MISC_ACCOUNT)), any()))
+                .willReturn(OK);
     }
 
     private void givenTransactionWithInvalidMemo() {
