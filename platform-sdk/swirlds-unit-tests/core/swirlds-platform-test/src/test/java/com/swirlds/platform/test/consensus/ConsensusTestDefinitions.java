@@ -562,7 +562,7 @@ public final class ConsensusTestDefinitions {
                 orchestrator2.getNodes().get(fi).getIntake().addEvent(e);
             });
             ConsensusUtils.loadEventsIntoGenerator(
-                    orchestrator1.getNodes().get(i).getOutput().getAddedEvents().toArray(EventImpl[]::new),
+                    orchestrator1.getNodes().get(i).getOutput().getAddedEvents(),
                     orchestrator2.getNodes().get(i).getEventEmitter().getGraphGenerator(),
                     orchestrator2.getNodes().get(i).getRandom());
         }

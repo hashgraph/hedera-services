@@ -100,7 +100,7 @@ public class TestIntake {
         hasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
         postHashCollectorWiring.getOutputWire().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
-        orphanBufferWiring.eventOutput().solderTo("output", "eventAdded", output::eventAdded);
+        //        orphanBufferWiring.eventOutput().solderTo("output", "eventAdded", output::eventAdded);
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
         consensusRoundOutputWire.solderTo(
@@ -125,6 +125,7 @@ public class TestIntake {
      */
     public void addEvent(@NonNull final GossipEvent event) {
         hasherWiring.getInputWire(EventHasher::hashEvent).put(event);
+        output.eventAdded(event);
     }
 
     /**
