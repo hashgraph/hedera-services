@@ -16,12 +16,6 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.bbm.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
-import static com.hedera.node.app.bbm.DumpCheckpoint.MOD_POST_MIGRATION;
-import static com.hedera.node.app.bbm.DumpCheckpoint.MONO_PRE_MIGRATION;
-import static com.hedera.node.app.bbm.DumpCheckpoint.selectedDumpCheckpoints;
-import static com.hedera.node.app.bbm.StateDumper.dumpModChildrenFrom;
-import static com.hedera.node.app.bbm.StateDumper.dumpMonoChildrenFrom;
 import static com.hedera.node.app.records.impl.BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
@@ -37,7 +31,13 @@ import static com.hedera.node.app.service.mono.state.migration.StateChildIndices
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_MIGRATION;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MONO_PRE_MIGRATION;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
+import static com.hedera.node.app.service.mono.statedumpers.StateDumper.dumpMonoChildrenFrom;
 import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
+import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -50,7 +50,6 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.bbm.DumpCheckpoint;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
@@ -80,6 +79,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
@@ -439,8 +439,13 @@ public final class Hedera implements SwirldMain {
         final Object test = state.getChild(0);
         boolean doBbmMigration = test instanceof VirtualMap;
         if (doBbmMigration) {
-            if (shouldDump(trigger, MONO_PRE_MIGRATION)) {
-                dumpMonoChildrenFrom(state, MONO_PRE_MIGRATION);
+            try {
+                if (shouldDump(trigger, MONO_PRE_MIGRATION)) {
+                    dumpMonoChildrenFrom(state, MONO_PRE_MIGRATION);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.error("Failed to dump mono state before migration at MONO_PRE_MIGRATION", e);
             }
 
             // --------------------- BEGIN MONO -> MODULAR MIGRATION ---------------------
@@ -499,7 +504,7 @@ public final class Hedera implements SwirldMain {
             // Here we assign the network context, but don't migrate it by itself. These properties have been split out
             // to various services in the modular code, and will each be migrated in its appropriate service.
             final MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
-            // ??? the translator is using firstConsTimeOfLastBlock instead of CURRENTBlock...is that ok???
+            // the translator is using firstConsTimeOfLastBlock instead of CURRENTBlock...is that ok???
             // firstConsTimeOfCurrentBlock – needed in blockInfo
 
             // --------------------- SPECIAL_FILES (7)
@@ -656,8 +661,13 @@ public final class Hedera implements SwirldMain {
         final var migrator = new OrderedServiceMigrator(servicesRegistry);
         logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
         migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
-        if (shouldDump(trigger, MOD_POST_MIGRATION)) {
-            dumpModChildrenFrom(state, MOD_POST_MIGRATION);
+        try {
+            if (shouldDump(trigger, MOD_POST_MIGRATION)) {
+                dumpModChildrenFrom(state, MOD_POST_MIGRATION);
+            }
+        } catch (Exception t) {
+            t.printStackTrace();
+            logger.error("Error dumping state after migration at MOD_POST_MIGRATION", t);
         }
 
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
@@ -896,8 +906,13 @@ public final class Hedera implements SwirldMain {
     public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
         // (FUTURE) - dump the semantic contents of the recovered state for
         // comparison with the mirroring mono-service state
-        if (shouldDump(daggerApp.initTrigger(), MOD_POST_EVENT_STREAM_REPLAY)) {
-            dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY);
+        try {
+            if (shouldDump(daggerApp.initTrigger(), MOD_POST_EVENT_STREAM_REPLAY)) {
+                dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("Error dumping state after migration at MOD_POST_EVENT_STREAM_REPLAY", e);
         }
         daggerApp.blockRecordManager().close();
     }
@@ -1118,7 +1133,7 @@ public final class Hedera implements SwirldMain {
         return readableFileStore.getFileLeaf(fileId);
     }
 
-    private static boolean shouldDump(@NonNull final InitTrigger trigger, @NonNull final DumpCheckpoint checkpoint) {
+    public static boolean shouldDump(@NonNull final InitTrigger trigger, @NonNull final DumpCheckpoint checkpoint) {
         return trigger == EVENT_STREAM_RECOVERY && selectedDumpCheckpoints().contains(checkpoint);
     }
 }
