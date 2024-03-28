@@ -79,6 +79,8 @@ public class InOrderLinker {
     private final RateLimitedLogger birthRoundMismatchLogger;
     private final RateLimitedLogger timeCreatedMismatchLogger;
 
+    // TODO don't report these metrics any more
+
     private final LongAccumulator missingParentAccumulator;
     private final LongAccumulator generationMismatchAccumulator;
     private final LongAccumulator birthRoundMismatchAccumulator;

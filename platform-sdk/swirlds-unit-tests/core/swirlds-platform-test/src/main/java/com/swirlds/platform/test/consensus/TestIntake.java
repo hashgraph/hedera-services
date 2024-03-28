@@ -33,6 +33,7 @@ import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
@@ -63,13 +64,18 @@ public class TestIntake {
     private final OrphanBufferWiring orphanBufferWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final WiringModel model;
+    private final int roundsNonAncient;
 
     /**
      * @param platformContext the platform context used to configure this intake.
      * @param addressBook     the address book used by this intake
      */
-    public TestIntake(@NonNull PlatformContext platformContext, @NonNull final AddressBook addressBook) {
+    public TestIntake(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
         final NodeId selfId = new NodeId(0);
+        roundsNonAncient = platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
 
         final Time time = Time.getCurrent();
         output = new ConsensusOutput(time);
@@ -100,7 +106,6 @@ public class TestIntake {
         hasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
         postHashCollectorWiring.getOutputWire().solderTo(orphanBufferWiring.eventInput());
         orphanBufferWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
-        //        orphanBufferWiring.eventOutput().solderTo("output", "eventAdded", output::eventAdded);
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
         consensusRoundOutputWire.solderTo(
@@ -156,8 +161,8 @@ public class TestIntake {
 
         final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
                 snapshot.round(),
-                snapshot.getMinimumGenerationNonAncient(26), // TODO
-                snapshot.getMinimumGenerationNonAncient(26),
+                snapshot.getMinimumGenerationNonAncient(roundsNonAncient),
+                snapshot.getMinimumGenerationNonAncient(roundsNonAncient),
                 GENERATION_THRESHOLD);
 
         orphanBufferWiring.nonAncientEventWindowInput().put(eventWindow);

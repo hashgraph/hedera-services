@@ -52,7 +52,8 @@ import org.apache.logging.log4j.Logger;
  *
  * <ul>
  *     <li>Wraps {@link GossipEvent}s in {@link EventImpl}s and links to their parent {@link EventImpl}s.</li>
- *     <li>Un-links events when they become ancient.</li>
+ *     <li>Un-links events when they become ancient. (Ancient events will have their parent links removed,
+ *         but non-ancient events may still be linked to their ancient parents.)</li>
  *     <li>updates metrics when events cannot be linked (possibly due to malicious behavior)</li>
  *     <li>Detects when events become ancient without first reaching consensus
  *     (i.e. stale events) and updates a metric</li>
