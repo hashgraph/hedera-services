@@ -41,7 +41,6 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fra
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeTargetLedgerIdTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -757,8 +756,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec getInfoForTokenByAccountAddressFails() {
-        return defaultHapiSpec(
-                "getInfoForTokenByAccountAddressFails")
+        return defaultHapiSpec("getInfoForTokenByAccountAddressFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -781,16 +779,15 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                TOKEN_INFO_CONTRACT,
-                                GET_INFORMATION_FOR_TOKEN,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(TOKEN_TREASURY))))
+                                        TOKEN_INFO_CONTRACT,
+                                        GET_INFORMATION_FOR_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(TOKEN_TREASURY))))
                                 .via(TOKEN_INFO_TXN)
                                 .gas(1_000_000L)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(getTxnRecord(TOKEN_INFO_TXN)
-                                .andAllChildRecords()
-                                .logged(),
+                .then(
+                        getTxnRecord(TOKEN_INFO_TXN).andAllChildRecords().logged(),
                         childRecordsCheck(
                                 TOKEN_INFO_TXN,
                                 CONTRACT_REVERT_EXECUTED,
@@ -799,8 +796,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec getInfoForNFTByFungibleTokenAddressFails() {
-        return defaultHapiSpec(
-                "getInfoForNFTByFungibleTokenAddressFails")
+        return defaultHapiSpec("getInfoForNFTByFungibleTokenAddressFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -823,15 +819,16 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                TOKEN_INFO_CONTRACT,
-                                GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(PRIMARY_TOKEN_NAME))),
-                                1L)
+                                        TOKEN_INFO_CONTRACT,
+                                        GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(PRIMARY_TOKEN_NAME))),
+                                        1L)
                                 .via(NON_FUNGIBLE_TOKEN_INFO_TXN)
                                 .gas(1_000_000L)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN)
+                .then(
+                        getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN)
                                 .andAllChildRecords()
                                 .logged(),
                         childRecordsCheck(
@@ -843,8 +840,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     @HapiTest
     final HapiSpec getInfoForFungibleTokenByNFTTokenAddressFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
-        return defaultHapiSpec(
-                "getInfoForFungibleTokenByNFTTokenAddressFails")
+        return defaultHapiSpec("getInfoForFungibleTokenByNFTTokenAddressFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -870,19 +866,18 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                TOKEN_INFO_CONTRACT,
-                                GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN_NAME))))
+                                        TOKEN_INFO_CONTRACT,
+                                        GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN_NAME))))
                                 .via(FUNGIBLE_TOKEN_INFO_TXN)
                                 .gas(1_000_000L))))
-                .then(getTxnRecord(FUNGIBLE_TOKEN_INFO_TXN)
-                        .andAllChildRecords()
-                        .logged(),
+                .then(
+                        getTxnRecord(FUNGIBLE_TOKEN_INFO_TXN)
+                                .andAllChildRecords()
+                                .logged(),
                         childRecordsCheck(
-                                FUNGIBLE_TOKEN_INFO_TXN,
-                                SUCCESS,
-                                recordWith().status(SUCCESS)));
+                                FUNGIBLE_TOKEN_INFO_TXN, SUCCESS, recordWith().status(SUCCESS)));
     }
 
     @HapiTest
