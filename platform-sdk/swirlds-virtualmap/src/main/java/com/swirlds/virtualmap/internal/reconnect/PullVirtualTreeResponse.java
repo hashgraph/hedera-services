@@ -56,11 +56,11 @@ public class PullVirtualTreeResponse implements SelfSerializable {
     /**
      * This constructor is used by the teacher to create new responses.
      */
-    public PullVirtualTreeResponse(final VirtualTeacherTreeView teacherView, final long path, final Hash hash) {
+    public PullVirtualTreeResponse(final VirtualTeacherTreeView teacherView, final PullVirtualTreeRequest request) {
         this.teacherView = teacherView;
         this.learnerView = null;
-        this.path = path;
-        this.hash = hash;
+        this.path = request.getPath();
+        this.hash = request.getHash();
     }
 
     /**

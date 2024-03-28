@@ -122,9 +122,9 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
         final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
                 time, reconnectConfig, workGroup, inputStream, out, this, allRequestsReceived);
         teacherReceiveTask.exec();
-        final TeacherPullVirtualTreeSendTask teacherSendTask = new TeacherPullVirtualTreeSendTask(
-                reconnectConfig, workGroup, out, this, allRequestsReceived);
-        teacherSendTask.exec();
+//        final TeacherPullVirtualTreeSendTask teacherSendTask = new TeacherPullVirtualTreeSendTask(
+//                reconnectConfig, workGroup, out, this, allRequestsReceived);
+//        teacherSendTask.exec();
     }
 
     private boolean isLeaf(final long path) {
@@ -153,8 +153,7 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
 
     @Override
     public void registerRequest(final PullVirtualTreeRequest request) {
-        responses.addLast(new PullVirtualTreeResponse(
-                TeacherPullVirtualTreeView.this, request.getPath(), request.getHash()));
+        responses.addLast(new PullVirtualTreeResponse(this, request));
     }
 
     @Override

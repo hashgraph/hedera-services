@@ -109,7 +109,7 @@ public class TeacherPullVirtualTreeReceiveTask {
      * This thread is responsible for sending lessons (and nested queries) to the learner.
      */
     private void run() {
-        try {
+        try (out) {
             while (true) {
                 rateLimit();
                 final PullVirtualTreeRequest request = new PullVirtualTreeRequest(view);
@@ -120,7 +120,9 @@ public class TeacherPullVirtualTreeReceiveTask {
                     logger.info(RECONNECT.getMarker(), "Teacher receiver is complete as requested by the learner");
                     break;
                 }
-                view.registerRequest(request);
+//                view.registerRequest(request);
+                final PullVirtualTreeResponse response = new PullVirtualTreeResponse(view, request);
+                out.sendAsync(response);
             }
 //            logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher receive done");
 //            System.err.println("TOREMOVE Teacher receive done");
