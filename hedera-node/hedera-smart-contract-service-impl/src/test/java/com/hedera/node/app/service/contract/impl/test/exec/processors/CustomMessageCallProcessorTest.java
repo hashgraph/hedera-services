@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.processors;
 
+import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
 import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REMAINING_GAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.isSameResult;
@@ -127,12 +128,12 @@ class CustomMessageCallProcessorTest {
     @Test
     void callPrngSystemContractHappyPath() {
         givenPrngCall(ZERO_GAS_REQUIREMENT);
+        given(result.getOutput()).willReturn(OUTPUT_DATA);
         given(result.getState()).willReturn(MessageFrame.State.CODE_SUCCESS);
 
         subject.start(frame, operationTracer);
 
         verify(prngPrecompile).computeFully(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
-        verify(operationTracer).tracePrecompileCall(frame, ZERO_GAS_REQUIREMENT, OUTPUT_DATA);
         verify(result).isRefundGas();
         verify(frame).decrementRemainingGas(ZERO_GAS_REQUIREMENT);
         verify(frame).setOutputData(OUTPUT_DATA);
@@ -148,8 +149,8 @@ class CustomMessageCallProcessorTest {
         subject.start(frame, operationTracer);
 
         verify(prngPrecompile).computeFully(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
-        verify(operationTracer).tracePrecompileCall(frame, GAS_REQUIREMENT, OUTPUT_DATA);
         verifyHalt(INSUFFICIENT_GAS, false);
+        verify(operationTracer).tracePrecompileResult(frame, SYSTEM);
     }
 
     @Test
@@ -196,7 +197,7 @@ class CustomMessageCallProcessorTest {
     }
 
     @Test
-    void haltsIfPrecompileGasRequirementExceedsRemaining() {
+    void haltsAndTracesInsufficientGasIfPrecompileGasRequirementExceedsRemaining() {
         final var isHalted = new AtomicBoolean();
         givenHaltableFrame(isHalted);
         givenEvmPrecompileCall();
@@ -206,6 +207,7 @@ class CustomMessageCallProcessorTest {
         subject.start(frame, operationTracer);
 
         verifyHalt(INSUFFICIENT_GAS, false);
+        verify(operationTracer).tracePrecompileResult(frame, PRECOMPILE);
     }
 
     @Test
@@ -220,7 +222,6 @@ class CustomMessageCallProcessorTest {
 
         subject.start(frame, operationTracer);
 
-        verify(operationTracer).tracePrecompileCall(frame, GAS_REQUIREMENT, OUTPUT_DATA);
         verify(frame).decrementRemainingGas(GAS_REQUIREMENT);
         verify(frame).incrementRemainingGas(GAS_REQUIREMENT);
         verify(frame).setOutputData(OUTPUT_DATA);
@@ -240,7 +241,6 @@ class CustomMessageCallProcessorTest {
 
         subject.start(frame, operationTracer);
 
-        verify(operationTracer).tracePrecompileCall(frame, GAS_REQUIREMENT, OUTPUT_DATA);
         verify(frame).decrementRemainingGas(GAS_REQUIREMENT);
         verify(frame).setRevertReason(OUTPUT_DATA);
         verify(frame, never()).setOutputData(OUTPUT_DATA);
@@ -313,7 +313,6 @@ class CustomMessageCallProcessorTest {
         givenCallWithCode(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
         given(frame.getInputData()).willReturn(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
         given(prngPrecompile.computeFully(any(), any())).willReturn(new FullResult(result, gasRequirement, null));
-        given(result.getOutput()).willReturn(OUTPUT_DATA);
     }
 
     private void verifyHalt(@NonNull final ExceptionalHaltReason reason) {

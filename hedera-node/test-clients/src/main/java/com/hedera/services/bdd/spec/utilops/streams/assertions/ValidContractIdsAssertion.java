@@ -55,6 +55,9 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
 
     private void validateActionIds(@NonNull final TransactionSidecarRecord sidecar) {
         final var actions = sidecar.getActions().getContractActionsList();
+        System.out.println("------");
+        System.out.println(actions);
+        System.out.println("------");
         for (final var action : actions) {
             if (action.hasCallingAccount()) {
                 assertValid(action.getCallingAccount(), "action#callingAccount", sidecar);

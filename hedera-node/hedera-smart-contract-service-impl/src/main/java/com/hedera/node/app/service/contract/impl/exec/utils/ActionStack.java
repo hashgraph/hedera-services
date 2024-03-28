@@ -20,7 +20,6 @@ import static com.hedera.hapi.streams.CallOperationType.OP_CALL;
 import static com.hedera.hapi.streams.CallOperationType.OP_CREATE;
 import static com.hedera.hapi.streams.ContractActionType.CALL;
 import static com.hedera.hapi.streams.ContractActionType.CREATE;
-import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
 import static com.hedera.hapi.streams.codec.ContractActionProtoCodec.RECIPIENT_UNSET;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
@@ -147,12 +146,10 @@ public class ActionStack {
             @NonNull final MessageFrame frame,
             @NonNull final ContractActionType type,
             @NonNull final Validation validation) {
-        if (!isAlreadyFinalized(frame, type)) {
-            internalFinalize(validation, frame, action -> action.copyBuilder()
-                    .recipientContract(asNumberedContractId(frame.getContractAddress()))
-                    .callType(type)
-                    .build());
-        }
+        internalFinalize(validation, frame, action -> action.copyBuilder()
+                .recipientContract(asNumberedContractId(frame.getContractAddress()))
+                .callType(type)
+                .build());
     }
 
     private void internalFinalize(@NonNull final Validation validateAction, @NonNull final MessageFrame frame) {
@@ -317,10 +314,6 @@ public class ActionStack {
             allActions.removeAll(invalidActions);
             invalidActions.clear();
         }
-    }
-
-    private boolean isAlreadyFinalized(@NonNull MessageFrame frame, @NonNull ContractActionType type) {
-        return PRECOMPILE == type && EXCEPTIONAL_HALT == frame.getState();
     }
 
     private ContractActionType asActionType(final MessageFrame.Type type) {

@@ -218,14 +218,6 @@ class ActionStackTest {
     }
 
     @Test
-    void haltedHederaPrecompileIsAlreadyFinalized() {
-        given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-
-        assertDoesNotThrow(
-                () -> subject.finalizeLastStackActionAsPrecompile(parentFrame, PRECOMPILE, ActionStack.Validation.ON));
-    }
-
-    @Test
     void configuresPrecompileActionAsExpected() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
         final var pretendPrecompileAction = CALL_ACTION
