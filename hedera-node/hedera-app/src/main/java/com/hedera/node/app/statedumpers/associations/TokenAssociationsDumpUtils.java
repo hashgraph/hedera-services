@@ -69,8 +69,7 @@ public class TokenAssociationsDumpUtils {
             System.err.println("*** Traversal of token associations virtual map interrupted!");
             Thread.currentThread().interrupt();
         }
-        BBMTokenAssociations.forEach(
-                BBMTokenAssociationPair -> r.put(BBMTokenAssociationPair.key(), BBMTokenAssociationPair.value()));
+        BBMTokenAssociations.forEach(pair -> r.put(pair.key(), pair.value()));
         return r;
     }
 

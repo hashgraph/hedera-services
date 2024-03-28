@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.statedumpers.files;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey;
 import static com.hedera.node.app.service.mono.statedumpers.files.FilesDumpUtils.reportFileContents;
 import static com.hedera.node.app.service.mono.statedumpers.files.FilesDumpUtils.reportFileContentsHeader;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -83,15 +82,13 @@ public class FilesDumpUtils {
 
     static BBMHederaFile fromMod(@NonNull final OnDiskValue<File> wrapper) {
         final var value = wrapper.getValue();
-        if (value.fileId().fileNum() == 13704L) {
-            System.out.println(value);
+        JKey key;
+        try {
+            key = JKey.mapKey(Key.newBuilder().keyList(value.keys()).build());
+        } catch (Exception e) {
+            key = null;
         }
-        final var key = Key.newBuilder().keyList(value.keys()).build();
-        final var meta = new HFileMeta(
-                value.deleted(),
-                value.keys() != null ? (JKey) fromPbjKey(key).get() : null,
-                value.expirationSecond(),
-                value.memo());
+        final var meta = new HFileMeta(value.deleted(), key, value.expirationSecond(), value.memo());
         return new BBMHederaFile(
                 FileStore.ORDINARY,
                 (int) value.fileId().fileNum(),

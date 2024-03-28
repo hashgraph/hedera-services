@@ -41,9 +41,9 @@ class BlockInfoTranslatorTest {
     @BeforeEach
     void setUp() {
         final FCQueue<BytesElement> hashes = new FCQueue<>();
-        hashes.add(new BytesElement("hash1".getBytes()));
-        hashes.add(new BytesElement("hash2".getBytes()));
-        hashes.add(new BytesElement("hash3".getBytes()));
+        hashes.add(new BytesElement("hash1joekaypketlkoklqnrfxxbqkcoolqotjhzogqqpedpyizvzp".getBytes()));
+        hashes.add(new BytesElement("hash2joekaypketlkoklqnrfxxbqkcoolqotjhzogqqpedpyizvzp".getBytes()));
+        hashes.add(new BytesElement("hash3joekaypketlkoklqnrfxxbqkcoolqotjhzogqqpedpyizvzp".getBytes()));
         subject = new com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext();
         subject.setFirstConsTimeOfCurrentBlock(Instant.ofEpochSecond(1_234_567L, 13579L));
         subject.setBlockNo(5L);
@@ -93,11 +93,13 @@ class BlockInfoTranslatorTest {
     }
 
     private BlockInfo.Builder getBaseExpectedBlockInfo() {
-        byte[] result = ByteBuffer.allocate(
-                        "hash1".getBytes().length + "hash2".getBytes().length + "hash3".getBytes().length)
-                .put("hash1".getBytes())
-                .put("hash2".getBytes())
-                .put("hash3".getBytes())
+        final var hash1 = appendForBlockHashes("hash1joekaypketlkoklqnrfxxbqkcoolqotjhzogqqpedpyizvzp".getBytes());
+        final var hash2 = appendForBlockHashes("hash2joekaypketlkoklqnrfxxbqkcoolqotjhzogqqpedpyizvzp".getBytes());
+        final var hash3 = appendForBlockHashes("hash3joekaypketlkoklqnrfxxbqkcoolqotjhzogqqpedpyizvzp".getBytes());
+        byte[] result = ByteBuffer.allocate(hash1.length + hash2.length + hash3.length)
+                .put(hash1)
+                .put(hash2)
+                .put(hash3)
                 .array();
         return BlockInfo.newBuilder()
                 .lastBlockNumber(5L)
@@ -107,5 +109,11 @@ class BlockInfoTranslatorTest {
 
     private BlockInfo.Builder getExpectedBlockInfoWithoutCurrentBlockTime() {
         return getBaseExpectedBlockInfo().firstConsTimeOfCurrentBlock((Timestamp) null);
+    }
+
+    private static byte[] appendForBlockHashes(byte[] bytes) {
+        final byte[] hashes = new byte[48];
+        System.arraycopy(bytes, 0, hashes, 0, 32);
+        return hashes;
     }
 }

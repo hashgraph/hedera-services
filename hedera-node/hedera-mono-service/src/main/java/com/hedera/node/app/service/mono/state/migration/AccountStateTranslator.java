@@ -190,9 +190,11 @@ public class AccountStateTranslator {
                                 : null)
                 .expiredAndPendingRemoval(account.isExpiredAndPendingRemoval());
 
-        if (stakedAccountId != null) acntBuilder.stakedAccountId(stakedAccountId);
-        else if (stakedNodeId != -1) acntBuilder.stakedNodeId(stakedNodeId);
-
+        if (stakedAccountId != null) {
+            acntBuilder.stakedAccountId(stakedAccountId);
+        } else if (stakedNodeId != -1) {
+            acntBuilder.stakedNodeId(stakedNodeId);
+        }
         return acntBuilder.build();
     }
 

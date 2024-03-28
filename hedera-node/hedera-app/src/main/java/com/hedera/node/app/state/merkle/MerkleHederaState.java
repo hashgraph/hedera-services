@@ -128,6 +128,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     private final HederaLifecycles lifecycles;
 
+    public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
+        return services;
+    }
+
     /**
      * Maintains information about each service, and each state of each service, known by this
      * instance. The key is the "service-name.state-key".
