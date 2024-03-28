@@ -164,9 +164,7 @@ public final class LoggingTestUtils {
     }
 
     public static Configuration prepareConfiguration(final String logFile, final String fileHandlerName) {
-        return new TestConfigBuilder()
-                .withConverter(ConfigLevel.class, new ConfigLevelConverter())
-                .withConverter(MarkerState.class, new MarkerStateConverter())
+        return getConfigBuilder()
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.%s.type".formatted(fileHandlerName), "file")
                 .withValue("logging.handler.%s.enabled".formatted(fileHandlerName), "true")
@@ -180,5 +178,11 @@ public final class LoggingTestUtils {
         final File testMultipleLoggersInParallel = new File(logFile);
         Files.deleteIfExists(testMultipleLoggersInParallel.toPath());
         return testMultipleLoggersInParallel.getAbsolutePath();
+    }
+
+    public static TestConfigBuilder getConfigBuilder() {
+        return new TestConfigBuilder()
+                .withConverter(MarkerState.class, new MarkerStateConverter())
+                .withConverter(ConfigLevel.class, new ConfigLevelConverter());
     }
 }

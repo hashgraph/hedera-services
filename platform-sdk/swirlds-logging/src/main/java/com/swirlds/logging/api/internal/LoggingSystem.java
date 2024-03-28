@@ -22,7 +22,6 @@ import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEvent;
-import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.extensions.handler.LogHandlerFactory;
@@ -41,13 +40,14 @@ import java.util.ServiceLoader.Provider;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * The implementation of the logging system.
  */
-public class LoggingSystem implements LogEventConsumer {
+public class LoggingSystem {
     private static final String LOGGING_HANDLER_PREFIX = "logging.handler.";
     private static final int LOGGING_HANDLER_PREFIX_LENGTH = LOGGING_HANDLER_PREFIX.length();
     private static final String LOGGING_HANDLER_TYPE = LOGGING_HANDLER_PREFIX + "%s.type";
@@ -80,7 +80,7 @@ public class LoggingSystem implements LogEventConsumer {
     /**
      * The level configuration of the logging system that checks if a specific logger is enabled for a specific level.
      */
-    private final HandlerLoggingLevelConfig levelConfig;
+    private AtomicReference<HandlerLoggingLevelConfig> levelConfig;
 
     /**
      * The factory that is used to create log events.
@@ -96,7 +96,7 @@ public class LoggingSystem implements LogEventConsumer {
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
         this.handlers = new CopyOnWriteArrayList<>();
         this.loggers = new ConcurrentHashMap<>();
-        this.levelConfig = new HandlerLoggingLevelConfig(configuration);
+        this.levelConfig = new AtomicReference<>(HandlerLoggingLevelConfig.create(configuration, null));
     }
 
     /**
@@ -107,7 +107,7 @@ public class LoggingSystem implements LogEventConsumer {
      * handlers are not removed for now.
      */
     public void update(final @NonNull Configuration configuration) {
-        this.levelConfig.update(configuration);
+        this.levelConfig.set(HandlerLoggingLevelConfig.create(configuration, null));
         this.handlers.forEach(handler -> handler.update(configuration));
     }
 
@@ -173,10 +173,10 @@ public class LoggingSystem implements LogEventConsumer {
                 return true;
             }
         }
-        return levelConfig.isEnabled(name, level, marker);
+
+        return levelConfig.get().isEnabled(name, level, marker);
     }
 
-    @Override
     public void accept(@NonNull final LogEvent event) {
         if (event == null) {
             EMERGENCY_LOGGER.logNPE("event");
@@ -198,7 +198,7 @@ public class LoggingSystem implements LogEventConsumer {
                     }
                 }
             }
-            if (!handled && levelConfig.isEnabled(event.loggerName(), event.level(), event.marker())) {
+            if (!handled && levelConfig.get().isEnabled(event.loggerName(), event.level(), event.marker())) {
                 EMERGENCY_LOGGER.log(event);
             }
         } catch (final Throwable throwable) {
@@ -209,7 +209,6 @@ public class LoggingSystem implements LogEventConsumer {
     /**
      * Loads all {@link LogProviderFactory} instances by SPI / {@link ServiceLoader} and installs them into the logging
      * system.
-     *
      */
     public void installProviders() {
         final ServiceLoader<LogProviderFactory> serviceLoader = ServiceLoader.load(LogProviderFactory.class);
@@ -225,7 +224,6 @@ public class LoggingSystem implements LogEventConsumer {
     /**
      * Loads all {@link LogHandlerFactory} instances by SPI / {@link ServiceLoader} and installs them into the logging
      * system.
-     *
      */
     public void installHandlers() {
         final Map<String, LogHandlerFactory> servicesMap = ServiceLoader.load(LogHandlerFactory.class).stream()
