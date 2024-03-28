@@ -161,7 +161,7 @@ jobs:
           containerd-version: v1.7.2
 
       - name: Setup Docker Support
-        uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0
+        uses: crazy-max/ghaction-setup-docker@c2351bbd0bfab8cd65e684219ad8ea46a6d093f3 # v3.1.0
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         env:
           HOME: /x
@@ -373,7 +373,7 @@ jobs:
           containerd-version: v1.7.2
 
       - name: Setup Docker Support
-        uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0
+        uses: crazy-max/ghaction-setup-docker@c2351bbd0bfab8cd65e684219ad8ea46a6d093f3 # v3.1.0
         env:
           HOME: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
         with:
