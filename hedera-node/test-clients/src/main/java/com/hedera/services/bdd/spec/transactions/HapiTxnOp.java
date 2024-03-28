@@ -578,7 +578,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     public T blankMetadata() {
-        memo = Optional.of("");
+        metadata = Optional.of("");
         return self();
     }
 

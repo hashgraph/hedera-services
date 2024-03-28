@@ -133,7 +133,47 @@ public class TokenUpdateSpecs extends HapiSuite {
                 updateUniqueTreasuryWithNfts(),
                 updateHappyPath(),
                 safeToUpdateCustomFeesWithNewFallbackWhileTransferring(),
-                tokenUpdateCanClearMemo());
+                tokenUpdateCanClearMemo(),
+                canUpdateExpiryOnlyOpWithoutAdminKey());
+    }
+
+    @HapiTest
+    private HapiSpec canUpdateExpiryOnlyOpWithoutAdminKey() {
+        final var smallBuffer = 12_345L;
+        final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
+        String originalMemo = "First things first";
+        String saltedName = salted("primary");
+        final var civilian = "civilian";
+        return defaultHapiSpec("ValidatesNewExpiry")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("freezeKey"),
+                        newKeyNamed("newFreezeKey"),
+                        newKeyNamed("kycKey"),
+                        newKeyNamed("newKycKey"),
+                        newKeyNamed("supplyKey"),
+                        newKeyNamed("newSupplyKey"),
+                        newKeyNamed("wipeKey"),
+                        newKeyNamed("newWipeKey"),
+                        newKeyNamed("pauseKey"),
+                        newKeyNamed("newPauseKey"),
+                        tokenCreate("primary")
+                                .name(saltedName)
+                                .entityMemo(originalMemo)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .adminKey("adminKey")
+                                .freezeKey("freezeKey")
+                                .kycKey("kycKey")
+                                .supplyKey("supplyKey")
+                                .wipeKey("wipeKey")
+                                .pauseKey("pauseKey")
+                                .payingWith(civilian))
+                .when()
+                .then(tokenUpdate("primary").expiry(okExpiry).signedBy(GENESIS));
     }
 
     @HapiTest
