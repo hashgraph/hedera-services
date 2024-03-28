@@ -27,7 +27,6 @@ import com.hedera.node.app.service.mono.statedumpers.accounts.BBMHederaAccount;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -85,7 +84,7 @@ public class AccountDumpUtils {
     public static BBMHederaAccount fromMod(OnDiskValue<Account> account) {
         return new BBMHederaAccount(
                 account.getValue().accountId(),
-                account.getValue().alias() != Bytes.EMPTY ? account.getValue().alias() : Bytes.EMPTY,
+                account.getValue().alias(),
                 account.getValue().key(),
                 account.getValue().expirationSecond(),
                 account.getValue().tinybarBalance(),
