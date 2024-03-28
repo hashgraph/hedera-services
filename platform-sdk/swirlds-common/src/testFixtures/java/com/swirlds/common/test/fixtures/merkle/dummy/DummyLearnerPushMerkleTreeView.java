@@ -17,9 +17,10 @@
 package com.swirlds.common.test.fixtures.merkle.dummy;
 
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.synchronization.views.StandardLearnerTreeView;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.views.LearnerPushMerkleTreeView;
 
-public class DummyLearnerTreeView extends StandardLearnerTreeView {
+public class DummyLearnerPushMerkleTreeView extends LearnerPushMerkleTreeView {
 
     /**
      * Create a new standard tree view out of an in-memory merkle tree (or subtree).
@@ -27,8 +28,8 @@ public class DummyLearnerTreeView extends StandardLearnerTreeView {
      * @param root
      * 		the root of the tree (or subtree)
      */
-    public DummyLearnerTreeView(final MerkleNode root) {
-        super(root);
+    public DummyLearnerPushMerkleTreeView(final ReconnectConfig reconnectConfig, final MerkleNode root) {
+        super(reconnectConfig, root);
     }
 
     /**

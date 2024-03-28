@@ -16,14 +16,26 @@
 
 package com.swirlds.common.merkle.synchronization.views;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.NodeToSend;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
+import com.swirlds.common.merkle.synchronization.task.Lesson;
+import com.swirlds.common.merkle.synchronization.task.NodeToSend;
+import com.swirlds.common.merkle.synchronization.task.QueryResponse;
+import com.swirlds.common.merkle.synchronization.task.TeacherPushReceiveTask;
+import com.swirlds.common.merkle.synchronization.task.TeacherPushSendTask;
+import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -33,11 +45,14 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A teaching tree view for a standard in memory merkle tree.
  */
-public class StandardTeacherTreeView implements TeacherTreeView<NodeToSend> {
+public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
+
+    private final ReconnectConfig reconnectConfig;
 
     private final Queue<NodeToSend> nodesToHandle;
     private final BlockingQueue<NodeToSend> expectedResponses;
@@ -52,15 +67,40 @@ public class StandardTeacherTreeView implements TeacherTreeView<NodeToSend> {
      * @param configuration the configuration
      * @param root          the root of the tree
      */
-    public StandardTeacherTreeView(@NonNull final Configuration configuration, final MerkleNode root) {
-
-        maxAckDelayMilliseconds = (int)
-                configuration.getConfigData(ReconnectConfig.class).maxAckDelay().toMillis();
+    public TeacherPushMerkleTreeView(@NonNull final Configuration configuration, final MerkleNode root) {
+        this.reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
+        maxAckDelayMilliseconds = (int) reconnectConfig.maxAckDelay().toMillis();
 
         this.root = new NodeToSend(root, maxAckDelayMilliseconds);
 
         nodesToHandle = new LinkedList<>();
         expectedResponses = new LinkedBlockingDeque<>();
+    }
+
+    @Override
+    public void startTeacherTasks(
+            final TeachingSynchronizer teachingSynchronizer,
+            final Time time,
+            final StandardWorkGroup workGroup,
+            final MerkleDataInputStream inputStream,
+            final MerkleDataOutputStream outputStream,
+            final Queue<TeacherSubtree> subtrees) {
+        final AsyncInputStream<QueryResponse> in =
+                new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
+        final AsyncOutputStream<Lesson<NodeToSend>> out =
+                teachingSynchronizer.buildOutputStream(workGroup, outputStream);
+
+        in.start();
+        out.start();
+
+        final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
+
+        final TeacherPushSendTask<NodeToSend> teacherPushSendTask =
+                new TeacherPushSendTask<>(time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
+        teacherPushSendTask.start();
+        final TeacherPushReceiveTask<NodeToSend> teacherPushReceiveTask =
+                new TeacherPushReceiveTask<>(workGroup, in, this, senderIsFinished);
+        teacherPushReceiveTask.start();
     }
 
     /**

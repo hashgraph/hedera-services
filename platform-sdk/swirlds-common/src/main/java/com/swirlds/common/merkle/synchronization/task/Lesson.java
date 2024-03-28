@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.synchronization.internal;
+package com.swirlds.common.merkle.synchronization.task;
 
-import static com.swirlds.common.merkle.synchronization.internal.LessonType.CUSTOM_VIEW_ROOT;
-import static com.swirlds.common.merkle.synchronization.internal.LessonType.INTERNAL_NODE_DATA;
-import static com.swirlds.common.merkle.synchronization.internal.LessonType.LEAF_NODE_DATA;
-import static com.swirlds.common.merkle.synchronization.internal.LessonType.NODE_IS_UP_TO_DATE;
+import static com.swirlds.common.merkle.synchronization.task.LessonType.CUSTOM_VIEW_ROOT;
+import static com.swirlds.common.merkle.synchronization.task.LessonType.INTERNAL_NODE_DATA;
+import static com.swirlds.common.merkle.synchronization.task.LessonType.LEAF_NODE_DATA;
+import static com.swirlds.common.merkle.synchronization.task.LessonType.NODE_IS_UP_TO_DATE;
 
 import com.swirlds.common.Releasable;
 import com.swirlds.common.crypto.Hash;

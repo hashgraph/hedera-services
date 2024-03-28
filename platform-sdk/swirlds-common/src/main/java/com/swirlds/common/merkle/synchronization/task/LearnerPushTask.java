@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.synchronization.internal;
+package com.swirlds.common.merkle.synchronization.task;
 
 import static com.swirlds.common.constructable.ClassIdFormatter.classIdString;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
@@ -28,7 +28,6 @@ import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import java.util.List;
@@ -38,16 +37,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class manages the learner's work thread for synchronization.
+ * This class manages the learner's work task for synchronization.
  *
  * @param <T>
  * 		the type of data used by the view to represent a node
  */
-public class LearnerThread<T> {
+public class LearnerPushTask<T> {
 
-    private static final Logger logger = LogManager.getLogger(LearnerThread.class);
+    private static final Logger logger = LogManager.getLogger(LearnerPushTask.class);
 
-    private static final String NAME = "send-and-receive";
+    private static final String NAME = "learner-task";
 
     private final StandardWorkGroup workGroup;
     private final AsyncInputStream<Lesson<T>> in;
@@ -61,17 +60,10 @@ public class LearnerThread<T> {
     private final ThresholdLimitingHandler<Throwable> exceptionRateLimiter = new ThresholdLimitingHandler<>(1);
 
     /**
-     * Responsible for creating and managing threads used by this object.
-     */
-    private final ThreadManager threadManager;
-
-    /**
      * Create a new thread for the learner.
      *
      * @param workGroup
      * 		the work group that will manage the thread
-     * @param threadManager
-     * 		manages the creation of threads
      * @param in
      * 		the input stream, this object is responsible for closing the stream when finished
      * @param out
@@ -85,9 +77,8 @@ public class LearnerThread<T> {
      * @param nodeCount
      * 		an object used to keep track of the number of nodes sent during the reconnect
      */
-    public LearnerThread(
+    public LearnerPushTask(
             final StandardWorkGroup workGroup,
-            final ThreadManager threadManager,
             final AsyncInputStream<Lesson<T>> in,
             final AsyncOutputStream<QueryResponse> out,
             final Queue<MerkleNode> rootsToReceive,
@@ -95,7 +86,6 @@ public class LearnerThread<T> {
             final LearnerTreeView<T> view,
             final ReconnectNodeCount nodeCount) {
         this.workGroup = workGroup;
-        this.threadManager = threadManager;
         this.in = in;
         this.out = out;
         this.rootsToReceive = rootsToReceive;
@@ -243,8 +233,6 @@ public class LearnerThread<T> {
         try (in;
                 out;
                 view) {
-
-            view.startThreads(threadManager, workGroup);
 
             view.expectLessonFor(null, 0, view.getOriginalRoot(), false);
             in.anticipateMessage();

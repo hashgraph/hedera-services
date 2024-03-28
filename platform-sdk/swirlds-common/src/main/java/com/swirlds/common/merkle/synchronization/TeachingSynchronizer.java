@@ -19,18 +19,14 @@ package com.swirlds.common.merkle.synchronization;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.Lesson;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
-import com.swirlds.common.merkle.synchronization.internal.TeacherReceivingThread;
-import com.swirlds.common.merkle.synchronization.internal.TeacherSendingThread;
-import com.swirlds.common.merkle.synchronization.internal.TeacherSubtree;
-import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
+import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -42,7 +38,6 @@ import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -179,22 +174,16 @@ public class TeachingSynchronizer {
                     return false;
                 });
 
-        final AsyncInputStream<QueryResponse> in =
-                new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
-        final AsyncOutputStream<Lesson<T>> out = buildOutputStream(workGroup, outputStream);
-
-        in.start();
-        out.start();
-
-        final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
-
-        new TeacherSendingThread<T>(time, reconnectConfig, workGroup, in, out, subtrees, view, senderIsFinished)
-                .start();
-        new TeacherReceivingThread<>(workGroup, in, view, senderIsFinished).start();
+        view.startTeacherTasks(this, time, workGroup, inputStream, outputStream, subtrees);
 
         workGroup.waitForTermination();
 
         if (workGroup.hasExceptions()) {
+
+            // Depending on where the failure occurred, there may be deserialized objects still sitting in
+            // the async input stream's queue that haven't been attached to any tree.
+            view.abort();
+
             throw new MerkleSynchronizationException(
                     "Synchronization failed with exceptions", firstReconnectException.get());
         }
@@ -205,7 +194,7 @@ public class TeachingSynchronizer {
     /**
      * Build the output stream. Exposed to allow unit tests to override implementation to simulate latency.
      */
-    protected <T> AsyncOutputStream<Lesson<T>> buildOutputStream(
+    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
         return new AsyncOutputStream<>(out, workGroup, reconnectConfig);
     }

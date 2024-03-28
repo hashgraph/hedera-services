@@ -35,7 +35,7 @@
   },
   "virtualMerkleConfig": {
 	"samplingProbability": 0,
-	"assorted": true,
+	"assorted": false,
 	"smartContractConfig": {
 	  "minKeyValuePairsDuringCreation": 100,
 	  "maxKeyValuePairsDuringCreation": 250,
@@ -48,24 +48,56 @@
 	"sequential": [
 	  {
 		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
-		"amount": 100000
+		"amount": 150000
 	  },
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_CREATE_SMART_CONTRACT",
+			"amount": 5000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_SMART_CONTRACT_METHOD_EXECUTION",
+			"amount": 5000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+			"amount": 30000
+		},
 	  {
 		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
-		"amount": 100000
-	  },
-	  {
-		"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-		"amount": 100000
+		"amount": 15000
 	  },
 	  {
 		"type": "TYPE_VIRTUAL_MERKLE_CREATE_SMART_CONTRACT",
-		"amount": 15000
+		"amount": 1000
 	  },
 	  {
 		"type": "TYPE_VIRTUAL_MERKLE_SMART_CONTRACT_METHOD_EXECUTION",
-		"amount": 15000
-	  }
+		"amount": 3000
+	  },
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+			"amount": 50000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_CREATE",
+			"amount": 50000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_CREATE_SMART_CONTRACT",
+			"amount": 2000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+			"amount": 50000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_SMART_CONTRACT_METHOD_EXECUTION",
+			"amount": 5000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+			"amount": 200000
+		}
 	]
   },
   "fcmConfig": {

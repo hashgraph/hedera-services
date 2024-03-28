@@ -20,13 +20,13 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.Lesson;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,7 +65,7 @@ public class LaggingTeachingSynchronizer extends TeachingSynchronizer {
      * {@inheritDoc}
      */
     @Override
-    protected <T> AsyncOutputStream<Lesson<T>> buildOutputStream(
+    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
         return new LaggingAsyncOutputStream<>(out, workGroup, latencyMilliseconds, reconnectConfig);
     }

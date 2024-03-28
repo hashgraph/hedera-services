@@ -16,10 +16,17 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
+import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
+import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
+import java.util.Queue;
 
 /**
  * An intentionally broken teacher tree view. Throws an IO exception after a certain number of nodes have been
@@ -50,6 +57,17 @@ public class BrokenVirtualMapTeacherView implements TeacherTreeView<Long> {
         this.baseView = baseView;
         this.permittedInternals = permittedInternals;
         this.permittedLeaves = permittedLeaves;
+    }
+
+    @Override
+    public void startTeacherTasks(
+            final TeachingSynchronizer teachingSynchronizer,
+            final Time time,
+            final StandardWorkGroup workGroup,
+            final MerkleDataInputStream inputStream,
+            final MerkleDataOutputStream outputStream,
+            final Queue<TeacherSubtree> subtrees) {
+        baseView.startTeacherTasks(teachingSynchronizer, time, workGroup, inputStream, outputStream, subtrees);
     }
 
     @Override
