@@ -271,7 +271,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             return false;
         };
         final StandardWorkGroup workGroup =
-                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
+                createStandardWorkGroup(threadManager, breakConnection, reconnectExceptionListener);
 
         final LearnerTreeView<T> view;
         if (root == null || !root.hasCustomReconnectView()) {
@@ -337,6 +337,13 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         viewsToInitialize.addFirst(view);
 
         return view.getMerkleRoot(reconstructedRoot.get());
+    }
+
+    protected StandardWorkGroup createStandardWorkGroup(
+            ThreadManager threadManager,
+            Runnable breakConnection,
+            Function<Throwable, Boolean> reconnectExceptionListener) {
+        return new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
     }
 
     /**

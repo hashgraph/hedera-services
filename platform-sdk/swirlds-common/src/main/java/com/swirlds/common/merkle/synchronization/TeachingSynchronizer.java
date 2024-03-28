@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -156,28 +157,26 @@ public class TeachingSynchronizer {
 
         final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
         // A future improvement might be to reuse threads between subtrees.
-        final StandardWorkGroup workGroup =
-                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, ex -> {
-                    Throwable cause = ex;
-                    while (cause != null) {
-                        if (cause instanceof SocketException socketEx) {
-                            if (socketEx.getMessage().equalsIgnoreCase("Connection reset by peer")) {
-                                // Connection issues during reconnects are expected and recoverable, just
-                                // log them as info. All other exceptions should be treated as real errors
-                                logger.info(
-                                        RECONNECT.getMarker(),
-                                        "Connection reset while sending tree at {} with route {}. Aborting",
-                                        root == null ? null : root.getClass().getName(),
-                                        root == null ? "[]" : root.getRoute());
-                                return true;
-                            }
-                        }
-                        cause = cause.getCause();
+        final StandardWorkGroup workGroup = createStandardWorkGroup(threadManager, breakConnection, cause -> {
+            while (cause != null) {
+                if (cause instanceof SocketException socketEx) {
+                    if (socketEx.getMessage().equalsIgnoreCase("Connection reset by peer")) {
+                        // Connection issues during reconnects are expected and recoverable, just
+                        // log them as info. All other exceptions should be treated as real errors
+                        logger.info(
+                                RECONNECT.getMarker(),
+                                "Connection reset while sending tree at {} with route {}. Aborting",
+                                root == null ? null : root.getClass().getName(),
+                                root == null ? "[]" : root.getRoute());
+                        return true;
                     }
-                    firstReconnectException.compareAndSet(null, ex);
-                    // Let StandardWorkGroup log it as an error using the EXCEPTION marker
-                    return false;
-                });
+                }
+                cause = cause.getCause();
+            }
+            firstReconnectException.compareAndSet(null, cause);
+            // Let StandardWorkGroup log it as an error using the EXCEPTION marker
+            return false;
+        });
 
         final AsyncInputStream<QueryResponse> in =
                 new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
@@ -200,6 +199,11 @@ public class TeachingSynchronizer {
         }
 
         logger.info(RECONNECT.getMarker(), "finished sending tree");
+    }
+
+    protected StandardWorkGroup createStandardWorkGroup(
+            ThreadManager threadManager, Runnable breakConnection, Function<Throwable, Boolean> exceptionListener) {
+        return new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, exceptionListener);
     }
 
     /**
