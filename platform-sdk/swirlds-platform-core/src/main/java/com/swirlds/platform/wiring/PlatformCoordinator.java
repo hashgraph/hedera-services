@@ -18,9 +18,7 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-
 import com.swirlds.platform.components.consensus.ConsensusEngine;
-
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;

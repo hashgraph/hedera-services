@@ -156,12 +156,14 @@ public class ReconnectBench extends VirtualMapBaseBench {
             throw new RuntimeException("Failed to restore the 'teacher' map.");
         }
         teacherMap = flushMap(teacherMap);
+        BenchmarkMetrics.register(teacherMap::registerMetrics);
 
         learnerMap = restoreMap("learner");
         if (teacherMap == null) {
             throw new RuntimeException("Failed to restore the 'learner' map.");
         }
         learnerMap = flushMap(learnerMap);
+        BenchmarkMetrics.register(learnerMap::registerMetrics);
 
         teacherTree = MerkleBenchmarkUtils.createTreeForMap(teacherMap);
         copy = teacherMap.copy();

@@ -167,9 +167,7 @@ public class TopicCreateSuite extends HapiSuite {
                                 .signedBy("wrongKey")
                                 .hasPrecheck(INVALID_SIGNATURE),
                         // In hedera-app, we'll allow contracts with admin keys to be auto-renew accounts
-                        createTopic("nonExistentAutoRenewAccount")
-                                .autoRenewAccountId(contractWithAdminKey)
-                                .hasKnownStatusFrom(INVALID_AUTORENEW_ACCOUNT),
+                        createTopic("withContractAutoRenew").autoRenewAccountId(contractWithAdminKey),
                         // But contracts without admin keys will get INVALID_SIGNATURE (can't sign!)
                         createTopic("NotToBe")
                                 .autoRenewAccountId(PAY_RECEIVABLE_CONTRACT)

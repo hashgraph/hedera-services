@@ -18,25 +18,31 @@ package com.swirlds.platform.test.sync;
 
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Random;
 
 /**
  * A simple, deterministic factory for Event instances
  */
 public class EventFactory {
-    public static ShadowEvent makeShadow() {
-        return makeShadow(null);
+    public static ShadowEvent makeShadow(@NonNull final Random random) {
+        return makeShadow(random, null);
     }
 
-    public static ShadowEvent makeShadow(final ShadowEvent selfParent) {
-        return makeShadow(selfParent, null);
+    public static ShadowEvent makeShadow(@NonNull final Random random, final ShadowEvent selfParent) {
+        return makeShadow(random, selfParent, null);
     }
 
-    public static ShadowEvent makeShadow(final ShadowEvent selfParent, final ShadowEvent otherParent) {
-        final EventImpl e = TestingEventBuilder.builder()
-                .setSelfParent(selfParent == null ? null : selfParent.getEvent())
-                .setOtherParent(otherParent == null ? null : otherParent.getEvent())
-                .buildEventImpl();
-        return new ShadowEvent(e, selfParent, otherParent);
+    public static ShadowEvent makeShadow(
+            @NonNull final Random random, final ShadowEvent selfParent, final ShadowEvent otherParent) {
+
+        final EventImpl eventImpl = EventImplTestUtils.createEventImpl(
+                TestingEventBuilder.builder(random),
+                selfParent == null ? null : selfParent.getEvent(),
+                otherParent == null ? null : otherParent.getEvent());
+
+        return new ShadowEvent(eventImpl, selfParent, otherParent);
     }
 }

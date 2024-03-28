@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
+import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
@@ -37,6 +38,7 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.AppNotifier;
+import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.CompleteStateNotificationWithCleanup;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
@@ -82,7 +84,6 @@ import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
-import com.swirlds.platform.wiring.components.EventWindowManagerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.HashLoggerWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
@@ -135,7 +136,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
     private final GossipWiring gossipWiring;
-    private final EventWindowManagerWiring eventWindowManagerWiring;
+    private final ComponentWiring<EventWindowManager, NonAncientEventWindow> eventWindowManagerWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final ComponentWiring<EventStreamManager, Void> eventStreamManagerWiring;
     private final RunningHashUpdaterWiring runningHashUpdaterWiring;
@@ -264,7 +265,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
 
         gossipWiring = GossipWiring.create(model);
-        eventWindowManagerWiring = EventWindowManagerWiring.create(model);
+        eventWindowManagerWiring = new ComponentWiring<>(
+                model,
+                EventWindowManager.class,
+                model.schedulerBuilder("eventWindowManager")
+                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                        .withHyperlink(platformCoreHyperlink(EventWindowManager.class))
+                        .build()
+                        .cast());
 
         issDetectorWiring = IssDetectorWiring.create(schedulers.issDetectorScheduler());
         issHandlerWiring = IssHandlerWiring.create(schedulers.issHandlerScheduler());
@@ -338,7 +346,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     private void solderNonAncientEventWindow() {
         final OutputWire<NonAncientEventWindow> nonAncientEventWindowOutputWire =
-                eventWindowManagerWiring.nonAncientEventWindowOutput();
+                eventWindowManagerWiring.getOutputWire();
 
         nonAncientEventWindowOutputWire.solderTo(
                 eventDeduplicatorWiring.getInputWire(EventDeduplicator::setNonAncientEventWindow), INJECT);
@@ -448,7 +456,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         // necessary keystone event is *never* flushed.
         consensusRoundOutputWire.orderedSolderTo(List.of(
                 keystoneEventSequenceNumberTransformer.getInputWire(), consensusRoundHandlerWiring.roundInput()));
-        consensusRoundOutputWire.solderTo(eventWindowManagerWiring.consensusRoundInput());
+        consensusRoundOutputWire.solderTo(
+                eventWindowManagerWiring.getInputWire(EventWindowManager::extractEventWindow));
 
         consensusEngineWiring
                 .getSplitAndTransformedOutput(ConsensusEngine::getConsensusEvents)
@@ -537,8 +546,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Future work: as more components are moved to the framework, this method should shrink, and eventually be
      * removed.
      *
-     * @param statusManager      the status manager to wire
-     * @param transactionPool    the transaction pool to wire
+     * @param statusManager   the status manager to wire
+     * @param transactionPool the transaction pool to wire
      */
     public void wireExternalComponents(
             @NonNull final PlatformStatusManager statusManager, @NonNull final TransactionPool transactionPool) {
@@ -584,6 +593,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventCreationManager      the event creation manager to bind
      * @param stateSignatureCollector   the signed state manager to bind
      * @param transactionPrehandler     the transaction prehandler to bind
+     * @param eventWindowManager        the event window manager to bind
      * @param consensusRoundHandler     the consensus round handler to bind
      * @param eventStreamManager        the event stream manager to bind
      * @param issDetector               the ISS detector to bind
@@ -617,6 +627,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventCreationManager eventCreationManager,
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final TransactionPrehandler transactionPrehandler,
+            @NonNull final EventWindowManager eventWindowManager,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final EventStreamManager eventStreamManager,
             @NonNull final IssDetector issDetector,
@@ -647,6 +658,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesSequencerWiring.bind(pcesSequencer);
         eventCreationManagerWiring.bind(eventCreationManager);
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
+        eventWindowManagerWiring.bind(eventWindowManager);
         applicationTransactionPrehandlerWiring.bind(transactionPrehandler);
         consensusRoundHandlerWiring.bind(consensusRoundHandler);
         eventStreamManagerWiring.bind(eventStreamManager);
@@ -808,8 +820,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
         // Future work: this method can merge with consensusSnapshotOverride
-
-        eventWindowManagerWiring.manualWindowInput().inject(nonAncientEventWindow);
+        eventWindowManagerWiring
+                .getInputWire(EventWindowManager::updateEventWindow)
+                .inject(nonAncientEventWindow);
 
         // Since there is asynchronous access to the shadowgraph, it's important to ensure that
         // it has fully ingested the new event window before continuing.
