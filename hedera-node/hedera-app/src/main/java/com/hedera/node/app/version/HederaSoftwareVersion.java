@@ -42,6 +42,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
 
     public static final long CLASS_ID = 0x6f2b1bc2df8cbd0cL;
     public static final int RELEASE_027_VERSION = 1;
+    public static final int RELEASE_048_VERSION = 2;
     public static final Pattern ALPHA_PRE_PATTERN = Pattern.compile("alpha[.](\\d+)");
 
     private int configVersion;
@@ -74,7 +75,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
 
     @Override
     public int getVersion() {
-        return RELEASE_027_VERSION;
+        return RELEASE_048_VERSION;
     }
 
     @Override
@@ -100,9 +101,12 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int i) throws IOException {
+    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
         hapiVersion = deserializeSemVer(in);
         servicesVersion = deserializeSemVer(in);
+        if (version >= RELEASE_048_VERSION) {
+            configVersion = in.readInt();
+        }
     }
 
     private static SemanticVersion deserializeSemVer(final SerializableDataInputStream in) throws IOException {
@@ -121,6 +125,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     public void serialize(SerializableDataOutputStream out) throws IOException {
         serializeSemVer(hapiVersion, out);
         serializeSemVer(servicesVersion, out);
+        out.writeInt(configVersion);
     }
 
     private static void serializeSemVer(final SemanticVersion semVer, final SerializableDataOutputStream out)
