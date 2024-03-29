@@ -87,8 +87,9 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
                 // without setting a halt reason to simulate mono-service for differential testing
                 return haltResult(contractsConfigOf(frame).precompileHtsDefaultGasCost());
             }
-        } catch (final Exception e) {
-            log.warn("Failed to create HTS call from input {}", input, e);
+        } catch (final Exception ignore) {
+            // Input that cannot be translated to an executable call, for any
+            // reason, halts the frame and consumes all remaining gas
             return haltResult(INVALID_OPERATION, frame.getRemainingGas());
         }
         return resultOfExecuting(attempt, call, input, frame);
