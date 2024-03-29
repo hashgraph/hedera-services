@@ -26,7 +26,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -73,13 +72,9 @@ final class HederaSoftwareVersionTest {
 
     @Test
     void serializationRoundTripWithConfigVersionTest() throws IOException, ConstructableRegistryException {
-        final var registry = ConstructableRegistry.getInstance();
-        registry.registerConstructables("com.swirlds.virtualmap");
-        registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructables("com.swirlds");
-        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
-        registry.registerConstructable(
-                new ClassConstructorPair(HederaSoftwareVersion.class, HederaSoftwareVersion::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(HederaSoftwareVersion.class, HederaSoftwareVersion::new));
 
         final HederaSoftwareVersion v1 = new HederaSoftwareVersion(
                 new SemanticVersion(0, 48, 0, "alpha.5", ""), new SemanticVersion(0, 48, 0, "", ""), 1);
