@@ -171,7 +171,6 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
     }
 
     private final AtomicLong processed = new AtomicLong(0);
-    private final AtomicLong skipped = new AtomicLong(0);
 
     /**
      * {@inheritDoc}

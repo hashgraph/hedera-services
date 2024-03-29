@@ -25,7 +25,11 @@ import com.swirlds.virtualmap.internal.Path;
 import java.io.IOException;
 
 /**
- * Used during the synchronization protocol to send data needed to reconstruct a single node.
+ * Used during the synchronization protocol to send data needed to reconstruct a single virtual node.
+ *
+ * <p>On the learner side, a request is created with a path and a hash in the old learner
+ * tree (if exists), then sent to the teacher. On the teacher side, requests are deserialized
+ * from the stream, and for every request a response is sent back to the learner.
  */
 public class PullVirtualTreeRequest implements SelfSerializable {
 
@@ -41,9 +45,13 @@ public class PullVirtualTreeRequest implements SelfSerializable {
     // Only used on the learner side
     private final VirtualLearnerTreeView learnerView;
 
-    private long path = -1;
+    // Virtual node path. If the path is Path.INVALID_PATH, it indicates that the learner will
+    // not send any more node requests to the teacher
+    private long path;
 
-    private Hash hash = null;
+    // Virtual node hash. If a node with the given path does not exists on the learner (path is
+    // outside of range), NULL_HASH is used. If the path is Path.INVALID_PATH, the hash is null
+    private Hash hash;
 
     /**
      * Zero-arg constructor for constructable registry.
@@ -67,6 +75,7 @@ public class PullVirtualTreeRequest implements SelfSerializable {
     public PullVirtualTreeRequest(final VirtualLearnerTreeView learnerTreeView, final long path, final Hash hash) {
         this.teacherView = null;
         this.learnerView = learnerTreeView;
+        // Null hash for the terminating requests, non-null otherwise
         assert path == Path.INVALID_PATH || (path >= 0 && hash != null);
         this.path = path;
         this.hash = hash;

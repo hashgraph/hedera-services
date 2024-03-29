@@ -26,9 +26,22 @@ import com.swirlds.virtualmap.internal.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A task running on the learner side, which is responsible for sending requests to the teacher.
+ *
+ * <p>The very first request to send is for path 0 (virtual root node). A response to this request
+ * is waited for before any other requests are sent, because root node response contains virtual
+ * tree path range on the teacher side.
+ *
+ * <p>After the root response has been received, this task keeps sending requests according to
+ * the provided {@link NodeTraversalOrder}. After the next path to request is {@link
+ * Path#INVALID_PATH}, this request is sent to indicate that there will be no more requests from
+ * the learner, and this task is finished.
+ */
 public class LearnerPullVirtualTreeSendTask {
 
     private static final Logger logger = LogManager.getLogger(LearnerPullVirtualTreeSendTask.class);
@@ -39,8 +52,16 @@ public class LearnerPullVirtualTreeSendTask {
     private final AsyncOutputStream<PullVirtualTreeRequest> out;
     private final VirtualLearnerTreeView view;
     private final NodeTraversalOrder traversalOrder;
+
+    // Indicates if the learner sender task is done sending all requests to the teacher
     private final AtomicBoolean senderIsFinished;
+
+    // Indicates if a response for path 0 (virtual root node) has been received
     private final CountDownLatch rootResponseReceived;
+
+    // Number of requests sent to teacher / responses expected from the teacher. Increased in
+    // this task, decreased in the receiving task
+    private final AtomicLong responsesExpected;
 
     /**
      * Create a thread for sending node requests to the teacher.
@@ -53,6 +74,9 @@ public class LearnerPullVirtualTreeSendTask {
      * 		the view to be used when touching the merkle tree
      * @param senderIsFinished
      * 		becomes true once the sending thread has finished
+     * @param responsesExpected
+     *      number of responses expected from the teacher, increased by one every time a request
+     *      is sent
      */
     public LearnerPullVirtualTreeSendTask(
             final StandardWorkGroup workGroup,
@@ -60,13 +84,15 @@ public class LearnerPullVirtualTreeSendTask {
             final VirtualLearnerTreeView view,
             final NodeTraversalOrder traversalOrder,
             final AtomicBoolean senderIsFinished,
-            final CountDownLatch rootResponseReceived) {
+            final CountDownLatch rootResponseReceived,
+            final AtomicLong responsesExpected) {
         this.workGroup = workGroup;
         this.out = out;
         this.view = view;
         this.traversalOrder = traversalOrder;
         this.senderIsFinished = senderIsFinished;
         this.rootResponseReceived = rootResponseReceived;
+        this.responsesExpected = responsesExpected;
     }
 
     void exec() {
@@ -75,17 +101,16 @@ public class LearnerPullVirtualTreeSendTask {
 
     private void run() {
         try (out) {
-            // assuming root is always dirty
+            // Assuming root is always dirty. Root response will contain virtual tree path range
             out.sendAsync(new PullVirtualTreeRequest(view, Path.ROOT_PATH, new Hash()));
-            view.anticipateMesssage();
+            responsesExpected.incrementAndGet();
             if (!rootResponseReceived.await(60, TimeUnit.SECONDS)) {
                 throw new MerkleSynchronizationException("Timed out waiting for root node response from the teacher");
             }
 
             while (true) {
                 final long path = traversalOrder.getNextPathToSend();
-                // logger.info(RECONNECT.getMarker(), "TOREMOVE Learner send path: " + path);
-//                System.err.println("TOREMOVE Learner send path: " + path);
+                logger.debug(RECONNECT.getMarker(), "Learner send path: " + path);
                 if (path < Path.INVALID_PATH) {
                     Thread.onSpinWait();
                     continue;
@@ -95,10 +120,9 @@ public class LearnerPullVirtualTreeSendTask {
                 if (path == Path.INVALID_PATH) {
                     break;
                 }
-                view.anticipateMesssage();
+                responsesExpected.incrementAndGet();
             }
-            // logger.info(RECONNECT.getMarker(), "TOREMOVE Learner send done");
-//            System.err.println("TOREMOVE Learner send done");
+            logger.debug(RECONNECT.getMarker(), "Learner send done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Learner's sending task interrupted");
             Thread.currentThread().interrupt();

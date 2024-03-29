@@ -24,7 +24,14 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 
 /**
- * Used during the synchronization protocol to send data needed to reconstruct a single node.
+ * Used during the synchronization protocol to send data needed to reconstruct a single virtual node.
+ *
+ * <p>The teacher sends one response for every {@link PullVirtualTreeRequest} received from the
+ * learner. Every response includes a path followed by an integer flag that indicates if the node
+ * is clear (value 0, node hash on the teacher is the same as sent by the learner), or not (non-zero
+ * value). If the path corresponds to a leaf node, and the node is not clear, a {@link
+ * com.swirlds.virtualmap.datasource.VirtualLeafRecord} for the node is included in the end of the
+ * response.
  */
 public class PullVirtualTreeResponse implements SelfSerializable {
 
@@ -40,10 +47,12 @@ public class PullVirtualTreeResponse implements SelfSerializable {
     // Only used on the learner side
     private final VirtualLearnerTreeView learnerView;
 
-    private long path = -1;
+    // Virtual node path
+    private long path;
 
-    // Only used on the teacher side
-    private Hash hash;
+    // Virtual node hash on the learner side. May be NULL_HASH, if the path is outside of path range
+    // in the old learner virtual tree
+    private Hash originalHash;
 
     /**
      * Zero-arg constructor for constructable registry.
@@ -60,7 +69,8 @@ public class PullVirtualTreeResponse implements SelfSerializable {
         this.teacherView = teacherView;
         this.learnerView = null;
         this.path = request.getPath();
-        this.hash = request.getHash();
+        this.originalHash = request.getHash();
+        assert originalHash != null;
     }
 
     /**
@@ -82,10 +92,11 @@ public class PullVirtualTreeResponse implements SelfSerializable {
         assert teacherView != null;
         out.writeLong(path);
         Hash teacherHash = teacherView.loadHash(path);
+        // The only valid scenario, when teacherHash may be null, is the empty tree
         if ((teacherHash == null) && (path != 0)) {
             throw new MerkleSerializationException("Cannot load node hash (bad request from learner?), path = " + path);
         }
-        final boolean isClean = (teacherHash == null) || teacherHash.equals(hash);
+        final boolean isClean = (teacherHash == null) || teacherHash.equals(originalHash);
         out.write(isClean ? 0 : 1);
         teacherView.writeNode(out, path, isClean);
     }

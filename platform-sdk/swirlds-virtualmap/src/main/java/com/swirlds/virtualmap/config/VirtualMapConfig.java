@@ -42,8 +42,8 @@ import java.time.Duration;
  * @param reconnectMode
  *      Reconnect mode. Accepted values are "push" (teacher pushes lessons to learner, this is the model
  *      used for the rest of the merkle tree), "pullTopToBottom" (learner sends node requests to teacher
- *      starting from the root, rank by rank to leaves), and "pullTwoPhaseParents" (learner sends node
- *      requests to teacher starting from leaves and clean internal nodes).
+ *      starting from the root, rank by rank to leaves), and "pullTwoPhasePessimistic" (learner sends node
+ *      requests to teacher starting from clean leaf parent nodes and then leaves).
  * @param reconnectFlushInterval
  *      During reconnect, virtual nodes are periodically flushed to disk after they are hashed. This
  *      interval indicates the number of nodes to hash before they are flushed to disk. If zero, all
@@ -95,9 +95,6 @@ public record VirtualMapConfig(
                 double percentHashThreads, // FUTURE WORK: We need to add min/max support for double values
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numHashThreads,
         @Min(1) @Max(64) @ConfigProperty(defaultValue = "3") int virtualHasherChunkHeight,
-//        @ConfigProperty(defaultValue = "push") String reconnectMode,
-//        @ConfigProperty(defaultValue = "pullTopToBottom") String reconnectMode,
-//        @ConfigProperty(defaultValue = "pullTwoPhaseParents") String reconnectMode,
         @ConfigProperty(defaultValue = "pullTwoPhasePessimistic") String reconnectMode,
         @Min(0) @ConfigProperty(defaultValue = "500000") int reconnectFlushInterval,
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "25.0")

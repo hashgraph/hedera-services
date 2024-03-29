@@ -83,9 +83,7 @@ import com.swirlds.virtualmap.internal.reconnect.ReconnectState;
 import com.swirlds.virtualmap.internal.reconnect.TeacherPullVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.TeacherPushVirtualTreeView;
 import com.swirlds.virtualmap.internal.reconnect.TopToBottomTraversalOrder;
-import com.swirlds.virtualmap.internal.reconnect.TwoPhaseParentsTraversalOrder;
 import com.swirlds.virtualmap.internal.reconnect.TwoPhasePessimisticTraversalOrder;
-import com.swirlds.virtualmap.internal.reconnect.VirtualLearnerTreeView;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -1381,7 +1379,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     public TeacherTreeView<Long> buildTeacherView(final ReconnectConfig reconnectConfig) {
         switch (config.reconnectMode()) {
             case "pullTopToBottom":
-            case "pullTwoPhaseParents":
             case "pullTwoPhasePessimistic":
                 return new TeacherPullVirtualTreeView<>(
                         getStaticThreadManager(), reconnectConfig, this, state, pipeline);
@@ -1462,31 +1459,14 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final LearnerTreeView<Long> learnerTreeView;
         switch (config.reconnectMode()) {
             case "pullTopToBottom":
-                {
-                    final VirtualLearnerTreeView view = new LearnerPullVirtualTreeView<>(
-                            reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
-                    final NodeTraversalOrder order = new TopToBottomTraversalOrder(view);
-                    view.setNodeTraveralOrder(order);
-                    learnerTreeView = view;
-                }
-                break;
-            case "pullTwoPhaseParents":
-                {
-                    final VirtualLearnerTreeView view = new LearnerPullVirtualTreeView<>(
-                            reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
-                    final NodeTraversalOrder order = new TwoPhaseParentsTraversalOrder(view);
-                    view.setNodeTraveralOrder(order);
-                    learnerTreeView = view;
-                }
+                final NodeTraversalOrder topToBottom = new TopToBottomTraversalOrder();
+                learnerTreeView = new LearnerPullVirtualTreeView<>(
+                        this, originalMap.records, originalState, reconnectState, nodeRemover, topToBottom);
                 break;
             case "pullTwoPhasePessimistic":
-                {
-                    final VirtualLearnerTreeView view = new LearnerPullVirtualTreeView<>(
-                            reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
-                    final NodeTraversalOrder order = new TwoPhasePessimisticTraversalOrder(view);
-                    view.setNodeTraveralOrder(order);
-                    learnerTreeView = view;
-                }
+                final NodeTraversalOrder twoPhasePessimistic = new TwoPhasePessimisticTraversalOrder();
+                learnerTreeView = new LearnerPullVirtualTreeView<>(
+                        this, originalMap.records, originalState, reconnectState, nodeRemover, twoPhasePessimistic);
                 break;
             default:
                 logger.warn(RECONNECT.getMarker(), "Unknown reconnect mode: " + config.reconnectMode());

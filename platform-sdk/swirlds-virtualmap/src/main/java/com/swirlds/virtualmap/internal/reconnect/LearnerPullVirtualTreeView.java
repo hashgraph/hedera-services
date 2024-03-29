@@ -16,19 +16,15 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
-import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
@@ -43,7 +39,6 @@ import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
@@ -58,6 +53,9 @@ import org.apache.logging.log4j.Logger;
  * needs access both to the original state and records, and the current reconnect state and records.
  * This implementation uses {@link Long} as the representation of a node and corresponds directly
  * to the path of the node.
+ *
+ * <p>This implementation is supposed to work with {@link TeacherPullVirtualTreeView} on the
+ * teacher side.
  *
  * @param <K>
  * 		The key
@@ -75,8 +73,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     private static final Hash NULL_HASH = CryptographyHolder.get().getNullHash();
 
-    private final ReconnectConfig reconnectConfig;
-
     /**
      * Handles removal of old nodes.
      */
@@ -92,11 +88,16 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     private final RecordAccessor<K, V> originalRecords;
 
-    private NodeTraversalOrder traversalOrder;
+    /**
+     * Node traversal order. Defines the order in which node requests will be sent to the teacher.
+     */
+    private final NodeTraversalOrder traversalOrder;
 
-    private final AtomicLong expectedResponses = new AtomicLong(0);
-
-    private boolean firstNode = true;
+    /**
+     * Indicates if no responses from the teacher have been received yet. The very first response
+     * must be for path 0 (root virtual node)
+     */
+    private boolean firstNodeResponse = true;
 
     /**
      * True until we have handled our first leaf
@@ -120,20 +121,15 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      * 		Cannot be null.
      */
     public LearnerPullVirtualTreeView(
-            final ReconnectConfig reconnectConfig,
             final VirtualRootNode<K, V> root,
             final RecordAccessor<K, V> originalRecords,
             final VirtualStateAccessor originalState,
             final VirtualStateAccessor reconnectState,
-            final ReconnectNodeRemover<K, V> nodeRemover) {
+            final ReconnectNodeRemover<K, V> nodeRemover,
+            final NodeTraversalOrder traversalOrder) {
         super(root, originalState, reconnectState);
-        this.reconnectConfig = reconnectConfig;
         this.originalRecords = Objects.requireNonNull(originalRecords);
         this.nodeRemover = nodeRemover;
-    }
-
-    @Override
-    public void setNodeTraveralOrder(final NodeTraversalOrder traversalOrder) {
         this.traversalOrder = traversalOrder;
     }
 
@@ -154,6 +150,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean();
         final CountDownLatch rootResponseReceived = new CountDownLatch(1);
+        final AtomicLong expectedResponses = new AtomicLong(0);
 
         final LearnerPullVirtualTreeReceiveTask learnerReceiveTask = new LearnerPullVirtualTreeReceiveTask(
                 workGroup, inputStream, this, senderIsFinished, expectedResponses, rootResponseReceived);
@@ -161,7 +158,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         reconstructedRoot.set(0L);
         assert traversalOrder != null;
         final LearnerPullVirtualTreeSendTask learnerSendTask = new LearnerPullVirtualTreeSendTask(
-                workGroup, out, this, traversalOrder, senderIsFinished, rootResponseReceived);
+                workGroup, out, this, traversalOrder, senderIsFinished, rootResponseReceived, expectedResponses);
         learnerSendTask.exec();
     }
 
@@ -171,23 +168,24 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     }
 
     @Override
-    public void readNode(final SerializableDataInputStream in, final long path, final boolean isClean) throws IOException {
+    public void readNode(final SerializableDataInputStream in, final long path, final boolean isClean)
+            throws IOException {
         if (path == Path.ROOT_PATH) {
             final long firstLeafPath = in.readLong();
             final long lastLeafPath = in.readLong();
-            if (firstNode) {
+            if (firstNodeResponse) {
                 reconnectState.setFirstLeafPath(firstLeafPath);
                 reconnectState.setLastLeafPath(lastLeafPath);
                 root.prepareReconnectHashing(firstLeafPath, lastLeafPath);
                 nodeRemover.setPathInformation(firstLeafPath, lastLeafPath);
                 traversalOrder.start(firstLeafPath, lastLeafPath, nodeCount);
-                firstNode = false;
+                firstNodeResponse = false;
                 if (lastLeafPath <= 0) {
                     return;
                 }
             }
         }
-        assert !firstNode : "Root node must be the first node received from the teacher";
+        assert !firstNodeResponse : "Root node must be the first node received from the teacher";
         final boolean isLeaf = isLeaf(path);
         traversalOrder.nodeReceived(path, isClean);
         if (isLeaf) {
@@ -201,19 +199,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
                 root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest
             }
         }
-    }
-
-    @Override
-    public void anticipateMesssage() {
-        expectedResponses.incrementAndGet();
-    }
-
-    @Override
-    public void applySendBackpressure() throws InterruptedException {
-//        final long t = expectedResponses.get();
-//        if (t > 4096) {
-//            Thread.sleep(1);
-//        }
     }
 
     /**

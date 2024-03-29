@@ -46,8 +46,10 @@ public final class SequentialTransactionRequestSupplier implements Supplier<Tran
         final TransactionRequestConfig transactionRequestConfig = sequenceOfConfigs.get(transactionConfigIndex);
         if (transactionRequestConfig.decrementAndGetAmount() == 0) {
             this.transactionConfigIndex++;
-            logger.info(LogMarker.DEMO_INFO.getMarker(),
-                    "Finished generating {} transactions", transactionRequestConfig.getType());
+            logger.info(
+                    LogMarker.DEMO_INFO.getMarker(),
+                    "Finished generating {} transactions",
+                    transactionRequestConfig.getType());
         }
 
         return transactionRequestConfig;

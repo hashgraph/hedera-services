@@ -28,12 +28,15 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.virtualmap.internal.Path;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class encapsulates all logic for the teacher's sending thread.
+ * A task running on the teacher side, which is responsible for processing requests from the
+ * learner. For every request, a response is sent to the provided async output stream. Async
+ * streams serialize objects to the underlying output streams in a separate thread. This is
+ * where the provided hash from the learner is compared with the corresponding hash on the
+ * teacher.
  */
 public class TeacherPullVirtualTreeReceiveTask {
 
@@ -48,8 +51,6 @@ public class TeacherPullVirtualTreeReceiveTask {
 
     private final RateLimiter rateLimiter;
     private final int sleepNanos;
-
-    private final AtomicBoolean allRequestsReceived;
 
     /**
      * Create new thread that will send data lessons and queries for a subtree.
@@ -67,13 +68,11 @@ public class TeacherPullVirtualTreeReceiveTask {
             final StandardWorkGroup workGroup,
             final SerializableDataInputStream in,
             final AsyncOutputStream<PullVirtualTreeResponse> out,
-            final VirtualTeacherTreeView view,
-            final AtomicBoolean allRequestsReceived) {
+            final VirtualTeacherTreeView view) {
         this.workGroup = workGroup;
         this.in = in;
         this.out = out;
         this.view = view;
-        this.allRequestsReceived = allRequestsReceived;
 
         final int maxRate = reconnectConfig.teacherMaxNodesPerSecond();
         if (maxRate > 0) {
@@ -114,25 +113,22 @@ public class TeacherPullVirtualTreeReceiveTask {
                 rateLimit();
                 final PullVirtualTreeRequest request = new PullVirtualTreeRequest(view);
                 request.deserialize(in, 0);
-//                logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher receive path: " + request.getPath());
-//                System.err.println("TOREMOVE Teacher receive path: " + request.getPath());
+                logger.debug(RECONNECT.getMarker(), "Teacher receive path: " + request.getPath());
                 if (request.getPath() == Path.INVALID_PATH) {
                     logger.info(RECONNECT.getMarker(), "Teacher receiver is complete as requested by the learner");
                     break;
                 }
-//                view.registerRequest(request);
                 final PullVirtualTreeResponse response = new PullVirtualTreeResponse(view, request);
+                // All real work is done in the async output thread. This call just registers a response
+                // and returns immediately
                 out.sendAsync(response);
             }
-//            logger.info(RECONNECT.getMarker(), "TOREMOVE Teacher receive done");
-//            System.err.println("TOREMOVE Teacher receive done");
+            logger.debug(RECONNECT.getMarker(), "Teacher receive done");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Teacher's receiving task is interrupted");
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
             throw new MerkleSynchronizationException("Exception in the teacher's receiving task", ex);
-        } finally {
-            allRequestsReceived.set(true);
         }
     }
 }

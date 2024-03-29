@@ -27,13 +27,6 @@ public interface VirtualTeacherTreeView extends TeacherTreeView<Long> {
     // state metadata (leaf paths)
     void writeNode(final SerializableDataOutputStream out, final long path, final boolean isClean) throws IOException;
 
+    // Returns virtual node hash for the specified path
     Hash loadHash(final long path);
-
-    // Only used in async teaching pull model, when teacher sends responses in a different thread
-    // than receives requests
-    void registerRequest(final PullVirtualTreeRequest request);
-
-    boolean hasPendingResponses();
-
-    PullVirtualTreeResponse getNextResponse() throws InterruptedException;
 }

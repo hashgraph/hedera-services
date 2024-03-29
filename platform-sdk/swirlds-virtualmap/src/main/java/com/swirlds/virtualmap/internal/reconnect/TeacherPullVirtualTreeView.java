@@ -26,7 +26,6 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
@@ -40,16 +39,21 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
-import java.util.Deque;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link TeacherTreeView} designed for virtual merkle trees.
+ *
+ * <p>This learner tree view creates two tasks running in the provided work group. One task
+ * is responsible for sending requests to the teacher, the other one receives responses. Once
+ * both tasks are completed, the corresponding virtual map is fully synchronized with the
+ * teacher.
+ *
+ * <p>This implementation is supposed to work with {@link LearnerPullVirtualTreeView} on the
+ * learner side.
  *
  * @param <K>
  * 		The key
@@ -117,14 +121,9 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
                 teachingSynchronizer.buildOutputStream(workGroup, outputStream);
         out.start();
 
-        final AtomicBoolean allRequestsReceived = new AtomicBoolean(false);
-
-        final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
-                time, reconnectConfig, workGroup, inputStream, out, this, allRequestsReceived);
+        final TeacherPullVirtualTreeReceiveTask teacherReceiveTask =
+                new TeacherPullVirtualTreeReceiveTask(time, reconnectConfig, workGroup, inputStream, out, this);
         teacherReceiveTask.exec();
-//        final TeacherPullVirtualTreeSendTask teacherSendTask = new TeacherPullVirtualTreeSendTask(
-//                reconnectConfig, workGroup, out, this, allRequestsReceived);
-//        teacherSendTask.exec();
     }
 
     private boolean isLeaf(final long path) {
@@ -132,8 +131,8 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
     }
 
     @Override
-    public void writeNode(
-            final SerializableDataOutputStream out, final long path, final boolean isClean) throws IOException {
+    public void writeNode(final SerializableDataOutputStream out, final long path, final boolean isClean)
+            throws IOException {
         checkValidNode(path, reconnectState);
         if (path == 0) {
             out.writeLong(reconnectState.getFirstLeafPath());
@@ -147,23 +146,6 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public Hash loadHash(final long path) {
         return records.findHash(path);
-    }
-
-    private final Deque<PullVirtualTreeResponse> responses = new ConcurrentLinkedDeque<>();
-
-    @Override
-    public void registerRequest(final PullVirtualTreeRequest request) {
-        responses.addLast(new PullVirtualTreeResponse(this, request));
-    }
-
-    @Override
-    public boolean hasPendingResponses() {
-        return !responses.isEmpty();
-    }
-
-    @Override
-    public PullVirtualTreeResponse getNextResponse() {
-        return responses.pollFirst();
     }
 
     /**

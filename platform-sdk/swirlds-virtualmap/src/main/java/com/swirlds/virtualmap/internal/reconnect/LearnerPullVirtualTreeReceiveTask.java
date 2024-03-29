@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
+
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -25,6 +27,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A task running on the learner side, which is responsible for getting responses from the teacher.
+ *
+ * <p>The task keeps running as long as the corresponding {@link LearnerPullVirtualTreeSendTask}
+ * is alive, or some responses are expected from the teacher.
+ *
+ * <p>For every response from the teacher, the learner view is notified, which in turn notifies
+ * the current traversal order, so it can recalculate the next virtual path to request.
+ */
 public class LearnerPullVirtualTreeReceiveTask {
 
     private static final Logger logger = LogManager.getLogger(LearnerPullVirtualTreeReceiveTask.class);
@@ -34,8 +45,15 @@ public class LearnerPullVirtualTreeReceiveTask {
     private final StandardWorkGroup workGroup;
     private final SerializableDataInputStream in;
     private final VirtualLearnerTreeView view;
+
+    // Indicates if the learner sender task is done sending all requests to the teacher
     private final AtomicBoolean senderIsFinished;
+
+    // Number of requests sent to teacher / responses expected from the teacher. Increased in
+    // the sending task, decreased in this task
     private final AtomicLong expectedResponses;
+
+    // Indicates if a response for path 0 (virtual root node) has been received
     private final CountDownLatch rootResponseReceived;
 
     /**
@@ -77,9 +95,9 @@ public class LearnerPullVirtualTreeReceiveTask {
             while (!finished || responseExpected) {
                 if (responseExpected) {
                     final PullVirtualTreeResponse response = new PullVirtualTreeResponse(view);
+                    // the learner tree is notified about the new response in deserialize() method below
                     response.deserialize(in, 0);
-                    // logger.info(RECONNECT.getMarker(), "TOREMOVE Learner receive path: " + response.getPath());
-//                    System.err.println("TOREMOVE Learner receive path: " + response.getPath());
+                    logger.debug(RECONNECT.getMarker(), "Learner receive path: " + response.getPath());
                     if (response.getPath() == 0) {
                         rootResponseReceived.countDown();
                     }
@@ -91,8 +109,7 @@ public class LearnerPullVirtualTreeReceiveTask {
                 finished = senderIsFinished.get();
                 responseExpected = expectedResponses.get() > 0;
             }
-            // logger.info(RECONNECT.getMarker(), "TOREMOVE Learner receive done");
-//            System.err.println("TOREMOVE Learner receive done");
+            logger.debug(RECONNECT.getMarker(), "Learner receive done");
         } catch (final Exception ex) {
             throw new MerkleSynchronizationException("Exception in the learner's receiving task", ex);
         }
