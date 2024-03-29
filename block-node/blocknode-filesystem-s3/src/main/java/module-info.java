@@ -4,19 +4,16 @@ module com.hedera.storage.blocknode.filesystem.s3 {
             com.hedera.storage.blocknode.filesystem.s3.test,
             com.hedera.storage.blocknode.core;
 
-    // Require modules which are needed for compilation and should be available to all modules that depend on this
-    // module (including tests and other source sets).
-    requires transitive com.hedera.storage.blocknode.filesystem.api;
-    requires transitive com.hedera.node.hapi;
-    requires software.amazon.awssdk.http.urlconnection;
-
     requires com.swirlds.config.api;
     requires software.amazon.awssdk.auth;
     requires software.amazon.awssdk.awscore;
     requires software.amazon.awssdk.core;
+    requires software.amazon.awssdk.http.urlconnection;
     requires software.amazon.awssdk.http;
     requires software.amazon.awssdk.regions;
     requires software.amazon.awssdk.utils;
     requires transitive com.hedera.storage.blocknode.config;
+    requires transitive com.hedera.storage.blocknode.filesystem.api;
+    requires transitive com.hedera.node.hapi;
     requires transitive software.amazon.awssdk.services.s3;
 }
