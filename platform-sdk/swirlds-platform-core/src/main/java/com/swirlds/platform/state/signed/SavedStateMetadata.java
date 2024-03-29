@@ -188,7 +188,7 @@ public record SavedStateMetadata(
                 signedState.getConsensusTimestamp(),
                 platformState.getRunningEventHash(),
                 platformState.getRunningEventHash().toMnemonic(),
-                platformState.getMinimumGenerationNonAncient(),
+                platformState.getAncientThreshold(),
                 convertToString(platformState.getCreationSoftwareVersion()),
                 now,
                 selfId,

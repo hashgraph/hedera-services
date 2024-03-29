@@ -79,7 +79,7 @@ public record EthTxData(
         }
     }
 
-    public EthTxData replaceCallData(byte[] callData) {
+    public EthTxData replaceCallData(final byte[] newCallData) {
         return new EthTxData(
                 null,
                 type,
@@ -91,7 +91,7 @@ public record EthTxData(
                 gasLimit,
                 to,
                 value,
-                callData,
+                newCallData,
                 accessList,
                 recId,
                 v,
@@ -240,11 +240,11 @@ public record EthTxData(
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(final Object other) {
+        if (this == other) return true;
+        if (other == null || getClass() != other.getClass()) return false;
 
-        final EthTxData ethTxData = (EthTxData) o;
+        final EthTxData ethTxData = (EthTxData) other;
 
         return (nonce == ethTxData.nonce)
                 && (gasLimit == ethTxData.gasLimit)
@@ -322,7 +322,7 @@ public record EthTxData(
     }
 
     @VisibleForTesting
-    public EthTxData replaceTo(byte[] to) {
+    public EthTxData replaceTo(final byte[] newTo) {
         return new EthTxData(
                 null,
                 type,
@@ -332,7 +332,7 @@ public record EthTxData(
                 maxPriorityGas,
                 maxGas,
                 gasLimit,
-                to,
+                newTo,
                 value,
                 callData,
                 accessList,
@@ -354,8 +354,8 @@ public record EthTxData(
         }
 
         byte[] chainId = null;
-        byte[] v = rlpList.get(6).asBytes();
-        BigInteger vBI = new BigInteger(1, v);
+        byte[] val = rlpList.get(6).asBytes();
+        BigInteger vBI = new BigInteger(1, val);
         byte recId = vBI.testBit(0) ? (byte) 0 : 1;
         // https://eips.ethereum.org/EIPS/eip-155
         if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
@@ -381,7 +381,7 @@ public record EthTxData(
                 rlpList.get(5).data(), // callData
                 null, // accessList
                 recId,
-                v,
+                val,
                 rlpList.get(7).data(), // r
                 rlpList.get(8).data() // s
                 );

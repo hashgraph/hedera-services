@@ -54,7 +54,7 @@ public class SequentialSuites {
             Create2OperationSuite::new,
             CannotDeleteSystemEntitiesSuite::new,
             Evm38ValidationSuite::new,
-            StakingSuite::new
+            StakingSuite::new,
         };
     }
 }

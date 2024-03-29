@@ -107,8 +107,6 @@ public class AdjustmentUtils {
         // If the fee is self-denominated, we don't need it to trigger next level custom fees
         // So add assessments in given input transaction body.
         if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
-            // If the fee is self-denominated, it should not trigger custom fees again
-            // So add the adjustment to previous level transaction
             addHtsAdjustment(inputHtsAdjustments, sender, collector, amount, denominatingToken);
         } else {
             // Any change that might trigger next level custom fees should be added to next

@@ -27,7 +27,7 @@ public final class ConfigNumberUtils {
     private ConfigNumberUtils() {}
 
     /**
-     * Compares the given value with the given number
+     * Compares the given value with the given number.
      *
      * @param value     the value
      * @param valueType the type of the value
@@ -64,7 +64,7 @@ public final class ConfigNumberUtils {
     }
 
     /**
-     * Returns the given object as a long value (if possible) or throws an {@link IllegalArgumentException}
+     * Returns the given object as a long value (if possible) or throws an {@link IllegalArgumentException}.
      *
      * @param value the object
      * @return the object as long value
@@ -79,7 +79,7 @@ public final class ConfigNumberUtils {
     }
 
     /**
-     * Returns true if the given class is a class that represents a number
+     * Returns true if the given class is a class that represents a number.
      *
      * @param cls the class to check
      * @return true if the given class represents a number

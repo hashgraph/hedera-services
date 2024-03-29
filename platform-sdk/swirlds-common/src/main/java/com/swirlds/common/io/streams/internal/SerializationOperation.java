@@ -22,6 +22,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
@@ -198,7 +199,7 @@ public enum SerializationOperation {
 
     /**
      * All variants of {@link SerializableDataInputStream#readSerializableList(int, boolean, Supplier)}
-     * and {@link SerializableDataInputStream#readSerializableArray(IntFunction, int, boolean, Supplier)}
+     * and {@link SerializableDataInputStream#readSerializableArray(IntFunction, int, boolean, Set)}
      */
     READ_SERIALIZABLE_LIST,
 

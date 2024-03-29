@@ -20,7 +20,7 @@ import com.swirlds.config.api.converter.ConfigConverter;
 
 /**
  * Concrete {@link ConfigConverter} implementation that provides the support for {@link Boolean} values in the
- * configuration
+ * configuration.
  */
 public final class BooleanConverter implements ConfigConverter<Boolean> {
 

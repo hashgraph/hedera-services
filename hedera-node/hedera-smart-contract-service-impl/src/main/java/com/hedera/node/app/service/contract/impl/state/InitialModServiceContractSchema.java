@@ -55,7 +55,7 @@ public class InitialModServiceContractSchema extends Schema {
     public static final String STORAGE_KEY = "STORAGE";
     public static final String BYTECODE_KEY = "BYTECODE";
     private static final int MAX_BYTECODES = 50_000_000;
-    private static final int MAX_STORAGE_ENTRIES = 500_000_000;
+    private static final int MAX_STORAGE_ENTRIES = 1_000_000_000;
 
     private VirtualMapLike<ContractKey, IterableContractValue> storageFromState;
     private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> contractBytecodeFromState;

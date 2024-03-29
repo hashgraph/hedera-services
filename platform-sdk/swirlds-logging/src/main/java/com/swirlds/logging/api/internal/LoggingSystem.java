@@ -96,10 +96,21 @@ public class LoggingSystem implements LogEventConsumer {
      */
     public LoggingSystem(@NonNull final Configuration configuration) {
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
-        ;
         this.handlers = new CopyOnWriteArrayList<>();
         this.loggers = new ConcurrentHashMap<>();
         this.levelConfig = new HandlerLoggingLevelConfig(configuration);
+    }
+
+    /**
+     * Updates the logging system with the given configuration.
+     *
+     * @implNote Currently only the level and marker configuration is updated. New handlers are not added and existing handlers are not removed for now.
+     *
+     * @param configuration the configuration to update the logging system with
+     */
+    public void update(final @NonNull Configuration configuration) {
+        this.levelConfig.update(configuration);
+        this.handlers.forEach(handler -> handler.update(configuration));
     }
 
     /**
@@ -263,6 +274,7 @@ public class LoggingSystem implements LogEventConsumer {
                 .toList();
 
         handlers.forEach(this::addHandler);
+
         EMERGENCY_LOGGER.log(Level.DEBUG, handlers.size() + " logging handlers installed: " + handlers);
     }
 

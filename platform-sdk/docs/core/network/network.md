@@ -14,11 +14,6 @@ network. The platform networking functionality aims to accomplish these goals:
 - has simple, loosely coupled, unit tested components
 
 ## Design
-The functionality is split up into multiple layers, each with its own responsibilities. See diagram below.
-**Note:** The aim is to transition away from unidirectional networks to bidirectional, so less consideration is given
-to the former. We plan to support both until we are ready to transition. More details about each can be found in the 
-following docs:
-- [Unidirectional](unidirectional.md)
 - [Bidirectional](bidirectional.md)
 
 ![](network.png)
@@ -30,8 +25,6 @@ number of connections each node has. So a node will not be directly connected to
 will receive events from non-neighbors through neighbors
 - **Outbound connection** - a connection to a neighbor that has been initiated by me
 - **Inbound connection** - a connection to a neighbor that has been initiated by the neighbor
-- **Unidirectional network** - a network where we have 2 connections per neighbor, 1 inbound and 1 outbound. A node can
-only initiate a protocol request through its outbound connection in this type of network.
 - **Bidirectional network** - a network where we have 1 connections per neighbor, that can be either inbound or 
 outbound, depending on the topology. In this type of network, both nodes can initiate a protocol over the same 
 connection. This means that both sides could initiate a protocol in parallel, so it is slightly more complex to decide

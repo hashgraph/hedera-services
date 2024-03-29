@@ -27,7 +27,6 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.config.VersionedConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -50,12 +49,9 @@ import org.apache.logging.log4j.Logger;
 public class OrderedServiceMigrator {
     private static final Logger logger = LogManager.getLogger(OrderedServiceMigrator.class);
     private final ServicesRegistry servicesRegistry;
-    private final ThrottleAccumulator backendThrottle;
 
-    public OrderedServiceMigrator(
-            @NonNull final ServicesRegistry servicesRegistry, @NonNull final ThrottleAccumulator backendThrottle) {
+    public OrderedServiceMigrator(@NonNull final ServicesRegistry servicesRegistry) {
         this.servicesRegistry = requireNonNull(servicesRegistry);
-        this.backendThrottle = requireNonNull(backendThrottle);
     }
 
     /**
@@ -84,7 +80,6 @@ public class OrderedServiceMigrator {
                 currentVersion,
                 versionedConfiguration,
                 networkInfo,
-                backendThrottle,
                 // We call with null here because we're migrating the entity ID service itself
                 null);
 
@@ -121,7 +116,6 @@ public class OrderedServiceMigrator {
                             currentVersion,
                             versionedConfiguration,
                             networkInfo,
-                            backendThrottle,
                             // If we have reached this point in the code, entityIdStore should not be null because the
                             // EntityIdService should have been migrated already. We enforce with requireNonNull in case
                             // there are scenarios we haven't considered.

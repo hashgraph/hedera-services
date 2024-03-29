@@ -239,11 +239,15 @@ public class InOrderLinker {
                 candidateParent.getBaseEvent().getHashedData().getTimeCreated();
         final Instant childTimeCreated = child.getHashedData().getTimeCreated();
 
-        if (parentTimeCreated.compareTo(childTimeCreated) >= 0) {
+        // only do this check for self parent, since the event creator doesn't consider other parent creation time
+        // when deciding on the event creation time
+        if (parentDescriptor.getCreator().equals(child.getDescriptor().getCreator())
+                && parentTimeCreated.compareTo(childTimeCreated) >= 0) {
+
             timeCreatedMismatchAccumulator.update(1);
-            timeCreatedMismatchLogger.warn(
+            timeCreatedMismatchLogger.error(
                     EXCEPTION.getMarker(),
-                    "Child time created isn't strictly after parent time created. "
+                    "Child time created isn't strictly after self parent time created. "
                             + "Child: {}, parent: {}, child time created: {}, parent time created: {}",
                     EventStrings.toMediumString(child),
                     EventStrings.toMediumString(candidateParent),

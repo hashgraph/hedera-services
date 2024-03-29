@@ -19,6 +19,8 @@ package com.swirlds.logging.api.extensions.handler;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
+import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
+import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -29,9 +31,10 @@ import java.util.Objects;
  */
 public abstract class AbstractLogHandler implements LogHandler {
 
-    private static final String PROPERTY_HANDLER = "logging.handler.%s";
-    private static final String PROPERTY_HANDLER_ENABLED = PROPERTY_HANDLER + ".enabled";
-    private static final String PROPERTY_HANDLER_LEVEL = PROPERTY_HANDLER + ".level";
+    /**
+     * The emergency logger that is used if the log handler is stopped.
+     */
+    protected static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
     /**
      * The configuration key of the log handler. This is used to create configuration keys for the log handler.
@@ -69,6 +72,11 @@ public abstract class AbstractLogHandler implements LogHandler {
     @Override
     public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
         return loggingLevelConfig.isEnabled(name, level, marker);
+    }
+
+    @Override
+    public void update(@NonNull final Configuration configuration) {
+        loggingLevelConfig.update(configuration);
     }
 
     /**

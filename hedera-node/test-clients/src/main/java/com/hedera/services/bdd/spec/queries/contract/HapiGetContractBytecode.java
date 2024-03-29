@@ -125,7 +125,7 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 
     @Override
     protected long costOnlyNodePayment(HapiSpec spec) {
-        return spec.fees().forOp(HederaFunctionality.ContractGetBytecode, FeeBuilder.getCostForQueryByIDOnly());
+        return spec.fees().forOp(HederaFunctionality.ContractGetBytecode, FeeBuilder.getCostForQueryByIdOnly());
     }
 
     @Override

@@ -51,7 +51,7 @@ public interface Time {
     Instant now();
 
     /**
-     * Returns a {@link Time} instance
+     * Returns a {@link Time} instance.
      *
      * @return a {@link Time} instance
      */

@@ -60,6 +60,7 @@ public class TipsetTracker {
 
     private final AddressBook addressBook;
 
+    private final AncientMode ancientMode;
     private NonAncientEventWindow nonAncientEventWindow;
 
     private final RateLimitedLogger ancientEventLogger;
@@ -86,6 +87,7 @@ public class TipsetTracker {
 
         ancientEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
+        this.ancientMode = Objects.requireNonNull(ancientMode);
         this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
     }
 
@@ -180,5 +182,14 @@ public class TipsetTracker {
      */
     public int size() {
         return tipsets.getSize();
+    }
+
+    /**
+     * Reset the tipset tracker to its initial state.
+     */
+    public void clear() {
+        nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        latestGenerations = new Tipset(addressBook);
+        tipsets.clear();
     }
 }

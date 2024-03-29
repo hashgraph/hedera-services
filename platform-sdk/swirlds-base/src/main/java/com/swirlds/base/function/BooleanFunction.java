@@ -32,5 +32,5 @@ public interface BooleanFunction<T> {
      * @param object the object to apply
      * @return true if success, false otherwise
      */
-    boolean apply(@Nullable final T object);
+    boolean apply(@Nullable T object);
 }

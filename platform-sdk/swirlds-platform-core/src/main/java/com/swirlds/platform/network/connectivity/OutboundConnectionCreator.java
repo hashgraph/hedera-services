@@ -43,6 +43,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -108,7 +109,7 @@ public class OutboundConnectionCreator {
                 dos.writeSerializable(softwareVersion, true);
                 dos.flush();
 
-                final SoftwareVersion otherVersion = dis.readSerializable();
+                final SoftwareVersion otherVersion = dis.readSerializable(Set.of(softwareVersion.getClassId()));
                 if (otherVersion == null
                         || otherVersion.getClass() != softwareVersion.getClass()
                         || otherVersion.compareTo(softwareVersion) != 0) {

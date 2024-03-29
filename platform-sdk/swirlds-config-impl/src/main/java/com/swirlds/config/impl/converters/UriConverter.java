@@ -22,7 +22,7 @@ import java.net.URISyntaxException;
 
 /**
  * Concrete {@link ConfigConverter} implementation that provides the support for {@link URI} values in the
- * configuration
+ * configuration.
  */
 public final class UriConverter implements ConfigConverter<URI> {
 

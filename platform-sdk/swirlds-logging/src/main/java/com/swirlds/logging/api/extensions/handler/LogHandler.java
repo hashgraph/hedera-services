@@ -16,6 +16,7 @@
 
 package com.swirlds.logging.api.extensions.handler;
 
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -27,6 +28,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @see LogHandlerFactory
  */
 public interface LogHandler extends LogEventConsumer {
+    String PROPERTY_HANDLER = "logging.handler.%s";
+    String PROPERTY_HANDLER_ENABLED = PROPERTY_HANDLER + ".enabled";
 
     /**
      * Returns the name of the log handler.
@@ -53,4 +56,11 @@ public interface LogHandler extends LogEventConsumer {
      * Calling that method will stop the log handler and finalize it. This can be used to close files or flush streams.
      */
     default void stopAndFinalize() {}
+
+    /**
+     * Updates the log handler with the new configuration.
+     *
+     * @param configuration the new configuration
+     */
+    default void update(@NonNull final Configuration configuration) {}
 }

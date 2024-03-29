@@ -66,7 +66,7 @@ final class BlockRecordServiceTest {
             assertTrue(states.contains(StateDefinition.singleton("BLOCKS", BlockInfo.PROTOBUF)));
 
             when(migrationContext.newStates()).thenReturn(writableStates);
-            when(migrationContext.previousStates()).thenReturn(EmptyReadableStates.INSTANCE);
+            when(migrationContext.previousVersion()).thenReturn(null);
             when(writableStates.getSingleton(BLOCK_INFO_STATE_KEY)).thenReturn(blockInfoState);
             when(writableStates.getSingleton(RUNNING_HASHES_STATE_KEY)).thenReturn(runningHashesState);
 

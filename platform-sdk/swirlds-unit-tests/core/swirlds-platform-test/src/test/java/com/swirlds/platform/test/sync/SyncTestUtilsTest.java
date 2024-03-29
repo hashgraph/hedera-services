@@ -16,14 +16,16 @@
 
 package com.swirlds.platform.test.sync;
 
+import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gossip.shadowgraph.Generations;
+import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
@@ -42,23 +44,25 @@ class SyncTestUtilsTest {
         //     	 \ | \
         //   0     e1 e2
 
-        final ShadowEvent e1 = EventFactory.makeShadow();
-        final ShadowEvent e2 = EventFactory.makeShadow();
-        final ShadowEvent e3 = EventFactory.makeShadow(null, e1);
-        final ShadowEvent e4 = EventFactory.makeShadow(e1, e2);
-        final ShadowEvent e5 = EventFactory.makeShadow(e3);
-        final ShadowEvent e6 = EventFactory.makeShadow(e4);
-        final ShadowEvent e7 = EventFactory.makeShadow(e5, e6);
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final ShadowEvent e1 = EventFactory.makeShadow(random);
+        final ShadowEvent e2 = EventFactory.makeShadow(random);
+        final ShadowEvent e3 = EventFactory.makeShadow(random, null, e1);
+        final ShadowEvent e4 = EventFactory.makeShadow(random, e1, e2);
+        final ShadowEvent e5 = EventFactory.makeShadow(random, e3);
+        final ShadowEvent e6 = EventFactory.makeShadow(random, e4);
+        final ShadowEvent e7 = EventFactory.makeShadow(random, e5, e6);
 
         final Set<ShadowEvent> knownSet = new HashSet<>();
         knownSet.add(e5);
         knownSet.add(e3);
         knownSet.add(e1);
 
-        final GraphGenerations generations = new Generations(0, 1, 3);
+        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(0, 1, 0, GENERATION_THRESHOLD);
 
         final Predicate<ShadowEvent> unknownNonAncient =
-                SyncUtils.unknownNonAncient(knownSet, generations, generations);
+                SyncUtils.unknownNonAncient(knownSet, eventWindow, eventWindow, GENERATION_THRESHOLD);
 
         assertFalse(unknownNonAncient.test(e1), "e1 is both ancient and known, should be false");
         assertFalse(unknownNonAncient.test(e2), "e2 is ancient, should be false");

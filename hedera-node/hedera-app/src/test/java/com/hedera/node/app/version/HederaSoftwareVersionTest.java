@@ -46,19 +46,17 @@ final class HederaSoftwareVersionTest {
             0.0.0,       0.0.1,        <
             0.0.10,      1.0.0,        <
             0.0.0,       0.0.0,        =
-            1.2.3,       1.2.3-foo,    <
+            1.2.3,       1.2.3-alpha.1,>
             1.2.4,       1.2.3-foo,    >
             1.2.2,       1.2.3-foo,    <
-            1.2.3,       1.2.3-foo+1,  <
+            1.2.3-alpha.1,       1.2.3-alpha.2+1,  <
             1.2.4,       1.2.3-foo+1,  >
             1.2.2,       1.2.3-foo+1,  <
-            1.2.3-foo+2, 1.2.3-foo+1,  >
-            1.2.3-bar+1, 1.2.3-foo+1,  <
             """)
     @DisplayName("compareTo()")
     void compareTo(@NonNull final String a, @NonNull final String b, final String expected) {
-        final var versionA = new HederaSoftwareVersion(semver(a), semver(a));
-        final var versionB = new HederaSoftwareVersion(semver(b), semver(b));
+        final var versionA = new HederaSoftwareVersion(semver(a), semver(a), 0);
+        final var versionB = new HederaSoftwareVersion(semver(b), semver(b), 0);
 
         switch (expected) {
             case "<" -> assertThat(versionA).isLessThan(versionB);
@@ -73,7 +71,7 @@ final class HederaSoftwareVersionTest {
     void sorting() {
         final var list = new ArrayList<HederaSoftwareVersion>();
         for (int i = 0; i < 20; i++) {
-            list.add(new HederaSoftwareVersion(semver("1.2." + i), semver("1.2." + i)));
+            list.add(new HederaSoftwareVersion(semver("1.2." + i), semver("1.2." + i), 0));
         }
 
         final var rand = new Random(3375);
@@ -88,7 +86,7 @@ final class HederaSoftwareVersionTest {
     @Test
     @DisplayName("Serialization")
     void serialization() throws IOException {
-        final var version = new HederaSoftwareVersion(semver("1.2.3"), semver("4.5.6"));
+        final var version = new HederaSoftwareVersion(semver("1.2.3"), semver("4.5.6"), 0);
 
         final var serializedBytes = new ByteArrayOutputStream();
         final var out = new SerializableDataOutputStream(serializedBytes);

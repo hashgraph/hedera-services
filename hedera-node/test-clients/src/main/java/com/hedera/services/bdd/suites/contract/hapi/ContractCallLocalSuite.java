@@ -45,10 +45,11 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
@@ -100,7 +101,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                invalidDeletedContract(),
+                successOnDeletedContract(),
                 invalidContractID(),
                 impureCallFails(),
                 insufficientFeeFails(),
@@ -212,13 +213,13 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidDeletedContract() {
-        return defaultHapiSpec("invalidDeletedContract", NONDETERMINISTIC_TRANSACTION_FEES)
+    final HapiSpec successOnDeletedContract() {
+        return defaultHapiSpec("SuccessOnDeletedContract", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractDelete(CONTRACT))
                 .then(contractCallLocal(CONTRACT, "create")
                         .nodePayment(1_234_567)
-                        .hasAnswerOnlyPrecheck(CONTRACT_DELETED));
+                        .hasAnswerOnlyPrecheck(OK));
     }
 
     @HapiTest
@@ -297,7 +298,9 @@ public class ContractCallLocalSuite extends HapiSuite {
                 .when(contractCall(CONTRACT, "create").gas(785_000))
                 .then(withOpContext((spec, opLog) -> IntStream.range(0, 2000).forEach(i -> {
                     final var create = cryptoCreate("account #" + i).deferStatusResolution();
-                    final var callLocal = contractCallLocal(CONTRACT, "getIndirect");
+                    final var callLocal = contractCallLocal(CONTRACT, "getIndirect")
+                            .nodePayment(ONE_HBAR)
+                            .hasAnswerOnlyPrecheckFrom(OK, BUSY);
                     allRunFor(spec, create, callLocal);
                 })));
     }

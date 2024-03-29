@@ -22,6 +22,12 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_IN
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_1;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_2;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_3;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_1;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_2;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_3;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.DEFAULT_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.EVM_ADDRESSES;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.EVM_ADDRESS_0;
@@ -56,7 +62,6 @@ import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -99,9 +104,6 @@ final class InitialModServiceTokenSchemaTest {
 
     @Mock
     private GenesisRecordsBuilder genesisRecordsBuilder;
-
-    @Mock
-    private HandleThrottleParser handleThrottling;
 
     @Captor
     private ArgumentCaptor<SortedSet<Account>> blocklistMapCaptor;
@@ -146,8 +148,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -160,7 +162,7 @@ final class InitialModServiceTokenSchemaTest {
     }
 
     @Test
-    void initializesStakingData() {
+    void initializesStakingDataOnGenesisStart() {
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
@@ -168,8 +170,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                null);
 
         schema.migrate(migrationContext);
 
@@ -180,7 +182,7 @@ final class InitialModServiceTokenSchemaTest {
     }
 
     @Test
-    void createsAllAccounts() {
+    void createsAllAccountsOnGenesisStart() {
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
                 EmptyReadableStates.INSTANCE,
@@ -188,8 +190,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                null);
 
         schema.migrate(migrationContext);
 
@@ -303,8 +305,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                null);
 
         schema.migrate(migrationContext);
 
@@ -429,8 +431,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -474,8 +476,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore);
+                entityIdStore,
+                CURRENT_VERSION);
 
         schema.migrate(migrationContext);
 
@@ -491,7 +493,7 @@ final class InitialModServiceTokenSchemaTest {
     }
 
     @Test
-    void createsSystemAccountsOnly() {
+    void createsSystemAccountsOnlyOnGenesisStart() {
         final var schema = new InitialModServiceTokenSchema(
                 this::allDefaultSysAccts,
                 Collections::emptySortedSet,
@@ -505,8 +507,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (int i = 1; i < DEFAULT_NUM_SYSTEM_ACCOUNTS; i++) {
@@ -535,8 +537,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         final var stakingRewardAccount = acctsStateResult.get(ACCT_IDS[800]);
@@ -567,8 +569,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (final long reservedNum : NON_CONTRACT_RESERVED_NUMS) {
@@ -597,8 +599,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
 
@@ -626,8 +628,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         // Verify that the assigned account ID matches the expected entity IDs
         for (int i = 0; i < EVM_ADDRESSES.length; i++) {
@@ -645,8 +647,8 @@ final class InitialModServiceTokenSchemaTest {
                 config,
                 networkInfo,
                 genesisRecordsBuilder,
-                handleThrottling,
-                entityIdStore));
+                entityIdStore,
+                null));
 
         // Verify contract entity IDs aren't used
         for (int i = 350; i < 400; i++) {
@@ -662,6 +664,42 @@ final class InitialModServiceTokenSchemaTest {
         for (int i = 802; i < 900; i++) {
             assertThat(accounts.contains(asAccount(i))).isFalse();
         }
+    }
+
+    @Test
+    void marksNonExistingNodesToDeletedInState() {
+        accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
+                .build();
+        // State has nodeIds 1, 2, 3
+        final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
+                .value(NODE_NUM_1, STAKING_INFO_1)
+                .value(NODE_NUM_2, STAKING_INFO_2)
+                .value(NODE_NUM_3, STAKING_INFO_3)
+                .build();
+        newStates = newStatesInstance(
+                accounts,
+                MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build(),
+                newWritableEntityIdState(),
+                stakingInfosState);
+        entityIdStore = new WritableEntityIdStore(newStates);
+        // Platform address book has node Ids 2, 4, 8
+        networkInfo = new FakeNetworkInfo();
+        config = buildConfig(DEFAULT_NUM_SYSTEM_ACCOUNTS, true);
+
+        final var schema = newSubjectWithAllExpected();
+        // When we call restart, the state will be updated to mark node 1 and 3 as deleted
+        schema.restart(new MigrationContextImpl(
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                null));
+        final var updatedStates = newStates.get(STAKING_INFO_KEY);
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_1)).deleted()).isTrue();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_2)).deleted()).isFalse();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_3)).deleted()).isTrue();
     }
 
     private Configuration overridingLedgerBalanceWithZero() {
@@ -695,6 +733,21 @@ final class InitialModServiceTokenSchemaTest {
                 .state(aliases)
                 .state(MapWritableKVState.builder(TokenServiceImpl.STAKING_INFO_KEY)
                         .build())
+                .state(new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
+                .state(entityIdState)
+                .build();
+    }
+
+    private MapWritableStates newStatesInstance(
+            final MapWritableKVState<AccountID, Account> accts,
+            final MapWritableKVState<Bytes, AccountID> aliases,
+            final WritableSingletonState<EntityNumber> entityIdState,
+            final MapWritableKVState<EntityNumber, StakingNodeInfo> stakingInfo) {
+        //noinspection ReturnOfNull
+        return MapWritableStates.builder()
+                .state(accts)
+                .state(aliases)
+                .state(stakingInfo)
                 .state(new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
                 .state(entityIdState)
                 .build();

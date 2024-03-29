@@ -33,7 +33,7 @@ public final class SystemEnvironmentConfigSource implements ConfigSource {
     private SystemEnvironmentConfigSource() {}
 
     /**
-     * Returns the singleton
+     * Returns the singleton.
      *
      * @return the singleton
      */

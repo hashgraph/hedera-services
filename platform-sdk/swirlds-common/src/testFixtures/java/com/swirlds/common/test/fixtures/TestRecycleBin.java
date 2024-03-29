@@ -47,4 +47,10 @@ public class TestRecycleBin implements RecycleBin {
     public void recycle(@NonNull final Path path) throws IOException {
         FileUtils.deleteDirectory(path);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void start() {}
 }

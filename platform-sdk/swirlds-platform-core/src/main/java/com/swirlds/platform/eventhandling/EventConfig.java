@@ -62,6 +62,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param useBirthRoundAncientThreshold     if true, use birth rounds instead of generations for deciding if an event is
  *                                          ancient or not. Once this setting has been enabled on a network, it can
  *                                          never be disabled again (migration pathway is one-way).
+ * @param useOldStyleIntakeQueue            if true then use an old style queue between gossip and the intake queue
  */
 @ConfigData("event")
 public record EventConfig(
@@ -76,7 +77,8 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "/opt/hgcapp/eventsStreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "8") int prehandlePoolSize,
-        @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold) {
+        @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold,
+        @ConfigProperty(defaultValue = "true") boolean useOldStyleIntakeQueue) {
 
     /**
      * @return the {@link AncientMode} based on useBirthRoundAncientThreshold

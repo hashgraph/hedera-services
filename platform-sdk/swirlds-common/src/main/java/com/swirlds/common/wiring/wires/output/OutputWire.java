@@ -17,13 +17,16 @@
 package com.swirlds.common.wiring.wires.output;
 
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;
 import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireListSplitter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
-import com.swirlds.common.wiring.transformers.internal.AdvancedWireTransformer;
 import com.swirlds.common.wiring.wires.SolderType;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
+import com.swirlds.common.wiring.wires.output.internal.TransformingOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -136,7 +139,8 @@ public abstract class OutputWire<OUT> {
     }
 
     /**
-     * Specify a consumer where output data should be forwarded.
+     * Specify a consumer where output data should be forwarded. This method creates a direct task scheduler under
+     * the hood and forwards output data to it.
      *
      * <p>
      * Soldering is the act of connecting two wires together, usually by melting a metal alloy between them. See
@@ -146,12 +150,24 @@ public abstract class OutputWire<OUT> {
      * Forwarding should be fully configured prior to data being inserted into the system. Adding forwarding
      * destinations after data has been inserted into the system is not thread safe and has undefined behavior.
      *
-     * @param handlerName the name of the consumer
-     * @param handler     the consumer to forward output data to
+     * @param handlerName    the name of the consumer
+     * @param inputWireLabel the label for the input wire going into the consumer
+     * @param handler        the consumer to forward output data to
      */
-    public void solderTo(@NonNull final String handlerName, @NonNull final Consumer<OUT> handler) {
-        model.registerEdge(name, handlerName, "", SolderType.PUT);
-        addForwardingDestination(Objects.requireNonNull(handler));
+    public void solderTo(
+            @NonNull final String handlerName,
+            @NonNull final String inputWireLabel,
+            @NonNull final Consumer<OUT> handler) {
+
+        final TaskScheduler<Void> directScheduler = model.schedulerBuilder(handlerName)
+                .withType(TaskSchedulerType.DIRECT)
+                .build()
+                .cast();
+
+        final BindableInputWire<OUT, Void> directSchedulerInputWire = directScheduler.buildInputWire(inputWireLabel);
+        directSchedulerInputWire.bindConsumer(handler);
+
+        this.solderTo(directSchedulerInputWire);
     }
 
     /**
@@ -206,10 +222,12 @@ public abstract class OutputWire<OUT> {
      * (i.e. all data that comes out of the wire will be inserted into the transformer). The output wire of the
      * transformer is returned by this method.
      *
-     * @param transformerName the name of the transformer
-     * @param transformer     the function that transforms the output of this wire into the output of the transformer.
-     *                        Called once per data item. Null data returned by this method his not forwarded.
-     * @param <NEW_OUT>       the output type of the transformer
+     * @param transformerName      the name of the transformer
+     * @param transformerInputName the label for the input wire going into the transformer
+     * @param transformer          the function that transforms the output of this wire into the output of the
+     *                             transformer.
+     *                             Called once per data item. Null data returned by this method his not forwarded.
+     * @param <NEW_OUT>            the output type of the transformer
      * @return the output wire of the transformer
      */
     @NonNull
@@ -229,10 +247,12 @@ public abstract class OutputWire<OUT> {
     }
 
     /**
-     * Build a {@link AdvancedWireTransformer}. The input wire to the transformer is automatically soldered to this
-     * output wire (i.e. all data that comes out of the wire will be inserted into the transformer). The output wire of
-     * the transformer is returned by this method. Similar to {@link #buildTransformer(String, String, Function)}, but
-     * instead of the transformer method being called once per data item, it is called once per output per data item.
+     * Build a transformation wire with cleanup functionality.
+     * <p>
+     * The input wire to the transformer is automatically soldered to this output wire (i.e. all data that comes out of
+     * the wire will be inserted into the transformer). The output wire of the transformer is returned by this method.
+     * Similar to {@link #buildTransformer(String, String, Function)}, but instead of the transformer method being
+     * called once per data item, it is called once per output per data item.
      *
      * @param transformer an object that manages the transformation
      * @param <NEW_OUT>   the output type of the transformer
@@ -241,16 +261,17 @@ public abstract class OutputWire<OUT> {
     @NonNull
     public <NEW_OUT> OutputWire<NEW_OUT> buildAdvancedTransformer(
             @NonNull final AdvancedTransformation<OUT, NEW_OUT> transformer) {
-        final AdvancedWireTransformer<OUT, NEW_OUT> wireTransformer = new AdvancedWireTransformer<>(
+
+        final TransformingOutputWire<OUT, NEW_OUT> outputWire = new TransformingOutputWire<>(
                 model,
-                Objects.requireNonNull(transformer.getName()),
+                transformer.getTransformerName(),
                 transformer::transform,
                 transformer::inputCleanup,
                 transformer::outputCleanup);
 
-        solderTo(transformer.getName(), wireTransformer);
+        solderTo(transformer.getTransformerName(), transformer.getTransformerInputName(), outputWire::forward);
 
-        return wireTransformer.getOutputWire();
+        return outputWire;
     }
 
     /**

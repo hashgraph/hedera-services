@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -100,10 +101,19 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoTransferHandler implements TransactionHandler {
     private final CryptoTransferValidator validator;
+    private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
     @Inject
     public CryptoTransferHandler(@NonNull final CryptoTransferValidator validator) {
+        this(validator, true);
+    }
+
+    public CryptoTransferHandler(
+            @NonNull final CryptoTransferValidator validator,
+            final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
         this.validator = validator;
+        this.enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments =
+                enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
     }
 
     @Override
@@ -212,7 +222,10 @@ public class CryptoTransferHandler implements TransactionHandler {
         validator.validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
 
         // create a new transfer context that is specific only for this transaction
-        final var transferContext = new TransferContextImpl(context);
+        final var transferContext =
+                new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
+
+        transferContext.validateHbarAllowances();
 
         // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
@@ -304,7 +317,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // Step 1: associate any token recipients that are not already associated and have
         // auto association slots open
         steps.add(new AssociateTokenRecipientsStep(op));
-        // Step 2: Charge custom fees for token transfers. yet to be implemented
+        // Step 2: Charge custom fees for token transfers
         final var customFeeStep = new CustomFeeAssessmentStep(op);
         // The below steps should be doe for both custom fee assessed transaction in addition to
         // original transaction
@@ -349,7 +362,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // single account.
         for (final var accountAmount : transfers) {
             // Given an accountId, we need to look up the associated account.
-            final var accountId = validateAccountID(accountAmount.accountIDOrElse(AccountID.DEFAULT));
+            final var accountId = validateAccountID(accountAmount.accountIDOrElse(AccountID.DEFAULT), null);
             final var account = accountStore.getAccountById(accountId);
             final var isCredit = accountAmount.amount() > 0;
             final var isDebit = accountAmount.amount() < 0;
@@ -410,11 +423,11 @@ public class CryptoTransferHandler implements TransactionHandler {
             throws PreCheckException {
         for (final var nftTransfer : nftTransfersList) {
             final var senderId = nftTransfer.senderAccountIDOrElse(AccountID.DEFAULT);
-            validateAccountID(senderId);
+            validateAccountID(senderId, null);
             checkSender(senderId, nftTransfer, meta, accountStore);
 
             final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
-            validateAccountID(receiverId);
+            validateAccountID(receiverId, null);
             checkReceiver(receiverId, senderId, nftTransfer, meta, tokenMeta, op, accountStore);
         }
     }
@@ -521,7 +534,6 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = body.cryptoTransferOrThrow();
         final var config = feeContext.configuration();
         final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
-        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
 
         /* BPT calculations shouldn't include any custom fee payment usage */
         int totalXfers = op.transfersOrElse(TransferList.DEFAULT)
@@ -557,11 +569,11 @@ public class CryptoTransferHandler implements TransactionHandler {
             final var status = ignore.getStatus();
             // If the transaction tried and failed to use custom fees, enable this flag.
             // This is used to charge a different canonical fees.
-            triedAndFailedToUseCustomFees = (status == INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE
-                    || status == INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+            triedAndFailedToUseCustomFees = status == INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE
+                    || status == INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE
+                    || status == CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
             assessedCustomFees = new ArrayList<>();
         }
-        totalXfers += assessedCustomFees.size();
         for (final var fee : assessedCustomFees) {
             if (!fee.hasTokenId()) {
                 customFeeHbarTransfers++;
@@ -570,6 +582,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 involvedTokens.add(fee.tokenId());
             }
         }
+        totalXfers += customFeeHbarTransfers;
         weightedTokenXfers += tokenMultiplier * customFeeTokenTransfers;
         weightedTokensInvolved += tokenMultiplier * involvedTokens.size();
         long rbs = (totalXfers * LONG_ACCOUNT_AMOUNT_BYTES)
@@ -583,12 +596,11 @@ public class CryptoTransferHandler implements TransactionHandler {
                 customFeeHbarTransfers,
                 customFeeTokenTransfers,
                 triedAndFailedToUseCustomFees);
-        final var ans = feeContext
+        return feeContext
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)
                 .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();
-        return ans;
     }
 
     /**

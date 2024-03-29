@@ -53,8 +53,8 @@ class ApprovalSwitchHelperTest {
 
     @Test
     void switchesOnlyUnauthorizedDebitsToApprovals() {
-        given(nativeOperations.getAccountKey(OWNER_ID.accountNumOrThrow())).willReturn(AN_ED25519_KEY);
-        given(nativeOperations.getAccountKey(APPROVED_ID.accountNumOrThrow())).willReturn(B_SECP256K1_KEY);
+        given(nativeOperations.getAccountKey(OWNER_ID)).willReturn(AN_ED25519_KEY);
+        given(nativeOperations.getAccountKey(APPROVED_ID)).willReturn(B_SECP256K1_KEY);
 
         given(signatureTest.test(AN_ED25519_KEY)).willReturn(true);
         given(signatureTest.test(B_SECP256K1_KEY)).willReturn(false);
@@ -67,7 +67,7 @@ class ApprovalSwitchHelperTest {
 
     @Test
     void doesNotSwitchSenderDebitsToApprovals() {
-        given(nativeOperations.getAccountKey(APPROVED_ID.accountNumOrThrow())).willReturn(B_SECP256K1_KEY);
+        given(nativeOperations.getAccountKey(APPROVED_ID)).willReturn(B_SECP256K1_KEY);
 
         given(signatureTest.test(B_SECP256K1_KEY)).willReturn(false);
 

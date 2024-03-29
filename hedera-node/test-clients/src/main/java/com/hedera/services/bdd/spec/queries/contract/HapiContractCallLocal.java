@@ -252,7 +252,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
     @Override
     protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
-        return spec.fees().forOp(HederaFunctionality.ContractCallLocal, FeeBuilder.getCostForQueryByIDOnly());
+        return spec.fees().forOp(HederaFunctionality.ContractCallLocal, FeeBuilder.getCostForQueryByIdOnly());
     }
 
     @Override

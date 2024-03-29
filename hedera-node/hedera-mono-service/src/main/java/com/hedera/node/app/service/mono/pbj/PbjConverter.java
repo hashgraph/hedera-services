@@ -50,10 +50,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRate;
-import com.hedera.hapi.node.transaction.FixedFee;
-import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.Query;
-import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
@@ -74,7 +71,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.security.InvalidKeyException;
-import java.util.Objects;
 import java.util.Optional;
 
 public final class PbjConverter {
@@ -348,6 +344,7 @@ public final class PbjConverter {
             case TokenUnfreezeAccount -> HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
             case TokenUnpause -> HederaFunctionality.TOKEN_UNPAUSE;
             case TokenUpdate -> HederaFunctionality.TOKEN_UPDATE;
+            case TokenUpdateNfts -> HederaFunctionality.TOKEN_UPDATE_NFTS;
             case TransactionGetReceipt -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TransactionGetRecord -> HederaFunctionality.TRANSACTION_GET_RECORD;
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
@@ -445,6 +442,7 @@ public final class PbjConverter {
             case TOKEN_UNFREEZE_ACCOUNT -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
             case TOKEN_UNPAUSE -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
             case TOKEN_UPDATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
+            case TOKEN_UPDATE_NFTS -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdateNfts;
             case TRANSACTION_GET_RECEIPT -> com.hederahashgraph.api.proto.java.HederaFunctionality
                     .TransactionGetReceipt;
             case TRANSACTION_GET_RECORD -> com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
@@ -770,6 +768,10 @@ public final class PbjConverter {
             case TRANSACTION_HAS_UNKNOWN_FIELDS -> ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
             case ACCOUNT_IS_IMMUTABLE -> ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
             case ALIAS_ALREADY_ASSIGNED -> ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
+            case INVALID_METADATA_KEY -> ResponseCodeEnum.INVALID_METADATA_KEY;
+            case MISSING_TOKEN_METADATA -> ResponseCodeEnum.MISSING_TOKEN_METADATA;
+            case TOKEN_HAS_NO_METADATA_KEY -> ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
+            case MISSING_SERIAL_NUMBERS -> ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
@@ -802,7 +804,7 @@ public final class PbjConverter {
     }
 
     public static @NonNull Transaction toPbj(final @NonNull com.hederahashgraph.api.proto.java.Transaction t) {
-        return protoToPbj(Objects.requireNonNull(t), Transaction.class);
+        return protoToPbj(requireNonNull(t), Transaction.class);
     }
 
     public static Timestamp toPbj(@NonNull com.hederahashgraph.api.proto.java.Timestamp t) {
@@ -1300,6 +1302,11 @@ public final class PbjConverter {
                     .TRANSACTION_HAS_UNKNOWN_FIELDS;
             case ACCOUNT_IS_IMMUTABLE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
             case ALIAS_ALREADY_ASSIGNED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
+            case INVALID_METADATA_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_METADATA_KEY;
+            case TOKEN_HAS_NO_METADATA_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .TOKEN_HAS_NO_METADATA_KEY;
+            case MISSING_TOKEN_METADATA -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_METADATA;
+            case MISSING_SERIAL_NUMBERS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
@@ -1326,12 +1333,29 @@ public final class PbjConverter {
         }
     }
 
+    private interface ProtoParser<R extends GeneratedMessageV3> {
+        R parseFrom(byte[] bytes) throws InvalidProtocolBufferException;
+    }
+
+    private static <T extends Record, R extends GeneratedMessageV3> R explicitPbjToProto(
+            @NonNull final T pbj, @NonNull final Codec<T> pbjCodec, @NonNull final ProtoParser<R> protoParser) {
+        requireNonNull(pbj);
+        requireNonNull(pbjCodec);
+        requireNonNull(protoParser);
+        try {
+            return protoParser.parseFrom(asBytes(pbjCodec, pbj));
+        } catch (InvalidProtocolBufferException e) {
+            // Should be impossible
+            throw new IllegalStateException("Serialization failure for " + pbj, e);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public static <T extends GeneratedMessageV3, R extends Record> @NonNull R protoToPbj(
             @NonNull final T proto, @NonNull final Class<R> pbjClass) {
         try {
-            final var bytes = Objects.requireNonNull(proto).toByteArray();
-            final var codecField = Objects.requireNonNull(pbjClass).getDeclaredField("PROTOBUF");
+            final var bytes = requireNonNull(proto).toByteArray();
+            final var codecField = requireNonNull(pbjClass).getDeclaredField("PROTOBUF");
             final var codec = (Codec<R>) codecField.get(null);
             return codec.parse(BufferedData.wrap(bytes));
         } catch (NoSuchFieldException | IllegalAccessException | ParseException e) {
@@ -1349,8 +1373,7 @@ public final class PbjConverter {
      * @throws IllegalStateException if the conversion fails
      */
     public static @NonNull Key fromGrpcKey(@NonNull final com.hederahashgraph.api.proto.java.Key grpcKey) {
-        try (final var bais =
-                new ByteArrayInputStream(Objects.requireNonNull(grpcKey).toByteArray())) {
+        try (final var bais = new ByteArrayInputStream(requireNonNull(grpcKey).toByteArray())) {
             final var stream = new ReadableStreamingData(bais);
             stream.limit(bais.available());
             return Key.PROTOBUF.parse(stream);
@@ -1440,6 +1463,17 @@ public final class PbjConverter {
         }
     }
 
+    public static @NonNull com.hederahashgraph.api.proto.java.SchedulableTransactionBody fromPbj(
+            @NonNull SchedulableTransactionBody tx) {
+        requireNonNull(tx);
+        try {
+            final var bytes = asBytes(SchedulableTransactionBody.PROTOBUF, tx);
+            return com.hederahashgraph.api.proto.java.SchedulableTransactionBody.parseFrom(bytes);
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static Key asPbjKey(@NonNull final JKey jKey) {
         requireNonNull(jKey);
         try {
@@ -1451,7 +1485,7 @@ public final class PbjConverter {
 
     public static @NonNull CustomFee fromFcCustomFee(@Nullable final FcCustomFee fcFee) {
         try (final var bais =
-                new ByteArrayInputStream(Objects.requireNonNull(fcFee).asGrpc().toByteArray())) {
+                new ByteArrayInputStream(requireNonNull(fcFee).asGrpc().toByteArray())) {
             final var stream = new ReadableStreamingData(bais);
             stream.limit(bais.available());
             return CustomFee.PROTOBUF.parse(stream);
@@ -1495,27 +1529,8 @@ public final class PbjConverter {
 
     @NonNull
     public static com.hederahashgraph.api.proto.java.CustomFee fromPbj(@NonNull final CustomFee customFee) {
-        var builder = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
-        if (customFee.hasFixedFee()) {
-            builder.setFixedFee(fromPbj(customFee.fixedFee()));
-        } else if (customFee.hasFractionalFee()) {
-            builder.setFractionalFee(fromPbj(customFee.fractionalFee()));
-        } else if (customFee.hasRoyaltyFee()) {
-            builder.setRoyaltyFee(fromPbj(customFee.royaltyFee()));
-        }
-
-        builder.setFeeCollectorAccountId(fromPbj(customFee.feeCollectorAccountId()));
-        builder.setAllCollectorsAreExempt(customFee.allCollectorsAreExempt());
-
-        return builder.build();
-    }
-
-    @NonNull
-    public static com.hederahashgraph.api.proto.java.RoyaltyFee fromPbj(@NonNull final RoyaltyFee royaltyFee) {
-        var builder = com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder();
-        builder.setExchangeValueFraction(fromPbj(royaltyFee.exchangeValueFraction()));
-        if (royaltyFee.hasFallbackFee()) builder.setFallbackFee(fromPbj(royaltyFee.fallbackFee()));
-        return builder.build();
+        return explicitPbjToProto(
+                customFee, CustomFee.PROTOBUF, com.hederahashgraph.api.proto.java.CustomFee::parseFrom);
     }
 
     @NonNull
@@ -1526,26 +1541,8 @@ public final class PbjConverter {
         return builder.build();
     }
 
-    @NonNull
-    public static com.hederahashgraph.api.proto.java.FractionalFee fromPbj(@NonNull final FractionalFee fractionalFee) {
-        var builder = com.hederahashgraph.api.proto.java.FractionalFee.newBuilder();
-        builder.setFractionalAmount(fromPbj(fractionalFee.fractionalAmount()));
-        builder.setMinimumAmount(fractionalFee.minimumAmount());
-        builder.setMaximumAmount(fractionalFee.maximumAmount());
-        builder.setNetOfTransfers(fractionalFee.netOfTransfers());
-        return builder.build();
-    }
-
-    @NonNull
-    public static com.hederahashgraph.api.proto.java.FixedFee fromPbj(@Nullable FixedFee fixedFee) {
-        var builder = com.hederahashgraph.api.proto.java.FixedFee.newBuilder();
-        if (fixedFee != null) {
-            builder.setAmount(fixedFee.amount());
-            if (fixedFee.hasDenominatingTokenId()) {
-                builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
-            }
-        }
-        return builder.build();
+    public static FileID toPbj(com.hederahashgraph.api.proto.java.FileID fileID) {
+        return protoToPbj(fileID, FileID.class);
     }
 
     @NonNull

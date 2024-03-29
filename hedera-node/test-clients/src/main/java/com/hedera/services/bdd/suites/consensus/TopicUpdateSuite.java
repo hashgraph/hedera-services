@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -42,6 +43,8 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
@@ -58,6 +61,9 @@ public class TopicUpdateSuite extends HapiSuite {
     private static final long validAutoRenewPeriod = 7_000_000L;
     private static final long defaultMaxLifetime =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
+
+    public static final Key IMMUTABILITY_SENTINEL_KEY =
+            Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
 
     public static void main(String... args) {
         new TopicUpdateSuite().runSuiteAsync();
@@ -77,7 +83,8 @@ public class TopicUpdateSuite extends HapiSuite {
                 clearingAdminKeyWhenAutoRenewAccountPresent(),
                 feeAsExpected(),
                 updateExpiryOnTopicWithNoAdminKey(),
-                updateToMissingTopicFails());
+                updateToMissingTopicFails(),
+                canRemoveSubmitKeyDuringUpdate());
     }
 
     @Override
@@ -166,6 +173,21 @@ public class TopicUpdateSuite extends HapiSuite {
                         .hasSubmitKey("submitKey")
                         .hasAdminKey("adminKey")
                         .logged());
+    }
+
+    @HapiTest
+    final HapiSpec canRemoveSubmitKeyDuringUpdate() {
+        return defaultHapiSpec("updateSubmitKeyToDiffKey")
+                .given(
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("submitKey"),
+                        createTopic("testTopic").adminKeyName("adminKey").submitKeyName("submitKey"))
+                .when(
+                        submitMessageTo("testTopic").message("message"),
+                        updateTopic("testTopic").submitKey(EMPTY_KEY))
+                .then(
+                        getTopicInfo("testTopic").hasNoSubmitKey().hasAdminKey("adminKey"),
+                        submitMessageTo("testTopic").message("message").logged());
     }
 
     @HapiTest

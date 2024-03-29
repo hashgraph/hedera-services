@@ -59,7 +59,7 @@ class ModelTests {
         assertEquals(illegalDirectSchedulerUseExpected, illegalDirectSchedulerUseDetected);
 
         // Should not throw.
-        final String diagram = model.generateWiringDiagram(List.of(), List.of(), List.of());
+        final String diagram = model.generateWiringDiagram(List.of(), List.of(), List.of(), false);
         if (printMermaidDiagram) {
             System.out.println(diagram);
         }
@@ -1271,48 +1271,6 @@ class ModelTests {
     }
 
     /**
-     * Make sure that adding a heartbeat doesn't break the model.
-     */
-    @Test
-    void heartbeatTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
-
-        /*
-
-        A -----> B <----- heartbeat
-        ^        |
-        |        v
-        D <----- C
-
-        */
-
-        final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputA = taskSchedulerA.buildInputWire("inputA");
-
-        final TaskScheduler<Integer> taskSchedulerB =
-                model.schedulerBuilder("B").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
-        taskSchedulerB.buildHeartbeatInputWire("heartbeat", 100);
-
-        final TaskScheduler<Integer> taskSchedulerC =
-                model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputC = taskSchedulerC.buildInputWire("inputC");
-
-        final TaskScheduler<Integer> taskSchedulerD =
-                model.schedulerBuilder("D").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
-
-        taskSchedulerA.getOutputWire().solderTo(inputB);
-        taskSchedulerB.getOutputWire().solderTo(inputC);
-        taskSchedulerC.getOutputWire().solderTo(inputD);
-        taskSchedulerD.getOutputWire().solderTo(inputA);
-
-        validateModel(model, true, false);
-    }
-
-    /**
      * We should detect when a concurrent scheduler access a direct scheduler.
      */
     @Test
@@ -1493,7 +1451,7 @@ class ModelTests {
 
     /**
      * We should detect when a concurrent scheduler access a direct scheduler through proxies (i.e. the concurrent
-     * scheduler calls into a DIRECT_STATELESS scheduler which calls into a DIRECT scheduler).
+     * scheduler calls into a DIRECT_THREADSAFE scheduler which calls into a DIRECT scheduler).
      */
     @Test
     void concurrentAccessingDirectThroughProxyTest() {
@@ -1517,8 +1475,8 @@ class ModelTests {
         G <----- F -----> H -----> I -----> J
 
         D = CONCURRENT
-        E = DIRECT_STATELESS
-        F = DIRECT_STATELESS
+        E = DIRECT_THREADSAFE
+        F = DIRECT_THREADSAFE
         G = DIRECT
 
         */
@@ -1542,13 +1500,13 @@ class ModelTests {
         final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
         final TaskScheduler<Integer> taskSchedulerE = model.schedulerBuilder("E")
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
         final InputWire<Integer> inputE = taskSchedulerE.buildInputWire("inputE");
 
         final TaskScheduler<Integer> taskSchedulerF = model.schedulerBuilder("F")
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
         final InputWire<Integer> inputF = taskSchedulerF.buildInputWire("inputF");
@@ -1611,7 +1569,7 @@ class ModelTests {
         G <----- F -----> H -----> I -----> J
 
         B = SEQUENTIAL_THREAD
-        C = DIRECT_STATELESS
+        C = DIRECT_THREADSAFE
         D = DIRECT
 
         */
@@ -1627,7 +1585,7 @@ class ModelTests {
         final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
         final TaskScheduler<Integer> taskSchedulerC = model.schedulerBuilder("C")
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
         final InputWire<Integer> inputC = taskSchedulerC.buildInputWire("inputC");
@@ -1688,7 +1646,7 @@ class ModelTests {
 
         assertTrue(model.checkForUnboundInputWires());
 
-        inputA.bind(x -> {});
+        inputA.bindConsumer(x -> {});
 
         assertFalse(model.checkForUnboundInputWires());
     }

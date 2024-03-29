@@ -22,6 +22,7 @@ import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesCons
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
@@ -58,7 +59,8 @@ public class StateSignatureCollectorTester extends StateSignatureCollector {
             @NonNull final SignedStateMetrics signedStateMetrics,
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
-        final LatestCompleteStateNexus latestSignedState = new LatestCompleteStateNexus(stateConfig, new NoOpMetrics());
+        final LatestCompleteStateNexus latestSignedState =
+                new DefaultLatestCompleteStateNexus(stateConfig, new NoOpMetrics());
         return new StateSignatureCollectorTester(
                 stateConfig,
                 signedStateMetrics,

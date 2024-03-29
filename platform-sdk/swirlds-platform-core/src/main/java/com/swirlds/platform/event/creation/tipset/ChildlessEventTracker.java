@@ -119,6 +119,14 @@ public class ChildlessEventTracker {
         }
     }
 
+    /**
+     * Clear the internal state of this object.
+     */
+    public void clear() {
+        childlessEvents.clear();
+        eventsByCreator.clear();
+    }
+
     @NonNull
     public String toString() {
         if (childlessEvents.isEmpty()) {

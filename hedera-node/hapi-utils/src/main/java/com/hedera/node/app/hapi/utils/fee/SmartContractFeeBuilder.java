@@ -44,7 +44,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns fee matrices for contract create transaction
+     * Creates fee matrices for a contract create transaction.
      *
      * @param txBody transaction body
      * @param sigValObj signature value object
@@ -70,7 +70,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 
         bpr = INT_SIZE;
         rbs = getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
-        long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
+        long rbsNetwork = getDefaultRbhNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
         FeeComponents feeMatricesForTx = FeeComponents.newBuilder()
                 .setBpt(bpt)
@@ -86,7 +86,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
         return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
     }
 
-    /** This method returns total bytes in Contract Create Transaction body */
+    /** Calculates the total bytes in Contract Create Transaction body. */
     private int getContractCreateTransactionBodySize(TransactionBody txBody) {
         /*
          * FileID fileID - BASIC_ENTITY_ID_SIZE Key adminKey - calculated value int64 gas - LONG_SIZE uint64
@@ -130,7 +130,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns fee matrices for contract update transaction
+     * Createsfee matrices for a contract update transaction.
      *
      * @param txBody transaction body
      * @param contractExpiryTime contract expiration time
@@ -162,7 +162,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
             sbs = getContractUpdateStorageBytesSec(txBody, contractExpiryTime);
         }
 
-        long rbsNetwork = getDefaultRBHNetworkSize();
+        long rbsNetwork = getDefaultRbhNetworkSize();
 
         rbs = getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
 
@@ -181,7 +181,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns fee matrices for contract call transaction
+     * Creates fee matrices for a contract call transaction.
      *
      * @param txBody transaction body
      * @param sigValObj signature value object
@@ -208,7 +208,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
         bpr = INT_SIZE;
 
         rbs = getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
-        long rbsNetwork = getDefaultRBHNetworkSize();
+        long rbsNetwork = getDefaultRbhNetworkSize();
 
         FeeComponents feeMatricesForTx = FeeComponents.newBuilder()
                 .setBpt(bpt)
@@ -225,7 +225,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns fee matrices for contract call local
+     * Creates fee matrices for a contract call local transaction.
      *
      * @param funcParamSize function parameter size
      * @param contractFuncResult contract function result
@@ -292,7 +292,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
         return getQueryFeeDataMatrices(feeMatrices);
     }
 
-    /** This method returns total bytes in Contract Update Transaction */
+    /** Calculates the total bytes in a Contract Update Transaction. */
     private int getContractUpdateBodyTxSize(TransactionBody txBody) {
         /*
          * ContractID contractID - BASIC_ENTITY_ID_SIZE Timestamp expirationTime - LONG_SIZE + INT_SIZE
@@ -330,7 +330,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
         return contractUpdateBodySize;
     }
 
-    /** This method returns total bytes in Contract Call body Transaction */
+    /** Calculates the total bytes in a Contract Call body Transaction. */
     private int getContractCallBodyTxSize(TransactionBody txBody) {
         /*
          * ContractID contractID - BASIC_ENTITY_ID_SIZE int64 gas - LONG_SIZE int64 amount - LONG_SIZE bytes
@@ -352,7 +352,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
         return contractCallBodySize;
     }
 
-    /** This method returns total bytes in Contract Call body Transaction */
+    /** Calculates the total bytes in a Contract Call body Transaction. */
     private int getEthereumTransactionBodyTxSize(TransactionBody txBody) {
         /*
          * AccountId contractID - BASIC_ENTITY_ID_SIZE int64 gas - LONG_SIZE int64 amount - LONG_SIZE bytes
@@ -368,7 +368,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns the fee matrices for contract byte code query
+     * Creates the fee matrices for a contract byte code query.
      *
      * @param byteCodeSize byte code size
      * @param responseType response type
@@ -390,7 +390,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
          * Transaction processing) ResponseType - INT_SIZE ContractID - BASIC_ENTITY_ID_SIZE
          */
 
-        bpt = calculateBPT();
+        bpt = calculateBpt();
         /*
          *
          * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
@@ -456,8 +456,8 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 
         bpr = INT_SIZE;
 
-        rbs = calculateRBS(txBody);
-        long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
+        rbs = calculateRbs(txBody);
+        long rbsNetwork = getDefaultRbhNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
         FeeComponents feeMatricesForTx = FeeComponents.newBuilder()
                 .setBpt(bpt)
@@ -474,7 +474,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns fee matrices for contract call transaction
+     * Creates fee matrices for a contract call transaction.
      *
      * @param txBody transaction body
      * @param sigValObj signature value object
@@ -501,7 +501,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
         bpr = INT_SIZE;
 
         rbs = getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
-        long rbsNetwork = getDefaultRBHNetworkSize();
+        long rbsNetwork = getDefaultRbhNetworkSize();
 
         FeeComponents feeMatricesForTx = FeeComponents.newBuilder()
                 .setBpt(bpt)

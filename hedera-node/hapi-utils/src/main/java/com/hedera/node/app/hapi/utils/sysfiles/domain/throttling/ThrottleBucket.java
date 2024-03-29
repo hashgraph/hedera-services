@@ -213,8 +213,8 @@ public final class ThrottleBucket<E extends Enum<E>> {
         return Math.max(1, mtps / splitFactor);
     }
 
-    public static long quotientRoundedUp(final long a, final long b) {
-        return a / b + (a % b == 0 ? 0 : 1);
+    public static long quotientRoundedUp(final long lhs, final long rhs) {
+        return lhs / rhs + (lhs % rhs == 0 ? 0 : 1);
     }
 
     private void assertMinimalOpsPerSec() {
@@ -242,19 +242,19 @@ public final class ThrottleBucket<E extends Enum<E>> {
     /**
      * Computes the least common multiple of the given two numbers.
      *
-     * @param a the first number
-     * @param b the second number
+     * @param lhs the first number
+     * @param rhs the second number
      * @return the least common multiple of {@code a} and {@code b}
      * @throws ArithmeticException if the result overflows a {@code long}
      */
-    private long lcm(final long a, final long b) {
-        if (productWouldOverflow(a, b)) {
+    private long lcm(final long lhs, final long rhs) {
+        if (productWouldOverflow(lhs, rhs)) {
             throw new ArithmeticException();
         }
-        return (a * b) / gcd(Math.min(a, b), Math.max(a, b));
+        return (lhs * rhs) / gcd(Math.min(lhs, rhs), Math.max(lhs, rhs));
     }
 
-    private long gcd(final long a, final long b) {
-        return (a == 0) ? b : gcd(b % a, a);
+    private long gcd(final long lhs, final long rhs) {
+        return (lhs == 0) ? rhs : gcd(rhs % lhs, lhs);
     }
 }

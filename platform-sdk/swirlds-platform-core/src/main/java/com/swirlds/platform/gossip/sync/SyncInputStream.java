@@ -23,9 +23,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.gossip.SyncException;
-import com.swirlds.platform.gossip.shadowgraph.Generations;
-import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -71,35 +68,6 @@ public class SyncInputStream extends SerializableDataInputStream {
 
     public CountingStreamExtension getSyncByteCounter() {
         return syncByteCounter;
-    }
-
-    /**
-     * Reads a sync request response from the stream
-     *
-     * @return true if the sync has been accepted, false if it was rejected
-     * @throws IOException   if a stream exception occurs
-     * @throws SyncException if something unexpected has been read from the stream
-     */
-    public boolean readSyncRequestResponse() throws IOException, SyncException {
-        final byte b = readByte();
-        if (b == ByteConstants.COMM_SYNC_NACK) {
-            // sync rejected
-            return false;
-        }
-        if (b != ByteConstants.COMM_SYNC_ACK) {
-            throw new SyncException(String.format(
-                    "COMM_SYNC_REQUEST was sent but reply was %02x instead of COMM_SYNC_ACK or COMM_SYNC_NACK", b));
-        }
-        return true;
-    }
-
-    /**
-     * Read the other node's generation numbers from an input stream
-     *
-     * @throws IOException if a stream exception occurs
-     */
-    public Generations readGenerations() throws IOException {
-        return readSerializable(false, Generations::new);
     }
 
     /**

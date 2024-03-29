@@ -54,7 +54,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.IntConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -75,7 +74,6 @@ public class TransferLogic {
     private final TransactionContext txnCtx;
     private final AliasManager aliasManager;
     private final FeeDistribution feeDistribution;
-    private final IntConsumer cryptoCreateThrottleReclaimer;
 
     @Inject
     public TransferLogic(
@@ -89,8 +87,7 @@ public class TransferLogic {
             final RecordsHistorian recordsHistorian,
             final TransactionContext txnCtx,
             final AliasManager aliasManager,
-            final FeeDistribution feeDistribution,
-            IntConsumer cryptoCreateThrottleReclaimer) {
+            final FeeDistribution feeDistribution) {
         this.tokenStore = tokenStore;
         this.nftsLedger = nftsLedger;
         this.accountsLedger = accountsLedger;
@@ -101,7 +98,6 @@ public class TransferLogic {
         this.txnCtx = txnCtx;
         this.aliasManager = aliasManager;
         this.feeDistribution = feeDistribution;
-        this.cryptoCreateThrottleReclaimer = cryptoCreateThrottleReclaimer;
 
         scopedCheck = new MerkleAccountScopedCheck(validator, nftsLedger);
     }
@@ -111,7 +107,6 @@ public class TransferLogic {
         var validity = OK;
         var autoCreationFee = 0L;
         var updatedPayerBalance = Long.MIN_VALUE;
-        boolean failedAutoCreation = false;
         boolean hasSuccessfulAutoCreation = false;
         int numAutoCreationsSoFar = 0;
         for (final var change : changes) {
@@ -144,7 +139,6 @@ public class TransferLogic {
                 } else {
                     validity = MAX_CHILD_RECORDS_EXCEEDED;
                 }
-                failedAutoCreation = validity != OK;
             } else if (change.isForHbar()) {
                 validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
                 if (change.affectsAccount(topLevelPayer)) {
@@ -185,9 +179,6 @@ public class TransferLogic {
             dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
             if (autoCreationLogic != null && autoCreationLogic.reclaimPendingAliases()) {
                 accountsLedger.undoCreations();
-            }
-            if (failedAutoCreation && txnCtx.isSelfSubmitted()) {
-                cryptoCreateThrottleReclaimer.accept(txnCtx.numImplicitCreations());
             }
             throw new InvalidTransactionException(validity);
         }

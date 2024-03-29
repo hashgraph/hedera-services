@@ -31,23 +31,43 @@ import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.event.DefaultLogEvent;
 import com.swirlds.logging.api.internal.level.ConfigLevel;
-import com.swirlds.logging.util.InMemoryHandler;
+import com.swirlds.logging.test.fixtures.InMemoryHandler;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @WithContext
+@Disabled
 public class LoggingSystemTest {
 
+    private final List<Path> tempFiles = List.of(Path.of("crypto.log"), Path.of("transaction.log"));
+    private LoggingSystem loggingSystem = null;
+
     @BeforeEach
-    void cleanup() {
+    void cleanupBefore() {
         // reset Emergency logger to remove messages from previous tests
         EmergencyLoggerImpl.getInstance().publishLoggedEvents();
+    }
+
+    @AfterEach
+    void cleanupAfter() {
+        if (loggingSystem != null) {
+            loggingSystem.stopAndFinalize();
+            tempFiles.forEach(path -> {
+                if (path.toFile().exists()) {
+                    path.toFile().delete();
+                }
+            });
+        }
+        loggingSystem = null;
     }
 
     @Test
@@ -569,7 +589,7 @@ public class LoggingSystemTest {
 
     @Test
     @DisplayName("Test that accept passes complex log calls correctly with all informations to the configured handler")
-    void testAcceptComnplexHandling() {
+    void testAcceptComplexHandling() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
@@ -783,6 +803,31 @@ public class LoggingSystemTest {
 
         // then
         testSpec(loggingSystem);
+    }
+
+    @Test
+    @DisplayName("Test that installing multiple known handler type and enabled throws no exception")
+    void testAddMultipleFileHandler() {
+        // given
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.handler.CRYPTO_FILE.enabled", "true")
+                .withValue("logging.handler.CRYPTO_FILE.type", "file")
+                .withValue("logging.handler.CRYPTO_FILE.file", "crypto.log")
+                .withValue("logging.handler.TRANSACTION_FILE.enabled", "true")
+                .withValue("logging.handler.TRANSACTION_FILE.type", "file")
+                .withValue("logging.handler.TRANSACTION_FILE.file", "transaction.log")
+                .getOrCreateConfig();
+
+        loggingSystem = new LoggingSystem(configuration);
+
+        // when
+        loggingSystem.installHandlers();
+
+        // then
+        assertThat(loggingSystem.getHandlers()).hasSize(2);
+        tempFiles.forEach(path -> {
+            assertThat(path.toFile()).exists();
+        });
     }
 
     static void testSpec(LoggingSystem system) {

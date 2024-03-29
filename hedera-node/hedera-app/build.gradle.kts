@@ -24,6 +24,7 @@ description = "Hedera Application - Implementation"
 
 mainModuleInfo {
     annotationProcessor("dagger.compiler")
+    annotationProcessor("com.google.auto.service.processor")
 
     // This is needed to pick up and include the native libraries for the netty epoll transport
     runtimeOnly("io.netty.transport.epoll.linux.x86_64")
@@ -100,6 +101,7 @@ xtestModuleInfo {
     requires("com.swirlds.config.api")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.metrics.api")
+    requires("com.swirlds.platform.core")
     requires("dagger")
     requires("headlong")
     requires("javax.inject")

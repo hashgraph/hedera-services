@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.model.internal;
 
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 
 /**
@@ -42,6 +43,14 @@ public interface ModelVertex extends Comparable<ModelVertex> {
      */
     @NonNull
     TaskSchedulerType getType();
+
+    /**
+     * Get the hyperlink to the documentation for this vertex, or null if there is no documentation.
+     *
+     * @return the hyperlink to the documentation for this vertex, or null if there is no documentation
+     */
+    @Nullable
+    String getHyperlink();
 
     /**
      * Get whether the insertion of this vertex may block until capacity is available.

@@ -103,15 +103,14 @@ public class FileSignTool {
 
     private static final Logger LOGGER = LogManager.getLogger(FileSignTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("FILE_SIGN");
-    /** default log4j2 file name */
+    /** default log4j2 file name. */
     private static final String DEFAULT_LOG_CONFIG = "log4j2.xml";
-    /** supported stream version file */
-    /** type of the keyStore */
+    /** type of the keyStore. */
     private static final String KEYSTORE_TYPE = "pkcs12";
-    /** name of RecordStreamType */
+    /** name of RecordStreamType. */
     private static final String RECORD_STREAM_EXTENSION = "rcd";
     /**
-     * name of compressed rcd file
+     * name of compressed rcd file.
      */
     private static final String COMPRESSED_RECORD_STREAM_EXTENSION = "rcd.gz";
 
@@ -119,16 +118,20 @@ public class FileSignTool {
 
     /**
      * a messageDigest object for digesting entire stream file and generating entire record stream
-     * file hash
+     * file hash.
      */
     private static MessageDigest streamDigest;
 
     /**
      * a messageDigest object for digesting metaData in the stream file and generating metaData
      * hash. Metadata contains: record stream version || HAPI proto version || startRunningHash ||
-     * endRunningHash || blockNumber, where || denotes concatenation
+     * endRunningHash || blockNumber, where || denotes concatenation.
      */
     private static MessageDigest metadataStreamDigest;
+
+    private FileSignTool() {
+        throw new IllegalStateException("Utility class");
+    }
 
     /**
      * Digitally sign the data with the private key. Return null if anything goes wrong (e.g., bad
@@ -161,7 +164,7 @@ public class FileSignTool {
     }
 
     /**
-     * Loads a pfx key file and return a KeyPair object
+     * Loads a pfx key file and return a KeyPair object.
      *
      * @param keyFileName a pfx key file
      * @param password password
@@ -188,7 +191,7 @@ public class FileSignTool {
     }
 
     /**
-     * builds a signature file path from a destination directory and stream file name
+     * builds a signature file path from a destination directory and stream file name.
      *
      * @param destDir the directory to which the signature file is saved
      * @param streamFile stream file to be signed
@@ -202,7 +205,7 @@ public class FileSignTool {
     /**
      * generates signature file for the given stream file with the given KeyPair for event stream /
      * record stream v5 file, generates v5 signature file which contains a EntireHash, a
-     * EntireSignature, a MetaHash, and a MetaSignature for other files, generate old signature file
+     * EntireSignature, a MetaHash, and a MetaSignature for other files, generate old signature file.
      *
      * @param sigKeyPair the keyPair used for signing
      * @param streamFile the stream file to be signed
@@ -228,7 +231,7 @@ public class FileSignTool {
     }
 
     /**
-     * Loads a StreamTypeFromJson object from a json file
+     * Loads a StreamTypeFromJson object from a json file.
      *
      * @param jsonPath path of the json file
      * @return a StreamType object
@@ -474,7 +477,7 @@ public class FileSignTool {
     }
 
     /**
-     * Sign all files in the provided directory
+     * Sign all files in the provided directory.
      *
      * @param sourceDir the directory where the files to sign are located
      * @param destDir the directory to which the signature files should be written

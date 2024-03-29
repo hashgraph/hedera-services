@@ -24,11 +24,10 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_LONG;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
@@ -412,7 +411,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public Optional<ExceptionalHaltReason> tryLazyCreation(@NonNull final Address address) {
         if (isLongZero(address)) {
-            return Optional.of(INVALID_CONTRACT_ID);
+            return Optional.of(INVALID_ALIAS_KEY);
         }
         final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number != MISSING_ENTITY_NUMBER) {
@@ -506,10 +505,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
 
     private boolean isNotPriority(
             final Address address, final @NonNull com.hedera.hapi.node.state.token.Account account) {
-        final var alias = requireNonNull(account).alias();
-        return alias != null
-                && alias.length() == EVM_ADDRESS_LENGTH_AS_LONG
-                && !address.equals(pbjToBesuAddress(alias));
+        requireNonNull(account);
+        final var maybeEvmAddress = extractEvmAddress(account.alias());
+        return maybeEvmAddress != null && !address.equals(pbjToBesuAddress(maybeEvmAddress));
     }
 
     private com.hedera.hapi.node.state.token.Account validatedAccount(final AccountID accountID) {

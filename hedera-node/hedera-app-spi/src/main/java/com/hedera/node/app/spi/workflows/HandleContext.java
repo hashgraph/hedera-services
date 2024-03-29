@@ -353,9 +353,13 @@ public interface HandleContext {
      *
      * @param txBody the {@link TransactionBody} of the child transaction to compute fees for
      * @param syntheticPayerId the child payer
+     * @param computeDispatchFeesAsTopLevel for mono fidelity, whether to compute fees as a top-level transaction
      * @return the calculated fees
      */
-    Fees dispatchComputeFees(@NonNull TransactionBody txBody, @NonNull AccountID syntheticPayerId);
+    Fees dispatchComputeFees(
+            @NonNull TransactionBody txBody,
+            @NonNull AccountID syntheticPayerId,
+            @NonNull ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel);
 
     /**
      * Dispatches an independent (top-level) transaction, that precedes the current transaction.
@@ -663,14 +667,6 @@ public interface HandleContext {
     void revertRecordsFrom(@NonNull RecordListCheckPoint recordListCheckPoint);
 
     /**
-     * Reclaim the capacity for a number of transactions of the same functionality.
-     *
-     * @param n the number of transactions to consider
-     * @param function the functionality type of the transactions
-     */
-    void reclaimPreviouslyReservedThrottle(int n, HederaFunctionality function);
-
-    /**
      * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
      * given function at the given time. (The time matters because we want to consider how much
      * will have leaked between now and that time.)
@@ -763,4 +759,11 @@ public interface HandleContext {
             throw new IllegalArgumentException("Transaction id must be set if dispatching without an explicit payer");
         }
     }
+
+    /**
+     * Returns the freeze time from state, if it is set.
+     * @return the freeze time, if it is set
+     */
+    @Nullable
+    Instant freezeTime();
 }

@@ -229,6 +229,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void failsWhenAutoAssociatedTokenHasKycKey() {
+        subject = new CryptoTransferHandler(validator, false);
         givenTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
@@ -258,6 +259,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void happyPathWorksWithAutoCreation() {
+        subject = new CryptoTransferHandler(validator, false);
         givenTxn();
         refreshWritableStores();
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());

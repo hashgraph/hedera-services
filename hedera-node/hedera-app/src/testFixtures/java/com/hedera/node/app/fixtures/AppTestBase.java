@@ -136,7 +136,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
     private final HederaSoftwareVersion softwareVersion = new HederaSoftwareVersion(
             SemanticVersion.newBuilder().major(1).minor(2).patch(3).build(),
-            SemanticVersion.newBuilder().major(1).minor(2).patch(3).build());
+            SemanticVersion.newBuilder().major(1).minor(2).patch(3).build(),
+            0);
     /** Represents "this node" in our tests. */
     protected final NodeId nodeSelfId = new NodeId(7);
     /** The AccountID of "this node" in our tests. */
@@ -314,7 +315,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         }
 
         public App build() {
-            final var hederaSoftwareVersion = new HederaSoftwareVersion(this.hapiVersion, this.softwareVersion);
+            final var hederaSoftwareVersion = new HederaSoftwareVersion(this.hapiVersion, this.softwareVersion, 0);
 
             final SelfNodeInfo realSelfNodeInfo;
             if (this.selfNodeInfo == null) {

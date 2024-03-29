@@ -64,6 +64,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
     private final AccountID senderId;
     private final AddressIdConverter addressIdConverter;
     private final boolean requiresApproval;
+    private final SpecialRewardReceivers specialRewardReceivers;
 
     // too many parameters
     @SuppressWarnings("java:S107")
@@ -77,7 +78,8 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final AccountID senderId,
             @NonNull final AddressIdConverter addressIdConverter,
-            final boolean requiresApproval) {
+            final boolean requiresApproval,
+            @NonNull final SpecialRewardReceivers specialRewardReceivers) {
         super(gasCalculator, enhancement, false);
         this.amount = amount;
         this.from = from;
@@ -87,13 +89,14 @@ public class Erc20TransfersCall extends AbstractHtsCall {
         this.senderId = requireNonNull(senderId);
         this.addressIdConverter = requireNonNull(addressIdConverter);
         this.requiresApproval = requiresApproval;
+        this.specialRewardReceivers = requireNonNull(specialRewardReceivers);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public @NonNull PricedResult execute() {
+    public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
         // https://eips.ethereum.org/EIPS/eip-20
         final var syntheticTransfer = syntheticTransferOrTransferFrom(senderId);
         final var selector = (from == null) ? ERC_20_TRANSFER.selector() : ERC_20_TRANSFER_FROM.selector();
@@ -103,11 +106,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             return reversionWith(INVALID_TOKEN_ID, gasRequirement);
         }
         final var recordBuilder = systemContractOperations()
-                .dispatch(
-                        syntheticTransferOrTransferFrom(senderId),
-                        verificationStrategy,
-                        senderId,
-                        ContractCallRecordBuilder.class);
+                .dispatch(syntheticTransfer, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var status = recordBuilder.status();
         if (status != SUCCESS) {
             if (status == NOT_SUPPORTED) {
@@ -118,6 +117,15 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                 return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
             }
         } else {
+            final var op = syntheticTransfer.cryptoTransferOrThrow();
+            for (final var fungibleTransfers : op.tokenTransfersOrThrow()) {
+                TransferEventLoggingUtils.logSuccessfulFungibleTransfer(
+                        requireNonNull(tokenId),
+                        fungibleTransfers.transfersOrThrow(),
+                        enhancement.nativeOperations().readableAccountStore(),
+                        frame);
+            }
+            specialRewardReceivers.addInFrame(frame, op, recordBuilder.getAssessedCustomFees());
             final var encodedOutput = (from == null)
                     ? ERC_20_TRANSFER.getOutputs().encodeElements(true)
                     : ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
@@ -126,26 +134,6 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                     .build());
             return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }
-    }
-
-    @NonNull
-    @Override
-    public PricedResult execute(final MessageFrame frame) {
-        final var result = execute();
-
-        if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
-            final var tokenTransferLists = syntheticTransferOrTransferFrom(senderId)
-                    .cryptoTransferOrThrow()
-                    .tokenTransfersOrThrow();
-            for (final var fungibleTransfers : tokenTransferLists) {
-                TransferEventLoggingUtils.logSuccessfulFungibleTransfer(
-                        requireNonNull(tokenId),
-                        fungibleTransfers.transfersOrThrow(),
-                        enhancement.nativeOperations().readableAccountStore(),
-                        frame);
-            }
-        }
-        return result;
     }
 
     private TransactionBody syntheticTransferOrTransferFrom(@NonNull final AccountID spenderId) {

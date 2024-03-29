@@ -65,7 +65,12 @@ public abstract class AbstractLogPayload implements LogPayload {
     @Override
     public final void setMessage(String message) {
         if (message.indexOf('{') != -1) {
-            throw new IllegalArgumentException("The character '{' is not permitted in the message field.");
+            throw new IllegalArgumentException(
+                    """
+                    The character '{' is not permitted in the message field.
+                    Illegal message: "%s"
+                    """
+                            .formatted(message));
         }
         this.message = message;
     }

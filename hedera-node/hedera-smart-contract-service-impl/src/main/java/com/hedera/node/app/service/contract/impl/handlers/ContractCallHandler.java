@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractCallResourceUsage;
@@ -59,7 +60,9 @@ public class ContractCallHandler implements TransactionHandler {
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
-        outcome.addCallDetailsTo(context.recordBuilder(ContractCallRecordBuilder.class));
+        // (FUTURE) Remove ExternalizeAbortResult.NO, this is only
+        // for mono-service fidelity during differential testing
+        outcome.addCallDetailsTo(context.recordBuilder(ContractCallRecordBuilder.class), ExternalizeAbortResult.NO);
 
         throwIfUnsuccessful(outcome.status());
     }

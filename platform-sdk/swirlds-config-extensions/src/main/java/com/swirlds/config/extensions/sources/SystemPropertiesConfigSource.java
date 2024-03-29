@@ -33,7 +33,7 @@ public final class SystemPropertiesConfigSource implements ConfigSource {
     private SystemPropertiesConfigSource() {}
 
     /**
-     * Returns the singleton
+     * Returns the singleton.
      *
      * @return the singleton
      */

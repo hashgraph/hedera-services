@@ -65,6 +65,7 @@ public class TaskSchedulerBuilder<O> {
     private ObjectCounter offRamp;
     private ForkJoinPool pool;
     private UncaughtExceptionHandler uncaughtExceptionHandler;
+    private String hyperlink;
 
     private Duration sleepDuration = Duration.ofNanos(100);
 
@@ -85,8 +86,8 @@ public class TaskSchedulerBuilder<O> {
         // The reason why wire names have a restricted character set is because downstream consumers of metrics
         // are very fussy about what characters are allowed in metric names.
         if (!name.matches("^[a-zA-Z0-9_]*$")) {
-            throw new IllegalArgumentException(
-                    "Task Schedulers name must only contain alphanumeric characters and underscores");
+            throw new IllegalArgumentException("Illegal name: \"" + name
+                    + "\". Task Schedulers name must only contain alphanumeric characters and underscores");
         }
         if (name.isEmpty()) {
             throw new IllegalArgumentException("TaskScheduler name must not be empty");
@@ -243,6 +244,18 @@ public class TaskSchedulerBuilder<O> {
     }
 
     /**
+     * Provide a hyperlink to documentation for this task scheduler. If none is provided then no hyperlink will be
+     * generated. Used only for the automatically generated wiring diagram.
+     * @param hyperlink the hyperlink to the documentation for this task scheduler
+     * @return this
+     */
+    @NonNull
+    public TaskSchedulerBuilder<O> withHyperlink(@Nullable final String hyperlink) {
+        this.hyperlink = hyperlink;
+        return this;
+    }
+
+    /**
      * Build an uncaught exception handler if one was not provided.
      *
      * @return the uncaught exception handler
@@ -390,7 +403,7 @@ public class TaskSchedulerBuilder<O> {
                             squelchingEnabled,
                             busyFractionTimer,
                             false);
-                    case DIRECT_STATELESS -> new DirectTaskScheduler<>(
+                    case DIRECT_THREADSAFE -> new DirectTaskScheduler<>(
                             model,
                             name,
                             buildUncaughtExceptionHandler(),
@@ -401,7 +414,7 @@ public class TaskSchedulerBuilder<O> {
                             true);
                 };
 
-        model.registerScheduler(scheduler);
+        model.registerScheduler(scheduler, hyperlink);
 
         return scheduler;
     }

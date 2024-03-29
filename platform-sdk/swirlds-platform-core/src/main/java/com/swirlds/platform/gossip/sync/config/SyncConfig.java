@@ -41,6 +41,7 @@ import java.time.Duration;
  *                                        during a sync
  * @param maxSyncTime                     the maximum amount of time to spend syncing with a peer, syncs that take
  *                                        longer than this will be aborted
+ * @param maxSyncEventCount               the maximum number of events to send in a sync, or 0 for no limit
  */
 @ConfigData("sync")
 public record SyncConfig(
@@ -52,4 +53,5 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "true") boolean filterLikelyDuplicates,
         @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold,
         @ConfigProperty(defaultValue = "500ms") Duration syncKeepalivePeriod,
-        @ConfigProperty(defaultValue = "1m") Duration maxSyncTime) {}
+        @ConfigProperty(defaultValue = "1m") Duration maxSyncTime,
+        @ConfigProperty(defaultValue = "0") int maxSyncEventCount) {}

@@ -539,7 +539,7 @@ class InOrderLinkerTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    @DisplayName("Other parent with mismatched time created should not be linked")
+    @DisplayName("Other parent with mismatched time created should be linked")
     void otherParentTimeCreatedMismatch(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
@@ -547,7 +547,7 @@ class InOrderLinkerTests {
         final Hash lateParentHash = randomHash(random);
         final long lateParentGeneration = 1;
         final GossipEvent lateParent = generateMockEvent(
-                selfId,
+                otherId,
                 lateParentHash,
                 lateParentGeneration,
                 1,
@@ -568,7 +568,7 @@ class InOrderLinkerTests {
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
-        assertNull(linkedEvent.getOtherParent(), "Other parent has mismatched time created, and should be null");
+        assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
         assertEquals(0, exitedIntakePipelineCount.get());
     }
 }
