@@ -96,7 +96,15 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .usingInvalidFeeScheduleKey()
                         .signedBy(civilian, "adminKey")
                         .payingWith(civilian))
-                .then(getTokenInfo("primary").logged());
+                .then(getTokenInfo("primary")
+                        .hasInvalidAdminKey()
+                        .hasInvalidWipeKey()
+                        .hasInvalidKycKey()
+                        .hasInvalidFreezeKey()
+                        .hasInvalidPauseKey()
+                        .hasInvalidSupplyKey()
+                        .hasInvalidFeeScheduleKey()
+                        .logged());
     }
 
     @HapiTest
@@ -143,7 +151,15 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 "supplyKey",
                                 "feeScheduleKey")
                         .payingWith(civilian))
-                .then(getTokenInfo("primary").logged());
+                .then(getTokenInfo("primary")
+                        .hasInvalidAdminKey()
+                        .hasInvalidWipeKey()
+                        .hasInvalidKycKey()
+                        .hasInvalidFreezeKey()
+                        .hasInvalidPauseKey()
+                        .hasInvalidSupplyKey()
+                        .hasInvalidFeeScheduleKey()
+                        .logged());
     }
 
     // here the admin key signature is missing when we try to update low priority keys plus the admin key
