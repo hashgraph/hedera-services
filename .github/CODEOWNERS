@@ -13,7 +13,7 @@
 /hedera-node/README.md                          @hashgraph/hedera-base @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Deployments - Configuration & Grafana Dashboards
-/hedera-node/configuration/**                   @rbair23 @dalvizu @poulok @netopyr @Nana-EC @SimiHunjan @steven-sheehy @nickpoorman @nathanklick
+/hedera-node/configuration/**                   @rbair23 @dalvizu @poulok @netopyr @Nana-EC @SimiHunjan @steven-sheehy @nathanklick
 /hedera-node/infrastructure/**                  @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-base @hashgraph/hedera-services
 
 # Hedera Node Docker Definitions
@@ -62,6 +62,12 @@
 /platform-sdk/swirlds-unit-tests/structures/    @hashgraph/platform-data @hashgraph/platform-architects  @hashgraph/platform-base
 /platform-sdk/swirlds-virtualmap/               @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/**/module-info.java               @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/release-engineering @hashgraph/release-engineering-managers
+
+# Documentation
+/platform-sdk/docs/platformWiki.md              @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base
+/platform-sdk/docs/base                         @hashgraph/platform-base
+/platform-sdk/docs/components                   @hashgraph/platform-hashgraph
+/platform-sdk/docs/core                         @hashgraph/platform-hashgraph
 
 #########################
 #####  Core Files  ######
