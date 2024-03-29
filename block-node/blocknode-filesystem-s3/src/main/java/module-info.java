@@ -11,9 +11,9 @@ module com.hedera.storage.blocknode.filesystem.s3 {
     requires software.amazon.awssdk.http.urlconnection;
     requires software.amazon.awssdk.http;
     requires software.amazon.awssdk.regions;
+    requires software.amazon.awssdk.services.s3;
     requires software.amazon.awssdk.utils;
     requires transitive com.hedera.storage.blocknode.config;
     requires transitive com.hedera.storage.blocknode.filesystem.api;
     requires transitive com.hedera.node.hapi;
-    requires transitive software.amazon.awssdk.services.s3;
 }
