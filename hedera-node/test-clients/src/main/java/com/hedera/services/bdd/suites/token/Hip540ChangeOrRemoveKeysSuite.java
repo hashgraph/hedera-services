@@ -122,7 +122,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
     @HapiTest
     public HapiSpec updateFailsIfTokenIsImmutable() {
         final var civilian = "civilian";
-        return defaultHapiSpec("validateThatTheAdminKeyCanRemoveItself")
+        return defaultHapiSpec("updateFailsIfTokenIsImmutable")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed("adminKey"),
@@ -138,7 +138,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
     @HapiTest
     public HapiSpec updateFailsIfKeyIsMissing() {
         final var civilian = "civilian";
-        return defaultHapiSpec("validateThatTheAdminKeyCanRemoveOtherKeys")
+        return defaultHapiSpec("updateFailsIfKeyIsMissing")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed("adminKey"),

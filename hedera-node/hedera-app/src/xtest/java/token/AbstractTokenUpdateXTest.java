@@ -16,21 +16,13 @@
 
 package token;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import common.AbstractXTest;
 import common.BaseScaffoldingComponent;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AbstractTokenUpdateXTest extends AbstractXTest {
-
-    protected static final String TOKEN_TREASURY = "tokenTreasury";
-
-    protected static final AccountID DEFAULT_PAYER_ID =
-            AccountID.newBuilder().accountNum(2L).build();
 
     protected TokenScaffoldingComponent component;
 
@@ -46,11 +38,5 @@ public abstract class AbstractTokenUpdateXTest extends AbstractXTest {
     @Override
     protected BaseScaffoldingComponent component() {
         return component;
-    }
-
-    protected Map<AccountID, Account> initialAccounts() {
-        final var accounts = super.initialAccounts();
-        addNamedAccount(TOKEN_TREASURY, accounts);
-        return accounts;
     }
 }

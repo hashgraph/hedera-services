@@ -96,11 +96,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
     private boolean emptyFreezeKey = false;
 
-    private boolean emptyKycKey = true;
+    private boolean emptyKycKey = false;
 
-    private boolean emptySupplyKey = true;
+    private boolean emptySupplyKey = false;
 
-    private boolean emptyWipeKey = true;
+    private boolean emptyWipeKey = false;
 
     @Nullable
     private String expectedLockKey = null;
