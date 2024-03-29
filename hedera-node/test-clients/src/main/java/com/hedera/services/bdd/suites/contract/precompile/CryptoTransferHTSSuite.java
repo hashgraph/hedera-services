@@ -69,7 +69,11 @@ import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -450,6 +454,249 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 TXN_TO_NON_EXISTING_ADDRESS,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)));
+    }
+
+    @HapiTest
+    final HapiSpec hapiTransferFromForNFTWithInvalidAddressesFails() {
+        final var NON_EXISTING_ADDRESS = "0x0000000000000000000000000000000000123456";
+        final var TXN_TO_NON_EXISTING_ADDRESS = "TXN_TO_NON_EXISTING_ADDRESS";
+        final var TXN_FROM_NON_EXISTING_ADDRESS = "TXN_FROM_NON_EXISTING_ADDRESS";
+        final var TXN_WITH_NON_EXISTING_NFT = "TXN_WITH_NON_EXISTING_NFT";
+
+        return defaultHapiSpec(
+                        "hapiTransferFromForNFTWithInvalidAddressesFails",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
+                        tokenCreate(NFT_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                        mintToken(NFT_TOKEN, List.of(META1, META2)),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addNftAllowance(OWNER, NFT_TOKEN, HTS_TRANSFER_FROM_CONTRACT, false, List.of(2L))
+                                .signedBy(DEFAULT_PAYER, OWNER)
+                                .fee(ONE_HBAR))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // transfer TO address that does not exist
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM_NFT,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NFT_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(NON_EXISTING_ADDRESS),
+                                        BigInteger.ONE)
+                                .gas(100_000_00L)
+                                .via(TXN_TO_NON_EXISTING_ADDRESS)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        // transfer FROM address that does not exist
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM_NFT,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NFT_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(NON_EXISTING_ADDRESS),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECEIVER))),
+                                        BigInteger.ONE)
+                                .gas(100_000_00L)
+                                .via(TXN_FROM_NON_EXISTING_ADDRESS)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        // transfer with nft address that does not exist
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM_NFT,
+                                        HapiParserUtil.asHeadlongAddress(new byte[20]),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECEIVER))),
+                                        BigInteger.ONE)
+                                .gas(100_000_00L)
+                                .via(TXN_WITH_NON_EXISTING_NFT)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        childRecordsCheck(
+                                TXN_TO_NON_EXISTING_ADDRESS,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_ALIAS_KEY)),
+                        childRecordsCheck(
+                                TXN_FROM_NON_EXISTING_ADDRESS,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_ACCOUNT_ID)),
+                        childRecordsCheck(
+                                TXN_WITH_NON_EXISTING_NFT,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)));
+    }
+
+    @HapiTest
+    final HapiSpec hapiTransferFromForFungibleTokenWithInvalidAddressesFails() {
+        final var NON_EXISTING_ADDRESS = "0x0000000000000000000000000000000000123456";
+        final var TXN_TO_NON_EXISTING_ADDRESS = "TXN_TO_NON_EXISTING_ADDRESS";
+        final var TXN_FROM_NON_EXISTING_ADDRESS = "TXN_FROM_NON_EXISTING_ADDRESS";
+        final var TXN_WITH_NON_EXISTING_TOKEN = "TXN_WITH_NON_EXISTING_TOKEN";
+
+        return defaultHapiSpec("hapiTransferFromForFungibleTokenWithInvalidAddressesFails")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(10L)
+                                .maxSupply(1000L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(OWNER),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // transfer TO address that does not exist
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(NON_EXISTING_ADDRESS),
+                                        5L)
+                                .gas(100_000_00L)
+                                .via(TXN_TO_NON_EXISTING_ADDRESS)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        // transfer FROM address that does not exist
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(NON_EXISTING_ADDRESS),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECEIVER))),
+                                        5L)
+                                .gas(100_000_00L)
+                                .via(TXN_FROM_NON_EXISTING_ADDRESS)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        // transfer with token address that does not exist
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(new byte[20]),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECEIVER))),
+                                        5L)
+                                .gas(100_000_00L)
+                                .via(TXN_WITH_NON_EXISTING_TOKEN)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        childRecordsCheck(
+                                TXN_TO_NON_EXISTING_ADDRESS,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_ALIAS_KEY)),
+                        childRecordsCheck(
+                                TXN_FROM_NON_EXISTING_ADDRESS,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_ACCOUNT_ID)),
+                        childRecordsCheck(
+                                TXN_WITH_NON_EXISTING_TOKEN,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)));
+    }
+
+    @HapiTest
+    final HapiSpec hapiTransferFromForFungibleTokenWithInvalidAmountsFails() {
+        final var TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE = "TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE";
+        final var TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE = "TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE";
+
+        final var allowance = 10L;
+        return defaultHapiSpec("hapiTransferFromForFungibleTokenWithInvalidAmountsFails")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(SPENDER).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(15L)
+                                .maxSupply(1000L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(OWNER),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, HTS_TRANSFER_FROM_CONTRACT, allowance)
+                                .signedBy(DEFAULT_PAYER, OWNER)
+                                .fee(ONE_HBAR),
+                        getAccountDetails(OWNER)
+                                .payingWith(GENESIS)
+                                .has(accountDetailsWith()
+                                        .tokenAllowancesContaining(
+                                                FUNGIBLE_TOKEN, HTS_TRANSFER_FROM_CONTRACT, allowance)))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // transfer with amount > allowance for the caller
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECEIVER))),
+                                        BigInteger.valueOf(allowance + 1))
+                                .gas(100_000_00L)
+                                .via(TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        // successful transfer to reduce balance
+                        cryptoTransfer(moving(10L, FUNGIBLE_TOKEN).between(OWNER, SPENDER)),
+                        // transfer with amount > balance of owner account
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECEIVER))),
+                                        BigInteger.valueOf(6L))
+                                .gas(100_000_00L)
+                                .via(TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        childRecordsCheck(
+                                TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(AMOUNT_EXCEEDS_ALLOWANCE)),
+                        childRecordsCheck(
+                                TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INSUFFICIENT_TOKEN_BALANCE)));
     }
 
     @HapiTest
