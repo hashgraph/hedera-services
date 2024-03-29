@@ -49,6 +49,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.hapi.node.base.TokenKeyValidation;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -93,7 +94,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         requireNonNull(txn);
         final var op = txn.tokenUpdateOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
-        if (op.hasFeeScheduleKey()) {
+
+        if (op.hasFeeScheduleKey()
+                && !isKeyRemoval(op.feeScheduleKey())
+                && op.keyVerificationMode() != TokenKeyValidation.NO_VALIDATION) {
             validateTruePreCheck(isValid(op.feeScheduleKey()), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
         }
     }
@@ -449,8 +453,16 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             @NonNull final Token originalToken)
             throws PreCheckException {
         if (op.hasAdminKey()) {
-            context.requireKey(op.adminKeyOrThrow());
+            if (isValid(op.adminKey())) {
+                // if op admin key is valid we require the signature
+                context.requireKey(op.adminKeyOrThrow());
+            } else {
+                // if it's not, case is that the current admin key wants to
+                // set itself to an invalid key, hence we require only the current admin key signature
+                context.requireKey(originalToken.adminKey());
+            }
         }
+
         if (op.hasTreasury()) {
             context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_ACCOUNT_ID);
         }

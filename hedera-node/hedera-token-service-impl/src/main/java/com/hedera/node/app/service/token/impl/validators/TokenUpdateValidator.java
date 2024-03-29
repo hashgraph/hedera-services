@@ -77,7 +77,7 @@ public class TokenUpdateValidator {
             validator.validateTokenName(op.name(), tokensConfig);
         }
         // validate token keys, if any being changed
-        if (op.keyVerificationMode() == TokenKeyValidation.FULL_VALIDATION) {
+        if (op.keyVerificationMode() != TokenKeyValidation.NO_VALIDATION) {
             validator.validateTokenKeys(
                     op.hasAdminKey(), op.adminKey(),
                     op.hasKycKey(), op.kycKey(),

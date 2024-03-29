@@ -23,13 +23,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,13 +38,7 @@ import org.junit.jupiter.api.Tag;
 @HapiTestSuite
 @Tag(TOKEN)
 public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
-
     private static final Logger log = LogManager.getLogger(Hip540ChangeOrRemoveKeysSuite.class);
-    private static final Key allZeros = Key.newBuilder()
-            .setECDSASecp256K1(ByteString.fromHex("0000000000000000000000000000000000000000"))
-            .build();
-    private static final Key otherInvalidKey =
-            Key.newBuilder().setECDSASecp256K1(ByteString.fromHex("00a9fF0a")).build();
 
     public static void main(String... args) {
         new Hip540ChangeOrRemoveKeysSuite().runSuiteSync();
@@ -56,33 +50,208 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
     }
 
     private List<HapiSpec> positiveTests() {
-        return List.of(changeToInvalid());
+        return List.of(updateAllKeysToInvalidAdminKeySigns(), updateAllKeysToInvalidAllKeysSign());
     }
 
     private List<HapiSpec> negativeTests() {
-        return List.of();
+        return List.of(
+                updateFailsAllKeysToInvalidOnlyLowPriorityKeysSign(),
+                updateFailsAllKeysToInvalidOneLowPriorityKeyDoesNotSign(),
+                updateFailsIfTokenIsInvalidAndWeValidateForKeys());
     }
 
     @HapiTest
-    public HapiSpec changeToInvalid() {
+    public HapiSpec updateAllKeysToInvalidAdminKeySigns() {
         String saltedName = salted("primary");
         final var civilian = "civilian";
-        return defaultHapiSpec("changeToInvalid")
+        return defaultHapiSpec("updateAllKeysToInvalidAdminKeySigns")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed("adminKey"),
+                        newKeyNamed("wipeKey"),
+                        newKeyNamed("kycKey"),
                         newKeyNamed("freezeKey"),
-                        newKeyNamed("newFreezeKey"),
+                        newKeyNamed("pauseKey"),
+                        newKeyNamed("supplyKey"),
+                        newKeyNamed("feeScheduleKey"),
                         tokenCreate("primary")
                                 .name(saltedName)
                                 .initialSupply(500)
                                 .adminKey("adminKey")
+                                .wipeKey("wipeKey")
+                                .kycKey("kycKey")
                                 .freezeKey("freezeKey")
+                                .pauseKey("pauseKey")
+                                .supplyKey("supplyKey")
+                                .feeScheduleKey("feeScheduleKey")
                                 .payingWith(civilian))
                 .when(tokenUpdate("primary")
-                        .freezeKey("newFreezeKey")
-                        .signedBy(civilian, "freezeKey")
+                        .applyNoValidationToKeys()
+                        .usingInvalidAdminKey()
+                        .usingInvalidWipeKey()
+                        .usingInvalidKycKey()
+                        .usingInvalidFreezeKey()
+                        .usingInvalidPauseKey()
+                        .usingInvalidSupplyKey()
+                        .usingInvalidFeeScheduleKey()
+                        .signedBy(civilian, "adminKey")
                         .payingWith(civilian))
+                .then(getTokenInfo("primary").logged());
+    }
+
+    @HapiTest
+    public HapiSpec updateAllKeysToInvalidAllKeysSign() {
+        String saltedName = salted("primary");
+        final var civilian = "civilian";
+        return defaultHapiSpec("updateAllKeysToInvalidAllKeysSign")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("wipeKey"),
+                        newKeyNamed("kycKey"),
+                        newKeyNamed("freezeKey"),
+                        newKeyNamed("pauseKey"),
+                        newKeyNamed("supplyKey"),
+                        newKeyNamed("feeScheduleKey"),
+                        tokenCreate("primary")
+                                .name(saltedName)
+                                .initialSupply(500)
+                                .adminKey("adminKey")
+                                .wipeKey("wipeKey")
+                                .kycKey("kycKey")
+                                .freezeKey("freezeKey")
+                                .pauseKey("pauseKey")
+                                .supplyKey("supplyKey")
+                                .feeScheduleKey("feeScheduleKey")
+                                .payingWith(civilian))
+                .when(tokenUpdate("primary")
+                        .applyNoValidationToKeys()
+                        .usingInvalidAdminKey()
+                        .usingInvalidWipeKey()
+                        .usingInvalidKycKey()
+                        .usingInvalidFreezeKey()
+                        .usingInvalidPauseKey()
+                        .usingInvalidSupplyKey()
+                        .usingInvalidFeeScheduleKey()
+                        .signedBy(
+                                civilian,
+                                "adminKey",
+                                "wipeKey",
+                                "kycKey",
+                                "freezeKey",
+                                "pauseKey",
+                                "supplyKey",
+                                "feeScheduleKey")
+                        .payingWith(civilian))
+                .then(getTokenInfo("primary").logged());
+    }
+
+    // here the admin key signature is missing when we try to update low priority keys plus the admin key
+    // all low priority key signatures are present, but we should require old admin key signature as well
+    @HapiTest
+    public HapiSpec updateFailsAllKeysToInvalidOnlyLowPriorityKeysSign() {
+        String saltedName = salted("primary");
+        final var civilian = "civilian";
+        return defaultHapiSpec("updateFailsAllKeysToInvalidOnlyLowPriorityKeysSign")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("wipeKey"),
+                        newKeyNamed("kycKey"),
+                        newKeyNamed("freezeKey"),
+                        newKeyNamed("pauseKey"),
+                        newKeyNamed("supplyKey"),
+                        newKeyNamed("feeScheduleKey"),
+                        tokenCreate("primary")
+                                .name(saltedName)
+                                .initialSupply(500)
+                                .adminKey("adminKey")
+                                .wipeKey("wipeKey")
+                                .kycKey("kycKey")
+                                .freezeKey("freezeKey")
+                                .pauseKey("pauseKey")
+                                .supplyKey("supplyKey")
+                                .feeScheduleKey("feeScheduleKey")
+                                .payingWith(civilian))
+                .when(tokenUpdate("primary")
+                        .applyNoValidationToKeys()
+                        .usingInvalidAdminKey()
+                        .usingInvalidWipeKey()
+                        .usingInvalidKycKey()
+                        .usingInvalidFreezeKey()
+                        .usingInvalidPauseKey()
+                        .usingInvalidSupplyKey()
+                        .usingInvalidFeeScheduleKey()
+                        .signedBy(civilian, "wipeKey", "kycKey", "freezeKey", "pauseKey", "supplyKey", "feeScheduleKey")
+                        .payingWith(civilian)
+                        .hasKnownStatus(INVALID_SIGNATURE))
+                .then(getTokenInfo("primary").logged());
+    }
+
+    // we try to update all low priority keys but the supply key signature is missing
+    @HapiTest
+    public HapiSpec updateFailsAllKeysToInvalidOneLowPriorityKeyDoesNotSign() {
+        String saltedName = salted("primary");
+        final var civilian = "civilian";
+        return defaultHapiSpec("updateFailsAllKeysToInvalidOneLowPriorityKeyDoesNotSign")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("wipeKey"),
+                        newKeyNamed("kycKey"),
+                        newKeyNamed("freezeKey"),
+                        newKeyNamed("pauseKey"),
+                        newKeyNamed("supplyKey"),
+                        newKeyNamed("feeScheduleKey"),
+                        tokenCreate("primary")
+                                .name(saltedName)
+                                .initialSupply(500)
+                                .adminKey("adminKey")
+                                .wipeKey("wipeKey")
+                                .kycKey("kycKey")
+                                .freezeKey("freezeKey")
+                                .pauseKey("pauseKey")
+                                .supplyKey("supplyKey")
+                                .feeScheduleKey("feeScheduleKey")
+                                .payingWith(civilian))
+                .when(tokenUpdate("primary")
+                        .applyNoValidationToKeys()
+                        .usingInvalidWipeKey()
+                        .usingInvalidKycKey()
+                        .usingInvalidFreezeKey()
+                        .usingInvalidPauseKey()
+                        .usingInvalidSupplyKey()
+                        .usingInvalidFeeScheduleKey()
+                        .signedBy(civilian, "wipeKey", "kycKey", "freezeKey", "pauseKey", "feeScheduleKey")
+                        .payingWith(civilian)
+                        .hasKnownStatus(INVALID_SIGNATURE))
+                .then(getTokenInfo("primary").logged());
+    }
+
+    @HapiTest
+    public HapiSpec updateFailsIfTokenIsInvalidAndWeValidateForKeys() {
+        String saltedName = salted("primary");
+        final var civilian = "civilian";
+        return defaultHapiSpec("updateFailsIfTokenIsInvalidAndWeValidateForKeys")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("wipeKey"),
+                        newKeyNamed("kycKey"),
+                        newKeyNamed("freezeKey"),
+                        newKeyNamed("pauseKey"),
+                        newKeyNamed("supplyKey"),
+                        newKeyNamed("feeScheduleKey"),
+                        tokenCreate("primary")
+                                .name(saltedName)
+                                .initialSupply(500)
+                                .adminKey("adminKey")
+                                .payingWith(civilian))
+                .when(tokenUpdate("primary")
+                        .usingInvalidAdminKey()
+                        .signedBy(civilian, "adminKey")
+                        .payingWith(civilian)
+                        .hasKnownStatus(INVALID_ADMIN_KEY))
                 .then(getTokenInfo("primary").logged());
     }
 

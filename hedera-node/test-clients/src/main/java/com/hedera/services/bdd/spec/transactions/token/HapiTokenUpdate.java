@@ -91,25 +91,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private boolean useInvalidFreezeKey = false;
     private boolean useInvalidFeeScheduleKey = false;
     private boolean useInvalidPauseKey = false;
-    private DeletedOrInvalidKeyTypes deletedOrInvalidKey = null;
-
-    private enum DeletedOrInvalidKeyTypes {
-        DELETED_ADMIN_KEY,
-        INVALID_ADMIN_KEY,
-        DELETED_WIPE_KEY,
-        INVALID_WIPE_KEY,
-        DELETED_KYC_KEY,
-        INVALID_KYC_KEY,
-        DELETED_SUPPLY_KEY,
-        INVALID_SUPPLY_KEY,
-        DELETED_FREEZE_KEY,
-        INVALID_FREEZE_KEY,
-        DELETED_FEE_SCHEDULE_KEY,
-        INVALID_FEE_SCHEDULE_KEY,
-        DELETED_PAUSE_KEY,
-        INVALID_PAUSE_KEY,
-    }
-
+    private boolean noKeyValidation = false;
     private Optional<String> contractKeyName = Optional.empty();
     private Set<TokenKeyType> contractKeyAppliedTo = Set.of();
 
@@ -269,6 +251,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         return this;
     }
 
+    public HapiTokenUpdate applyNoValidationToKeys() {
+        noKeyValidation = true;
+        return this;
+    }
+
     public HapiTokenUpdate contractKey(final Set<TokenKeyType> contractKeyAppliedTo, final String contractKeyName) {
         this.contractKeyName = Optional.of(contractKeyName);
         this.contractKeyAppliedTo = contractKeyAppliedTo;
@@ -351,20 +338,20 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             }
                             newTreasury.ifPresent(a -> b.setTreasury(asId(a, spec)));
                             if (useInvalidSupplyKey) {
-                                b.setFreezeKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setSupplyKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
                             } else {
                                 newSupplyKey.ifPresent(
                                         k -> b.setSupplyKey(spec.registry().getKey(k)));
                             }
                             newSupplyKeySupplier.ifPresent(s -> b.setSupplyKey(s.get()));
                             if (useInvalidWipeKey) {
-                                b.setFreezeKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setWipeKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
                             } else {
                                 newWipeKey.ifPresent(
                                         k -> b.setWipeKey(spec.registry().getKey(k)));
                             }
                             if (useInvalidKycKey) {
-                                b.setFreezeKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setKycKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
                             } else {
                                 newKycKey.ifPresent(
                                         k -> b.setKycKey(spec.registry().getKey(k)));
@@ -382,7 +369,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                         k -> b.setFreezeKey(spec.registry().getKey(k)));
                             }
                             if (useInvalidPauseKey) {
-                                b.setFreezeKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setPauseKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
                             } else {
                                 newPauseKey.ifPresent(
                                         k -> b.setPauseKey(spec.registry().getKey(k)));
@@ -395,6 +382,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                     Timestamp.newBuilder().setSeconds(t).build()));
                             autoRenewPeriod.ifPresent(secs -> b.setAutoRenewPeriod(
                                     Duration.newBuilder().setSeconds(secs).build()));
+                            if (noKeyValidation) {
+                                b.setKeyVerificationMode(TokenKeyValidation.NO_VALIDATION);
+                            } else {
+                                b.setKeyVerificationMode(TokenKeyValidation.FULL_VALIDATION);
+                            }
                             // We often want to use an existing contract to control the keys of various types (supply,
                             // freeze etc.)
                             // of a token, and in this case we need to use a Key{contractID=0.0.X} as the key; so for
