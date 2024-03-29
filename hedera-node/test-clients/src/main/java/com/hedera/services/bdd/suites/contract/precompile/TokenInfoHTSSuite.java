@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -51,6 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
@@ -152,7 +154,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 getInfoOnDeletedFungibleTokenWorks(),
                 getInfoOnInvalidFungibleTokenFails(),
                 getInfoOnDeletedNonFungibleTokenFails(),
-                getInfoOnInvalidNonFungibleTokenFails());
+                getInfoOnInvalidNonFungibleTokenFails(),
+                getTokenCustomFeesNegativeCases());
     }
 
     List<HapiSpec> positiveSpecs() {
@@ -900,6 +903,78 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                         .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
                                                         .withStatus(SUCCESS)
                                                         .withCustomFees(getCustomFeeForNFT(spec))))))));
+    }
+
+    @HapiTest
+    final HapiSpec getTokenCustomFeesNegativeCases() {
+        final int maxSupply = 10;
+        final var accountAddressForToken = "accountAddressForToken";
+        final var tokenWithNoFees = "tokenWithNoFees";
+        return defaultHapiSpec("negativeGetTokenCustomFeesCases")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        cryptoCreate(NFT_OWNER),
+                        cryptoCreate(HTS_COLLECTOR),
+                        newKeyNamed(SUPPLY_KEY),
+                        uploadInitCode(TOKEN_INFO_CONTRACT),
+                        contractCreate(TOKEN_INFO_CONTRACT).gas(1_000_000L),
+                        tokenCreate(FEE_DENOM).treasury(HTS_COLLECTOR),
+                        tokenCreate(NON_FUNGIBLE_TOKEN_NAME)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .entityMemo(MEMO)
+                                .name(NON_FUNGIBLE_TOKEN_NAME)
+                                .symbol(NON_FUNGIBLE_SYMBOL)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(maxSupply)
+                                .initialSupply(0)
+                                .supplyKey(SUPPLY_KEY)
+                                .withCustom(royaltyFeeWithFallback(
+                                        1, 2, fixedHtsFeeInheritingRoyaltyCollector(100, FEE_DENOM), HTS_COLLECTOR)),
+                        tokenAssociate(NFT_OWNER, List.of(NON_FUNGIBLE_TOKEN_NAME)),
+                        tokenCreate(TOKEN))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_INFO_CONTRACT,
+                                        GET_CUSTOM_FEES_FOR_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(NFT_OWNER))))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .via(accountAddressForToken),
+                        contractCall(
+                                        TOKEN_INFO_CONTRACT,
+                                        GET_CUSTOM_FEES_FOR_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(TOKEN))))
+                                .hasKnownStatus(SUCCESS)
+                                .via(tokenWithNoFees))))
+                .then(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        childRecordsCheck(
+                                accountAddressForToken,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)),
+                        childRecordsCheck(
+                                tokenWithNoFees,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
+                                                        .withCustomFees(List.of(CustomFee.newBuilder()
+                                                                .setFixedFee(
+                                                                        FixedFee.newBuilder()
+                                                                                .build())
+                                                                .setFractionalFee(
+                                                                        FractionalFee.newBuilder()
+                                                                                .build())
+                                                                .setRoyaltyFee(
+                                                                        RoyaltyFee.newBuilder()
+                                                                                .build())
+                                                                .build()))
+                                                        .withStatus(SUCCESS)))))));
     }
 
     private TokenNftInfo getTokenNftInfoForCheck(
