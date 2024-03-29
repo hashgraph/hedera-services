@@ -16,7 +16,6 @@
 
 package com.hedera.node.blocknode.filesystem.api.test;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
