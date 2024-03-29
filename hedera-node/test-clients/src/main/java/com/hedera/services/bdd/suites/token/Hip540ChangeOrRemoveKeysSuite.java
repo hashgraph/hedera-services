@@ -20,17 +20,20 @@ import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,11 +44,6 @@ import org.junit.jupiter.api.Tag;
 public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(Hip540ChangeOrRemoveKeysSuite.class);
-    private static final Key allZeros = Key.newBuilder()
-            .setECDSASecp256K1(ByteString.fromHex("0000000000000000000000000000000000000000"))
-            .build();
-    private static final Key otherInvalidKey =
-            Key.newBuilder().setECDSASecp256K1(ByteString.fromHex("00a9fF0a")).build();
 
     public static void main(String... args) {
         new Hip540ChangeOrRemoveKeysSuite().runSuiteSync();
@@ -61,7 +59,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
     }
 
     private List<HapiSpec> negativeTests() {
-        return List.of();
+        return List.of(updateFailsIfTokenIsImmutable(), updateFailsIfKeyIsMissing());
     }
 
     @Override
@@ -71,30 +69,17 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
 
     @HapiTest
     public HapiSpec validateThatTheAdminKeyCanRemoveOtherKeys() {
-        String token = salted("token");
         final var civilian = "civilian";
         return defaultHapiSpec("validateThatTheAdminKeyCanRemoveOtherKeys")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate("newTokenTreasury").balance(0L),
-                        cryptoCreate("autoRenewAccount").balance(0L),
-                        cryptoCreate("newAutoRenewAccount").balance(0L),
                         newKeyNamed("adminKey"),
                         newKeyNamed("freezeKey"),
-                        newKeyNamed("newFreezeKey"),
                         newKeyNamed("kycKey"),
-                        newKeyNamed("newKycKey"),
                         newKeyNamed("supplyKey"),
                         newKeyNamed("wipeKey"),
                         newKeyNamed("pauseKey"),
                         tokenCreate("primary")
-                                .name(token)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount("autoRenewAccount")
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .initialSupply(500)
-                                .decimals(1)
                                 .adminKey("adminKey")
                                 .freezeKey("freezeKey")
                                 .kycKey("kycKey")
@@ -102,16 +87,14 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .wipeKey("wipeKey")
                                 .pauseKey("pauseKey")
                                 .payingWith(civilian))
-                .when(
-                        tokenAssociate("newTokenTreasury", "primary"),
-                        tokenUpdate("primary")
-                                .properlyEmptyingFreezeKey()
-                                .properlyEmptyingKycKey()
-                                .properlyEmptyingSupplyKey()
-                                .properlyEmptyingWipeKey()
-                                .properlyEmptyingPauseKey()
-                                .signedBy(civilian, "adminKey")
-                                .payingWith(civilian))
+                .when(tokenUpdate("primary")
+                        .properlyEmptyingFreezeKey()
+                        .properlyEmptyingKycKey()
+                        .properlyEmptyingSupplyKey()
+                        .properlyEmptyingWipeKey()
+                        .properlyEmptyingPauseKey()
+                        .signedBy(civilian, "adminKey")
+                        .payingWith(civilian))
                 .then(getTokenInfo("primary")
                         .logged()
                         .hasEmptyFreezeKey()
@@ -123,31 +106,69 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
 
     @HapiTest
     public HapiSpec validateThatTheAdminKeyCanRemoveItself() {
-        String token = salted("token");
         final var civilian = "civilian";
         return defaultHapiSpec("validateThatTheAdminKeyCanRemoveItself")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate("newTokenTreasury").balance(0L),
-                        cryptoCreate("autoRenewAccount").balance(0L),
-                        cryptoCreate("newAutoRenewAccount").balance(0L),
                         newKeyNamed("adminKey"),
-                        tokenCreate("primary")
-                                .name(token)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount("autoRenewAccount")
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .initialSupply(500)
-                                .decimals(1)
-                                .adminKey("adminKey")
-                                .payingWith(civilian))
-                .when(
-                        tokenAssociate("newTokenTreasury", "primary"),
-                        tokenUpdate("primary")
-                                .properlyEmptyingAdminKey()
-                                .signedBy(civilian, "adminKey")
-                                .payingWith(civilian))
+                        tokenCreate("primary").adminKey("adminKey").payingWith(civilian))
+                .when(tokenUpdate("primary")
+                        .properlyEmptyingAdminKey()
+                        .signedBy(civilian, "adminKey")
+                        .payingWith(civilian))
                 .then(getTokenInfo("primary").logged().hasEmptyAdminKey());
+    }
+
+    @HapiTest
+    public HapiSpec updateFailsIfTokenIsImmutable() {
+        final var civilian = "civilian";
+        return defaultHapiSpec("validateThatTheAdminKeyCanRemoveItself")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed("adminKey"),
+                        tokenCreate("primary").payingWith(civilian))
+                .when()
+                .then(tokenUpdate("primary")
+                        .properlyEmptyingAdminKey()
+                        .signedBy(civilian, "adminKey")
+                        .payingWith(civilian)
+                        .hasKnownStatus(TOKEN_IS_IMMUTABLE));
+    }
+
+    @HapiTest
+    public HapiSpec updateFailsIfKeyIsMissing() {
+        final var civilian = "civilian";
+        return defaultHapiSpec("validateThatTheAdminKeyCanRemoveOtherKeys")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed("adminKey"),
+                        tokenCreate("primary").adminKey("adminKey").payingWith(civilian))
+                .when()
+                .then(
+                        tokenUpdate("primary")
+                                .properlyEmptyingFreezeKey()
+                                .signedBy(civilian, "adminKey")
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
+                        tokenUpdate("primary")
+                                .properlyEmptyingKycKey()
+                                .signedBy(civilian, "adminKey")
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_KYC_KEY),
+                        tokenUpdate("primary")
+                                .properlyEmptyingSupplyKey()
+                                .signedBy(civilian, "adminKey")
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
+                        tokenUpdate("primary")
+                                .properlyEmptyingWipeKey()
+                                .signedBy(civilian, "adminKey")
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
+                        tokenUpdate("primary")
+                                .properlyEmptyingPauseKey()
+                                .signedBy(civilian, "adminKey")
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
     }
 }
