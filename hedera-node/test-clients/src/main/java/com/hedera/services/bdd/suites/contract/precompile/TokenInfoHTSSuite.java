@@ -155,7 +155,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 getInfoOnInvalidFungibleTokenFails(),
                 getInfoOnDeletedNonFungibleTokenWorks(),
                 getInfoOnInvalidNonFungibleTokenFails(),
-                getInfoForFungibleTokenByNFTTokenAddressFails(),
+                getInfoForFungibleTokenByNFTTokenAddressWorks(),
                 getInfoForNFTByFungibleTokenAddressFails(),
                 getInfoForTokenByAccountAddressFails());
     }
@@ -838,9 +838,11 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getInfoForFungibleTokenByNFTTokenAddressFails() {
+    // FUTURE: This test ensures matching mono === mod behavior. We should consider revising the behavior of allowing
+    // NonFungibleToken to be passed to getInfoForFungibleToken and resulting SUCCESS status.
+    final HapiSpec getInfoForFungibleTokenByNFTTokenAddressWorks() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
-        return defaultHapiSpec("getInfoForFungibleTokenByNFTTokenAddressFails")
+        return defaultHapiSpec("getInfoForFungibleTokenByNFTTokenAddressWorks")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
