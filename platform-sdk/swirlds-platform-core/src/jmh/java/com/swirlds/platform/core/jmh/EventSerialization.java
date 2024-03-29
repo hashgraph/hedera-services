@@ -26,6 +26,7 @@ import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -55,10 +56,11 @@ public class EventSerialization {
 
     @Setup
     public void setup() throws IOException, ConstructableRegistryException {
-        event = TestingEventBuilder.builder()
+        final Random random = new Random(seed);
+
+        event = TestingEventBuilder.builder(random)
                 .setNumberOfSystemTransactions(1)
-                .setSeed(seed)
-                .buildEvent();
+                .build();
         StaticSoftwareVersion.setSoftwareVersion(event.getHashedData().getSoftwareVersion());
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.platform.system");
         final PipedInputStream inputStream = new PipedInputStream();

@@ -2,8 +2,6 @@ module com.swirlds.common {
 
     /* Exported packages. This list should remain alphabetized. */
     exports com.swirlds.common;
-    exports com.swirlds.common.bloom;
-    exports com.swirlds.common.bloom.hasher;
     exports com.swirlds.common.config;
     exports com.swirlds.common.config.singleton;
     exports com.swirlds.common.constructable;
