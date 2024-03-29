@@ -57,9 +57,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
     }
 
     private List<HapiSpec> positiveTests() {
-        return List.of(
-                validateThatTheAdminKeyCanRemoveOtherKeys(),
-                validateThatTheAdminKeyCanRemoveItself());
+        return List.of(validateThatTheAdminKeyCanRemoveOtherKeys(), validateThatTheAdminKeyCanRemoveItself());
     }
 
     private List<HapiSpec> negativeTests() {
@@ -152,5 +150,4 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .payingWith(civilian))
                 .then(getTokenInfo("primary").logged().hasEmptyAdminKey());
     }
-
 }
