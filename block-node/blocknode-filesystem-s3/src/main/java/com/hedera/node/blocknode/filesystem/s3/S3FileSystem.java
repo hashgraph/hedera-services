@@ -38,9 +38,13 @@ import software.amazon.awssdk.utils.AttributeMap;
 
 public class S3FileSystem implements FileSystemApi {
 
-    private S3Client client;
+    // instance of the awssdk client
+    private final S3Client client;
+
+    // file extension of the block files
     private static final String FILE_EXTENSION = ".blk.gz";
 
+    // config provider
     private final BlockNodeFileSystemConfig fileSystemConfig;
 
     public S3FileSystem(ConfigProvider configProvider) {
@@ -49,7 +53,7 @@ public class S3FileSystem implements FileSystemApi {
         this.client = createS3ClientV2();
     }
 
-    public S3Client createS3ClientV2() {
+    private S3Client createS3ClientV2() {
         return S3Client.builder()
                 .region(Region.of(fileSystemConfig.s3Region()))
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
