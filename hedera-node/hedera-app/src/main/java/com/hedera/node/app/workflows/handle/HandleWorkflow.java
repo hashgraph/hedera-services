@@ -825,25 +825,6 @@ public class HandleWorkflow {
             }
         }
 
-        // verify all the keys
-        for (final var key : preHandleResult.getRequiredKeys()) {
-            final var verification = verifier.verificationFor(key);
-            if (verification.failed()) {
-                utilizationManager.trackFeePayments(consensusNow, state);
-                final var fees = dispatcher.dispatchComputeFees(context);
-                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
-            }
-        }
-        // If there are any hollow accounts whose signatures need to be verified, verify them
-        for (final var hollowAccount : preHandleResult.getHollowAccounts()) {
-            final var verification = verifier.verificationFor(hollowAccount.alias());
-            if (verification.failed()) {
-                utilizationManager.trackFeePayments(consensusNow, state);
-                final var fees = dispatcher.dispatchComputeFees(context);
-                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
-            }
-        }
-
         // Notice that above, we computed fees assuming network utilization for
         // just a fee payment. Here we instead calculate fees based on tracking the
         // user transaction. This is for mono-service fidelity, but does not have any
@@ -903,6 +884,23 @@ public class HandleWorkflow {
         }
         if (privileges == SystemPrivilege.IMPERMISSIBLE) {
             return new ValidationResult(PRE_HANDLE_FAILURE, ENTITY_NOT_ALLOWED_TO_DELETE, fees);
+        }
+
+        // verify all the keys
+        for (final var key : preHandleResult.getRequiredKeys()) {
+            final var verification = verifier.verificationFor(key);
+            if (verification.failed()) {
+                utilizationManager.trackFeePayments(consensusNow, state);
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
+            }
+        }
+        // If there are any hollow accounts whose signatures need to be verified, verify them
+        for (final var hollowAccount : preHandleResult.getHollowAccounts()) {
+            final var verification = verifier.verificationFor(hollowAccount.alias());
+            if (verification.failed()) {
+                utilizationManager.trackFeePayments(consensusNow, state);
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
+            }
         }
 
         return new ValidationResult(SO_FAR_SO_GOOD, OK, fees);
