@@ -237,9 +237,10 @@ class HandleHederaOperationsTest {
     @Test
     void lazyCreationCostInGasTest() {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
-        given(gasCalculator.topLevelGasRequirement(any(), eq(A_NEW_ACCOUNT_ID)))
+        given(gasCalculator.canonicalPriceInTinybars(any(), eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(6L)
                 .willReturn(5L);
+        given(gasCalculator.topLevelGasPrice()).willReturn(1L);
         assertEquals(11L, subject.lazyCreationCostInGas(NON_SYSTEM_LONG_ZERO_ADDRESS));
     }
 
