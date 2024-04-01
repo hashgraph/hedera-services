@@ -57,8 +57,9 @@ public class TokenUpdateValidator {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         // If the token has an empty admin key it can't be updated
         if (isEmpty(token.adminKey())) {
-            validateTrue(BaseTokenHandler.isExpiryOnlyUpdateOp(op), TOKEN_IS_IMMUTABLE);
-            validateTrue(BaseTokenHandler.isLowPriorityKeyUpdate(op), TOKEN_IS_IMMUTABLE);
+            validateTrue(
+                    BaseTokenHandler.isExpiryOnlyUpdateOp(op) || BaseTokenHandler.isLowPriorityKeyUpdate(op),
+                    TOKEN_IS_IMMUTABLE);
         }
         // validate memo
         if (op.hasMemo()) {
