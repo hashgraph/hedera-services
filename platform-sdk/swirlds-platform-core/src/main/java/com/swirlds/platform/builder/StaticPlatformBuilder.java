@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.builder;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
@@ -28,6 +28,7 @@ import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.NodeStartPayload;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.CryptoMetrics;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -39,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  * Static setup code for a platform. Logic in this class should gradually disappear as we move away from the use of
  * static stateful objects.
  */
-final class StaticPlatformBuilder {
+public final class StaticPlatformBuilder {
 
     public static final String LOG4J_FILE_NAME = "log4j2.xml";
 

@@ -313,7 +313,7 @@ public class SwirldsPlatform implements Platform {
      * @param snapshotOverrideConsumer  the consumer for snapshot overrides, null if publishing this data has not been
      *                                  enabled
      */
-    SwirldsPlatform(
+    public SwirldsPlatform(
             @NonNull final PlatformContext platformContext,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final RecycleBin recycleBin,

@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.builder;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.StaticPlatformBuilder.doStaticSetup;
-import static com.swirlds.platform.StaticPlatformBuilder.getGlobalMetrics;
-import static com.swirlds.platform.StaticPlatformBuilder.getMetricsProvider;
-import static com.swirlds.platform.StaticPlatformBuilder.setupGlobalMetrics;
+import static com.swirlds.platform.builder.StaticPlatformBuilder.doStaticSetup;
+import static com.swirlds.platform.builder.StaticPlatformBuilder.getGlobalMetrics;
+import static com.swirlds.platform.builder.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
@@ -43,6 +43,8 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;

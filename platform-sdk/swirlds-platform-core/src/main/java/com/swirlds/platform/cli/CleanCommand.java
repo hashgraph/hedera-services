@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
-import static com.swirlds.platform.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
 
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
