@@ -17,11 +17,13 @@
 package token.update;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.key.KeyUtils.ALL_ZEROS_INVALID_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenKeyValidation;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
@@ -50,14 +52,11 @@ public class TokenUpdateReplaceKeysXTest extends AbstractTokenXTest {
             .ed25519(Bytes.fromHex("00aaa00aaa00aaa00aaa00aaa00aaaaa00aaa00aaa00aaa00aaa00aaa00aaaaa"))
             .build();
     protected static final String TOKEN_UPDATE_KEYS_ID = "tokenUpdateKeysId";
+    protected static final String TOKEN_INVALID_KEYS_ID = "tokenInvalidKeysId";
     private static final String TOKEN_TREASURY = "tokenTreasury";
     private static final String FIRST_ROYALTY_COLLECTOR = "firstRoyaltyCollector";
     private static final int PLENTY_OF_SLOTS = 10;
     private static final long INITIAL_SUPPLY = 123456789;
-
-    private static final Key DEFAULT_KEY = Key.newBuilder()
-            .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
-            .build();
 
     @Override
     protected void doScenarioOperations() {
@@ -103,6 +102,50 @@ public class TokenUpdateReplaceKeysXTest extends AbstractTokenXTest {
                 component.tokenUpdateHandler(),
                 tokenUpdate(idOfNamedToken(TOKEN_UPDATE_KEYS_ID), List.of(b -> b.metadataKey(FINAL_KEY))),
                 OK);
+
+        // change keys to an "invalid" key i.e `0x0000000000000000000000000000000000000000`
+        // change freeze key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.freezeKey(ALL_ZEROS_INVALID_KEY)
+                        .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
+                OK);
+        // change kyc key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.kycKey(ALL_ZEROS_INVALID_KEY)
+                        .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
+                OK);
+        // change wipe key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.wipeKey(ALL_ZEROS_INVALID_KEY)
+                        .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
+                OK);
+        // change supply key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.supplyKey(ALL_ZEROS_INVALID_KEY)
+                        .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
+                OK);
+        // change fee schedule key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.feeScheduleKey(ALL_ZEROS_INVALID_KEY)
+                        .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
+                OK);
+        // change pause key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.pauseKey(ALL_ZEROS_INVALID_KEY)
+                        .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
+                OK);
+        // change admin key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.adminKey(ALL_ZEROS_INVALID_KEY)
+                        .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
+                OK);
     }
 
     @Override
@@ -125,9 +168,6 @@ public class TokenUpdateReplaceKeysXTest extends AbstractTokenXTest {
 
     @Override
     protected Map<TokenID, Token> initialTokens() {
-        /**
-         * Initial token should be initialized with all keys to test removal. Set DEFAULT_KEY as default value for all keys.
-         */
         final var tokens = super.initialTokens();
         addNamedFungibleToken(
                 TOKEN_UPDATE_KEYS_ID,
@@ -142,7 +182,19 @@ public class TokenUpdateReplaceKeysXTest extends AbstractTokenXTest {
                         .metadataKey(INITIAL_KEY)
                         .kycKey(INITIAL_KEY),
                 tokens);
-
+        addNamedFungibleToken(
+                TOKEN_INVALID_KEYS_ID,
+                b -> b.treasuryAccountId(idOfNamedAccount(TOKEN_TREASURY))
+                        .totalSupply(INITIAL_SUPPLY)
+                        .adminKey(ADMIN_KEY)
+                        .freezeKey(INITIAL_KEY)
+                        .feeScheduleKey(INITIAL_KEY)
+                        .pauseKey(INITIAL_KEY)
+                        .supplyKey(INITIAL_KEY)
+                        .wipeKey(INITIAL_KEY)
+                        .metadataKey(INITIAL_KEY)
+                        .kycKey(INITIAL_KEY),
+                tokens);
         return tokens;
     }
 
