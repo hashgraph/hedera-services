@@ -102,7 +102,7 @@ public class DefaultConsensusEngine implements ConsensusEngine {
         }
 
         final List<ConsensusRound> consensusRounds = consensus.addEvent(linkedEvent);
-        eventAddedMetrics.eventAdded(linkedEvent); // TODO should this come before or after adding to consensus?
+        eventAddedMetrics.eventAdded(linkedEvent);
 
         if (!consensusRounds.isEmpty()) {
             // If multiple rounds reach consensus at the same moment there is no need to pass in
@@ -122,7 +122,7 @@ public class DefaultConsensusEngine implements ConsensusEngine {
         final NonAncientEventWindow nonAncientEventWindow =
                 new NonAncientEventWindow(snapshot.round(), ancientThreshold, ancientThreshold, ancientMode);
 
-        linker.clear(new ClearTrigger()); // TODO clear trigger
+        linker.clear(new ClearTrigger());
         linker.setNonAncientEventWindow(nonAncientEventWindow);
         consensus.loadSnapshot(snapshot);
     }
