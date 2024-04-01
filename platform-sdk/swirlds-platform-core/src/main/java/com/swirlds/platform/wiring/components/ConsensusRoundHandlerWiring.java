@@ -46,7 +46,7 @@ public record ConsensusRoundHandlerWiring(
         @NonNull InputWire<RunningEventHashUpdate> runningHashUpdateInput,
         @NonNull OutputWire<StateAndRound> stateAndRoundOutput,
         @NonNull OutputWire<ReservedSignedState> stateOutput,
-        @NonNull OutputWire<Long> roundNumberOutput,
+        @NonNull OutputWire<Long> roundNumberOutput, // TODO remove
         @NonNull Runnable flushRunnable,
         @NonNull Runnable startSquelchingRunnable,
         @NonNull Runnable stopSquelchingRunnable) {
