@@ -50,14 +50,17 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
     }
 
     private List<HapiSpec> positiveTests() {
-        return List.of(updateAllKeysToInvalidAdminKeySigns(), updateAllKeysToInvalidAllKeysSign());
+        return List.of(
+                updateAllKeysToInvalidAdminKeySigns(),
+                updateAllKeysToInvalidAllKeysSign(),
+                updateAllLowPriorityKeysToInvalidAllOfThemSign());
     }
 
     private List<HapiSpec> negativeTests() {
         return List.of(
-                updateFailsAllKeysToInvalidOnlyLowPriorityKeysSign(),
-                updateFailsAllKeysToInvalidOneLowPriorityKeyDoesNotSign(),
-                updateFailsIfTokenIsInvalidAndWeValidateForKeys());
+                failUpdateAllKeysOnlyLowPriorityKeysSign(),
+                failUpdateAllKeysOneLowPriorityKeyDoesNotSign(),
+                failUpdateIfKeyIsInvalidAndWeValidateForKeys());
     }
 
     @HapiTest
@@ -162,13 +165,58 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
+    public HapiSpec updateAllLowPriorityKeysToInvalidAllOfThemSign() {
+        String saltedName = salted("primary");
+        final var civilian = "civilian";
+        return defaultHapiSpec("updateAllLowPriorityKeysToInvalidAllOfThemSign")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("wipeKey"),
+                        newKeyNamed("kycKey"),
+                        newKeyNamed("freezeKey"),
+                        newKeyNamed("pauseKey"),
+                        newKeyNamed("supplyKey"),
+                        newKeyNamed("feeScheduleKey"),
+                        tokenCreate("primary")
+                                .name(saltedName)
+                                .initialSupply(500)
+                                .adminKey("adminKey")
+                                .wipeKey("wipeKey")
+                                .kycKey("kycKey")
+                                .freezeKey("freezeKey")
+                                .pauseKey("pauseKey")
+                                .supplyKey("supplyKey")
+                                .feeScheduleKey("feeScheduleKey")
+                                .payingWith(civilian))
+                .when(tokenUpdate("primary")
+                        .applyNoValidationToKeys()
+                        .usingInvalidWipeKey()
+                        .usingInvalidKycKey()
+                        .usingInvalidFreezeKey()
+                        .usingInvalidPauseKey()
+                        .usingInvalidSupplyKey()
+                        .usingInvalidFeeScheduleKey()
+                        .signedBy(civilian, "wipeKey", "kycKey", "freezeKey", "pauseKey", "supplyKey", "feeScheduleKey")
+                        .payingWith(civilian))
+                .then(getTokenInfo("primary")
+                        .hasInvalidWipeKey()
+                        .hasInvalidKycKey()
+                        .hasInvalidFreezeKey()
+                        .hasInvalidPauseKey()
+                        .hasInvalidSupplyKey()
+                        .hasInvalidFeeScheduleKey()
+                        .logged());
+    }
+
     // here the admin key signature is missing when we try to update low priority keys plus the admin key
     // all low priority key signatures are present, but we should require old admin key signature as well
     @HapiTest
-    public HapiSpec updateFailsAllKeysToInvalidOnlyLowPriorityKeysSign() {
+    public HapiSpec failUpdateAllKeysOnlyLowPriorityKeysSign() {
         String saltedName = salted("primary");
         final var civilian = "civilian";
-        return defaultHapiSpec("updateFailsAllKeysToInvalidOnlyLowPriorityKeysSign")
+        return defaultHapiSpec("failUpdateAllKeysOnlyLowPriorityKeysSign")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed("adminKey"),
@@ -206,10 +254,10 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
 
     // we try to update all low priority keys but the supply key signature is missing
     @HapiTest
-    public HapiSpec updateFailsAllKeysToInvalidOneLowPriorityKeyDoesNotSign() {
+    public HapiSpec failUpdateAllKeysOneLowPriorityKeyDoesNotSign() {
         String saltedName = salted("primary");
         final var civilian = "civilian";
-        return defaultHapiSpec("updateFailsAllKeysToInvalidOneLowPriorityKeyDoesNotSign")
+        return defaultHapiSpec("failUpdateAllKeysOneLowPriorityKeyDoesNotSign")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed("adminKey"),
@@ -245,10 +293,10 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec updateFailsIfTokenIsInvalidAndWeValidateForKeys() {
+    public HapiSpec failUpdateIfKeyIsInvalidAndWeValidateForKeys() {
         String saltedName = salted("primary");
         final var civilian = "civilian";
-        return defaultHapiSpec("updateFailsIfTokenIsInvalidAndWeValidateForKeys")
+        return defaultHapiSpec("failUpdateIfKeyIsInvalidAndWeValidateForKeys")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed("adminKey"),
