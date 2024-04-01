@@ -23,8 +23,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_A
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
@@ -37,8 +39,11 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferStep {
+    private static final Logger logger = LogManager.getLogger(NFTOwnersChangeStep.class);
     private final CryptoTransferTransactionBody op;
     private final AccountID topLevelPayer;
 
@@ -168,6 +173,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         final var fromNumPositiveBalances = senderAccount.numberPositiveBalances();
         final var toNumPositiveBalances = receiverAccount.numberPositiveBalances();
         final var isTreasuryReturn = treasuryId.equals(receiverAccount.accountId());
+        final var isSenderTreasury = treasuryId.equals(senderAccount.accountId());
 
         // If the token is being returned back to treasury null out the owner
         if (isTreasuryReturn) {
@@ -177,12 +183,22 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         }
         // wipe the spender on this NFT
         nftCopy.spenderId((AccountID) null);
+        nftStore.put(nftCopy.build());
 
         // adjust number of positive balances
         final var updatedFromPositiveBalances =
                 fromTokenRelBalance - 1 == 0 ? fromNumPositiveBalances - 1 : fromNumPositiveBalances;
         final var updatedToPositiveBalances =
                 toTokenRelBalance == 0 ? toNumPositiveBalances + 1 : toNumPositiveBalances;
+        // update links
+        updateLinks(
+                senderAccount,
+                receiverAccount,
+                nft.nftIdOrThrow(),
+                isSenderTreasury,
+                isTreasuryReturn,
+                nftStore,
+                accountStore);
 
         // Make copies of the objects to be updated
         final var senderAccountCopy = senderAccount.copyBuilder();
@@ -201,6 +217,76 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         tokenRelStore.put(senderRelCopy.balance(fromTokenRelBalance - 1).build());
         tokenRelStore.put(receiverRelCopy.balance(toTokenRelBalance + 1).build());
         nftStore.put(nftCopy.build());
-        // TODO: make sure finalize is capturing all these in transfer list
+    }
+
+    public void updateLinks(
+            @NonNull final Account from,
+            @NonNull final Account to,
+            @NonNull final NftID nftId,
+            final boolean isSenderTreasury,
+            final boolean isReceiverTreasury,
+            final WritableNftStore nftStore,
+            final WritableAccountStore accountStore) {
+        if (!isSenderTreasury) {
+            removeFromList(nftId, nftStore, from, accountStore);
+        }
+        if (!isReceiverTreasury) {
+            insertToList(nftId, nftStore, to, accountStore);
+        }
+    }
+
+    private void insertToList(
+            @NonNull final NftID nftId,
+            @NonNull final WritableNftStore nftStore,
+            @NonNull final Account to,
+            @NonNull final WritableAccountStore accountStore) {
+        final var nft = requireNonNull(nftStore.get(nftId));
+        final var nftCopy = nft.copyBuilder();
+
+        if (to.hasHeadNftId()) {
+            if (nftStore.get(to.headNftIdOrThrow()) == null) {
+                System.out.println(
+                        "NFT value: " + to.headNftId() + "NFT value: " + nftStore.get(to.headNftIdOrThrow()));
+            }
+            final var headNft = requireNonNull(nftStore.get(to.headNftIdOrThrow()));
+            final var headCopy = headNft.copyBuilder();
+            headCopy.ownerPreviousNftId(nftId);
+            nftStore.put(headCopy.build());
+
+            nftCopy.ownerNextNftId(to.headNftId());
+        }
+        nftCopy.ownerPreviousNftId((NftID) null);
+
+        final var toAccountCopy = to.copyBuilder();
+        toAccountCopy.headNftId(nftId);
+
+        nftStore.put(nftCopy.build());
+        accountStore.put(toAccountCopy.build());
+    }
+
+    public static void removeFromList(
+            @NonNull final NftID nftId,
+            @NonNull final WritableNftStore nftStore,
+            @NonNull final Account from,
+            @NonNull final WritableAccountStore accountStore) {
+        final var nft = requireNonNull(nftStore.get(nftId));
+
+        if (!nft.hasOwnerPreviousNftId()) {
+            final var accountCopy = from.copyBuilder();
+            accountCopy.headNftId(nft.ownerNextNftId());
+            accountStore.put(accountCopy.build());
+        } else {
+            final var previousNft = requireNonNull(nftStore.get(nft.ownerPreviousNftIdOrThrow()));
+            final var previousCopy = previousNft.copyBuilder();
+            previousCopy.ownerNextNftId(nft.ownerNextNftId());
+            nftStore.put(previousCopy.build());
+        }
+
+        if (nft.hasOwnerNextNftId()) {
+            final var nextNft = requireNonNull(nftStore.get(nft.ownerNextNftIdOrThrow()));
+            final var nextCopy = nextNft.copyBuilder();
+            nextCopy.ownerPreviousNftId(nft.ownerPreviousNftId());
+            nftStore.put(nextCopy.build());
+        }
     }
 }

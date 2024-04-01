@@ -52,50 +52,50 @@ public class ScheduledTransactionsDumpUtils {
             final var byIdBump = gatherMonoScheduledTransactionsByID(byId);
             reportOnScheduledTransactionsById(writer, byIdBump);
             System.out.printf(
-                    "=== mono scheduled transactions report is %d bytes at checkpoint %s%n",
+                    "=== mono scheduled transactions report by id is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
 
             final var byEqualityDump = gatherMonoScheduledTransactionsByEquality(byEquality);
             reportOnScheduledTransactionsByEquality(writer, byEqualityDump);
             System.out.printf(
-                    "=== mono scheduled transactions report is %d bytes at checkpoint %s%n",
+                    "=== mono scheduled transactions report by equality is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
 
             final var byExpiryDump = gatherMonoScheduledTransactionsByExpiry(byExpirationSecond);
             reportOnScheduledTransactionsByExpiry(writer, byExpiryDump);
             System.out.printf(
-                    "=== mono scheduled transactions report is %d bytes at checkpoint %s%n",
+                    "=== mono scheduled transactions report by expiry is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
         }
     }
 
     @NonNull
-    private static Map<BBMScheduledTransactionId, BBMScheduledTransaction> gatherMonoScheduledTransactionsByID(
+    private static Map<BBMScheduledId, BBMScheduledTransaction> gatherMonoScheduledTransactionsByID(
             MerkleMapLike<EntityNumVirtualKey, ScheduleVirtualValue> source) {
-        final var r = new HashMap<BBMScheduledTransactionId, BBMScheduledTransaction>();
-        source.forEach((k, v) -> r.put(BBMScheduledTransactionId.fromMono(k), BBMScheduledTransaction.fromMono(v)));
+        final var r = new HashMap<BBMScheduledId, BBMScheduledTransaction>();
+        source.forEach((k, v) -> r.put(BBMScheduledId.fromMono(k), BBMScheduledTransaction.fromMono(v)));
         return r;
     }
 
     @NonNull
-    private static Map<BBMScheduledTransactionId, BBMScheduledEqualityValue> gatherMonoScheduledTransactionsByEquality(
+    private static Map<BBMScheduledId, BBMScheduledEqualityValue> gatherMonoScheduledTransactionsByEquality(
             MerkleMapLike<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> source) {
-        final var r = new HashMap<BBMScheduledTransactionId, BBMScheduledEqualityValue>();
-        source.forEach((k, v) -> r.put(BBMScheduledTransactionId.fromMono(k), BBMScheduledEqualityValue.fromMono(v)));
+        final var r = new HashMap<BBMScheduledId, BBMScheduledEqualityValue>();
+        source.forEach((k, v) -> r.put(BBMScheduledId.fromMono(k), BBMScheduledEqualityValue.fromMono(v)));
         return r;
     }
 
     @NonNull
-    private static Map<BBMScheduledTransactionId, BBMScheduledSecondValue> gatherMonoScheduledTransactionsByExpiry(
+    private static Map<BBMScheduledId, BBMScheduledSecondValue> gatherMonoScheduledTransactionsByExpiry(
             MerkleMapLike<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> source) {
-        final var r = new HashMap<BBMScheduledTransactionId, BBMScheduledSecondValue>();
-        source.forEach((k, v) -> r.put(BBMScheduledTransactionId.fromMono(k), BBMScheduledSecondValue.fromMono(v)));
+        final var r = new HashMap<BBMScheduledId, BBMScheduledSecondValue>();
+        source.forEach((k, v) -> r.put(BBMScheduledId.fromMono(k), BBMScheduledSecondValue.fromMono(v)));
         return r;
     }
 
     public static void reportOnScheduledTransactionsById(
             @NonNull final Writer writer,
-            @NonNull final Map<BBMScheduledTransactionId, BBMScheduledTransaction> scheduledTransactions) {
+            @NonNull final Map<BBMScheduledId, BBMScheduledTransaction> scheduledTransactions) {
         writer.writeln(formatHeader());
         scheduledTransactions.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -105,7 +105,7 @@ public class ScheduledTransactionsDumpUtils {
 
     private static void reportOnScheduledTransactionsByEquality(
             @NonNull final Writer writer,
-            @NonNull final Map<BBMScheduledTransactionId, BBMScheduledEqualityValue> scheduledTransactions) {
+            @NonNull final Map<BBMScheduledId, BBMScheduledEqualityValue> scheduledTransactions) {
         writer.writeln(formatHeader());
         scheduledTransactions.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -115,7 +115,7 @@ public class ScheduledTransactionsDumpUtils {
 
     private static void reportOnScheduledTransactionsByExpiry(
             @NonNull final Writer writer,
-            @NonNull final Map<BBMScheduledTransactionId, BBMScheduledSecondValue> scheduledTransactions) {
+            @NonNull final Map<BBMScheduledId, BBMScheduledSecondValue> scheduledTransactions) {
         writer.writeln(formatHeader());
         scheduledTransactions.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())

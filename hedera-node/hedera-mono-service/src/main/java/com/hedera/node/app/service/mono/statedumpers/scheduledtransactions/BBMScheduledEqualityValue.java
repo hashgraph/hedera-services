@@ -20,7 +20,8 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityV
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.SortedMap;
 
-@SuppressWarnings("java:S6218") // "Equals/hashcode methods should be overridden in records containing array fields"
+@SuppressWarnings("java:S6218")
+public // "Equals/hashcode methods should be overridden in records containing array fields"
 record BBMScheduledEqualityValue(long number, SortedMap<String, Long> ids) {
 
     static BBMScheduledEqualityValue fromMono(@NonNull final ScheduleEqualityVirtualValue scheduleVirtualValue) {

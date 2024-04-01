@@ -41,14 +41,16 @@ public record BBMCongestion(
                 .toList();
         final var gasThrottleUsageSnapshot = PbjConverter.toPbj(networkContext.getGasThrottleUsageSnapshot());
         // format the following two from `List<RichInstant>` to String
-        final var gasCongestionStarts = networkContext.getMultiplierSources() != null && networkContext.getMultiplierSources().gasCongestionStarts() != null
+        final var gasCongestionStarts = networkContext.getMultiplierSources() != null
+                        && networkContext.getMultiplierSources().gasCongestionStarts() != null
                 ? Arrays.stream(networkContext.getMultiplierSources().gasCongestionStarts())
                         .map(RichInstant::fromJava)
                         .filter(Objects::nonNull)
                         .map(ThingsToStrings::toStringOfRichInstant)
                         .collect(Collectors.joining(", "))
                 : "";
-        final var genericCongestionStarts = networkContext.getMultiplierSources() != null && networkContext.getMultiplierSources().genericCongestionStarts() != null
+        final var genericCongestionStarts = networkContext.getMultiplierSources() != null
+                        && networkContext.getMultiplierSources().genericCongestionStarts() != null
                 ? Arrays.stream(networkContext.getMultiplierSources().genericCongestionStarts())
                         .map(RichInstant::fromJava)
                         .filter(Objects::nonNull)

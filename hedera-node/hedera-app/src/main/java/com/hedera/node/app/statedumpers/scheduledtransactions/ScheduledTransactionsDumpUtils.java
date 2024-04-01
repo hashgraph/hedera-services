@@ -21,14 +21,17 @@ import static com.hedera.node.app.service.mono.statedumpers.scheduledtransaction
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledId;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledTransaction;
-import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledTransactionId;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
@@ -48,22 +51,64 @@ public class ScheduledTransactionsDumpUtils {
     public static void dumpModScheduledTransactions(
             @NonNull final Path path,
             @NonNull final VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> scheduledTransactions,
+            @NonNull final VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<ScheduleList>> byEquality,
+            @NonNull final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> byExpiry,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
-            final var dumpableScheduledTransactions = gatherModScheduledTransactions(scheduledTransactions);
-            reportOnScheduledTransactionsById(writer, dumpableScheduledTransactions);
+            final var dumpableScheduledTransactionsById = gatherModScheduledTransactionsById(scheduledTransactions);
+            reportOnScheduledTransactionsById(writer, dumpableScheduledTransactionsById);
             System.out.printf(
                     "=== mod scheduled transactions report is %d bytes at checkpoint %s%n",
+                    writer.getSize(), checkpoint.name());
+            //            final var byEqualityDump = gatherModScheduledTransactionsByEquality(byEquality);
+            //            reportOnScheduledTransactionsByEquality(writer, byEqualityDump);
+            System.out.printf(
+                    "=== mod scheduled transactions by equality report is %d bytes at checkpoint %s%n",
+                    writer.getSize(), checkpoint.name());
+            //            final var byExpiryDump = gatherModScheduledTransactionsByExpiry(byExpiry);
+            //            reportOnScheduledTransactionsByExpiry(writer, byExpiryDump);
+            System.out.printf(
+                    "=== mod scheduled transactions by expiry report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
         }
     }
 
+    //    private static Map<BBMScheduledId, BBMScheduledSecondValue> gatherModScheduledTransactionsByExpiry(
+    //            final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> source) {
+    //        final var r = new HashMap<BBMScheduledId, BBMScheduledSecondValue>();
+    //        final var scheduledTransactions =
+    //                new ConcurrentLinkedQueue<Pair<BBMScheduledId, BBMScheduledSecondValue>>();
+    //
+    //        try {
+    //            VirtualMapLike.from(source)
+    //                    .extractVirtualMapDataC(
+    //                            getStaticThreadManager(),
+    //                            p -> {
+    //                                try {
+    //                                    scheduledTransactions.add(Pair.of(
+    //                                            new BBMScheduledId(p.key().getKey().value()),
+    //                                            fromMod(p.value().getValue())));
+    //                                } catch (InvalidKeyException e) {
+    //                                    throw new RuntimeException(e);
+    //                                }
+    //                            },
+    //                            8);
+    //        } catch (final InterruptedException ex) {
+    //            System.err.println("*** Traversal of scheduledTransactions virtual map interrupted!");
+    //            Thread.currentThread().interrupt();
+    //        }
+    //        while (!scheduledTransactions.isEmpty()) {
+    //            final var mapping = scheduledTransactions.poll();
+    //            r.put(mapping.key(), mapping.value());
+    //        }
+    //        return r;
+    //    }
+
     @NonNull
-    private static Map<BBMScheduledTransactionId, BBMScheduledTransaction> gatherModScheduledTransactions(
+    private static Map<BBMScheduledId, BBMScheduledTransaction> gatherModScheduledTransactionsById(
             VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> source) {
-        final var r = new HashMap<BBMScheduledTransactionId, BBMScheduledTransaction>();
-        final var scheduledTransactions =
-                new ConcurrentLinkedQueue<Pair<BBMScheduledTransactionId, BBMScheduledTransaction>>();
+        final var r = new HashMap<BBMScheduledId, BBMScheduledTransaction>();
+        final var scheduledTransactions = new ConcurrentLinkedQueue<Pair<BBMScheduledId, BBMScheduledTransaction>>();
 
         try {
             VirtualMapLike.from(source)
@@ -89,6 +134,38 @@ public class ScheduledTransactionsDumpUtils {
         }
         return r;
     }
+
+    //    @NonNull
+    //    private static Map<BBMScheduledId, BBMScheduledEqualityValue> gatherModScheduledTransactionsByEquality(
+    //            VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<ScheduleList>> source) {
+    //        final var r = new HashMap<BBMScheduledId, BBMScheduledEqualityValue>();
+    //        final var scheduledTransactions =
+    //                new ConcurrentLinkedQueue<Pair<BBMScheduledId, BBMScheduledEqualityValue>>();
+    //
+    //        try {
+    //            VirtualMapLike.from(source)
+    //                    .extractVirtualMapDataC(
+    //                            getStaticThreadManager(),
+    //                            p -> {
+    //                                try {
+    //                                    scheduledTransactions.add(Pair.of(
+    //                                            fromMod(p.key().getKey()),
+    //                                            fromMod(p.value().getValue())));
+    //                                } catch (InvalidKeyException e) {
+    //                                    throw new RuntimeException(e);
+    //                                }
+    //                            },
+    //                            8);
+    //        } catch (final InterruptedException ex) {
+    //            System.err.println("*** Traversal of scheduledTransactions virtual map interrupted!");
+    //            Thread.currentThread().interrupt();
+    //        }
+    //        while (!scheduledTransactions.isEmpty()) {
+    //            final var mapping = scheduledTransactions.poll();
+    //            r.put(mapping.key(), mapping.value());
+    //        }
+    //        return r;
+    //    }
 
     static BBMScheduledTransaction fromMod(@NonNull final Schedule value) throws InvalidKeyException {
         return new BBMScheduledTransaction(
@@ -116,8 +193,8 @@ public class ScheduledTransactionsDumpUtils {
                 value.signatories().stream().map(k -> toPrimitiveKey(k)).toList());
     }
 
-    static BBMScheduledTransactionId fromMod(@NonNull final ScheduleID scheduleID) {
-        return new BBMScheduledTransactionId(scheduleID.scheduleNum());
+    static BBMScheduledId fromMod(@NonNull final ScheduleID scheduleID) {
+        return new BBMScheduledId(scheduleID.scheduleNum());
     }
 
     static byte[] toPrimitiveKey(com.hedera.hapi.node.base.Key key) {

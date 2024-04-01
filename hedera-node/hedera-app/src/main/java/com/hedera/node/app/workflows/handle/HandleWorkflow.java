@@ -573,6 +573,7 @@ public class HandleWorkflow {
                 }
             }
         } catch (final Exception e) {
+            e.printStackTrace();
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             // We should always rollback stack including gas charges when there is an unexpected exception
             rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);

@@ -22,7 +22,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NavigableMap;
 import org.eclipse.collections.api.list.primitive.ImmutableLongList;
 
-@SuppressWarnings("java:S6218") // "Equals/hashcode methods should be overridden in records containing array fields"
+@SuppressWarnings("java:S6218")
+public // "Equals/hashcode methods should be overridden in records containing array fields"
 record BBMScheduledSecondValue(long number, NavigableMap<RichInstant, ImmutableLongList> ids) {
 
     static BBMScheduledSecondValue fromMono(@NonNull final ScheduleSecondVirtualValue scheduleVirtualValue) {
