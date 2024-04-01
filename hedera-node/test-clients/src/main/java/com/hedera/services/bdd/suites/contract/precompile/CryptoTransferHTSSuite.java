@@ -575,7 +575,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(OWNER))),
                                         HapiParserUtil.asHeadlongAddress(NON_EXISTING_ADDRESS),
-                                        5L)
+                                        BigInteger.valueOf(5L))
                                 .gas(100_000_00L)
                                 .via(TXN_TO_NON_EXISTING_ADDRESS)
                                 .payingWith(GENESIS)
@@ -589,7 +589,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(NON_EXISTING_ADDRESS),
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
-                                        5L)
+                                        BigInteger.valueOf(5L))
                                 .gas(100_000_00L)
                                 .via(TXN_FROM_NON_EXISTING_ADDRESS)
                                 .payingWith(GENESIS)
@@ -603,7 +603,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 asAddress(spec.registry().getAccountID(OWNER))),
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
-                                        5L)
+                                        BigInteger.valueOf(5L))
                                 .gas(100_000_00L)
                                 .via(TXN_WITH_NON_EXISTING_TOKEN)
                                 .payingWith(GENESIS)
