@@ -207,7 +207,7 @@ public class Browser {
                 configBuilder.withConfigDataType(configType);
             }
 
-            final PlatformBuilder builder = new PlatformBuilder(
+            final PlatformBuilder builder = PlatformBuilder.create(
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     appMain.getSoftwareVersion(),

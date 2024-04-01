@@ -118,7 +118,26 @@ public final class PlatformBuilder {
      * @param softwareVersion     the software version of the application
      * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
      */
-    public PlatformBuilder(
+    @NonNull
+    public static PlatformBuilder create(@NonNull final String appName,
+            @NonNull final String swirldName,
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final Supplier<SwirldState> genesisStateBuilder,
+            @NonNull final NodeId selfId) {
+        return new PlatformBuilder(appName, swirldName, softwareVersion, genesisStateBuilder, selfId);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param appName             the name of the application, currently used for deciding where to store states on
+     *                            disk
+     * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
+     * @param selfId              the ID of this node
+     * @param softwareVersion     the software version of the application
+     * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
+     */
+    private PlatformBuilder(
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,

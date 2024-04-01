@@ -407,7 +407,7 @@ public class InProcessHapiTestNode implements HapiTestNode {
 
             hedera = new Hedera(cr);
 
-            final PlatformBuilder builder = new PlatformBuilder(
+            final PlatformBuilder builder = PlatformBuilder.create(
                     Hedera.APP_NAME,
                     Hedera.SWIRLD_NAME,
                     hedera.getSoftwareVersion(),

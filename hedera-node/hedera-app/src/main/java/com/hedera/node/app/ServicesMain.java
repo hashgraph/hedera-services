@@ -160,7 +160,7 @@ public class ServicesMain implements SwirldMain {
                 buildPlatformContext(config, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME), selfId);
 
         final PlatformBuilder builder =
-                new PlatformBuilder(Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId);
+                PlatformBuilder.create(Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId);
 
         builder.withPreviousSoftwareVersionClassId(0x6f2b1bc2df8cbd0bL /* SerializableSemVers.CLASS_ID */);
         builder.withPlatformContext(platformContext);
