@@ -99,6 +99,7 @@ import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.stream.DefaultEventStreamManager;
 import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
+import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
@@ -605,7 +606,7 @@ public class SwirldsPlatform implements Platform {
         final InternalEventValidator internalEventValidator = new DefaultInternalEventValidator(
                 platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
         final EventDeduplicator eventDeduplicator = new StandardEventDeduplicator(platformContext, intakeEventCounter);
-        final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(
+        final EventSignatureValidator eventSignatureValidator = new DefaultEventSignatureValidator(
                 platformContext,
                 time,
                 CryptoStatic::verifySignature,

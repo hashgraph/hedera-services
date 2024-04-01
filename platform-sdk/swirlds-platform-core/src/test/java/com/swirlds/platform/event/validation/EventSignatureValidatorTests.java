@@ -149,7 +149,7 @@ class EventSignatureValidatorTests {
 
         defaultVersion = new BasicSoftwareVersion(2);
 
-        validatorWithTrueVerifier = new EventSignatureValidator(
+        validatorWithTrueVerifier = new DefaultEventSignatureValidator(
                 platformContext,
                 time,
                 trueVerifier,
@@ -158,7 +158,7 @@ class EventSignatureValidatorTests {
                 currentAddressBook,
                 intakeEventCounter);
 
-        validatorWithFalseVerifier = new EventSignatureValidator(
+        validatorWithFalseVerifier = new DefaultEventSignatureValidator(
                 platformContext,
                 time,
                 falseVerifier,
@@ -181,7 +181,7 @@ class EventSignatureValidatorTests {
     @Test
     @DisplayName("Lower version event with missing previous address book")
     void versionMismatchWithNullPreviousAddressBook() {
-        final EventSignatureValidator signatureValidator = new EventSignatureValidator(
+        final EventSignatureValidator signatureValidator = new DefaultEventSignatureValidator(
                 platformContext, time, trueVerifier, defaultVersion, null, currentAddressBook, intakeEventCounter);
 
         final GossipEvent event =
@@ -257,7 +257,7 @@ class EventSignatureValidatorTests {
                 .build();
         final AddressBook previousAddressBook = new AddressBook(List.of(previousNodeAddress));
 
-        final EventSignatureValidator validator = new EventSignatureValidator(
+        final EventSignatureValidator validator = new DefaultEventSignatureValidator(
                 platformContext,
                 time,
                 trueVerifier,
