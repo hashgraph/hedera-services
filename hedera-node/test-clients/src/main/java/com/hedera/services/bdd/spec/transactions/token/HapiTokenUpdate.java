@@ -418,7 +418,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
-
         signers.add(spec -> {
             try {
                 return spec.registry().getAdminKey(token);

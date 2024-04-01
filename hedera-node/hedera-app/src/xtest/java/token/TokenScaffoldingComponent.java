@@ -17,6 +17,7 @@
 package token;
 
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
@@ -45,4 +46,6 @@ public interface TokenScaffoldingComponent extends BaseScaffoldingComponent {
     TokenMintHandler tokenMintHandler();
 
     TokenUpdateHandler tokenUpdateHandler();
+
+    TokenGetInfoHandler tokenInfoHandler();
 }
