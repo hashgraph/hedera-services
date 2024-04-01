@@ -155,15 +155,15 @@ class InOrderLinkerTests {
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
-        inOrderLinker = new InOrderLinker(
+        inOrderLinker = new GossipLinker(
                 TestPlatformContextBuilder.create()
                         .withConfiguration(new TestConfigBuilder()
                                 .withValue(
                                         EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
                                         (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD))
                                 .getOrCreateConfig())
+                        .withTime(time)
                         .build(),
-                time,
                 intakeEventCounter);
 
         time.tick(Duration.ofSeconds(1));

@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.consensus;
+package com.swirlds.platform.event.linking;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -36,6 +37,7 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
@@ -47,26 +49,28 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Tests the {@link ConsensusEventStorage} class
+ * Tests the {@link InOrderLinker} class
  */
-class ConsensusEventStorageTests {
+class ConsensusEventLinkerTests {
+    private AtomicLong exitedIntakePipelineCount;
     private Random random;
 
-    private ConsensusEventStorage consensusEventStorage;
+    private InOrderLinker inOrderLinker;
 
     private GossipEvent genesisSelfParent;
     private GossipEvent genesisOtherParent;
 
     private FakeTime time;
 
-    private static final NodeId selfId = new NodeId(0);
-    private static final NodeId otherId = new NodeId(1);
+    private NodeId selfId = new NodeId(0);
+    private NodeId otherId = new NodeId(1);
 
     /**
      * Generates a mock event with the given parameters
@@ -137,22 +141,30 @@ class ConsensusEventStorageTests {
     void setup() {
         random = getRandomPrintSeed();
 
+        exitedIntakePipelineCount = new AtomicLong(0);
+
         time = new FakeTime();
     }
 
-    private void setupConsensusEventStorage(@NonNull final AncientMode ancientMode) {
+    private void inOrderLinkerSetup(@NonNull final AncientMode ancientMode) {
+        final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
+        doAnswer(invocation -> {
+                    exitedIntakePipelineCount.incrementAndGet();
+                    return null;
+                })
+                .when(intakeEventCounter)
+                .eventExitedIntakePipeline(any());
 
-        // TODO are we ready to handle birth rounds?
-        final PlatformContext platformContext = TestPlatformContextBuilder.create()
-                .withConfiguration(new TestConfigBuilder()
-                        .withValue(
-                                EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
-                                (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD))
-                        .getOrCreateConfig())
-                .withTime(time) // TODO do we really need time for these tests?
-                .build();
-
-        consensusEventStorage = new ConsensusEventStorage(platformContext, selfId);
+        inOrderLinker = new GossipLinker(
+                TestPlatformContextBuilder.create()
+                        .withConfiguration(new TestConfigBuilder()
+                                .withValue(
+                                        EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
+                                        (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD))
+                                .getOrCreateConfig())
+                        .withTime(time)
+                        .build(),
+                intakeEventCounter);
 
         time.tick(Duration.ofSeconds(1));
         genesisSelfParent = generateMockEvent(
@@ -163,7 +175,7 @@ class ConsensusEventStorageTests {
                 null,
                 null,
                 time.now());
-        consensusEventStorage.linkEvent(genesisSelfParent);
+        inOrderLinker.linkEvent(genesisSelfParent);
 
         time.tick(Duration.ofSeconds(1));
         genesisOtherParent = generateMockEvent(
@@ -174,7 +186,7 @@ class ConsensusEventStorageTests {
                 null,
                 null,
                 time.now());
-        consensusEventStorage.linkEvent(genesisOtherParent);
+        inOrderLinker.linkEvent(genesisOtherParent);
 
         time.tick(Duration.ofSeconds(1));
     }
@@ -185,7 +197,7 @@ class ConsensusEventStorageTests {
     void standardOperation(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-        setupConsensusEventStorage(ancientMode);
+        inOrderLinkerSetup(ancientMode);
 
         // In the following test events are created with increasing generation and birth round numbers.
         // The linking should fail to occur based on the advancing non-ancient event window.
@@ -206,23 +218,24 @@ class ConsensusEventStorageTests {
                 genesisOtherParent.getDescriptor(),
                 time.now());
 
-        final EventImpl linkedEvent1 = consensusEventStorage.linkEvent(child1);
+        final EventImpl linkedEvent1 = inOrderLinker.linkEvent(child1);
         assertNotEquals(null, linkedEvent1);
         assertNotEquals(null, linkedEvent1.getSelfParent(), "Self parent is non-ancient, and should not be null");
         assertNotEquals(null, linkedEvent1.getOtherParent(), "Other parent is non-ancient, and should not be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
         latestConsensusRound += 1;
         minRoundNonAncient += 1;
         minGenNonAncient += 1;
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            consensusEventStorage.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
                     latestConsensusRound,
                     minRoundNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
                     ancientMode));
         } else {
-            consensusEventStorage.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
                     latestConsensusRound,
                     minGenNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
@@ -239,23 +252,24 @@ class ConsensusEventStorageTests {
                 genesisOtherParent.getDescriptor(),
                 time.now());
 
-        final EventImpl linkedEvent2 = consensusEventStorage.linkEvent(child2);
+        final EventImpl linkedEvent2 = inOrderLinker.linkEvent(child2);
         assertNotEquals(null, linkedEvent2);
         assertNotEquals(null, linkedEvent2.getSelfParent(), "Self parent is non-ancient, and should not be null");
         assertNull(linkedEvent2.getOtherParent(), "Other parent is ancient, and should be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
         latestConsensusRound += 1;
         minRoundNonAncient += 1;
         minGenNonAncient += 1;
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            consensusEventStorage.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
                     latestConsensusRound,
                     minRoundNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
                     ancientMode));
         } else {
-            consensusEventStorage.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
                     latestConsensusRound,
                     minGenNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
@@ -272,10 +286,11 @@ class ConsensusEventStorageTests {
                 child2.getDescriptor(),
                 time.now());
 
-        final EventImpl linkedEvent3 = consensusEventStorage.linkEvent(child3);
+        final EventImpl linkedEvent3 = inOrderLinker.linkEvent(child3);
         assertNotEquals(null, linkedEvent3);
         assertNull(linkedEvent3.getSelfParent(), "Self parent is ancient, and should be null");
         assertNotEquals(null, linkedEvent3.getOtherParent(), "Other parent is non-ancient, and should not be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
         latestConsensusRound += 1;
@@ -283,13 +298,13 @@ class ConsensusEventStorageTests {
         minRoundNonAncient += 2;
         minGenNonAncient += 2;
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            consensusEventStorage.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
                     latestConsensusRound,
                     minRoundNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
                     ancientMode));
         } else {
-            consensusEventStorage.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
                     latestConsensusRound,
                     minGenNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
@@ -306,10 +321,11 @@ class ConsensusEventStorageTests {
                 child3.getDescriptor(),
                 time.now());
 
-        final EventImpl linkedEvent4 = consensusEventStorage.linkEvent(child4);
+        final EventImpl linkedEvent4 = inOrderLinker.linkEvent(child4);
         assertNotEquals(null, linkedEvent4);
         assertNull(linkedEvent4.getSelfParent(), "Self parent is ancient, and should be null");
         assertNull(linkedEvent4.getOtherParent(), "Other parent is ancient, and should be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -318,14 +334,16 @@ class ConsensusEventStorageTests {
     void missingSelfParent(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-        setupConsensusEventStorage(ancientMode);
+        inOrderLinkerSetup(ancientMode);
         final GossipEvent child = generateMockEvent(
                 selfId, randomHash(random), 4, 1, null, genesisOtherParent.getDescriptor(), time.now());
 
-        final EventImpl linkedEvent = consensusEventStorage.linkEvent(child);
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent is missing, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent is not missing, and should not be null");
+
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -334,14 +352,16 @@ class ConsensusEventStorageTests {
     void missingOtherParent(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-        setupConsensusEventStorage(ancientMode);
+        inOrderLinkerSetup(ancientMode);
         final GossipEvent child = generateMockEvent(
                 selfId, randomHash(random), 4, 1, genesisSelfParent.getDescriptor(), null, time.now());
 
-        final EventImpl linkedEvent = consensusEventStorage.linkEvent(child);
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent is not missing, and should not be null");
         assertNull(linkedEvent.getOtherParent(), "Other parent is missing, and should be null");
+
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -350,17 +370,17 @@ class ConsensusEventStorageTests {
     void ancientEvent(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-        setupConsensusEventStorage(ancientMode);
+        inOrderLinkerSetup(ancientMode);
         final long minRoundNonAncient = 3;
         final long minGenNonAncient = 3;
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            consensusEventStorage.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
                     ConsensusConstants.ROUND_FIRST /* not consequential for this test */,
                     minRoundNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
                     ancientMode));
         } else {
-            consensusEventStorage.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
                     ConsensusConstants.ROUND_FIRST /* not consequential for this test */,
                     minGenNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
@@ -378,7 +398,7 @@ class ConsensusEventStorageTests {
 
         time.tick(Duration.ofSeconds(1));
 
-        assertNull(consensusEventStorage.linkEvent(child1));
+        assertNull(inOrderLinker.linkEvent(child1));
 
         // barely ancient
         final GossipEvent child2 = generateMockEvent(
@@ -390,7 +410,8 @@ class ConsensusEventStorageTests {
                 genesisOtherParent.getDescriptor(),
                 time.now());
 
-        assertNull(consensusEventStorage.linkEvent(child2));
+        assertNull(inOrderLinker.linkEvent(child2));
+        assertEquals(2, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -399,7 +420,7 @@ class ConsensusEventStorageTests {
     void selfParentGenerationMismatch(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-        setupConsensusEventStorage(ancientMode);
+        inOrderLinkerSetup(ancientMode);
         final EventDescriptor mismatchedSelfParent = new EventDescriptor(
                 genesisSelfParent.getDescriptor().getHash(),
                 genesisSelfParent.getSenderId(),
@@ -408,10 +429,11 @@ class ConsensusEventStorageTests {
         final GossipEvent child = generateMockEvent(
                 selfId, randomHash(random), 2, 1, mismatchedSelfParent, genesisOtherParent.getDescriptor(), time.now());
 
-        final EventImpl linkedEvent = consensusEventStorage.linkEvent(child);
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched generation, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -420,7 +442,7 @@ class ConsensusEventStorageTests {
     void selfParentBirthRoundMismatch(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-        setupConsensusEventStorage(ancientMode);
+        inOrderLinkerSetup(ancientMode);
         final EventDescriptor mismatchedSelfParent = new EventDescriptor(
                 genesisSelfParent.getDescriptor().getHash(),
                 genesisSelfParent.getSenderId(),
@@ -429,10 +451,11 @@ class ConsensusEventStorageTests {
         final GossipEvent child = generateMockEvent(
                 selfId, randomHash(random), 2, 1, mismatchedSelfParent, genesisOtherParent.getDescriptor(), time.now());
 
-        final EventImpl linkedEvent = consensusEventStorage.linkEvent(child);
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched generation, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -441,7 +464,7 @@ class ConsensusEventStorageTests {
     void otherParentGenerationMismatch(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-        setupConsensusEventStorage(ancientMode);
+        inOrderLinkerSetup(ancientMode);
         final EventDescriptor mismatchedOtherParent = new EventDescriptor(
                 genesisOtherParent.getDescriptor().getHash(),
                 genesisOtherParent.getSenderId(),
@@ -450,10 +473,11 @@ class ConsensusEventStorageTests {
         final GossipEvent child = generateMockEvent(
                 selfId, randomHash(random), 2, 1, genesisSelfParent.getDescriptor(), mismatchedOtherParent, time.now());
 
-        final EventImpl linkedEvent = consensusEventStorage.linkEvent(child);
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
         assertNull(linkedEvent.getOtherParent(), "Other parent has mismatched generation, and should be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -462,7 +486,7 @@ class ConsensusEventStorageTests {
     void otherParentBirthRoundMismatch(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-        setupConsensusEventStorage(ancientMode);
+        inOrderLinkerSetup(ancientMode);
         final EventDescriptor mismatchedOtherParent = new EventDescriptor(
                 genesisOtherParent.getDescriptor().getHash(),
                 genesisOtherParent.getSenderId(),
@@ -471,10 +495,11 @@ class ConsensusEventStorageTests {
         final GossipEvent child = generateMockEvent(
                 selfId, randomHash(random), 2, 1, genesisSelfParent.getDescriptor(), mismatchedOtherParent, time.now());
 
-        final EventImpl linkedEvent = consensusEventStorage.linkEvent(child);
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
         assertNull(linkedEvent.getOtherParent(), "Other parent has mismatched generation, and should be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -483,7 +508,7 @@ class ConsensusEventStorageTests {
     void selfParentTimeCreatedMismatch(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-        setupConsensusEventStorage(ancientMode);
+        inOrderLinkerSetup(ancientMode);
         final Hash lateParentHash = randomHash(random);
         final long lateParentGeneration = 1;
         final GossipEvent lateParent = generateMockEvent(
@@ -494,7 +519,7 @@ class ConsensusEventStorageTests {
                 genesisSelfParent.getDescriptor(),
                 genesisOtherParent.getDescriptor(),
                 time.now().plus(Duration.ofSeconds(10)));
-        consensusEventStorage.linkEvent(lateParent);
+        inOrderLinker.linkEvent(lateParent);
 
         final GossipEvent child = generateMockEvent(
                 selfId,
@@ -505,10 +530,11 @@ class ConsensusEventStorageTests {
                 genesisOtherParent.getDescriptor(),
                 time.now());
 
-        final EventImpl linkedEvent = consensusEventStorage.linkEvent(child);
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched time created, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -517,7 +543,7 @@ class ConsensusEventStorageTests {
     void otherParentTimeCreatedMismatch(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-        setupConsensusEventStorage(ancientMode);
+        inOrderLinkerSetup(ancientMode);
         final Hash lateParentHash = randomHash(random);
         final long lateParentGeneration = 1;
         final GossipEvent lateParent = generateMockEvent(
@@ -528,7 +554,7 @@ class ConsensusEventStorageTests {
                 genesisSelfParent.getDescriptor(),
                 genesisOtherParent.getDescriptor(),
                 time.now().plus(Duration.ofSeconds(10)));
-        consensusEventStorage.linkEvent(lateParent);
+        inOrderLinker.linkEvent(lateParent);
 
         final GossipEvent child = generateMockEvent(
                 selfId,
@@ -539,9 +565,10 @@ class ConsensusEventStorageTests {
                 lateParent.getDescriptor(),
                 time.now());
 
-        final EventImpl linkedEvent = consensusEventStorage.linkEvent(child);
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
+        assertEquals(0, exitedIntakePipelineCount.get());
     }
 }

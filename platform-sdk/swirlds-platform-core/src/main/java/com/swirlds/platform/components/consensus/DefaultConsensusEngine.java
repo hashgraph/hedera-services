@@ -25,12 +25,16 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.linking.ConsensusLinker;
+import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -43,7 +47,7 @@ public class DefaultConsensusEngine implements ConsensusEngine {
     /**
      * Stores non-ancient events and manages linking and unlinking.
      */
-    private final ConsensusEventStorage eventStorage;
+    private final InOrderLinker linker;
 
     /**
      * Executes the hashgraph consensus algorithm.
@@ -52,6 +56,8 @@ public class DefaultConsensusEngine implements ConsensusEngine {
 
     private final AncientMode ancientMode;
     private final int roundsNonAncient;
+
+    private final AddedEventMetrics eventAddedMetrics;
 
     /**
      * Constructor
@@ -68,7 +74,7 @@ public class DefaultConsensusEngine implements ConsensusEngine {
         final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(selfId, platformContext.getMetrics());
         consensus = new ConsensusImpl(platformContext, consensusMetrics, addressBook);
 
-        eventStorage = new ConsensusEventStorage(platformContext, selfId);
+        linker = new ConsensusLinker(platformContext, selfId);
         ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
@@ -77,6 +83,8 @@ public class DefaultConsensusEngine implements ConsensusEngine {
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
+
+        eventAddedMetrics = new AddedEventMetrics(selfId, platformContext.getMetrics());
     }
 
     /**
@@ -87,18 +95,19 @@ public class DefaultConsensusEngine implements ConsensusEngine {
     public List<ConsensusRound> addEvent(@NonNull final GossipEvent event) {
         Objects.requireNonNull(event);
 
-        final EventImpl linkedEvent = eventStorage.linkEvent(event);
+        final EventImpl linkedEvent = linker.linkEvent(event);
         if (linkedEvent == null) {
-            // event storage discarded an ancient event
+            // linker discarded an ancient event
             return List.of();
         }
 
         final List<ConsensusRound> consensusRounds = consensus.addEvent(linkedEvent);
+        eventAddedMetrics.eventAdded(linkedEvent); // TODO should this come before or after adding to consensus?
 
         if (!consensusRounds.isEmpty()) {
             // If multiple rounds reach consensus at the same moment there is no need to pass in
             // each event window. The latest event window is sufficient to keep event storage clean.
-            eventStorage.setNonAncientEventWindow(consensusRounds.getLast().getNonAncientEventWindow());
+            linker.setNonAncientEventWindow(consensusRounds.getLast().getNonAncientEventWindow());
         }
 
         return consensusRounds;
@@ -113,8 +122,8 @@ public class DefaultConsensusEngine implements ConsensusEngine {
         final NonAncientEventWindow nonAncientEventWindow =
                 new NonAncientEventWindow(snapshot.round(), ancientThreshold, ancientThreshold, ancientMode);
 
-        eventStorage.clear();
-        eventStorage.setNonAncientEventWindow(nonAncientEventWindow);
+        linker.clear(new ClearTrigger()); // TODO clear trigger
+        linker.setNonAncientEventWindow(nonAncientEventWindow);
         consensus.loadSnapshot(snapshot);
     }
 }
