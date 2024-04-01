@@ -145,7 +145,7 @@ public class StateSignatureCollector {
     private @Nullable ReservedSignedState handlePreconsensusSignature(
             @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
 
-        final long round = scopedTransaction.transaction().getRound();
+        final long round = scopedTransaction.transaction().round();
         final Signature signature = scopedTransaction.transaction().getStateSignature();
 
         signedStateMetrics.getStateSignaturesGatheredPerSecondMetric().cycle();
@@ -181,7 +181,7 @@ public class StateSignatureCollector {
 
     private @Nullable ReservedSignedState handlePostconsensusSignature(
             @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
-        final long round = scopedTransaction.transaction().getRound();
+        final long round = scopedTransaction.transaction().round();
 
         final ReservedSignedState reservedState = incompleteStates.get(round);
         // it isn't possible to receive a postconsensus signature transaction for a future round,

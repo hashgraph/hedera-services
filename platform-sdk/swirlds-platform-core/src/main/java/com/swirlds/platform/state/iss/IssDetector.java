@@ -349,14 +349,14 @@ public class IssDetector {
             return null;
         }
 
-        if (signatureTransaction.getRound() == ignoredRound) {
+        if (signatureTransaction.round() == ignoredRound) {
             // This round is intentionally ignored.
             return null;
         }
 
         final long nodeWeight = addressBook.getAddress(signerId).getWeight();
 
-        final RoundHashValidator roundValidator = roundData.get(signatureTransaction.getRound());
+        final RoundHashValidator roundValidator = roundData.get(signatureTransaction.round());
         if (roundValidator == null) {
             // We are being asked to validate a signature from the far future or far past, or a round that has already
             // been decided.
