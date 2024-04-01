@@ -79,6 +79,7 @@ import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
@@ -142,9 +143,15 @@ public class StateDumper {
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
         dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
 
-        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts = requireNonNull(state.getChild(
+        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> byteCodes = requireNonNull(state.getChild(
                 state.findNodeIndex(ContractService.NAME, InitialModServiceContractSchema.BYTECODE_KEY)));
-        dumpModContractBytecodes(Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES), contracts, checkpoint);
+        dumpModContractBytecodes(
+                Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
+                byteCodes,
+                accounts,
+                (StateMetadata<AccountID, Account>)
+                        state.getServices().get(TokenService.NAME).get(ACCOUNTS_KEY),
+                checkpoint);
 
         final VirtualMap<OnDiskKey<TopicID>, OnDiskValue<Topic>> topics = requireNonNull(
                 state.getChild(state.findNodeIndex(ConsensusService.NAME, ConsensusServiceImpl.TOPICS_KEY)));

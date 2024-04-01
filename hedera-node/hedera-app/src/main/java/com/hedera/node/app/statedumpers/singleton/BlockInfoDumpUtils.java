@@ -104,7 +104,7 @@ public class BlockInfoDumpUtils {
             final var blockHash =
                     blockHashes.toByteArray(i * BlockRecordInfoUtils.HASH_SIZE, BlockRecordInfoUtils.HASH_SIZE);
             jsonSb.append("{\"num\": ")
-                    .append(nextBlockNo + 1)
+                    .append(nextBlockNo)
                     .append(", ")
                     .append("\"hash\": \"")
                     .append(CommonUtils.hex(blockHash))
