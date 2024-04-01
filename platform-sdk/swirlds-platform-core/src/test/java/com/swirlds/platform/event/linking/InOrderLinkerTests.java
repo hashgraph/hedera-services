@@ -56,7 +56,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Tests the {@link InOrderLinker} class
+ * Tests the {@link InOrderLinker} class. For historical reasons, the linker implementation used in this test is
+ * {@link GossipLinker}, and so we also test that the intake event counter is updated correctly (this is a feature
+ * specific to {@link GossipLinker}).
  */
 class InOrderLinkerTests {
     private AtomicLong exitedIntakePipelineCount;
@@ -75,13 +77,13 @@ class InOrderLinkerTests {
     /**
      * Generates a mock event with the given parameters
      *
-     * @param selfId                the id of the event creator
-     * @param selfHash              the hash of the event
-     * @param selfGeneration        the generation of the event
-     * @param selfBirthRound        the birthRound of the event
-     * @param selfParent            the self parent event descriptor
-     * @param otherParent           the other parent event descriptor
-     * @param selfTimeCreated       the time created of the event
+     * @param selfId          the id of the event creator
+     * @param selfHash        the hash of the event
+     * @param selfGeneration  the generation of the event
+     * @param selfBirthRound  the birthRound of the event
+     * @param selfParent      the self parent event descriptor
+     * @param otherParent     the other parent event descriptor
+     * @param selfTimeCreated the time created of the event
      * @return the mock event
      */
     private static GossipEvent generateMockEvent(
