@@ -369,8 +369,8 @@ public class TaskSchedulerBuilder<O> {
         // If we don't need to enforce a maximum capacity, we need to use a standard object counter if any
         // of the following conditions are true:
         //  - we have unhandled task metrics enabled
-        //  - the scheduler is concurrent and flushing is enabled. This is because the concurrent scheduler's
-        //    flush implementation requires a counter that is not a no-op counter.
+        //  - flushing is enabled. This is because our flush implementation is not
+        //    compatible with a no-op counter.
         //
         // In all other cases, better to use a no-op counter. Counters have overhead, and if we don't need one
         // then we shouldn't use one.
