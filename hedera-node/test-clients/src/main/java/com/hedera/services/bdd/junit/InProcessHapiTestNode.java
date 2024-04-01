@@ -16,8 +16,8 @@
 
 package com.hedera.services.bdd.junit;
 
-import static com.swirlds.platform.builder.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
-import static com.swirlds.platform.builder.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;

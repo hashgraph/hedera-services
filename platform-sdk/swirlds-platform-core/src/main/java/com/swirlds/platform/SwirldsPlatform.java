@@ -59,6 +59,7 @@ import com.swirlds.common.utility.StackTrace;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.DefaultAppNotifier;
@@ -72,7 +73,6 @@ import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.TransactionConfig;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -199,6 +199,7 @@ public class SwirldsPlatform implements Platform {
      * value
      */
     private final NodeId selfId;
+
     /**
      * The shadow graph manager. This wraps a shadow graph, which is an Event graph that adds child pointers to the
      * Hashgraph Event graph. Used for gossiping.
@@ -210,13 +211,19 @@ public class SwirldsPlatform implements Platform {
      * from disk or getting it through reconnect
      */
     private final AtomicReference<Consensus> consensusRef = new AtomicReference<>();
-    /** the current nodes in the network and their information */
+
+    /**
+     * the current nodes in the network and their information
+     */
     private final AddressBook currentAddressBook;
 
     private final Metrics metrics;
 
-    /** the object that contains all key pairs and CSPRNG state for this member */
+    /**
+     * the object that contains all key pairs and CSPRNG state for this member
+     */
     private final KeysAndCerts keysAndCerts;
+
     /**
      * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from a
      * genesis state, this is 0.
@@ -238,11 +245,20 @@ public class SwirldsPlatform implements Platform {
     private final SignedStateNexus latestImmutableStateNexus = new LockFreeStateNexus();
 
     private final TransactionPool transactionPool;
-    /** Handles all interaction with {@link SwirldState} */
+
+    /**
+     * Handles all interaction with {@link SwirldState}
+     */
     private final SwirldStateManager swirldStateManager;
-    /** Checks the validity of transactions and submits valid ones to the transaction pool */
+
+    /**
+     * Checks the validity of transactions and submits valid ones to the transaction pool
+     */
     private final SwirldTransactionSubmitter transactionSubmitter;
-    /** clears all pipelines to prepare for a reconnect */
+
+    /**
+     * clears all pipelines to prepare for a reconnect
+     */
     private final Clearable clearAllPipelines;
 
     /**
@@ -281,9 +297,14 @@ public class SwirldsPlatform implements Platform {
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
-    /** Manages emergency recovery */
+    /**
+     * Manages emergency recovery
+     */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
-    /** Controls which states are saved to disk */
+
+    /**
+     * Controls which states are saved to disk
+     */
     private final SavedStateController savedStateController;
 
     private final SignedStateGarbageCollector signedStateGarbageCollector;
@@ -296,37 +317,14 @@ public class SwirldsPlatform implements Platform {
     private final AncientMode ancientMode;
 
     /**
-     * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
+     * Constructor.
      *
-     * @param platformContext           the context for this platform
-     * @param keysAndCerts              an object holding all the public/private key pairs and the CSPRNG state for this
-     *                                  member
-     * @param recycleBin                used to delete files that may be useful for later debugging
-     * @param id                        the ID for this node
-     * @param mainClassName             the name of the app class inheriting from SwirldMain
-     * @param swirldName                the name of the swirld being run
-     * @param appVersion                the current version of the running application
-     * @param initialState              the initial state of the platform
-     * @param emergencyRecoveryManager  used in emergency recovery.
-     * @param preconsensusEventConsumer the consumer for preconsensus events, null if publishing this data has not been
-     *                                  enabled
-     * @param snapshotOverrideConsumer  the consumer for snapshot overrides, null if publishing this data has not been
-     *                                  enabled
+     * @param builder this object is responsible for building platform components and other things needed by the
+     *                platform
      */
-    public SwirldsPlatform(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final RecycleBin recycleBin,
-            @NonNull final NodeId id,
-            @NonNull final String mainClassName,
-            @NonNull final String swirldName,
-            @NonNull final SoftwareVersion appVersion,
-            @NonNull final SignedState initialState,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @Nullable final Consumer<GossipEvent> preconsensusEventConsumer,
-            @Nullable final Consumer<ConsensusSnapshot> snapshotOverrideConsumer) {
+    public SwirldsPlatform(@NonNull final PlatformComponentBuilder builder) {
 
-        this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
+        platformContext = builder.getPlatformContext();
 
         ancientMode = platformContext
                 .getConfiguration()
@@ -334,7 +332,11 @@ public class SwirldsPlatform implements Platform {
                 .getAncientMode();
 
         // This method is a no-op if we are not in birth round mode, or if we have already migrated.
-        modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion);
+        final SoftwareVersion appVersion = builder.getAppVersion();
+        modifyStateForBirthRoundMigration(builder.getInitialState(), ancientMode, appVersion);
+
+        final SignedState initialState = builder.getInitialState();
+        final RecycleBin recycleBin = builder.getRecycleBin();
 
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             try {
@@ -342,7 +344,7 @@ public class SwirldsPlatform implements Platform {
                 migratePcesToBirthRoundMode(
                         platformContext,
                         recycleBin,
-                        id,
+                        builder.getSelfId(),
                         initialState.getRound(),
                         initialState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
             } catch (final IOException e) {
@@ -350,7 +352,7 @@ public class SwirldsPlatform implements Platform {
             }
         }
 
-        this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
+        this.emergencyRecoveryManager = builder.getEmergencyRecoveryManager();
         final Time time = Time.getCurrent();
 
         thingsToStart = new ThingsToStart();
@@ -361,10 +363,11 @@ public class SwirldsPlatform implements Platform {
         notificationEngine = NotificationEngine.buildEngine(threadManager);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
+        final String actualMainClassName = stateConfig.getMainClassName(builder.getMainClassName());
 
-        this.selfId = id;
-        this.currentAddressBook = initialState.getAddressBook();
+        selfId = builder.getSelfId();
+
+        currentAddressBook = initialState.getAddressBook();
 
         final EmergencyStateNexus emergencyState = new EmergencyStateNexus();
         if (emergencyRecoveryManager.isEmergencyState(initialState)) {
@@ -372,7 +375,9 @@ public class SwirldsPlatform implements Platform {
         }
 
         platformWiring = thingsToStart.add(new PlatformWiring(
-                platformContext, preconsensusEventConsumer != null, snapshotOverrideConsumer != null));
+                platformContext,
+                builder.getPreconsensusEventConsumer() != null,
+                builder.getSnapshotOverrideConsumer() != null));
 
         final Consumer<PlatformStatus> statusChangeConsumer = s -> {
             platformWiring
@@ -405,7 +410,7 @@ public class SwirldsPlatform implements Platform {
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
-        this.keysAndCerts = keysAndCerts;
+        this.keysAndCerts = builder.getKeysAndCerts();
 
         EventCounter.registerEventCounterMetrics(metrics);
 
@@ -416,6 +421,7 @@ public class SwirldsPlatform implements Platform {
             epochHash = initialState.getState().getPlatformState().getEpochHash();
         }
 
+        final String swirldName = builder.getSwirldName();
         StartupStateUtils.doRecoveryCleanup(
                 platformContext,
                 recycleBin,
@@ -642,8 +648,9 @@ public class SwirldsPlatform implements Platform {
         final AppNotifier appNotifier = new DefaultAppNotifier(notificationEngine);
 
         final PlatformPublisher publisher;
-        if (preconsensusEventConsumer != null || snapshotOverrideConsumer != null) {
-            publisher = new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
+        if (builder.getPreconsensusEventConsumer() != null || builder.getSnapshotOverrideConsumer() != null) {
+            publisher = new DefaultPlatformPublisher(
+                    builder.getPreconsensusEventConsumer(), builder.getSnapshotOverrideConsumer());
         } else {
             publisher = null;
         }

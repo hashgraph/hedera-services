@@ -19,12 +19,12 @@ package com.swirlds.platform.builder;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.builder.StaticPlatformBuilder.doStaticSetup;
-import static com.swirlds.platform.builder.StaticPlatformBuilder.getGlobalMetrics;
-import static com.swirlds.platform.builder.StaticPlatformBuilder.getMetricsProvider;
-import static com.swirlds.platform.builder.StaticPlatformBuilder.setupGlobalMetrics;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStaticSetup;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
@@ -53,7 +53,6 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
@@ -64,7 +63,6 @@ import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
-import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
@@ -90,11 +88,6 @@ public final class PlatformBuilder {
     private PlatformContext platformContext;
     private ConfigurationBuilder configurationBuilder;
 
-    private static final String SWIRLDS_PACKAGE = "com.swirlds";
-
-    public static final String DEFAULT_CONFIG_FILE_NAME = "config.txt";
-    public static final String DEFAULT_SETTINGS_FILE_NAME = "settings.txt";
-
     /**
      * The path to the configuration file (i.e. the file with the address book).
      */
@@ -109,6 +102,11 @@ public final class PlatformBuilder {
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
 
     /**
+     * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
+     */
+    private boolean used;
+
+    /**
      * Create a new platform builder.
      *
      * @param appName             the name of the application, currently used for deciding where to store states on
@@ -119,7 +117,8 @@ public final class PlatformBuilder {
      * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
      */
     @NonNull
-    public static PlatformBuilder create(@NonNull final String appName,
+    public static PlatformBuilder create(
+            @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<SwirldState> genesisStateBuilder,
@@ -163,6 +162,7 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformBuilder withPlatformContext(@NonNull final PlatformContext platformContext) {
+        throwIfAlreadyUsed();
         if (configurationBuilder != null) {
             throw new IllegalStateException("Cannot set the platform context after the config builder has been set. "
                     + "This method should not be called if withConfigurationBuilder() has been called.");
@@ -185,6 +185,7 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformBuilder withConfigurationBuilder(@Nullable final ConfigurationBuilder configurationBuilder) {
+        throwIfAlreadyUsed();
         if (platformContext != null) {
             throw new IllegalStateException("Cannot set the config builder after the platform context has been "
                     + "created. This method should not be called if withPlatformContext() has been called.");
@@ -196,7 +197,7 @@ public final class PlatformBuilder {
 
     /**
      * Set the path to the settings file (i.e. the file used to instantiate {@link Configuration}). Traditionally named
-     * {@link #DEFAULT_SETTINGS_FILE_NAME}.
+     * {@link PlatformBuildConstants#DEFAULT_SETTINGS_FILE_NAME}.
      *
      * @param path the path to the settings file
      * @return this
@@ -204,6 +205,7 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformBuilder withSettingsPath(@NonNull final Path path) {
+        throwIfAlreadyUsed();
         if (platformContext != null) {
             throw new IllegalStateException("Cannot set the settings path after the platform context has been created. "
                     + "This method should not be called if withPlatformContext() has been called.");
@@ -215,13 +217,14 @@ public final class PlatformBuilder {
 
     /**
      * The path to the config file (i.e. the file with the address book. Traditionally named
-     * {@link #DEFAULT_CONFIG_FILE_NAME}.
+     * {@link PlatformBuildConstants#DEFAULT_CONFIG_FILE_NAME}.
      *
      * @param path the path to the config file
      * @return this
      */
     @NonNull
     public PlatformBuilder withConfigPath(@NonNull final Path path) {
+        throwIfAlreadyUsed();
         Objects.requireNonNull(path);
         this.configPath = getAbsolutePath(path);
         return this;
@@ -236,6 +239,7 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformBuilder withPreviousSoftwareVersionClassId(final long previousSoftwareVersionClassId) {
+        throwIfAlreadyUsed();
         final Set<Long> softwareVersions = new HashSet<>();
         softwareVersions.add(softwareVersion.getClassId());
         softwareVersions.add(previousSoftwareVersionClassId);
@@ -263,6 +267,7 @@ public final class PlatformBuilder {
     @NonNull
     public PlatformBuilder withPreconsensusEventCallback(
             @NonNull final Consumer<GossipEvent> preconsensusEventConsumer) {
+        throwIfAlreadyUsed();
         this.preconsensusEventConsumer = Objects.requireNonNull(preconsensusEventConsumer);
         return this;
     }
@@ -286,6 +291,7 @@ public final class PlatformBuilder {
     @NonNull
     public PlatformBuilder withConsensusSnapshotOverrideCallback(
             @NonNull final Consumer<ConsensusSnapshot> snapshotOverrideConsumer) {
+        throwIfAlreadyUsed();
         this.snapshotOverrideConsumer = Objects.requireNonNull(snapshotOverrideConsumer);
         return this;
     }
@@ -355,12 +361,28 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Build a platform. Platform is not started.
+     * Throw an exception if this builder has been used to build a platform or a platform factory.
+     */
+    private void throwIfAlreadyUsed() {
+        if (used) {
+            throw new IllegalStateException("PlatformBuilder has already been used");
+        }
+    }
+
+    /**
+     * Construct a platform component builder. This can be used for advanced use cases where custom component
+     * implementations are required. If custom components are not required then {@link #build()} can be used and this
+     * method can be ignored.
      *
-     * @return a new platform instance
+     * @return a new platform component builder
      */
     @NonNull
-    public Platform build() {
+    public PlatformComponentBuilder buildComponentBuilder() {
+
+        throwIfAlreadyUsed();
+        used = true;
+
+        // TODO how much of this can live in the platform component builder?
 
         if (platformContext == null) {
             if (configurationBuilder == null) {
@@ -374,7 +396,7 @@ public final class PlatformBuilder {
 
         final Configuration configuration = platformContext.getConfiguration();
 
-        final boolean firstTimeSetup = doStaticSetup(configuration, configPath);
+        final boolean firstPlatofrm = doStaticSetup(configuration, configPath);
 
         final AddressBook configAddressBook = loadConfigAddressBook();
 
@@ -388,14 +410,12 @@ public final class PlatformBuilder {
         final RecycleBinImpl recycleBin = rethrowIO(() -> new RecycleBinImpl(
                 configuration, platformContext.getMetrics(), getStaticThreadManager(), Time.getCurrent(), selfId));
 
-        // We can't send a "real" dispatch, since the dispatcher will not have been started by the
-        // time this class is used.
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final EmergencyRecoveryManager emergencyRecoveryManager =
                 new EmergencyRecoveryManager(stateConfig, basicConfig.getEmergencyRecoveryFileLoadDir());
 
-        try (final ReservedSignedState initialState = getInitialState(
+        final ReservedSignedState initialState = getInitialState(
                 platformContext,
                 recycleBin,
                 softwareVersion,
@@ -404,63 +424,64 @@ public final class PlatformBuilder {
                 swirldName,
                 selfId,
                 configAddressBook,
-                emergencyRecoveryManager)) {
+                emergencyRecoveryManager);
 
-            final boolean softwareUpgrade = detectSoftwareUpgrade(softwareVersion, initialState.get());
+        final boolean softwareUpgrade = detectSoftwareUpgrade(softwareVersion, initialState.get());
 
-            // Initialize the address book from the configuration and platform saved state.
-            final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                    selfId,
-                    softwareVersion,
-                    softwareUpgrade,
-                    initialState.get(),
-                    configAddressBook.copy(),
-                    platformContext);
+        // Initialize the address book from the configuration and platform saved state.
+        final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
+                selfId,
+                softwareVersion,
+                softwareUpgrade,
+                initialState.get(),
+                configAddressBook.copy(),
+                platformContext);
 
-            if (addressBookInitializer.hasAddressBookChanged()) {
-                final State state = initialState.get().getState();
-                // Update the address book with the current address book read from config.txt.
-                // Eventually we will not do this, and only transactions will be capable of
-                // modifying the address book.
-                state.getPlatformState()
-                        .setAddressBook(
-                                addressBookInitializer.getCurrentAddressBook().copy());
+        if (addressBookInitializer.hasAddressBookChanged()) {
+            final State state = initialState.get().getState();
+            // Update the address book with the current address book read from config.txt.
+            // Eventually we will not do this, and only transactions will be capable of
+            // modifying the address book.
+            state.getPlatformState()
+                    .setAddressBook(
+                            addressBookInitializer.getCurrentAddressBook().copy());
 
-                state.getPlatformState()
-                        .setPreviousAddressBook(
-                                addressBookInitializer.getPreviousAddressBook() == null
-                                        ? null
-                                        : addressBookInitializer
-                                                .getPreviousAddressBook()
-                                                .copy());
-            }
-
-            // At this point the initial state must have the current address book set.  If not, something is wrong.
-            if (initialState.get().getState().getPlatformState().getAddressBook() == null) {
-                throw new IllegalStateException("The current address book of the initial state is null.");
-            }
-
-            final SwirldsPlatform platform = new SwirldsPlatform(
-                    platformContext,
-                    keysAndCerts.get(selfId),
-                    recycleBin,
-                    selfId,
-                    appName,
-                    swirldName,
-                    softwareVersion,
-                    initialState.get(),
-                    emergencyRecoveryManager,
-                    preconsensusEventConsumer,
-                    snapshotOverrideConsumer);
-
-            if (firstTimeSetup) {
-                MetricsDocUtils.writeMetricsDocumentToFile(getGlobalMetrics(), getPlatforms(), configuration);
-                getMetricsProvider().start();
-            }
-
-            return platform;
-        } catch (final SignedStateLoadingException e) {
-            throw new RuntimeException("unable to load state from disk", e);
+            state.getPlatformState()
+                    .setPreviousAddressBook(
+                            addressBookInitializer.getPreviousAddressBook() == null
+                                    ? null
+                                    : addressBookInitializer
+                                            .getPreviousAddressBook()
+                                            .copy());
         }
+
+        // At this point the initial state must have the current address book set.  If not, something is wrong.
+        if (initialState.get().getState().getPlatformState().getAddressBook() == null) {
+            throw new IllegalStateException("The current address book of the initial state is null.");
+        }
+
+        return new PlatformComponentBuilder(
+                platformContext,
+                keysAndCerts.get(selfId),
+                recycleBin,
+                selfId,
+                appName,
+                swirldName,
+                softwareVersion,
+                initialState,
+                emergencyRecoveryManager,
+                preconsensusEventConsumer,
+                snapshotOverrideConsumer,
+                firstPlatofrm);
+    }
+
+    /**
+     * Build a platform. Platform is not started.
+     *
+     * @return a new platform instance
+     */
+    @NonNull
+    public Platform build() {
+        return buildComponentBuilder().build();
     }
 }

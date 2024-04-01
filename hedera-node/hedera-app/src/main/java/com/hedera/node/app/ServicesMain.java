@@ -18,7 +18,8 @@ package com.hedera.node.app;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.builder.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuilder.buildPlatformContext;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
@@ -128,7 +129,7 @@ public class ServicesMain implements SwirldMain {
 
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
-        final AddressBook addressBook = loadAddressBook(PlatformBuilder.DEFAULT_CONFIG_FILE_NAME);
+        final AddressBook addressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
         // parse command line arguments
         final CommandLineArgs commandLineArgs = CommandLineArgs.parse(args);
 
