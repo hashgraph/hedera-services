@@ -48,6 +48,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
     private static final String pauseKey = "pauseKey";
     private static final String supplyKey = "supplyKey";
     private static final String feeScheduleKey = "feeScheduleKey";
+    private static final String metadataKey = "metadataKey";
     private static final String saltedName = salted("primary");
     private static final String civilian = "civilian";
 
@@ -376,6 +377,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         newKeyNamed(pauseKey),
                         newKeyNamed(supplyKey),
                         newKeyNamed(feeScheduleKey),
+                        newKeyNamed(metadataKey),
                         tokenCreate("primary")
                                 .name(saltedName)
                                 .initialSupply(500)
@@ -386,6 +388,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .pauseKey(pauseKey)
                                 .supplyKey(supplyKey)
                                 .feeScheduleKey(feeScheduleKey)
+                                .metadataKey(metadataKey)
                                 .payingWith(civilian))
                 .when(tokenUpdate("primary")
                         .applyNoValidationToKeys()
@@ -396,6 +399,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .usingInvalidPauseKey()
                         .usingInvalidSupplyKey()
                         .usingInvalidFeeScheduleKey()
+                        .usingInvalidMetadataKey()
                         .signedBy(civilian, adminKey)
                         .payingWith(civilian))
                 .then(getTokenInfo("primary")
@@ -406,6 +410,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .hasInvalidPauseKey()
                         .hasInvalidSupplyKey()
                         .hasInvalidFeeScheduleKey()
+                        .hasInvalidMetadataKey()
                         .logged());
     }
 
@@ -421,6 +426,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         newKeyNamed(pauseKey),
                         newKeyNamed(supplyKey),
                         newKeyNamed(feeScheduleKey),
+                        newKeyNamed(metadataKey),
                         tokenCreate("primary")
                                 .name(saltedName)
                                 .initialSupply(500)
@@ -431,6 +437,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .pauseKey(pauseKey)
                                 .supplyKey(supplyKey)
                                 .feeScheduleKey(feeScheduleKey)
+                                .metadataKey(metadataKey)
                                 .payingWith(civilian))
                 .when(tokenUpdate("primary")
                         .applyNoValidationToKeys()
@@ -441,7 +448,17 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .usingInvalidPauseKey()
                         .usingInvalidSupplyKey()
                         .usingInvalidFeeScheduleKey()
-                        .signedBy(civilian, adminKey, wipeKey, kycKey, freezeKey, pauseKey, supplyKey, feeScheduleKey)
+                        .usingInvalidMetadataKey()
+                        .signedBy(
+                                civilian,
+                                adminKey,
+                                wipeKey,
+                                kycKey,
+                                freezeKey,
+                                pauseKey,
+                                supplyKey,
+                                feeScheduleKey,
+                                metadataKey)
                         .payingWith(civilian))
                 .then(getTokenInfo("primary")
                         .hasInvalidAdminKey()
@@ -451,6 +468,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .hasInvalidPauseKey()
                         .hasInvalidSupplyKey()
                         .hasInvalidFeeScheduleKey()
+                        .hasInvalidMetadataKey()
                         .logged());
     }
 
@@ -466,6 +484,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         newKeyNamed(pauseKey),
                         newKeyNamed(supplyKey),
                         newKeyNamed(feeScheduleKey),
+                        newKeyNamed(metadataKey),
                         tokenCreate("primary")
                                 .name(saltedName)
                                 .initialSupply(500)
@@ -476,6 +495,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .pauseKey(pauseKey)
                                 .supplyKey(supplyKey)
                                 .feeScheduleKey(feeScheduleKey)
+                                .metadataKey(metadataKey)
                                 .payingWith(civilian))
                 .when(tokenUpdate("primary")
                         .applyNoValidationToKeys()
@@ -485,7 +505,9 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .usingInvalidPauseKey()
                         .usingInvalidSupplyKey()
                         .usingInvalidFeeScheduleKey()
-                        .signedBy(civilian, wipeKey, kycKey, freezeKey, pauseKey, supplyKey, feeScheduleKey)
+                        .usingInvalidMetadataKey()
+                        .signedBy(
+                                civilian, wipeKey, kycKey, freezeKey, pauseKey, supplyKey, feeScheduleKey, metadataKey)
                         .payingWith(civilian))
                 .then(getTokenInfo("primary")
                         .hasInvalidWipeKey()
@@ -494,6 +516,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .hasInvalidPauseKey()
                         .hasInvalidSupplyKey()
                         .hasInvalidFeeScheduleKey()
+                        .hasInvalidMetadataKey()
                         .logged());
     }
 
@@ -511,6 +534,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         newKeyNamed(pauseKey),
                         newKeyNamed(supplyKey),
                         newKeyNamed(feeScheduleKey),
+                        newKeyNamed(metadataKey),
                         tokenCreate("primary")
                                 .name(saltedName)
                                 .initialSupply(500)
@@ -521,6 +545,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .pauseKey(pauseKey)
                                 .supplyKey(supplyKey)
                                 .feeScheduleKey(feeScheduleKey)
+                                .metadataKey(metadataKey)
                                 .payingWith(civilian))
                 .when(tokenUpdate("primary")
                         .applyNoValidationToKeys()
@@ -531,7 +556,9 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .usingInvalidPauseKey()
                         .usingInvalidSupplyKey()
                         .usingInvalidFeeScheduleKey()
-                        .signedBy(civilian, wipeKey, kycKey, freezeKey, pauseKey, supplyKey, feeScheduleKey)
+                        .usingInvalidMetadataKey()
+                        .signedBy(
+                                civilian, wipeKey, kycKey, freezeKey, pauseKey, supplyKey, feeScheduleKey, metadataKey)
                         .payingWith(civilian)
                         .hasKnownStatus(INVALID_SIGNATURE))
                 .then(getTokenInfo("primary").logged());
@@ -550,6 +577,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         newKeyNamed(pauseKey),
                         newKeyNamed(supplyKey),
                         newKeyNamed(feeScheduleKey),
+                        newKeyNamed(metadataKey),
                         tokenCreate("primary")
                                 .name(saltedName)
                                 .initialSupply(500)
@@ -560,6 +588,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .pauseKey(pauseKey)
                                 .supplyKey(supplyKey)
                                 .feeScheduleKey(feeScheduleKey)
+                                .metadataKey(metadataKey)
                                 .payingWith(civilian))
                 .when(tokenUpdate("primary")
                         .applyNoValidationToKeys()
@@ -569,7 +598,9 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .usingInvalidPauseKey()
                         .usingInvalidSupplyKey()
                         .usingInvalidFeeScheduleKey()
-                        .signedBy(civilian, wipeKey, kycKey, freezeKey, pauseKey, feeScheduleKey)
+                        .usingInvalidMetadataKey()
+                        // supplyKey does not sign the update
+                        .signedBy(civilian, wipeKey, kycKey, freezeKey, pauseKey, feeScheduleKey, metadataKey)
                         .payingWith(civilian)
                         .hasKnownStatus(INVALID_SIGNATURE))
                 .then(getTokenInfo("primary").logged());
@@ -587,6 +618,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         newKeyNamed(pauseKey),
                         newKeyNamed(supplyKey),
                         newKeyNamed(feeScheduleKey),
+                        newKeyNamed(metadataKey),
                         tokenCreate("primary")
                                 .name(saltedName)
                                 .initialSupply(500)

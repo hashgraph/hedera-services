@@ -456,6 +456,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                         op.hasFeeScheduleKey());
                 addRequiredLowPrioritySigner(
                         lowPriorityKeys, originalToken.hasPauseKey(), originalToken.pauseKey(), op.hasPauseKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys,
+                        originalToken.hasMetadataKey(),
+                        originalToken.metadataKey(),
+                        op.hasMetadataKey());
 
                 final Key lowPriorityKeyList = Key.newBuilder()
                         .keyList(KeyList.newBuilder().keys(lowPriorityKeys).build())

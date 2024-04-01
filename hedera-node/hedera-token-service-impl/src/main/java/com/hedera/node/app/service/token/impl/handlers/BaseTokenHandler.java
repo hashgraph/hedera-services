@@ -406,7 +406,7 @@ public class BaseTokenHandler {
 
     /**
      * Check if TokenUpdateOp wants to update one of the low priority keys
-     * wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey or pauseKey
+     * wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or metadataKey
      */
     public static boolean isLowPriorityKeyUpdate(@NonNull final TokenUpdateTransactionBody op) {
         return op.hasWipeKey()
@@ -414,7 +414,8 @@ public class BaseTokenHandler {
                 || op.hasSupplyKey()
                 || op.hasFreezeKey()
                 || op.hasFeeScheduleKey()
-                || op.hasPauseKey();
+                || op.hasPauseKey()
+                || op.hasMetadataKey();
     }
 
     @NonNull

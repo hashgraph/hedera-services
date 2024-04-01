@@ -140,6 +140,12 @@ public class TokenUpdateReplaceKeysXTest extends AbstractTokenXTest {
                 tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.pauseKey(ALL_ZEROS_INVALID_KEY)
                         .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
                 OK);
+        // change metadata key to an invalid
+        handleAndCommitSingleTransaction(
+                component.tokenUpdateHandler(),
+                tokenUpdate(idOfNamedToken(TOKEN_INVALID_KEYS_ID), List.of(b -> b.metadataKey(ALL_ZEROS_INVALID_KEY)
+                        .keyVerificationMode(TokenKeyValidation.NO_VALIDATION))),
+                OK);
         // change admin key to an invalid
         handleAndCommitSingleTransaction(
                 component.tokenUpdateHandler(),

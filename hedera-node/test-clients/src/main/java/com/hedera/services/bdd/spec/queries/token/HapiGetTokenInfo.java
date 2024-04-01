@@ -97,6 +97,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     private boolean invalidSupplyKey = false;
     private boolean invalidFreezeKey = false;
     private boolean invalidFeeScheduleKey = false;
+    private boolean invalidMetadataKey = false;
     private boolean invalidPauseKey = false;
 
     @Nullable
@@ -343,6 +344,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasInvalidMetadataKey() {
+        invalidMetadataKey = true;
+        return this;
+    }
+
     @Override
     @SuppressWarnings("java:S5960")
     protected void assertExpectationsGiven(HapiSpec spec) {
@@ -492,12 +498,16 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
                     "Wrong token pause key!",
                     registry);
         }
-        assertFor(
-                actualInfo.getMetadataKey(),
-                expectedMetadataKey,
-                (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getMetadataKey(n),
-                "Wrong token metadata key!",
-                registry);
+        if (invalidMetadataKey) {
+            assertForAllZerosInvalidKey(actualInfo.getMetadataKey());
+        } else {
+            assertFor(
+                    actualInfo.getMetadataKey(),
+                    expectedMetadataKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getMetadataKey(n),
+                    "Wrong token metadata key!",
+                    registry);
+        }
 
         expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, actualInfo.getLedgerId()));
     }

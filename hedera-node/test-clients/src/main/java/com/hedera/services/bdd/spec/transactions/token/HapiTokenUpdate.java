@@ -65,6 +65,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private Optional<String> newFreezeKey = Optional.empty();
     private Optional<String> newFeeScheduleKey = Optional.empty();
     private Optional<String> newPauseKey = Optional.empty();
+    private Optional<String> newMetadataKey = Optional.empty();
 
     @Nullable
     private String newLockKey;
@@ -90,6 +91,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private boolean useInvalidSupplyKey = false;
     private boolean useInvalidFreezeKey = false;
     private boolean useInvalidFeeScheduleKey = false;
+    private boolean useInvalidMetadataKey = false;
     private boolean useInvalidPauseKey = false;
     private boolean noKeyValidation = false;
     private Optional<String> contractKeyName = Optional.empty();
@@ -143,6 +145,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
     public HapiTokenUpdate pauseKey(String name) {
         newPauseKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiTokenUpdate metadataKey(String name) {
+        newMetadataKey = Optional.of(name);
         return this;
     }
 
@@ -243,6 +250,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
     public HapiTokenUpdate usingInvalidFeeScheduleKey() {
         useInvalidFeeScheduleKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate usingInvalidMetadataKey() {
+        useInvalidMetadataKey = true;
         return this;
     }
 
@@ -374,6 +386,12 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                 newPauseKey.ifPresent(
                                         k -> b.setPauseKey(spec.registry().getKey(k)));
                             }
+                            if (useInvalidMetadataKey) {
+                                b.setMetadataKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                            } else {
+                                newMetadataKey.ifPresent(
+                                        k -> b.setMetadataKey(spec.registry().getKey(k)));
+                            }
                             if (autoRenewAccount.isPresent()) {
                                 var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
                                 b.setAutoRenewAccount(autoRenewId);
@@ -455,6 +473,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         newKycKey.ifPresent(n -> registry.saveKycKey(token, registry.getKey(n)));
         newFeeScheduleKey.ifPresent(n -> registry.saveFeeScheduleKey(token, registry.getKey(n)));
         newPauseKey.ifPresent(n -> registry.savePauseKey(token, registry.getKey(n)));
+        newMetadataKey.ifPresent(n -> registry.saveMetadataKey(token, registry.getKey(n)));
     }
 
     @Override
