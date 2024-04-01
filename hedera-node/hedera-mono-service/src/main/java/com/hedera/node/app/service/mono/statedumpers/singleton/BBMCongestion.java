@@ -25,6 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public record BBMCongestion(
@@ -40,15 +41,17 @@ public record BBMCongestion(
                 .toList();
         final var gasThrottleUsageSnapshot = PbjConverter.toPbj(networkContext.getGasThrottleUsageSnapshot());
         // format the following two from `List<RichInstant>` to String
-        final var gasCongestionStarts = networkContext.getMultiplierSources() != null
+        final var gasCongestionStarts = networkContext.getMultiplierSources() != null && networkContext.getMultiplierSources().gasCongestionStarts() != null
                 ? Arrays.stream(networkContext.getMultiplierSources().gasCongestionStarts())
                         .map(RichInstant::fromJava)
+                        .filter(Objects::nonNull)
                         .map(ThingsToStrings::toStringOfRichInstant)
                         .collect(Collectors.joining(", "))
                 : "";
-        final var genericCongestionStarts = networkContext.getMultiplierSources() != null
+        final var genericCongestionStarts = networkContext.getMultiplierSources() != null && networkContext.getMultiplierSources().genericCongestionStarts() != null
                 ? Arrays.stream(networkContext.getMultiplierSources().genericCongestionStarts())
                         .map(RichInstant::fromJava)
+                        .filter(Objects::nonNull)
                         .map(ThingsToStrings::toStringOfRichInstant)
                         .collect(Collectors.joining(", "))
                 : "";

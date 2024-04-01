@@ -98,6 +98,6 @@ public class TopicDumpUtils {
                 topic.runningHash().toByteArray(),
                 topic.sequenceNumber(),
                 topic.autoRenewPeriod(),
-                EntityId.fromNum(topic.autoRenewAccountId().accountNum()));
+                topic.hasAutoRenewAccountId() ? EntityId.fromNum(topic.autoRenewAccountId().accountNum()) : null);
     }
 }
