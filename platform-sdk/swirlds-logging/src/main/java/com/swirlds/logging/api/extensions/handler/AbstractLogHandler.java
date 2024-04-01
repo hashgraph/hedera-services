@@ -80,7 +80,11 @@ public abstract class AbstractLogHandler implements LogHandler {
             EMERGENCY_LOGGER.logNPE("level");
             return true;
         }
-        return loggingLevelConfig.get().isEnabled(name, level, marker);
+        if (marker == null) { // Favor the method that has chances to be inlined
+            return loggingLevelConfig.get().isEnabled(name, level);
+        } else {
+            return loggingLevelConfig.get().isEnabled(name, level, marker);
+        }
     }
 
     @Override

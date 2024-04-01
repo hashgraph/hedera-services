@@ -190,7 +190,8 @@ public class HandlerLoggingLevelConfig {
      * @return True if the given level is enabled for the given name.
      */
     public boolean isEnabled(@NonNull final String name, @NonNull final Level level) {
-        return isEnabled(name, level, null);
+        final Level enabledLevel = levelCache.computeIfAbsent(name, this::getConfiguredLevel);
+        return enabledLevel.enabledLoggingOfLevel(level);
     }
 
     public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
@@ -214,8 +215,7 @@ public class HandlerLoggingLevelConfig {
                 return isEnabled;
             }
         }
-        final Level enabledLevel = levelCache.computeIfAbsent(name, this::getConfiguredLevel);
-        return enabledLevel.enabledLoggingOfLevel(level);
+        return isEnabled(name, level);
     }
 
     @NonNull

@@ -174,7 +174,11 @@ public class LoggingSystem {
             }
         }
 
-        return levelConfig.get().isEnabled(name, level, marker);
+        if (marker == null) { // favor inlining
+            return levelConfig.get().isEnabled(name, level);
+        } else {
+            return levelConfig.get().isEnabled(name, level, marker);
+        }
     }
 
     public void accept(@NonNull final LogEvent event) {
