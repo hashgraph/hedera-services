@@ -608,10 +608,6 @@ public final class MerkleDb {
         return getInstance(defaultInstancePath);
     }
 
-    private void storeMetadata() {
-        storeMetadata(storageDir, getPrimaryTables());
-    }
-
     /**
      * Writes database metadata file to the specified dir. Only table configs from the given list of
      * tables are included.
@@ -623,13 +619,19 @@ public final class MerkleDb {
      *   <li>(for every table) table ID, table Name, and table serialization config
      * </ul>
      *
-     * @param dir Folder to write metadata file to
-     * @param tables List of tables to include to the metadata file
+     * This method has to be synchronized, as it's totally possible for multiple tables to be processed
+     * at the same time, and we'd like to guarantee that the metadata file is consistent.
      */
-    @SuppressWarnings("rawtypes")
-    private void storeMetadata(final Path dir, final Collection<TableMetadata> tables) {
+    private synchronized void storeMetadata() {
+        final Set<TableMetadata> tables = new HashSet<>();
+        for (int i = 0; i < tableConfigs.length(); i++) {
+            final TableMetadata tableMetadata = tableConfigs.get(i);
+            if ((tableMetadata != null) && primaryTables.contains(i)) {
+                tables.add(tableMetadata);
+            }
+        }
         if (config.usePbj()) {
-            final Path dbMetadataFile = dir.resolve(METADATA_FILENAME);
+            final Path dbMetadataFile = storageDir.resolve(METADATA_FILENAME);
             try (final OutputStream fileOut =
                     Files.newOutputStream(dbMetadataFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
                 final WritableSequentialData out = new WritableStreamingData(fileOut);
@@ -641,7 +643,7 @@ public final class MerkleDb {
                 throw new UncheckedIOException(z);
             }
         } else {
-            final Path dbMetadataFile = dir.resolve(METADATA_FILENAME_OLD);
+            final Path dbMetadataFile = storageDir.resolve(METADATA_FILENAME_OLD);
             try (final OutputStream fileOut =
                             Files.newOutputStream(dbMetadataFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
                     SerializableDataOutputStream out = new SerializableDataOutputStream(fileOut)) {
@@ -759,26 +761,6 @@ public final class MerkleDb {
             }
         }
         return null;
-    }
-
-    /**
-     * Returns the set of primary tables in this database. The corresponding data source may
-     * or may not be opened.
-     *
-     * @return Set of all tables in the database
-     */
-    private Set<TableMetadata> getPrimaryTables() {
-        // I wish there was AtomicReferenceArray.stream()
-        final Set<TableMetadata> tables = new HashSet<>();
-        for (int i = 0; i < tableConfigs.length(); i++) {
-            final TableMetadata tableMetadata = tableConfigs.get(i);
-            if ((tableMetadata != null) && primaryTables.contains(i)) {
-                tables.add(tableConfigs.get(i));
-            }
-        }
-        // If this method is ever used outside this class, change it to return an
-        // unmodifiable set instead
-        return tables;
     }
 
     /**
