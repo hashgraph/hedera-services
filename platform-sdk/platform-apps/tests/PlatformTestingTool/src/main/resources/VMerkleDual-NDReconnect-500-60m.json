@@ -35,7 +35,7 @@
   },
   "virtualMerkleConfig": {
 	"samplingProbability": 0,
-	"assorted": false,
+	"assorted": true,
 	"smartContractConfig": {
 	  "minKeyValuePairsDuringCreation": 100,
 	  "maxKeyValuePairsDuringCreation": 250,
@@ -46,63 +46,31 @@
 	  "addsDuringMethodExecution": 300
 	},
 	"sequential": [
-	  {
-		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
-		"amount": 150000
-	  },
-		{
-			"type": "TYPE_VIRTUAL_MERKLE_CREATE_SMART_CONTRACT",
-			"amount": 5000
-		},
-		{
-			"type": "TYPE_VIRTUAL_MERKLE_SMART_CONTRACT_METHOD_EXECUTION",
-			"amount": 5000
-		},
-		{
-			"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-			"amount": 30000
-		},
-	  {
-		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
-		"amount": 15000
-	  },
-	  {
-		"type": "TYPE_VIRTUAL_MERKLE_CREATE_SMART_CONTRACT",
-		"amount": 1000
-	  },
-	  {
-		"type": "TYPE_VIRTUAL_MERKLE_SMART_CONTRACT_METHOD_EXECUTION",
-		"amount": 3000
-	  },
-		{
-			"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-			"amount": 50000
-		},
 		{
 			"type": "TYPE_VIRTUAL_MERKLE_CREATE",
-			"amount": 50000
+			"amount": 100000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_DELETE",
+			"amount": 100000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+			"amount": 100000
 		},
 		{
 			"type": "TYPE_VIRTUAL_MERKLE_CREATE_SMART_CONTRACT",
-			"amount": 2000
-		},
-		{
-			"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-			"amount": 50000
+			"amount": 15000
 		},
 		{
 			"type": "TYPE_VIRTUAL_MERKLE_SMART_CONTRACT_METHOD_EXECUTION",
-			"amount": 5000
-		},
-		{
-			"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-			"amount": 200000
+			"amount": 15000
 		}
 	]
   },
   "fcmConfig": {
 	"sequentialTest": false,
-	"_comment": "if sequentialTest is true, generate payload according to sequentialType, sequentialAmoutn, sequentialSize, this override typeDistribution defined in payloadConfig",
+	"_comment": "if sequentialTest is true, generate payload according to sequentialType, sequentialAmount, sequentialSize, this override typeDistribution defined in payloadConfig",
 	"sequentials": []
   }
 }

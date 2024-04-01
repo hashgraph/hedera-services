@@ -174,7 +174,7 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
                         chunkNextToCheckPaths.get(chunk).addFirst(Path.getParentPath(path));
                     }
                 } else {
-                    // At the chunk start rank, every other path (i.e. all right paths) is skipped by
+                    // At the chunk start rank, every other path (i.e. all right paths) are skipped by
                     // default. If a left sibling is clean, there is no need to check the right sibling,
                     // as a request for the parent will be sent anyway. However, if the left sibling
                     // is dirty, the right sibling may be either dirty, or clean, so a request for it
@@ -201,24 +201,35 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
                 final int chunk = (lastSentPathChunk + 1 + i) % chunkCount;
                 // Check the queue first. If not empty, return a path from there (if not clean)
                 final Deque<Long> toCheck = chunkNextToCheckPaths.get(chunk);
-                result = toCheck.isEmpty() ? -1 : toCheck.pollFirst();
-                while ((result != -1) && hasCleanParent(result)) {
-                    result = toCheck.isEmpty() ? -1 : toCheck.pollFirst();
+                result = toCheck.isEmpty() ? Path.INVALID_PATH : toCheck.pollFirst();
+                while ((result != Path.INVALID_PATH) && hasCleanParent(result)) {
+                    result = toCheck.isEmpty() ? Path.INVALID_PATH : toCheck.pollFirst();
                 }
-                if (result != -1) {
+                if (result != Path.INVALID_PATH) {
                     lastSentPathChunk = chunk;
                     break;
                 }
                 // Otherwise proceed to the next pessimistic path at chunk start rank
-                result = cleanOrNext(chunk, chunkNextPessimisticPaths.get(chunk));
-                if (result == -1) {
-                    chunkNextPessimisticPaths.put(chunk, -1L);
+                final long nextPessimisticPath = chunkNextPessimisticPaths.get(chunk);
+                if (nextPessimisticPath == Path.INVALID_PATH) {
                     continue;
                 }
+                result = skipCleanPaths(nextPessimisticPath, getLastChunkPath(chunk));
+                if (result == Path.INVALID_PATH) {
+                    // All remaining paths at chunk start rank are clear. Mark the chunk as done
+                    // and try the next chunk
+                    chunkNextPessimisticPaths.put(chunk, Path.INVALID_PATH);
+                    continue;
+                }
+                // Only left paths are sent at the chunk start rank. If a left path is dirty, then its
+                // right sibling is scheduled to check in nodeReceived(), otherwise a parent will be
+                // checked, and there is no need to send a request for the right sibling
+                assert Path.isLeft(result);
                 lastSentPathChunk = chunk;
+                // Skip to the next left path
                 long next = result + 2;
                 if (next > getLastChunkPath(chunk)) {
-                    next = -1;
+                    next = Path.INVALID_PATH;
                 }
                 chunkNextPessimisticPaths.put(chunk, next);
                 break;
@@ -228,28 +239,6 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
             result = getNextLeafPath();
         }
         return result;
-    }
-
-    private long cleanOrNext(final int chunk, final long path) {
-        if ((path == -1) || (getPathChunk(path) != chunk)) {
-            return -1;
-        }
-        return hasCleanParent(path) ? getNextPathInChunk(chunk, path) : path;
-    }
-
-    private long getNextPathInChunk(final int chunk, final long lastPath) {
-        final int lastPathRank = Path.getRank(lastPath);
-        final int chunkStartRank = chunkStartRanks.get(chunk);
-        final int chunkHeight = chunkStartRank - chunksStopRank;
-        if (Path.isLeft(lastPath) && (chunkStartRank - lastPathRank < chunkHeight) && !hasCleanParent(lastPath)) {
-            return Path.getParentPath(lastPath);
-        }
-        // next path at chunk start rank
-        long path = Path.getLeftGrandChildPath(lastPath, chunkStartRank - lastPathRank) + 1;
-        final long chunkStartPath = chunkStartPaths.get(chunk);
-        final long chunkWidth = chunkWidths.get(chunk);
-        final long lastPathInChunk = chunkStartPath + chunkWidth - 1;
-        return skipCleanPaths(path, lastPathInChunk);
     }
 
     private long getNextLeafPath() {
@@ -287,6 +276,10 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
         return clean;
     }
 
+    /**
+     * Skip all clean paths starting from the given path at the same rank, un until the limit. If
+     * all paths are clean to the very limit, Path.INVALID_PATH is returned
+     */
     private long skipCleanPaths(long path, final long limit) {
         long result = skipCleanPaths(path);
         while ((result < limit) && (result != path)) {
@@ -296,6 +289,11 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
         return (result <= limit) ? result : Path.INVALID_PATH;
     }
 
+    /**
+     * For a given path, find its highest parent path in cleanNodes. If such a parent exists,
+     * skip all paths at the original paths's rank in the parent sub-tree and return the first
+     * path after that. If no clean parent is found, the original path is returned
+     */
     private long skipCleanPaths(final long path) {
         assert path > 0;
         long parent = Path.getParentPath(path);
