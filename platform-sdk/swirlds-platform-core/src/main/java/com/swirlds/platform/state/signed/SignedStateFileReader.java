@@ -27,6 +27,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -98,8 +99,12 @@ public final class SignedStateFileReader {
                     return new StateFileData(state, hash, sigSet);
                 });
 
-        final SignedState newSignedState =
-                new SignedState(platformContext, data.state(), "SignedStateFileReader.readStateFile()", false);
+        final SignedState newSignedState = new SignedState(
+                platformContext,
+                CryptoStatic::verifySignature,
+                data.state(),
+                "SignedStateFileReader.readStateFile()",
+                false);
 
         newSignedState.setSigSet(data.sigSet());
 
@@ -127,6 +132,7 @@ public final class SignedStateFileReader {
                     readAndCheckVersion(in);
                     return new SignedState(
                             platformContext,
+                            CryptoStatic::verifySignature,
                             in.readMerkleTree(stateFile.getParent(), MAX_MERKLE_NODES_IN_STATE),
                             "SignedStateFileReader.readSignedStateOnly()",
                             false);
