@@ -22,6 +22,7 @@ import static software.amazon.awssdk.http.SdkHttpConfigurationOption.TRUST_ALL_C
 import com.hedera.node.blocknode.config.ConfigProvider;
 import com.hedera.node.blocknode.config.data.BlockNodeFileSystemConfig;
 import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
+import com.hedera.node.blocknode.util.BlockNodeUtil;
 import com.hedera.services.stream.v7.proto.Block;
 import com.hedera.services.stream.v7.proto.BlockItem;
 import java.io.ByteArrayInputStream;
@@ -40,9 +41,6 @@ public class S3FileSystem implements FileSystemApi {
 
     // instance of the awssdk client
     private final S3Client client;
-
-    // file extension of the block files
-    private static final String FILE_EXTENSION = ".blk.gz";
 
     // config provider
     private final BlockNodeFileSystemConfig fileSystemConfig;
@@ -68,38 +66,6 @@ public class S3FileSystem implements FileSystemApi {
                 .build();
     }
 
-    private String blockNumberToKey(long blockNumber) {
-        return String.format("%036d", blockNumber) + FILE_EXTENSION;
-    }
-
-    private long extractBlockNumber(Block block) {
-        Long blockNumber = null;
-        for (BlockItem item : block.getItemsList()) {
-            if (item.hasHeader()) {
-                blockNumber = item.getHeader().getNumber();
-                break;
-            }
-        }
-
-        requireNonNull(blockNumber, "Block number can not be extracted.");
-
-        return blockNumber;
-    }
-
-    private String extractBlockFileNameFromBlock(Block block) {
-        Long blockNumber = null;
-        for (BlockItem item : block.getItemsList()) {
-            if (item.hasHeader()) {
-                blockNumber = item.getHeader().getNumber();
-                break;
-            }
-        }
-
-        requireNonNull(blockNumber, "Block number can not be extracted.");
-
-        return blockNumberToKey(extractBlockNumber(block));
-    }
-
     @Override
     public void writeBlock(Block block) {
         byte[] serializedData = block.toByteArray();
@@ -108,7 +74,7 @@ public class S3FileSystem implements FileSystemApi {
 
         PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(fileSystemConfig.s3BucketName())
-                .key(extractBlockFileNameFromBlock(block))
+                .key(BlockNodeUtil.extractBlockFileNameFromBlock(block))
                 .build();
 
         this.client.putObject(objectRequest, requestBody);

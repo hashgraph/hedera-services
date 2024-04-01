@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.blocknode.config.ConfigProvider;
 import com.hedera.node.blocknode.config.data.BlockNodeFileSystemConfig;
 import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
+import com.hedera.node.blocknode.util.BlockNodeUtil;
 import com.hedera.services.stream.v7.proto.Block;
 import com.hedera.services.stream.v7.proto.BlockItem;
 import java.io.IOException;
@@ -39,8 +40,6 @@ public class LocalFileSystem implements FileSystemApi {
 
     private final Path blocksExportPath;
 
-    private static final String FILE_EXTENSION = ".blk.gz";
-
     public LocalFileSystem(ConfigProvider configProvider) {
         this.fileSystemConfig = configProvider.getConfiguration().getConfigData(BlockNodeFileSystemConfig.class);
 
@@ -52,7 +51,7 @@ public class LocalFileSystem implements FileSystemApi {
     public void writeBlock(Block block) {
         Path blockFilePath = null;
         try {
-            String blockFileName = extractBlockFileNameFromBlock(block);
+            String blockFileName = BlockNodeUtil.extractBlockFileNameFromBlock(block);
             blockFilePath = blocksExportPath.resolve(blockFileName);
 
             OutputStream out = Files.newOutputStream(blockFilePath);
@@ -68,17 +67,5 @@ public class LocalFileSystem implements FileSystemApi {
     @Override
     public Block readBlock(long number) {
         return null;
-    }
-
-    private String extractBlockFileNameFromBlock(Block block) {
-        Optional<Long> blockNumber = block.getItemsList().stream()
-                .filter(BlockItem::hasHeader)
-                .map(item -> item.getHeader().getNumber())
-                .findFirst();
-        Long optionalBlockNumber = blockNumber.orElse(null);
-
-        requireNonNull(optionalBlockNumber, "Block number can not be extracted.");
-
-        return String.format("%036d", optionalBlockNumber) + FILE_EXTENSION;
     }
 }

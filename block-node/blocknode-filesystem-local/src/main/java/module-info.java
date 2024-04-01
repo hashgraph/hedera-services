@@ -12,5 +12,6 @@ module com.hedera.storage.blocknode.filesystem.local {
     // module (including tests and other source sets).
     requires transitive com.hedera.storage.blocknode.config;
     requires transitive com.hedera.storage.blocknode.filesystem.api;
+    requires transitive com.hedera.storage.blocknode.util;
     requires transitive com.hedera.node.hapi;
 }
