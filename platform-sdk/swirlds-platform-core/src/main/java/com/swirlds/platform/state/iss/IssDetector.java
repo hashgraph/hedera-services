@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -339,7 +340,7 @@ public class IssDetector {
             return null;
         }
 
-        if (!Objects.equals(signatureTransaction.getEpochHash(), currentEpochHash)) {
+        if (!hashEquals(currentEpochHash, signatureTransaction.epochHash())) {
             // this is a signature from a different epoch, ignore it
             return null;
         }
@@ -364,7 +365,8 @@ public class IssDetector {
         }
 
         final boolean decided =
-                roundValidator.reportHashFromNetwork(signerId, nodeWeight, signatureTransaction.getStateHash());
+                roundValidator.reportHashFromNetwork(signerId, nodeWeight,
+                        new Hash(signatureTransaction.hash().toByteArray()));
         if (decided) {
             return checkValidity(roundValidator);
         }
@@ -547,5 +549,12 @@ public class IssDetector {
                     .append(Duration.ofMinutes(1).toSeconds())
                     .append("seconds.");
         }
+    }
+
+    private static boolean hashEquals(@Nullable final Hash a, @NonNull final Bytes b) {
+        if(a == null && b.length() == 0) {
+            return true;
+        }
+        return a != null && b.contains(0, a.getValue());
     }
 }

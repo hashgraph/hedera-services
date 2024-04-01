@@ -115,11 +115,17 @@ public final class StateSignatureTransaction extends SystemTransaction {
         return stateSignature == null ? Bytes.EMPTY : Bytes.wrap(stateSignature.getSignatureBytes());
     }
 
+    /**
+     * @return the hash that was signed
+     */
     @NonNull
     public Bytes hash() {
         return stateHash == null ? Bytes.EMPTY : Bytes.wrap(stateHash.getValue());
     }
 
+    /**
+     * @return the hash of the epoch to which this signature corresponds to
+     */
     @NonNull
     public Bytes epochHash() {
         return epochHash == null ? Bytes.EMPTY : Bytes.wrap(epochHash.getValue());
@@ -131,20 +137,6 @@ public final class StateSignatureTransaction extends SystemTransaction {
      */
     public Signature getStateSignature() {
         return stateSignature;
-    }
-
-    /**
-     * @return the hash that was signed
-     */
-    public Hash getStateHash() {
-        return stateHash;
-    }
-
-    /**
-     * @return the hash of the epoch to which this signature corresponds to
-     */
-    public @Nullable Hash getEpochHash() {
-        return epochHash;
     }
 
     /**
