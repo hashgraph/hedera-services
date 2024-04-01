@@ -57,25 +57,6 @@ public class LoggerImplTest {
         Assertions.assertTrue(errorEnabled);
     }
 
-    private LoggingSystem dummySystem() {
-        final Configuration orCreateConfig = LoggingTestUtils.getConfigBuilder().getOrCreateConfig();
-        return new LoggingSystem(orCreateConfig) {
-            @Override
-            public boolean isEnabled(String name, Level level, Marker marker) {
-                return true;
-            }
-            /**
-             * Accepts a log event but performs no action.
-             *
-             * @param event the log event to be accepted
-             */
-            @Override
-            public void accept(LogEvent event) {
-                // Empty implementation; does not perform any action
-            }
-        };
-    }
-
     @Test
     void testNullLogEventConsumer() {
         Assertions.assertThrows(
@@ -100,7 +81,7 @@ public class LoggerImplTest {
         LoggerImpl logger = new LoggerImpl("test-name", new SimpleLogEventFactory(), dummySystem());
 
         // then
-        LoggerApiSpecTest.testSpec(logger);
+        LoggerApiSpecAssertions.assertSpecForLogger(logger);
     }
 
     @Test
@@ -120,12 +101,32 @@ public class LoggerImplTest {
         final Logger logger = loggingSystem.getLogger("test-name");
 
         // then
-        LoggerApiSpecTest.testSpec(logger);
+        LoggerApiSpecAssertions.assertSpecForLogger(logger);
     }
 
     @Test
     void testSpecWithDifferentLoggers() {
-        LoggerApiSpecTest.testSpec(new LoggerImpl("test-name", new SimpleLogEventFactory(), dummySystem()));
-        LoggerApiSpecTest.testSpec(new LoggerImpl("null", new SimpleLogEventFactory(), dummySystem()));
+        LoggerApiSpecAssertions.assertSpecForLogger(
+                new LoggerImpl("test-name", new SimpleLogEventFactory(), dummySystem()));
+        LoggerApiSpecAssertions.assertSpecForLogger(new LoggerImpl("null", new SimpleLogEventFactory(), dummySystem()));
+    }
+
+    private static LoggingSystem dummySystem() {
+        final Configuration orCreateConfig = LoggingTestUtils.getConfigBuilder().getOrCreateConfig();
+        return new LoggingSystem(orCreateConfig) {
+            @Override
+            public boolean isEnabled(String name, Level level, Marker marker) {
+                return true;
+            }
+            /**
+             * Accepts a log event but performs no action.
+             *
+             * @param event the log event to be accepted
+             */
+            @Override
+            public void accept(LogEvent event) {
+                // Empty implementation; does not perform any action
+            }
+        };
     }
 }

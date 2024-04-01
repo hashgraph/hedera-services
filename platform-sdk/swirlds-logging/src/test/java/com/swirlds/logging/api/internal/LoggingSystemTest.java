@@ -16,6 +16,11 @@
 
 package com.swirlds.logging.api.internal;
 
+import static com.swirlds.base.test.fixtures.assertions.AssertionUtils.assertThrowsNPE;
+import static com.swirlds.logging.util.LoggingTestUtils.EXPECTED_STATEMENTS;
+import static com.swirlds.logging.util.LoggingTestUtils.countLinesInStatements;
+import static com.swirlds.logging.util.LoggingTestUtils.getLines;
+import static com.swirlds.logging.util.LoggingTestUtils.linesToStatements;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,8 +31,9 @@ import com.swirlds.base.test.fixtures.io.SystemErrProvider;
 import com.swirlds.base.test.fixtures.io.WithSystemError;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.logging.LoggerApiSpecTest;
+import com.swirlds.logging.LoggerApiSpecAssertions;
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.event.LogMessage;
@@ -37,12 +43,20 @@ import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.event.DefaultLogEvent;
 import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.test.fixtures.InMemoryHandler;
+import com.swirlds.logging.test.fixtures.internal.LoggingMirrorImpl;
+import com.swirlds.logging.util.LoggingSystemTestOrchestrator;
+import com.swirlds.logging.util.LoggingTestScenario;
+import com.swirlds.logging.util.LoggingTestUtils;
 import jakarta.inject.Inject;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -126,108 +140,64 @@ public class LoggingSystemTest {
     @DisplayName("Test that INFO is default level for a non configured logging system")
     void testDefaultLevel() {
         // given
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-
-        // when
-        final boolean rootTraceEnabled = loggingSystem.isEnabled("", Level.TRACE, null);
-        final boolean rootDebugEnabled = loggingSystem.isEnabled("", Level.DEBUG, null);
-        final boolean rootInfoEnabled = loggingSystem.isEnabled("", Level.INFO, null);
-        final boolean rootWarnEnabled = loggingSystem.isEnabled("", Level.WARN, null);
-        final boolean rootErrorEnabled = loggingSystem.isEnabled("", Level.ERROR, null);
-
-        final boolean rootTrimTraceEnabled = loggingSystem.isEnabled("  ", Level.TRACE, null);
-        final boolean rootTrimDebugEnabled = loggingSystem.isEnabled("  ", Level.DEBUG, null);
-        final boolean rootTrimInfoEnabled = loggingSystem.isEnabled("  ", Level.INFO, null);
-        final boolean rootTrimWarnEnabled = loggingSystem.isEnabled("  ", Level.WARN, null);
-        final boolean rootTrimErrorEnabled = loggingSystem.isEnabled("  ", Level.ERROR, null);
-
-        final boolean rootNullTraceEnabled = loggingSystem.isEnabled(null, Level.TRACE, null);
-        final boolean rootNullDebugEnabled = loggingSystem.isEnabled(null, Level.DEBUG, null);
-        final boolean rootNullInfoEnabled = loggingSystem.isEnabled(null, Level.INFO, null);
-        final boolean rootNullWarnEnabled = loggingSystem.isEnabled(null, Level.WARN, null);
-        final boolean rootNullErrorEnabled = loggingSystem.isEnabled(null, Level.ERROR, null);
-
-        final boolean testTraceEnabled = loggingSystem.isEnabled("test.Class", Level.TRACE, null);
-        final boolean testDebugEnabled = loggingSystem.isEnabled("test.Class", Level.DEBUG, null);
-        final boolean testInfoEnabled = loggingSystem.isEnabled("test.Class", Level.INFO, null);
-        final boolean testWarnEnabled = loggingSystem.isEnabled("test.Class", Level.WARN, null);
-        final boolean testErrorEnabled = loggingSystem.isEnabled("test.Class", Level.ERROR, null);
-
-        final boolean testBlankTraceEnabled = loggingSystem.isEnabled("  test.Class  ", Level.TRACE, null);
-        final boolean testBlankDebugEnabled = loggingSystem.isEnabled("  test.Class  ", Level.DEBUG, null);
-        final boolean testBlankInfoEnabled = loggingSystem.isEnabled("  test.Class  ", Level.INFO, null);
-        final boolean testBlankWarnEnabled = loggingSystem.isEnabled("  test.Class  ", Level.WARN, null);
-        final boolean testBlankErrorEnabled = loggingSystem.isEnabled("  test.Class  ", Level.ERROR, null);
-
-        // then
-        Assertions.assertFalse(rootTraceEnabled, "INFO should be default level");
-        Assertions.assertFalse(rootDebugEnabled, "INFO should be default level");
-        Assertions.assertTrue(rootInfoEnabled, "INFO should be default level");
-        Assertions.assertTrue(rootWarnEnabled, "INFO should be default level");
-        Assertions.assertTrue(rootErrorEnabled, "INFO should be default level");
-
-        Assertions.assertFalse(rootNullTraceEnabled, "INFO should be default level");
-        Assertions.assertFalse(rootNullDebugEnabled, "INFO should be default level");
-        Assertions.assertTrue(rootNullInfoEnabled, "INFO should be default level");
-        Assertions.assertTrue(rootNullWarnEnabled, "INFO should be default level");
-        Assertions.assertTrue(rootNullErrorEnabled, "INFO should be default level");
-
-        Assertions.assertFalse(rootTrimTraceEnabled, "INFO should be default level");
-        Assertions.assertFalse(rootTrimDebugEnabled, "INFO should be default level");
-        Assertions.assertTrue(rootTrimInfoEnabled, "INFO should be default level");
-        Assertions.assertTrue(rootTrimWarnEnabled, "INFO should be default level");
-        Assertions.assertTrue(rootTrimErrorEnabled, "INFO should be default level");
-
-        Assertions.assertFalse(testTraceEnabled, "INFO should be default level");
-        Assertions.assertFalse(testDebugEnabled, "INFO should be default level");
-        Assertions.assertTrue(testInfoEnabled, "INFO should be default level");
-        Assertions.assertTrue(testWarnEnabled, "INFO should be default level");
-        Assertions.assertTrue(testErrorEnabled, "INFO should be default level");
-
-        Assertions.assertFalse(testBlankTraceEnabled, "INFO should be default level");
-        Assertions.assertFalse(testBlankDebugEnabled, "INFO should be default level");
-        Assertions.assertTrue(testBlankInfoEnabled, "INFO should be default level");
-        Assertions.assertTrue(testBlankWarnEnabled, "INFO should be default level");
-        Assertions.assertTrue(testBlankErrorEnabled, "INFO should be default level");
+        LoggingTestScenario.builder()
+                .name("Test that INFO is default level for a non configured logging system")
+                .withConfiguration(new TestConfigBuilder())
+                // then
+                .assertThatLevelIsNotAllowed("", Level.TRACE)
+                .assertThatLevelIsNotAllowed("", Level.DEBUG)
+                .assertThatLevelIsAllowed("", Level.INFO)
+                .assertThatLevelIsAllowed("", Level.WARN)
+                .assertThatLevelIsAllowed("", Level.ERROR)
+                .assertThatLevelIsNotAllowed("", Level.OFF)
+                .assertThatLevelIsNotAllowed(null, Level.TRACE)
+                .assertThatLevelIsNotAllowed(null, Level.DEBUG)
+                .assertThatLevelIsAllowed(null, Level.INFO)
+                .assertThatLevelIsAllowed(null, Level.WARN)
+                .assertThatLevelIsAllowed(null, Level.ERROR)
+                .assertThatLevelIsNotAllowed(null, Level.OFF)
+                .assertThatLevelIsNotAllowed("test.Class", Level.TRACE)
+                .assertThatLevelIsNotAllowed("test.Class", Level.DEBUG)
+                .assertThatLevelIsAllowed("test.Class", Level.INFO)
+                .assertThatLevelIsAllowed("test.Class", Level.WARN)
+                .assertThatLevelIsAllowed("test.Class", Level.ERROR)
+                .assertThatLevelIsNotAllowed("test.Class", Level.OFF)
+                .build()
+                .verifyAssertionRules();
     }
 
     @Test
     @DisplayName("Test that logging system can handle null params for isEnabled")
     void testNullLevel() {
         // given
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-
-        // when
-        final boolean rootEnabled = loggingSystem.isEnabled("", null, null);
-        final boolean rootTrimEnabled = loggingSystem.isEnabled("  ", null, null);
-        final boolean rootNullEnabled = loggingSystem.isEnabled(null, null, null);
-        final boolean testEnabled = loggingSystem.isEnabled("test.Class", null, null);
-        final boolean testBlankEnabled = loggingSystem.isEnabled("  test.Class  ", null, null);
-
-        // then
-        Assertions.assertTrue(rootEnabled, "For a NULL level all must be enabled");
-        Assertions.assertTrue(rootTrimEnabled, "For a NULL level all must be enabled");
-        Assertions.assertTrue(rootNullEnabled, "For a NULL level all must be enabled");
-        Assertions.assertTrue(testEnabled, "For a NULL level all must be enabled");
-        Assertions.assertTrue(testBlankEnabled, "For a NULL level all must be enabled");
+        LoggingTestScenario.builder()
+                .name("Test that logging system can handle null params for isEnabled")
+                .withConfiguration(new TestConfigBuilder())
+                // then
+                .assertThatLevelIsAllowed("", null)
+                .assertThatLevelIsAllowed(" ", null)
+                .assertThatLevelIsAllowed(null, null)
+                .assertThatLevelIsAllowed("test.Class", null)
+                .build()
+                .verifyAssertionRules();
     }
 
     @Test
     @DisplayName("Test that isEnabled logs errors to emergency logger")
     void testErrorsForEnabled() {
         // given
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+        LoggingTestScenario.builder()
+                .name("Test that isEnabled logs errors to emergency logger")
+                .withConfiguration(new TestConfigBuilder())
+                // then
+                .assertThatLevelIsNotAllowed("test.Class", Level.TRACE) // no logged error
+                .assertThatLevelIsAllowed("test.Class", null) // 1 logged error
+                .assertThatLevelIsNotAllowed(null, Level.TRACE) // 1 logged error
+                .assertThatLevelIsAllowed(null, null) // 2 logged errors
+                .build()
+                .verifyAssertionRules();
 
-        // when
-        loggingSystem.isEnabled("test.Class", Level.TRACE, null); // no logged error
-        loggingSystem.isEnabled("test.Class", null, null); // 1 logged error
-        loggingSystem.isEnabled(null, Level.TRACE, null); // 1 logged error
-        loggingSystem.isEnabled(null, null, null); // 2 logged errors
-
-        final List<LogEvent> loggedErrorEvents = getEmergencyLoggerEvents(Level.ERROR);
+        final List<LogEvent> loggedErrorEvents = LoggingTestUtils.getEmergencyLoggerEvents(Level.ERROR);
 
         assertEquals(4, loggedErrorEvents.size(), "There should be 6 ERROR events");
     }
@@ -242,90 +212,74 @@ public class LoggingSystemTest {
         // when
         loggingSystem.accept(null); // 1 logged error
 
-        final List<LogEvent> loggedErrorEvents = getEmergencyLoggerEvents(Level.ERROR);
+        final List<LogEvent> loggedErrorEvents = LoggingTestUtils.getEmergencyLoggerEvents(Level.ERROR);
 
         assertEquals(1, loggedErrorEvents.size(), "There should be 1 ERROR event");
-    }
-
-    private static List<LogEvent> getEmergencyLoggerEvents(final Level level) {
-        return EmergencyLoggerImpl.getInstance().publishLoggedEvents().stream()
-                .filter(event -> event.level() == level)
-                .collect(Collectors.toList());
     }
 
     @Test
     @DisplayName("Test that log level can be configured")
     void testCustomLevel() {
         // given
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("logging.level", "ERROR")
-                .withValue("logging.level.test.Class", "TRACE")
-                .withConverter(ConfigLevel.class, new ConfigLevelConverter())
-                .getOrCreateConfig();
+        LoggingTestScenario.builder()
+                .name("Test that log level can be configured")
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue("logging.level", "ERROR")
+                        .withValue("logging.level.test.Class", "TRACE")
+                        .withConverter(ConfigLevel.class, new ConfigLevelConverter()))
+                // then
+                .assertThatLevelIsNotAllowed("", Level.TRACE)
+                .assertThatLevelIsNotAllowed("", Level.DEBUG)
+                .assertThatLevelIsNotAllowed("", Level.INFO)
+                .assertThatLevelIsNotAllowed("", Level.WARN)
+                .assertThatLevelIsAllowed("", Level.ERROR)
+                .assertThatLevelIsNotAllowed("", Level.OFF)
+                .assertThatLevelIsNotAllowed(null, Level.TRACE)
+                .assertThatLevelIsNotAllowed(null, Level.INFO)
+                .assertThatLevelIsNotAllowed(null, Level.DEBUG)
+                .assertThatLevelIsNotAllowed(null, Level.WARN)
+                .assertThatLevelIsAllowed(null, Level.ERROR)
+                .assertThatLevelIsNotAllowed(null, Level.OFF)
+                .assertThatLevelIsAllowed("test.Class", Level.TRACE)
+                .assertThatLevelIsAllowed("test.Class", Level.DEBUG)
+                .assertThatLevelIsAllowed("test.Class", Level.INFO)
+                .assertThatLevelIsAllowed("test.Class", Level.WARN)
+                .assertThatLevelIsAllowed("test.Class", Level.ERROR)
+                .assertThatLevelIsNotAllowed("test.Class", Level.OFF)
+                .build()
+                .verifyAssertionRules();
+    }
 
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-
-        // when
-        final boolean rootTraceEnabled = loggingSystem.isEnabled("", Level.TRACE, null);
-        final boolean rootDebugEnabled = loggingSystem.isEnabled("", Level.DEBUG, null);
-        final boolean rootInfoEnabled = loggingSystem.isEnabled("", Level.INFO, null);
-        final boolean rootWarnEnabled = loggingSystem.isEnabled("", Level.WARN, null);
-        final boolean rootErrorEnabled = loggingSystem.isEnabled("", Level.ERROR, null);
-
-        final boolean rootNullTraceEnabled = loggingSystem.isEnabled(null, Level.TRACE, null);
-        final boolean rootNullDebugEnabled = loggingSystem.isEnabled(null, Level.DEBUG, null);
-        final boolean rootNullInfoEnabled = loggingSystem.isEnabled(null, Level.INFO, null);
-        final boolean rootNullWarnEnabled = loggingSystem.isEnabled(null, Level.WARN, null);
-        final boolean rootNullErrorEnabled = loggingSystem.isEnabled(null, Level.ERROR, null);
-
-        final boolean rootTrimTraceEnabled = loggingSystem.isEnabled("  ", Level.TRACE, null);
-        final boolean rootTrimDebugEnabled = loggingSystem.isEnabled("  ", Level.DEBUG, null);
-        final boolean rootTrimInfoEnabled = loggingSystem.isEnabled("  ", Level.INFO, null);
-        final boolean rootTrimWarnEnabled = loggingSystem.isEnabled("  ", Level.WARN, null);
-        final boolean rootTrimErrorEnabled = loggingSystem.isEnabled("  ", Level.ERROR, null);
-
-        final boolean testTraceEnabled = loggingSystem.isEnabled("test.Class", Level.TRACE, null);
-        final boolean testDebugEnabled = loggingSystem.isEnabled("test.Class", Level.DEBUG, null);
-        final boolean testInfoEnabled = loggingSystem.isEnabled("test.Class", Level.INFO, null);
-        final boolean testWarnEnabled = loggingSystem.isEnabled("test.Class", Level.WARN, null);
-        final boolean testErrorEnabled = loggingSystem.isEnabled("test.Class", Level.ERROR, null);
-
-        // final boolean testBlankTraceEnabled = loggingSystem.isEnabled("  test.Class  ", Level.TRACE, null);
-        // final boolean testBlankDebugEnabled = loggingSystem.isEnabled("  test.Class  ", Level.DEBUG, null);
-        // final boolean testBlankInfoEnabled = loggingSystem.isEnabled("  test.Class  ", Level.INFO, null);
-        // final boolean testBlankWarnEnabled = loggingSystem.isEnabled("  test.Class  ", Level.WARN, null);
-        // final boolean testBlankErrorEnabled = loggingSystem.isEnabled("  test.Class  ", Level.ERROR, null);
-
-        // then
-        Assertions.assertFalse(rootTraceEnabled, "ERROR is configured for root");
-        Assertions.assertFalse(rootDebugEnabled, "ERROR is configured for root");
-        Assertions.assertFalse(rootInfoEnabled, "ERROR is configured for root");
-        Assertions.assertFalse(rootWarnEnabled, "ERROR is configured for root");
-        Assertions.assertTrue(rootErrorEnabled, "ERROR is configured for root");
-
-        Assertions.assertFalse(rootNullTraceEnabled, "ERROR is configured for root");
-        Assertions.assertFalse(rootNullDebugEnabled, "ERROR is configured for root");
-        Assertions.assertFalse(rootNullInfoEnabled, "ERROR is configured for root");
-        Assertions.assertFalse(rootNullWarnEnabled, "ERROR is configured for root");
-        Assertions.assertTrue(rootNullErrorEnabled, "ERROR is configured for root");
-
-        Assertions.assertFalse(rootTrimTraceEnabled, "ERROR is configured for root");
-        Assertions.assertFalse(rootTrimDebugEnabled, "ERROR is configured for root");
-        Assertions.assertFalse(rootTrimInfoEnabled, "ERROR is configured for root");
-        Assertions.assertFalse(rootTrimWarnEnabled, "ERROR is configured for root");
-        Assertions.assertTrue(rootTrimErrorEnabled, "ERROR is configured for root");
-
-        Assertions.assertTrue(testTraceEnabled, "TRACE is configured");
-        Assertions.assertTrue(testDebugEnabled, "TRACE is configured");
-        Assertions.assertTrue(testInfoEnabled, "TRACE is configured");
-        Assertions.assertTrue(testWarnEnabled, "TRACE is configured");
-        Assertions.assertTrue(testErrorEnabled, "TRACE is configured");
-
-        // Assertions.assertTrue(testBlankTraceEnabled, "TRACE is configured");
-        // Assertions.assertTrue(testBlankDebugEnabled, "TRACE is configured");
-        // Assertions.assertTrue(testBlankInfoEnabled, "TRACE is configured");
-        // Assertions.assertTrue(testBlankWarnEnabled, "TRACE is configured");
-        // Assertions.assertTrue(testBlankErrorEnabled, "TRACE is configured");
+    @Test
+    @DisplayName("Test that log can be disabled")
+    void testOFFLevel() {
+        // given
+        LoggingTestScenario.builder()
+                .name("Test that log can be disabled")
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue("logging.level", "OFF")
+                        .withConverter(ConfigLevel.class, new ConfigLevelConverter()))
+                // then
+                .assertThatLevelIsNotAllowed("", Level.TRACE)
+                .assertThatLevelIsNotAllowed("", Level.DEBUG)
+                .assertThatLevelIsNotAllowed("", Level.INFO)
+                .assertThatLevelIsNotAllowed("", Level.WARN)
+                .assertThatLevelIsNotAllowed("", Level.ERROR)
+                .assertThatLevelIsNotAllowed("", Level.OFF)
+                .assertThatLevelIsNotAllowed(null, Level.TRACE)
+                .assertThatLevelIsNotAllowed(null, Level.INFO)
+                .assertThatLevelIsNotAllowed(null, Level.DEBUG)
+                .assertThatLevelIsNotAllowed(null, Level.WARN)
+                .assertThatLevelIsNotAllowed(null, Level.ERROR)
+                .assertThatLevelIsNotAllowed(null, Level.OFF)
+                .assertThatLevelIsNotAllowed("test.Class", Level.TRACE)
+                .assertThatLevelIsNotAllowed("test.Class", Level.DEBUG)
+                .assertThatLevelIsNotAllowed("test.Class", Level.INFO)
+                .assertThatLevelIsNotAllowed("test.Class", Level.WARN)
+                .assertThatLevelIsNotAllowed("test.Class", Level.ERROR)
+                .assertThatLevelIsNotAllowed("test.Class", Level.OFF)
+                .build()
+                .verifyAssertionRules();
     }
 
     @Test
@@ -339,10 +293,10 @@ public class LoggingSystemTest {
         loggingSystem.addHandler(null);
 
         // then
-        final List<String> loggedErrorEvents = getEmergencyLoggerEvents(Level.ERROR).stream()
+        final List<String> loggedErrorEvents = LoggingTestUtils.getEmergencyLoggerEvents(Level.ERROR).stream()
                 .map(LogEvent::message)
                 .map(LogMessage::getMessage)
-                .collect(Collectors.toList());
+                .toList();
         assertEquals(1, loggedErrorEvents.size());
         final String expectedError = "Null parameter: handler";
         assertTrue(loggedErrorEvents.contains(expectedError));
@@ -353,21 +307,25 @@ public class LoggingSystemTest {
     @DisplayName("Test that getLogger logs errors to emergency logger")
     void testNullLogger() {
         // given
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+        LoggingTestScenario.builder()
+                .name("Test that getLogger logs errors to emergency logger")
+                .withConfiguration(new TestConfigBuilder())
+                // then
+                .assertThatLevelIsNotAllowed(Level.TRACE)
+                .assertThatLevelIsNotAllowed(Level.DEBUG)
+                .assertThatLevelIsAllowed(Level.INFO)
+                .assertThatLevelIsAllowed(Level.WARN)
+                .assertThatLevelIsAllowed(Level.ERROR)
+                .assertThatLevelIsNotAllowed(Level.OFF)
+                .withGetLogger(ls -> ls.getLogger(null))
+                .assertWitLogger(logger -> {
+                    Assertions.assertNotNull(logger);
+                    assertEquals("", logger.getName());
+                })
+                .build()
+                .verifyAssertionRules();
 
-        // when
-        final LoggerImpl logger = loggingSystem.getLogger(null);
-
-        // then
-        Assertions.assertNotNull(logger);
-        assertEquals("", logger.getName());
-        Assertions.assertFalse(logger.isEnabled(Level.TRACE), "logger should be configured as root logger");
-        Assertions.assertFalse(logger.isEnabled(Level.DEBUG), "logger should be configured as root logger");
-        Assertions.assertTrue(logger.isEnabled(Level.INFO), "logger should be configured as root logger");
-        Assertions.assertTrue(logger.isEnabled(Level.WARN), "logger should be configured as root logger");
-        Assertions.assertTrue(logger.isEnabled(Level.ERROR), "logger should be configured as root logger");
-        final List<LogEvent> loggedErrorEvents = getEmergencyLoggerEvents(Level.ERROR);
+        final List<LogEvent> loggedErrorEvents = LoggingTestUtils.getEmergencyLoggerEvents(Level.ERROR);
         assertEquals(1, loggedErrorEvents.size());
     }
 
@@ -704,7 +662,7 @@ public class LoggingSystemTest {
         // when
         loggingSystem.accept(loggingSystem.getLogEventFactory().createLogEvent(Level.INFO, "logger", "message"));
 
-        final List<LogEvent> loggedErrorEvents = getEmergencyLoggerEvents(Level.ERROR);
+        final List<LogEvent> loggedErrorEvents = LoggingTestUtils.getEmergencyLoggerEvents(Level.ERROR);
 
         assertEquals(1, loggedErrorEvents.size(), "There should be 1 ERROR event");
     }
@@ -795,25 +753,34 @@ public class LoggingSystemTest {
     @Test
     void testSpecWithLoggingSystemWithoutHandler() {
         // given
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-
-        // then
-        testSpec(loggingSystem);
+        LoggingTestScenario.builder()
+                .name("testSpecWithLoggingSystemWithoutHandler")
+                .withConfiguration(new TestConfigBuilder())
+                .withGetLogger(ls -> ls.getLogger("test-name"))
+                // then
+                .assertWitLogger(LoggerApiSpecAssertions::assertSpecForLogger)
+                .build()
+                .verifyAssertionRules();
     }
 
     @Test
     void testSpecWithLoggingSystemWithHandler() {
         // given
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        LogHandler handler = logEvent -> {
-            // We do not handle any events
-        };
-        loggingSystem.addHandler(handler);
-
-        // then
-        testSpec(loggingSystem);
+        LoggingTestScenario.builder()
+                .name("testSpecWithLoggingSystemWithHandler")
+                .withConfiguration(new TestConfigBuilder())
+                .withGetLogger(ls -> ls.getLogger("test-name"))
+                // then
+                .assertWitLogger(LoggerApiSpecAssertions::assertSpecForLogger)
+                .build()
+                .verifyAssertionRules(c -> {
+                    final LoggingSystem loggingSystem = new LoggingSystem(c);
+                    LogHandler handler = logEvent -> {
+                        // We do not handle any events
+                    };
+                    loggingSystem.addHandler(handler);
+                    return loggingSystem;
+                });
     }
 
     @Test
@@ -829,7 +796,7 @@ public class LoggingSystemTest {
         // then // when
         final LoggerImpl logger = loggingSystem.getLogger(null);
 
-        final List<String> loggedErrorEvents = getEmergencyLoggerEvents(Level.ERROR).stream()
+        final List<String> loggedErrorEvents = LoggingTestUtils.getEmergencyLoggerEvents(Level.ERROR).stream()
                 .map(LogEvent::message)
                 .map(LogMessage::getMessage)
                 .toList();
@@ -838,7 +805,7 @@ public class LoggingSystemTest {
         assertTrue(loggedErrorEvents.contains(expectedError));
         assertTrue(this.provider.getLines().toList().stream().anyMatch(s -> s.contains(expectedError)));
 
-        LoggerApiSpecTest.testSpec(logger);
+        LoggerApiSpecAssertions.assertSpecForLogger(logger);
     }
 
     @Test
@@ -866,7 +833,262 @@ public class LoggingSystemTest {
         });
     }
 
-    static void testSpec(LoggingSystem system) {
-        LoggerApiSpecTest.testSpec(system.getLogger("test-name"));
+    private static final String LOG_FILE = "log-files/logging.log";
+    private static final Duration MAX_DURATION = Duration.of(2, ChronoUnit.SECONDS);
+
+    @Test
+    void testFileHandlerLogging() throws IOException {
+
+        // given
+        final String logFile = LoggingTestUtils.prepareLoggingFile(LOG_FILE);
+        final String fileHandlerName = "file";
+        final Configuration configuration = LoggingTestUtils.prepareConfiguration(logFile, fileHandlerName);
+        final LoggingMirrorImpl mirror = new LoggingMirrorImpl();
+        final LoggingSystem loggingSystem = loggingSystemWithHandlers(configuration, mirror);
+        // A random log name, so it's easier to combine lines after
+        final String loggerName = UUID.randomUUID().toString();
+        final Logger logger = loggingSystem.getLogger(loggerName);
+
+        // when
+        LoggingTestUtils.loggExtensively(logger);
+        loggingSystem.stopAndFinalize();
+
+        try {
+            final List<String> statementsInMirror = LoggingTestUtils.mirrorToStatements(mirror);
+            final List<String> logLines = getLines(logFile);
+            final List<String> statementsInFile = linesToStatements(logLines);
+
+            // then
+            org.assertj.core.api.Assertions.assertThat(statementsInFile.size()).isEqualTo(EXPECTED_STATEMENTS);
+
+            // Loglines should be 1 per statement in mirror + 1 for each stament
+            final int expectedLineCountInFile = countLinesInStatements(statementsInMirror);
+            org.assertj.core.api.Assertions.assertThat((long) logLines.size()).isEqualTo(expectedLineCountInFile);
+            org.assertj.core.api.Assertions.assertThat(statementsInFile).isSubsetOf(statementsInMirror);
+
+        } finally {
+            Files.deleteIfExists(Path.of(logFile));
+        }
+    }
+
+    @Test
+    @DisplayName("Multiple configuration updates test")
+    public void testConfigUpdate() {
+
+        final Configuration configuration = LoggingTestUtils.getConfigBuilder().getOrCreateConfig();
+        final LoggingSystem loggingSystem = loggingSystemWithHandlers(configuration);
+
+        // Ask the Orchestrator to run all desired scenarios up to 2 Seconds
+        // Scenarios define a configuration and a set of assertions for that config.
+        LoggingSystemTestOrchestrator.runScenarios(
+                loggingSystem,
+                MAX_DURATION,
+                defaultScenario(),
+                scenario1(),
+                scenario2(),
+                scenario3(),
+                scenario4(),
+                scenario5(),
+                scenario6());
+    }
+
+    @Test
+    void testSimpleConfigUpdate() {
+        // given
+        final Configuration initialConfiguration = LoggingTestUtils.getConfigBuilder()
+                .withValue("logging.level", Level.ERROR)
+                .getOrCreateConfig();
+        final Configuration updatedConfiguration = LoggingTestUtils.getConfigBuilder()
+                .withValue("logging.level", Level.TRACE)
+                .getOrCreateConfig();
+        final LoggingSystem system = loggingSystemWithHandlers(initialConfiguration);
+
+        // when
+        system.update(updatedConfiguration);
+
+        // then
+        assertTrue(system.isEnabled("com.sample.Foo", Level.TRACE, null));
+    }
+
+    @Test
+    void testConfigUpdateWithNullConfig() {
+        // given
+        final Configuration initialConfiguration =
+                LoggingTestUtils.getConfigBuilder().getOrCreateConfig();
+        final LoggingSystem loggingSystem = new LoggingSystem(initialConfiguration);
+        final Configuration updatedConfiguration = null;
+
+        // then
+        assertThrowsNPE(() -> loggingSystem.update(updatedConfiguration));
+    }
+
+    @Test
+    void testWithConfigUpdateWitEmptyConfig() {
+        // given
+        final Configuration configuration = LoggingTestUtils.getConfigBuilder()
+                .withValue("logging.level", "INFO")
+                .withValue("logging.level.com.sample", "DEBUG")
+                .withValue("logging.level.com.sample.package", "ERROR")
+                .withValue("logging.level.com.sample.package.ClassB", "ERROR")
+                .withValue("logging.level.com.sample.package.ClassC", "TRACE")
+                .getOrCreateConfig();
+        final LoggingSystem loggingSystem = loggingSystemWithHandlers(configuration);
+
+        // when
+        final LoggingTestScenario scenario = LoggingTestScenario.builder()
+                .name("reloaded")
+                // empty configuration
+                .assertThatLevelIsAllowed("", Level.INFO)
+                .assertThatLevelIsAllowed("a.long.name.for.a.logger", Level.INFO)
+                .assertThatLevelIsAllowed("com.sample", Level.INFO)
+                .assertThatLevelIsAllowed("com.sample.Class", Level.INFO)
+                .assertThatLevelIsAllowed("com.sample.package", Level.INFO)
+                .assertThatLevelIsAllowed("com.sample.package.ClassA", Level.INFO)
+                .assertThatLevelIsAllowed("com.sample.package.ClassB", Level.INFO)
+                .assertThatLevelIsAllowed("com.sample.package.ClassC", Level.INFO)
+                .build();
+
+        // then
+        LoggingSystemTestOrchestrator.runScenarios(loggingSystem, scenario);
+    }
+
+    private static LoggingSystem loggingSystemWithHandlers(final Configuration configuration, LogHandler... handlers) {
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+        loggingSystem.installHandlers();
+        for (LogHandler handler : handlers) {
+            loggingSystem.addHandler(handler);
+        }
+        return loggingSystem;
+    }
+
+    // Default scenario: what should happen if no configuration is reloaded
+    private static LoggingTestScenario defaultScenario() {
+        return LoggingTestScenario.builder()
+                .name("default")
+                .assertThatLevelIsAllowed("", Level.ERROR)
+                .assertThatLevelIsAllowed("", Level.WARN)
+                .assertThatLevelIsAllowed("", Level.INFO)
+                .assertThatLevelIsNotAllowed("", Level.DEBUG)
+                .build();
+    }
+
+    // Scenario 1: Change logging level
+    private static LoggingTestScenario scenario1() {
+        return LoggingTestScenario.builder()
+                .name("scenario1")
+                .withConfiguration("logging.level", Level.TRACE)
+                .assertThatLevelIsAllowed("com.sample.Class", Level.TRACE) // Fix Scenario
+                .assertThatLevelIsAllowed("com.Class", Level.INFO)
+                .assertThatLevelIsAllowed("Class", Level.TRACE)
+                .build();
+    }
+
+    // Scenario 2: No Specific Configuration for Package
+    private static LoggingTestScenario scenario2() {
+        return LoggingTestScenario.builder()
+                .name("scenario2")
+                .withConfiguration("logging.level", Level.WARN)
+                .assertThatLevelIsNotAllowed("com.sample.Class", Level.DEBUG)
+                .build();
+    }
+
+    // Scenario 3: Class-Specific Configuration
+    private static LoggingTestScenario scenario3() {
+        return LoggingTestScenario.builder()
+                .name("scenario3")
+                .withConfiguration("logging.level.com.sample.package.Class", Level.ERROR)
+                .assertThatLevelIsAllowed("com.sample.package.Class", Level.ERROR)
+                .build();
+    }
+
+    // Scenario 4: Package-Level Configuration
+    private static LoggingTestScenario scenario4() {
+        return LoggingTestScenario.builder()
+                .name("scenario4")
+                .withConfiguration("logging.level.com.sample.package", Level.TRACE)
+                .assertThatLevelIsAllowed("com.sample.package.Class", Level.TRACE)
+                .assertThatLevelIsNotAllowed("com.sample.package.Class", Level.OFF)
+                .build();
+    }
+
+    // Scenario 5: Mixed Configuration
+    private static LoggingTestScenario scenario5() {
+        String subPackage = ".sub";
+        String clazz = ".Random";
+        String subpackageSubClazz = ".sub.Random";
+        return LoggingTestScenario.builder()
+                .name("scenario5")
+                .withConfiguration("logging.level", Level.WARN)
+                .withConfiguration("logging.level.com.sample", Level.INFO)
+                .withConfiguration("logging.level.com.sample.package", Level.ERROR)
+                .assertThatLevelIsAllowed("Class", Level.ERROR)
+                .assertThatLevelIsAllowed("Class", Level.WARN)
+                .assertThatLevelIsNotAllowed("Class", Level.OFF)
+                .assertThatLevelIsNotAllowed("Class", Level.INFO)
+                .assertThatLevelIsNotAllowed("Class", Level.DEBUG)
+                .assertThatLevelIsNotAllowed("Class", Level.TRACE)
+                .assertThatLevelIsAllowed("a" + clazz, Level.WARN)
+                .assertThatLevelIsNotAllowed("b" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("c" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("d" + clazz, Level.TRACE)
+                .assertThatLevelIsNotAllowed("d" + clazz, Level.OFF)
+                .assertThatLevelIsAllowed("other" + clazz, Level.ERROR)
+                .assertThatLevelIsNotAllowed("other" + clazz, Level.OFF)
+                .assertThatLevelIsAllowed("other.a" + clazz, Level.WARN)
+                .assertThatLevelIsNotAllowed("other.b" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("other.c" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("other.d" + clazz, Level.TRACE)
+                .assertThatLevelIsAllowed("com.sample" + clazz, Level.ERROR)
+                .assertThatLevelIsAllowed("com.sample" + clazz, Level.WARN)
+                .assertThatLevelIsAllowed("com.sample" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("com.sample" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("com.sample" + clazz, Level.TRACE)
+                .assertThatLevelIsAllowed("com.sample.package" + clazz, Level.ERROR)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.WARN)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.TRACE)
+                .assertThatLevelIsAllowed("com.sample" + subPackage, Level.WARN)
+                .assertThatLevelIsAllowed("com.sample" + subpackageSubClazz, Level.INFO)
+                .build();
+    }
+
+    private static LoggingTestScenario scenario6() {
+        String subPackage = ".sub";
+        String clazz = ".Random";
+        String subpackageSubClazz = ".sub.Random";
+        return LoggingTestScenario.builder()
+                .name("scenario6")
+                .withConfiguration("logging.level", Level.OFF)
+                .assertThatLevelIsNotAllowed("Class", Level.ERROR)
+                .assertThatLevelIsNotAllowed("Class", Level.WARN)
+                .assertThatLevelIsNotAllowed("Class", Level.OFF)
+                .assertThatLevelIsNotAllowed("Class", Level.INFO)
+                .assertThatLevelIsNotAllowed("Class", Level.DEBUG)
+                .assertThatLevelIsNotAllowed("Class", Level.TRACE)
+                .assertThatLevelIsNotAllowed("a" + clazz, Level.WARN)
+                .assertThatLevelIsNotAllowed("b" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("c" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("d" + clazz, Level.TRACE)
+                .assertThatLevelIsNotAllowed("d" + clazz, Level.OFF)
+                .assertThatLevelIsNotAllowed("other" + clazz, Level.ERROR)
+                .assertThatLevelIsNotAllowed("other" + clazz, Level.OFF)
+                .assertThatLevelIsNotAllowed("other.a" + clazz, Level.WARN)
+                .assertThatLevelIsNotAllowed("other.b" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("other.c" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("other.d" + clazz, Level.TRACE)
+                .assertThatLevelIsNotAllowed("com.sample" + clazz, Level.ERROR)
+                .assertThatLevelIsNotAllowed("com.sample" + clazz, Level.WARN)
+                .assertThatLevelIsNotAllowed("com.sample" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("com.sample" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("com.sample" + clazz, Level.TRACE)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.ERROR)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.WARN)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.INFO)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.DEBUG)
+                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.TRACE)
+                .assertThatLevelIsNotAllowed("com.sample" + subPackage, Level.WARN)
+                .assertThatLevelIsNotAllowed("com.sample" + subpackageSubClazz, Level.INFO)
+                .build();
     }
 }
