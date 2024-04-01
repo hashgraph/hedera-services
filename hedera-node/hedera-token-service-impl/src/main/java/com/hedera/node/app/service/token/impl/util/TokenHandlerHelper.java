@@ -34,7 +34,6 @@ package com.hedera.node.app.service.token.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
@@ -42,6 +41,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.REQUIRE_NOT_PAUSED;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -152,7 +152,7 @@ public class TokenHandlerHelper {
         validateTrue(acct != null, errorIfNotUsable);
         final var isContract = acct.smartContract();
 
-        validateFalse(acct.deleted(), isContract ? CONTRACT_DELETED : errorOnAccountDeleted);
+        validateFalse(acct.deleted(), errorOnAccountDeleted);
         final var type = isContract ? EntityType.CONTRACT : EntityType.ACCOUNT;
 
         final var expiryStatus =
@@ -162,22 +162,38 @@ public class TokenHandlerHelper {
         return acct;
     }
 
+    public enum TokenValidations {
+        REQUIRE_NOT_PAUSED,
+        PERMIT_PAUSED
+    }
+
+    public static Token getIfUsable(@NonNull final TokenID tokenId, @NonNull final ReadableTokenStore tokenStore) {
+        return getIfUsable(tokenId, tokenStore, REQUIRE_NOT_PAUSED);
+    }
+
     /**
      * Returns the token if it exists and is usable. A {@link HandleException} is thrown if the token is invalid
      *
      * @param tokenId the ID of the token to get
      * @param tokenStore the {@link ReadableTokenStore} to use for token retrieval
+     * @param tokenValidations whether validate paused token status
      * @throws HandleException if any of the token conditions are not met
      */
     @NonNull
-    public static Token getIfUsable(@NonNull final TokenID tokenId, @NonNull final ReadableTokenStore tokenStore) {
+    public static Token getIfUsable(
+            @NonNull final TokenID tokenId,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final TokenValidations tokenValidations) {
         requireNonNull(tokenId);
         requireNonNull(tokenStore);
+        requireNonNull(tokenValidations);
 
         final var token = tokenStore.get(tokenId);
         validateTrue(token != null, INVALID_TOKEN_ID);
         validateFalse(token.deleted(), TOKEN_WAS_DELETED);
-        validateFalse(token.paused(), TOKEN_IS_PAUSED);
+        if (tokenValidations == REQUIRE_NOT_PAUSED) {
+            validateFalse(token.paused(), TOKEN_IS_PAUSED);
+        }
         return token;
     }
 

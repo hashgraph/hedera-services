@@ -268,7 +268,7 @@ public abstract class AbstractXTest {
     }
 
     protected RunningHashes initialRunningHashes() {
-        return RunningHashes.DEFAULT;
+        return new RunningHashes(Bytes.fromHex("00"), Bytes.fromHex("00"), Bytes.fromHex("00"), Bytes.fromHex("00"));
     }
 
     protected Bytes resourceAsBytes(@NonNull final String loc) {

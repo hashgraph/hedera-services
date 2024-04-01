@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.event.emitter;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
@@ -42,14 +43,27 @@ public class EventEmitterFactory {
      * test.
      */
     private final long commonSeed;
+    /** the platform context containing configuration */
+    private final PlatformContext platformContext;
 
     private final EventSourceFactory sourceFactory;
 
-    public EventEmitterFactory(@NonNull final Random random, @NonNull final AddressBook addressBook) {
+    /**
+     * Create a new factory.
+     *
+     * @param platformContext the platform context
+     * @param random          the random number generator to use
+     * @param addressBook     the address book to use
+     */
+    public EventEmitterFactory(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Random random,
+            @NonNull final AddressBook addressBook) {
         this.random = Objects.requireNonNull(random);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.commonSeed = random.nextLong();
         this.sourceFactory = new EventSourceFactory(addressBook);
+        this.platformContext = Objects.requireNonNull(platformContext);
     }
 
     /**
@@ -93,10 +107,12 @@ public class EventEmitterFactory {
     private StandardGraphGenerator newStandardGraphGenerator(final List<EventSource<?>> eventSources) {
         if (addressBook == null) {
             return new StandardGraphGenerator(
+                    platformContext,
                     commonSeed, // standard seed must be the same across all generators
                     eventSources);
         } else {
             return new StandardGraphGenerator(
+                    platformContext,
                     commonSeed, // standard seed must be the same across all generators
                     eventSources,
                     addressBook);
@@ -106,6 +122,7 @@ public class EventEmitterFactory {
     private ShuffledEventEmitter newShuffledEmitter(final List<EventSource<?>> eventSources) {
         return new ShuffledEventEmitter(
                 new StandardGraphGenerator(
+                        platformContext,
                         commonSeed, // standard seed must be the same across all generators
                         eventSources),
                 random.nextLong() // shuffle seed changes every time

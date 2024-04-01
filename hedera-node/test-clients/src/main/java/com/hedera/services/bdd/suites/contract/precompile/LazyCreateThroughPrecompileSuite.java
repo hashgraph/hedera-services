@@ -49,7 +49,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
@@ -59,7 +58,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.headlongFromHexed;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
@@ -202,17 +200,23 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 IntStream.range(0, n)
                                         .mapToObj(i -> ByteString.copyFromUtf8(ONE_TIME + i))
                                         .toList()))
-                .when(sourcing(() -> contractCall(
-                                AUTO_CREATION_MODES,
-                                "createSeveralDirectly",
-                                headlongFromHexed(nftMirrorAddr.get()),
-                                nCopiesOfSender(n, mirrorAddrWith(civilianId.get())),
-                                nNonMirrorAddressFrom(n, civilianId.get() + 3_050_000),
-                                LongStream.iterate(1L, l -> l + 1).limit(n).toArray())
-                        .via(creationAttempt)
-                        .gas(GAS_TO_OFFER)
-                        .alsoSigningWithFullPrefix(CIVILIAN)
-                        .hasKnownStatusFrom(MAX_CHILD_RECORDS_EXCEEDED, CONTRACT_REVERT_EXECUTED)))
+                .when(
+                        cryptoApproveAllowance()
+                                .payingWith(CIVILIAN)
+                                .addNftAllowance(CIVILIAN, nft, AUTO_CREATION_MODES, true, List.of()),
+                        sourcing(() -> contractCall(
+                                        AUTO_CREATION_MODES,
+                                        "createSeveralDirectly",
+                                        headlongFromHexed(nftMirrorAddr.get()),
+                                        nCopiesOfSender(n, mirrorAddrWith(civilianId.get())),
+                                        nNonMirrorAddressFrom(n, civilianId.get() + 3_050_000),
+                                        LongStream.iterate(1L, l -> l + 1)
+                                                .limit(n)
+                                                .toArray())
+                                .via(creationAttempt)
+                                .gas(GAS_TO_OFFER)
+                                .alsoSigningWithFullPrefix(CIVILIAN)
+                                .hasKnownStatusFrom(MAX_CHILD_RECORDS_EXCEEDED, CONTRACT_REVERT_EXECUTED)))
                 .then(
                         // mono-service did not do an "orderly shutdown" of the EVM transaction when it hit
                         // a resource limit exception like MAX_CHILD_RECORDS_EXCEEDED, instead throwing an
@@ -259,17 +263,21 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(
                                         idLit -> nftMirrorAddr.set(asHexedSolidityAddress(asToken(idLit)))),
                         mintToken(nft, List.of(ByteString.copyFromUtf8(ONE_TIME))))
-                .when(sourcing(() -> contractCall(
-                                AUTO_CREATION_MODES,
-                                CREATE_DIRECTLY,
-                                headlongFromHexed(nftMirrorAddr.get()),
-                                mirrorAddrWith(civilianId.get()),
-                                mirrorAddrWith(civilianId.get() + 1_000_001),
-                                1L,
-                                false)
-                        .via(creationAttempt)
-                        .gas(GAS_TO_OFFER)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .when(
+                        cryptoApproveAllowance()
+                                .payingWith(CIVILIAN)
+                                .addNftAllowance(CIVILIAN, nft, AUTO_CREATION_MODES, true, List.of()),
+                        sourcing(() -> contractCall(
+                                        AUTO_CREATION_MODES,
+                                        CREATE_DIRECTLY,
+                                        headlongFromHexed(nftMirrorAddr.get()),
+                                        mirrorAddrWith(civilianId.get()),
+                                        mirrorAddrWith(civilianId.get() + 1_000_001),
+                                        1L,
+                                        false)
+                                .via(creationAttempt)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .then(childRecordsCheck(
                         creationAttempt, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ALIAS_KEY)));
     }
@@ -712,12 +720,11 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     // Adding refusingEthConversion() due to fee differences
     @HapiTest
     final HapiSpec revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
-        return defaultHapiSpec("revertedAutoCreationRollsBackEvenIfTopLevelSucceeds")
+        return defaultHapiSpec(
+                        "revertedAutoCreationRollsBackEvenIfTopLevelSucceeds",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
                 .given(
-                        snapshotMode(
-                                FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS,
-                                NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),

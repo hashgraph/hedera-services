@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.throttle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.throttle.CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY;
@@ -30,9 +31,11 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableSingletonState;
@@ -136,6 +139,19 @@ public class ThrottleServiceManager {
         return validatedThrottles.successStatus();
     }
 
+    public int numImplicitCreations(
+            @NonNull final TransactionBody body, @NonNull final ReadableAccountStore accountStore) {
+        return backendThrottle.getImplicitCreationsCount(body, accountStore);
+    }
+
+    /**
+     * Updates all metrics for the throttles.
+     */
+    public void updateAllMetrics() {
+        ingestThrottle.updateAllMetrics();
+        backendThrottle.updateAllMetrics();
+    }
+
     private void saveThrottleSnapshotsTo(@NonNull final WritableStates serviceStates) {
         final var hapiThrottles = backendThrottle.allActiveThrottles();
         final List<ThrottleUsageSnapshot> hapiThrottleSnapshots;
@@ -203,6 +219,21 @@ public class ThrottleServiceManager {
         safeResetThrottles(backendThrottle.allActiveThrottles(), usageSnapshots.hapiUsageSnapshots());
         if (usageSnapshots.gasUsageSnapshot() != null) {
             backendThrottle.gasLimitThrottle().resetUsageTo(usageSnapshots.gasUsageSnapshot());
+        }
+    }
+
+    /**
+     * Reclaims the capacity used for throttling the given number of implicit creations
+     * on the frontend.
+     *
+     * @param numImplicitCreations the number of implicit creations
+     */
+    public void reclaimFrontendThrottleCapacity(final int numImplicitCreations) {
+        try {
+            ingestThrottle.leakCapacityForNOfUnscaled(numImplicitCreations, CRYPTO_CREATE);
+        } catch (Exception ignore) {
+            // Ignore if the frontend bucket has already leaked all the capacity
+            // used for throttling the transaction on the frontend
         }
     }
 

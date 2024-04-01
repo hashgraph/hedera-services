@@ -22,6 +22,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.StaticPlatformBuilder.doStaticSetup;
 import static com.swirlds.platform.StaticPlatformBuilder.getGlobalMetrics;
 import static com.swirlds.platform.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
@@ -29,7 +30,6 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -42,19 +42,21 @@ import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
@@ -64,10 +66,12 @@ import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -81,6 +85,7 @@ public final class PlatformBuilder {
     private final NodeId selfId;
     private final String swirldName;
 
+    private PlatformContext platformContext;
     private ConfigurationBuilder configurationBuilder;
 
     private static final String SWIRLDS_PACKAGE = "com.swirlds";
@@ -96,7 +101,10 @@ public final class PlatformBuilder {
     /**
      * The path to the settings file (i.e. the path used to instantiate {@link Configuration}).
      */
-    private Path settingsPath = getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME);
+    private Path settingsPath;
+
+    private Consumer<GossipEvent> preconsensusEventConsumer;
+    private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
 
     /**
      * Create a new platform builder.
@@ -125,14 +133,43 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Set the platform context to use. If not provided then one is generated when the platform is built.
+     *
+     * @param platformContext the platform context to use
+     * @return this
+     * @throws IllegalStateException if {@link #withConfigurationBuilder(ConfigurationBuilder)} has been called or if
+     *                               {@link #withSettingsPath(Path)} has been called
+     */
+    @NonNull
+    public PlatformBuilder withPlatformContext(@NonNull final PlatformContext platformContext) {
+        if (configurationBuilder != null) {
+            throw new IllegalStateException("Cannot set the platform context after the config builder has been set. "
+                    + "This method should not be called if withConfigurationBuilder() has been called.");
+        }
+        if (settingsPath != null) {
+            throw new IllegalStateException("Cannot set the platform context after the settings path has been set. "
+                    + "This method should not be called if withSettingsPath() has been called.");
+        }
+        this.platformContext = Objects.requireNonNull(platformContext);
+
+        return this;
+    }
+
+    /**
      * Set the configuration builder to use. If not provided then one is generated when the platform is built.
      *
      * @param configurationBuilder the configuration builder to use
      * @return this
+     * @throws IllegalStateException if {@link #withPlatformContext(PlatformContext)} has been called
      */
     @NonNull
     public PlatformBuilder withConfigurationBuilder(@Nullable final ConfigurationBuilder configurationBuilder) {
-        this.configurationBuilder = configurationBuilder;
+        if (platformContext != null) {
+            throw new IllegalStateException("Cannot set the config builder after the platform context has been "
+                    + "created. This method should not be called if withPlatformContext() has been called.");
+        }
+        this.configurationBuilder = Objects.requireNonNull(configurationBuilder);
+
         return this;
     }
 
@@ -142,11 +179,16 @@ public final class PlatformBuilder {
      *
      * @param path the path to the settings file
      * @return this
+     * @throws IllegalStateException if {@link #withPlatformContext(PlatformContext)} has been called
      */
     @NonNull
     public PlatformBuilder withSettingsPath(@NonNull final Path path) {
-        Objects.requireNonNull(path);
-        this.settingsPath = getAbsolutePath(path);
+        if (platformContext != null) {
+            throw new IllegalStateException("Cannot set the settings path after the platform context has been created. "
+                    + "This method should not be called if withPlatformContext() has been called.");
+        }
+
+        this.settingsPath = getAbsolutePath(Objects.requireNonNull(path));
         return this;
     }
 
@@ -165,17 +207,82 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Provide the platform with the class ID of the previous software version. Needed at migration boundaries if the
+     * class ID of the software version has changed.
+     *
+     * @param previousSoftwareVersionClassId the class ID of the previous software version
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withPreviousSoftwareVersionClassId(final long previousSoftwareVersionClassId) {
+        final Set<Long> softwareVersions = new HashSet<>();
+        softwareVersions.add(softwareVersion.getClassId());
+        softwareVersions.add(previousSoftwareVersionClassId);
+        StaticSoftwareVersion.setSoftwareVersion(softwareVersions);
+        return this;
+    }
+
+    /**
+     * Registers a callback that is called for each valid non-ancient preconsensus event in topological order (i.e.
+     * after each event exits the orphan buffer). Useful for scenarios where access to this internal stream of events is
+     * useful (e.g. UI hashgraph visualizers).
+     *
+     * <p>
+     * Among all callbacks in the following list, it is guaranteed that callbacks will not be called concurrently, and
+     * that there will be a happens-before relationship between each of the callbacks.
+     *
+     * <ul>
+     *     <li>{@link #withPreconsensusEventCallback(Consumer)} (i.e. this callback)</li>
+     *     <li>{@link #withConsensusSnapshotOverrideCallback(Consumer)}</li>
+     * </ul>
+     *
+     * @param preconsensusEventConsumer the callback to register
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withPreconsensusEventCallback(
+            @NonNull final Consumer<GossipEvent> preconsensusEventConsumer) {
+        this.preconsensusEventConsumer = Objects.requireNonNull(preconsensusEventConsumer);
+        return this;
+    }
+
+    /**
+     * Registers a callback that is called when the consensus snapshot is specified by an out of band operation (i.e.
+     * restart or reconnect). Useful for scenarios where access to this internal stream of data is useful (e.g. UI
+     * hashgraph visualizers).
+     *
+     * <p>
+     * Among all callbacks in the following list, it is guaranteed that callbacks will not be called concurrently, and
+     * that there will be a happens-before relationship between each of the callbacks.
+     *
+     * <ul>
+     *     <li>{@link #withPreconsensusEventCallback(Consumer)}</li>
+     *     <li>{@link #withConsensusSnapshotOverrideCallback(Consumer)} (i.e. this callback)</li>
+     * </ul>
+     *
+     * @return
+     */
+    @NonNull
+    public PlatformBuilder withConsensusSnapshotOverrideCallback(
+            @NonNull final Consumer<ConsensusSnapshot> snapshotOverrideConsumer) {
+        this.snapshotOverrideConsumer = Objects.requireNonNull(snapshotOverrideConsumer);
+        return this;
+    }
+
+    /**
      * Build the configuration for the node.
      *
+     * @param configurationBuilder used to build configuration
+     * @param settingsPath         the path to the settings file
      * @return the configuration
      */
     @NonNull
-    private Configuration buildConfiguration() {
-        if (configurationBuilder == null) {
-            configurationBuilder = ConfigurationBuilder.create();
-        }
+    private static Configuration buildConfiguration(
+            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath) {
 
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
+        Objects.requireNonNull(configurationBuilder);
+        Objects.requireNonNull(settingsPath);
+
         rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configurationBuilder, settingsPath));
 
         final Configuration configuration = configurationBuilder.build();
@@ -197,13 +304,21 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Build a platform. Platform is not started.
+     * Build a platform context that is compatible with the platform.
      *
-     * @return a new platform instance
+     * @param configurationBuilder used to build configuration, can be pre-configured for application specific
+     *                             configuration needs
+     * @param settingsPath         the path to the settings file
+     * @param selfId               the ID of this node
+     * @return a new platform context
      */
     @NonNull
-    public Platform build() {
-        final Configuration configuration = buildConfiguration();
+    public static PlatformContext buildPlatformContext(
+            @NonNull final ConfigurationBuilder configurationBuilder,
+            @NonNull final Path settingsPath,
+            @NonNull final NodeId selfId) {
+
+        final Configuration configuration = buildConfiguration(configurationBuilder, settingsPath);
 
         final Cryptography cryptography = CryptographyFactory.create(configuration);
         final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
@@ -212,6 +327,32 @@ public final class PlatformBuilder {
         CryptographyHolder.set(cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
 
+        setupGlobalMetrics(configuration);
+        final Metrics metrics = getMetricsProvider().createPlatformMetrics(selfId);
+
+        return new DefaultPlatformContext(configuration, metrics, cryptography, Time.getCurrent());
+    }
+
+    /**
+     * Build a platform. Platform is not started.
+     *
+     * @return a new platform instance
+     */
+    @NonNull
+    public Platform build() {
+
+        if (platformContext == null) {
+            if (configurationBuilder == null) {
+                configurationBuilder = ConfigurationBuilder.create();
+            }
+            if (settingsPath == null) {
+                settingsPath = getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME);
+            }
+            platformContext = buildPlatformContext(configurationBuilder, settingsPath, selfId);
+        }
+
+        final Configuration configuration = platformContext.getConfiguration();
+
         final boolean firstTimeSetup = doStaticSetup(configuration, configPath);
 
         final AddressBook configAddressBook = loadConfigAddressBook();
@@ -219,8 +360,6 @@ public final class PlatformBuilder {
         checkNodesToRun(List.of(selfId));
 
         final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, getMetricsProvider().createPlatformMetrics(selfId), cryptography, Time.getCurrent());
 
         // the AddressBook is not changed after this point, so we calculate the hash now
         platformContext.getCryptography().digestSync(configAddressBook);
@@ -232,8 +371,8 @@ public final class PlatformBuilder {
         // time this class is used.
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                stateConfig, new Shutdown()::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
+        final EmergencyRecoveryManager emergencyRecoveryManager =
+                new EmergencyRecoveryManager(stateConfig, basicConfig.getEmergencyRecoveryFileLoadDir());
 
         try (final ReservedSignedState initialState = getInitialState(
                 platformContext,
@@ -289,7 +428,9 @@ public final class PlatformBuilder {
                     swirldName,
                     softwareVersion,
                     initialState.get(),
-                    emergencyRecoveryManager);
+                    emergencyRecoveryManager,
+                    preconsensusEventConsumer,
+                    snapshotOverrideConsumer);
 
             if (firstTimeSetup) {
                 MetricsDocUtils.writeMetricsDocumentToFile(getGlobalMetrics(), getPlatforms(), configuration);

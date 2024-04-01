@@ -281,6 +281,8 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .defaultKycStatus(fungibleToken.accountsKycGrantedByDefault() ? GRANTED : REVOKED)
                 .pauseStatus(fungibleToken.paused() ? PAUSED : UNPAUSED)
                 .customFees(fungibleToken.customFees())
+                .metadata(fungibleToken.metadata())
+                .metadataKey(fungibleToken.metadataKey())
                 .build();
     }
 
@@ -294,6 +296,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .adminKey((Key) null)
                 .feeScheduleKey((Key) null)
                 .pauseKey((Key) null)
+                .metadataKey((Key) null)
                 .defaultFreezeStatus(FREEZE_NOT_APPLICABLE)
                 .defaultKycStatus(KYC_NOT_APPLICABLE)
                 .pauseStatus(PAUSE_NOT_APPLICABLE)
@@ -319,6 +322,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .adminKey(Key.DEFAULT)
                 .feeScheduleKey(Key.DEFAULT)
                 .pauseKey(Key.DEFAULT)
+                .metadataKey(Key.DEFAULT)
                 .build();
     }
 

@@ -10,6 +10,7 @@ module com.hedera.node.app.service.network.admin.impl {
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
+    requires transitive com.swirlds.platform.core;
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.utils;

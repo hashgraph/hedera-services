@@ -22,6 +22,8 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.swirlds.base.time.Time;
 import com.swirlds.benchmark.BenchmarkKey;
 import com.swirlds.benchmark.BenchmarkValue;
+import com.swirlds.benchmark.reconnect.lag.BenchmarkSlowLearningSynchronizer;
+import com.swirlds.benchmark.reconnect.lag.BenchmarkSlowTeachingSynchronizer;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -51,7 +53,11 @@ public class MerkleBenchmarkUtils {
     }
 
     public static <T extends MerkleNode> T hashAndTestSynchronization(
-            final MerkleNode startingTree, final MerkleNode desiredTree, final Configuration configuration)
+            final MerkleNode startingTree,
+            final MerkleNode desiredTree,
+            final long delayStorageMicroseconds,
+            final long delayNetworkMicroseconds,
+            final Configuration configuration)
             throws Exception {
         System.out.println("------------");
         System.out.println("starting: " + startingTree);
@@ -65,7 +71,13 @@ public class MerkleBenchmarkUtils {
         if (desiredTree != null && desiredTree.getHash() == null) {
             MerkleCryptoFactory.getInstance().digestTreeSync(desiredTree);
         }
-        return testSynchronization(startingTree, desiredTree, configuration, reconnectConfig);
+        return testSynchronization(
+                startingTree,
+                desiredTree,
+                delayStorageMicroseconds,
+                delayNetworkMicroseconds,
+                configuration,
+                reconnectConfig);
     }
 
     /**
@@ -75,6 +87,8 @@ public class MerkleBenchmarkUtils {
     private static <T extends MerkleNode> T testSynchronization(
             final MerkleNode startingTree,
             final MerkleNode desiredTree,
+            final long delayStorageMicroseconds,
+            final long delayNetworkMicroseconds,
             final Configuration configuration,
             final ReconnectConfig reconnectConfig)
             throws Exception {
@@ -82,36 +96,70 @@ public class MerkleBenchmarkUtils {
             final LearningSynchronizer learner;
             final TeachingSynchronizer teacher;
 
-            learner = new LearningSynchronizer(
-                    getStaticThreadManager(),
-                    streams.getLearnerInput(),
-                    streams.getLearnerOutput(),
-                    startingTree,
-                    () -> {
-                        try {
-                            streams.disconnect();
-                        } catch (final IOException e) {
-                            // test code, no danger
-                            e.printStackTrace();
-                        }
-                    },
-                    reconnectConfig);
-            teacher = new TeachingSynchronizer(
-                    configuration,
-                    Time.getCurrent(),
-                    getStaticThreadManager(),
-                    streams.getTeacherInput(),
-                    streams.getTeacherOutput(),
-                    desiredTree,
-                    () -> {
-                        try {
-                            streams.disconnect();
-                        } catch (final IOException e) {
-                            // test code, no danger
-                            e.printStackTrace();
-                        }
-                    },
-                    reconnectConfig);
+            if (delayStorageMicroseconds == 0 && delayNetworkMicroseconds == 0) {
+                learner = new LearningSynchronizer(
+                        getStaticThreadManager(),
+                        streams.getLearnerInput(),
+                        streams.getLearnerOutput(),
+                        startingTree,
+                        () -> {
+                            try {
+                                streams.disconnect();
+                            } catch (final IOException e) {
+                                // test code, no danger
+                                e.printStackTrace();
+                            }
+                        },
+                        reconnectConfig);
+                teacher = new TeachingSynchronizer(
+                        configuration,
+                        Time.getCurrent(),
+                        getStaticThreadManager(),
+                        streams.getTeacherInput(),
+                        streams.getTeacherOutput(),
+                        desiredTree,
+                        () -> {
+                            try {
+                                streams.disconnect();
+                            } catch (final IOException e) {
+                                // test code, no danger
+                                e.printStackTrace();
+                            }
+                        },
+                        reconnectConfig);
+            } else {
+                learner = new BenchmarkSlowLearningSynchronizer(
+                        streams.getLearnerInput(),
+                        streams.getLearnerOutput(),
+                        startingTree,
+                        delayStorageMicroseconds,
+                        delayNetworkMicroseconds,
+                        () -> {
+                            try {
+                                streams.disconnect();
+                            } catch (final IOException e) {
+                                // test code, no danger
+                                e.printStackTrace();
+                            }
+                        },
+                        reconnectConfig);
+                teacher = new BenchmarkSlowTeachingSynchronizer(
+                        configuration,
+                        streams.getTeacherInput(),
+                        streams.getTeacherOutput(),
+                        desiredTree,
+                        delayStorageMicroseconds,
+                        delayNetworkMicroseconds,
+                        () -> {
+                            try {
+                                streams.disconnect();
+                            } catch (final IOException e) {
+                                // test code, no danger
+                                e.printStackTrace();
+                            }
+                        },
+                        reconnectConfig);
+            }
 
             final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
             final Function<Throwable, Boolean> exceptionListener = t -> {

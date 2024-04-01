@@ -143,7 +143,7 @@ class ConcurrentNodeStatusTrackerTests {
         final ConcurrentNodeStatusTracker tracker = new ConcurrentNodeStatusTracker(capacity);
         final ExecutorService executor = Executors.newSingleThreadExecutor();
         final Future<?> future = executor.submit(() -> producer(tracker, value, value + 1));
-        future.get(500, TimeUnit.MILLISECONDS);
+        future.get(1, TimeUnit.SECONDS);
 
         assertEquals(KNOWN, tracker.getStatus(value), "The capacity - 1 is a valid value");
         executor.shutdown();

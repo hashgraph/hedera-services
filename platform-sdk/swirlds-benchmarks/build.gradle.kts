@@ -50,9 +50,23 @@ fun listProperty(value: String) = objects.listProperty<String>().value(listOf(va
 
 tasks.register<JMHTask>("jmhReconnect") {
     includes.set(listOf("Reconnect.*"))
-    jvmArgs.set(listOf("-Xmx16g"))
+    jvmArgs.set(
+        listOf(
+            "-Xmx16g",
+            "-Xms16g",
+            "-XX:+UnlockExperimentalVMOptions",
+            "-XX:+UseZGC",
+            "-XX:MaxDirectMemorySize=48g"
+        )
+    )
 
     resultsFile.convention(layout.buildDirectory.file("results/jmh/results-reconnect.txt"))
 
-    benchmarkParameters.put("numRecords", listProperty("5000000"))
+    benchmarkParameters.put("numRecords", listProperty("1000"))
+    benchmarkParameters.put("numFiles", listProperty("100"))
+    benchmarkParameters.put("delayStorageMicroseconds", listProperty("100"))
+    benchmarkParameters.put("delayNetworkMicroseconds", listProperty("50"))
+    benchmarkParameters.put("teacherAddProbability", listProperty("0.01"))
+    benchmarkParameters.put("teacherRemoveProbability", listProperty("0.01"))
+    benchmarkParameters.put("teacherModifyProbability", listProperty("0.01"))
 }

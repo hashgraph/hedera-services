@@ -18,6 +18,7 @@ package com.swirlds.platform.test.chatter.protocol.output;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.protocol.output.SendAction;
 import com.swirlds.platform.gossip.chatter.protocol.output.VariableTimeDelay;
@@ -25,6 +26,7 @@ import com.swirlds.platform.gossip.chatter.protocol.peer.PeerGossipState;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -35,7 +37,9 @@ class VariableTimeDelayTest {
 
     @Test
     void testPeerKnows() {
-        final GossipEvent event = TestingEventBuilder.builder().buildEvent();
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final GossipEvent event = TestingEventBuilder.builder(random).build();
         state.setPeerKnows(event.getDescriptor());
         final VariableTimeDelay<GossipEvent> eventTimeDelay =
                 new VariableTimeDelay<>(() -> Duration.ofMillis(100), state, now::get);
@@ -44,7 +48,9 @@ class VariableTimeDelayTest {
 
     @Test
     void testVariableDelay() {
-        final GossipEvent event = TestingEventBuilder.builder().buildEvent();
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final GossipEvent event = TestingEventBuilder.builder(random).build();
 
         final AtomicInteger numCalls = new AtomicInteger(0);
         final VariableTimeDelay<GossipEvent> eventTimeDelay = new VariableTimeDelay<>(

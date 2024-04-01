@@ -65,6 +65,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -136,13 +137,13 @@ class HandleHederaNativeOperationsTest {
     void getAccountKeyUsesContextReadableStore() {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(SOMEBODY);
-        assertSame(SOMEBODY.keyOrThrow(), subject.getAccountKey(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow()));
+        assertSame(SOMEBODY.keyOrThrow(), subject.getAccountKey(NON_SYSTEM_ACCOUNT_ID));
     }
 
     @Test
     void getAccountKeyReturnsNullForMissing() {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-        assertNull(subject.getAccountKey(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow()));
+        assertNull(subject.getAccountKey(NON_SYSTEM_ACCOUNT_ID));
     }
 
     @Test
@@ -178,14 +179,15 @@ class HandleHederaNativeOperationsTest {
                 .thenReturn(cryptoCreateRecordBuilder);
 
         final var synthLazyCreateFees = new Fees(1L, 2L, 3L);
-        given(context.dispatchComputeFees(synthLazyCreate, A_NEW_ACCOUNT_ID)).willReturn(synthLazyCreateFees);
+        given(context.dispatchComputeFees(synthLazyCreate, A_NEW_ACCOUNT_ID, ComputeDispatchFeesAsTopLevel.NO))
+                .willReturn(synthLazyCreateFees);
 
         final var synthFinalizatonFees = new Fees(4L, 5L, 6L);
         final var synthFinalizationTxn = TransactionBody.newBuilder()
                 .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
                         .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY)))
                 .build();
-        given(context.dispatchComputeFees(synthFinalizationTxn, A_NEW_ACCOUNT_ID))
+        given(context.dispatchComputeFees(synthFinalizationTxn, A_NEW_ACCOUNT_ID, ComputeDispatchFeesAsTopLevel.NO))
                 .willReturn(synthFinalizatonFees);
 
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
@@ -209,14 +211,15 @@ class HandleHederaNativeOperationsTest {
                 .willReturn(cryptoCreateRecordBuilder);
 
         final var synthLazyCreateFees = new Fees(1L, 2L, 3L);
-        given(context.dispatchComputeFees(synthLazyCreate, A_NEW_ACCOUNT_ID)).willReturn(synthLazyCreateFees);
+        given(context.dispatchComputeFees(synthLazyCreate, A_NEW_ACCOUNT_ID, ComputeDispatchFeesAsTopLevel.NO))
+                .willReturn(synthLazyCreateFees);
 
         final var synthFinalizatonFees = new Fees(4L, 5L, 6L);
         final var synthFinalizationTxn = TransactionBody.newBuilder()
                 .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
                         .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY)))
                 .build();
-        given(context.dispatchComputeFees(synthFinalizationTxn, A_NEW_ACCOUNT_ID))
+        given(context.dispatchComputeFees(synthFinalizationTxn, A_NEW_ACCOUNT_ID, ComputeDispatchFeesAsTopLevel.NO))
                 .willReturn(synthFinalizatonFees);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 

@@ -72,13 +72,13 @@ public record PcesWriterWiring(
      */
     public void bind(@NonNull final PcesWriter pcesWriter) {
         ((BindableInputWire<DoneStreamingPcesTrigger, Long>) doneStreamingPcesInputWire)
-                .bind(pcesWriter::beginStreamingNewEvents);
+                .bindConsumer(pcesWriter::beginStreamingNewEvents);
         ((BindableInputWire<GossipEvent, Long>) eventInputWire).bind(pcesWriter::writeEvent);
         ((BindableInputWire<Long, Long>) discontinuityInputWire).bind(pcesWriter::registerDiscontinuity);
         ((BindableInputWire<NonAncientEventWindow, Long>) nonAncientEventWindowInput)
-                .bind(pcesWriter::updateNonAncientEventBoundary);
+                .bindConsumer(pcesWriter::updateNonAncientEventBoundary);
         ((BindableInputWire<Long, Long>) minimumAncientIdentifierToStoreInputWire)
-                .bind(pcesWriter::setMinimumAncientIdentifierToStore);
+                .bindConsumer(pcesWriter::setMinimumAncientIdentifierToStore);
         ((BindableInputWire<Long, Long>) flushRequestInputWire).bind(pcesWriter::submitFlushRequest);
     }
 }
