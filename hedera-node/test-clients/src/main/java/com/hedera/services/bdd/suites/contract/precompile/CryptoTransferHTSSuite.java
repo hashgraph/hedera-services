@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
@@ -124,9 +125,12 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private static final String CONTRACT = "CryptoTransfer";
     private static final String MULTI_KEY = "purpose";
     private static final String HTS_TRANSFER_FROM_CONTRACT = "HtsTransferFrom";
+    private static final String NEGATIVE_HTS_TRANSFER_FROM_CONTRACT = "NegativeHTSTransferFrom";
     private static final String OWNER = "Owner";
     private static final String HTS_TRANSFER_FROM = "htsTransferFrom";
     private static final String HTS_TRANSFER_FROM_NFT = "htsTransferFromNFT";
+    private static final String HTS_TRANSFER_FROM_UNDERFLOW = "transferFromUnderflowAmountValue";
+    private static final String HTS_TRANSFER_FROM_OVERFLOW = "transferFromWithOverflowAmountValue";
     public static final String TRANSFER_MULTIPLE_TOKENS = "transferMultipleTokens";
     private static final ByteString META1 = ByteStringUtils.wrapUnsafely("meta1".getBytes());
     private static final ByteString META2 = ByteStringUtils.wrapUnsafely("meta2".getBytes());
@@ -627,6 +631,8 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     final HapiSpec hapiTransferFromForFungibleTokenWithInvalidAmountsFails() {
         final var TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE = "TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE";
         final var TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE = "TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE";
+        final var TXN_WITH_AMOUNT_UNDERFLOW_UINT = "TXN_WITH_AMOUNT_UNDERFLOW_UINT";
+        final var TXN_WITH_AMOUNT_OVERFLOW_UINT = "TXN_WITH_AMOUNT_OVERFLOW_UINT";
 
         final var allowance = 10L;
         return defaultHapiSpec("hapiTransferFromForFungibleTokenWithInvalidAmountsFails")
@@ -644,6 +650,8 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .treasury(OWNER),
                         uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
                         contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                        uploadInitCode(NEGATIVE_HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(NEGATIVE_HTS_TRANSFER_FROM_CONTRACT),
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, HTS_TRANSFER_FROM_CONTRACT, allowance)
@@ -687,7 +695,37 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .gas(100_000_00L)
                                 .via(TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE)
                                 .payingWith(GENESIS)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        // try transfer with underflow (negative) amount for the uint256 type
+                        contractCall(
+                                NEGATIVE_HTS_TRANSFER_FROM_CONTRACT,
+                                HTS_TRANSFER_FROM_UNDERFLOW,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECEIVER))))
+                                .gas(100_000_00L)
+                                .via(TXN_WITH_AMOUNT_UNDERFLOW_UINT)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck(TXN_WITH_AMOUNT_UNDERFLOW_UINT, CONTRACT_REVERT_EXECUTED),
+                        // try transfer with overflow amount for the uint256 type
+                        contractCall(
+                                NEGATIVE_HTS_TRANSFER_FROM_CONTRACT,
+                                HTS_TRANSFER_FROM_OVERFLOW,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(OWNER))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECEIVER))))
+                                .gas(100_000_00L)
+                                .via(TXN_WITH_AMOUNT_OVERFLOW_UINT)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck(TXN_WITH_AMOUNT_OVERFLOW_UINT, CONTRACT_REVERT_EXECUTED))))
                 .then(
                         childRecordsCheck(
                                 TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE,
