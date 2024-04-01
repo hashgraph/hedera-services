@@ -43,7 +43,7 @@ public final class BlockInfoTranslator {
             throws IOException {
         requireNonNull(merkleNetworkContext);
         final var blockInfoBuilder = new BlockInfo.Builder()
-                .lastBlockNumber(merkleNetworkContext.getAlignmentBlockNo())
+                .lastBlockNumber(merkleNetworkContext.getAlignmentBlockNo() - 1)
                 .blockHashes(getBlockHashes(merkleNetworkContext.getBlockHashes()));
         if (merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond() > 0) {
             blockInfoBuilder.firstConsTimeOfCurrentBlock(Timestamp.newBuilder()
