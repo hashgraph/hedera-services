@@ -21,20 +21,20 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
-import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
+import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.state.manager.SignatureVerificationTestUtils;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
@@ -286,7 +286,6 @@ class StateSigningTests {
         long expectedWeight = 0;
 
         final SigSet sigSet = signedState.getSigSet();
-        final Hash hash = signedState.getState().getHash();
 
         // Randomize address order
         final List<Address> nodes = new ArrayList<>(addressBook.getSize());
@@ -297,7 +296,8 @@ class StateSigningTests {
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
         for (final Address address : nodes) {
-            signatures.add(buildFakeSignature(address.getSigPublicKey(), hash));
+            signatures.add(SignatureVerificationTestUtils.buildFakeSignature(
+                    address.getSigPublicKey(), signedState.getState().getHash()));
         }
 
         for (int index = 0; index < nodeCount; index++) {
@@ -320,7 +320,7 @@ class StateSigningTests {
 
         // Tamper with a node's signature
         final long weightWithModifiedSignature = nodes.get(1).getWeight();
-        when(signatures.get(1).verifySignature(any(), any())).thenReturn(false);
+        signatures.get(1).getSignatureBytes()[0] = 0;
 
         signedState.pruneInvalidSignatures();
 
@@ -439,6 +439,7 @@ class StateSigningTests {
         for (final Address address : newAddressBook) {
             final PublicKey publicKey = mock(PublicKey.class);
             when(publicKey.getAlgorithm()).thenReturn("RSA");
+            when(publicKey.getEncoded()).thenReturn(new byte[] {1, 2, 3});
             final X509Certificate certificate = mock(X509Certificate.class);
             when(certificate.getPublicKey()).thenReturn(publicKey);
             final Address newAddress = address.copySetSigCert(certificate);
