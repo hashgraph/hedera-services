@@ -36,7 +36,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param stateAndRoundOutput     the output wire for the reserved signed state, bundled with the round that caused
  *                                the state to be created
  * @param stateOutput             the output wire for the reserved signed state
- * @param roundNumberOutput       the output wire for the round number
  * @param flushRunnable           the runnable to flush the task scheduler
  * @param startSquelchingRunnable the runnable to start squelching
  * @param stopSquelchingRunnable  the runnable to stop squelching
@@ -46,7 +45,6 @@ public record ConsensusRoundHandlerWiring(
         @NonNull InputWire<RunningEventHashUpdate> runningHashUpdateInput,
         @NonNull OutputWire<StateAndRound> stateAndRoundOutput,
         @NonNull OutputWire<ReservedSignedState> stateOutput,
-        @NonNull OutputWire<Long> roundNumberOutput, // TODO remove
         @NonNull Runnable flushRunnable,
         @NonNull Runnable startSquelchingRunnable,
         @NonNull Runnable stopSquelchingRunnable) {
@@ -69,11 +67,6 @@ public record ConsensusRoundHandlerWiring(
                 taskScheduler.buildInputWire("running hash update"),
                 stateAndRoundOutput,
                 stateOutput,
-                taskScheduler
-                        .getOutputWire()
-                        .buildTransformer("postHandler_getRoundNumber", "stateAndRound", stateAndRound -> stateAndRound
-                                .round()
-                                .getRoundNum()),
                 taskScheduler::flush,
                 taskScheduler::startSquelching,
                 taskScheduler::stopSquelching);
