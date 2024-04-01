@@ -21,6 +21,13 @@ package com.swirlds.logging.util;
  */
 public class Throwables {
 
+    public static final String METHOD_SIGNATURE_PATTERN =
+            "\\tat " + Throwables.class.getName().replace(".", "\\.") + "\\.createThrowableWithDeepCause\\("
+                    + Throwables.class.getSimpleName() + "\\.java:\\d+\\)";
+    public static final String CAUSE_METHOD_SIGNATURE_PATTERN =
+            "\\tat " + Throwables.class.getName().replace(".", "\\.") + "\\.createDeepThrowable\\("
+                    + Throwables.class.getSimpleName() + "\\.java:\\d+\\)";
+
     private Throwables() {}
 
     /**
@@ -46,12 +53,5 @@ public class Throwables {
             return new RuntimeException("test");
         }
         return createDeepThrowable(depth - 1);
-    }
-
-    /**
-     * Creates a throwable.
-     */
-    public static Throwable createThrowable() {
-        return new RuntimeException("test");
     }
 }

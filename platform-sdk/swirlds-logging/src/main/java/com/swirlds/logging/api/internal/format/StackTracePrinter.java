@@ -17,6 +17,7 @@
 package com.swirlds.logging.api.internal.format;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -38,13 +39,12 @@ public class StackTracePrinter {
      * @param writer         The Appendable object to write the stack trace to.
      * @param throwable      The Throwable object whose stack trace is to be printed.
      */
-    public static void print(final @NonNull StringBuilder writer, final @NonNull Throwable throwable)
+    public static void print(final @NonNull StringBuilder writer, final @Nullable Throwable throwable)
             throws IOException {
-        Set<Throwable> alreadyPrinted = Collections.newSetFromMap(new IdentityHashMap<>());
+        final Set<Throwable> alreadyPrinted = Collections.newSetFromMap(new IdentityHashMap<>());
         alreadyPrinted.add(throwable);
-        // Push all exceptions (including cause) onto the stack
         Throwable currentThrowable = throwable;
-        StackTraceElement[] enclosingTrace = null;
+        StackTraceElement[] enclosingTrace = new StackTraceElement[0];
         while (currentThrowable != null) {
             writer.append(currentThrowable.getClass().getName());
             writer.append(": ");
@@ -53,12 +53,10 @@ public class StackTracePrinter {
 
             final StackTraceElement[] stackTrace = currentThrowable.getStackTrace();
             int m = stackTrace.length - 1;
-            if (enclosingTrace != null) {
-                int n = enclosingTrace.length - 1;
-                while (m >= 0 && n >= 0 && stackTrace[m].equals(enclosingTrace[n])) {
-                    m--;
-                    n--;
-                }
+            int n = enclosingTrace.length - 1;
+            while (m >= 0 && n >= 0 && stackTrace[m].equals(enclosingTrace[n])) {
+                m--;
+                n--;
             }
             if (MAX_STACK_TRACE_DEPTH >= 0) {
                 m = Math.min(m, MAX_STACK_TRACE_DEPTH);
