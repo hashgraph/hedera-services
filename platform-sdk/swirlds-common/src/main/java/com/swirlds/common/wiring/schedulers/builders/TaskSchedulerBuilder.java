@@ -16,6 +16,8 @@
 
 package com.swirlds.common.wiring.schedulers.builders;
 
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
@@ -373,7 +375,7 @@ public class TaskSchedulerBuilder<O> {
         // In all other cases, better to use a no-op counter. Counters have overhead, and if we don't need one
         // then we shouldn't use one.
 
-        if (unhandledTaskCapacity != UNLIMITED_CAPACITY) {
+        if (unhandledTaskCapacity != UNLIMITED_CAPACITY && type != DIRECT && type != DIRECT_THREADSAFE) {
             innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration);
         } else if (unhandledTaskMetricEnabled || (type == TaskSchedulerType.CONCURRENT && flushingEnabled)) {
             innerCounter = new StandardObjectCounter(sleepDuration);
