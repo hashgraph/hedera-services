@@ -374,6 +374,21 @@ class MerkleDbStatisticsTest {
         assertValueSet(metric);
     }
 
+    @Test
+    void testTableNameWithPeriod() {
+        final String complexLabel = "service." + LABEL;
+        final String expectedLabelSuffix = complexLabel.replace('.', '_');
+        final MerkleDbStatistics stats = new MerkleDbStatistics(complexLabel);
+        stats.registerMetrics(metrics);
+
+        // given
+        final Metric metric = getMetric("files_", "totalSizeMb_" + expectedLabelSuffix);
+        // when
+        stats.setTotalFileSizeMb(10);
+        // then
+        assertValueSet(metric);
+    }
+
     private static int randomCompactionLevel() {
         return nextInt(1, 6);
     }

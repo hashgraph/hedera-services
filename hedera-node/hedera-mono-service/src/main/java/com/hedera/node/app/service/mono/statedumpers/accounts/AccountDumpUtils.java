@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.mono.statedumpers.accounts;
 
-import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_ACCOUNT_ID;
-import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_NODE_ID;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
@@ -332,15 +330,7 @@ public class AccountDumpUtils {
             Pair.of("HNTN", a -> a.headNftId().tokenId().tokenNum()),
             Pair.of("HTI", a -> a.headTokenId().tokenNum()),
             Pair.of("N", BBMHederaAccount::ethereumNonce),
-            Pair.of("SID", a -> {
-                if (a.stakedId().kind() == STAKED_NODE_ID) {
-                    return -(long) a.stakedId().value() - 1;
-                } else if (a.stakedId().kind() == STAKED_ACCOUNT_ID) {
-                    return (long) a.stakedId().value();
-                } else {
-                    return -1L;
-                }
-            }),
+            Pair.of("SID", BBMHederaAccount::stakedIdLong),
             Pair.of("SNID", BBMHederaAccount::stakedNodeAddressBookId),
             Pair.of("SPS", coerceMinus1ToBeDefault(BBMHederaAccount::stakePeriodStart)),
             Pair.of("STM", BBMHederaAccount::stakedToMe),
