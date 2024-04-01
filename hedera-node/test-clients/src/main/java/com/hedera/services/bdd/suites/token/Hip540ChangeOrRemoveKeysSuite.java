@@ -91,7 +91,6 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
 
         final var admin = "admin";
         final var freeze = "freeze";
-        final var freeze2 = "freeze2";
         final var freezeKey2 = "freezeKey2";
         final var newFeeScheduleKey = "feeScheduleRedux";
 
@@ -107,7 +106,6 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
                         cryptoCreate(freeze).key(freezeKey).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(freeze2).key(freezeKey2).balance(ONE_MILLION_HBARS),
                         tokenCreate(tokenName)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -135,7 +133,6 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
 
         final var admin = "admin";
         final var freeze = "freeze";
-        final var freeze2 = "freeze2";
         final var freezeKey2 = "freezeKey2";
         final var newFeeScheduleKey = "feeScheduleRedux";
 
@@ -154,17 +151,11 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
                         cryptoCreate(freeze).key(freezeKey).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(freeze2).key(freezeKey2).balance(ONE_MILLION_HBARS),
                         tokenCreate(tokenName)
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(10)
                                 .adminKey(adminKey)
-                                .supplyKey(supplyKey)
                                 .freezeKey(freezeKey)
-                                .wipeKey(wipeKey)
-                                .kycKey(kycKey)
-                                .pauseKey(pauseKey)
-                                .feeScheduleKey(feeScheduleKey)
                                 .payingWith(admin))
                 .when(tokenUpdate(tokenName)
                         .freezeKey(freezeKey2)
@@ -178,7 +169,6 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
         final var tokenName = "token";
         final var HBAR_COLLECTOR = "hbarFee";
 
-        final var supply2 = "supply2";
         final var supply = "supply";
         final var supplyKey2 = "supplyKey2";
         final var newFeeScheduleKey = "feeScheduleRedux";
@@ -195,7 +185,6 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         cryptoCreate(HBAR_COLLECTOR),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(supply).key(supplyKey).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(supply2).key(supplyKey2).balance(ONE_MILLION_HBARS),
                         tokenCreate(tokenName)
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(10)
@@ -217,7 +206,6 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
 
         final var admin = "admin";
         final var feeSchedule = "feeSchedule";
-        final var feeSchedule2 = "feeSchedule2";
         final var feeScheduleKey2 = "feeScheduleKey2";
         final var newFeeScheduleKey = "feeScheduleRedux";
 
@@ -233,7 +221,6 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
                         cryptoCreate(feeSchedule).key(feeScheduleKey).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(feeSchedule2).key(feeScheduleKey2).balance(ONE_MILLION_HBARS),
                         tokenCreate(tokenName)
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(10)
@@ -259,7 +246,6 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
 
         final var admin = "admin";
         final var kyc = "kyc";
-        final var kyc2 = "kyc2";
         final var kycKey2 = "kycKey2";
         final var newFeeScheduleKey = "feeScheduleRedux";
 
