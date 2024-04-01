@@ -17,6 +17,7 @@
 package com.swirlds.platform.system;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -36,12 +37,21 @@ public final class StaticSoftwareVersion {
     private StaticSoftwareVersion() {}
 
     /**
-     * Get the current software version.
+     * Set the current software version.
      *
      * @param softwareVersion the current software version
      */
     public static void setSoftwareVersion(@NonNull final SoftwareVersion softwareVersion) {
         softwareVersionClassIdSet = Set.of(softwareVersion.getClassId());
+    }
+
+    /**
+     * Set the current software version.
+     *
+     * @param softwareVersions the current software versions (there may be multiple versions during a migration)
+     */
+    public static void setSoftwareVersion(@NonNull final Set<Long> softwareVersions) {
+        softwareVersionClassIdSet = Objects.requireNonNull(softwareVersions);
     }
 
     /**

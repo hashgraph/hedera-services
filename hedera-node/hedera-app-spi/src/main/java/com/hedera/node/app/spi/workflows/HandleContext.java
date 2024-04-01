@@ -353,9 +353,13 @@ public interface HandleContext {
      *
      * @param txBody the {@link TransactionBody} of the child transaction to compute fees for
      * @param syntheticPayerId the child payer
+     * @param computeDispatchFeesAsTopLevel for mono fidelity, whether to compute fees as a top-level transaction
      * @return the calculated fees
      */
-    Fees dispatchComputeFees(@NonNull TransactionBody txBody, @NonNull AccountID syntheticPayerId);
+    Fees dispatchComputeFees(
+            @NonNull TransactionBody txBody,
+            @NonNull AccountID syntheticPayerId,
+            @NonNull ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel);
 
     /**
      * Dispatches an independent (top-level) transaction, that precedes the current transaction.
@@ -661,14 +665,6 @@ public interface HandleContext {
      * Revert the childRecords from the checkpoint.
      */
     void revertRecordsFrom(@NonNull RecordListCheckPoint recordListCheckPoint);
-
-    /**
-     * Reclaim the capacity for a number of transactions of the same functionality.
-     *
-     * @param n the number of transactions to consider
-     * @param function the functionality type of the transactions
-     */
-    void reclaimPreviouslyReservedThrottle(int n, HederaFunctionality function);
 
     /**
      * Verifies if the throttle in this operation context has enough capacity to handle the given number of the

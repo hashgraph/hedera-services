@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.DefaultEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationStatus;
 import com.swirlds.platform.event.creation.EventCreator;
@@ -72,7 +73,7 @@ class EventCreationManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventCreationManager manager = new EventCreationManager(platformContext, creator, rule);
+        final EventCreationManager manager = new DefaultEventCreationManager(platformContext, creator, rule);
         assertEquals(0, eventWasCreatedCount.get());
 
         final GossipEvent e0 = manager.maybeCreateEvent();
@@ -123,7 +124,7 @@ class EventCreationManagerTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final EventCreationManager manager = new EventCreationManager(platformContext, creator, rule);
+        final EventCreationManager manager = new DefaultEventCreationManager(platformContext, creator, rule);
 
         assertEquals(0, eventWasCreatedCount.get());
 

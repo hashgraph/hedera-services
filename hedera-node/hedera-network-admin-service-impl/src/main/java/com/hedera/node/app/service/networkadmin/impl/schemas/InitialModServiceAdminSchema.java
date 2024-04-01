@@ -36,6 +36,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class InitialModServiceAdminSchema extends Schema {
     private static final Logger log = LogManager.getLogger(InitialModServiceAdminSchema.class);
+    private static boolean merkleNetworkContextExists;
 
     public InitialModServiceAdminSchema(@NonNull final SemanticVersion version) {
         super(version);
@@ -47,12 +48,12 @@ public class InitialModServiceAdminSchema extends Schema {
     public Set<StateDefinition> statesToCreate() {
         return Set.of(
                 StateDefinition.singleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY, ProtoBytes.PROTOBUF),
-                StateDefinition.singleton(FreezeServiceImpl.FREEZE_TIME_KEY, Timestamp.PROTOBUF),
-                StateDefinition.singleton(FreezeServiceImpl.LAST_FROZEN_TIME_KEY, Timestamp.PROTOBUF));
+                StateDefinition.singleton(FreezeServiceImpl.FREEZE_TIME_KEY, Timestamp.PROTOBUF));
     }
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
+        log.info("BBM: migrating Admin service");
         // Reset the upgrade file hash to empty
         // It should always be empty at genesis or after an upgrade, to indicate that no upgrade is in progress
         // Nothing in state can ever be null, so use Type.DEFAULT to indicate an empty hash
@@ -61,15 +62,16 @@ public class InitialModServiceAdminSchema extends Schema {
         final var upgradeFileHashKeyState =
                 ctx.newStates().<ProtoBytes>getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY);
         final var freezeTimeKeyState = ctx.newStates().<Timestamp>getSingleton(FreezeServiceImpl.FREEZE_TIME_KEY);
-        final var lastFrozenTimeKeyState =
-                ctx.newStates().<Timestamp>getSingleton(FreezeServiceImpl.LAST_FROZEN_TIME_KEY);
 
-        if (isGenesis) {
+        if (isGenesis || merkleNetworkContextExists) {
             upgradeFileHashKeyState.put(ProtoBytes.DEFAULT);
             freezeTimeKeyState.put(Timestamp.DEFAULT);
-            lastFrozenTimeKeyState.put(Timestamp.DEFAULT);
         }
 
-        log.info("BBM: no migration actions necessary for admin service");
+        log.info("BBM: finished migrating Admin service");
+    }
+
+    public static void setFs(final boolean networkContextExists) {
+        merkleNetworkContextExists = networkContextExists;
     }
 }

@@ -141,7 +141,7 @@ public class MutableLogEvent implements LogEvent {
             @NonNull final Level level,
             @NonNull final String loggerName,
             @NonNull final String threadName,
-            @NonNull final long timestamp,
+            final long timestamp,
             @NonNull final LogMessage message,
             @Nullable final Throwable throwable,
             @Nullable final Marker marker,
@@ -175,7 +175,6 @@ public class MutableLogEvent implements LogEvent {
     }
 
     @Override
-    @NonNull
     public long timestamp() {
         return timestamp;
     }

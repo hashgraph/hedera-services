@@ -2,8 +2,6 @@ module com.swirlds.common {
 
     /* Exported packages. This list should remain alphabetized. */
     exports com.swirlds.common;
-    exports com.swirlds.common.bloom;
-    exports com.swirlds.common.bloom.hasher;
     exports com.swirlds.common.config;
     exports com.swirlds.common.config.singleton;
     exports com.swirlds.common.constructable;
@@ -66,6 +64,7 @@ module com.swirlds.common {
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
+    exports com.swirlds.common.wiring.component;
     exports com.swirlds.common.wiring.counters;
     exports com.swirlds.common.wiring.model;
     exports com.swirlds.common.wiring.schedulers;

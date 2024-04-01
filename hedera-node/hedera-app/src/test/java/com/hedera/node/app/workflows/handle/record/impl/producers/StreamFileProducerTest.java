@@ -108,7 +108,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
             final var runningHashes = new RunningHashes(randomBytes(32), null, null, null);
             subject.initRunningHash(runningHashes);
             assertThat(subject.getRunningHash()).isEqualTo(runningHashes.runningHash());
-            assertThat(subject.getNMinus3RunningHash()).isNull();
+            assertThat(subject.getNMinus3RunningHash()).isEqualTo(Bytes.EMPTY);
         }
     }
 
@@ -247,7 +247,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
 
             // Submitting a batch of records only moves the running hash forward once, because it moves forward once
             // PER USER TRANSACTION, not per record.
-            assertThat(subject.getNMinus3RunningHash()).isNull();
+            assertThat(subject.getNMinus3RunningHash()).isEqualTo(Bytes.EMPTY);
 
             final var finalRunningHash = subject.getRunningHash();
             subject.close();

@@ -17,6 +17,7 @@
 package com.swirlds.logging.test.fixtures.internal;
 
 import com.swirlds.base.test.fixtures.util.TestInjector;
+import com.swirlds.logging.api.internal.DefaultLoggingSystem;
 import com.swirlds.logging.test.fixtures.LoggingMirror;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -32,9 +33,14 @@ public class LoggerMirrorExtension implements InvocationInterceptor {
             ExtensionContext extensionContext)
             throws Throwable {
         try (final LoggingMirrorImpl loggingMirror = new LoggingMirrorImpl()) {
-            TestInjector.injectInTest(LoggingMirror.class, () -> loggingMirror, extensionContext);
-            TestInjector.injectInTest(LoggingMirrorImpl.class, () -> loggingMirror, extensionContext);
-            invocation.proceed();
+            try {
+                DefaultLoggingSystem.getInstance().addHandler(loggingMirror);
+                TestInjector.injectInTest(LoggingMirror.class, () -> loggingMirror, extensionContext);
+                TestInjector.injectInTest(LoggingMirrorImpl.class, () -> loggingMirror, extensionContext);
+                invocation.proceed();
+            } finally {
+                DefaultLoggingSystem.getInstance().removeHandler(loggingMirror);
+            }
         }
     }
 }

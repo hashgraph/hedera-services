@@ -28,6 +28,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -161,8 +162,8 @@ public final class CompareStatesCommand extends AbstractCommand {
     public Integer call() throws IOException {
         BootstrapUtils.setupConstructableRegistry();
 
-        final Configuration configuration =
-                DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"), configurationPaths);
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(
+                ConfigurationBuilder.create(), getAbsolutePath("settings.txt"), configurationPaths);
         final PlatformContext platformContext = new DefaultPlatformContext(
                 configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 

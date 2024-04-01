@@ -577,6 +577,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
+    public T blankMetadata() {
+        memo = Optional.of("");
+        return self();
+    }
+
+    public T metaData(String text) {
+        metadata = Optional.of(text);
+        return self();
+    }
+
     public T ensuringResolvedStatusIsntFromDuplicate() {
         ensureResolvedStatusIsntFromDuplicate = true;
         memo = Optional.of(TxnUtils.randomUppercase(64));

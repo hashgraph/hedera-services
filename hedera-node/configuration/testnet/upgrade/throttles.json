@@ -92,7 +92,8 @@
             "TokenGrantKycToAccount",
             "TokenRevokeKycFromAccount",
             "TokenPause",
-            "TokenUnpause"
+            "TokenUnpause",
+            "TokenUpdateNfts"
           ]
         }
       ]

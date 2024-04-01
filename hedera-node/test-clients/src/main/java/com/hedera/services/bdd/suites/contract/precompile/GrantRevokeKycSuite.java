@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -137,6 +138,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())))
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("GrantKycAccountWithoutKeyTx")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -146,6 +148,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())))
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("RevokeKycAccountWithoutKeyTx")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -156,6 +159,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())))
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("GrantKycAccountKeyNotMatchingTokenKeyTx")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -165,6 +169,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())))
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("RevokeKycAccountKeyNotMatchingTokenKeyTx")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -175,6 +180,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(tokenWithoutKeyID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())))
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("GrantKycTokenWithoutKeyTx")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -184,6 +190,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(tokenWithoutKeyID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())))
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("RevokeKycTokenWithoutKeyTx")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -193,6 +200,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(invalidTokenID)),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())))
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("RevokeKycWrongTokenTx")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -202,6 +210,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(invalidTokenID)),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())))
                                 .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
                                 .via("GrantKycWrongTokenTx")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))

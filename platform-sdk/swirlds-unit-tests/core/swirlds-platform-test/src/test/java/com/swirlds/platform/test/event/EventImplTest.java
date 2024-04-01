@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.event;
 
+import static com.swirlds.platform.test.fixtures.event.EventImplTestUtils.createEventImpl;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.internal.EventImpl;
@@ -29,10 +30,10 @@ public class EventImplTest {
     @Test
     void validateEqualsHashCodeCompareTo() {
         final List<EventImpl> list = EqualsVerifier.generateObjects(
-                r -> TestingEventBuilder.builder()
-                        .setRandom(r)
-                        .setGeneration(r.nextLong(0, Long.MAX_VALUE))
-                        .buildEventImpl(),
+                random -> createEventImpl(
+                        TestingEventBuilder.builder(random).setGeneration(random.nextLong(0, Long.MAX_VALUE)),
+                        null,
+                        null),
                 new long[] {1, 1, 2});
         assertTrue(EqualsVerifier.verifyEqualsHashCode(list.get(0), list.get(1), list.get(2)));
         assertTrue(EqualsVerifier.verifyCompareTo(list.get(0), list.get(1), list.get(2)));

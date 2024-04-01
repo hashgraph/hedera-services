@@ -19,7 +19,11 @@ package com.hedera.node.app.workflows.handle.metric;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.StatsConfig;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
+import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.metrics.RunningAverageMetric.Config;
 import com.swirlds.metrics.api.IntegerAccumulator;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,8 +41,16 @@ public class HandleWorkflowMetrics {
 
     private static final BinaryOperator<Integer> AVERAGE = (sum, count) -> count == 0 ? 0 : sum / count;
 
+    private static final Config GAS_PER_CONS_SEC_CONFIG = new Config("app", "gasPerConsSec")
+            .withDescription("average EVM gas used per second of consensus time")
+            .withFormat("%,13.6f");
+
     private final Map<HederaFunctionality, TransactionMetric> transactionMetrics =
             new EnumMap<>(HederaFunctionality.class);
+
+    private final RunningAverageMetric gasPerConsSec;
+
+    private long gasUsedThisConsensusSecond = 0L;
 
     /**
      * Constructor for the HandleWorkflowMetrics
@@ -46,8 +58,10 @@ public class HandleWorkflowMetrics {
      * @param metrics the {@link Metrics} object where all metrics will be registered
      */
     @Inject
-    public HandleWorkflowMetrics(@NonNull final Metrics metrics) {
+    public HandleWorkflowMetrics(@NonNull final Metrics metrics, @NonNull final ConfigProvider configProvider) {
         requireNonNull(metrics, "metrics must not be null");
+        requireNonNull(configProvider, "configProvider must not be null");
+
         for (final var functionality : HederaFunctionality.values()) {
             if (functionality == HederaFunctionality.NONE) {
                 continue;
@@ -65,6 +79,9 @@ public class HandleWorkflowMetrics {
             final var avgMetric = metrics.getOrCreate(avgConfig);
             transactionMetrics.put(functionality, new TransactionMetric(maxMetric, avgMetric));
         }
+
+        final StatsConfig statsConfig = configProvider.getConfiguration().getConfigData(StatsConfig.class);
+        gasPerConsSec = metrics.getOrCreate(GAS_PER_CONS_SEC_CONFIG.withHalfLife(statsConfig.runningAvgHalfLifeSecs()));
     }
 
     /**
@@ -73,7 +90,7 @@ public class HandleWorkflowMetrics {
      * @param functionality the {@link HederaFunctionality} for which the metrics will be updated
      * @param duration the duration of the transaction in {@code ns}
      */
-    public void update(@NonNull final HederaFunctionality functionality, final int duration) {
+    public void updateTransactionDuration(@NonNull final HederaFunctionality functionality, final int duration) {
         requireNonNull(functionality, "functionality must not be null");
         final var metric = transactionMetrics.get(functionality);
         if (metric != null) {
@@ -83,6 +100,15 @@ public class HandleWorkflowMetrics {
             metric.max.update(duration);
             metric.avg.update(duration, 1);
         }
+    }
+
+    public void switchConsensusSecond() {
+        gasPerConsSec.update(gasUsedThisConsensusSecond);
+        gasUsedThisConsensusSecond = 0L;
+    }
+
+    public void addGasUsed(final long gasUsed) {
+        gasUsedThisConsensusSecond += gasUsed;
     }
 
     private record TransactionMetric(IntegerAccumulator max, IntegerPairAccumulator<Integer> avg) {}
