@@ -24,11 +24,23 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 
 class StackTracePrinterTest {
 
     public static final int DEPTH = 100;
+
+    @Test
+    void printNullShouldReturnEmpty() throws IOException {
+        // Given
+        final StringBuilder writer = new StringBuilder();
+
+        // When
+        StackTracePrinter.print(writer, null);
+
+        assertEquals(StringUtils.EMPTY, writer.toString());
+    }
 
     @Test
     void printShouldBehaveAsPrintStackTrace() throws IOException {
@@ -65,22 +77,17 @@ class StackTracePrinterTest {
 
     @Test
     void printWithThrowableWithDeepCauseShouldContainTraceAndCause() throws IOException {
+        // given
         final StringBuilder writer = new StringBuilder();
+        // when
         StackTracePrinter.print(writer, Throwables.createThrowableWithDeepCause(DEPTH, DEPTH));
         final String stackTrace = writer.toString();
+        // then
         assertTrue(stackTrace.contains("java.lang.RuntimeException: test\n"));
         assertTrue(stackTrace.contains("Caused by: java.lang.RuntimeException: test\n"));
-        int count = countMatches(
-                stackTrace,
-                "\\tat com\\.swirlds\\.logging\\.util\\.Throwables\\.createThrowableWithDeepCause\\(Throwables\\.java:\\d+\\)");
-
-        assertEquals(DEPTH + 2, count);
-        count = countMatches(
-                stackTrace,
-                "\\tat com\\.swirlds\\.logging\\.util\\.Throwables\\.createDeepThrowable\\(Throwables\\.java:\\d+\\)");
-        assertEquals(DEPTH + 1, count);
-        count = countMatches(stackTrace, "\\.\\.\\. \\d+ more");
-        assertEquals(1, count);
+        assertEquals(DEPTH + 2, countMatches(stackTrace, Throwables.METHOD_SIGNATURE_PATTERN));
+        assertEquals(DEPTH + 1, countMatches(stackTrace, Throwables.CAUSE_METHOD_SIGNATURE_PATTERN));
+        assertEquals(1, countMatches(stackTrace, "\\.\\.\\. \\d+ more"));
     }
 
     private static int countMatches(final String stackTrace, final String regex) {
