@@ -377,7 +377,7 @@ public class TaskSchedulerBuilder<O> {
 
         if (unhandledTaskCapacity != UNLIMITED_CAPACITY && type != DIRECT && type != DIRECT_THREADSAFE) {
             innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration);
-        } else if (unhandledTaskMetricEnabled || (type == TaskSchedulerType.CONCURRENT && flushingEnabled)) {
+        } else if (unhandledTaskMetricEnabled || flushingEnabled) {
             innerCounter = new StandardObjectCounter(sleepDuration);
         } else {
             innerCounter = null;
