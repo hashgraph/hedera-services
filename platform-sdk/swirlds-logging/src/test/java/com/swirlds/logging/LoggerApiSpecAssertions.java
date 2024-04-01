@@ -21,7 +21,7 @@ import com.swirlds.logging.api.Logger;
 import java.util.Arrays;
 import org.junit.jupiter.api.Assertions;
 
-public class LoggerApiSpecTest {
+public class LoggerApiSpecAssertions {
 
     private static final String MESSAGE = "test-message";
 
@@ -78,63 +78,69 @@ public class LoggerApiSpecTest {
 
     private static final String LOG_ERROR_MESSAGE = "a log call must never throw an exception";
 
-    public static void testSpec(Logger logger) {
-        testLogger(logger);
-        testLogger(logger.withMarker("test-marker"));
-        testLogger(logger.withContext("key", "value"));
-        testLogger(logger.withContext("key", "value").withMarker("test-marker"));
-        testLogger(logger.withMarker("test-marker").withContext("key", "value"));
+    public static void assertSpecForLogger(Logger logger) {
+        innerAssertSpecForLogger(logger);
+        innerAssertSpecForLogger(logger.withMarker("test-marker"));
+        innerAssertSpecForLogger(logger.withContext("key", "value"));
+        innerAssertSpecForLogger(logger.withContext("key", "value").withMarker("test-marker"));
+        innerAssertSpecForLogger(logger.withMarker("test-marker").withContext("key", "value"));
     }
 
-    private static void testLogger(Logger logger) {
-        testLogCall(logger, Level.TRACE, MESSAGE);
-        testLogCall(logger, Level.TRACE, MESSAGE_WITH_1_PLACEHODLER);
-        testLogCall(logger, Level.TRACE, MESSAGE_WITH_2_PLACEHODLER);
-        testLogCall(logger, Level.TRACE, MESSAGE_WITH_5_PLACEHODLER);
-        testLogCall(logger, Level.TRACE, null);
+    private static void innerAssertSpecForLogger(Logger logger) {
+        assertSpecLogCallsNotThrow(logger, Level.OFF, MESSAGE);
+        assertSpecLogCallsNotThrow(logger, Level.OFF, MESSAGE_WITH_1_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.OFF, MESSAGE_WITH_2_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.OFF, MESSAGE_WITH_5_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.OFF, null);
 
-        testLogCall(logger, Level.DEBUG, MESSAGE);
-        testLogCall(logger, Level.DEBUG, MESSAGE_WITH_1_PLACEHODLER);
-        testLogCall(logger, Level.DEBUG, MESSAGE_WITH_2_PLACEHODLER);
-        testLogCall(logger, Level.DEBUG, MESSAGE_WITH_5_PLACEHODLER);
-        testLogCall(logger, Level.DEBUG, null);
+        assertSpecLogCallsNotThrow(logger, Level.TRACE, MESSAGE);
+        assertSpecLogCallsNotThrow(logger, Level.TRACE, MESSAGE_WITH_1_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.TRACE, MESSAGE_WITH_2_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.TRACE, MESSAGE_WITH_5_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.TRACE, null);
 
-        testLogCall(logger, Level.INFO, MESSAGE);
-        testLogCall(logger, Level.INFO, MESSAGE_WITH_1_PLACEHODLER);
-        testLogCall(logger, Level.INFO, MESSAGE_WITH_2_PLACEHODLER);
-        testLogCall(logger, Level.INFO, MESSAGE_WITH_5_PLACEHODLER);
-        testLogCall(logger, Level.INFO, null);
+        assertSpecLogCallsNotThrow(logger, Level.DEBUG, MESSAGE);
+        assertSpecLogCallsNotThrow(logger, Level.DEBUG, MESSAGE_WITH_1_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.DEBUG, MESSAGE_WITH_2_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.DEBUG, MESSAGE_WITH_5_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.DEBUG, null);
 
-        testLogCall(logger, Level.WARN, MESSAGE);
-        testLogCall(logger, Level.WARN, MESSAGE_WITH_1_PLACEHODLER);
-        testLogCall(logger, Level.WARN, MESSAGE_WITH_2_PLACEHODLER);
-        testLogCall(logger, Level.WARN, MESSAGE_WITH_5_PLACEHODLER);
-        testLogCall(logger, Level.WARN, null);
+        assertSpecLogCallsNotThrow(logger, Level.INFO, MESSAGE);
+        assertSpecLogCallsNotThrow(logger, Level.INFO, MESSAGE_WITH_1_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.INFO, MESSAGE_WITH_2_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.INFO, MESSAGE_WITH_5_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.INFO, null);
 
-        testLogCall(logger, Level.ERROR, MESSAGE);
-        testLogCall(logger, Level.ERROR, MESSAGE_WITH_1_PLACEHODLER);
-        testLogCall(logger, Level.ERROR, MESSAGE_WITH_2_PLACEHODLER);
-        testLogCall(logger, Level.ERROR, MESSAGE_WITH_5_PLACEHODLER);
-        testLogCall(logger, Level.ERROR, null);
+        assertSpecLogCallsNotThrow(logger, Level.WARN, MESSAGE);
+        assertSpecLogCallsNotThrow(logger, Level.WARN, MESSAGE_WITH_1_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.WARN, MESSAGE_WITH_2_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.WARN, MESSAGE_WITH_5_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.WARN, null);
 
-        testLogCall(logger, null, MESSAGE);
-        testLogCall(logger, null, MESSAGE_WITH_1_PLACEHODLER);
-        testLogCall(logger, null, MESSAGE_WITH_2_PLACEHODLER);
-        testLogCall(logger, null, MESSAGE_WITH_5_PLACEHODLER);
-        testLogCall(logger, null, null);
+        assertSpecLogCallsNotThrow(logger, Level.ERROR, MESSAGE);
+        assertSpecLogCallsNotThrow(logger, Level.ERROR, MESSAGE_WITH_1_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.ERROR, MESSAGE_WITH_2_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.ERROR, MESSAGE_WITH_5_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, Level.ERROR, null);
 
-        testEnabledCall(logger);
+        assertSpecLogCallsNotThrow(logger, null, MESSAGE);
+        assertSpecLogCallsNotThrow(logger, null, MESSAGE_WITH_1_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, null, MESSAGE_WITH_2_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, null, MESSAGE_WITH_5_PLACEHODLER);
+        assertSpecLogCallsNotThrow(logger, null, null);
 
-        testMarker(logger);
+        assertSpecEnabledCalls(logger);
 
-        testContext(logger);
+        assertSpecLogCallsWithMarkerNotThrow(logger);
+
+        assertSpecLogCallsWithContextNotThrow(logger);
 
         Assertions.assertDoesNotThrow(logger::getName, LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(logger::toString, LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(logger::hashCode, LOG_ERROR_MESSAGE);
     }
 
-    private static void testMarker(Logger logger) {
+    private static void assertSpecLogCallsWithMarkerNotThrow(Logger logger) {
         Assertions.assertDoesNotThrow(() -> logger.withMarker(null), LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(() -> logger.withMarker(""), LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(() -> logger.withMarker("marker"), LOG_ERROR_MESSAGE);
@@ -155,7 +161,7 @@ public class LoggerApiSpecTest {
                 () -> logger.withMarker("sameMarker").withMarker("sameMarker"), LOG_ERROR_MESSAGE);
     }
 
-    private static void testContext(Logger logger) {
+    private static void assertSpecLogCallsWithContextNotThrow(Logger logger) {
         Assertions.assertDoesNotThrow(() -> logger.withContext("key", "value"), LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(() -> logger.withContext("key", ""), LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(() -> logger.withContext("key", (String) null), LOG_ERROR_MESSAGE);
@@ -243,7 +249,7 @@ public class LoggerApiSpecTest {
         Assertions.assertDoesNotThrow(() -> logger.withContext("key", (boolean[]) null), LOG_ERROR_MESSAGE);
     }
 
-    private static void testLogCall(Logger logger, Level level, String message) {
+    private static void assertSpecLogCallsNotThrow(Logger logger, Level level, String message) {
         Assertions.assertDoesNotThrow(() -> logger.log(level, message), LOG_ERROR_MESSAGE);
 
         Assertions.assertDoesNotThrow(() -> logger.log(level, message, THROW), LOG_ERROR_MESSAGE);
@@ -277,12 +283,13 @@ public class LoggerApiSpecTest {
         });
     }
 
-    private static void testEnabledCall(Logger logger) {
+    private static void assertSpecEnabledCalls(Logger logger) {
         Assertions.assertDoesNotThrow(logger::isTraceEnabled, LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(logger::isDebugEnabled, LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(logger::isInfoEnabled, LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(logger::isWarnEnabled, LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(logger::isErrorEnabled, LOG_ERROR_MESSAGE);
+        Assertions.assertDoesNotThrow(() -> logger.isEnabled(Level.OFF), LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(() -> logger.isEnabled(Level.TRACE), LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(() -> logger.isEnabled(Level.DEBUG), LOG_ERROR_MESSAGE);
         Assertions.assertDoesNotThrow(() -> logger.isEnabled(Level.INFO), LOG_ERROR_MESSAGE);
