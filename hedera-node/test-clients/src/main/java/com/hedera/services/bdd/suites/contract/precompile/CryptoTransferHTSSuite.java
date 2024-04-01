@@ -698,14 +698,14 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // try transfer with underflow (negative) amount for the uint256 type
                         contractCall(
-                                NEGATIVE_HTS_TRANSFER_FROM_CONTRACT,
-                                HTS_TRANSFER_FROM_UNDERFLOW,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(OWNER))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(RECEIVER))))
+                                        NEGATIVE_HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM_UNDERFLOW,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECEIVER))))
                                 .gas(100_000_00L)
                                 .via(TXN_WITH_AMOUNT_UNDERFLOW_UINT)
                                 .payingWith(GENESIS)
@@ -713,14 +713,14 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         emptyChildRecordsCheck(TXN_WITH_AMOUNT_UNDERFLOW_UINT, CONTRACT_REVERT_EXECUTED),
                         // try transfer with overflow amount for the uint256 type
                         contractCall(
-                                NEGATIVE_HTS_TRANSFER_FROM_CONTRACT,
-                                HTS_TRANSFER_FROM_OVERFLOW,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(OWNER))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(RECEIVER))))
+                                        NEGATIVE_HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM_OVERFLOW,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECEIVER))))
                                 .gas(100_000_00L)
                                 .via(TXN_WITH_AMOUNT_OVERFLOW_UINT)
                                 .payingWith(GENESIS)
