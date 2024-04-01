@@ -20,23 +20,12 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getGlo
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * The advanced platform builder is responsible for constructing platform components. This class is exposed so that
@@ -44,22 +33,7 @@ import java.util.function.Consumer;
  */
 public class PlatformComponentBuilder {
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Final variables defined here are constructed before all components are constructed. It is ok to pass these
-    // variables into component constructors.
-
-    private final PlatformContext platformContext;
-    final KeysAndCerts keysAndCerts;
-    final RecycleBin recycleBin;
-    final NodeId selfId;
-    final String mainClassName;
-    final String swirldName;
-    final SoftwareVersion appVersion;
-    final ReservedSignedState initialState;
-    final EmergencyRecoveryManager emergencyRecoveryManager;
-    final Consumer<GossipEvent> preconsensusEventConsumer; // TODO create a record for these
-    final Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
-    final boolean firstPlatform;
+    private final PlatformBuildingBlocks platformBuildingBlocks;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // All non-final variables defined here are components. In general, default components should not be passed to
@@ -78,160 +52,21 @@ public class PlatformComponentBuilder {
     /**
      * Constructor.
      *
-     * @param platformContext           the context for this platform
-     * @param keysAndCerts              an object holding all the public/private key pairs and the CSPRNG state for this
-     *                                  member
-     * @param recycleBin                used to delete files that may be useful for later debugging
-     * @param selfId                    the ID for this node
-     * @param mainClassName             the name of the app class inheriting from SwirldMain
-     * @param swirldName                the name of the swirld being run
-     * @param appVersion                the current version of the running application
-     * @param initialState              the initial state of the platform
-     * @param emergencyRecoveryManager  used in emergency recovery.
-     * @param preconsensusEventConsumer the consumer for preconsensus events, null if publishing this data has not been
-     *                                  enabled
-     * @param snapshotOverrideConsumer  the consumer for snapshot overrides, null if publishing this data has not been
-     *                                  enabled
-     * @param firstPlatform             if this is the first platform being built (there is static setup that needs to
-     *                                  be done, long term plan is to stop using static variables)
+     * @param platformBuildingBlocks the build context for the platform under construction, contains all data needed to
+     *                             construct platform components
      */
-    public PlatformComponentBuilder(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final RecycleBin recycleBin,
-            @NonNull final NodeId selfId,
-            @NonNull final String mainClassName,
-            @NonNull final String swirldName,
-            @NonNull final SoftwareVersion appVersion,
-            @NonNull final ReservedSignedState initialState,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @Nullable final Consumer<GossipEvent> preconsensusEventConsumer,
-            @Nullable final Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
-            final boolean firstPlatform) {
-
-        this.platformContext = Objects.requireNonNull(platformContext);
-        this.keysAndCerts = Objects.requireNonNull(keysAndCerts);
-        this.recycleBin = Objects.requireNonNull(recycleBin);
-        this.selfId = Objects.requireNonNull(selfId);
-        this.mainClassName = Objects.requireNonNull(mainClassName);
-        this.swirldName = Objects.requireNonNull(swirldName);
-        this.appVersion = Objects.requireNonNull(appVersion);
-        this.initialState = Objects.requireNonNull(initialState);
-        this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager);
-        this.preconsensusEventConsumer = preconsensusEventConsumer;
-        this.snapshotOverrideConsumer = snapshotOverrideConsumer;
-        this.firstPlatform = firstPlatform;
+    public PlatformComponentBuilder(@NonNull final PlatformBuildingBlocks platformBuildingBlocks) {
+        this.platformBuildingBlocks = Objects.requireNonNull(platformBuildingBlocks);
     }
 
     /**
-     * Get the platform context.
+     * Get the build context for this platform. Contains all data needed to construct platform components.
      *
-     * @return the platform context
+     * @return the build context
      */
     @NonNull
-    public PlatformContext getPlatformContext() {
-        return platformContext;
-    }
-
-    /**
-     * Get the keys and certs. Used to sign and verify signatures.
-     *
-     * @return the keys and certs
-     */
-    @NonNull
-    public KeysAndCerts getKeysAndCerts() {
-        return keysAndCerts;
-    }
-
-    /**
-     * Get the recycle bin. Used to "delete" files that may be useful for later debugging.
-     *
-     * @return the recycle bin
-     */
-    @NonNull
-    public RecycleBin getRecycleBin() {
-        return recycleBin;
-    }
-
-    /**
-     * Get the ID for this node.
-     *
-     * @return the ID for this node
-     */
-    @NonNull
-    public NodeId getSelfId() {
-        return selfId;
-    }
-
-    /**
-     * Get the name of the app class inheriting from SwirldMain.
-     *
-     * @return the name of the app class inheriting from SwirldMain
-     */
-    @NonNull
-    public String getMainClassName() {
-        return mainClassName;
-    }
-
-    /**
-     * Get the name of the swirld being run.
-     *
-     * @return the name of the swirld being run
-     */
-    @NonNull
-    public String getSwirldName() {
-        return swirldName;
-    }
-
-    /**
-     * Get the current version of the running application.
-     *
-     * @return the current version of the running application
-     */
-    @NonNull
-    public SoftwareVersion getAppVersion() {
-        return appVersion;
-    }
-
-    /**
-     * Get the initial state of the platform. This object holds a reference count for this state until the platform has
-     * been built.
-     *
-     * @return the initial state of the platform
-     */
-    @NonNull
-    public SignedState getInitialState() {
-        return initialState.get();
-    }
-
-    /**
-     * Get the emergency recovery manager.
-     *
-     * @return the emergency recovery manager
-     */
-    @NonNull
-    public EmergencyRecoveryManager getEmergencyRecoveryManager() {
-        return emergencyRecoveryManager;
-    }
-
-    /**
-     * Get the consumer for preconsensus events. Ignored if null.
-     *
-     * @return the consumer for preconsensus events
-     */
-    @Nullable
-    public Consumer<GossipEvent> getPreconsensusEventConsumer() {
-        return preconsensusEventConsumer;
-    }
-
-    /**
-     * Get the consumer for snapshot overrides. Ignored if null.
-     *
-     * @return the consumer for snapshot overrides
-     */
-    @Nullable
-    public Consumer<ConsensusSnapshot> getSnapshotOverrideConsumer() {
-        return snapshotOverrideConsumer;
+    public PlatformBuildingBlocks getBuildingBlocks() {
+        return platformBuildingBlocks;
     }
 
     /**
@@ -253,14 +88,16 @@ public class PlatformComponentBuilder {
         throwIfAlreadyUsed();
         used = true;
 
-        try (initialState) {
+        try (final ReservedSignedState initialState = platformBuildingBlocks.initialState()) {
             return new SwirldsPlatform(this);
         } finally {
 
             // Future work: eliminate the static variables that require this code to exist
-            if (firstPlatform) {
+            if (platformBuildingBlocks.firstPlatform()) {
                 MetricsDocUtils.writeMetricsDocumentToFile(
-                        getGlobalMetrics(), getPlatforms(), platformContext.getConfiguration());
+                        getGlobalMetrics(),
+                        getPlatforms(),
+                        platformBuildingBlocks.platformContext().getConfiguration());
                 getMetricsProvider().start();
             }
         }

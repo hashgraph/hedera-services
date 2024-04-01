@@ -73,6 +73,7 @@ import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.TransactionConfig;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -324,19 +325,22 @@ public class SwirldsPlatform implements Platform {
      */
     public SwirldsPlatform(@NonNull final PlatformComponentBuilder builder) {
 
-        platformContext = builder.getPlatformContext();
+        platformContext = builder.getBuildingBlocks().platformContext();
 
         ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
 
-        // This method is a no-op if we are not in birth round mode, or if we have already migrated.
-        final SoftwareVersion appVersion = builder.getAppVersion();
-        modifyStateForBirthRoundMigration(builder.getInitialState(), ancientMode, appVersion);
+        // The reservation on this state is held by the caller of this constructor.
+        final SignedState initialState =
+                builder.getBuildingBlocks().initialState().get();
 
-        final SignedState initialState = builder.getInitialState();
-        final RecycleBin recycleBin = builder.getRecycleBin();
+        // This method is a no-op if we are not in birth round mode, or if we have already migrated.
+        final SoftwareVersion appVersion = builder.getBuildingBlocks().appVersion();
+        modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion);
+
+        final RecycleBin recycleBin = builder.getBuildingBlocks().recycleBin();
 
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             try {
@@ -344,7 +348,7 @@ public class SwirldsPlatform implements Platform {
                 migratePcesToBirthRoundMode(
                         platformContext,
                         recycleBin,
-                        builder.getSelfId(),
+                        builder.getBuildingBlocks().selfId(),
                         initialState.getRound(),
                         initialState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
             } catch (final IOException e) {
@@ -352,7 +356,7 @@ public class SwirldsPlatform implements Platform {
             }
         }
 
-        this.emergencyRecoveryManager = builder.getEmergencyRecoveryManager();
+        this.emergencyRecoveryManager = builder.getBuildingBlocks().emergencyRecoveryManager();
         final Time time = Time.getCurrent();
 
         thingsToStart = new ThingsToStart();
@@ -363,9 +367,10 @@ public class SwirldsPlatform implements Platform {
         notificationEngine = NotificationEngine.buildEngine(threadManager);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final String actualMainClassName = stateConfig.getMainClassName(builder.getMainClassName());
+        final String actualMainClassName =
+                stateConfig.getMainClassName(builder.getBuildingBlocks().mainClassName());
 
-        selfId = builder.getSelfId();
+        selfId = builder.getBuildingBlocks().selfId();
 
         currentAddressBook = initialState.getAddressBook();
 
@@ -374,10 +379,12 @@ public class SwirldsPlatform implements Platform {
             emergencyState.setState(initialState.reserve("emergency state nexus"));
         }
 
+        final Consumer<GossipEvent> preconsensusEventConsumer =
+                builder.getBuildingBlocks().preconsensusEventConsumer();
+        final Consumer<ConsensusSnapshot> snapshotOverrideConsumer =
+                builder.getBuildingBlocks().snapshotOverrideConsumer();
         platformWiring = thingsToStart.add(new PlatformWiring(
-                platformContext,
-                builder.getPreconsensusEventConsumer() != null,
-                builder.getSnapshotOverrideConsumer() != null));
+                platformContext, preconsensusEventConsumer != null, snapshotOverrideConsumer != null));
 
         final Consumer<PlatformStatus> statusChangeConsumer = s -> {
             platformWiring
@@ -410,7 +417,7 @@ public class SwirldsPlatform implements Platform {
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
-        this.keysAndCerts = builder.getKeysAndCerts();
+        this.keysAndCerts = builder.getBuildingBlocks().keysAndCerts();
 
         EventCounter.registerEventCounterMetrics(metrics);
 
@@ -421,7 +428,7 @@ public class SwirldsPlatform implements Platform {
             epochHash = initialState.getState().getPlatformState().getEpochHash();
         }
 
-        final String swirldName = builder.getSwirldName();
+        final String swirldName = builder.getBuildingBlocks().swirldName();
         StartupStateUtils.doRecoveryCleanup(
                 platformContext,
                 recycleBin,
@@ -648,9 +655,8 @@ public class SwirldsPlatform implements Platform {
         final AppNotifier appNotifier = new DefaultAppNotifier(notificationEngine);
 
         final PlatformPublisher publisher;
-        if (builder.getPreconsensusEventConsumer() != null || builder.getSnapshotOverrideConsumer() != null) {
-            publisher = new DefaultPlatformPublisher(
-                    builder.getPreconsensusEventConsumer(), builder.getSnapshotOverrideConsumer());
+        if (preconsensusEventConsumer != null || snapshotOverrideConsumer != null) {
+            publisher = new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
         } else {
             publisher = null;
         }

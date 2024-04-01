@@ -460,7 +460,7 @@ public final class PlatformBuilder {
             throw new IllegalStateException("The current address book of the initial state is null.");
         }
 
-        return new PlatformComponentBuilder(
+        final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
                 keysAndCerts.get(selfId),
                 recycleBin,
@@ -473,6 +473,8 @@ public final class PlatformBuilder {
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
                 firstPlatofrm);
+
+        return new PlatformComponentBuilder(buildingBlocks);
     }
 
     /**
