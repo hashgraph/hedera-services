@@ -16,16 +16,13 @@
 
 package com.swirlds.platform.system.transaction;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -69,7 +66,8 @@ public class TransactionTest {
             final boolean system = random.nextBoolean();
             if (system) {
                 final Bytes sigature = randomSignatureBytes(random);
-                list.add(new StateSignatureTransaction(random.nextLong(), sigature, randomHashBytes(random), Bytes.EMPTY));
+                list.add(new StateSignatureTransaction(
+                        random.nextLong(), sigature, randomHashBytes(random), Bytes.EMPTY));
             } else {
                 list.add(new SwirldTransaction(bytes));
             }

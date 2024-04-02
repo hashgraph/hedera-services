@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
@@ -79,7 +78,10 @@ class IssDetectorTests {
         return hashGenerationData.nodeList().stream()
                 .map(nodeHashInfo -> {
                     final StateSignatureTransaction signatureTransaction = new StateSignatureTransaction(
-                            roundNumber, Bytes.EMPTY, nodeHashInfo.nodeStateHash().getBytes(), Bytes.EMPTY);
+                            roundNumber,
+                            Bytes.EMPTY,
+                            nodeHashInfo.nodeStateHash().getBytes(),
+                            Bytes.EMPTY);
 
                     final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
                     when(hashedData.getCreatorId()).thenReturn(nodeHashInfo.nodeId());

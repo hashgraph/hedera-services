@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -110,8 +109,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                                             .getSigPublicKey(),
                                     states.get(round).getState().getHash()),
                             states.get(round).getState().getHash().getBytes(),
-                            Bytes.EMPTY
-                    ));
+                            Bytes.EMPTY));
             manager.handlePreconsensusSignatureTransaction(
                     addressBook.getNodeId(2),
                     new StateSignatureTransaction(
@@ -122,8 +120,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                                             .getSigPublicKey(),
                                     states.get(round).getState().getHash()),
                             states.get(round).getState().getHash().getBytes(),
-                            Bytes.EMPTY
-                    ));
+                            Bytes.EMPTY));
 
             // Even numbered rounds have 3 sent very early.
             if (round % 2 == 0) {
@@ -137,8 +134,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                                                 .getSigPublicKey(),
                                         states.get(round).getState().getHash()),
                                 states.get(round).getState().getHash().getBytes(),
-                                Bytes.EMPTY
-                        ));
+                                Bytes.EMPTY));
             }
         }
 

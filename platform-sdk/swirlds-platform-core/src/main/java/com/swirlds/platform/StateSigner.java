@@ -18,8 +18,6 @@ package com.swirlds.platform;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.stream.HashSigner;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -70,11 +68,7 @@ public class StateSigner {
             Objects.requireNonNull(signature);
 
             return new StateSignatureTransaction(
-                    reservedSignedState.get().getRound(),
-                    signature,
-                    stateHash.getBytes(),
-                    Bytes.EMPTY
-            );
+                    reservedSignedState.get().getRound(), signature, stateHash.getBytes(), Bytes.EMPTY);
         }
     }
 }

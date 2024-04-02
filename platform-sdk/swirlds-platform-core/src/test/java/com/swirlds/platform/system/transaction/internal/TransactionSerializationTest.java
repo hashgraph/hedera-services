@@ -17,9 +17,7 @@
 package com.swirlds.platform.system.transaction.internal;
 
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getInstanceSerializedLength;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
@@ -29,8 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.test.fixtures.crypto.SignaturePool;
