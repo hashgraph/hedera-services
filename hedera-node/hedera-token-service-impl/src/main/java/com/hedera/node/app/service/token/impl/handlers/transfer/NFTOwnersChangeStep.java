@@ -68,8 +68,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
             // So not doing same check again here
 
             for (final var nftTransfer : xfers.nftTransfersOrElse(emptyList())) {
-                final var senderId = nftTransfer.senderAccountID();
-                final var receiverId = nftTransfer.receiverAccountID();
+                final var senderId = nftTransfer.senderAccountIDOrThrow();
+                final var receiverId = nftTransfer.receiverAccountIDOrThrow();
                 final var serial = nftTransfer.serialNumber();
 
                 final var senderAccount = getIfUsable(senderId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
@@ -80,8 +80,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 validateNotFrozenAndKycOnRelation(senderRel);
                 validateNotFrozenAndKycOnRelation(receiverRel);
 
-                final var treasury = token.treasuryAccountId();
-                getIfUsable(treasury, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
+                final var treasuryId = token.treasuryAccountId();
+                getIfUsable(treasuryId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
                 final var nft = nftStore.get(tokenId, serial);
                 validateTrue(nft != null, INVALID_NFT_ID);
 
@@ -96,13 +96,13 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 if (nft.hasOwnerId()) {
                     validateTrue(nft.ownerId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
                 } else {
-                    validateTrue(treasury.equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+                    validateTrue(treasuryId.equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
                 }
 
                 // Update the ownership of the nft
                 updateOwnership(
                         nft,
-                        treasury,
+                        treasuryId,
                         senderAccount,
                         receiverAccount,
                         senderRel,
@@ -201,8 +201,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 accountStore);
 
         // Make copies of the objects to be updated
-        final var senderAccountCopy = senderAccount.copyBuilder();
-        final var receiverAccountCopy = receiverAccount.copyBuilder();
+        final var senderAccountCopy = requireNonNull(accountStore.get(senderAccount.accountIdOrThrow())).copyBuilder();
+        final var receiverAccountCopy = requireNonNull(accountStore.get(receiverAccount.accountIdOrThrow())).copyBuilder();
         final var senderRelCopy = senderRel.copyBuilder();
         final var receiverRelCopy = receiverRel.copyBuilder();
 
@@ -216,7 +216,6 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 .build());
         tokenRelStore.put(senderRelCopy.balance(fromTokenRelBalance - 1).build());
         tokenRelStore.put(receiverRelCopy.balance(toTokenRelBalance + 1).build());
-        nftStore.put(nftCopy.build());
     }
 
     public void updateLinks(
@@ -246,7 +245,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         if (to.hasHeadNftId()) {
             if (nftStore.get(to.headNftIdOrThrow()) == null) {
                 System.out.println(
-                        "NFT value: " + to.headNftId() + "NFT value: " + nftStore.get(to.headNftIdOrThrow()));
+                        "NFT value: " + to.headNftId() + "NFT value: " +
+                                nftStore.get(to.headNftIdOrThrow()) + " for account " + to.accountIdOrThrow());
             }
             final var headNft = requireNonNull(nftStore.get(to.headNftIdOrThrow()));
             final var headCopy = headNft.copyBuilder();
