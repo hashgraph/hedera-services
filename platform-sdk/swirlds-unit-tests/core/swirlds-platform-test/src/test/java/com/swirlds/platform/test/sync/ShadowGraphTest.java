@@ -515,7 +515,7 @@ class ShadowgraphTest {
     void testAddNullEvent() {
         initShadowgraph(RandomUtils.getRandomPrintSeed(), 0, 4);
         assertThrows(
-                ShadowgraphInsertionException.class,
+                NullPointerException.class,
                 () -> shadowgraph.addEvent(null),
                 "A null event should not be added to the shadow graph.");
     }
