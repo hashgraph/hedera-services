@@ -19,8 +19,10 @@ package com.swirlds.platform.network;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -37,8 +39,15 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,8 +55,15 @@ import org.apache.logging.log4j.Marker;
 
 public final class NetworkUtils {
     private static final Logger logger = LogManager.getLogger(NetworkUtils.class);
+    /**
+     * limits the frequency of error log statements
+     */
+    private static final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, Time.getCurrent(),
+            Duration.ofMinutes(2));
+    ;
 
-    private NetworkUtils() {}
+    private NetworkUtils() {
+    }
 
     /**
      * Close all the {@link Closeable} instances supplied, ignoring any exceptions
@@ -170,5 +186,36 @@ public final class NetworkUtils {
                 | IOException e) {
             throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
         }
+    }
+
+    /**
+     * identifies the client on the other end of the socket using their signing certificate.
+     *
+     * @param certs        the list of all certificates in the public keystore
+     * @param peerInfoList List of known peers
+     * @return info of the identified peer
+     */
+    public static PeerInfo identifyTlsPeer(
+            final @NonNull Certificate[] certs,
+            final @NonNull List<PeerInfo> peerInfoList) {
+        PeerInfo matchingPair = null;
+        final X509Certificate agreementCert = (X509Certificate) certs[0];
+        final Set<PeerInfo> peers = peerInfoList.stream()
+                .filter(peerInfo -> ((X509Certificate) peerInfo.signingCertificate())
+                        .getSubjectX500Principal()
+                        .equals(agreementCert.getIssuerX500Principal())).collect(Collectors.toSet());
+        final Optional<PeerInfo> peer = peers.stream().findFirst();
+        if (peer.isEmpty()) {
+            rateLimitedLogger.warn(SOCKET_EXCEPTIONS.getMarker(),
+                    "Unable to find a matching peer with the presented certificate {}.", agreementCert);
+        } else {
+            matchingPair = peer.get();
+        }
+
+        if (peers.size() > 1) {
+            rateLimitedLogger.info(SOCKET_EXCEPTIONS.getMarker(),
+                    "Found {} matching peers for the presented certificate", peers);
+        }
+        return matchingPair;
     }
 }

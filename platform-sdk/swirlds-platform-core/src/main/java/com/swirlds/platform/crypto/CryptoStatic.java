@@ -284,7 +284,8 @@ public final class CryptoStatic {
      * @throws KeyStoreException   if {@link #createEmptyTrustStore()} throws
      * @throws KeyLoadingException if the file is empty or another issue occurs while reading it
      */
-    static KeyStore loadKeys(final Path file, final char[] password) throws KeyStoreException, KeyLoadingException {
+    public static KeyStore loadKeys(final Path file, final char[] password)
+            throws KeyStoreException, KeyLoadingException {
         final KeyStore store = createEmptyTrustStore();
         try (final FileInputStream fis = new FileInputStream(file.toFile())) {
             store.load(fis, password);

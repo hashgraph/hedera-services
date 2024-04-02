@@ -24,7 +24,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.Utilities;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.Connection;
@@ -39,6 +38,7 @@ import java.net.Socket;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,6 +48,8 @@ import org.apache.logging.log4j.Logger;
  */
 public class InboundConnectionHandler {
     private static final Logger logger = LogManager.getLogger(InboundConnectionHandler.class);
+    private static final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, Time.getCurrent(),
+            Duration.ofMinutes(2));
 
     private final ConnectionTracker connectionTracker;
     private final NodeId selfId;
@@ -138,18 +140,26 @@ public class InboundConnectionHandler {
     }
 
     private PeerInfo getConnectedPeer(@NonNull final SSLSocket sslSocket, @NonNull final List<PeerInfo> peers) {
-        final PeerInfo peer = Utilities.validateTLSPeer(sslSocket, peers);
-        if (peer == null) {
-            try {
+        PeerInfo peer = null;
+        try {
+            peer = NetworkUtils.identifyTlsPeer(sslSocket.getSession().getPeerCertificates(), peers);
+            if (peer == null) {
                 sslSocket.close();
-            } catch (final IOException e) {
-                logger.warn(
-                        EXCEPTION.getMarker(),
-                        "Attempt to close connection from {}:{} threw IO exception {}",
-                        sslSocket.getInetAddress(),
-                        sslSocket.getPort(),
-                        e.getMessage());
             }
+        } catch (final SSLPeerUnverifiedException e) {
+            rateLimitedLogger.warn(
+                    SOCKET_EXCEPTIONS.getMarker(),
+                    "Attempt to obtain certificate from an unverified peer {}:{} threw exception {}",
+                    sslSocket.getInetAddress(),
+                    sslSocket.getPort(),
+                    e.getMessage());
+        } catch (final IOException e) {
+            rateLimitedLogger.warn(
+                    SOCKET_EXCEPTIONS.getMarker(),
+                    "Attempt to close connection from {}:{} threw IO exception {}",
+                    sslSocket.getInetAddress(),
+                    sslSocket.getPort(),
+                    e.getMessage());
         }
         return peer;
     }

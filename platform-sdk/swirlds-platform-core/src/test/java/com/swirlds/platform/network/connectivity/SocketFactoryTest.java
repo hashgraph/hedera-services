@@ -26,7 +26,6 @@ import static org.mockito.Mockito.mockingDetails;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.Utilities;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.PeerInfo;
@@ -114,9 +113,11 @@ class SocketFactoryTest {
                             .isMock())) {
                         // we've passed a mocked peer's certificate as an example of an invalid agreement
                         // certificate - it possesses no valid issuer's principal
-                        assertNull(Utilities.validateTLSPeer((SSLSocket) s, peerInfoList));
+                        assertNull(NetworkUtils.identifyTlsPeer(((SSLSocket) s).getSession().getPeerCertificates(),
+                                peerInfoList));
                     } else {
-                        assertNotNull(Utilities.validateTLSPeer((SSLSocket) s, peerInfoList));
+                        assertNotNull(NetworkUtils.identifyTlsPeer(((SSLSocket) s).getSession().getPeerCertificates(),
+                                peerInfoList));
                     }
                 }
                 final byte[] bytes = s.getInputStream().readNBytes(DATA.length);
