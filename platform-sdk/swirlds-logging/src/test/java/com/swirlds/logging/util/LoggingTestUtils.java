@@ -21,6 +21,8 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.extensions.event.LogEvent;
+import com.swirlds.logging.api.extensions.handler.LogHandler;
+import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
@@ -193,5 +195,14 @@ public final class LoggingTestUtils {
         return EmergencyLoggerImpl.getInstance().publishLoggedEvents().stream()
                 .filter(event -> event.level() == level)
                 .collect(Collectors.toList());
+    }
+
+    public static LoggingSystem loggingSystemWithHandlers(final Configuration configuration, LogHandler... handlers) {
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+        loggingSystem.installHandlers();
+        for (LogHandler handler : handlers) {
+            loggingSystem.addHandler(handler);
+        }
+        return loggingSystem;
     }
 }
