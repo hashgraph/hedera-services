@@ -105,6 +105,12 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
         return Response.newBuilder().contractGetInfo(contractGetInfo).build();
     }
 
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext context) {
+        return context.feeCalculator().calculate();
+    }
+
     private ContractInfo infoFor(
             @NonNull final Account contract,
             @NonNull final TokensConfig tokensConfig,
@@ -148,11 +154,5 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
         final var contractId = context.query().contractGetInfoOrThrow().contractIDOrElse(ContractID.DEFAULT);
         final var contract = accountsStore.getContractById(contractId);
         return (contract == null || !contract.smartContract()) ? null : contract;
-    }
-
-    @NonNull
-    @Override
-    public Fees computeFees(@NonNull final QueryContext context) {
-        return context.feeCalculator().calculate();
     }
 }
