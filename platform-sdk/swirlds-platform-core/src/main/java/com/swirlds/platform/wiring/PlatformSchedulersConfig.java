@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
@@ -34,9 +35,8 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          negative number.
  * @param eventHasherUnhandledCapacity                      number of unhandled tasks allowed in the event hasher
  *                                                          scheduler
- * @param internalEventValidatorSchedulerType               the internal event validator scheduler type
- * @param internalEventValidatorUnhandledCapacity           number of unhandled events allowed in the internal event
- *                                                          validator scheduler
+ * @param internalEventValidator                            configuration for the internal event validator
+ *                                                          scheduler
  * @param eventDeduplicatorSchedulerType                    the event deduplicator scheduler type
  * @param eventDeduplicatorUnhandledCapacity                number of unhandled tasks allowed in the event deduplicator
  *                                                          scheduler
@@ -81,15 +81,13 @@ import com.swirlds.config.api.ConfigProperty;
  * @param consensusRoundHandlerSchedulerType                the consensus round handler scheduler type
  * @param consensusRoundHandlerUnhandledCapacity            number of unhandled tasks allowed for the consensus round
  *                                                          handler
- * @param futureEventBufferSchedulerType                    the future event buffer scheduler type
- * @param futureEventBufferUnhandledCapacity                number of unhandled tasks allowed for the future event
- *                                                          buffer
  * @param issDetectorSchedulerType                          the ISS detector scheduler type
  * @param issDetectorUnhandledCapacity                      number of unhandled tasks allowed for the ISS detector
  * @param hashLoggerSchedulerType                           the hash logger scheduler type
- * @param hashLoggerUnhandledTaskCapacity                   number of unhandled tasks allowed in the hash logger
- *                                                          task scheduler
- * @param completeStateNotifierUnhandledCapacity            number of unhandled tasks allowed for the state completion notifier
+ * @param hashLoggerUnhandledTaskCapacity                   number of unhandled tasks allowed in the hash logger task
+ *                                                          scheduler
+ * @param completeStateNotifierUnhandledCapacity            number of unhandled tasks allowed for the state completion
+ *                                                          notifier
  * @param stateHasherSchedulerType                          the state hasher scheduler type
  * @param stateHasherUnhandledCapacity                      number of unhandled tasks allowed for the state hasher
  */
@@ -98,8 +96,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
         @ConfigProperty(defaultValue = "0") int defaultPoolConstant,
         @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType internalEventValidatorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration internalEventValidator,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventDeduplicatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventDeduplicatorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventSignatureValidatorSchedulerType,
@@ -130,8 +128,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
         @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType futureEventBufferSchedulerType,
-        @ConfigProperty(defaultValue = "500") int futureEventBufferUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,
         @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType hashLoggerSchedulerType,
