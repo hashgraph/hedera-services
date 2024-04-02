@@ -69,7 +69,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
 
     @HapiTest
     @Order(0)
-    final HapiSpec sidecarWatcherSetup() {
+    public final HapiSpec sidecarWatcherSetup() {
         return defaultHapiSpec("initializeSidecarWatcher")
                 .given()
                 .when()
@@ -78,7 +78,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
 
     @HapiTest
     @Order(Integer.MAX_VALUE)
-    final HapiSpec assertSidecars() {
+    public final HapiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
                 .given(
                         // send a dummy transaction to trigger externalization of last sidecars
