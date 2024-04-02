@@ -88,7 +88,7 @@ public class AccountStateTranslator {
                         .tokenNum(account.getHeadTokenId())
                         .realmNum(StaticProperties.getRealm())
                         .shardNum(StaticProperties.getShard()))
-                .headNftSerialNumber(account.getHeadNftSerialNum() != 0 ? account.getHeadNftSerialNum() : 0)
+                .headNftSerialNumber(account.getHeadNftSerialNum())
                 .tinybarBalance(account.getBalance())
                 .receiverSigRequired(account.isReceiverSigRequired())
                 .key(PbjConverter.asPbjKey(account.getAccountKey()))
@@ -115,7 +115,8 @@ public class AccountStateTranslator {
                                                 .tokenNum(account.getHeadNftTokenNum())
                                                 .realmNum(StaticProperties.getRealm())
                                                 .shardNum(StaticProperties.getShard()))
-                                        .serialNumber(account.getHeadNftSerialNum()))
+                                        .serialNumber(account.getHeadNftSerialNum())
+                                        .build())
                                 : null)
                 .autoRenewAccountId(AccountID.newBuilder()
                         .accountNum(Optional.ofNullable(account.getAutoRenewAccount())
@@ -176,12 +177,16 @@ public class AccountStateTranslator {
                 .stakedToMe(account.getStakedToMe())
                 .stakePeriodStart(account.getStakePeriodStart())
                 .firstContractStorageKey(firstContractStorageKey)
-                .headNftId(NftID.newBuilder()
-                        .tokenId(TokenID.newBuilder()
-                                .tokenNum(account.getHeadNftTokenNum())
-                                .realmNum(StaticProperties.getRealm())
-                                .shardNum(StaticProperties.getShard()))
-                        .serialNumber(account.getHeadNftSerialNum()))
+                .headNftId(
+                        (account.getHeadNftTokenNum() != 0 && account.getHeadNftSerialNum() != 0)
+                                ? NftID.newBuilder()
+                                        .tokenId(TokenID.newBuilder()
+                                                .tokenNum(account.getHeadNftTokenNum())
+                                                .realmNum(StaticProperties.getRealm())
+                                                .shardNum(StaticProperties.getShard()))
+                                        .serialNumber(account.getHeadNftSerialNum())
+                                        .build()
+                                : null)
                 .autoRenewAccountId(
                         account.hasAutoRenewAccount()
                                 ? AccountID.newBuilder()
@@ -348,9 +353,8 @@ public class AccountStateTranslator {
         merkleAccount.setAutoRenewAccount(new EntityId(
                 0, 0, account.autoRenewAccountIdOrElse(AccountID.DEFAULT).accountNum()));
         merkleAccount.setExpiredAndPendingRemoval(account.expiredAndPendingRemoval());
-        merkleAccount.setHeadNftId(account.headNftIdOrElse(NftID.DEFAULT)
-                .tokenIdOrElse(TokenID.DEFAULT)
-                .tokenNum());
+        merkleAccount.setHeadNftId(
+                account.headNftIdOrElse(null).tokenIdOrElse(TokenID.DEFAULT).tokenNum());
         merkleAccount.setHeadNftSerialNum(account.headNftSerialNumber());
         if (account.firstContractStorageKey() != null
                 && account.firstContractStorageKey().length() > 0)

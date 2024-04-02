@@ -58,6 +58,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      */
     public void put(@NonNull final Token token) {
         Objects.requireNonNull(token);
+        requireNotDefault(token.tokenId());
         tokenState.put(token.tokenId(), Objects.requireNonNull(token));
     }
 
@@ -101,5 +102,11 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
     public Token getOriginalValue(@NonNull final TokenID tokenId) {
         requireNonNull(tokenId);
         return tokenState.getOriginalValue(tokenId);
+    }
+
+    public static void requireNotDefault(@NonNull final TokenID tokenId) {
+        if (tokenId.equals(TokenID.DEFAULT)) {
+            throw new IllegalArgumentException("Token ID cannot be default");
+        }
     }
 }
