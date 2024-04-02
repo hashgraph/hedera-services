@@ -33,8 +33,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * @param bytecode - bytecode of the contract
  * @param validity - whether the contract is valid or note, aka active or deleted
  */
-public record BBMContract(
-        @NonNull TreeSet</*@NonNull*/ Integer> ids, @NonNull byte[] bytecode, @NonNull Validity validity) {
+public record BBMContract(@NonNull TreeSet<Integer> ids, @NonNull byte[] bytecode, @NonNull Validity validity) {
 
     // For any set of contract ids with the same bytecode, the lowest contract id is used as the "canonical"
     // id for that bytecode (useful for ordering contracts deterministically)
