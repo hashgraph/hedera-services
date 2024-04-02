@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.hexedEvmAddressOf;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.summarizeStakingInfo;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
@@ -36,6 +37,7 @@ import com.hedera.hapi.node.contract.ContractInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.usage.contract.ContractGetInfoUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
@@ -48,6 +50,7 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -108,7 +111,18 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
     @NonNull
     @Override
     public Fees computeFees(@NonNull final QueryContext context) {
-        return context.feeCalculator().calculate();
+        return context.feeCalculator().legacyCalculate(sigValueObj -> {
+            final var contract = contractFrom(context);
+            if (contract == null) {
+                return FeeData.getDefaultInstance();
+            } else {
+                return ContractGetInfoUsage.newEstimate(fromPbj(context.query()))
+                        .givenCurrentKey(fromPbj(contract.keyOrThrow()))
+                        .givenCurrentMemo(contract.memo())
+                        .givenCurrentTokenAssocs(contract.numberAssociations())
+                        .get();
+            }
+        });
     }
 
     private ContractInfo infoFor(
