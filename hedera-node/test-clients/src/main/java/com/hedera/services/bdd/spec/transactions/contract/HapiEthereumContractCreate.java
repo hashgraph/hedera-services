@@ -156,8 +156,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
             return Optional.of(BigInteger.ZERO);
         }
         try {
-            return Optional.of(WEIBARS_TO_TINYBARS
-                    .multiply(BigInteger.valueOf(balance.get())));
+            return Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(balance.get())));
         } catch (ArithmeticException e) {
             return Optional.of(BigInteger.ZERO);
         }
