@@ -42,8 +42,8 @@ public class ServerUtils {
     /**
      * Creates and starts a Http server with a set of defined handlers
      */
-    public static void createServer(final @NonNull BaseExampleRestApiConfig config, final @NonNull Context swirldsContext)
-            throws IOException {
+    public static void createServer(
+            final @NonNull BaseExampleRestApiConfig config, final @NonNull Context swirldsContext) throws IOException {
         // Create HTTP server instance
         final HttpServerProvider provider = HttpServerProvider.provider();
         final HttpServer server = provider.createHttpServer(new InetSocketAddress(config.host(), config.port()), 0);
@@ -70,7 +70,9 @@ public class ServerUtils {
 
     @NonNull
     private static List<AdapterHandler<?>> createHandlers(
-            final @NonNull BaseExampleRestApiConfig config, final @NonNull Context swirldsContext, final HttpServer server) {
+            final @NonNull BaseExampleRestApiConfig config,
+            final @NonNull Context swirldsContext,
+            final HttpServer server) {
         final List<AdapterHandler<?>> handlers = List.of(
                 new AdapterHandler<>(swirldsContext, new InventoryService(), config.basePath() + "/inventories"),
                 new AdapterHandler<>(

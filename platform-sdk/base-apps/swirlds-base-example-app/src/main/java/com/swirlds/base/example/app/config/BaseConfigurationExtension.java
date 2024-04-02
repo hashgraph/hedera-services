@@ -37,6 +37,7 @@ public class BaseConfigurationExtension implements ConfigurationExtension {
     public Set<Class<? extends Record>> getConfigDataTypes() {
 
         // Load Configuration Definitions
-        return Set.of(BaseExampleRestApiConfig.class, BasicCommonConfig.class, MetricsConfig.class, PrometheusConfig.class);
+        return Set.of(
+                BaseExampleRestApiConfig.class, BasicCommonConfig.class, MetricsConfig.class, PrometheusConfig.class);
     }
 }
