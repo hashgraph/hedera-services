@@ -5,5 +5,4 @@ module com.hedera.storage.blocknode.util.test {
 
     // Require other modules needed for the unit tests to compile.
     requires com.hedera.storage.blocknode.util;
-    requires org.junit.jupiter.api;
 }
