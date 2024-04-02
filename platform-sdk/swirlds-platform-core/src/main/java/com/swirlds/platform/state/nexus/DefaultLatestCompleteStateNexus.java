@@ -85,7 +85,7 @@ public class DefaultLatestCompleteStateNexus implements LatestCompleteStateNexus
     public void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
         // Any state older than this is unconditionally removed, even if it is the latest
         final long earliestPermittedRound =
-                eventWindow.getPendingConsensusRound() - stateConfig.roundsToKeepForSigning() + 1;
+                eventWindow.getLatestConsensusRound() - stateConfig.roundsToKeepForSigning() + 1;
 
         // Is the latest complete round older than the earliest permitted round?
         if (getRound() < earliestPermittedRound) {
