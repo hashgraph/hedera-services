@@ -118,6 +118,9 @@ includeAllProjects("platform-sdk/platform-apps/demos")
 
 includeAllProjects("platform-sdk/platform-apps/tests")
 
+//Platform-base demo applications
+include(":swirlds-base-example-app", "platform-sdk/base-apps/swirlds-base-example-app")
+
 // Block Node Projects
 include(":blocknode-core", "block-node/blocknode-core")
 include(":blocknode-core-spi", "block-node/blocknode-core-spi")
@@ -127,8 +130,7 @@ include(":blocknode-filesystem-s3", "block-node/blocknode-filesystem-s3")
 include(":blocknode-grpc-api", "block-node/blocknode-grpc-api")
 include(":blocknode-state", "block-node/blocknode-state")
 
-// Base applications
-include(":swirlds-base-sample", "platform-sdk/base-apps/swirlds-base-sample")
+
 
 fun include(name: String, path: String) {
     include(name)
