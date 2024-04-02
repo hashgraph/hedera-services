@@ -30,9 +30,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 
 /**
- * This record contains core utilities and objects needed to build a platform. It should not contain any platform
- * components. A platform component is defined as an object that uses the wiring framework to communicate with other
- * components. All objects in this class are constructed prior to the first component being constructed.
+ * This record contains core utilities and basic objects needed to build a platform. It should not contain any platform
+ * components.
  *
  * @param platformContext           the context for this platform
  * @param keysAndCerts              an object holding all the public/private key pairs and the CSPRNG state for this
