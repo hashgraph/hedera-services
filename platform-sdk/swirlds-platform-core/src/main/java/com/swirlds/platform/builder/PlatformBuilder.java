@@ -382,8 +382,6 @@ public final class PlatformBuilder {
         throwIfAlreadyUsed();
         used = true;
 
-        // TODO how much of this can live in the platform component builder?
-
         if (platformContext == null) {
             if (configurationBuilder == null) {
                 configurationBuilder = ConfigurationBuilder.create();
@@ -396,7 +394,7 @@ public final class PlatformBuilder {
 
         final Configuration configuration = platformContext.getConfiguration();
 
-        final boolean firstPlatofrm = doStaticSetup(configuration, configPath);
+        final boolean firstPlatform = doStaticSetup(configuration, configPath);
 
         final AddressBook configAddressBook = loadConfigAddressBook();
 
@@ -472,7 +470,7 @@ public final class PlatformBuilder {
                 emergencyRecoveryManager,
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
-                firstPlatofrm);
+                firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);
     }
