@@ -16,7 +16,6 @@
 
 package com.hedera.node.blocknode.filesystem.s3;
 
-import static java.util.Objects.requireNonNull;
 import static software.amazon.awssdk.http.SdkHttpConfigurationOption.TRUST_ALL_CERTIFICATES;
 
 import com.hedera.node.blocknode.config.ConfigProvider;
@@ -24,7 +23,6 @@ import com.hedera.node.blocknode.config.data.BlockNodeFileSystemConfig;
 import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
 import com.hedera.node.blocknode.util.BlockNodeUtil;
 import com.hedera.services.stream.v7.proto.Block;
-import com.hedera.services.stream.v7.proto.BlockItem;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;

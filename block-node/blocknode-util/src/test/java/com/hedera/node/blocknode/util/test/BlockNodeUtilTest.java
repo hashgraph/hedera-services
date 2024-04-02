@@ -16,12 +16,4 @@
 
 package com.hedera.node.blocknode.util.test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-import com.hedera.node.blocknode.util.BlockNodeUtil;
-import org.junit.jupiter.api.Test;
-
-class BlockNodeUtilTest {
-
-}
+class BlockNodeUtilTest {}

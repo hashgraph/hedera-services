@@ -16,10 +16,10 @@
 
 package com.hedera.node.blocknode.util;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.services.stream.v7.proto.Block;
 import com.hedera.services.stream.v7.proto.BlockItem;
-
-import static java.util.Objects.requireNonNull;
 
 public class BlockNodeUtil {
 
@@ -47,5 +47,4 @@ public class BlockNodeUtil {
         Long blockNumber = extractBlockNumber(block);
         return blockNumberToKey(blockNumber);
     }
-
 }
