@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.NON_CANONICAL_REFERENCE_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.hasNonDegenerateAutoRenewAccountId;
 import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.Objects.requireNonNull;
@@ -752,7 +753,7 @@ public class ConversionUtils {
         if (sponsor.memo() != null) {
             builder.memo(sponsor.memo());
         }
-        if (sponsor.autoRenewAccountId() != null) {
+        if (hasNonDegenerateAutoRenewAccountId(sponsor)) {
             builder.autoRenewAccountId(sponsor.autoRenewAccountId());
         }
         if (sponsor.stakedAccountId() != null) {
