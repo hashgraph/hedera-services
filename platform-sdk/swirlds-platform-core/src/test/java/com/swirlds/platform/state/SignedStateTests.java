@@ -34,6 +34,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
@@ -278,8 +279,8 @@ class SignedStateTests {
         final PlatformState platformState = mock(PlatformState.class);
         when(state.getPlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
-        final SignedState signedState =
-                new SignedState(TestPlatformContextBuilder.create().build(), state, "test", false);
+        final SignedState signedState = new SignedState(
+                TestPlatformContextBuilder.create().build(), mock(SignatureVerifier.class), state, "test", false);
 
         assertFalse(state.isDestroyed(), "state should not yet be destroyed");
 
