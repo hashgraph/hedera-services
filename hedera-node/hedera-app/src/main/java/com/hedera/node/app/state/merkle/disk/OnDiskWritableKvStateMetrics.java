@@ -50,8 +50,8 @@ public class OnDiskWritableKvStateMetrics {
         if (currentValue < 0) {
             throw new IllegalArgumentException("currentValue must be non-negative");
         }
-        if (maxCapacity <= 0) {
-            throw new IllegalArgumentException("maxCapacity must be positive");
+        if (maxCapacity < 0) {
+            throw new IllegalArgumentException("maxCapacity must be non-negative");
         }
         this.count = new AtomicLong(currentValue);
 
@@ -60,7 +60,7 @@ public class OnDiskWritableKvStateMetrics {
                 .withFormat("%,d");
         metrics.getOrCreate(totalUtilizationConfig);
 
-        final double relativeFactor = 100.0 / maxCapacity;
+        final double relativeFactor = 100.0 / Math.max(1.0, maxCapacity); // in some tests, maxCapacity is 0
         final var relativeUtilizationConfig = new Config<>(
                         "app", name + "PercentUsed", Double.class, () -> count.get() * relativeFactor)
                 .withDescription(String.format("instantaneous %% used of %s system limit", label))
