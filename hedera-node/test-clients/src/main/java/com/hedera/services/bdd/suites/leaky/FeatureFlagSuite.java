@@ -124,7 +124,7 @@ public class FeatureFlagSuite extends HapiSuite {
     private HapiSpecOperation confirmHollowAccountCreationNotSupported() {
         return UtilVerbs.blockingOrder(
                 newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * 3 * ONE_HBAR),
                 withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry()
                             .getKey(SECP_256K1_SOURCE_KEY)
