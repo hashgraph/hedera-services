@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -24,6 +25,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
+import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.annotations.RunTopLevelTransition;
@@ -58,6 +60,7 @@ public class ServicesTxnManager {
     private final RewardCalculator rewardCalculator;
     private final BootstrapProperties bootstrapProperties;
     private final BlocklistAccountCreator blocklistAccountCreator;
+    private final EntityIdSource idSource;
 
     @Inject
     public ServicesTxnManager(
@@ -73,7 +76,8 @@ public class ServicesTxnManager {
             final BlockManager blockManager,
             final RewardCalculator rewardCalculator,
             final @NonNull BootstrapProperties bootstrapProperties,
-            final @NonNull BlocklistAccountCreator blocklistAccountCreator) {
+            final @NonNull BlocklistAccountCreator blocklistAccountCreator,
+            EntityIdSource idSource) {
         this.txnCtx = txnCtx;
         this.ledger = ledger;
         this.recordCache = recordCache;
@@ -87,6 +91,7 @@ public class ServicesTxnManager {
         this.rewardCalculator = rewardCalculator;
         this.bootstrapProperties = Objects.requireNonNull(bootstrapProperties);
         this.blocklistAccountCreator = Objects.requireNonNull(blocklistAccountCreator);
+        this.idSource = idSource;
     }
 
     private boolean isFirstTransaction = true;
@@ -115,10 +120,14 @@ public class ServicesTxnManager {
                 migrationRecordsManager.publishMigrationRecords(consensusTime);
                 isFirstTransaction = false;
             }
+            final var beforeNum = idSource.getCurrentNum();
             if (accessor.isTriggeredTxn()) {
                 scopedTriggeredProcessing.run();
             } else {
                 scopedProcessing.run();
+            }
+            if (txnCtx.status() != SUCCESS) {
+                idSource.setCurrentNum(beforeNum);
             }
         } catch (Exception processFailure) {
             processFailed = true;

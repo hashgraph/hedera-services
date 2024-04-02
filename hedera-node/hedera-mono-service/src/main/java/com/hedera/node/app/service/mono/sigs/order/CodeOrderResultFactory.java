@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.sigs.order;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -135,7 +134,7 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
     static final SigningOrderResult<ResponseCodeEnum> GENERAL_PAYER_ERROR_RESULT =
             new SigningOrderResult<>(INVALID_SIGNATURE);
     static final SigningOrderResult<ResponseCodeEnum> MISSING_ACCOUNT_RESULT =
-            new SigningOrderResult<>(ACCOUNT_ID_DOES_NOT_EXIST);
+            new SigningOrderResult<>(INVALID_ACCOUNT_ID);
     static final SigningOrderResult<ResponseCodeEnum> MISSING_FILE_RESULT = new SigningOrderResult<>(INVALID_FILE_ID);
     static final SigningOrderResult<ResponseCodeEnum> MISSING_CONTRACT_RESULT =
             new SigningOrderResult<>(INVALID_CONTRACT_ID);
