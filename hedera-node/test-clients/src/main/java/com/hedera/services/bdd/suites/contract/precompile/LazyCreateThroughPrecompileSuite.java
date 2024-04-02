@@ -356,7 +356,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
                                     recordWith().status(SUCCESS)),
-                            getTxnRecord(TRANSFER_TXN).andAllChildRecords().exposingTo(record -> {
+                            getTxnRecord(TRANSFER_TXN).exposingTo(record -> {
                                 Assertions.assertEquals(
                                         GAS_PRICE,
                                         record.getTransactionFee()
@@ -472,15 +472,12 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
                                     recordWith().status(SUCCESS)),
-                            getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
-                                    .andAllChildRecords()
-                                    .exposingTo(record -> {
-                                        Assertions.assertEquals(
-                                                GAS_PRICE,
-                                                record.getTransactionFee()
-                                                        / record.getContractCallResult()
-                                                                .getGasUsed());
-                                    }));
+                            getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).exposingTo(record -> {
+                                Assertions.assertEquals(
+                                        GAS_PRICE,
+                                        record.getTransactionFee()
+                                                / record.getContractCallResult().getGasUsed());
+                            }));
                 }))
                 .then();
     }
@@ -570,15 +567,12 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
                                     recordWith().status(SUCCESS)),
-                            getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
-                                    .andAllChildRecords()
-                                    .exposingTo(record -> {
-                                        Assertions.assertEquals(
-                                                GAS_PRICE,
-                                                record.getTransactionFee()
-                                                        / record.getContractCallResult()
-                                                                .getGasUsed());
-                                    }));
+                            getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).exposingTo(record -> {
+                                Assertions.assertEquals(
+                                        GAS_PRICE,
+                                        record.getTransactionFee()
+                                                / record.getContractCallResult().getGasUsed());
+                            }));
                 }))
                 .then();
     }
