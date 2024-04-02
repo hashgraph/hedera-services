@@ -19,6 +19,7 @@ package com.swirlds.common.crypto;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.Mnemonics.generateMnemonic;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.io.streams.AugmentedDataOutputStream;
@@ -151,6 +152,10 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      */
     public byte[] getValue() {
         return value;
+    }
+
+    public Bytes getBytes() {
+        return Bytes.wrap(value);
     }
 
     /**

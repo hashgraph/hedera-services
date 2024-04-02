@@ -17,8 +17,11 @@
 package com.swirlds.platform.event;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -117,9 +120,9 @@ public abstract class DetGenerateUtils {
             random.nextBytes(bytes);
             final boolean system = random.nextBoolean();
             if (system) {
-                final Signature signature = randomSignature(random);
-                final Hash hash = randomHash(random);
-                list.add(new StateSignatureTransaction(random.nextLong(), signature, hash));
+                final Bytes signature = randomSignatureBytes(random);
+                final Bytes hash = randomHashBytes(random);
+                list.add(new StateSignatureTransaction(random.nextLong(), signature, hash, Bytes.EMPTY));
             } else {
                 list.add(new SwirldTransaction(bytes));
             }

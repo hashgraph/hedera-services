@@ -28,6 +28,7 @@ mainModuleInfo {
 }
 
 testModuleInfo {
+    requires("com.hedera.pbj.runtime")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.config.extensions")

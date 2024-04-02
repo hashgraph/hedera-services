@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -78,7 +79,7 @@ class IssDetectorTests {
         return hashGenerationData.nodeList().stream()
                 .map(nodeHashInfo -> {
                     final StateSignatureTransaction signatureTransaction = new StateSignatureTransaction(
-                            roundNumber, mock(Signature.class), nodeHashInfo.nodeStateHash());
+                            roundNumber, Bytes.EMPTY, nodeHashInfo.nodeStateHash().getBytes(), Bytes.EMPTY);
 
                     final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
                     when(hashedData.getCreatorId()).thenReturn(nodeHashInfo.nodeId());

@@ -18,12 +18,15 @@ package com.swirlds.platform.system.transaction.internal;
 
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getInstanceSerializedLength;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_STATE_SIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -58,9 +61,9 @@ class TransactionSerializationTest {
             nbyte = new byte[sigSize];
             random.nextBytes(nbyte);
         }
-        final Signature signature = randomSignature(random);
-        final Hash stateHash = randomHash(random);
-        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
+        final Bytes signature = randomSignatureBytes(random);
+        final Bytes stateHash = randomHashBytes(random);
+        final Bytes epochHash = random.nextBoolean() ? randomHashBytes(random) : Bytes.EMPTY;
         final StateSignatureTransaction systemTransactionSignature =
                 new StateSignatureTransaction(random.nextLong(), signature, stateHash, epochHash);
         final StateSignatureTransaction deserialized = serializeDeserialize(systemTransactionSignature);
