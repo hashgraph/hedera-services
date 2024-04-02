@@ -133,13 +133,6 @@ public final class StateSignatureTransaction extends SystemTransaction {
     // End of PBJ generated methods
 
     /**
-     * @return the signature on the state
-     */
-    public Signature getStateSignature() {
-        return stateSignature;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override

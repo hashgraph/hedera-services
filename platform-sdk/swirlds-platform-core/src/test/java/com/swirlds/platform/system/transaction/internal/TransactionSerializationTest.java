@@ -65,7 +65,7 @@ class TransactionSerializationTest {
                 new StateSignatureTransaction(random.nextLong(), signature, stateHash, epochHash);
         final StateSignatureTransaction deserialized = serializeDeserialize(systemTransactionSignature);
 
-        assertEquals(systemTransactionSignature.getStateSignature(), deserialized.getStateSignature());
+        assertEquals(systemTransactionSignature.signature(), deserialized.signature());
         assertEquals(systemTransactionSignature.isSystem(), deserialized.isSystem());
         assertEquals(systemTransactionSignature.getVersion(), deserialized.getVersion());
         assertEquals(systemTransactionSignature.getClassId(), deserialized.getClassId());
