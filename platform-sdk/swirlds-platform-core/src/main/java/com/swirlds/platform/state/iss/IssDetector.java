@@ -364,9 +364,8 @@ public class IssDetector {
             return null;
         }
 
-        final boolean decided =
-                roundValidator.reportHashFromNetwork(signerId, nodeWeight,
-                        new Hash(signatureTransaction.hash().toByteArray()));
+        final boolean decided = roundValidator.reportHashFromNetwork(
+                signerId, nodeWeight, new Hash(signatureTransaction.hash().toByteArray()));
         if (decided) {
             return checkValidity(roundValidator);
         }
@@ -552,7 +551,7 @@ public class IssDetector {
     }
 
     private static boolean hashEquals(@Nullable final Hash a, @NonNull final Bytes b) {
-        if(a == null && b.length() == 0) {
+        if (a == null && b.length() == 0) {
             return true;
         }
         return a != null && b.contains(0, a.getValue());

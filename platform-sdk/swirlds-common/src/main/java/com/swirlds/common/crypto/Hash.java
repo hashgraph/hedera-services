@@ -24,7 +24,6 @@ import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.io.streams.AugmentedDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;

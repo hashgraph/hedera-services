@@ -36,5 +36,4 @@ public interface SignatureVerifier {
      * @return true if the signature is valid
      */
     boolean verifySignature(@NonNull byte[] data, @NonNull byte[] signature, @NonNull PublicKey publicKey);
-
 }

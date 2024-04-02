@@ -147,7 +147,8 @@ public class StateSignatureCollector {
             @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
 
         final long round = scopedTransaction.transaction().round();
-        final Signature signature = new Signature(SignatureType.RSA, scopedTransaction.transaction().signature().toByteArray());
+        final Signature signature = new Signature(
+                SignatureType.RSA, scopedTransaction.transaction().signature().toByteArray());
 
         signedStateMetrics.getStateSignaturesGatheredPerSecondMetric().cycle();
 
@@ -195,7 +196,9 @@ public class StateSignatureCollector {
         return addSignature(
                 reservedState,
                 scopedTransaction.submitterId(),
-                new Signature(SignatureType.RSA, scopedTransaction.transaction().signature().toByteArray()));
+                new Signature(
+                        SignatureType.RSA,
+                        scopedTransaction.transaction().signature().toByteArray()));
     }
 
     /**
