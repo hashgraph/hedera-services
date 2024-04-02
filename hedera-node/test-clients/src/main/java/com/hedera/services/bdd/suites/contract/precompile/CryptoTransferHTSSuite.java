@@ -173,7 +173,10 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                 hapiTransferFromForNFT(),
                 hapiTransferFromForNFTWithCustomFeesWithoutApproveFails(),
                 hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails(),
-                hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender());
+                hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
+                hapiTransferFromForNFTWithInvalidAddressesFails(),
+                hapiTransferFromForFungibleTokenWithInvalidAddressesFails(),
+                hapiTransferFromForFungibleTokenWithInvalidAmountsFails());
     }
 
     @HapiTest
