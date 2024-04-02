@@ -16,80 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.traceability;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.stripSelector;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
-import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion.recordStreamLocFor;
-import static com.hedera.services.bdd.suites.contract.Utils.FunctionType;
-import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
-import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.asSolidityAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.asToken;
-import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
-import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhexed;
-import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
-import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_ADDRESS_MESSAGE;
-import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_LOG_MESSAGE;
-import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.DEPLOY;
-import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.EXPECTED_CREATE2_ADDRESS_MESSAGE;
-import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_ADDRESS;
-import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_BYTECODE;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
-import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
-import static com.hedera.services.stream.proto.ContractActionType.CALL;
-import static com.hedera.services.stream.proto.ContractActionType.CREATE;
-import static com.hedera.services.stream.proto.ContractActionType.PRECOMPILE;
-import static com.hedera.services.stream.proto.ContractActionType.SYSTEM;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.swirlds.common.utility.CommonUtils.hex;
-import static org.hyperledger.besu.crypto.Hash.keccak256;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExceptionalHaltReason.PRECOMPILE_ERROR;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -111,28 +37,10 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
-import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.stream.proto.CallOperationType;
-import com.hedera.services.stream.proto.ContractAction;
-import com.hedera.services.stream.proto.ContractActions;
-import com.hedera.services.stream.proto.ContractBytecode;
-import com.hedera.services.stream.proto.ContractStateChanges;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenType;
-import com.hederahashgraph.api.proto.java.TransferList;
+import com.hedera.services.bdd.suites.SidecarAwareHapiSuite;
+import com.hedera.services.stream.proto.*;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.utility.CommonUtils;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -144,14 +52,46 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.stripSelector;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.*;
+import static com.hedera.services.bdd.suites.contract.Utils.*;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.*;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
+import static com.hedera.services.stream.proto.ContractActionType.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.swirlds.common.utility.CommonUtils.hex;
+import static org.hyperledger.besu.crypto.Hash.keccak256;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExceptionalHaltReason.PRECOMPILE_ERROR;
+
 @HapiTestSuite(fuzzyMatch = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Tag(SMART_CONTRACT)
-public class TraceabilitySuite extends HapiSuite {
+public class TraceabilitySuite extends SidecarAwareHapiSuite {
 
     private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
 
-    private static SidecarWatcher sidecarWatcher;
     private static final ByteString EMPTY = ByteStringUtils.wrapUnsafely(new byte[0]);
     private static final ByteString CALL_CODE_INPUT_SUFFIX = ByteStringUtils.wrapUnsafely(new byte[28]);
     private static final String TRACEABILITY = "Traceability";
@@ -181,9 +121,8 @@ public class TraceabilitySuite extends HapiSuite {
         new TraceabilitySuite().runSuiteSync();
     }
 
-    @SuppressWarnings("java:S5960")
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    protected List<HapiSpec> getSpecs() {
         return List.of(
                 suiteSetup(),
                 traceabilityE2EScenario1(),
@@ -211,8 +150,7 @@ public class TraceabilitySuite extends HapiSuite {
                 vanillaBytecodeSidecar2(),
                 actionsShowPropagatedRevert(),
                 ethereumLazyCreateExportsExpectedSidecars(),
-                hollowAccountCreate2MergeExportsExpectedSidecars(),
-                assertSidecars());
+                hollowAccountCreate2MergeExportsExpectedSidecars());
     }
 
     @HapiTest
@@ -224,8 +162,7 @@ public class TraceabilitySuite extends HapiSuite {
                 .then(
                         overridingTwo(
                                 "contracts.throttle.throttleByGas", "false",
-                                "contracts.enforceCreationThrottle", "false"),
-                        withOpContext((spec, opLog) -> initializeWatcherOf(recordStreamLocFor(spec))));
+                                "contracts.enforceCreationThrottle", "false"));
     }
 
     @HapiTest
@@ -5162,28 +5099,6 @@ public class TraceabilitySuite extends HapiSuite {
                         }));
     }
 
-    @SuppressWarnings("java:S5960")
-    @HapiTest
-    @Order(28)
-    final HapiSpec assertSidecars() {
-        return defaultHapiSpec("assertSidecars")
-                .given(
-                        // send a dummy transaction to trigger externalization of last sidecars
-                        cryptoCreate("externalizeFinalSidecars").delayBy(2000))
-                .when(withOpContext((spec, opLog) -> {
-                    sidecarWatcher.waitUntilFinished();
-                    sidecarWatcher.tearDown();
-                }))
-                .then(assertionsHold((spec, assertLog) -> {
-                    assertTrue(sidecarWatcher.thereAreNoMismatchedSidecars(), sidecarWatcher.getMismatchErrors());
-                    assertTrue(
-                            sidecarWatcher.thereAreNoPendingSidecars(),
-                            "There are some sidecars that have not been yet"
-                                    + " externalized in the sidecar files after all"
-                                    + " specs: " + sidecarWatcher.getPendingErrors());
-                }));
-    }
-
     @Override
     protected Logger getResultsLogger() {
         return log;
@@ -5194,7 +5109,7 @@ public class TraceabilitySuite extends HapiSuite {
             final var txnRecord = getTxnRecord(txnName);
             allRunFor(spec, txnRecord);
             final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+            addExpectedSidecar(new ExpectedSidecar(
                     spec.getName(),
                     TransactionSidecarRecord.newBuilder()
                             .setConsensusTimestamp(consensusTimestamp)
@@ -5211,7 +5126,7 @@ public class TraceabilitySuite extends HapiSuite {
             final var txnRecord = getTxnRecord(txnName);
             allRunFor(spec, txnRecord);
             final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+            addExpectedSidecar(new ExpectedSidecar(
                     spec.getName(),
                     TransactionSidecarRecord.newBuilder()
                             .setConsensusTimestamp(consensusTimestamp)
@@ -5233,7 +5148,7 @@ public class TraceabilitySuite extends HapiSuite {
             allRunFor(spec, txnRecord, contractBytecode);
             final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
             final var initCode = getInitcode(binFileName, constructorArgs);
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+            addExpectedSidecar(new ExpectedSidecar(
                     spec.getName(),
                     TransactionSidecarRecord.newBuilder()
                             .setConsensusTimestamp(consensusTimestamp)
@@ -5257,7 +5172,7 @@ public class TraceabilitySuite extends HapiSuite {
             allRunFor(spec, txnRecord);
             final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
             final var initCode = getInitcode(binFileName, constructorArgs);
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+            addExpectedSidecar(new ExpectedSidecar(
                     spec.getName(),
                     TransactionSidecarRecord.newBuilder()
                             .setConsensusTimestamp(consensusTimestamp)
@@ -5276,7 +5191,7 @@ public class TraceabilitySuite extends HapiSuite {
             allRunFor(spec, txnRecord, contractBytecode);
             final var consensusTimestamp =
                     txnRecord.getFirstNonStakingChildRecord().getConsensusTimestamp();
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+            addExpectedSidecar(new ExpectedSidecar(
                     spec.getName(),
                     TransactionSidecarRecord.newBuilder()
                             .setConsensusTimestamp(consensusTimestamp)
@@ -5298,7 +5213,7 @@ public class TraceabilitySuite extends HapiSuite {
             final var contractBytecode = getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
             allRunFor(spec, txnRecord, contractBytecode);
             final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+            addExpectedSidecar(new ExpectedSidecar(
                     spec.getName(),
                     TransactionSidecarRecord.newBuilder()
                             .setConsensusTimestamp(consensusTimestamp)
@@ -5320,7 +5235,7 @@ public class TraceabilitySuite extends HapiSuite {
             final ContractID contractID,
             final ByteString initCode,
             final ByteString runtimeCode) {
-        sidecarWatcher.addExpectedSidecar(new ExpectedSidecar(
+        addExpectedSidecar(new ExpectedSidecar(
                 specName,
                 TransactionSidecarRecord.newBuilder()
                         .setConsensusTimestamp(timestamp)
@@ -5342,13 +5257,6 @@ public class TraceabilitySuite extends HapiSuite {
                         .encodeCall(Tuple.of(constructorArgs))
                         .array();
         return initCode.concat(ByteStringUtils.wrapUnsafely(params.length > 4 ? stripSelector(params) : params));
-    }
-
-    private static void initializeWatcherOf(@NonNull final String recordStreamLoc) throws Exception {
-        final var absolutePath = Paths.get(recordStreamLoc).toAbsolutePath();
-        log.info("Watching for sidecars at absolute path {}", absolutePath);
-        sidecarWatcher = new SidecarWatcher(Paths.get(recordStreamLoc));
-        sidecarWatcher.watch();
     }
 
     private ByteString encodeFunctionCall(final String contractName, final String functionName, final Object... args) {

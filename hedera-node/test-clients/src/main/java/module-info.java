@@ -29,6 +29,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.transactions.system;
     exports com.hedera.services.bdd.suites.crypto.staking;
     exports com.hedera.services.bdd.spec.fees;
+    exports com.hedera.services.bdd.spec.verification.traceability;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
