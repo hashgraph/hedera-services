@@ -23,6 +23,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.google.protobuf.StringValue;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenUpdateUsage;
@@ -66,6 +68,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private Optional<String> newFeeScheduleKey = Optional.empty();
     private Optional<String> newPauseKey = Optional.empty();
     private Optional<String> newMetadataKey = Optional.empty();
+    private Optional<String> newMetadata = Optional.empty();
 
     @Nullable
     private String newLockKey;
@@ -150,6 +153,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
     public HapiTokenUpdate metadataKey(String name) {
         newMetadataKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiTokenUpdate newMetadata(String name) {
+        newMetadata = Optional.of(name);
         return this;
     }
 
@@ -392,6 +400,13 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                 newMetadataKey.ifPresent(
                                         k -> b.setMetadataKey(spec.registry().getKey(k)));
                             }
+                            if (newMetadata.isPresent()) {
+                                var metadataValue = BytesValue.newBuilder()
+                                        .setValue(ByteString.copyFrom(
+                                                newMetadata.orElseThrow().getBytes()))
+                                        .build();
+                                b.setMetadata(metadataValue);
+                            }
                             if (autoRenewAccount.isPresent()) {
                                 var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
                                 b.setAutoRenewAccount(autoRenewId);
@@ -474,6 +489,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         newFeeScheduleKey.ifPresent(n -> registry.saveFeeScheduleKey(token, registry.getKey(n)));
         newPauseKey.ifPresent(n -> registry.savePauseKey(token, registry.getKey(n)));
         newMetadataKey.ifPresent(n -> registry.saveMetadataKey(token, registry.getKey(n)));
+        newMetadata.ifPresent(n -> registry.saveMetadata(token, n));
     }
 
     @Override

@@ -40,19 +40,19 @@ public class SimpleGraphs {
      */
     public static List<GossipEvent> graph5e2n(final Random random) {
         final GossipEvent e0 =
-                TestingEventBuilder.builder(random).setCreatorId(new NodeId(1)).build();
+                new TestingEventBuilder(random).setCreatorId(new NodeId(1)).build();
         final GossipEvent e1 =
-                TestingEventBuilder.builder(random).setCreatorId(new NodeId(2)).build();
-        final GossipEvent e2 = TestingEventBuilder.builder(random)
+                new TestingEventBuilder(random).setCreatorId(new NodeId(2)).build();
+        final GossipEvent e2 = new TestingEventBuilder(random)
                 .setCreatorId(new NodeId(1))
                 .setSelfParent(e0)
                 .setOtherParent(e1)
                 .build();
-        final GossipEvent e3 = TestingEventBuilder.builder(random)
+        final GossipEvent e3 = new TestingEventBuilder(random)
                 .setCreatorId(new NodeId(1))
                 .setSelfParent(e2)
                 .build();
-        final GossipEvent e4 = TestingEventBuilder.builder(random)
+        final GossipEvent e4 = new TestingEventBuilder(random)
                 .setCreatorId(new NodeId(2))
                 .setSelfParent(e1)
                 .setOtherParent(e2)
@@ -94,31 +94,28 @@ public class SimpleGraphs {
      */
     public static List<EventImpl> graph9e3n(final Random random) {
         // generation 0
-        final EventImpl e0 =
-                createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(1)), null, null);
+        final EventImpl e0 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(1)), null, null);
         e0.setConsensus(true);
 
-        final EventImpl e1 =
-                createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(2)), null, null);
+        final EventImpl e1 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(2)), null, null);
         e1.setConsensus(true);
 
-        final EventImpl e2 =
-                createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)), null, null);
+        final EventImpl e2 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(3)), null, null);
 
         // generation 1
-        final EventImpl e3 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(1)), e0, e1);
+        final EventImpl e3 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(1)), e0, e1);
 
-        final EventImpl e4 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)), e2, null);
+        final EventImpl e4 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(3)), e2, null);
 
         // generation 2
-        final EventImpl e5 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(1)), e3, null);
+        final EventImpl e5 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(1)), e3, null);
 
-        final EventImpl e6 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(2)), e1, e3);
+        final EventImpl e6 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(2)), e1, e3);
 
-        final EventImpl e7 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)), e4, e1);
+        final EventImpl e7 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(3)), e4, e1);
 
         // generation 3
-        final EventImpl e8 = createEventImpl(TestingEventBuilder.builder(random).setCreatorId(new NodeId(3)), e7, e6);
+        final EventImpl e8 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(3)), e7, e6);
 
         return List.of(e0, e1, e2, e3, e4, e5, e6, e7, e8);
     }

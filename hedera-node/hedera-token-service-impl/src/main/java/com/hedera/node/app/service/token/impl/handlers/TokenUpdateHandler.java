@@ -114,6 +114,27 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
 
         addRequiredSigners(context, op, token);
+        // To update metadata either admin key or metadata key should sign.
+        // For updating any other fields admin key should sign.
+        if (isMetadataOnlyUpdateOp(op) && (token.hasAdminKey() || token.hasMetadataKey())) {
+            final List<Key> keys = new ArrayList<>();
+            if (token.hasAdminKey()) {
+                keys.add(token.adminKey());
+            }
+            if (token.hasMetadataKey()) {
+                keys.add(token.metadataKey());
+            }
+            final Key threshKey = Key.newBuilder()
+                    .thresholdKey(ThresholdKey.newBuilder()
+                            .keys(KeyList.newBuilder().keys(keys).build())
+                            .threshold(1)
+                            .build())
+                    .build();
+            context.requireKey(threshKey);
+        } else if (!isExpiryOnlyUpdateOp(op) && token.hasAdminKey()) {
+            // For expiry only op admin key is not required
+            context.requireKey(token.adminKey());
+        }
     }
 
     @Override
@@ -173,7 +194,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 transferTokensToNewTreasury(existingTreasury, newTreasury, token, tokenRelStore, accountStore);
             }
         }
-
         final var tokenBuilder = customizeToken(token, resolvedExpiry, op);
         tokenStore.put(tokenBuilder.build());
         recordBuilder.tokenType(token.tokenType());
@@ -393,7 +413,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             validateTrue(originalToken.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
             builder.metadataKey(op.metadataKey());
         }
-        if (!isExpiryOnlyUpdateOp(op) && !isLowPriorityKeyUpdate(op)) {
+
+        if (isMetadataOnlyUpdateOp(op)) {
+            validateTrue(originalToken.hasAdminKey() || originalToken.hasMetadataKey(), TOKEN_IS_IMMUTABLE);
+        } else if (!isExpiryOnlyUpdateOp(op)) {
             validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         }
         if (op.hasAdminKey()) {
