@@ -508,7 +508,7 @@ public class Shadowgraph implements Clearable {
      * @return true iff e was inserted
      * @throws ShadowgraphInsertionException if the event was unable to be added to the shadowgraph
      */
-    public synchronized boolean addEvent(final EventImpl e) throws ShadowgraphInsertionException {
+    public synchronized boolean addEvent(@NonNull final EventImpl e) throws ShadowgraphInsertionException {
         Objects.requireNonNull(e);
         try {
             final InsertableStatus status = insertable(e);
