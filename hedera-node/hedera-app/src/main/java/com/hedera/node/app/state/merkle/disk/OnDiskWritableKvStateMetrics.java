@@ -60,7 +60,7 @@ public class OnDiskWritableKvStateMetrics {
                 .withFormat("%,d");
         metrics.getOrCreate(totalUtilizationConfig);
 
-        final double relativeFactor = 100.0 / Math.max(1.0, maxCapacity);  // in some tests, maxCapacity is 0
+        final double relativeFactor = 100.0 / Math.max(1.0, maxCapacity); // in some tests, maxCapacity is 0
         final var relativeUtilizationConfig = new Config<>(
                         "app", name + "PercentUsed", Double.class, () -> count.get() * relativeFactor)
                 .withDescription(String.format("instantaneous %% used of %s system limit", label))
