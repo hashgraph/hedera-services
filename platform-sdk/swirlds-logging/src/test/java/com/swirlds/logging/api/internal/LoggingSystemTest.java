@@ -48,6 +48,7 @@ import com.swirlds.logging.util.LoggingSystemTestOrchestrator;
 import com.swirlds.logging.util.LoggingTestScenario;
 import com.swirlds.logging.util.LoggingTestUtils;
 import jakarta.inject.Inject;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,18 +58,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 @WithContext
 @WithSystemError
 public class LoggingSystemTest {
-
-    private final List<Path> tempFiles = List.of(Path.of("crypto.log"), Path.of("transaction.log"));
-    private LoggingSystem loggingSystem = null;
 
     @Inject
     private SystemErrProvider provider;
@@ -77,19 +75,6 @@ public class LoggingSystemTest {
     void cleanupBefore() {
         // reset Emergency logger to remove messages from previous tests
         EmergencyLoggerImpl.getInstance().publishLoggedEvents();
-    }
-
-    @AfterEach
-    void cleanupAfter() {
-        if (loggingSystem != null) {
-            loggingSystem.stopAndFinalize();
-            tempFiles.forEach(path -> {
-                if (path.toFile().exists()) {
-                    path.toFile().delete();
-                }
-            });
-        }
-        loggingSystem = null;
     }
 
     @Test
@@ -384,14 +369,68 @@ public class LoggingSystemTest {
     }
 
     @Test
+    void testLoggingLevelOff() {
+        // given
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("logging.level", "OFF").getOrCreateConfig();
+        final LoggingSystem loggingSystem = LoggingTestUtils.loggingSystemWithHandlers(configuration, new LogHandler() {
+            @Override
+            public String getName() {
+                return "ExceptionThrowingHandler";
+            }
+
+            @Override
+            public boolean isActive() {
+                return true;
+            }
+
+            @Override
+            public void accept(LogEvent event) {
+                Assertions.fail("Should not invoke handler");
+            }
+        });
+        final LoggerImpl logger = loggingSystem.getLogger("test.Class");
+
+        // when
+        logger.trace("trace-message"); // should not be logged
+        logger.debug("debug-message"); // should not be logged
+        logger.info("info-message"); // should not be logged
+        logger.warn("warn-message"); // should not be logged
+        logger.error("error-message"); // should not be logged
+    }
+
+    @Test
+    void testHandlerLoggingLevelOff() {
+        // given
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("logging.level", "TRACE")
+                .withValue("logging.handler.HANDLER1.enabled", "true")
+                .withValue("logging.handler.HANDLER1.type", "inMemory")
+                .withValue("logging.handler.HANDLER1.level.com.bar.ZOO", "OFF")
+                .getOrCreateConfig();
+        final InMemoryHandler inMemoryHandler = new InMemoryHandler("HANDLER1", configuration);
+        final LoggingSystem loggingSystem = LoggingTestUtils.loggingSystemWithHandlers(configuration, inMemoryHandler);
+        final LoggerImpl logger = loggingSystem.getLogger("com.bar.ZOO");
+
+        // when
+        logger.trace("trace-message"); // should not be logged
+        logger.debug("debug-message"); // should not be logged
+        logger.info("info-message"); // should not be logged
+        logger.warn("warn-message"); // should not be logged
+        logger.error("error-message"); // should not be logged
+
+        final List<LogEvent> loggedEvents = inMemoryHandler.getEvents();
+        assertEquals(0, loggedEvents.size());
+    }
+
+    @Test
     @DisplayName(
             "Test that checks if simple log calls are forwarded correctly will all information to the configured handler")
     void testSimpleLoggingHandling() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final InMemoryHandler handler = new InMemoryHandler(configuration);
-        loggingSystem.addHandler(handler);
+        final LoggingSystem loggingSystem = LoggingTestUtils.loggingSystemWithHandlers(configuration, handler);
         final LoggerImpl logger = loggingSystem.getLogger("test-logger");
         final long startTime = System.currentTimeMillis() - 1;
 
@@ -483,9 +522,8 @@ public class LoggingSystemTest {
     void testComplexLoggingHandling() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final InMemoryHandler handler = new InMemoryHandler(configuration);
-        loggingSystem.addHandler(handler);
+        final LoggingSystem loggingSystem = LoggingTestUtils.loggingSystemWithHandlers(configuration, handler);
         final LoggerImpl logger = loggingSystem.getLogger("test-logger");
         final long startTime = System.currentTimeMillis() - 1;
 
@@ -564,9 +602,8 @@ public class LoggingSystemTest {
     void testAcceptComplexHandling() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final InMemoryHandler handler = new InMemoryHandler(configuration);
-        loggingSystem.addHandler(handler);
+        final LoggingSystem loggingSystem = LoggingTestUtils.loggingSystemWithHandlers(configuration, handler);
 
         LogEvent event1 = loggingSystem
                 .getLogEventFactory()
@@ -810,41 +847,48 @@ public class LoggingSystemTest {
 
     @Test
     @DisplayName("Test that installing multiple known handler type and enabled throws no exception")
-    void testAddMultipleFileHandler() {
+    void testAddMultipleFileHandler(@TempDir final Path tempDir) throws IOException {
+        // given
+        final String cryptoFile = tempDir.resolve("crypto.log").toString();
+        final String transactionFile = tempDir.resolve("transaction.log").toString();
         // given
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("logging.handler.CRYPTO_FILE.enabled", "true")
                 .withValue("logging.handler.CRYPTO_FILE.type", "file")
-                .withValue("logging.handler.CRYPTO_FILE.file", "crypto.log")
+                .withValue("logging.handler.CRYPTO_FILE.file", cryptoFile)
                 .withValue("logging.handler.TRANSACTION_FILE.enabled", "true")
                 .withValue("logging.handler.TRANSACTION_FILE.type", "file")
-                .withValue("logging.handler.TRANSACTION_FILE.file", "transaction.log")
+                .withValue("logging.handler.TRANSACTION_FILE.file", transactionFile)
                 .getOrCreateConfig();
 
-        loggingSystem = new LoggingSystem(configuration);
+        LoggingSystem loggingSystem = new LoggingSystem(configuration);
+        try {
 
-        // when
-        loggingSystem.installHandlers();
+            // when
+            loggingSystem.installHandlers();
 
-        // then
-        assertThat(loggingSystem.getHandlers()).hasSize(2);
-        tempFiles.forEach(path -> {
-            assertThat(path.toFile()).exists();
-        });
+            // then
+            assertThat(loggingSystem.getHandlers()).hasSize(2);
+            assertThat(new File(cryptoFile)).exists();
+            assertThat(new File(transactionFile)).exists();
+        } finally {
+            loggingSystem.stopAndFinalize();
+            Files.deleteIfExists(Path.of(cryptoFile));
+            Files.deleteIfExists(Path.of(transactionFile));
+        }
     }
 
-    private static final String LOG_FILE = "log-files/logging.log";
-    private static final Duration MAX_DURATION = Duration.of(2, ChronoUnit.SECONDS);
+    private static final String LOG_FILE = "logging.log";
 
     @Test
-    void testFileHandlerLogging() throws IOException {
+    void testFileHandlerLogging(@TempDir final Path tempDir) throws IOException {
 
         // given
-        final String logFile = LoggingTestUtils.prepareLoggingFile(LOG_FILE);
+        final String logFile = tempDir.resolve(LOG_FILE).toString();
         final String fileHandlerName = "file";
         final Configuration configuration = LoggingTestUtils.prepareConfiguration(logFile, fileHandlerName);
         final LoggingMirrorImpl mirror = new LoggingMirrorImpl();
-        final LoggingSystem loggingSystem = loggingSystemWithHandlers(configuration, mirror);
+        final LoggingSystem loggingSystem = LoggingTestUtils.loggingSystemWithHandlers(configuration, mirror);
         // A random log name, so it's easier to combine lines after
         final String loggerName = UUID.randomUUID().toString();
         final Logger logger = loggingSystem.getLogger(loggerName);
@@ -867,29 +911,9 @@ public class LoggingSystemTest {
             org.assertj.core.api.Assertions.assertThat(statementsInFile).isSubsetOf(statementsInMirror);
 
         } finally {
+            loggingSystem.stopAndFinalize();
             Files.deleteIfExists(Path.of(logFile));
         }
-    }
-
-    @Test
-    @DisplayName("Multiple configuration updates test")
-    public void testConfigUpdate() {
-
-        final Configuration configuration = LoggingTestUtils.getConfigBuilder().getOrCreateConfig();
-        final LoggingSystem loggingSystem = loggingSystemWithHandlers(configuration);
-
-        // Ask the Orchestrator to run all desired scenarios up to 2 Seconds
-        // Scenarios define a configuration and a set of assertions for that config.
-        LoggingSystemTestOrchestrator.runScenarios(
-                loggingSystem,
-                MAX_DURATION,
-                defaultScenario(),
-                scenario1(),
-                scenario2(),
-                scenario3(),
-                scenario4(),
-                scenario5(),
-                scenario6());
     }
 
     @Test
@@ -901,7 +925,7 @@ public class LoggingSystemTest {
         final Configuration updatedConfiguration = LoggingTestUtils.getConfigBuilder()
                 .withValue("logging.level", Level.TRACE)
                 .getOrCreateConfig();
-        final LoggingSystem system = loggingSystemWithHandlers(initialConfiguration);
+        final LoggingSystem system = LoggingTestUtils.loggingSystemWithHandlers(initialConfiguration);
 
         // when
         system.update(updatedConfiguration);
@@ -916,10 +940,9 @@ public class LoggingSystemTest {
         final Configuration initialConfiguration =
                 LoggingTestUtils.getConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(initialConfiguration);
-        final Configuration updatedConfiguration = null;
 
         // then
-        assertThrowsNPE(() -> loggingSystem.update(updatedConfiguration));
+        assertThrowsNPE(() -> loggingSystem.update(null));
     }
 
     @Test
@@ -932,7 +955,7 @@ public class LoggingSystemTest {
                 .withValue("logging.level.com.sample.package.ClassB", "ERROR")
                 .withValue("logging.level.com.sample.package.ClassC", "TRACE")
                 .getOrCreateConfig();
-        final LoggingSystem loggingSystem = loggingSystemWithHandlers(configuration);
+        final LoggingSystem loggingSystem = LoggingTestUtils.loggingSystemWithHandlers(configuration);
 
         // when
         final LoggingTestScenario scenario = LoggingTestScenario.builder()
@@ -952,71 +975,57 @@ public class LoggingSystemTest {
         LoggingSystemTestOrchestrator.runScenarios(loggingSystem, scenario);
     }
 
-    private static LoggingSystem loggingSystemWithHandlers(final Configuration configuration, LogHandler... handlers) {
-        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        loggingSystem.installHandlers();
-        for (LogHandler handler : handlers) {
-            loggingSystem.addHandler(handler);
-        }
-        return loggingSystem;
-    }
+    @Test
+    @DisplayName("Multiple configuration updates test")
+    public void testConfigUpdate() {
 
-    // Default scenario: what should happen if no configuration is reloaded
-    private static LoggingTestScenario defaultScenario() {
-        return LoggingTestScenario.builder()
+        final Configuration configuration = LoggingTestUtils.getConfigBuilder().getOrCreateConfig();
+        final LoggingSystem loggingSystem = LoggingTestUtils.loggingSystemWithHandlers(configuration);
+
+        // Default scenario: what should happen if no configuration is reloaded
+        final LoggingTestScenario defaultScenario = LoggingTestScenario.builder()
                 .name("default")
                 .assertThatLevelIsAllowed("", Level.ERROR)
                 .assertThatLevelIsAllowed("", Level.WARN)
                 .assertThatLevelIsAllowed("", Level.INFO)
                 .assertThatLevelIsNotAllowed("", Level.DEBUG)
                 .build();
-    }
 
-    // Scenario 1: Change logging level
-    private static LoggingTestScenario scenario1() {
-        return LoggingTestScenario.builder()
+        // Scenario 1: Change logging level
+        final LoggingTestScenario scenario1 = LoggingTestScenario.builder()
                 .name("scenario1")
                 .withConfiguration("logging.level", Level.TRACE)
                 .assertThatLevelIsAllowed("com.sample.Class", Level.TRACE) // Fix Scenario
                 .assertThatLevelIsAllowed("com.Class", Level.INFO)
                 .assertThatLevelIsAllowed("Class", Level.TRACE)
                 .build();
-    }
-
-    // Scenario 2: No Specific Configuration for Package
-    private static LoggingTestScenario scenario2() {
-        return LoggingTestScenario.builder()
+        // Scenario 2: No Specific Configuration for Package
+        final LoggingTestScenario scenario2 = LoggingTestScenario.builder()
                 .name("scenario2")
                 .withConfiguration("logging.level", Level.WARN)
                 .assertThatLevelIsNotAllowed("com.sample.Class", Level.DEBUG)
                 .build();
-    }
 
-    // Scenario 3: Class-Specific Configuration
-    private static LoggingTestScenario scenario3() {
-        return LoggingTestScenario.builder()
+        // Scenario 3: Class-Specific Configuration
+        final LoggingTestScenario scenario3 = LoggingTestScenario.builder()
                 .name("scenario3")
                 .withConfiguration("logging.level.com.sample.package.Class", Level.ERROR)
                 .assertThatLevelIsAllowed("com.sample.package.Class", Level.ERROR)
                 .build();
-    }
 
-    // Scenario 4: Package-Level Configuration
-    private static LoggingTestScenario scenario4() {
-        return LoggingTestScenario.builder()
+        // Scenario 4: Package-Level Configuration
+        final LoggingTestScenario scenario4 = LoggingTestScenario.builder()
                 .name("scenario4")
                 .withConfiguration("logging.level.com.sample.package", Level.TRACE)
                 .assertThatLevelIsAllowed("com.sample.package.Class", Level.TRACE)
                 .assertThatLevelIsNotAllowed("com.sample.package.Class", Level.OFF)
                 .build();
-    }
 
-    // Scenario 5: Mixed Configuration
-    private static LoggingTestScenario scenario5() {
-        String subPackage = ".sub";
-        String clazz = ".Random";
-        String subpackageSubClazz = ".sub.Random";
-        return LoggingTestScenario.builder()
+        final String clazz = ".Random";
+        final String subpackageSubClazz = ".sub.Random";
+
+        // Scenario 5: Mixed Configuration
+        final LoggingTestScenario scenario5 = LoggingTestScenario.builder()
                 .name("scenario5")
                 .withConfiguration("logging.level", Level.WARN)
                 .withConfiguration("logging.level.com.sample", Level.INFO)
@@ -1048,16 +1057,11 @@ public class LoggingSystemTest {
                 .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.INFO)
                 .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.DEBUG)
                 .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.TRACE)
-                .assertThatLevelIsAllowed("com.sample" + subPackage, Level.WARN)
+                .assertThatLevelIsAllowed("com.sample.sub", Level.WARN)
                 .assertThatLevelIsAllowed("com.sample" + subpackageSubClazz, Level.INFO)
                 .build();
-    }
 
-    private static LoggingTestScenario scenario6() {
-        String subPackage = ".sub";
-        String clazz = ".Random";
-        String subpackageSubClazz = ".sub.Random";
-        return LoggingTestScenario.builder()
+        final LoggingTestScenario scenario6 = LoggingTestScenario.builder()
                 .name("scenario6")
                 .withConfiguration("logging.level", Level.OFF)
                 .assertThatLevelIsNotAllowed("Class", Level.ERROR)
@@ -1087,8 +1091,21 @@ public class LoggingSystemTest {
                 .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.INFO)
                 .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.DEBUG)
                 .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.TRACE)
-                .assertThatLevelIsNotAllowed("com.sample" + subPackage, Level.WARN)
+                .assertThatLevelIsNotAllowed("com.sample.sub", Level.WARN)
                 .assertThatLevelIsNotAllowed("com.sample" + subpackageSubClazz, Level.INFO)
                 .build();
+
+        // Ask the Orchestrator to run all desired scenarios up to 2 Seconds
+        // Scenarios define a configuration and a set of assertions for that config.
+        LoggingSystemTestOrchestrator.runScenarios(
+                loggingSystem,
+                Duration.of(2, ChronoUnit.SECONDS),
+                defaultScenario,
+                scenario1,
+                scenario2,
+                scenario3,
+                scenario4,
+                scenario5,
+                scenario6);
     }
 }

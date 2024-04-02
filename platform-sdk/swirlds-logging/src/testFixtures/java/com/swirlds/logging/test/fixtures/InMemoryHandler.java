@@ -52,10 +52,20 @@ public class InMemoryHandler extends AbstractLogHandler {
     /**
      * Creates a new log handler.
      *
+     * @param configKey     the configuration key
+     * @param configuration the configuration
+     */
+    public InMemoryHandler(final String configKey, final Configuration configuration) {
+        super(configKey, configuration);
+    }
+
+    /**
+     * Creates a new log handler.
+     *
      * @param configuration the configuration
      */
     public InMemoryHandler(final Configuration configuration) {
-        super("inMemory", configuration);
+        this("inMemory", configuration);
     }
 
     /**
