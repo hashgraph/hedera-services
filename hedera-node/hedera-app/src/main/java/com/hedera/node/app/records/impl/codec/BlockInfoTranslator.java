@@ -43,6 +43,9 @@ public final class BlockInfoTranslator {
             throws IOException {
         requireNonNull(merkleNetworkContext);
         final var blockInfoBuilder = new BlockInfo.Builder()
+                // Mono-service kept the current (in-progress) block number in state,
+                // while mod-service keeps the last finished block number in state; so
+                // subtract 1 to get the last finished block number here
                 .lastBlockNumber(merkleNetworkContext.getAlignmentBlockNo() - 1)
                 .blockHashes(getBlockHashes(merkleNetworkContext.getBlockHashes()));
         if (merkleNetworkContext.firstConsTimeOfCurrentBlock().getEpochSecond() > 0) {

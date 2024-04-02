@@ -102,7 +102,7 @@ class BlockInfoTranslatorTest {
                 .put(hash3)
                 .array();
         return BlockInfo.newBuilder()
-                .lastBlockNumber(5L)
+                .lastBlockNumber(4L)
                 .firstConsTimeOfCurrentBlock(CONSENSUS_TIME)
                 .blockHashes(Bytes.wrap(result));
     }
