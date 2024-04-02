@@ -31,6 +31,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
+import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
@@ -59,6 +60,9 @@ class ServicesTxnManagerTest {
     private final long submittingMember = 1;
     private final Instant consensusTime = Instant.ofEpochSecond(1_234_567L, 890);
     private final AccountID effectivePayer = IdUtils.asAccount("0.0.75231");
+
+    @Mock
+    private EntityIdSource idSource;
 
     @Mock
     private Runnable processLogic;
@@ -127,7 +131,8 @@ class ServicesTxnManagerTest {
                 cryptoCreateThrottleReclaimer,
                 rewardCalculator,
                 bootstrapProperties,
-                blocklistAccountCreator);
+                blocklistAccountCreator,
+                idSource);
     }
 
     @Test
