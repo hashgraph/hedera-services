@@ -428,17 +428,29 @@ public class BaseTokenHandler {
     }
 
     /**
-     * Check if TokenUpdateOp wants to update one of the low priority keys
-     * wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or metadataKey
+     * Check if TokenUpdateOp wants to update only some of the low priority keys or the metadata field
+     * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or metadataKey
      */
-    public static boolean isLowPriorityKeyUpdate(@NonNull final TokenUpdateTransactionBody op) {
-        return op.hasWipeKey()
-                || op.hasKycKey()
-                || op.hasSupplyKey()
-                || op.hasFreezeKey()
-                || op.hasFeeScheduleKey()
-                || op.hasPauseKey()
-                || op.hasMetadataKey();
+    public static boolean noOtherFieldThanLowPriorityKeyOrMetadataWillBeUpdated(@NonNull final TokenUpdateTransactionBody op) {
+        return !(op.hasTreasury()
+                || op.hasAdminKey()
+                || op.hasAutoRenewAccount()
+                || op.hasAutoRenewPeriod()
+                || op.hasMemo());
+    }
+
+    /**
+     * Check if a given token already has some of the low priority keys
+     * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or metadataKey
+     */
+    public static boolean hasAlreadySomeLowPriorityKeys(@NonNull final Token token) {
+        return token.hasWipeKey()
+                || token.hasKycKey()
+                || token.hasSupplyKey()
+                || token.hasFreezeKey()
+                || token.hasFeeScheduleKey()
+                || token.hasPauseKey()
+                || token.hasMetadataKey();
     }
 
     @NonNull

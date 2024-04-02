@@ -30,7 +30,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_K
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -114,7 +113,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
 
         addRequiredSigners(context, op, token);
-        // To update metadata either admin key or metadata key should sign.
+        /*// To update metadata either admin key or metadata key should sign.
         // For updating any other fields admin key should sign.
         if (isMetadataOnlyUpdateOp(op) && (token.hasAdminKey() || token.hasMetadataKey())) {
             final List<Key> keys = new ArrayList<>();
@@ -134,7 +133,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         } else if (!isExpiryOnlyUpdateOp(op) && token.hasAdminKey()) {
             // For expiry only op admin key is not required
             context.requireKey(token.adminKey());
-        }
+        }*/
     }
 
     @Override
@@ -414,11 +413,12 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             builder.metadataKey(op.metadataKey());
         }
 
+        /*// TODO May be removed ?
         if (isMetadataOnlyUpdateOp(op)) {
             validateTrue(originalToken.hasAdminKey() || originalToken.hasMetadataKey(), TOKEN_IS_IMMUTABLE);
         } else if (!isExpiryOnlyUpdateOp(op)) {
             validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
-        }
+        }*/
         if (op.hasAdminKey()) {
             final var newAdminKey = op.adminKey();
             if (isKeyRemoval(newAdminKey)) {
@@ -462,7 +462,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (originalToken.hasAdminKey()) {
             // if we update any of the low priority keys, we should allow either admin key
             // or the respective low priority key to sign.
-            if (isLowPriorityKeyUpdate(op)) {
+            if (noOtherFieldThanLowPriorityKeyOrMetadataWillBeUpdated(op)) {
                 List<Key> lowPriorityKeys = new ArrayList<>();
                 addRequiredLowPrioritySigner(
                         lowPriorityKeys, originalToken.hasWipeKey(), originalToken.wipeKey(), op.hasWipeKey());
@@ -484,6 +484,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                         originalToken.hasMetadataKey(),
                         originalToken.metadataKey(),
                         op.hasMetadataKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys,
+                        originalToken.hasMetadataKey(),
+                        originalToken.metadataKey(),
+                        op.hasMetadata());
 
                 final Key lowPriorityKeyList = Key.newBuilder()
                         .keyList(KeyList.newBuilder().keys(lowPriorityKeys).build())
@@ -499,8 +504,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                                 .build())
                         .build();
                 context.requireKey(thresholdKey);
-            } else {
+            } else if (!isExpiryOnlyUpdateOp(op)) {
                 // if we update any other field, we need the current admin key to sign
+                // note: for expiry only op admin key is not required
                 context.requireKey(originalToken.adminKey());
             }
         }
@@ -508,11 +514,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
 
     private void addRequiredLowPrioritySigner(
             @NonNull List<Key> lowPriorityKeys,
-            final boolean originalTokenHasKey,
+            final boolean tokenHasKey,
             @NonNull final Key originalKey,
-            final boolean tokenUpdateHasKey) {
-        if (tokenUpdateHasKey) {
-            if (originalTokenHasKey) {
+            final boolean updateHasField) {
+        if (updateHasField) {
+            if (tokenHasKey) {
                 lowPriorityKeys.add(originalKey);
             }
         }

@@ -138,7 +138,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec canUpdateExpiryOnlyOpWithoutAdminKey() {
+    final HapiSpec canUpdateExpiryOnlyOpWithoutAdminKey() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
         String originalMemo = "First things first";
