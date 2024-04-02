@@ -81,7 +81,7 @@ public class HapiTestEnv {
                 final AccountID acct =
                         AccountID.newBuilder().accountNum(3L + nodeId).build();
                 boolean currentNodeAlice = nodeId == 0;
-                if (/*IN_PROCESS_ALICE == nodesType && */currentNodeAlice) {
+                if (IN_PROCESS_ALICE == nodesType && currentNodeAlice) {
                     nodes.add(new InProcessHapiTestNode(nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT));
                 } else {
                     nodes.add(new SubProcessHapiTestNode(

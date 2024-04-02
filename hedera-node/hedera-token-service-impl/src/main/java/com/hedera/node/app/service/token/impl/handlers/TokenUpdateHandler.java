@@ -113,27 +113,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
 
         addRequiredSigners(context, op, token);
-        /*// To update metadata either admin key or metadata key should sign.
-        // For updating any other fields admin key should sign.
-        if (isMetadataOnlyUpdateOp(op) && (token.hasAdminKey() || token.hasMetadataKey())) {
-            final List<Key> keys = new ArrayList<>();
-            if (token.hasAdminKey()) {
-                keys.add(token.adminKey());
-            }
-            if (token.hasMetadataKey()) {
-                keys.add(token.metadataKey());
-            }
-            final Key threshKey = Key.newBuilder()
-                    .thresholdKey(ThresholdKey.newBuilder()
-                            .keys(KeyList.newBuilder().keys(keys).build())
-                            .threshold(1)
-                            .build())
-                    .build();
-            context.requireKey(threshKey);
-        } else if (!isExpiryOnlyUpdateOp(op) && token.hasAdminKey()) {
-            // For expiry only op admin key is not required
-            context.requireKey(token.adminKey());
-        }*/
     }
 
     @Override
@@ -412,13 +391,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             validateTrue(originalToken.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
             builder.metadataKey(op.metadataKey());
         }
-
-        /*// TODO May be removed ?
-        if (isMetadataOnlyUpdateOp(op)) {
-            validateTrue(originalToken.hasAdminKey() || originalToken.hasMetadataKey(), TOKEN_IS_IMMUTABLE);
-        } else if (!isExpiryOnlyUpdateOp(op)) {
-            validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
-        }*/
         if (op.hasAdminKey()) {
             final var newAdminKey = op.adminKey();
             if (isKeyRemoval(newAdminKey)) {
@@ -485,25 +457,31 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                         originalToken.metadataKey(),
                         op.hasMetadataKey());
                 addRequiredLowPrioritySigner(
-                        lowPriorityKeys,
-                        originalToken.hasMetadataKey(),
-                        originalToken.metadataKey(),
-                        op.hasMetadata());
+                        lowPriorityKeys, originalToken.hasMetadataKey(), originalToken.metadataKey(), op.hasMetadata());
 
-                final Key lowPriorityKeyList = Key.newBuilder()
-                        .keyList(KeyList.newBuilder().keys(lowPriorityKeys).build())
-                        .build();
-                final List<Key> keysRequired = List.of(lowPriorityKeyList, originalToken.adminKey());
-                // with this we will require either admin key signature or all low priority keys signatures
-                // (we can update several low priority keys with one TokenUpdate, so we will require all of these keys
-                // to sign)
-                final Key thresholdKey = Key.newBuilder()
-                        .thresholdKey(ThresholdKey.newBuilder()
-                                .keys(KeyList.newBuilder().keys(keysRequired).build())
-                                .threshold(1)
-                                .build())
-                        .build();
-                context.requireKey(thresholdKey);
+                Key requiredKey;
+                if (lowPriorityKeys.isEmpty()) {
+                    requiredKey = originalToken.adminKey();
+                } else {
+                    final Key lowPriorityKeyList = Key.newBuilder()
+                            .keyList(KeyList.newBuilder().keys(lowPriorityKeys).build())
+                            .build();
+                    final List<Key> keysRequired = List.of(lowPriorityKeyList, originalToken.adminKey());
+                    // with this we will require either admin key signature or all low priority keys signatures
+                    // (we can update several low priority keys with one TokenUpdate, so we will require all of these
+                    // keys
+                    // to sign)
+                    requiredKey = Key.newBuilder()
+                            .thresholdKey(ThresholdKey.newBuilder()
+                                    .keys(KeyList.newBuilder()
+                                            .keys(keysRequired)
+                                            .build())
+                                    .threshold(1)
+                                    .build())
+                            .build();
+                }
+
+                context.requireKey(requiredKey);
             } else if (!isExpiryOnlyUpdateOp(op)) {
                 // if we update any other field, we need the current admin key to sign
                 // note: for expiry only op admin key is not required

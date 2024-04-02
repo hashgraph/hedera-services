@@ -431,12 +431,16 @@ public class BaseTokenHandler {
      * Check if TokenUpdateOp wants to update only some of the low priority keys or the metadata field
      * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or metadataKey
      */
-    public static boolean noOtherFieldThanLowPriorityKeyOrMetadataWillBeUpdated(@NonNull final TokenUpdateTransactionBody op) {
-        return !(op.hasTreasury()
+    public static boolean noOtherFieldThanLowPriorityKeyOrMetadataWillBeUpdated(
+            @NonNull final TokenUpdateTransactionBody op) {
+        return !((op.symbol() != null && !op.symbol().isEmpty())
+                || (op.name() != null && !op.name().isEmpty())
+                || op.hasTreasury()
                 || op.hasAdminKey()
                 || op.hasAutoRenewAccount()
                 || op.hasAutoRenewPeriod()
-                || op.hasMemo());
+                || op.hasMemo()
+                || op.hasExpiry());
     }
 
     /**

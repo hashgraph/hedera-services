@@ -276,10 +276,7 @@ public class TokenMetadataSpecs extends HapiSuite {
         String saltedName = salted(PRIMARY);
 
         return defaultHapiSpec("updatingMetadataWorksWithMetadataKey", NONDETERMINISTIC_TOKEN_NAMES)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(100L),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(METADATA_KEY))
+                .given(cryptoCreate(TOKEN_TREASURY).balance(100L), newKeyNamed(SUPPLY_KEY), newKeyNamed(METADATA_KEY))
                 .when(
                         tokenCreate(PRIMARY)
                                 .supplyType(TokenSupplyType.FINITE)
