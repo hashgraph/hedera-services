@@ -83,8 +83,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
-import com.swirlds.platform.event.deduplication.EventDeduplicator;
-import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
@@ -586,8 +584,6 @@ public class SwirldsPlatform implements Platform {
 
         final PcesSequencer sequencer = new DefaultPcesSequencer();
 
-        final EventDeduplicator eventDeduplicator =
-                new StandardEventDeduplicator(platformContext, blocks.intakeEventCounter());
         final EventSignatureValidator eventSignatureValidator = new DefaultEventSignatureValidator(
                 platformContext,
                 time,
@@ -643,7 +639,7 @@ public class SwirldsPlatform implements Platform {
         platformWiring.bind(
                 builder.buildEventHasher(),
                 builder.buildInternalEventValidator(),
-                eventDeduplicator,
+                builder.buildEventDeduplicator(),
                 eventSignatureValidator,
                 orphanBuffer,
                 inOrderLinker,

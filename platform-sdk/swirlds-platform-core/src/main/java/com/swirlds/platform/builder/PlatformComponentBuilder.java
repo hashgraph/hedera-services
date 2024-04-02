@@ -21,6 +21,8 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
@@ -54,6 +56,7 @@ public class PlatformComponentBuilder {
 
     private EventHasher eventHasher;
     private InternalEventValidator internalEventValidator;
+    private EventDeduplicator eventDeduplicator;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -178,5 +181,34 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(), singleNodeNetwork, blocks.intakeEventCounter());
         }
         return internalEventValidator;
+    }
+
+    /**
+     * Provide an event deduplicator in place of the platform's default event deduplicator.
+     *
+     * @param eventDeduplicator the event deduplicator to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withEventDeduplicator(@NonNull final EventDeduplicator eventDeduplicator) {
+        throwIfAlreadyUsed();
+        this.eventDeduplicator = Objects.requireNonNull(eventDeduplicator);
+        return this;
+    }
+
+    /**
+     * Build the event deduplicator if it has not yet been built. If one has been provided via
+     * {@link #withEventDeduplicator(EventDeduplicator)}, that deduplicator will be used. If this method is called
+     * more than once, only the first call will build the event deduplicator. Otherwise, the default deduplicator
+     * will be created and returned.
+     *
+     * @return the event deduplicator
+     */
+    @NonNull
+    public EventDeduplicator buildEventDeduplicator() {
+        if (eventDeduplicator == null) {
+            eventDeduplicator = new StandardEventDeduplicator(blocks.platformContext(), blocks.intakeEventCounter());
+        }
+        return eventDeduplicator;
     }
 }
