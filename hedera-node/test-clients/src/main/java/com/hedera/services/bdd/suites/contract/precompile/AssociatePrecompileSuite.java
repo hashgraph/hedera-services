@@ -75,7 +75,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
+@HapiTestSuite
 @Tag(SMART_CONTRACT)
 public class AssociatePrecompileSuite extends HapiSuite {
 
@@ -398,7 +398,8 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                         NEGATIVE_ASSOCIATIONS_CONTRACT,
                                         "associateTokensWithEmptyTokensArray",
                                         accountAddress.get())
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                // match mono behaviour, this is a successful call, but it should not associate any tokens
+                                .hasKnownStatus(SUCCESS)
                                 .gas(GAS_TO_OFFER)
                                 .signingWith(ACCOUNT)
                                 .via(nonExistingTokenArray)
@@ -448,8 +449,8 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 recordWith().status(INVALID_ACCOUNT_ID)),
                         childRecordsCheck(
                                 nonExistingTokenArray,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(REVERTED_SUCCESS)),
+                                SUCCESS,
+                                recordWith().status(SUCCESS)),
                         childRecordsCheck(
                                 someNonExistingTokenArray, SUCCESS, recordWith().status(SUCCESS)),
                         childRecordsCheck(
