@@ -48,7 +48,7 @@ public class AbortException extends HandleException {
             @NonNull final ResponseCodeEnum status,
             @NonNull final AccountID senderId,
             @Nullable final AccountID relayerId,
-            @NonNull final boolean isChargeable) {
+            final boolean isChargeable) {
         super(status);
         this.senderId = requireNonNull(senderId);
         this.relayerId = relayerId;
