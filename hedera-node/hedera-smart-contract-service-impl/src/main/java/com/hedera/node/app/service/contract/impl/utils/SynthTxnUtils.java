@@ -119,7 +119,14 @@ public class SynthTxnUtils {
         return builder.build();
     }
 
-    private static boolean hasNonDegenerateAutoRenewAccountId(@NonNull final Account account) {
+    /**
+     * Returns whether the given account has an auto-renew account id that is not
+     * {@code 0.0.0}.
+     *
+     * @param account the account
+     * @return whether the given account has an auto-renew account id that is not
+     */
+    public static boolean hasNonDegenerateAutoRenewAccountId(@NonNull final Account account) {
         return account.hasAutoRenewAccountId()
                 && account.autoRenewAccountIdOrThrow().accountNumOrElse(0L) != 0L;
     }

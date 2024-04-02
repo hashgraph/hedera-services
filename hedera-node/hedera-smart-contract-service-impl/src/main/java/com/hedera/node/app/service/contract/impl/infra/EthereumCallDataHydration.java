@@ -67,11 +67,10 @@ public class EthereumCallDataHydration {
             if (callDataFileId.fileNum() < firstUserEntityNum) {
                 return failureFrom(INVALID_FILE_ID);
             }
-            final var maybeCallDataFile = fileStore.getFileLeaf(callDataFileId);
-            if (maybeCallDataFile == null) {
+            final var callDataFile = fileStore.getFileLeaf(callDataFileId);
+            if (callDataFile == null) {
                 return failureFrom(INVALID_FILE_ID);
             }
-            final var callDataFile = maybeCallDataFile;
             if (callDataFile.deleted()) {
                 return failureFrom(FILE_DELETED);
             }
