@@ -113,11 +113,11 @@ class SocketFactoryTest {
                             .isMock())) {
                         // we've passed a mocked peer's certificate as an example of an invalid agreement
                         // certificate - it possesses no valid issuer's principal
-                        assertNull(NetworkUtils.identifyTlsPeer(((SSLSocket) s).getSession().getPeerCertificates(),
-                                peerInfoList));
+                        assertNull(NetworkUtils.identifyTlsPeer(
+                                ((SSLSocket) s).getSession().getPeerCertificates(), peerInfoList));
                     } else {
-                        assertNotNull(NetworkUtils.identifyTlsPeer(((SSLSocket) s).getSession().getPeerCertificates(),
-                                peerInfoList));
+                        assertNotNull(NetworkUtils.identifyTlsPeer(
+                                ((SSLSocket) s).getSession().getPeerCertificates(), peerInfoList));
                     }
                 }
                 final byte[] bytes = s.getInputStream().readNBytes(DATA.length);

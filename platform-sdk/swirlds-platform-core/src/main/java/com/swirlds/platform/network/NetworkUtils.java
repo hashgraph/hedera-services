@@ -58,12 +58,10 @@ public final class NetworkUtils {
     /**
      * limits the frequency of error log statements
      */
-    private static final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, Time.getCurrent(),
-            Duration.ofMinutes(2));
-    ;
+    private static final RateLimitedLogger rateLimitedLogger =
+            new RateLimitedLogger(logger, Time.getCurrent(), Duration.ofMinutes(2));
 
-    private NetworkUtils() {
-    }
+    private NetworkUtils() {}
 
     /**
      * Close all the {@link Closeable} instances supplied, ignoring any exceptions
@@ -196,25 +194,27 @@ public final class NetworkUtils {
      * @return info of the identified peer
      */
     public static PeerInfo identifyTlsPeer(
-            final @NonNull Certificate[] certs,
-            final @NonNull List<PeerInfo> peerInfoList) {
+            final @NonNull Certificate[] certs, final @NonNull List<PeerInfo> peerInfoList) {
         PeerInfo matchingPair = null;
         final X509Certificate agreementCert = (X509Certificate) certs[0];
         final Set<PeerInfo> peers = peerInfoList.stream()
                 .filter(peerInfo -> ((X509Certificate) peerInfo.signingCertificate())
                         .getSubjectX500Principal()
-                        .equals(agreementCert.getIssuerX500Principal())).collect(Collectors.toSet());
+                        .equals(agreementCert.getIssuerX500Principal()))
+                .collect(Collectors.toSet());
         final Optional<PeerInfo> peer = peers.stream().findFirst();
         if (peer.isEmpty()) {
-            rateLimitedLogger.warn(SOCKET_EXCEPTIONS.getMarker(),
-                    "Unable to find a matching peer with the presented certificate {}.", agreementCert);
+            rateLimitedLogger.warn(
+                    SOCKET_EXCEPTIONS.getMarker(),
+                    "Unable to find a matching peer with the presented certificate {}.",
+                    agreementCert);
         } else {
             matchingPair = peer.get();
         }
 
         if (peers.size() > 1) {
-            rateLimitedLogger.info(SOCKET_EXCEPTIONS.getMarker(),
-                    "Found {} matching peers for the presented certificate", peers);
+            rateLimitedLogger.info(
+                    SOCKET_EXCEPTIONS.getMarker(), "Found {} matching peers for the presented certificate", peers);
         }
         return matchingPair;
     }

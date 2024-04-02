@@ -48,8 +48,8 @@ import org.apache.logging.log4j.Logger;
  */
 public class InboundConnectionHandler {
     private static final Logger logger = LogManager.getLogger(InboundConnectionHandler.class);
-    private static final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, Time.getCurrent(),
-            Duration.ofMinutes(2));
+    private static final RateLimitedLogger rateLimitedLogger =
+            new RateLimitedLogger(logger, Time.getCurrent(), Duration.ofMinutes(2));
 
     private final ConnectionTracker connectionTracker;
     private final NodeId selfId;

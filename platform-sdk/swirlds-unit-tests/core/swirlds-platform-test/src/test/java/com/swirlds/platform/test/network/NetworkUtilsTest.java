@@ -60,7 +60,6 @@ class NetworkUtilsTest {
                 "an interrupted exception should be rethrown");
     }
 
-
     /**
      * Tests that given a list of valid Swirlds production certificates,
      * {@link NetworkUtils#identifyTlsPeer(Certificate[], List)} is able to successfully identify a matching peer.
@@ -69,12 +68,13 @@ class NetworkUtilsTest {
     void testExtractPeerInfoWorksForMainnet()
             throws URISyntaxException, KeyLoadingException, KeyStoreException, InvalidAlgorithmParameterException {
 
-        //sample node names from mainnet
-        final List<String> names = List.of("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8",
-                "node9", "node10");
+        // sample node names from mainnet
+        final List<String> names =
+                List.of("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10");
         // sample pfx file grabbed from mainnet
-        final KeyStore publicKeys = loadKeys(ResourceLoader.getFile("preGeneratedKeysAndCerts/")
-                .resolve("publicMainnet.pfx"), "password".toCharArray());
+        final KeyStore publicKeys = loadKeys(
+                ResourceLoader.getFile("preGeneratedKeysAndCerts/").resolve("publicMainnet.pfx"),
+                "password".toCharArray());
         final PublicStores publicStores = PublicStores.fromAllPublic(publicKeys, names);
 
         final List<PeerInfo> peerInfoList = new ArrayList<>();
@@ -91,8 +91,8 @@ class NetworkUtilsTest {
         final PKIXParameters params = new PKIXParameters(publicStores.agrTrustStore());
         final Set<TrustAnchor> trustAnchors = params.getTrustAnchors();
 
-        final Certificate[] certificates = trustAnchors.stream()
-                .map(TrustAnchor::getTrustedCert).toArray(Certificate[]::new);
+        final Certificate[] certificates =
+                trustAnchors.stream().map(TrustAnchor::getTrustedCert).toArray(Certificate[]::new);
 
         final PeerInfo matchedPeer = NetworkUtils.identifyTlsPeer(certificates, peerInfoList);
         Assertions.assertNotNull(matchedPeer);
