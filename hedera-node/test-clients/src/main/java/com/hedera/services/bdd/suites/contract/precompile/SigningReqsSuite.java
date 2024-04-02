@@ -95,9 +95,11 @@ public class SigningReqsSuite extends HapiSuite {
                 .given(
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
+                        // refusing eth conversion because LegacyActivation is created with longzero address (ClassicCreatesCall.legacyActivationIn)
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .exposingNumTo(contractId::set)
-                                .gas(GAS_TO_OFFER),
+                                .gas(GAS_TO_OFFER)
+                                .refusingEthConversion(),
                         cryptoCreate(autoRenew)
                                 .keyShape(origKey.signedWith(sigs(ON, MINIMAL_CREATIONS_CONTRACT)))
                                 .exposingCreatedIdTo(id -> autoRenewMirrorAddr.set(idAsHeadlongAddress(id))))

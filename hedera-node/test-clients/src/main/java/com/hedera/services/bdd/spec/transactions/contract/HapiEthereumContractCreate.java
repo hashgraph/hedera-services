@@ -112,7 +112,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.contract = contractCreate.contract;
         this.key = contractCreate.key;
         this.autoRenewPeriodSecs = contractCreate.autoRenewPeriodSecs;
-        this.balance = mapBalance(contractCreate.balance);
+        this.balance = contractCreate.balance;
         this.adminKeyControl = contractCreate.adminKeyControl;
         this.adminKeyType = contractCreate.adminKeyType;
         this.memo = contractCreate.memo;
@@ -151,17 +151,15 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.maxGasAllowance = Optional.of(FIVE_HBARS);
     }
 
-    private Optional<Long> mapBalance(Optional<Long> balance) {
+    private Optional<BigInteger> weibarsToTinybars(Optional<Long> balance) {
         if (balance.isEmpty()) {
-            return Optional.empty();
+            return Optional.of(BigInteger.ZERO);
         }
-
         try {
             return Optional.of(WEIBARS_TO_TINYBARS
-                    .multiply(BigInteger.valueOf(balance.get()))
-                    .longValueExact());
+                    .multiply(BigInteger.valueOf(balance.get())));
         } catch (ArithmeticException e) {
-            return Optional.of(Long.MAX_VALUE);
+            return Optional.of(BigInteger.ZERO);
         }
     }
 
@@ -209,8 +207,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     public HapiEthereumContractCreate balance(long initial) {
-        balance = Optional.of(
-                WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(initial)).longValueExact());
+        balance = Optional.of(initial);
         return this;
     }
 
@@ -312,7 +309,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                 maxFeePerGasBytes,
                 gas.orElse(0L),
                 new byte[] {},
-                BigInteger.valueOf(balance.orElse(0L)),
+                weibarsToTinybars(balance).orElse(BigInteger.ZERO),
                 callData,
                 new byte[] {},
                 0,
