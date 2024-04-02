@@ -85,9 +85,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
     public static final String WIPE_FUNGIBLE_TOKEN = "wipeFungibleToken";
     public static final String WIPE_NON_FUNGIBLE_TOKEN = "wipeNonFungibleToken";
 
-    public static final String THRESHOLD_KEY = "TreshKey";
-
-    private static final KeyShape TRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
+    public static final String THRESHOLD_KEY = "ThreshKey";
+    private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
 
     public static void main(String... args) {
         new WipeTokenAccountPrecompileSuite().runSuiteAsync();
@@ -105,7 +104,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of();
+        return List.of(wipeFungibleTokenScenarios(), wipeNonFungibleTokenScenarios());
     }
 
     @HapiTest
@@ -146,7 +145,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                 .via("accountDoesNotOwnWipeKeyTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                        newKeyNamed(THRESHOLD_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, WIPE_CONTRACT))),
+                        newKeyNamed(THRESHOLD_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, WIPE_CONTRACT))),
                         tokenUpdate(VANILLA_TOKEN).wipeKey(THRESHOLD_KEY),
                         cryptoUpdate(ADMIN_ACCOUNT).key(THRESHOLD_KEY),
                         contractCall(
@@ -270,7 +269,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                     .via("wipeNonFungibleAccountDoesNotOwnWipeKeyTxn")
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                            newKeyNamed(THRESHOLD_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, WIPE_CONTRACT))),
+                            newKeyNamed(THRESHOLD_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, WIPE_CONTRACT))),
                             tokenUpdate(VANILLA_TOKEN).wipeKey(THRESHOLD_KEY),
                             cryptoUpdate(ADMIN_ACCOUNT).key(THRESHOLD_KEY),
                             contractCall(
