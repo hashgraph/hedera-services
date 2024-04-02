@@ -39,7 +39,7 @@ pcli diagram \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Transaction Prehandling:applicationTransactionPrehandler,🔮' \
     -g 'Signature Management:State Signature Collection,stateSigner,🖋️' \
-    -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,postHandler_getRoundNumber,postHandler_stateReserver' \
+    -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,postHandler_stateReserver' \
     -g 'State Hasher:stateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'State Modification:Consensus Round Handler,runningHashUpdate' \
     -c 'Consensus Event Stream' \
