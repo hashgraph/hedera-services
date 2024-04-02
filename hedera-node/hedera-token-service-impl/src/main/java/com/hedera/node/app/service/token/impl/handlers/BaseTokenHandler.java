@@ -404,10 +404,33 @@ public class BaseTokenHandler {
      * @return true if the given token update op is an expiry-only update op
      */
     public static boolean isExpiryOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
-        final var defaultOp = TokenUpdateTransactionBody.DEFAULT;
-        final var copyDefaultWithExpiry =
-                defaultOp.copyBuilder().expiry(op.expiry()).token(op.token()).build();
-        return op.equals(copyDefaultWithExpiry);
+        if (!op.hasExpiry()) {
+            return false;
+        }
+        final var defaultWithExpiry = TokenUpdateTransactionBody.newBuilder()
+                .expiry(op.expiry())
+                .token(op.token())
+                .build();
+        return op.equals(defaultWithExpiry);
+    }
+
+    /**
+     * Returns true if the given token update op is a metadata-only update op.
+     * This is needed for validating whether a token update op has admin key present on the token,
+     * to update any other fields other than metadata.
+     * For updating metadata we need signature from either admin key or metadata key
+     * @param op the token update op to check
+     * @return true if the given token update op is an metadata-only update op
+     */
+    public static boolean isMetadataOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
+        if (!op.hasMetadata()) {
+            return false;
+        }
+        final var defaultWithMetadata = TokenUpdateTransactionBody.newBuilder()
+                .metadata(op.metadata())
+                .token(op.token())
+                .build();
+        return op.equals(defaultWithMetadata);
     }
 
     @NonNull

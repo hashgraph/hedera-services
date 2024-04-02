@@ -111,11 +111,11 @@ public interface TransferContext {
     boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments();
 
     /**
-     * Validates hbar allowances for the top-level operation in this transfer context.
+     * Validates allowances for the top-level operation in this transfer context.
      *
      * <p> (FUTURE) Remove this, only needed for diff testing and has no logical priority.
      */
-    void validateHbarAllowances();
+    void validateTopLevelAllowances();
 
     /**
      * Validates account IDs for the top-level operation in this transfer context.

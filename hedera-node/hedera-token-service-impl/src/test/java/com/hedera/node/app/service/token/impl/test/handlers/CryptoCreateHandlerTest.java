@@ -83,6 +83,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -127,6 +128,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private FeeAccumulator feeAccumulator;
 
+    @Mock
+    private Metrics metrics;
+
     private CryptoCreateHandler subject;
 
     private CryptoCreateValidator cryptoCreateValidator;
@@ -142,6 +146,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
+        configuration = HederaTestConfigBuilder.createConfig();
         refreshStoresWithCurrentTokenInWritable();
         txn = new CryptoCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);
@@ -629,7 +634,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .value(new ProtoBytes(Bytes.wrap(evmAddress)), asAccount(accountNum))
                 .build();
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        writableStore = new WritableAccountStore(writableStates);
+        writableStore = new WritableAccountStore(writableStates, configuration, metrics);
         when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -665,7 +670,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         final var copy = account.copyBuilder().deleted(true).build();
         writableAccounts.put(id, copy);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        writableStore = new WritableAccountStore(writableStates, configuration, metrics);
     }
 
     private void setupConfig() {

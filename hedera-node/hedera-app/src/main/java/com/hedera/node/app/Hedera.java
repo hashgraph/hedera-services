@@ -138,6 +138,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -230,6 +231,12 @@ public final class Hedera implements SwirldMain {
     private static BlockRecordService BLOCK_SERVICE;
     private static FeeService FEE_SERVICE;
     private static CongestionThrottleService CONGESTION_THROTTLE_SERVICE;
+
+    /**
+     * In order to migrate from mono to modular, we need to keep references to the virtual maps that we are migrating.
+     * Then they can be properly closed when the migration is complete.
+     */
+    private static final Set<VirtualMap<?, ?>> MONO_VIRTUAL_MAPS = ConcurrentHashMap.newKeySet();
 
     /*==================================================================================================================
     *
@@ -446,7 +453,6 @@ public final class Hedera implements SwirldMain {
                     dumpMonoChildrenFrom(state, MONO_PRE_MIGRATION);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
                 logger.error("Failed to dump mono state before migration at MONO_PRE_MIGRATION", e);
             }
 
@@ -458,7 +464,9 @@ public final class Hedera implements SwirldMain {
             if (uniqTokensFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
                 final var copy = uniqTokensFromState.copy();
-                TOKEN_SERVICE.setNftsFromState(copy);
+                copy.registerMetrics(metrics);
+                MONO_VIRTUAL_MAPS.add(copy);
+                TOKEN_SERVICE.setNftsFromState(uniqTokensFromState);
             }
 
             // --------------------- TOKEN_ASSOCIATIONS (1)
@@ -467,7 +475,9 @@ public final class Hedera implements SwirldMain {
             if (tokenRelsFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
                 final var copy = tokenRelsFromState.copy();
-                TOKEN_SERVICE.setTokenRelsFromState(copy);
+                copy.registerMetrics(metrics);
+                MONO_VIRTUAL_MAPS.add(copy);
+                TOKEN_SERVICE.setTokenRelsFromState(tokenRelsFromState);
             }
 
             // --------------------- TOPICS (2)
@@ -481,19 +491,24 @@ public final class Hedera implements SwirldMain {
             if (filesFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
                 final var copy = filesFromState.copy();
-                FILE_SERVICE.setFs(() -> VirtualMapLike.from(copy));
+                copy.registerMetrics(metrics);
+                MONO_VIRTUAL_MAPS.add(copy);
+
+                // Note: some files have no metadata, e.g. contract bytecode files
+                FILE_SERVICE.setFs(() -> VirtualMapLike.from(filesFromState));
 
                 // We also need to make this available to the contract service, so it can extract contract bytecode
-                CONTRACT_SERVICE.setBytecodeFromState(() -> VirtualMapLike.from(copy));
+                CONTRACT_SERVICE.setBytecodeFromState(() -> VirtualMapLike.from(filesFromState));
             }
-            // Note: some files have no metadata, e.g. contract bytecode files
 
             // --------------------- ACCOUNTS (4)
             final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFromState = state.getChild(ACCOUNTS);
             if (acctsFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
                 final var copy = acctsFromState.copy();
-                TOKEN_SERVICE.setAcctsFromState(copy);
+                copy.registerMetrics(metrics);
+                MONO_VIRTUAL_MAPS.add(copy);
+                TOKEN_SERVICE.setAcctsFromState(acctsFromState);
             }
 
             // --------------------- TOKENS (5)
@@ -506,8 +521,6 @@ public final class Hedera implements SwirldMain {
             // Here we assign the network context, but don't migrate it by itself. These properties have been split out
             // to various services in the modular code, and will each be migrated in its appropriate service.
             final MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
-            // the translator is using firstConsTimeOfLastBlock instead of CURRENTBlock...is that ok???
-            // firstConsTimeOfCurrentBlock – needed in blockInfo
 
             // --------------------- SPECIAL_FILES (7)
             // No longer useful; don't migrate
@@ -519,7 +532,6 @@ public final class Hedera implements SwirldMain {
             }
 
             // --------------------- RECORD_STREAM_RUNNING_HASH (9)
-            // From MerkleNetworkContext: blockNo, blockHashes
             final RecordsRunningHashLeaf blockInfoFromState = state.getChild(RECORD_STREAM_RUNNING_HASH);
             if (blockInfoFromState != null) {
                 BLOCK_SERVICE.setFs(blockInfoFromState, fromNetworkContext);
@@ -533,7 +545,9 @@ public final class Hedera implements SwirldMain {
             if (contractFromStorage != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
                 final var copy = contractFromStorage.copy();
-                CONTRACT_SERVICE.setStorageFromState(VirtualMapLike.from(copy));
+                copy.registerMetrics(metrics);
+                MONO_VIRTUAL_MAPS.add(copy);
+                CONTRACT_SERVICE.setStorageFromState(VirtualMapLike.from(contractFromStorage));
             }
 
             // --------------------- STAKING_INFO (12)
@@ -560,8 +574,9 @@ public final class Hedera implements SwirldMain {
 
             // --------------------- CONGESTION THROTTLE SERVICE (14)
             if (fromNetworkContext != null) {
-                CONGESTION_THROTTLE_SERVICE.setFs(fromNetworkContext);
-                InitialModServiceAdminSchema.setFs(fromNetworkContext);
+                CONGESTION_THROTTLE_SERVICE.setFs(
+                        fromNetworkContext.usageSnapshots(), fromNetworkContext.getGasThrottleUsageSnapshot());
+                InitialModServiceAdminSchema.setFs(true);
             }
 
             // Here we release all mono children so that we don't have a bunch of null routes in state
@@ -611,7 +626,7 @@ public final class Hedera implements SwirldMain {
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
         try {
             switch (trigger) {
-                case GENESIS -> genesis(state, platformState);
+                case GENESIS -> genesis(state, platformState, metrics);
                 case RECONNECT -> reconnect(state, deserializedVersion, platformState, metrics);
                 case RESTART, EVENT_STREAM_RECOVERY -> restart(
                         state, deserializedVersion, trigger, platformState, metrics);
@@ -632,6 +647,7 @@ public final class Hedera implements SwirldMain {
                 platformState.getFreezeTime(),
                 platformState.getLastFrozenTime());
     }
+
     /**
      * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
      * than the current software version. If it is prior to the current version, then each migration between the
@@ -647,7 +663,8 @@ public final class Hedera implements SwirldMain {
     private void onMigrate(
             @NonNull final MerkleHederaState state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
-            @NonNull final InitTrigger trigger) {
+            @NonNull final InitTrigger trigger,
+            @NonNull final Metrics metrics) {
         final var currentVersion = version.getServicesVersion();
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getServicesVersion();
         logger.info(
@@ -663,14 +680,22 @@ public final class Hedera implements SwirldMain {
 
         final var migrator = new OrderedServiceMigrator(servicesRegistry);
         logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
+        migrator.doMigrations(
+                state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo, metrics);
+
+        // Now that migrations are complete, clean up the leftover virtual maps
+        MONO_VIRTUAL_MAPS.forEach(vm -> {
+            if (!vm.isDestroyed()) {
+                vm.release();
+            }
+        });
+        MONO_VIRTUAL_MAPS.clear();
+
         try {
-            migrator.doMigrations(
-                    state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
             if (shouldDump(trigger, MOD_POST_MIGRATION)) {
                 dumpModChildrenFrom(state, MOD_POST_MIGRATION);
             }
         } catch (Exception t) {
-            t.printStackTrace();
             logger.error("Error dumping state after migration at MOD_POST_MIGRATION", t);
         }
 
@@ -963,10 +988,13 @@ public final class Hedera implements SwirldMain {
     /**
      * Implements the code flow for initializing the state of a new Hedera node with NO SAVED STATE.
      */
-    private void genesis(@NonNull final MerkleHederaState state, @NonNull final PlatformState platformState) {
+    private void genesis(
+            @NonNull final MerkleHederaState state,
+            @NonNull final PlatformState platformState,
+            @NonNull final Metrics metrics) {
         logger.debug("Genesis Initialization");
         // Create all the nodes in the merkle tree for all the services
-        onMigrate(state, null, GENESIS);
+        onMigrate(state, null, GENESIS, metrics);
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, GENESIS, platformState);
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
@@ -1038,7 +1066,7 @@ public final class Hedera implements SwirldMain {
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
         //       the config provider to the migration code and let it get the right version of config as it goes.
-        onMigrate(state, deserializedVersion, trigger);
+        onMigrate(state, deserializedVersion, trigger, metrics);
         if (trigger == EVENT_STREAM_RECOVERY) {
             // (FUTURE) Dump post-migration mod-service state
         }

@@ -294,7 +294,6 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER_ID;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asTopic;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -891,7 +890,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -904,7 +903,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -917,7 +916,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -930,7 +929,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -1250,7 +1249,7 @@ public class SigRequirementsTest {
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
         assertTrue(summary.getOrderedKeys().isEmpty());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -2023,7 +2022,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.hasErrorReport());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -2036,7 +2035,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.hasErrorReport());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -2049,7 +2048,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.hasErrorReport());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -2062,7 +2061,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.hasErrorReport());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -3585,7 +3584,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.hasErrorReport());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -3598,7 +3597,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.hasErrorReport());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -4678,7 +4677,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -4691,7 +4690,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -5449,7 +5448,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.hasErrorReport());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -5462,7 +5461,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.hasErrorReport());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
@@ -6016,7 +6015,7 @@ public class SigRequirementsTest {
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
-        assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, summary.getErrorReport());
+        assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
     }
 
     @Test
