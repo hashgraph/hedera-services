@@ -119,7 +119,7 @@ includeAllProjects("platform-sdk/platform-apps/demos")
 includeAllProjects("platform-sdk/platform-apps/tests")
 
 //Platform-base demo applications
-include(":swirlds-platform-base-example-app", "platform-sdk/base-apps/swirlds-platform-base-example-app")
+include(":swirlds-platform-base-example", "example-apps/swirlds-platform-base-example")
 
 // Block Node Projects
 include(":blocknode-core", "block-node/blocknode-core")
