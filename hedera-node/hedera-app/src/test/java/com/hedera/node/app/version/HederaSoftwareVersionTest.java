@@ -17,9 +17,13 @@
 package com.hedera.node.app.version;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.config.converter.SemanticVersionConverter;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -64,6 +68,31 @@ final class HederaSoftwareVersionTest {
             case ">" -> assertThat(versionA).isGreaterThan(versionB);
             default -> throw new IllegalArgumentException("Unknown expected value: " + expected);
         }
+    }
+
+    @Test
+    void serializationRoundTripWithConfigVersionTest() throws IOException, ConstructableRegistryException {
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(HederaSoftwareVersion.class, HederaSoftwareVersion::new));
+
+        final HederaSoftwareVersion v1 = new HederaSoftwareVersion(
+                new SemanticVersion(0, 48, 0, "alpha.5", ""), new SemanticVersion(0, 48, 0, "", ""), 1);
+
+        final HederaSoftwareVersion v2 = new HederaSoftwareVersion(
+                new SemanticVersion(0, 48, 0, "alpha.5", ""), new SemanticVersion(0, 48, 0, "", ""), 1);
+
+        assertEquals(0, v1.compareTo(v2));
+
+        final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+        final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
+        out.writeSerializable(v1, true);
+
+        final SerializableDataInputStream in =
+                new SerializableDataInputStream(new ByteArrayInputStream(byteOut.toByteArray()));
+        final HederaSoftwareVersion v3 = in.readSerializable();
+
+        assertEquals(0, v1.compareTo(v3));
     }
 
     @Test

@@ -113,7 +113,7 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config) {
-        final var parties = safeComputeInvolvedParties(transaction, updater, config, context);
+        final var parties = computeInvolvedPartiesOrAbort(transaction, updater, config);
         try {
             return processTransactionWithParties(
                     transaction, updater, feesOnlyUpdater, context, tracer, config, parties);
@@ -162,11 +162,10 @@ public class TransactionProcessor {
         return safeCommit(result, transaction, updater, feesOnlyUpdater, context, config);
     }
 
-    private InvolvedParties safeComputeInvolvedParties(
+    private InvolvedParties computeInvolvedPartiesOrAbort(
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
-            @NonNull final Configuration config,
-            @NonNull final HederaEvmContext context) {
+            @NonNull final Configuration config) {
         try {
             return computeInvolvedParties(transaction, updater, config);
         } catch (AbortException e) {

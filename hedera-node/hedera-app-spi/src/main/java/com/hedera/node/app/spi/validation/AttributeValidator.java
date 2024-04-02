@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.spi.validation;
 
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Key;
+import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -68,5 +72,18 @@ public interface AttributeValidator {
      * @param key the key to validate
      * @return true if immutable entity with the key
      */
-    boolean isImmutableKey(@NonNull Key key);
+    static boolean isImmutableKey(@NonNull Key key) {
+        requireNonNull(key);
+        return key.hasKeyList() && key.equals(IMMUTABILITY_SENTINEL_KEY);
+    }
+
+    /**
+     * Checks if the given key is a key removal, if it is set as {@link KeyUtils#IMMUTABILITY_SENTINEL_KEY}.
+     * @param source the key to check
+     * @return true if the key is a key removal, false otherwise
+     */
+    static boolean isKeyRemoval(@NonNull final Key source) {
+        requireNonNull(source);
+        return isImmutableKey(source);
+    }
 }
