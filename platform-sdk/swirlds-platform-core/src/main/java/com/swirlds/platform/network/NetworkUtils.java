@@ -209,12 +209,10 @@ public final class NetworkUtils {
                     "Unable to find a matching peer with the presented certificate {}.",
                     agreementCert);
         } else {
-            matchingPair = peer.get();
-        }
-
-        if (peers.size() > 1) {
             rateLimitedLogger.info(
-                    SOCKET_EXCEPTIONS.getMarker(), "Found {} matching peers for the presented certificate", peers);
+                    SOCKET_EXCEPTIONS.getMarker(), "Found {} matching peers for the presented certificate",
+                    peers.size());
+            matchingPair = peer.get();
         }
         return matchingPair;
     }
