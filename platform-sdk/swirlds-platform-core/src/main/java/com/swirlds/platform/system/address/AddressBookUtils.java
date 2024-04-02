@@ -239,9 +239,9 @@ public class AddressBookUtils {
                 nickname,
                 selfname,
                 weight,
-                internalIp.getHostAddress(),
+                parts[5], // FQDN Support: use original string for internal address
                 internalPort,
-                externalIp.getHostAddress(),
+                parts[7], // FQDN Support: use original string for external address
                 externalPort,
                 memoToUse);
     }
