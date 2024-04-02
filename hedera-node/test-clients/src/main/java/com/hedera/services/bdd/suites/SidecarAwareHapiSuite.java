@@ -16,6 +16,13 @@
 
 package com.hedera.services.bdd.suites;
 
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion.recordStreamLocFor;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -29,13 +36,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
-
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion.recordStreamLocFor;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
 public abstract class SidecarAwareHapiSuite extends HapiSuite {
@@ -74,7 +74,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Order(Order.DEFAULT)
+    @Order(Integer.MAX_VALUE)
     final HapiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
                 .given(
