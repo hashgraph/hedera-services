@@ -210,7 +210,8 @@ public final class NetworkUtils {
                     agreementCert);
         } else {
             rateLimitedLogger.info(
-                    SOCKET_EXCEPTIONS.getMarker(), "Found {} matching peers for the presented certificate",
+                    SOCKET_EXCEPTIONS.getMarker(),
+                    "Found {} matching peers for the presented certificate",
                     peers.size());
             matchingPair = peer.get();
         }
