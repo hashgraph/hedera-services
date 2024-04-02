@@ -4,6 +4,7 @@ module com.hedera.storage.blocknode.filesystem.s3 {
             com.hedera.storage.blocknode.filesystem.s3.test,
             com.hedera.storage.blocknode.core;
 
+    requires com.hedera.storage.blocknode.util;
     requires com.swirlds.config.api;
     requires software.amazon.awssdk.auth;
     requires software.amazon.awssdk.awscore;
@@ -15,6 +16,5 @@ module com.hedera.storage.blocknode.filesystem.s3 {
     requires software.amazon.awssdk.utils;
     requires transitive com.hedera.storage.blocknode.config;
     requires transitive com.hedera.storage.blocknode.filesystem.api;
-    requires transitive com.hedera.storage.blocknode.util;
     requires transitive com.hedera.node.hapi;
 }

@@ -5,6 +5,7 @@ module com.hedera.storage.blocknode.filesystem.local {
             com.hedera.storage.blocknode.core;
 
     // Require the modules needed for compilation.
+    requires com.hedera.storage.blocknode.util;
     requires com.swirlds.config.api;
     requires org.apache.logging.log4j;
 
@@ -12,6 +13,5 @@ module com.hedera.storage.blocknode.filesystem.local {
     // module (including tests and other source sets).
     requires transitive com.hedera.storage.blocknode.config;
     requires transitive com.hedera.storage.blocknode.filesystem.api;
-    requires transitive com.hedera.storage.blocknode.util;
     requires transitive com.hedera.node.hapi;
 }
