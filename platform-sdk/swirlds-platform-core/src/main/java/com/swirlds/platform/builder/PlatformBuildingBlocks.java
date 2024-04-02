@@ -22,6 +22,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -47,6 +48,8 @@ import java.util.function.Consumer;
  *                                  enabled
  * @param snapshotOverrideConsumer  the consumer for snapshot overrides, null if publishing this data has not been
  *                                  enabled
+ * @param intakeEventCounter        counts events that have been received by gossip but not yet inserted into gossip
+ *                                  event storage, per peer
  * @param firstPlatform             if this is the first platform being built (there is static setup that needs to be
  *                                  done, long term plan is to stop using static variables)
  */
@@ -62,4 +65,5 @@ public record PlatformBuildingBlocks(
         @NonNull EmergencyRecoveryManager emergencyRecoveryManager,
         @NonNull Consumer<GossipEvent> preconsensusEventConsumer,
         @NonNull Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
+        @NonNull IntakeEventCounter intakeEventCounter,
         boolean firstPlatform) {}

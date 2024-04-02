@@ -21,6 +21,10 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.event.hashing.DefaultEventHasher;
+import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
+import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.util.MetricsDocUtils;
@@ -30,19 +34,26 @@ import java.util.Objects;
 /**
  * The advanced platform builder is responsible for constructing platform components. This class is exposed so that
  * individual components can be replaced with alternate implementations.
+ * <p>
+ * In order to be considered a "component", an object must meet the following criteria:
+ * <ul>
+ *     <li>A component must not require another component as a constructor argument.</li>
+ *     <li>A component's constructor should only use things from the {@link PlatformBuildingBlocks} or things derived
+ *     from things from the {@link PlatformBuildingBlocks}.</li>
+ *     <li>A component must not communicate with other components except through the wiring framework
+ *         (with a very small number of exceptions due to tech debt that has not yet been paid off).</li>
+ *     <li>A component should have an interface and at default implementation.</li>
+ *     <li>A component should use {@link com.swirlds.common.wiring.component.ComponentWiring ComponentWiring} to define
+ *         wiring API.</li>
+ *     <li>The order in which components are constructed should not matter.</li>
+ * </ul>
  */
 public class PlatformComponentBuilder {
 
-    private final PlatformBuildingBlocks platformBuildingBlocks;
+    private final PlatformBuildingBlocks blocks;
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // All non-final variables defined here are components. In general, default components should not be passed to
-    // other components as constructor arguments, and it should be legal to construct components in any order.
-
-    // Future work: move all components here
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // All other variables should be defined below this line.
+    private EventHasher eventHasher;
+    private InternalEventValidator internalEventValidator;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -52,11 +63,11 @@ public class PlatformComponentBuilder {
     /**
      * Constructor.
      *
-     * @param platformBuildingBlocks the build context for the platform under construction, contains all data needed to
-     *                             construct platform components
+     * @param blocks the build context for the platform under construction, contains all data needed to
+     *                               construct platform components
      */
-    public PlatformComponentBuilder(@NonNull final PlatformBuildingBlocks platformBuildingBlocks) {
-        this.platformBuildingBlocks = Objects.requireNonNull(platformBuildingBlocks);
+    public PlatformComponentBuilder(@NonNull final PlatformBuildingBlocks blocks) {
+        this.blocks = Objects.requireNonNull(blocks);
     }
 
     /**
@@ -66,7 +77,7 @@ public class PlatformComponentBuilder {
      */
     @NonNull
     public PlatformBuildingBlocks getBuildingBlocks() {
-        return platformBuildingBlocks;
+        return blocks;
     }
 
     /**
@@ -88,18 +99,84 @@ public class PlatformComponentBuilder {
         throwIfAlreadyUsed();
         used = true;
 
-        try (final ReservedSignedState initialState = platformBuildingBlocks.initialState()) {
+        try (final ReservedSignedState initialState = blocks.initialState()) {
             return new SwirldsPlatform(this);
         } finally {
 
             // Future work: eliminate the static variables that require this code to exist
-            if (platformBuildingBlocks.firstPlatform()) {
+            if (blocks.firstPlatform()) {
                 MetricsDocUtils.writeMetricsDocumentToFile(
                         getGlobalMetrics(),
                         getPlatforms(),
-                        platformBuildingBlocks.platformContext().getConfiguration());
+                        blocks.platformContext().getConfiguration());
                 getMetricsProvider().start();
             }
         }
+    }
+
+    /**
+     * Provide an event hasher in place of the platform's default event hasher.
+     *
+     * @param eventHasher the event hasher to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withEventHasher(@NonNull final EventHasher eventHasher) {
+        throwIfAlreadyUsed();
+        this.eventHasher = Objects.requireNonNull(eventHasher);
+        return this;
+    }
+
+    /**
+     * Build the event hasher if it has not yet been built. If one has been provided via
+     * {@link #withEventHasher(EventHasher)}, that hasher will be used. If this method is called more than once, only
+     * the first call will build the event hasher. Otherwise, the default hasher will be created and returned.
+     *
+     * @return the event hasher
+     */
+    @NonNull
+    public EventHasher buildEventHasher() {
+        if (eventHasher == null) {
+            eventHasher = new DefaultEventHasher(blocks.platformContext());
+        }
+        return eventHasher;
+    }
+
+    /**
+     * Provide an internal event validator in place of the platform's default internal event validator.
+     *
+     * @param internalEventValidator the internal event validator to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withInternalEventValidator(
+            @NonNull final InternalEventValidator internalEventValidator) {
+        throwIfAlreadyUsed();
+        this.internalEventValidator = Objects.requireNonNull(internalEventValidator);
+        return this;
+    }
+
+    /**
+     * Build the internal event validator if it has not yet been built. If one has been provided via
+     * {@link #withInternalEventValidator(InternalEventValidator)}, that validator will be used. If this method is called
+     * more than once, only the first call will build the internal event validator. Otherwise, the default validator
+     * will be created and returned.
+     *
+     * @return the internal event validator
+     */
+    @NonNull
+    public InternalEventValidator buildInternalEventValidator() {
+        if (internalEventValidator == null) {
+            final boolean singleNodeNetwork = blocks.initialState()
+                            .get()
+                            .getState()
+                            .getPlatformState()
+                            .getAddressBook()
+                            .getSize()
+                    == 1;
+            internalEventValidator = new DefaultInternalEventValidator(
+                    blocks.platformContext(), singleNodeNetwork, blocks.intakeEventCounter());
+        }
+        return internalEventValidator;
     }
 }

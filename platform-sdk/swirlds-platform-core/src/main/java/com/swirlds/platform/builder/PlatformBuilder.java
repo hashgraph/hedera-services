@@ -53,6 +53,10 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
+import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
@@ -458,6 +462,16 @@ public final class PlatformBuilder {
             throw new IllegalStateException("The current address book of the initial state is null.");
         }
 
+        final AddressBook currentAddressBook =
+                initialState.get().getState().getPlatformState().getAddressBook();
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        final IntakeEventCounter intakeEventCounter;
+        if (syncConfig.waitForEventsInIntake()) {
+            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
+        } else {
+            intakeEventCounter = new NoOpIntakeEventCounter();
+        }
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
                 keysAndCerts.get(selfId),
@@ -470,6 +484,7 @@ public final class PlatformBuilder {
                 emergencyRecoveryManager,
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
+                intakeEventCounter,
                 firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);
