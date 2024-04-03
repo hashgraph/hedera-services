@@ -35,8 +35,7 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          negative number.
  * @param eventHasherUnhandledCapacity                      number of unhandled tasks allowed in the event hasher
  *                                                          scheduler
- * @param internalEventValidator                            configuration for the internal event validator
- *                                                          scheduler
+ * @param internalEventValidator                            configuration for the internal event validator scheduler
  * @param eventDeduplicatorSchedulerType                    the event deduplicator scheduler type
  * @param eventDeduplicatorUnhandledCapacity                number of unhandled tasks allowed in the event deduplicator
  *                                                          scheduler
@@ -134,4 +133,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "100") int hashLoggerUnhandledTaskCapacity,
         @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
-        @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration platformPublisher) {}
