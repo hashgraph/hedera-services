@@ -220,6 +220,16 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         tokenRelStore.put(receiverRelCopy.balance(toTokenRelBalance + 1).build());
     }
 
+    /**
+     * Update the linked list of NFTs for the sender and receiver accounts.
+     * @param from - Sender account
+     * @param to - Receiver account
+     * @param nftId - NFT id
+     * @param isSenderTreasury - Flag to indicate if sender is treasury
+     * @param isReceiverTreasury - Flag to indicate if receiver is treasury
+     * @param nftStore - NFT store
+     * @param accountStore - Account store
+     */
     public void updateLinks(
             @NonNull final Account from,
             @NonNull final Account to,
@@ -228,12 +238,15 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
             final boolean isReceiverTreasury,
             final WritableNftStore nftStore,
             final WritableAccountStore accountStore) {
+        // If sender is not treasury, remove this NftId from the list of sender's NftIds
         if (!isSenderTreasury) {
             removeFromList(nftId, nftStore, from, accountStore);
         }
+        // If receiver is not treasury, add this NftId to the list of receiver's NftIds
         if (!isReceiverTreasury) {
             insertToList(nftId, nftStore, to, accountStore);
         } else {
+            // If receiver is treasury, remove the previous and next pointers as per mono-service
             final var nft = requireNonNull(nftStore.get(nftId));
             final var nftCopy = nft.copyBuilder();
             nftCopy.ownerPreviousNftId((NftID) null);
@@ -242,6 +255,13 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         }
     }
 
+    /**
+     * Insert the NFT to the head of the list of NFTs owned by the account.
+     * @param nftId - NFT id
+     * @param nftStore - NFT store
+     * @param to - Account
+     * @param accountStore - Account store
+     */
     private void insertToList(
             @NonNull final NftID nftId,
             @NonNull final WritableNftStore nftStore,
@@ -271,6 +291,13 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         accountStore.put(toAccountCopy.build());
     }
 
+    /**
+     * Remove the NFT from the list of NFTs owned by the account.
+     * @param nftId - NFT id
+     * @param nftStore - NFT store
+     * @param from - Account
+     * @param accountStore - Account store
+     */
     public static void removeFromList(
             @NonNull final NftID nftId,
             @NonNull final WritableNftStore nftStore,

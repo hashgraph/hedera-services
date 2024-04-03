@@ -314,9 +314,6 @@ public class InitialModServiceTokenSchema extends Schema {
             final var numStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
             log.info("BBM: finished staking info");
 
-            System.out.println("Node 19 StakeToReward: "
-                    + stakingToState.get(new EntityNumber(19)).stakeToReward());
-
             // ---------- Accounts
             log.info("BBM: doing accounts");
             final var numAccountInsertions = new AtomicLong();
