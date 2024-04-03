@@ -213,7 +213,7 @@ public class SwirldsPlatform implements Platform {
     private final Metrics metrics;
 
     /**
-     * t he object that contains all key pairs and CSPRNG state for this member
+     * the object that contains all key pairs and CSPRNG state for this member
      */
     private final KeysAndCerts keysAndCerts;
 

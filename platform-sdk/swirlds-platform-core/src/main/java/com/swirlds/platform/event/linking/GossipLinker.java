@@ -34,7 +34,8 @@ public class GossipLinker extends InOrderLinker {
     /**
      * Constructor
      *
-     * @param platformContext    the platform context
+     * @param platformContext the platform context
+     * @param counter         counts the number of events, per peer, that are in the intake pipeline
      */
     public GossipLinker(@NonNull final PlatformContext platformContext, @NonNull final IntakeEventCounter counter) {
         super(platformContext);

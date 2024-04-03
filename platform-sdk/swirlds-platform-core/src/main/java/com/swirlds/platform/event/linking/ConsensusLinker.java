@@ -46,6 +46,7 @@ public class ConsensusLinker extends InOrderLinker {
      * Constructor
      *
      * @param platformContext    the platform context
+     * @param selfId             the ID of this node
      */
     public ConsensusLinker(@NonNull final PlatformContext platformContext, @NonNull final NodeId selfId) {
         super(platformContext);
@@ -125,12 +126,12 @@ public class ConsensusLinker extends InOrderLinker {
      * {@inheritDoc}
      */
     @Override
-    protected void parentChildTimeIsIncorrect(
+    protected void childTimeIsNotAfterSelfParentTime(
             @NonNull final GossipEvent child,
             @NonNull final EventImpl candidateParent,
             @NonNull final Instant parentTimeCreated,
             @NonNull final Instant childTimeCreated) {
-        super.parentChildTimeIsIncorrect(child, candidateParent, parentTimeCreated, childTimeCreated);
+        super.childTimeIsNotAfterSelfParentTime(child, candidateParent, parentTimeCreated, childTimeCreated);
         timeCreatedMismatchAccumulator.update(1);
     }
 }

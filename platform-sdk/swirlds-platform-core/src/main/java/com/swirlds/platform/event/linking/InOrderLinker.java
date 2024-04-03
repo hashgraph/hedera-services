@@ -187,7 +187,7 @@ public class InOrderLinker {
             @NonNull final GossipEvent child, @NonNull final EventDescriptor parentDescriptor) {
         missingParentLogger.error(
                 EXCEPTION.getMarker(),
-                "Child has a missing parent. This should not be possible. " + "Child: {}, Parent EventDescriptor: {}",
+                "Child has a missing parent. This should not be possible. Child: {}, Parent EventDescriptor: {}",
                 EventStrings.toMediumString(child),
                 parentDescriptor);
     }
@@ -243,7 +243,7 @@ public class InOrderLinker {
      * @param parentTimeCreated the time created of the parent event
      * @param childTimeCreated  the time created of the child event
      */
-    protected void parentChildTimeIsIncorrect(
+    protected void childTimeIsNotAfterSelfParentTime(
             @NonNull final GossipEvent child,
             @NonNull final EventImpl candidateParent,
             @NonNull final Instant parentTimeCreated,
@@ -329,7 +329,7 @@ public class InOrderLinker {
         if (parentDescriptor.getCreator().equals(child.getDescriptor().getCreator())
                 && parentTimeCreated.compareTo(childTimeCreated) >= 0) {
 
-            parentChildTimeIsIncorrect(child, candidateParent, parentTimeCreated, childTimeCreated);
+            childTimeIsNotAfterSelfParentTime(child, candidateParent, parentTimeCreated, childTimeCreated);
 
             return null;
         }
