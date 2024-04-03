@@ -71,11 +71,8 @@ public class TokenMetadataSpecs extends HapiSuite {
     private static final String CREATE_TXN = "createTxn";
     private static final String PAYER = "payer";
     private static final String METADATA_KEY = "metadataKey";
-    private static final String PAUSE_KEY = "pauseKey";
     private static final String FREEZE_KEY = "freezeKey";
     private static final String KYC_KEY = "kycKey";
-    private static final String FEE_SCHEDULE_KEY = "feeScheduleKey";
-
     private static String TOKEN_TREASURY = "treasury";
 
     public static void main(String... args) {
