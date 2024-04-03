@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.service.token.records;
 
-import static java.util.Collections.emptySet;
+import static java.util.Collections.emptyMap;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -49,7 +50,7 @@ public interface ParentRecordFinalizer {
             @NonNull FinalizeContext context,
             HederaFunctionality functionality,
             @NonNull Set<AccountID> explicitRewardReceivers) {
-        finalizeParentRecord(payer, context, functionality, explicitRewardReceivers, emptySet());
+        finalizeParentRecord(payer, context, functionality, explicitRewardReceivers, emptyMap());
     }
 
     void finalizeParentRecord(
@@ -57,5 +58,5 @@ public interface ParentRecordFinalizer {
             @NonNull FinalizeContext context,
             HederaFunctionality functionality,
             @NonNull Set<AccountID> explicitRewardReceivers,
-            @NonNull Set<AccountID> prePaidRewardReceivers);
+            @NonNull Map<AccountID, Long> prePaidRewards);
 }

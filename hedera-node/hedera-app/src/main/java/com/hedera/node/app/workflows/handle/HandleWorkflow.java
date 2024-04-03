@@ -45,6 +45,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAY
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
@@ -126,6 +127,7 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
@@ -360,7 +362,7 @@ public class HandleWorkflow {
         AccountID payer = null;
         Fees fees = null;
         TransactionInfo transactionInfo = null;
-        Set<AccountID> prePaidRewardReceivers = emptySet();
+        Map<AccountID, Long> prePaidRewards = emptyMap();
         try {
             final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
 
@@ -555,7 +557,7 @@ public class HandleWorkflow {
                     recordBuilder.status(SUCCESS);
                     // Only ScheduleCreate and ScheduleSign can trigger paid staking rewards via
                     // dispatch; and only if this top-level transaction was successful
-                    prePaidRewardReceivers = context.dispatchPaidStakerIds();
+                    prePaidRewards = context.dispatchPaidRewards();
 
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
@@ -622,7 +624,7 @@ public class HandleWorkflow {
                 tokenServiceContext,
                 function,
                 extraRewardReceivers(transactionInfo, recordBuilder),
-                prePaidRewardReceivers);
+                prePaidRewards);
 
         // Commit all state changes
         stack.commitFullStack();
