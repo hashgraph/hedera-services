@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
@@ -76,9 +77,9 @@ class OutboundConnectionCreatorTest {
         doAnswer(i -> connected.get()).when(socket).isBound();
         doAnswer(i -> !connected.get()).when(socket).isClosed();
         doAnswer(i -> {
-                    connected.set(false);
-                    return null;
-                })
+            connected.set(false);
+            return null;
+        })
                 .when(socket)
                 .close();
 
@@ -109,14 +110,7 @@ class OutboundConnectionCreatorTest {
         assertFalse(connection.connected(), "should not be connected after calling disconnect()");
 
         // test exceptions
-        final ByteArrayOutputStream byteOut2 = new ByteArrayOutputStream();
-        final SerializableDataOutputStream out2 = new SerializableDataOutputStream(byteOut2);
-        out2.writeInt(0);
-        out2.close();
-
-        final ByteArrayInputStream badInputStream = new ByteArrayInputStream(byteOut2.toByteArray());
-
-        doAnswer(i -> badInputStream).when(socket).getInputStream();
+        Mockito.doThrow(SocketTimeoutException.class).when(socketFactory).createClientSocket(any(), anyInt());
         connection = occ.createConnection(otherNode);
         assertTrue(
                 connection instanceof NotConnectedConnection,
@@ -163,9 +157,9 @@ class OutboundConnectionCreatorTest {
         doAnswer(i -> connected.get()).when(socket).isBound();
         doAnswer(i -> !connected.get()).when(socket).isClosed();
         doAnswer(i -> {
-                    connected.set(false);
-                    return null;
-                })
+            connected.set(false);
+            return null;
+        })
                 .when(socket)
                 .close();
 
