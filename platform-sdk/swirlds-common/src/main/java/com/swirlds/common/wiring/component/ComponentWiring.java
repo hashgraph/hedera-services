@@ -16,12 +16,15 @@
 
 package com.swirlds.common.wiring.component;
 
+import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
+
 import com.swirlds.common.wiring.component.internal.FilterToBind;
 import com.swirlds.common.wiring.component.internal.InputWireToBind;
 import com.swirlds.common.wiring.component.internal.TransformerToBind;
 import com.swirlds.common.wiring.component.internal.WiringComponentProxy;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
@@ -97,7 +100,10 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
      * @param model     the wiring model that will contain the component
      * @param clazz     the interface class of the component
      * @param scheduler the task scheduler that will run the component
+     * @deprecated use {@link #ComponentWiring(WiringModel, Class, TaskSchedulerConfiguration)} instead. Once all uses
+     * have been updated, this constructor will be removed.
      */
+    @Deprecated
     public ComponentWiring(
             @NonNull final WiringModel model,
             @NonNull final Class<COMPONENT_TYPE> clazz,
@@ -105,6 +111,43 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
 
         this.model = Objects.requireNonNull(model);
         this.scheduler = Objects.requireNonNull(scheduler);
+
+        if (!clazz.isInterface()) {
+            throw new IllegalArgumentException("Component class " + clazz.getName() + " is not an interface.");
+        }
+
+        proxyComponent = (COMPONENT_TYPE) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {clazz}, proxy);
+    }
+
+    /**
+     * Create a new component wiring.
+     *
+     * @param model                  the wiring model that will contain the component
+     * @param clazz                  the interface class of the component
+     * @param schedulerConfiguration for the task scheduler that will run the component
+     */
+    public ComponentWiring(
+            @NonNull final WiringModel model,
+            @NonNull final Class<COMPONENT_TYPE> clazz,
+            @NonNull final TaskSchedulerConfiguration schedulerConfiguration) {
+
+        this.model = Objects.requireNonNull(model);
+        Objects.requireNonNull(schedulerConfiguration);
+
+        final String schedulerName;
+        final SchedulerLabel schedulerLabelAnnotation = clazz.getAnnotation(SchedulerLabel.class);
+        if (schedulerLabelAnnotation == null) {
+            schedulerName = clazz.getSimpleName();
+        } else {
+            schedulerName = schedulerLabelAnnotation.value();
+        }
+
+        this.scheduler = model.schedulerBuilder(schedulerName)
+                .configure(schedulerConfiguration)
+                // FUTURE WORK: all components not currently in platform core should move there
+                .withHyperlink(platformCoreHyperlink(clazz))
+                .build()
+                .cast();
 
         if (!clazz.isInterface()) {
             throw new IllegalArgumentException("Component class " + clazz.getName() + " is not an interface.");
@@ -565,5 +608,15 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         for (final FilterToBind<COMPONENT_TYPE, Object> filterToBind : filtersToBind) {
             filterToBind.filter().bind(x -> filterToBind.predicate().apply(component, x));
         }
+    }
+
+    /**
+     * Get the name of the scheduler that is running this component.
+     *
+     * @return the name of the scheduler
+     */
+    @NonNull
+    public String getSchedulerName() {
+        return scheduler.getName();
     }
 }
