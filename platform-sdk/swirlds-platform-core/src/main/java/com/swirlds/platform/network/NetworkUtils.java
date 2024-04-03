@@ -33,6 +33,7 @@ import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.system.PlatformConstructionException;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -193,7 +194,7 @@ public final class NetworkUtils {
      * @param peerInfoList List of known peers
      * @return info of the identified peer
      */
-    public static PeerInfo identifyTlsPeer(
+    public static @Nullable PeerInfo identifyTlsPeer(
             final @NonNull Certificate[] certs, final @NonNull List<PeerInfo> peerInfoList) {
         PeerInfo matchingPair = null;
         final X509Certificate agreementCert = (X509Certificate) certs[0];
