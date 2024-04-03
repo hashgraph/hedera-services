@@ -71,7 +71,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     public Map<AccountID, Long> applyStakingRewards(
             @NonNull final FinalizeContext context,
             @NonNull final Set<AccountID> explicitRewardReceivers,
-            @NonNull final Set<AccountID> prePaidRewardReceivers) {
+            @NonNull final Map<AccountID, Long> prePaidRewards) {
         requireNonNull(context);
         requireNonNull(explicitRewardReceivers);
         final var writableStore = context.writableStore(WritableAccountStore.class);
@@ -87,17 +87,28 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         // get list of possible reward receivers which are staked to node
         final var rewardReceivers =
                 getAllRewardReceivers(writableStore, stakedToMeRewardReceivers, explicitRewardReceivers);
-        rewardReceivers.removeAll(prePaidRewardReceivers);
+        // We don't want to repeat any rewards that have already been paid (in current implementation, this means during
+        // a SCHEDULED dispatch)
+        rewardReceivers.removeAll(prePaidRewards.keySet());
         // Pay rewards to all possible reward receivers, returns all rewards paid
         final var recordBuilder = context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class);
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
                 rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow, recordBuilder);
-        // Apply all changes related to stakedId changes, and adjust stakedToMe
-        // for all accounts staking to an account
-        adjustStakedToMeForAccountStakees(writableStore);
-        // Adjust stakes for nodes and account's staking metadata
-        adjustStakeMetadata(
-                writableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid, rewardReceivers);
+
+        if (!context.isScheduleDispatch()) {
+            // We only manage stake metadata once, at the end of a transaction; but to do
+            // this correctly, we need to include information about any rewards paid during
+            // a SCHEDULED dispatch
+            rewardReceivers.addAll(prePaidRewards.keySet());
+            rewardsPaid.putAll(prePaidRewards);
+            // Apply all changes related to stakedId changes, and adjust stakedToMe
+            // for all accounts staking to an account
+            adjustStakedToMeForAccountStakees(writableStore);
+            // Adjust stakes for nodes and account's staking metadata
+            adjustStakeMetadata(
+                    writableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid, rewardReceivers);
+        }
+
         // Decrease staking reward account balance by rewardPaid amount
         decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
         return rewardsPaid;

@@ -46,6 +46,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
     private String account;
     private String aliasKeySource = null;
     private boolean shouldPurge = false;
+    private boolean omitId = false;
     private Optional<String> transferAccount = Optional.empty();
     private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
@@ -77,6 +78,11 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
         return this;
     }
 
+    public HapiCryptoDelete sansTargetId() {
+        omitId = true;
+        return this;
+    }
+
     public HapiCryptoDelete purging() {
         shouldPurge = true;
         return this;
@@ -105,7 +111,9 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
                         CryptoDeleteTransactionBody.class, b -> {
                             transferAccount.ifPresent(
                                     a -> b.setTransferAccountID(spec.registry().getAccountID(a)));
-                            b.setDeleteAccountID(target);
+                            if (!omitId) {
+                                b.setDeleteAccountID(target);
+                            }
                         });
         return b -> b.setCryptoDelete(opBody);
     }
