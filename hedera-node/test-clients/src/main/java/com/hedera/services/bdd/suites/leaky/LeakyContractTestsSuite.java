@@ -2154,16 +2154,18 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                     .via(payTxn)
                                     .sending(depositAmount)
                                     .hasKnownStatus(SUCCESS)
-                                    .gas(6_000_000)
-                    );
+                                    .gas(6_000_000));
                 }))
                 .then(withOpContext((spec, opLog) -> {
-                    final var getTxnRecord = getTxnRecord(payTxn).andAllChildRecords().logged()
+                    final var getTxnRecord = getTxnRecord(payTxn)
+                            .andAllChildRecords()
+                            .logged()
                             .hasChildRecordCount(1)
                             .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO));
                     allRunFor(spec, getTxnRecord);
 
-                    final var childReceipt = getTxnRecord.getFirstNonStakingChildRecord().getReceipt();
+                    final var childReceipt =
+                            getTxnRecord.getFirstNonStakingChildRecord().getReceipt();
                     final var lazyAccountId = childReceipt.getAccountID();
                     final var name = "lazy";
                     spec.registry().saveAccountId(name, lazyAccountId);
@@ -2181,8 +2183,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                             .receiverSigReq(false)
                                             .memo(LAZY_MEMO)
                                             .evmAddress(evmAddress)
-                                            .balance(depositAmount))
-                    );
+                                            .balance(depositAmount)));
                     allRunFor(
                             spec,
                             expectContractActionSidecarFor(
@@ -2196,8 +2197,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                             .setValue(depositAmount)
                                             .setRecipientAccount(lazyAccountId)
                                             .setOutput(EMPTY)
-                                            .build()))
-                    );
+                                            .build())));
                 }));
     }
 
@@ -3233,18 +3233,16 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                 .payingWith(GENESIS);
     }
 
-    private static CustomSpecAssert expectContractActionSidecarFor(final Timestamp consensusTimestamp,
-                                                                   final List<ContractAction> actions) {
-        return withOpContext((spec, opLog) ->
-                addExpectedSidecar(new ExpectedSidecar(
-                        spec.getName(),
-                        TransactionSidecarRecord.newBuilder()
-                                .setConsensusTimestamp(consensusTimestamp)
-                                .setActions(ContractActions.newBuilder()
-                                        .addAllContractActions(actions)
-                                        .build())
-                                .build()))
-        );
+    private static CustomSpecAssert expectContractActionSidecarFor(
+            final Timestamp consensusTimestamp, final List<ContractAction> actions) {
+        return withOpContext((spec, opLog) -> addExpectedSidecar(new ExpectedSidecar(
+                spec.getName(),
+                TransactionSidecarRecord.newBuilder()
+                        .setConsensusTimestamp(consensusTimestamp)
+                        .setActions(ContractActions.newBuilder()
+                                .addAllContractActions(actions)
+                                .build())
+                        .build())));
     }
 
     @Override

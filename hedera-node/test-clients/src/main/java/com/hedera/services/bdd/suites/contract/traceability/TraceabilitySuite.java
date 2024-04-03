@@ -122,6 +122,11 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -132,12 +137,6 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 @HapiTestSuite(fuzzyMatch = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -213,10 +212,9 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()
-                .then(
-                        overridingTwo(
-                                "contracts.throttle.throttleByGas", "false",
-                                "contracts.enforceCreationThrottle", "false"));
+                .then(overridingTwo(
+                        "contracts.throttle.throttleByGas", "false",
+                        "contracts.enforceCreationThrottle", "false"));
     }
 
     @HapiTest

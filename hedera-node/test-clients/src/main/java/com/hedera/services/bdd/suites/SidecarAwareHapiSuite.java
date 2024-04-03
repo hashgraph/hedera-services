@@ -62,18 +62,13 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
             hapiSpecs.add(hapiSpec);
         }
 
-        return hapiSpecs.add(assertSidecars())
-                .build()
-                .toList();
+        return hapiSpecs.add(assertSidecars()).build().toList();
     }
 
     @HapiTest
     @Order(0)
     public final HapiSpec sidecarWatcherSetup() {
-        return defaultHapiSpec("initializeSidecarWatcher")
-                .given()
-                .when()
-                .then(initializeSidecarWatcher());
+        return defaultHapiSpec("initializeSidecarWatcher").given().when().then(initializeSidecarWatcher());
     }
 
     @HapiTest
