@@ -277,6 +277,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
             nftStore.put(headCopy.build());
 
             nftCopy.ownerNextNftId(to.headNftId());
+        } else {
+            nftCopy.ownerNextNftId((NftID) null);
         }
         nftCopy.ownerPreviousNftId((NftID) null);
 
