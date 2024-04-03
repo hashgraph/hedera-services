@@ -77,9 +77,9 @@ class OutboundConnectionCreatorTest {
         doAnswer(i -> connected.get()).when(socket).isBound();
         doAnswer(i -> !connected.get()).when(socket).isClosed();
         doAnswer(i -> {
-            connected.set(false);
-            return null;
-        })
+                    connected.set(false);
+                    return null;
+                })
                 .when(socket)
                 .close();
 
@@ -157,9 +157,9 @@ class OutboundConnectionCreatorTest {
         doAnswer(i -> connected.get()).when(socket).isBound();
         doAnswer(i -> !connected.get()).when(socket).isClosed();
         doAnswer(i -> {
-            connected.set(false);
-            return null;
-        })
+                    connected.set(false);
+                    return null;
+                })
                 .when(socket)
                 .close();
 
