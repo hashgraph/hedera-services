@@ -358,6 +358,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         nonAncientEventWindowOutputWire.solderTo(
                 eventCreationManagerWiring.getInputWire(EventCreationManager::setNonAncientEventWindow), INJECT);
         nonAncientEventWindowOutputWire.solderTo(shadowgraphWiring.eventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(
+                latestCompleteStateNexusWiring.getInputWire(LatestCompleteStateNexus::updateEventWindow));
     }
 
     /**
@@ -481,9 +483,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         consensusRoundHandlerWiring
                 .stateOutput()
                 .solderTo(savedStateControllerWiring.getInputWire(SavedStateController::markSavedState));
-        consensusRoundHandlerWiring
-                .roundNumberOutput()
-                .solderTo(latestCompleteStateNexusWiring.getInputWire(LatestCompleteStateNexus::newIncompleteState));
         consensusRoundHandlerWiring.stateAndRoundOutput().solderTo(signedStateHasherWiring.stateAndRoundInput());
 
         signedStateHasherWiring.stateOutput().solderTo(hashLoggerWiring.hashLoggerInputWire());
