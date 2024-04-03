@@ -90,7 +90,7 @@ public class TestIntake implements LoadableFromSignedState {
 
         shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
 
-        model = WiringModel.create(platformContext, time, mock(ForkJoinPool.class));
+        model = WiringModel.create(platformContext, mock(ForkJoinPool.class));
 
         hasherWiring = new ComponentWiring<>(model, EventHasher.class, directScheduler("eventHasher"));
         final EventHasher eventHasher = new DefaultEventHasher(platformContext);
