@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Tag;
 @HapiTestSuite
 @Tag(TOKEN)
 public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
-
     private static final Logger log = LogManager.getLogger(Hip540ChangeOrRemoveKeysSuite.class);
 
     public static void main(String... args) {

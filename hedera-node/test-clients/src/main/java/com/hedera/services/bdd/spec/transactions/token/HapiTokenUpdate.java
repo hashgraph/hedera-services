@@ -65,6 +65,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private Optional<String> newFreezeKey = Optional.empty();
     private Optional<String> newFeeScheduleKey = Optional.empty();
     private Optional<String> newPauseKey = Optional.empty();
+    private Optional<String> newMetadataKey = Optional.empty();
+    private Optional<String> newMetadata = Optional.empty();
 
     @Nullable
     private String newLockKey;
@@ -92,6 +94,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private boolean useEmptyPauseKey = false;
     private boolean useEmptyFeeScheduleKey = false;
     private boolean useInvalidFeeScheduleKey = false;
+    private boolean useInvalidMetadataKey = false;
+    private boolean useInvalidPauseKey = false;
+    private boolean noKeyValidation = false;
     private Optional<String> contractKeyName = Optional.empty();
     private Set<TokenKeyType> contractKeyAppliedTo = Set.of();
 
@@ -143,6 +148,16 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
     public HapiTokenUpdate pauseKey(String name) {
         newPauseKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiTokenUpdate metadataKey(String name) {
+        newMetadataKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiTokenUpdate newMetadata(String name) {
+        newMetadata = Optional.of(name);
         return this;
     }
 

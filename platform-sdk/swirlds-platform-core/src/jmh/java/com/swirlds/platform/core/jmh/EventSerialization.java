@@ -58,9 +58,7 @@ public class EventSerialization {
     public void setup() throws IOException, ConstructableRegistryException {
         final Random random = new Random(seed);
 
-        event = TestingEventBuilder.builder(random)
-                .setNumberOfSystemTransactions(1)
-                .build();
+        event = new TestingEventBuilder(random).setSystemTransactionCount(1).build();
         StaticSoftwareVersion.setSoftwareVersion(event.getHashedData().getSoftwareVersion());
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.platform.system");
         final PipedInputStream inputStream = new PipedInputStream();

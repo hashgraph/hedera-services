@@ -18,17 +18,19 @@ package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.hasAlreadySomeLowPriorityKeys;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.isExpiryOnlyUpdateOp;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenKeyValidation;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -54,9 +56,13 @@ public class TokenUpdateValidator {
         final var tokenId = op.tokenOrThrow();
         final var token = getIfUsable(tokenId, tokenStore);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        // If the token has an empty admin key it can't be updated
+        // If the token has an empty admin key it can't be updated for any other fields other than low priority keys or
+        // expiry
+        // For updating only low priority keys - (wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or
+        // metadataKey)
+        // the transaction should have admin key or the respective low priority key signature
         if (isEmpty(token.adminKey())) {
-            validateTrue(BaseTokenHandler.isExpiryOnlyUpdateOp(op), TOKEN_IS_IMMUTABLE);
+            validateTrue(isExpiryOnlyUpdateOp(op) || hasAlreadySomeLowPriorityKeys(token), TOKEN_IS_IMMUTABLE);
         }
         // validate memo
         if (op.hasMemo()) {
@@ -75,15 +81,17 @@ public class TokenUpdateValidator {
             validator.validateTokenName(op.name(), tokensConfig);
         }
         // validate token keys, if any being changed
-        validator.validateTokenKeys(
-                op.hasAdminKey(), op.adminKey(),
-                op.hasKycKey(), op.kycKey(),
-                op.hasWipeKey(), op.wipeKey(),
-                op.hasSupplyKey(), op.supplyKey(),
-                op.hasFreezeKey(), op.freezeKey(),
-                op.hasFeeScheduleKey(), op.feeScheduleKey(),
-                op.hasPauseKey(), op.pauseKey(),
-                op.hasMetadataKey(), op.metadataKey());
+        if (op.keyVerificationMode() != TokenKeyValidation.NO_VALIDATION) {
+            validator.validateTokenKeys(
+                    op.hasAdminKey(), op.adminKey(),
+                    op.hasKycKey(), op.kycKey(),
+                    op.hasWipeKey(), op.wipeKey(),
+                    op.hasSupplyKey(), op.supplyKey(),
+                    op.hasFreezeKey(), op.freezeKey(),
+                    op.hasFeeScheduleKey(), op.feeScheduleKey(),
+                    op.hasPauseKey(), op.pauseKey(),
+                    op.hasMetadataKey(), op.metadataKey());
+        }
 
         // Check whether there is change on the following properties in the transaction body
         // If no change occurred, no need to change them or validate them

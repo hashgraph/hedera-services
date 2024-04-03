@@ -30,7 +30,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_K
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -45,7 +44,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TokenKeyValidation;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
@@ -69,6 +70,8 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -89,6 +92,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         requireNonNull(txn);
         final var op = txn.tokenUpdateOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
+
         if (op.hasFeeScheduleKey()
                 && !isKeyRemoval(op.feeScheduleKey())
                 && op.keyVerificationMode() != TokenKeyValidation.NO_VALIDATION) {
@@ -106,11 +110,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
 
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var token = tokenStore.get(tokenId);
-        if (token == null) {
-            throw new PreCheckException(INVALID_TOKEN_ID);
-        }
+        if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
 
-        addRequiredSignersForKeyRemoval(context, op, token);
+        addRequiredSigners(context, op, token);
     }
 
     @Override
@@ -170,7 +172,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 transferTokensToNewTreasury(existingTreasury, newTreasury, token, tokenRelStore, accountStore);
             }
         }
-
         final var tokenBuilder = customizeToken(token, resolvedExpiry, op);
         tokenStore.put(tokenBuilder.build());
         recordBuilder.tokenType(token.tokenType());
@@ -179,12 +180,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     /**
      * Transfer tokens from old treasury to new treasury if the token is fungible. If the token is non-fungible,
      * transfer the ownership of the NFTs from old treasury to new treasury
-     *
-     * @param oldTreasury   old treasury account
-     * @param newTreasury   new treasury account
-     * @param token         token
+     * @param oldTreasury old treasury account
+     * @param newTreasury new treasury account
+     * @param token token
      * @param tokenRelStore token relationship store
-     * @param accountStore  account store
+     * @param accountStore account store
      */
     private void transferTokensToNewTreasury(
             final AccountID oldTreasury,
@@ -213,15 +213,13 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             }
         }
     }
-
     /**
-     * Transfer fungible tokens from old treasury to new treasury. NOTE: This updates account's numOfPositiveBalances
-     * and puts to modifications on state.
-     *
+     * Transfer fungible tokens from old treasury to new treasury.
+     * NOTE: This updates account's numOfPositiveBalances and puts to modifications on state.
      * @param fromTreasuryRel old treasury relationship
-     * @param toTreasuryRel   new treasury relationship
-     * @param tokenRelStore   token relationship store
-     * @param accountStore    account store
+     * @param toTreasuryRel new treasury relationship
+     * @param tokenRelStore token relationship store
+     * @param accountStore account store
      */
     private void transferFungibleTokensToTreasury(
             final TokenRelation fromTreasuryRel,
@@ -238,13 +236,12 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Change the ownership of the NFTs from old treasury to new treasury. NOTE: This updates account's numOwnedNfts and
-     * tokenRelation's balance and puts to modifications on state.
-     *
+     * Change the ownership of the NFTs from old treasury to new treasury.
+     * NOTE: This updates account's numOwnedNfts and tokenRelation's balance and puts to modifications on state.
      * @param fromTreasuryRel old treasury relationship
-     * @param toTreasuryRel   new treasury relationship
-     * @param tokenRelStore   token relationship store
-     * @param accountStore    account store
+     * @param toTreasuryRel new treasury relationship
+     * @param tokenRelStore token relationship store
+     * @param accountStore account store
      */
     private void changeOwnerToNewTreasury(
             final TokenRelation fromTreasuryRel,
@@ -284,7 +281,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
 
     /**
      * Validate both KYC is granted and token is not frozen on the token.
-     *
      * @param tokenRel token relationship
      */
     private void validateFrozenAndKey(final TokenRelation tokenRel) {
@@ -294,10 +290,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
 
     /**
      * Build a Token based on the given token update transaction body.
-     *
-     * @param token          token to be updated
+     * @param token token to be updated
      * @param resolvedExpiry resolved expiry
-     * @param op             token update transaction body
+     * @param op token update transaction body
      * @return updated token builder
      */
     private Token.Builder customizeToken(
@@ -314,11 +309,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Updates token name, token symbol, token metadata, token memo and token treasury if they are present in the token
-     * update transaction body.
-     *
-     * @param op            token update transaction body
-     * @param builder       token builder
+     * Updates token name, token symbol, token metadata, token memo
+     * and token treasury if they are present in the token update transaction body.
+     * @param op token update transaction body
+     * @param builder token builder
      * @param originalToken original token
      */
     private void updateTokenAttributes(
@@ -342,10 +336,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
 
     /**
      * Updates expiry fields of the token if they are present in the token update transaction body.
-     *
-     * @param op             token update transaction body
+     * @param op token update transaction body
      * @param resolvedExpiry resolved expiry
-     * @param builder        token builder
+     * @param builder token builder
      */
     private void updateExpiryFields(
             final TokenUpdateTransactionBody op, final ExpiryMeta resolvedExpiry, final Token.Builder builder) {
@@ -361,12 +354,12 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Updates keys of the token if they are present in the token update transaction body. All keys can be updates only
-     * if they had already existed on the token. These keys can't be updated if they were not added during creation.
-     *
-     * @param op            token update transaction body
+     * Updates keys of the token if they are present in the token update transaction body.
+     * All keys can be updates only if they had already existed on the token.
+     * These keys can't be updated if they were not added during creation.
+     * @param op token update transaction body
      * @param originalToken original token
-     * @param builder       token builder
+     * @param builder token builder
      */
     private void updateKeys(
             final TokenUpdateTransactionBody op, final Token originalToken, final Token.Builder builder) {
@@ -398,9 +391,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             validateTrue(originalToken.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
             builder.metadataKey(getNewKeyValue(op.metadataKey()));
         }
-        if (!isExpiryOnlyUpdateOp(op)) {
-            validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
-        }
         if (op.hasAdminKey()) {
             builder.adminKey(getNewKeyValue(op.adminKey()));
         }
@@ -411,13 +401,13 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Add all signature requirements for TokenUpdateTx note: those requirements drastically changed after HIP-540
-     *
-     * @param context       pre handle context
-     * @param op            token update transaction body
+     * Add all signature requirements for TokenUpdateTx
+     * note: those requirements drastically changed after HIP-540
+     * @param context pre handle context
+     * @param op token update transaction body
      * @param originalToken original token
      */
-    private void addRequiredSignersForKeyRemoval(
+    private void addRequiredSigners(
             @NonNull PreHandleContext context,
             @NonNull final TokenUpdateTransactionBody op,
             @NonNull final Token originalToken)
@@ -441,18 +431,88 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.hasAutoRenewAccount()) {
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
+
+        if (originalToken.hasAdminKey()) {
+            // if we update any of the low priority keys, we should allow either admin key
+            // or the respective low priority key to sign.
+            if (noOtherFieldThanLowPriorityKeyOrMetadataWillBeUpdated(op)) {
+                List<Key> lowPriorityKeys = new ArrayList<>();
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys, originalToken.hasWipeKey(), originalToken.wipeKey(), op.hasWipeKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys, originalToken.hasKycKey(), originalToken.kycKey(), op.hasKycKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys, originalToken.hasSupplyKey(), originalToken.supplyKey(), op.hasSupplyKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys, originalToken.hasFreezeKey(), originalToken.freezeKey(), op.hasFreezeKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys,
+                        originalToken.hasFeeScheduleKey(),
+                        originalToken.feeScheduleKey(),
+                        op.hasFeeScheduleKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys, originalToken.hasPauseKey(), originalToken.pauseKey(), op.hasPauseKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys,
+                        originalToken.hasMetadataKey(),
+                        originalToken.metadataKey(),
+                        op.hasMetadataKey());
+                addRequiredLowPrioritySigner(
+                        lowPriorityKeys, originalToken.hasMetadataKey(), originalToken.metadataKey(), op.hasMetadata());
+
+                Key requiredKey;
+                if (lowPriorityKeys.isEmpty()) {
+                    requiredKey = originalToken.adminKey();
+                } else {
+                    final Key lowPriorityKeyList = Key.newBuilder()
+                            .keyList(KeyList.newBuilder().keys(lowPriorityKeys).build())
+                            .build();
+                    final List<Key> keysRequired = List.of(lowPriorityKeyList, originalToken.adminKey());
+                    // with this we will require either admin key signature or all low priority keys signatures
+                    // (we can update several low priority keys with one TokenUpdate, so we will require all of these
+                    // keys
+                    // to sign)
+                    requiredKey = Key.newBuilder()
+                            .thresholdKey(ThresholdKey.newBuilder()
+                                    .keys(KeyList.newBuilder()
+                                            .keys(keysRequired)
+                                            .build())
+                                    .threshold(1)
+                                    .build())
+                            .build();
+                }
+
+                context.requireKey(requiredKey);
+            } else if (!isExpiryOnlyUpdateOp(op)) {
+                // if we update any other field, we need the current admin key to sign
+                // note: for expiry only op admin key is not required
+                context.requireKey(originalToken.adminKey());
+            }
+        }
+    }
+
+    private void addRequiredLowPrioritySigner(
+            @NonNull List<Key> lowPriorityKeys,
+            final boolean tokenHasKey,
+            @NonNull final Key originalKey,
+            final boolean updateHasField) {
+        if (updateHasField) {
+            if (tokenHasKey) {
+                lowPriorityKeys.add(originalKey);
+            }
+        }
     }
 
     /**
-     * If there is a change in treasury account, update the treasury titles of the old and new treasury accounts. NOTE :
-     * This updated the numberTreasuryTitles on old and new treasury accounts. And also updates new treasury
-     * relationship to not be frozen
-     *
+     * If there is a change in treasury account, update the treasury titles of the old and
+     * new treasury accounts.
+     * NOTE : This updated the numberTreasuryTitles on old and new treasury accounts.
+     * And also updates new treasury relationship to not be frozen
      * @param existingTreasuryAccount existing treasury account
-     * @param newTreasuryAccount      new treasury account
-     * @param originalToken           original token
-     * @param accountStore            account store
-     * @param tokenRelStore           token relation store
+     * @param newTreasuryAccount new treasury account
+     * @param originalToken original token
+     * @param accountStore account store
+     * @param tokenRelStore token relation store
      */
     private void updateTreasuryTitles(
             @NonNull final Account existingTreasuryAccount,

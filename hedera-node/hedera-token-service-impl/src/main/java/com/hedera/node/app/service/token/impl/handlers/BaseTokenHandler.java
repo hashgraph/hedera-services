@@ -398,10 +398,63 @@ public class BaseTokenHandler {
      * @return true if the given token update op is an expiry-only update op
      */
     public static boolean isExpiryOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
-        final var defaultOp = TokenUpdateTransactionBody.DEFAULT;
-        final var copyDefaultWithExpiry =
-                defaultOp.copyBuilder().expiry(op.expiry()).token(op.token()).build();
-        return op.equals(copyDefaultWithExpiry);
+        if (!op.hasExpiry()) {
+            return false;
+        }
+        final var defaultWithExpiry = TokenUpdateTransactionBody.newBuilder()
+                .expiry(op.expiry())
+                .token(op.token())
+                .build();
+        return op.equals(defaultWithExpiry);
+    }
+
+    /**
+     * Returns true if the given token update op is a metadata-only update op.
+     * This is needed for validating whether a token update op has admin key present on the token,
+     * to update any other fields other than metadata.
+     * For updating metadata we need signature from either admin key or metadata key
+     * @param op the token update op to check
+     * @return true if the given token update op is an metadata-only update op
+     */
+    public static boolean isMetadataOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
+        if (!op.hasMetadata()) {
+            return false;
+        }
+        final var defaultWithMetadata = TokenUpdateTransactionBody.newBuilder()
+                .metadata(op.metadata())
+                .token(op.token())
+                .build();
+        return op.equals(defaultWithMetadata);
+    }
+
+    /**
+     * Check if TokenUpdateOp wants to update only some of the low priority keys or the metadata field
+     * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or metadataKey
+     */
+    public static boolean noOtherFieldThanLowPriorityKeyOrMetadataWillBeUpdated(
+            @NonNull final TokenUpdateTransactionBody op) {
+        return !((op.symbol() != null && !op.symbol().isEmpty())
+                || (op.name() != null && !op.name().isEmpty())
+                || op.hasTreasury()
+                || op.hasAdminKey()
+                || op.hasAutoRenewAccount()
+                || op.hasAutoRenewPeriod()
+                || op.hasMemo()
+                || op.hasExpiry());
+    }
+
+    /**
+     * Check if a given token already has some of the low priority keys
+     * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or metadataKey
+     */
+    public static boolean hasAlreadySomeLowPriorityKeys(@NonNull final Token token) {
+        return token.hasWipeKey()
+                || token.hasKycKey()
+                || token.hasSupplyKey()
+                || token.hasFreezeKey()
+                || token.hasFeeScheduleKey()
+                || token.hasPauseKey()
+                || token.hasMetadataKey();
     }
 
     @NonNull
