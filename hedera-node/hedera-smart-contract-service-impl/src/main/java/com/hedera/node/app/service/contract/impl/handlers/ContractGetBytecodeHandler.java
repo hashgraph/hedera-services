@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjResponseType;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -31,6 +32,7 @@ import com.hedera.hapi.node.contract.ContractGetBytecodeResponse;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.Fees;
@@ -48,6 +50,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ContractGetBytecodeHandler extends PaidQueryHandler {
+    private final SmartContractFeeBuilder feeBuilder = new SmartContractFeeBuilder();
+
     @Inject
     public ContractGetBytecodeHandler() {
         // Exists for injection
@@ -93,6 +97,23 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
                 .build();
     }
 
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext context) {
+        final Bytes effectiveBytecode;
+        final var contract = contractFrom(context);
+        if (contract == null || contract.deleted()) {
+            effectiveBytecode = Bytes.EMPTY;
+        } else {
+            effectiveBytecode = bytecodeFrom(context, contract);
+        }
+        final var op = context.query().contractGetBytecodeOrThrow();
+        final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
+        final var usage = feeBuilder.getContractByteCodeQueryFeeMatrices(
+                (int) effectiveBytecode.length(), fromPbjResponseType(responseType));
+        return context.feeCalculator().legacyCalculate(sigValueObj -> usage);
+    }
+
     private @Nullable Account contractFrom(@NonNull final QueryContext context) {
         final var accountsStore = context.createStore(ReadableAccountStore.class);
         final var contractId = context.query().contractGetBytecodeOrThrow().contractIDOrElse(ContractID.DEFAULT);
@@ -102,15 +123,9 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
 
     private Bytes bytecodeFrom(@NonNull final QueryContext context, @NonNull Account contract) {
         final var store = context.createStore(ContractStateStore.class);
-        var contractNumber = contract.accountId().accountNum();
+        var contractNumber = contract.accountIdOrThrow().accountNumOrThrow();
         var contractId = ContractID.newBuilder().contractNum(contractNumber).build();
         final var bytecode = store.getBytecode(contractId);
         return bytecode.code();
-    }
-
-    @NonNull
-    @Override
-    public Fees computeFees(@NonNull final QueryContext context) {
-        return context.feeCalculator().calculate();
     }
 }
