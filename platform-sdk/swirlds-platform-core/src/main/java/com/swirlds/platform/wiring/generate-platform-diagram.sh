@@ -23,7 +23,7 @@ pcli diagram \
     -s 'eventCreationManager:non-validated events:🍎' \
     -s 'Mystery Input:mystery data:X' \
     -s 'stateSigner:signature transactions:🖋️' \
-    -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
+    -g 'Event Validation:InternalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Consensus Engine:consensusEngine,consensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber' \
