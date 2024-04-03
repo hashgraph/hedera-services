@@ -262,7 +262,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -2195,7 +2194,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                                     .withStorageChanges(
                                                             StorageChange.onlyRead(
                                                                     formattedAssertionValue(0L),
-                                                                    formattedAssertionValue(6259834845692061694L))))),
+                                                                    formattedAssertionValue(2809624877451934192L))))),
                                     expectContractActionSidecarFor(
                                             payTxn,
                                             List.of(ContractAction.newBuilder()
@@ -2206,7 +2205,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                                             spec.registry().getContractId(LAZY_CREATE_CONTRACT))
                                                     .setRecipientAccount(lazyAccountId)
                                                     .setOutput(EMPTY)
-                                                    .setGas(6_000_000)
+                                                    .setGas(5_832_500)
                                                     .setValue(250)
                                                     .build())));
                         }),
