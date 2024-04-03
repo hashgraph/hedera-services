@@ -137,6 +137,23 @@ public interface WiringModel extends Startable, Stoppable {
     OutputWire<Instant> buildHeartbeatWire(final double frequency);
 
     /**
+     * Lower a metaphorical anchor into the JVM that prevents the JVM from shutting down. This is useful if there are no
+     * other non-daemon threads running in the JVM. Before the JVM is permitted to exit, the anchor must be raised via
+     * {@link #raiseJvmAnchor()}.
+     * <p>
+     * Calling this method when the anchor is already lowered has no effect.
+     */
+    void lowerJvmAnchor();
+
+    /**
+     * Raise the metaphorical anchor that prevents the JVM from shutting down. This is automatically called when the
+     * model is stopped via {@link #stop()}.
+     * <p>
+     * Calling this method when the anchor is already raised has no effect.
+     */
+    void raiseJvmAnchor();
+
+    /**
      * Start everything in the model that needs to be started. Performs static analysis of the wiring topology and
      * writes errors to the logs if problems are detected.
      */
