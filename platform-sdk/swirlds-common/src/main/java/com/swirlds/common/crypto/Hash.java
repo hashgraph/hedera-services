@@ -25,6 +25,7 @@ import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.io.streams.AugmentedDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -154,6 +155,9 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
         return value;
     }
 
+    /**
+     * @return the hash value as an immutable {@link Bytes} object
+     */
     public Bytes getBytes() {
         return Bytes.wrap(value);
     }
@@ -226,6 +230,17 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
         }
 
         return digestType.id() == that.digestType.id() && Arrays.equals(value, that.value);
+    }
+
+    /**
+     * Check if the bytes of this hash are equal to the bytes supplied.
+     *
+     * @param bytes
+     * 		the bytes to compare
+     * @return true if the bytes are equal, false otherwise
+     */
+    public boolean equalBytes(@NonNull final Bytes bytes){
+        return value.length == bytes.length() && bytes.contains(0, value);
     }
 
     /**
