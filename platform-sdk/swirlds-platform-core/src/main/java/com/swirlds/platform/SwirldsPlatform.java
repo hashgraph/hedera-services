@@ -1005,7 +1005,7 @@ public class SwirldsPlatform implements Platform {
     @Override
     public void start() {
         logger.info(STARTUP.getMarker(), "Starting platform {}", selfId);
-        platformWiring.getModel().lowerJvmAnchor();
+        platformWiring.getModel().preventJvmExit();
 
         thingsToStart.start();
 

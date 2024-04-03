@@ -108,7 +108,7 @@ public class StandardWiringModel implements WiringModel {
     /**
      * Used to protect access to the JVM anchor.
      */
-    private final AutoClosableLock anchorLock = new AutoLock();
+    private final AutoClosableLock jvmExitLock = new AutoLock();
 
     private JvmAnchor anchor;
 
@@ -159,8 +159,8 @@ public class StandardWiringModel implements WiringModel {
      * {@inheritDoc}
      */
     @Override
-    public void lowerJvmAnchor() {
-        try (final Locked ignored = anchorLock.lock()) {
+    public void preventJvmExit() {
+        try (final Locked ignored = jvmExitLock.lock()) {
             if (anchor == null) {
                 anchor = new JvmAnchor();
                 anchor.start();
@@ -172,8 +172,8 @@ public class StandardWiringModel implements WiringModel {
      * {@inheritDoc}
      */
     @Override
-    public void raiseJvmAnchor() {
-        try (final Locked ignored = anchorLock.lock()) {
+    public void permitJvmExit() {
+        try (final Locked ignored = jvmExitLock.lock()) {
             if (anchor != null) {
                 anchor.stop();
                 anchor = null;
@@ -408,7 +408,7 @@ public class StandardWiringModel implements WiringModel {
             threadScheduler.stop();
         }
 
-        raiseJvmAnchor();
+        permitJvmExit();
     }
 
     /**
