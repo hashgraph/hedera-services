@@ -251,7 +251,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public StateGarbageCollector buildStateGarbageCollector() {
         if (stateGarbageCollector == null) {
-            stateGarbageCollector = new DefaultStateGarbageCollector();
+            stateGarbageCollector = new DefaultStateGarbageCollector(blocks.platformContext());
         }
         return stateGarbageCollector;
     }
