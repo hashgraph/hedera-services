@@ -75,7 +75,7 @@ public class StateSignatureCollectorWiring {
                 preConsensusTransformer = new WireTransformer<>(
                         model,
                         "extractPreconsensusSignatureTransactions",
-                        "preconsensus events",
+                        "preconsensus signatures",
                         event -> SystemTransactionExtractionUtils.extractFromEvent(
                                 event, StateSignatureTransaction.class));
         preConsensusEventInput = preConsensusTransformer.getInputWire();
