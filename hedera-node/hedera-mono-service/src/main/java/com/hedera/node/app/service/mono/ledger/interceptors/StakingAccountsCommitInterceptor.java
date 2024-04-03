@@ -113,7 +113,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
     @Override
     public void preview(final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
-        final var stakeToRewardBefore = stakeInfoManager.mutableStakeInfoFor(19L).getStakeToReward();
+        final var stakeToRewardBefore =
+                stakeInfoManager.mutableStakeInfoFor(19L).getStakeToReward();
         if (!dynamicProperties.isStakingEnabled()) {
             super.preview(pendingChanges);
         } else {
@@ -136,7 +137,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             }
         }
         final var stakeToRewardAfter = stakeInfoManager.mutableStakeInfoFor(19L).getStakeToReward();
-        if(stakeToRewardBefore != stakeToRewardAfter){
+        if (stakeToRewardBefore != stakeToRewardAfter) {
             System.out.println(" stakeToRewardBefore " + stakeToRewardBefore + " stakeToRewardAfter "
                     + stakeToRewardAfter + "staking reward difference is "
                     + (stakeToRewardAfter - stakeToRewardBefore)

@@ -201,8 +201,10 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 accountStore);
 
         // Make copies of the objects to be updated
-        final var senderAccountCopy = requireNonNull(accountStore.get(senderAccount.accountIdOrThrow())).copyBuilder();
-        final var receiverAccountCopy = requireNonNull(accountStore.get(receiverAccount.accountIdOrThrow())).copyBuilder();
+        final var senderAccountCopy = requireNonNull(accountStore.get(senderAccount.accountIdOrThrow()))
+                .copyBuilder();
+        final var receiverAccountCopy = requireNonNull(accountStore.get(receiverAccount.accountIdOrThrow()))
+                .copyBuilder();
         final var senderRelCopy = senderRel.copyBuilder();
         final var receiverRelCopy = receiverRel.copyBuilder();
 
@@ -231,7 +233,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         }
         if (!isReceiverTreasury) {
             insertToList(nftId, nftStore, to, accountStore);
-        } else{
+        } else {
             final var nft = requireNonNull(nftStore.get(nftId));
             final var nftCopy = nft.copyBuilder();
             nftCopy.ownerPreviousNftId((NftID) null);
@@ -250,9 +252,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
 
         if (to.hasHeadNftId()) {
             if (nftStore.get(to.headNftIdOrThrow()) == null) {
-                System.out.println(
-                        "NFT value: " + to.headNftId() + "NFT value: " +
-                                nftStore.get(to.headNftIdOrThrow()) + " for account " + to.accountIdOrThrow());
+                System.out.println("NFT value: " + to.headNftId() + "NFT value: " + nftStore.get(to.headNftIdOrThrow())
+                        + " for account " + to.accountIdOrThrow());
             }
             final var headNft = requireNonNull(nftStore.get(to.headNftIdOrThrow()));
             final var headCopy = headNft.copyBuilder();
