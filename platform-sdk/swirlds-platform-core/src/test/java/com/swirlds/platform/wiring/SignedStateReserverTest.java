@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.ValueReference;
@@ -57,7 +56,7 @@ class SignedStateReserverTest {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
         final TaskScheduler<ReservedSignedState> taskScheduler = model.schedulerBuilder("scheduler")
                 .withType(TaskSchedulerType.DIRECT)
                 .build()
