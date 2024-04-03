@@ -21,7 +21,6 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
 import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.metrics.api.LongAccumulator;
@@ -87,17 +86,13 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * Constructor
      *
      * @param platformContext    the platform context
-     * @param time               a time object, for rate limiting logging
      * @param singleNodeNetwork  true if this node is in a single-node network, otherwise false
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      */
     public DefaultInternalEventValidator(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             final boolean singleNodeNetwork,
             @NonNull final IntakeEventCounter intakeEventCounter) {
-
-        Objects.requireNonNull(time);
 
         this.singleNodeNetwork = singleNodeNetwork;
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
@@ -108,14 +103,17 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
 
-        this.nullHashedDataLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.nullUnhashedDataLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.tooManyTransactionBytesLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.inconsistentSelfParentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.inconsistentOtherParentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.identicalParentsLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.invalidGenerationLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.invalidBirthRoundLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
+        this.nullHashedDataLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.nullUnhashedDataLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.tooManyTransactionBytesLogger =
+                new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.inconsistentSelfParentLogger =
+                new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.inconsistentOtherParentLogger =
+                new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.identicalParentsLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.invalidGenerationLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.invalidBirthRoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
 
         this.nullHashedDataAccumulator = platformContext
                 .getMetrics()
