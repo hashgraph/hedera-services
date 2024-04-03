@@ -904,7 +904,7 @@ class TipsetEventCreatorTests {
             otherParentId = null;
         }
 
-        final GossipEvent legalOtherParent = createTestEvent(random, otherParentId, 0, null, 0);
+        final GossipEvent legalOtherParent = createTestEvent(random, otherParentId, 0, nodeA, 0);
 
         eventCreator.registerEvent(legalOtherParent);
 
