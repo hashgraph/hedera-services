@@ -78,7 +78,6 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
     private static final String ACCOUNT = "anybody";
     private static final String MULTI_KEY = "purpose";
     private static final String DELETE_TXN = "deleteTxn";
-    final AtomicReference<AccountID> accountID = new AtomicReference<>();
 
     public static final String THRESHOLD_KEY = "ThreshKey";
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
@@ -100,6 +99,7 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec deleteFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final var tokenAlreadyDeletedTxn = "tokenAlreadyDeletedTxn";
 
         return defaultHapiSpec("deleteFungibleToken")
@@ -159,6 +159,7 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
     @HapiTest
     final HapiSpec deleteNftToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final var notAnAdminTxn = "notAnAdminTxn";
 
         return defaultHapiSpec("deleteNftToken")
