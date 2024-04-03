@@ -82,7 +82,7 @@ public class DefaultLatestCompleteStateNexus implements LatestCompleteStateNexus
      * {@inheritDoc}
      */
     @Override
-    public void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public synchronized void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
         // Any state older than this is unconditionally removed, even if it is the latest
         final long earliestPermittedRound =
                 eventWindow.getLatestConsensusRound() - stateConfig.roundsToKeepForSigning() + 1;
