@@ -56,8 +56,8 @@ class EventStreamManagerTest {
             verify(multiStreamMock, never()).close();
         }
 
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
         final ComponentWiring<EventStreamManager, Void> wiring = new ComponentWiring<>(
                 model,
                 EventStreamManager.class,
@@ -84,8 +84,8 @@ class EventStreamManagerTest {
         final Random random = RandomUtils.getRandomPrintSeed();
         final Hash runningHash = RandomUtils.randomHash(random);
 
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
         final ComponentWiring<EventStreamManager, Void> wiring = new ComponentWiring<>(
                 model,
                 EventStreamManager.class,
