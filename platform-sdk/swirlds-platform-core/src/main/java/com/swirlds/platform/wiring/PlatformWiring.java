@@ -173,16 +173,16 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         this.platformContext = Objects.requireNonNull(platformContext);
 
-        final PlatformSchedulersConfig schedulersConfig =
+        final PlatformSchedulersConfig config =
                 platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
 
         final int coreCount = Runtime.getRuntime().availableProcessors();
-        final int parallelism = (int) Math.max(
-                1, schedulersConfig.defaultPoolMultiplier() * coreCount + schedulersConfig.defaultPoolConstant());
+        final int parallelism =
+                (int) Math.max(1, config.defaultPoolMultiplier() * coreCount + config.defaultPoolConstant());
         final ForkJoinPool defaultPool = new ForkJoinPool(parallelism);
         logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
 
-        model = WiringModel.create(platformContext, platformContext.getTime(), defaultPool);
+        model = WiringModel.create(platformContext, defaultPool);
 
         // This counter spans both the event hasher and the post hash collector. This is a workaround for the current
         // inability of concurrent schedulers to handle backpressure from an immediately subsequent scheduler.
@@ -216,8 +216,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventHasherWiring = new ComponentWiring<>(model, EventHasher.class, schedulers.eventHasherScheduler());
         postHashCollectorWiring =
                 new PassThroughWiring<>(model, "GossipEvent", schedulers.postHashCollectorScheduler());
-        internalEventValidatorWiring = new ComponentWiring<>(
-                model, InternalEventValidator.class, schedulers.internalEventValidatorScheduler());
+        internalEventValidatorWiring =
+                new ComponentWiring<>(model, InternalEventValidator.class, config.internalEventValidator());
         eventDeduplicatorWiring =
                 new ComponentWiring<>(model, EventDeduplicator.class, schedulers.eventDeduplicatorScheduler());
         eventSignatureValidatorWiring = new ComponentWiring<>(
