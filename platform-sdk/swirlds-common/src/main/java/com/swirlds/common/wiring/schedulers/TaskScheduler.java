@@ -17,7 +17,7 @@
 package com.swirlds.common.wiring.schedulers;
 
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.internal.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.internal.DefaultSquelcher;
@@ -50,7 +50,7 @@ import java.util.function.Function;
 public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
 
     private final boolean flushEnabled;
-    private final StandardWiringModel model;
+    private final TraceableWiringModel model;
     private final String name;
     private final TaskSchedulerType type;
     private final StandardOutputWire<OUT> primaryOutputWire;
@@ -74,7 +74,7 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
      *                            available?
      */
     protected TaskScheduler(
-            @NonNull final StandardWiringModel model,
+            @NonNull final TraceableWiringModel model,
             @NonNull final String name,
             @NonNull final TaskSchedulerType type,
             final boolean flushEnabled,
