@@ -28,16 +28,15 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Stream;
 
 @SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
