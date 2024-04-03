@@ -40,7 +40,6 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
-import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
@@ -65,7 +64,6 @@ import java.util.List;
  *
  * @param eventHasherScheduler                      the scheduler for the event hasher
  * @param postHashCollectorScheduler                the scheduler for the post hash collector
- * @param internalEventValidatorScheduler           the scheduler for the internal event validator
  * @param eventDeduplicatorScheduler                the scheduler for the event deduplicator
  * @param eventSignatureValidatorScheduler          the scheduler for the event signature validator
  * @param orphanBufferScheduler                     the scheduler for the orphan buffer
@@ -92,7 +90,6 @@ import java.util.List;
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
         @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
-        @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,
         @NonNull TaskScheduler<GossipEvent> eventDeduplicatorScheduler,
         @NonNull TaskScheduler<GossipEvent> eventSignatureValidatorScheduler,
         @NonNull TaskScheduler<List<GossipEvent>> orphanBufferScheduler,
@@ -149,11 +146,6 @@ public record PlatformSchedulers(
                         .withExternalBackPressure(true)
                         .withUnhandledTaskMetricEnabled(true)
                         .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("internalEventValidator")
-                        .configure(config.internalEventValidator())
-                        .withHyperlink(platformCoreHyperlink(InternalEventValidator.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("eventDeduplicator")

@@ -22,14 +22,20 @@ pcli diagram \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'eventCreationManager:non-validated events:🍎' \
-    -s 'Mystery Input:mystery data:X' \
+    -s 'Mystery Input:mystery data:❔' \
     -s 'stateSigner:signature transactions:🖋️' \
-    -g 'Event Validation:internalEventValidator,eventDeduplicator,eventSignatureValidator' \
+    -s 'issNotificationSplitter:Iss Notification:💥' \
+    -s 'toNotification:state written notification:📦' \
+    -s 'latestCompleteStateNotifier:complete state notification:💢' \
+    -s 'orphanBufferSplitter:preconsensus signatures:🔰' \
+    -g 'Event Validation:InternalEventValidator,eventDeduplicator,eventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
     -g 'Consensus Engine:consensusEngine,consensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
-    -g 'State File Management:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,statusManager_submitStateWritten,toNotification' \
-    -g 'State Signature Collection:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions' \
+    -g 'State File Manager:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,statusManager_submitStateWritten,toNotification' \
+    -g 'State File Management:State File Manager,📦,📀' \
+    -g 'State Signature Collector:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
+    -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
     -g 'Consensus Event Stream:eventStreamManager,runningHashUpdate' \
     -g 'Event Creation:eventCreationManager,transactionPool,🍎' \
@@ -41,11 +47,13 @@ pcli diagram \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,postHandler_getRoundNumber,postHandler_stateReserver' \
     -g 'State Hasher:stateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
+    -g 'State Verification:stateSigner,hashLogger,ISS Detector,🖋️,💥' \
+    -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus,savedStateController' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
-    -c 'State Signature Collection' \
-    -c 'State File Management' \
+    -c 'State Signature Collector' \
+    -c 'State File Manager' \
     -c 'Consensus Round Handler' \
     -c 'State Hasher' \
     -c 'ISS Detector' \
