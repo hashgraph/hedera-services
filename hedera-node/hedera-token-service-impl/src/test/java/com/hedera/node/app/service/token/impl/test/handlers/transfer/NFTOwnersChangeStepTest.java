@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -47,8 +48,22 @@ class NFTOwnersChangeStepTest extends StepsBase {
         refreshWritableStores();
         // since we can't change NFT owner with auto association if KYC key exists on token
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
-        writableNftStore.put(nftSl1.copyBuilder().spenderId(spenderId).build());
-        writableNftStore.put(nftSl2.copyBuilder().spenderId(spenderId).build());
+        writableNftStore.put(writableNftStore
+                .get(nftIdSl1)
+                .copyBuilder()
+                .spenderId(spenderId)
+                .build());
+        writableNftStore.put(writableNftStore
+                .get(nftIdSl2)
+                .copyBuilder()
+                .spenderId(spenderId)
+                .build());
+        writableAccountStore.put(writableAccountStore
+                .get(tokenReceiverId)
+                .copyBuilder()
+                .headNftId((NftID) null)
+                .headNftSerialNumber(0L)
+                .build());
 
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
@@ -66,6 +81,15 @@ class NFTOwnersChangeStepTest extends StepsBase {
         changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
         final var nft = writableNftStore.get(nftIdSl1);
         assertThat(nft.ownerId()).isEqualTo(ownerId);
+
+        // check pointer updates
+        assertThat(nft.hasOwnerPreviousNftId()).isFalse();
+        assertThat(nft.hasOwnerNextNftId()).isTrue();
+        assertThat(nft.ownerNextNftId()).isEqualTo(nftIdSl2);
+
+        final var nextNftBefore = writableNftStore.get(nftIdSl2);
+        assertThat(nextNftBefore.hasOwnerPreviousNftId()).isTrue();
+        assertThat(nextNftBefore.hasOwnerNextNftId()).isFalse();
 
         final var senderAccount = writableAccountStore.get(ownerId);
         final var receiverAccount = writableAccountStore.get(receiver);
@@ -91,9 +115,15 @@ class NFTOwnersChangeStepTest extends StepsBase {
         // owner Id on NFT should change to receiver
         final var nftChanged = writableNftStore.get(nftIdSl1);
         assertThat(nftChanged.ownerId()).isEqualTo(receiver);
+
+        // check pointer updates
+        // Because receiver has no Nfts before
         assertThat(nftChanged.hasOwnerPreviousNftId()).isFalse();
-        assertThat(nftChanged.hasOwnerNextNftId()).isTrue();
-        assertThat(nftChanged.ownerNextNftId()).isEqualTo(nftIdSl2);
+        assertThat(nftChanged.hasOwnerNextNftId()).isFalse();
+
+        final var nextNft = writableNftStore.get(nftIdSl2);
+        assertThat(nextNft.hasOwnerPreviousNftId()).isFalse();
+        assertThat(nextNft.hasOwnerNextNftId()).isFalse();
 
         // see numPositiveBalances and numOwnedNfts change
         final var senderAccountAfter = writableAccountStore.get(ownerId);
@@ -113,6 +143,9 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var receiverTokenRelBalanceAfter = writableTokenRelStore.get(receiver, nonFungibleTokenId);
         assertThat(senderTokenRelBalanceAfter.balance()).isEqualTo(senderTokenRelBalance - 1);
         assertThat(receiverTokenRelBalanceAfter.balance()).isEqualTo(receiverTokenRelBalance + 1);
+
+        assertThat(senderAccountAfter.headNftId()).isEqualTo(nftIdSl2);
+        assertThat(receiverAccountAfter.headNftId()).isEqualTo(nftIdSl1);
     }
 
     @Test
