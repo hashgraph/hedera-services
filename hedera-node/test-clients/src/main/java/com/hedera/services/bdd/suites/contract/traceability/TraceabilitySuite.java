@@ -38,11 +38,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.stripSelector;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
@@ -56,14 +54,12 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.suites.contract.Utils.FunctionType;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asSolidityAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhexed;
-import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_ADDRESS_MESSAGE;
@@ -72,6 +68,12 @@ import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSu
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.EXPECTED_CREATE2_ADDRESS_MESSAGE;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_ADDRESS;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_BYTECODE;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.encodeFunctionCall;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.encodeTuple;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.formattedAssertionValue;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.getInitcode;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.hexedSolidityAddressToHeadlongAddress;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.uint256ReturnWithValue;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.stream.proto.ContractActionType.CALL;
@@ -89,8 +91,6 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExcept
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.hash.Hashing;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
@@ -111,9 +111,7 @@ import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
 import com.hedera.services.bdd.suites.SidecarAwareHapiSuite;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
-import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
-import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -128,11 +126,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -175,7 +171,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
     }
 
     @Override
-    protected List<HapiSpec> getSpecs() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 suiteSetup(),
                 traceabilityE2EScenario1(),
@@ -212,9 +208,11 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()
-                .then(overridingTwo(
-                        "contracts.throttle.throttleByGas", "false",
-                        "contracts.enforceCreationThrottle", "false"));
+                .then(
+                        initializeSidecarWatcher(),
+                        overridingTwo(
+                                "contracts.throttle.throttleByGas", "false",
+                                "contracts.enforceCreationThrottle", "false"));
     }
 
     @HapiTest
@@ -5151,42 +5149,18 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                         }));
     }
 
+    @HapiTest
+    @Order(Integer.MAX_VALUE)
+    public final HapiSpec assertSidecars() {
+        return defaultHapiSpec("assertSidecars")
+                .given()
+                .when(tearDownSidecarWatcher())
+                .then(assertNoMismatchedSidecars());
+    }
+
     @Override
     protected Logger getResultsLogger() {
         return log;
-    }
-
-    private CustomSpecAssert expectContractActionSidecarFor(final String txnName, final List<ContractAction> actions) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(txnName);
-            allRunFor(spec, txnRecord);
-            final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecord.newBuilder()
-                            .setConsensusTimestamp(consensusTimestamp)
-                            .setActions(ContractActions.newBuilder()
-                                    .addAllContractActions(actions)
-                                    .build())
-                            .build()));
-        });
-    }
-
-    private CustomSpecAssert expectContractStateChangesSidecarFor(
-            final String txnName, final List<StateChange> stateChanges) {
-        return withOpContext((spec, opLog) -> {
-            final var txnRecord = getTxnRecord(txnName);
-            allRunFor(spec, txnRecord);
-            final var consensusTimestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
-            addExpectedSidecar(new ExpectedSidecar(
-                    spec.getName(),
-                    TransactionSidecarRecord.newBuilder()
-                            .setConsensusTimestamp(consensusTimestamp)
-                            .setStateChanges(ContractStateChanges.newBuilder()
-                                    .addAllContractStateChanges(stateChangesToGrpc(stateChanges, spec))
-                                    .build())
-                            .build()));
-        });
     }
 
     private CustomSpecAssert expectContractBytecodeSidecarFor(
@@ -5299,41 +5273,5 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 .setRuntimeBytecode(runtimeCode)
                                 .build())
                         .build()));
-    }
-
-    private ByteString getInitcode(final String binFileName, final Object... constructorArgs) {
-        final var initCode = extractBytecodeUnhexed(getResourcePath(binFileName, ".bin"));
-        final var params = constructorArgs.length == 0
-                ? new byte[] {}
-                : Function.fromJson(getABIFor(FunctionType.CONSTRUCTOR, StringUtils.EMPTY, binFileName))
-                        .encodeCall(Tuple.of(constructorArgs))
-                        .array();
-        return initCode.concat(ByteStringUtils.wrapUnsafely(params.length > 4 ? stripSelector(params) : params));
-    }
-
-    private ByteString encodeFunctionCall(final String contractName, final String functionName, final Object... args) {
-        return ByteStringUtils.wrapUnsafely(
-                Function.fromJson(getABIFor(FunctionType.FUNCTION, functionName, contractName))
-                        .encodeCallWithArgs(args)
-                        .array());
-    }
-
-    byte[] encodeTuple(final String argumentsSignature, final Object... actualArguments) {
-        return TupleType.parse(argumentsSignature)
-                .encode(Tuple.of(actualArguments))
-                .array();
-    }
-
-    private ByteString uint256ReturnWithValue(final BigInteger value) {
-        return ByteStringUtils.wrapUnsafely(encodeTuple("(uint256)", value));
-    }
-
-    private Address hexedSolidityAddressToHeadlongAddress(final String hexedSolidityAddress) {
-        return Address.wrap(Address.toChecksumAddress("0x" + hexedSolidityAddress));
-    }
-
-    private ByteString formattedAssertionValue(final long value) {
-        return ByteString.copyFrom(
-                Bytes.wrap(UInt256.valueOf(value)).trimLeadingZeros().toArrayUnsafe());
     }
 }

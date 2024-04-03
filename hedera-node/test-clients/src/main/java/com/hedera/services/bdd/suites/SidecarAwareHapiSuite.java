@@ -16,26 +16,29 @@
 
 package com.hedera.services.bdd.suites;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion.recordStreamLocFor;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
+import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.ContractActions;
+import com.hedera.services.stream.proto.ContractStateChanges;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
@@ -50,38 +53,39 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
         sidecarWatcher.addExpectedSidecar(expectedSidecar);
     }
 
-    protected abstract List<HapiSpec> getSpecs();
-
-    @Override
-    public final List<HapiSpec> getSpecsInSuite() {
-        Stream.Builder<HapiSpec> hapiSpecs = Stream.builder();
-        hapiSpecs.add(sidecarWatcherSetup());
-
-        for (HapiSpec hapiSpec : getSpecs()) {
-            hapiSpecs.add(hapiSpec);
-        }
-
-        return hapiSpecs.add(assertSidecars()).build().toList();
+    protected static CustomSpecAssert expectContractActionSidecarFor(
+            final String txnName, final List<ContractAction> actions) {
+        return withOpContext((spec, opLog) -> {
+            final var txnRecord = getTxnRecord(txnName);
+            allRunFor(spec, txnRecord);
+            addExpectedSidecar(new ExpectedSidecar(
+                    spec.getName(),
+                    TransactionSidecarRecord.newBuilder()
+                            .setConsensusTimestamp(txnRecord.getResponseRecord().getConsensusTimestamp())
+                            .setActions(ContractActions.newBuilder()
+                                    .addAllContractActions(actions)
+                                    .build())
+                            .build()));
+        });
     }
 
-    @HapiTest
-    @Order(0)
-    public final HapiSpec sidecarWatcherSetup() {
-        return defaultHapiSpec("initializeSidecarWatcher").given().when().then(initializeSidecarWatcher());
+    protected static CustomSpecAssert expectContractStateChangesSidecarFor(
+            final String txnName, final List<StateChange> stateChanges) {
+        return withOpContext((spec, opLog) -> {
+            final var txnRecord = getTxnRecord(txnName);
+            allRunFor(spec, txnRecord);
+            addExpectedSidecar(new ExpectedSidecar(
+                    spec.getName(),
+                    TransactionSidecarRecord.newBuilder()
+                            .setConsensusTimestamp(txnRecord.getResponseRecord().getConsensusTimestamp())
+                            .setStateChanges(ContractStateChanges.newBuilder()
+                                    .addAllContractStateChanges(stateChangesToGrpc(stateChanges, spec))
+                                    .build())
+                            .build()));
+        });
     }
 
-    @HapiTest
-    @Order(Integer.MAX_VALUE)
-    public final HapiSpec assertSidecars() {
-        return defaultHapiSpec("assertSidecars")
-                .given(
-                        // send a dummy transaction to trigger externalization of last sidecars
-                        cryptoCreate("externalizeFinalSidecars").delayBy(2000))
-                .when(tearDownSidecarWatcher())
-                .then(assertNoMismatchedSidecars());
-    }
-
-    private static CustomSpecAssert initializeSidecarWatcher() {
+    protected static CustomSpecAssert initializeSidecarWatcher() {
         return withOpContext((spec, opLog) -> {
             Path path = Paths.get(recordStreamLocFor(spec));
             log.info("Watching for sidecars at absolute path {}", path.toAbsolutePath());
@@ -90,14 +94,27 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
         });
     }
 
-    private static CustomSpecAssert tearDownSidecarWatcher() {
+    protected static CustomSpecAssert tearDownSidecarWatcher() {
         return withOpContext((spec, opLog) -> {
+            // send a dummy transaction to trigger externalization of last sidecars
+            allRunFor(spec, cryptoCreate("externalizeFinalSidecars").delayBy(2000));
             sidecarWatcher.waitUntilFinished();
             sidecarWatcher.tearDown();
         });
     }
 
-    private static CustomSpecAssert assertNoMismatchedSidecars() {
+    protected static CustomSpecAssert assertContainsAllExpectedContractActions() {
+        return assertionsHold((spec, assertLog) -> {
+            assertTrue(sidecarWatcher.containsAllExpectedContractActions(), sidecarWatcher.getMismatchErrors());
+            assertTrue(
+                    sidecarWatcher.thereAreNoPendingSidecars(),
+                    "There are some sidecars that have not been yet"
+                            + " externalized in the sidecar files after all"
+                            + " specs: " + sidecarWatcher.getPendingErrors());
+        });
+    }
+
+    protected static CustomSpecAssert assertNoMismatchedSidecars() {
         return assertionsHold((spec, assertLog) -> {
             assertTrue(sidecarWatcher.thereAreNoMismatchedSidecars(), sidecarWatcher.getMismatchErrors());
             assertTrue(

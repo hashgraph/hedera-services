@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.verification.traceability;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
+import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
@@ -27,9 +28,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.regex.Pattern;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
@@ -222,6 +225,28 @@ public class SidecarWatcher {
 
     public boolean thereAreNoMismatchedSidecars() {
         return failedSidecars.isEmpty();
+    }
+
+    public boolean containsAllExpectedContractActions() {
+        for (final var kv : failedSidecars.entrySet()) {
+            final var faultySidecars = kv.getValue();
+            final var specName = kv.getKey();
+            for (final var pair : faultySidecars) {
+                Set<ContractAction> actualActions =
+                        new HashSet<>(pair.actualSidecarRecord().getActions().getContractActionsList());
+                Set<ContractAction> expectedActions =
+                        new HashSet<>(pair.expectedSidecarRecord().getActions().getContractActionsList());
+                if (!actualActions.containsAll(expectedActions)) {
+                    log.error(
+                            "Some expected actions are missing for spec {}: \nExpected: {}\nActual: {}",
+                            specName,
+                            expectedActions,
+                            actualActions);
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public String getMismatchErrors() {

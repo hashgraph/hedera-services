@@ -172,6 +172,7 @@ import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferH
 import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.TRANSFER_MULTIPLE_TOKENS;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.NAME_TXN;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.formattedAssertionValue;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TRUE;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
@@ -223,6 +224,8 @@ import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
+import com.hedera.services.bdd.spec.assertions.StateChange;
+import com.hedera.services.bdd.spec.assertions.StorageChange;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -232,17 +235,13 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
 import com.hedera.services.bdd.suites.SidecarAwareHapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
-import com.hedera.services.stream.proto.ContractActions;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -263,6 +262,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -333,13 +333,14 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     public static final String DEPLOY = "deploy";
     private static final String CREATE_2_TXN_2 = "create2Txn2";
     private static final String NESTED_LAZY_CREATE_VIA_CONSTRUCTOR = "NestedLazyCreateViaConstructor";
+    private static final long NONEXISTENT_CONTRACT_NUM = 1_234_567_890L;
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
     }
 
     @Override
-    protected List<HapiSpec> getSpecs() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 transferToCaller(),
                 resultSizeAffectsFees(),
@@ -2127,20 +2128,26 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         uploadInitCode(LAZY_CREATE_CONTRACT),
                         contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
-                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
+                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged(),
+                        initializeSidecarWatcher())
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var keyBytes = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var address = asHeadlongAddress(recoverAddressFromPubKey(keyBytes));
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(keyBytes));
                     allRunFor(
                             spec,
                             // given invalid address that's not derived from an ECDSA key, should revert the transaction
-                            contractCall(LAZY_CREATE_CONTRACT, callLazyCreateFunction, mirrorAddrWith(1_234_567_890L))
+                            contractCall(
+                                            LAZY_CREATE_CONTRACT,
+                                            callLazyCreateFunction,
+                                            mirrorAddrWith(NONEXISTENT_CONTRACT_NUM))
                                     .sending(depositAmount)
                                     .via(mirrorTxn)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                     .gas(6_000_000),
                             emptyChildRecordsCheck(mirrorTxn, CONTRACT_REVERT_EXECUTED),
+                            getAccountInfo("0.0." + NONEXISTENT_CONTRACT_NUM).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
                             // given a reverting contract call, should also revert the hollow account creation
                             contractCall(LAZY_CREATE_CONTRACT, revertingCallLazyCreateFunction, address)
                                     .sending(depositAmount)
@@ -2148,33 +2155,17 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                     .gas(6_000_000),
                             emptyChildRecordsCheck(revertingTxn, CONTRACT_REVERT_EXECUTED),
+                            getAliasedAccountInfo(evmAddress).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
                             // given a valid address that is derived from an ECDSA key, should create hollow account
                             contractCall(LAZY_CREATE_CONTRACT, callLazyCreateFunction, address)
                                     .via(payTxn)
                                     .sending(depositAmount)
                                     .hasKnownStatus(SUCCESS)
-                                    .gas(6_000_000));
-                }))
-                .then(withOpContext((spec, opLog) -> {
-                    final var getTxnRecord = getTxnRecord(payTxn)
-                            .andAllChildRecords()
-                            .logged()
-                            .hasChildRecordCount(1)
-                            .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO));
-                    allRunFor(spec, getTxnRecord);
-
-                    final var childReceipt =
-                            getTxnRecord.getFirstNonStakingChildRecord().getReceipt();
-                    final var lazyAccountId = childReceipt.getAccountID();
-                    final var name = "lazy";
-                    spec.registry().saveAccountId(name, lazyAccountId);
-
-                    final var lazyAccountKey = spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1();
-                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(lazyAccountKey.toByteArray()));
-
-                    allRunFor(
-                            spec,
-                            getAccountBalance(name).hasTinyBars(depositAmount),
+                                    .gas(6_000_000),
+                            childRecordsCheck(
+                                    payTxn,
+                                    SUCCESS,
+                                    recordWith().status(SUCCESS).memo(LAZY_MEMO)),
                             getAliasedAccountInfo(ECDSA_KEY)
                                     .has(accountWith()
                                             .key(EMPTY_KEY)
@@ -2183,21 +2174,44 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                             .memo(LAZY_MEMO)
                                             .evmAddress(evmAddress)
                                             .balance(depositAmount)));
-                    allRunFor(
-                            spec,
-                            expectContractActionSidecarFor(
-                                    getTxnRecord.getResponseRecord().getConsensusTimestamp(),
-                                    List.of(ContractAction.newBuilder()
-                                            .setCallType(CALL)
-                                            .setCallOperationType(CallOperationType.OP_CALL)
-                                            .setCallingContract(spec.registry().getContractId(LAZY_CREATE_CONTRACT))
-                                            .setGas(6_000_000)
-                                            .setGasUsed(4_800_000)
-                                            .setValue(depositAmount)
-                                            .setRecipientAccount(lazyAccountId)
-                                            .setOutput(EMPTY)
-                                            .build())));
-                }));
+                }))
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            final var getTxnRecord =
+                                    getTxnRecord(payTxn).andAllChildRecords().logged();
+                            allRunFor(spec, getTxnRecord);
+
+                            final var childRecord = getTxnRecord.getFirstNonStakingChildRecord();
+                            final var lazyAccountId = childRecord.getReceipt().getAccountID();
+                            final var lazyAccountName = "lazy";
+                            spec.registry().saveAccountId(lazyAccountName, lazyAccountId);
+
+                            allRunFor(
+                                    spec,
+                                    getAccountBalance(lazyAccountName).hasTinyBars(depositAmount),
+                                    expectContractStateChangesSidecarFor(
+                                            payTxn,
+                                            List.of(StateChange.stateChangeFor(LAZY_CREATE_CONTRACT)
+                                                    .withStorageChanges(
+                                                            StorageChange.onlyRead(
+                                                                    formattedAssertionValue(0L),
+                                                                    formattedAssertionValue(6259834845692061694L))))),
+                                    expectContractActionSidecarFor(
+                                            payTxn,
+                                            List.of(ContractAction.newBuilder()
+                                                    .setCallType(CALL)
+                                                    .setCallDepth(1)
+                                                    .setCallOperationType(CallOperationType.OP_CALL)
+                                                    .setCallingContract(
+                                                            spec.registry().getContractId(LAZY_CREATE_CONTRACT))
+                                                    .setRecipientAccount(lazyAccountId)
+                                                    .setOutput(EMPTY)
+                                                    .setGas(6_000_000)
+                                                    .setValue(250)
+                                                    .build())));
+                        }),
+                        tearDownSidecarWatcher(),
+                        assertContainsAllExpectedContractActions());
     }
 
     // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
@@ -3230,18 +3244,6 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                     expectedCreate2Address.set(hexedAddress);
                 })
                 .payingWith(GENESIS);
-    }
-
-    private static CustomSpecAssert expectContractActionSidecarFor(
-            final Timestamp consensusTimestamp, final List<ContractAction> actions) {
-        return withOpContext((spec, opLog) -> addExpectedSidecar(new ExpectedSidecar(
-                spec.getName(),
-                TransactionSidecarRecord.newBuilder()
-                        .setConsensusTimestamp(consensusTimestamp)
-                        .setActions(ContractActions.newBuilder()
-                                .addAllContractActions(actions)
-                                .build())
-                        .build())));
     }
 
     @Override
