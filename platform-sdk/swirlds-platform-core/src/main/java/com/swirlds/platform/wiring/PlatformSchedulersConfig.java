@@ -36,9 +36,7 @@ import com.swirlds.config.api.ConfigProperty;
  * @param eventHasherUnhandledCapacity                      number of unhandled tasks allowed in the event hasher
  *                                                          scheduler
  * @param internalEventValidator                            configuration for the internal event validator scheduler
- * @param eventDeduplicatorSchedulerType                    the event deduplicator scheduler type
- * @param eventDeduplicatorUnhandledCapacity                number of unhandled tasks allowed in the event deduplicator
- *                                                          scheduler
+ * @param eventDeduplicator                                 configuration for the event deduplicator scheduler
  * @param eventSignatureValidatorSchedulerType              the event signature validator scheduler type
  * @param eventSignatureValidatorUnhandledCapacity          number of unhandled tasks allowed in the event signature
  *                                                          validator scheduler
@@ -98,8 +96,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration internalEventValidator,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventDeduplicatorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int eventDeduplicatorUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration eventDeduplicator,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventSignatureValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventSignatureValidatorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType orphanBufferSchedulerType,
