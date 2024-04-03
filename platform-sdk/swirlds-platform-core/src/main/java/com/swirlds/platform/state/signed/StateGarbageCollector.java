@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.signed;
 
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Iterator;
@@ -38,6 +39,19 @@ public class StateGarbageCollector {
      */
     public void registerState(@NonNull final SignedState signedState) {
         states.add(signedState);
+    }
+
+    /**
+     * Register a signed state contained within a {@link StateAndRound} object with the garbage collector. The garbage
+     * collector will eventually delete the state when it is no longer needed.
+     *
+     * @param stateAndRound the state and round to register
+     * @return the original state and round object (this method is a pass through)
+     */
+    @NonNull
+    public StateAndRound registerStateAndRound(@NonNull final StateAndRound stateAndRound) {
+        states.add(stateAndRound.reservedSignedState().get());
+        return stateAndRound;
     }
 
     /**
