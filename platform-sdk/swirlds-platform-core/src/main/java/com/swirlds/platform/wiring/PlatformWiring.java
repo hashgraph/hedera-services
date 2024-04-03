@@ -510,9 +510,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         solderNotifier();
 
-        orphanBufferWiring
-                .eventOutput()
-                .solderTo(platformPublisherWiring.getInputWire(PlatformPublisher::publishPreconsensusEvent));
+        if (publishPreconsensusEvents) {
+            orphanBufferWiring
+                    .eventOutput()
+                    .solderTo(platformPublisherWiring.getInputWire(PlatformPublisher::publishPreconsensusEvent));
+        }
 
         buildUnsolderedWires();
     }

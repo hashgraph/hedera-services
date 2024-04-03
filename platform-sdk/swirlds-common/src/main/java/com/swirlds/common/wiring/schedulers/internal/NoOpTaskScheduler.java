@@ -105,7 +105,8 @@ public class NoOpTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @NonNull
     @Override
-    protected StandardOutputWire<OUT> buildPrimaryOutputWire() {
+    protected StandardOutputWire<OUT> buildPrimaryOutputWire(
+            @NonNull final StandardWiringModel model, @NonNull final String name) {
         return new NoOpOutputWire<>(model, getName());
     }
 
