@@ -23,6 +23,7 @@ import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
+import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 
@@ -79,43 +80,77 @@ public class SimpleGraphs {
      *
      * Consensus events: 0,1
      *
-     * Time created for events:
-     * 0: 2020-05-06T13:21:56.680Z
-     * 1: 2020-05-06T13:21:56.681Z
-     * 2: 2020-05-06T13:21:56.682Z
-     * 3: 2020-05-06T13:21:56.683Z
-     * 4: 2020-05-06T13:21:56.686Z
-     * 5: 2020-05-06T13:21:56.685Z
-     * 6: 2020-05-06T13:21:56.686Z
-     * 7: 2020-05-06T13:21:56.690Z
-     * 8: 2020-05-06T13:21:56.694Z
-     *
      * </pre>
      */
     public static List<EventImpl> graph9e3n(final Random random) {
         // generation 0
-        final EventImpl e0 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(1)), null, null);
+        final EventImpl e0 = createEventImpl(
+                new TestingEventBuilder(random)
+                        .setCreatorId(new NodeId(1))
+                        .setTimeCreated(Instant.parse("2020-05-06T13:21:56.680Z")),
+                null,
+                null);
         e0.setConsensus(true);
 
-        final EventImpl e1 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(2)), null, null);
+        final EventImpl e1 = createEventImpl(
+                new TestingEventBuilder(random)
+                        .setCreatorId(new NodeId(2))
+                        .setTimeCreated(Instant.parse("2020-05-06T13:21:56.681Z")),
+                null,
+                null);
         e1.setConsensus(true);
 
-        final EventImpl e2 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(3)), null, null);
+        final EventImpl e2 = createEventImpl(
+                new TestingEventBuilder(random)
+                        .setCreatorId(new NodeId(3))
+                        .setTimeCreated(Instant.parse("2020-05-06T13:21:56.682Z")),
+                null,
+                null);
 
         // generation 1
-        final EventImpl e3 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(1)), e0, e1);
+        final EventImpl e3 = createEventImpl(
+                new TestingEventBuilder(random)
+                        .setCreatorId(new NodeId(1))
+                        .setTimeCreated(Instant.parse("2020-05-06T13:21:56.683Z")),
+                e0,
+                e1);
 
-        final EventImpl e4 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(3)), e2, null);
+        final EventImpl e4 = createEventImpl(
+                new TestingEventBuilder(random)
+                        .setCreatorId(new NodeId(3))
+                        .setTimeCreated(Instant.parse("2020-05-06T13:21:56.686Z")),
+                e2,
+                null);
 
         // generation 2
-        final EventImpl e5 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(1)), e3, null);
+        final EventImpl e5 = createEventImpl(
+                new TestingEventBuilder(random)
+                        .setCreatorId(new NodeId(1))
+                        .setTimeCreated(Instant.parse("2020-05-06T13:21:56.685Z")),
+                e3,
+                null);
 
-        final EventImpl e6 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(2)), e1, e3);
+        final EventImpl e6 = createEventImpl(
+                new TestingEventBuilder(random)
+                        .setCreatorId(new NodeId(2))
+                        .setTimeCreated(Instant.parse("2020-05-06T13:21:56.686Z")),
+                e1,
+                e3);
 
-        final EventImpl e7 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(3)), e4, e1);
+        final EventImpl e7 = createEventImpl(
+                new TestingEventBuilder(random)
+                        .setCreatorId(new NodeId(3))
+                        .setTimeCreated(Instant.parse("2020-05-06T13:21:56.690Z")),
+                e4,
+                e1);
 
         // generation 3
-        final EventImpl e8 = createEventImpl(new TestingEventBuilder(random).setCreatorId(new NodeId(3)), e7, e6);
+        final EventImpl e8 = createEventImpl(
+                new TestingEventBuilder(random)
+                        .setCreatorId(new NodeId(3))
+                        .setTimeCreated(Instant.parse("2020-05-06T13:21:56.694Z")),
+                e7,
+                e6);
 
         return List.of(e0, e1, e2, e3, e4, e5, e6, e7, e8);
     }

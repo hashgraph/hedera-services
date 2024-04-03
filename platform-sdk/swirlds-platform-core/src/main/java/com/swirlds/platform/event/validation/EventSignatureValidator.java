@@ -35,15 +35,15 @@ public interface EventSignatureValidator {
      */
     @InputWireLabel("GossipEvent")
     @Nullable
-    public GossipEvent validateSignature(@NonNull final GossipEvent event);
+    GossipEvent validateSignature(@NonNull final GossipEvent event);
 
     /**
      * Set the non-ancient event window that defines the minimum threshold required for an event to be non-ancient
      *
      * @param nonAncientEventWindow the non-ancient event window
      */
-    @InputWireLabel("NonAncientEventWindow")
-    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow);
+    @InputWireLabel("non-ancient event window")
+    void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow);
 
     /**
      * Set the previous and current address books
@@ -51,5 +51,5 @@ public interface EventSignatureValidator {
      * @param addressBookUpdate the new address books
      */
     @InputWireLabel("AddressBookUpdate")
-    public void updateAddressBooks(@NonNull final AddressBookUpdate addressBookUpdate);
+    void updateAddressBooks(@NonNull final AddressBookUpdate addressBookUpdate);
 }
