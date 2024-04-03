@@ -103,7 +103,7 @@ public class ScheduledTransactionsDumpUtils {
         writer.writeln("");
     }
 
-    private static void reportOnScheduledTransactionsByEquality(
+    public static void reportOnScheduledTransactionsByEquality(
             @NonNull final Writer writer,
             @NonNull final Map<BBMScheduledId, BBMScheduledEqualityValue> scheduledTransactions) {
         writer.writeln(formatHeader());
@@ -113,7 +113,7 @@ public class ScheduledTransactionsDumpUtils {
         writer.writeln("");
     }
 
-    private static void reportOnScheduledTransactionsByExpiry(
+    public static void reportOnScheduledTransactionsByExpiry(
             @NonNull final Writer writer,
             @NonNull final Map<BBMScheduledId, BBMScheduledSecondValue> scheduledTransactions) {
         writer.writeln(formatHeader());

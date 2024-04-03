@@ -60,49 +60,8 @@ public class ScheduledTransactionsDumpUtils {
             System.out.printf(
                     "=== mod scheduled transactions report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
-            //            final var byEqualityDump = gatherModScheduledTransactionsByEquality(byEquality);
-            //            reportOnScheduledTransactionsByEquality(writer, byEqualityDump);
-            System.out.printf(
-                    "=== mod scheduled transactions by equality report is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
-            //            final var byExpiryDump = gatherModScheduledTransactionsByExpiry(byExpiry);
-            //            reportOnScheduledTransactionsByExpiry(writer, byExpiryDump);
-            System.out.printf(
-                    "=== mod scheduled transactions by expiry report is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
         }
     }
-
-    //    private static Map<BBMScheduledId, BBMScheduledSecondValue> gatherModScheduledTransactionsByExpiry(
-    //            final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> source) {
-    //        final var r = new HashMap<BBMScheduledId, BBMScheduledSecondValue>();
-    //        final var scheduledTransactions =
-    //                new ConcurrentLinkedQueue<Pair<BBMScheduledId, BBMScheduledSecondValue>>();
-    //
-    //        try {
-    //            VirtualMapLike.from(source)
-    //                    .extractVirtualMapDataC(
-    //                            getStaticThreadManager(),
-    //                            p -> {
-    //                                try {
-    //                                    scheduledTransactions.add(Pair.of(
-    //                                            new BBMScheduledId(p.key().getKey().value()),
-    //                                            fromMod(p.value().getValue())));
-    //                                } catch (InvalidKeyException e) {
-    //                                    throw new RuntimeException(e);
-    //                                }
-    //                            },
-    //                            8);
-    //        } catch (final InterruptedException ex) {
-    //            System.err.println("*** Traversal of scheduledTransactions virtual map interrupted!");
-    //            Thread.currentThread().interrupt();
-    //        }
-    //        while (!scheduledTransactions.isEmpty()) {
-    //            final var mapping = scheduledTransactions.poll();
-    //            r.put(mapping.key(), mapping.value());
-    //        }
-    //        return r;
-    //    }
 
     @NonNull
     private static Map<BBMScheduledId, BBMScheduledTransaction> gatherModScheduledTransactionsById(
@@ -134,38 +93,6 @@ public class ScheduledTransactionsDumpUtils {
         }
         return r;
     }
-
-    //    @NonNull
-    //    private static Map<BBMScheduledId, BBMScheduledEqualityValue> gatherModScheduledTransactionsByEquality(
-    //            VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<ScheduleList>> source) {
-    //        final var r = new HashMap<BBMScheduledId, BBMScheduledEqualityValue>();
-    //        final var scheduledTransactions =
-    //                new ConcurrentLinkedQueue<Pair<BBMScheduledId, BBMScheduledEqualityValue>>();
-    //
-    //        try {
-    //            VirtualMapLike.from(source)
-    //                    .extractVirtualMapDataC(
-    //                            getStaticThreadManager(),
-    //                            p -> {
-    //                                try {
-    //                                    scheduledTransactions.add(Pair.of(
-    //                                            fromMod(p.key().getKey()),
-    //                                            fromMod(p.value().getValue())));
-    //                                } catch (InvalidKeyException e) {
-    //                                    throw new RuntimeException(e);
-    //                                }
-    //                            },
-    //                            8);
-    //        } catch (final InterruptedException ex) {
-    //            System.err.println("*** Traversal of scheduledTransactions virtual map interrupted!");
-    //            Thread.currentThread().interrupt();
-    //        }
-    //        while (!scheduledTransactions.isEmpty()) {
-    //            final var mapping = scheduledTransactions.poll();
-    //            r.put(mapping.key(), mapping.value());
-    //        }
-    //        return r;
-    //    }
 
     static BBMScheduledTransaction fromMod(@NonNull final Schedule value) throws InvalidKeyException {
         return new BBMScheduledTransaction(
