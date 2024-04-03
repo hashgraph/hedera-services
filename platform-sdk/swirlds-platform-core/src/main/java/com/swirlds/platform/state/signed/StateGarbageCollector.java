@@ -16,59 +16,27 @@
 
 package com.swirlds.platform.state.signed;
 
-import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
- * This class is responsible for the deletion of signed states. In case signed state deletion is expensive, we never
+ * This component is responsible for the deletion of signed states. In case signed state deletion is expensive, we never
  * want to delete a signed state on the last thread that releases it.
  */
-public class StateGarbageCollector {
-
-    private final List<SignedState> states = new LinkedList<>();
+public interface StateGarbageCollector {
 
     /**
      * Register a signed state with the garbage collector. The garbage collector will eventually delete the state when
      * it is no longer needed.
      *
-     * @param signedState the signed state to register
+     * @param state the state to register
      */
-    public void registerState(@NonNull final SignedState signedState) {
-        states.add(signedState);
-    }
-
-    /**
-     * Register a signed state contained within a {@link StateAndRound} object with the garbage collector. The garbage
-     * collector will eventually delete the state when it is no longer needed.
-     *
-     * @param stateAndRound the state and round to register
-     * @return the original state and round object (this method is a pass through)
-     */
-    @NonNull
-    public StateAndRound registerStateAndRound(@NonNull final StateAndRound stateAndRound) {
-        states.add(stateAndRound.reservedSignedState().get());
-        return stateAndRound;
-    }
+    void registerState(@NonNull ReservedSignedState state);
 
     /**
      * This method is called periodically to give the signed state manager a chance to delete states.
      *
-     * @param ignored the current time
+     * @param now the current time
      */
-    public void heartbeat(@NonNull final Instant ignored) {
-        // TODO add a metric for number of undeleted states and time to delete each state
-
-        final Iterator<SignedState> iterator = states.iterator();
-        while (iterator.hasNext()) {
-            final SignedState signedState = iterator.next();
-            if (signedState.isEligibleForDeletion()) {
-                signedState.delete();
-                iterator.remove();
-            }
-        }
-    }
+    void heartbeat(@NonNull Instant now);
 }

@@ -49,6 +49,7 @@ import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
+import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.util.HashLogger;
@@ -98,7 +99,8 @@ class PlatformWiringTests {
                 mock(SavedStateController.class),
                 mock(SignedStateHasher.class),
                 mock(AppNotifier.class),
-                mock(PlatformPublisher.class));
+                mock(PlatformPublisher.class),
+                mock(StateGarbageCollector.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

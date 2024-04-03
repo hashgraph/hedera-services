@@ -662,7 +662,12 @@ public class SwirldsPlatform implements Platform {
                 savedStateController,
                 signedStateHasher,
                 appNotifier,
-                publisher);
+                publisher,
+                builder.buildStateGarbageCollector());
+
+        platformWiring
+                .getStateGarbageCollectorInput()
+                .put(initialState.reserve("initialize state to garbage collector"));
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
@@ -967,6 +972,9 @@ public class SwirldsPlatform implements Platform {
                             signedState.getState().getSwirldState()));
 
             signedState.setBackgroundDeletionEnabled(true); // TODO is this the right place to do this?
+            platformWiring
+                    .getStateGarbageCollectorInput()
+                    .put(signedState.reserve("reconnect state to garbage collector"));
 
         } catch (final RuntimeException e) {
             logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : FAILED, reason: {}", e.getMessage());
