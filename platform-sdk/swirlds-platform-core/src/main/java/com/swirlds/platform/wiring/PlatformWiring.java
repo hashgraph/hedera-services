@@ -218,8 +218,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 new PassThroughWiring<>(model, "GossipEvent", schedulers.postHashCollectorScheduler());
         internalEventValidatorWiring =
                 new ComponentWiring<>(model, InternalEventValidator.class, config.internalEventValidator());
-        eventDeduplicatorWiring =
-                new ComponentWiring<>(model, EventDeduplicator.class, schedulers.eventDeduplicatorScheduler());
+        eventDeduplicatorWiring = new ComponentWiring<>(model, EventDeduplicator.class, config.eventDeduplicator());
         eventSignatureValidatorWiring = new ComponentWiring<>(
                 model, EventSignatureValidator.class, schedulers.eventSignatureValidatorScheduler());
         orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
