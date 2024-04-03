@@ -231,6 +231,12 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         }
         if (!isReceiverTreasury) {
             insertToList(nftId, nftStore, to, accountStore);
+        } else{
+            final var nft = requireNonNull(nftStore.get(nftId));
+            final var nftCopy = nft.copyBuilder();
+            nftCopy.ownerPreviousNftId((NftID) null);
+            nftCopy.ownerNextNftId((NftID) null);
+            nftStore.put(nftCopy.build());
         }
     }
 
