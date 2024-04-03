@@ -20,11 +20,14 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -190,12 +193,16 @@ public class RandomSignedStateGenerator {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;
         }
 
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("state.stateHistoryEnabled", true)
+                .withConfigDataType(StateConfig.class)
+                .getOrCreateConfig();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         final SignedState signedState = new SignedState(
-                new TestConfigBuilder()
-                        .withValue("state.stateHistoryEnabled", true)
-                        .withConfigDataType(StateConfig.class)
-                        .getOrCreateConfig()
-                        .getConfigData(StateConfig.class),
+                platformContext,
                 signatureVerifier,
                 stateInstance,
                 "RandomSignedStateGenerator.build()",

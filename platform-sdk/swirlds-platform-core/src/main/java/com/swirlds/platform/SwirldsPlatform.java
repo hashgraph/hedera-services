@@ -143,7 +143,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
@@ -286,8 +285,6 @@ public class SwirldsPlatform implements Platform {
     /** Controls which states are saved to disk */
     private final SavedStateController savedStateController;
 
-    private final SignedStateGarbageCollector signedStateGarbageCollector;
-
     /**
      * Encapsulated wiring for the platform.
      */
@@ -332,6 +329,8 @@ public class SwirldsPlatform implements Platform {
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
+
+        initialState.setBackgroundDeletionEnabled(true); // TODO is this the right place to do this?
 
         // This method is a no-op if we are not in birth round mode, or if we have already migrated.
         modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion);
@@ -522,8 +521,6 @@ public class SwirldsPlatform implements Platform {
                 platformContext.getConfiguration().getConfigData(StateConfig.class), signedStateMetrics);
 
         thingsToStart.add(new SignedStateSentinel(platformContext, threadManager, Time.getCurrent()));
-        signedStateGarbageCollector =
-                thingsToStart.add(new SignedStateGarbageCollector(threadManager, signedStateMetrics));
 
         final LatestCompleteStateNotifier latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
 
@@ -578,7 +575,6 @@ public class SwirldsPlatform implements Platform {
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
-                signedStateGarbageCollector,
                 eventDurabilityNexus::waitUntilDurable,
                 platformStatusManager,
                 appVersion);
@@ -745,7 +741,6 @@ public class SwirldsPlatform implements Platform {
             initialAncientThreshold = initialState.getState().getPlatformState().getAncientThreshold();
             startingRound = initialState.getRound();
 
-            initialState.setGarbageCollector(signedStateGarbageCollector);
             logSignedStateHash(initialState);
             platformWiring
                     .getSignatureCollectorStateInput()
@@ -951,7 +946,6 @@ public class SwirldsPlatform implements Platform {
             savedStateController.reconnectStateReceived(
                     signedState.reserve("savedStateController.reconnectStateReceived"));
 
-            signedState.setGarbageCollector(signedStateGarbageCollector);
             logSignedStateHash(signedState);
             // this will send the state to the signature collector which will send it to be written to disk.
             // in the future, we might not send it to the collector because it already has all the signatures
@@ -984,6 +978,9 @@ public class SwirldsPlatform implements Platform {
                             signedState.getRound(),
                             signedState.getConsensusTimestamp(),
                             signedState.getState().getSwirldState()));
+
+            signedState.setBackgroundDeletionEnabled(true); // TODO is this the right place to do this?
+
         } catch (final RuntimeException e) {
             logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : FAILED, reason: {}", e.getMessage());
             // if the loading fails for whatever reason, we clear all data again in case some of it has been loaded

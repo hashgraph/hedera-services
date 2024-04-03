@@ -19,7 +19,6 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.SIGNED_STATE;
 import static com.swirlds.platform.state.PlatformState.GENESIS_ROUND;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
@@ -43,11 +42,11 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -114,11 +113,6 @@ public class SignedState implements SignedStateInfo {
     private StateToDiskReason stateToDiskReason;
 
     /**
-     * Signed states are deleted on this background thread.
-     */
-    private SignedStateGarbageCollector signedStateGarbageCollector;
-
-    /**
      * Indicates whether this signed state has been saved to disk.
      * <p>
      * Note: this value only applies to signed states that are saved inside the normal workflow: states that are dumped
@@ -146,12 +140,22 @@ public class SignedState implements SignedStateInfo {
     /**
      * Keeps track of reservations on this object.
      */
-    private final ReferenceCounter reservations = new ReferenceCounter(this::destroy, this::onReferenceCountException);
+    private final ReferenceCounter reservations =
+            new ReferenceCounter(this::markEligibleForDeletion, this::onReferenceCountException);
 
     /**
      * The signature verifier used to verify signatures.
      */
     private final SignatureVerifier signatureVerifier;
+
+    private final AtomicBoolean eligibleForDeletion = new AtomicBoolean(false);
+
+    /**
+     * If false, delete signed states on the thread that removes the last reference count. Otherwise, let the background
+     * deletion handler delete the state. This should be true in production environments and false in unit test
+     * environments that are not set up with a {@link StateGarbageCollector}.
+     */
+    private final AtomicBoolean deleteOnBackgroundThread = new AtomicBoolean(false);
 
     /**
      * Instantiate a signed state.
@@ -171,38 +175,13 @@ public class SignedState implements SignedStateInfo {
             @NonNull final State state,
             @NonNull final String reason,
             final boolean freezeState) {
-        this(
-                platformContext.getConfiguration().getConfigData(StateConfig.class),
-                signatureVerifier,
-                state,
-                reason,
-                freezeState);
-    }
-
-    /**
-     * Instantiate a signed state.
-     *
-     * @param stateConfig       state configuration
-     * @param signatureVerifier the signature verifier
-     * @param state             a fast copy of the state resulting from all transactions in consensus order from all
-     *                          events with received rounds up through the round this SignedState represents
-     * @param reason            a short description of why this SignedState is being created. Each location where a
-     *                          SignedState is created should attempt to use a unique reason, as this makes debugging
-     *                          reservation bugs easier.
-     * @param freezeState       specifies whether this state is the last one saved before the freeze
-     */
-    public SignedState(
-            @NonNull final StateConfig stateConfig,
-            @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final State state,
-            @NonNull final String reason,
-            final boolean freezeState) {
 
         state.reserve();
 
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.state = state;
 
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         if (stateConfig.stateHistoryEnabled()) {
             history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
             history.recordAction(CREATION, getReservationCount(), reason, null);
@@ -214,14 +193,6 @@ public class SignedState implements SignedStateInfo {
         sigSet = new SigSet();
 
         this.freezeState = freezeState;
-    }
-
-    /**
-     * Set a garbage collector, used to delete states on a background thread.
-     */
-    public synchronized void setGarbageCollector(
-            @NonNull final SignedStateGarbageCollector signedStateGarbageCollector) {
-        this.signedStateGarbageCollector = signedStateGarbageCollector;
     }
 
     /**
@@ -348,19 +319,27 @@ public class SignedState implements SignedStateInfo {
         reservations.release();
     }
 
+    // TODO this is SUPER clunky... probably should move to the constructor
     /**
-     * Add this state to the queue to be deleted on a background thread.
+     * Specify if this state should be deleted on the background thread or on the thread that removes the last reference
+     * count. By default this is false.
+     *
+     * @param enabled true if this state should be deleted on the background thread, false if it should be deleted on
+     *                the thread that removes the last reference count
      */
-    private void destroy() {
-        if (signedStateGarbageCollector == null
-                || !signedStateGarbageCollector.executeOnGarbageCollectionThread(this::delete)) {
-            logger.warn(
-                    SIGNED_STATE.getMarker(),
-                    "unable to enqueue state for deletion, " + "will delete state on calling thread {}",
-                    Thread.currentThread().getName());
-            synchronized (this) {
-                delete();
-            }
+    public void setBackgroundDeletionEnabled(
+            final boolean enabled) { // TODO make sure all production states have this toggled
+        deleteOnBackgroundThread.set(enabled);
+    }
+
+    /**
+     * Mark this state as eligible for deletion. If configured to delete on the calling thread, then this method will
+     * also delete the state.
+     */
+    private void markEligibleForDeletion() {
+        eligibleForDeletion.set(true);
+        if (!deleteOnBackgroundThread.get()) {
+            delete();
         }
     }
 
@@ -375,6 +354,16 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
+     * Check if this state is eligible for deletion. Once a state becomes eligible for deletion, this method will return
+     * true even after the state has been deleted.
+     *
+     * @return true if this state is eligible for deletion
+     */
+    boolean isEligibleForDeletion() {
+        return eligibleForDeletion.get();
+    }
+
+    /**
      * <p>
      * Perform deletion on this signed state.
      * </p>
@@ -385,9 +374,7 @@ public class SignedState implements SignedStateInfo {
      * that, this method must be synchronized.
      * </p>
      */
-    private synchronized void delete() {
-        final Instant start = Instant.now();
-
+    synchronized void delete() {
         if (reservations.isDestroyed()) {
             if (!deleted) {
                 try {
@@ -398,10 +385,6 @@ public class SignedState implements SignedStateInfo {
                     }
                     registryRecord.release();
                     state.release();
-
-                    if (signedStateGarbageCollector != null) {
-                        signedStateGarbageCollector.reportDeleteTime(Duration.between(start, Instant.now()));
-                    }
                 } catch (final Throwable ex) {
                     logger.error(EXCEPTION.getMarker(), "exception while attempting to delete signed state", ex);
                 }
