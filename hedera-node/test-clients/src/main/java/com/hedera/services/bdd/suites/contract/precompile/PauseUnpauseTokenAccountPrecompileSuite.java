@@ -116,16 +116,16 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
         return List.of(
                 noTokenIdReverts(),
                 noAccountKeyReverts(),
-                pauseFungibleTokenHappyPath(),
-                unpauseFungibleTokenHappyPath(),
-                pauseNonFungibleTokenHappyPath(),
-                unpauseNonFungibleTokenHappyPath());
+                pauseFungibleToken(),
+                unpauseFungibleToken(),
+                pauseNonFungibleToken(),
+                unpauseNonFungibleToken());
     }
 
     @HapiTest
-    HapiSpec pauseFungibleTokenHappyPath() {
+    HapiSpec pauseFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return defaultHapiSpec("PauseFungibleTokenHappyPath")
+        return defaultHapiSpec("PauseFungibleToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -194,9 +194,9 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec unpauseFungibleTokenHappyPath() {
+    HapiSpec unpauseFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return defaultHapiSpec("UnpauseFungibleTokenHappyPath")
+        return defaultHapiSpec("unpauseFungibleToken")
                 .given(
                         newKeyNamed(UNPAUSE_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -246,9 +246,9 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec pauseNonFungibleTokenHappyPath() {
+    HapiSpec pauseNonFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return defaultHapiSpec("PauseNonFungibleTokenHappyPath")
+        return defaultHapiSpec("pauseNonFungibleToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(PAUSE_KEY),
@@ -319,9 +319,9 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec unpauseNonFungibleTokenHappyPath() {
+    HapiSpec unpauseNonFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return defaultHapiSpec("UnpauseNonFungibleTokenHappyPath")
+        return defaultHapiSpec("unpauseNonFungibleToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(UNPAUSE_KEY),
