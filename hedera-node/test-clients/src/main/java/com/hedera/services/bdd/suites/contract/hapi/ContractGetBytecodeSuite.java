@@ -18,10 +18,16 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.approxChangeFromSnapshot;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 
@@ -35,6 +41,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
@@ -71,21 +78,47 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     @HapiTest
     final HapiSpec getByteCodeWorks() {
         final var contract = "EmptyConstructor";
+        final var canonicalUsdFee = 0.05;
+        final var canonicalQueryFeeAtActiveRate = new AtomicLong();
         return HapiSpec.defaultHapiSpec("GetByteCodeWorks")
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
-                    final var getBytecode = getContractBytecode(contract).saveResultTo("contractByteCode");
-                    allRunFor(spec, getBytecode);
+                .given(
+                        cryptoCreate(CIVILIAN_PAYER).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(balanceSnapshot("beforeQuery", CIVILIAN_PAYER))
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            final var getBytecode = getContractBytecode(contract)
+                                    .payingWith(CIVILIAN_PAYER)
+                                    .saveResultTo("contractByteCode")
+                                    .exposingBytecodeTo(bytes -> {
+                                        canonicalQueryFeeAtActiveRate.set(
+                                                spec.ratesProvider().toTbWithActiveRates((long)
+                                                        (canonicalUsdFee * 100 * TINY_PARTS_PER_WHOLE)));
+                                        log.info(
+                                                "Canoncal tinybar cost at active rate: {}",
+                                                canonicalQueryFeeAtActiveRate.get());
+                                    });
+                            allRunFor(spec, getBytecode);
 
-                    @SuppressWarnings("UnstableApiUsage")
-                    final var originalBytecode =
-                            Hex.decode(Files.toByteArray(new File(getResourcePath(contract, ".bin"))));
-                    final var actualBytecode = spec.registry().getBytes("contractByteCode");
-                    // The original bytecode is modified on deployment
-                    final var expectedBytecode = Arrays.copyOfRange(originalBytecode, 29, originalBytecode.length);
-                    Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
-                }));
+                            @SuppressWarnings("UnstableApiUsage")
+                            final var originalBytecode =
+                                    Hex.decode(Files.toByteArray(new File(getResourcePath(contract, ".bin"))));
+                            final var actualBytecode = spec.registry().getBytes("contractByteCode");
+                            // The original bytecode is modified on deployment
+                            final var expectedBytecode =
+                                    Arrays.copyOfRange(originalBytecode, 29, originalBytecode.length);
+                            Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
+                        }),
+                        // Wait for the query payment transaction to be handled
+                        sleepFor(5_000),
+                        sourcing(() -> getAccountBalance(CIVILIAN_PAYER)
+                                .hasTinyBars(
+                                        // Just sanity-check a fee within 50% of the canonical fee to be safe
+                                        approxChangeFromSnapshot(
+                                                "beforeQuery",
+                                                -canonicalQueryFeeAtActiveRate.get(),
+                                                canonicalQueryFeeAtActiveRate.get() / 2))));
     }
 
     @HapiTest
