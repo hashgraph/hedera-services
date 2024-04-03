@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 
 /**
  * An output wire that doesn't actually do anything. When asked to solder to another wire, it does nothing. When asked
- * when asked to build a transformer (or variations there upon) it produces no-op implementations.
+ * to build a transformer (or variations there upon) it produces no-op implementations.
  *
  * @param <OUT> the type of data passed to the forwarding method
  */
@@ -119,6 +119,6 @@ public class NoOpOutputWire<OUT> extends StandardOutputWire<OUT> {
     @Override
     public <NEW_OUT> OutputWire<NEW_OUT> buildAdvancedTransformer(
             @NonNull final AdvancedTransformation<OUT, NEW_OUT> transformer) {
-        return new NoOpOutputWire<>(getModel(), "this name doesn't matter because this wire doesn't do anything");
+        return new NoOpOutputWire<>(getModel(), transformer.getTransformerName());
     }
 }

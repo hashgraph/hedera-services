@@ -89,6 +89,7 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          notifier
  * @param stateHasherSchedulerType                          the state hasher scheduler type
  * @param stateHasherUnhandledCapacity                      number of unhandled tasks allowed for the state hasher
+ * @param platformPublisher                                 configuration for the platform publisher scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
