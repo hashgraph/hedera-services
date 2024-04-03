@@ -186,9 +186,9 @@ public class SwirldsPlatform implements Platform {
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
 
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
+
     /**
-     * the ID of the member running  Since a node can be a main node or a mirror node, the ID is not a primitive
-     * value
+     * The unique ID of this node.
      */
     private final NodeId selfId;
 

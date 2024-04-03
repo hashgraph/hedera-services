@@ -458,16 +458,16 @@ public final class PlatformBuilder {
         }
 
         // At this point the initial state must have the current address book set.  If not, something is wrong.
-        if (initialState.get().getState().getPlatformState().getAddressBook() == null) {
+        final AddressBook addressBook =
+                initialState.get().getState().getPlatformState().getAddressBook();
+        if (addressBook == null) {
             throw new IllegalStateException("The current address book of the initial state is null.");
         }
 
-        final AddressBook currentAddressBook =
-                initialState.get().getState().getPlatformState().getAddressBook();
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
         if (syncConfig.waitForEventsInIntake()) {
-            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
+            intakeEventCounter = new DefaultIntakeEventCounter(addressBook);
         } else {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }

@@ -27,6 +27,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
 
 /**
@@ -63,6 +64,6 @@ public record PlatformBuildingBlocks(
         @NonNull ReservedSignedState initialState,
         @NonNull EmergencyRecoveryManager emergencyRecoveryManager,
         @NonNull Consumer<GossipEvent> preconsensusEventConsumer,
-        @NonNull Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
-        @NonNull IntakeEventCounter intakeEventCounter,
+        @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
+        @Nullable IntakeEventCounter intakeEventCounter,
         boolean firstPlatform) {}

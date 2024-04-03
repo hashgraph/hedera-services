@@ -66,8 +66,8 @@ public class PlatformComponentBuilder {
     /**
      * Constructor.
      *
-     * @param blocks the build context for the platform under construction, contains all data needed to
-     *                               construct platform components
+     * @param blocks the build context for the platform under construction, contains all data needed to construct
+     *               platform components
      */
     public PlatformComponentBuilder(@NonNull final PlatformBuildingBlocks blocks) {
         this.blocks = Objects.requireNonNull(blocks);
@@ -126,6 +126,9 @@ public class PlatformComponentBuilder {
     @NonNull
     public PlatformComponentBuilder withEventHasher(@NonNull final EventHasher eventHasher) {
         throwIfAlreadyUsed();
+        if (this.eventHasher != null) {
+            throw new IllegalStateException("Event hasher has already been set");
+        }
         this.eventHasher = Objects.requireNonNull(eventHasher);
         return this;
     }
@@ -155,15 +158,18 @@ public class PlatformComponentBuilder {
     public PlatformComponentBuilder withInternalEventValidator(
             @NonNull final InternalEventValidator internalEventValidator) {
         throwIfAlreadyUsed();
+        if (this.internalEventValidator != null) {
+            throw new IllegalStateException("Internal event validator has already been set");
+        }
         this.internalEventValidator = Objects.requireNonNull(internalEventValidator);
         return this;
     }
 
     /**
      * Build the internal event validator if it has not yet been built. If one has been provided via
-     * {@link #withInternalEventValidator(InternalEventValidator)}, that validator will be used. If this method is called
-     * more than once, only the first call will build the internal event validator. Otherwise, the default validator
-     * will be created and returned.
+     * {@link #withInternalEventValidator(InternalEventValidator)}, that validator will be used. If this method is
+     * called more than once, only the first call will build the internal event validator. Otherwise, the default
+     * validator will be created and returned.
      *
      * @return the internal event validator
      */
@@ -192,15 +198,18 @@ public class PlatformComponentBuilder {
     @NonNull
     public PlatformComponentBuilder withEventDeduplicator(@NonNull final EventDeduplicator eventDeduplicator) {
         throwIfAlreadyUsed();
+        if (this.eventDeduplicator != null) {
+            throw new IllegalStateException("Event deduplicator has already been set");
+        }
         this.eventDeduplicator = Objects.requireNonNull(eventDeduplicator);
         return this;
     }
 
     /**
      * Build the event deduplicator if it has not yet been built. If one has been provided via
-     * {@link #withEventDeduplicator(EventDeduplicator)}, that deduplicator will be used. If this method is called
-     * more than once, only the first call will build the event deduplicator. Otherwise, the default deduplicator
-     * will be created and returned.
+     * {@link #withEventDeduplicator(EventDeduplicator)}, that deduplicator will be used. If this method is called more
+     * than once, only the first call will build the event deduplicator. Otherwise, the default deduplicator will be
+     * created and returned.
      *
      * @return the event deduplicator
      */
