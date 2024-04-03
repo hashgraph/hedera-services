@@ -271,10 +271,6 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         final var nftCopy = nft.copyBuilder();
 
         if (to.hasHeadNftId()) {
-            if (nftStore.get(to.headNftIdOrThrow()) == null) {
-                System.out.println("NFT value: " + to.headNftId() + "NFT value: " + nftStore.get(to.headNftIdOrThrow())
-                        + " for account " + to.accountIdOrThrow());
-            }
             final var headNft = requireNonNull(nftStore.get(to.headNftIdOrThrow()));
             final var headCopy = headNft.copyBuilder();
             headCopy.ownerPreviousNftId(nftId);

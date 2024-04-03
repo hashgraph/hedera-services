@@ -38,7 +38,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ChangeNFTOwnersStepTest extends StepsBase {
+class NFTOwnersChangeStepTest extends StepsBase {
 
     @BeforeEach
     public void setUp() {
@@ -64,7 +64,6 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         given(handleContext.payer()).willReturn(spenderId);
         final var replacedOp = getReplacedOp();
         changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
-
         final var nft = writableNftStore.get(nftIdSl1);
         assertThat(nft.ownerId()).isEqualTo(ownerId);
 
@@ -92,6 +91,9 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         // owner Id on NFT should change to receiver
         final var nftChanged = writableNftStore.get(nftIdSl1);
         assertThat(nftChanged.ownerId()).isEqualTo(receiver);
+        assertThat(nftChanged.hasOwnerPreviousNftId()).isFalse();
+        assertThat(nftChanged.hasOwnerNextNftId()).isTrue();
+        assertThat(nftChanged.ownerNextNftId()).isEqualTo(nftIdSl2);
 
         // see numPositiveBalances and numOwnedNfts change
         final var senderAccountAfter = writableAccountStore.get(ownerId);

@@ -746,8 +746,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                         .build()))
                 .build();
         nonFungibleToken = givenValidNonFungibleToken(true);
-        nftSl1 = givenNft(nftIdSl1);
-        nftSl2 = givenNft(nftIdSl2);
+        nftSl1 = givenNft(nftIdSl1).copyBuilder().ownerNextNftId(nftIdSl2).build();
+        nftSl2 = givenNft(nftIdSl2).copyBuilder().ownerPreviousNftId(nftIdSl1).build();
     }
 
     private void givenValidAccounts() {
@@ -858,6 +858,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .headTokenId(TokenID.newBuilder().tokenNum(3L).build())
                 .headNftId(NftID.newBuilder()
                         .tokenId(TokenID.newBuilder().tokenNum(2L))
+                        .serialNumber(1L)
                         .build())
                 .headNftSerialNumber(1L)
                 .numberOwnedNfts(2L)
