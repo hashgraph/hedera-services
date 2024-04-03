@@ -95,7 +95,7 @@ public record VirtualMapConfig(
                 double percentHashThreads, // FUTURE WORK: We need to add min/max support for double values
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numHashThreads,
         @Min(1) @Max(64) @ConfigProperty(defaultValue = "3") int virtualHasherChunkHeight,
-        @ConfigProperty(defaultValue = "push") String reconnectMode,
+        @ConfigProperty(defaultValue = RECONNECT_MODE_PUSH) String reconnectMode,
         @Min(0) @ConfigProperty(defaultValue = "500000") int reconnectFlushInterval,
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "25.0")
                 double percentCleanerThreads, // FUTURE WORK: We need to add min/max support for double values
@@ -111,6 +111,19 @@ public record VirtualMapConfig(
         @ConfigProperty(defaultValue = "10000") int preferredFlushQueueSize,
         @ConfigProperty(defaultValue = "200ms") Duration flushThrottleStepSize,
         @ConfigProperty(defaultValue = "5s") Duration maximumFlushThrottlePeriod) {
+
+    // "Push" reconnect mode, when teacher sends requests to learner, and learner responses if it has
+    // the same virtual nodes
+    private static final String RECONNECT_MODE_PUSH = "push";
+
+    // "Pull / top to bottom" reconnect mode, when learner sends requests to teacher, rank by rank
+    // starting from the root of the virtual tree, and teacher responses if it has the same virtual nodes
+    private static final String RECONNECT_MODE_PULL_TOP_TO_BOTTOM = "pullTopToBottom";
+
+    // "Pull / bottom to top" reconnect mode, when learner sends requests to teacher, starting from
+    // leaf parent nodes, then leaves, and teacher responses if it has the same virtual nodes
+    private static final String RECONNECT_MODE_PULL_TWO_PHASE_PESSIMISTIC = "pullTwoPhasePessimistic";
+
     private static final double UNIT_FRACTION_PERCENT = 100.0;
 
     public ConfigViolation virtualMapWarningIntervalValidation(final Configuration configuration) {

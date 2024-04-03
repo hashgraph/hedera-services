@@ -1377,19 +1377,15 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public TeacherTreeView<Long> buildTeacherView(final ReconnectConfig reconnectConfig) {
-        switch (config.reconnectMode()) {
-            case "pullTopToBottom":
-            case "pullTwoPhasePessimistic":
-                return new TeacherPullVirtualTreeView<>(
-                        getStaticThreadManager(), reconnectConfig, this, state, pipeline);
-            default:
-                logger.warn(RECONNECT.getMarker(), "Unknown reconnect mode: " + config.reconnectMode());
-                logger.warn(RECONNECT.getMarker(), "Using default reconnect mode: push");
-                // fallthrough
-            case "push":
-                return new TeacherPushVirtualTreeView<>(
-                        getStaticThreadManager(), reconnectConfig, this, state, pipeline);
-        }
+        return switch (config.reconnectMode()) {
+            case "push" -> new TeacherPushVirtualTreeView<>(
+                    getStaticThreadManager(), reconnectConfig, this, state, pipeline);
+            case "pullTopToBottom" -> new TeacherPullVirtualTreeView<>(
+                    getStaticThreadManager(), reconnectConfig, this, state, pipeline);
+            case "pullTwoPhasePessimistic" -> new TeacherPullVirtualTreeView<>(
+                    getStaticThreadManager(), reconnectConfig, this, state, pipeline);
+            default -> throw new UnsupportedOperationException("Unknown reconnect mode: " + config.reconnectMode());
+        };
     }
 
     /**
@@ -1456,28 +1452,33 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final VirtualStateAccessor originalState = originalMap.getState();
         nodeRemover = new ReconnectNodeRemover<>(
                 originalMap.getRecords(), originalState.getFirstLeafPath(), originalState.getLastLeafPath());
-        final LearnerTreeView<Long> learnerTreeView;
-        switch (config.reconnectMode()) {
-            case "pullTopToBottom":
+        return switch (config.reconnectMode()) {
+            case "push" -> new LearnerPushVirtualTreeView<>(
+                    reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
+            case "pullTopToBottom" -> {
                 final NodeTraversalOrder topToBottom = new TopToBottomTraversalOrder();
-                learnerTreeView = new LearnerPullVirtualTreeView<>(
-                        this, originalMap.records, originalState, reconnectState, nodeRemover, topToBottom);
-                break;
-            case "pullTwoPhasePessimistic":
+                yield new LearnerPullVirtualTreeView<>(
+                        reconnectConfig,
+                        this,
+                        originalMap.records,
+                        originalState,
+                        reconnectState,
+                        nodeRemover,
+                        topToBottom);
+            }
+            case "pullTwoPhasePessimistic" -> {
                 final NodeTraversalOrder twoPhasePessimistic = new TwoPhasePessimisticTraversalOrder();
-                learnerTreeView = new LearnerPullVirtualTreeView<>(
-                        this, originalMap.records, originalState, reconnectState, nodeRemover, twoPhasePessimistic);
-                break;
-            default:
-                logger.warn(RECONNECT.getMarker(), "Unknown reconnect mode: " + config.reconnectMode());
-                logger.warn(RECONNECT.getMarker(), "Using default reconnect mode: push");
-                // fallthrough
-            case "push":
-                learnerTreeView = new LearnerPushVirtualTreeView<>(
-                        reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
-                break;
-        }
-        return learnerTreeView;
+                yield new LearnerPullVirtualTreeView<>(
+                        reconnectConfig,
+                        this,
+                        originalMap.records,
+                        originalState,
+                        reconnectState,
+                        nodeRemover,
+                        twoPhasePessimistic);
+            }
+            default -> throw new UnsupportedOperationException("Unknown reconnect mode: " + config.reconnectMode());
+        };
     }
 
     /**
@@ -1517,6 +1518,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     public void prepareReconnectHashing(final long firstLeafPath, final long lastLeafPath) {
+        assert nodeRemover != null : "Cannot prepare reconnect hashing, since reconnect is not started";
         // The hash listener will be responsible for flushing stuff to the reconnect data source
         final ReconnectHashListener<K, V> hashListener =
                 new ReconnectHashListener<>(firstLeafPath, lastLeafPath, reconnectRecords.getDataSource(), nodeRemover);

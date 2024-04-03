@@ -23,8 +23,10 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
@@ -45,8 +47,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link LearnerTreeView} for the virtual merkle. The learner during reconnect
@@ -63,15 +63,18 @@ import org.apache.logging.log4j.Logger;
  * 		The value
  */
 public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends VirtualValue>
-        extends VirtualTreeViewBase<K, V> implements VirtualLearnerTreeView {
-
-    private static final Logger logger = LogManager.getLogger(LearnerPullVirtualTreeView.class);
+        extends VirtualTreeViewBase<K, V> implements LearnerTreeView<Long> {
 
     /**
      * A stashed null hash, which is used for any leaves which are null that we need to send
      * (specifically, leaf 2 for a tree with only a single leaf).
      */
     private static final Hash NULL_HASH = CryptographyHolder.get().getNullHash();
+
+    /**
+     * Reconnect configuration.
+     */
+    private final ReconnectConfig reconnectConfig;
 
     /**
      * Handles removal of old nodes.
@@ -121,6 +124,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      * 		Cannot be null.
      */
     public LearnerPullVirtualTreeView(
+            final ReconnectConfig reconnectConfig,
             final VirtualRootNode<K, V> root,
             final RecordAccessor<K, V> originalRecords,
             final VirtualStateAccessor originalState,
@@ -128,6 +132,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final ReconnectNodeRemover<K, V> nodeRemover,
             final NodeTraversalOrder traversalOrder) {
         super(root, originalState, reconnectState);
+        this.reconnectConfig = reconnectConfig;
         this.originalRecords = Objects.requireNonNull(originalRecords);
         this.nodeRemover = nodeRemover;
         this.traversalOrder = traversalOrder;
@@ -140,9 +145,8 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,
             final Queue<MerkleNode> rootsToReceive,
-            final AtomicReference<Long> reconstructedRoot,
-            final ReconnectNodeCount nodeCount) {
-        this.nodeCount = nodeCount;
+            final AtomicReference<Long> reconstructedRoot) {
+        this.nodeCount = learningSynchronizer;
 
         final AsyncOutputStream<PullVirtualTreeRequest> out =
                 learningSynchronizer.buildOutputStream(workGroup, outputStream);
@@ -158,7 +162,14 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         reconstructedRoot.set(0L);
         assert traversalOrder != null;
         final LearnerPullVirtualTreeSendTask learnerSendTask = new LearnerPullVirtualTreeSendTask(
-                workGroup, out, this, traversalOrder, senderIsFinished, rootResponseReceived, expectedResponses);
+                reconnectConfig,
+                workGroup,
+                out,
+                this,
+                traversalOrder,
+                senderIsFinished,
+                rootResponseReceived,
+                expectedResponses);
         learnerSendTask.exec();
     }
 
@@ -167,7 +178,21 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         return path >= reconnectState.getFirstLeafPath();
     }
 
-    @Override
+    /**
+     * Reads a virtual node identified by a given path from the output stream. The node was previously
+     * written by reconnect teacher. This method should match {@link
+     * TeacherPullVirtualTreeView#writeNode(SerializableDataOutputStream, long, boolean)}.
+     *
+     * <p>For a root node, reconnect state information is read: the first and the last leaf paths. Nothing
+     * is read for other internal nodes.
+     *
+     * <p>For dirty leaf nodes, leaf records are read. Nothing is read for clean leaf nodes.
+     *
+     * @param in the input stream to read from
+     * @param path the virtual path
+     * @param isClean indicates that the node with the given path is the same on the learner and teacher
+     * @throws IOException if an I/O error occurs
+     */
     public void readNode(final SerializableDataInputStream in, final long path, final boolean isClean)
             throws IOException {
         if (path == Path.ROOT_PATH) {
@@ -195,6 +220,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             }
             if (!isClean) {
                 final VirtualLeafRecord<K, V> leaf = in.readSerializable(false, VirtualLeafRecord::new);
+                assert path == leaf.getPath();
                 nodeRemover.newLeafNode(path, leaf.getKey());
                 root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest
             }

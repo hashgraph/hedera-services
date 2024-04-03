@@ -34,7 +34,6 @@ import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.LearnerPushTask;
 import com.swirlds.common.merkle.synchronization.task.Lesson;
 import com.swirlds.common.merkle.synchronization.task.QueryResponse;
-import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
@@ -78,16 +77,15 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,
             final Queue<MerkleNode> rootsToReceive,
-            final AtomicReference<MerkleNode> reconstructedRoot,
-            final ReconnectNodeCount nodeCount) {
+            final AtomicReference<MerkleNode> reconstructedRoot) {
         in = new AsyncInputStream<>(inputStream, workGroup, () -> new Lesson<>(this), reconnectConfig);
         out = learningSynchronizer.buildOutputStream(workGroup, outputStream);
 
         in.start();
         out.start();
 
-        final LearnerPushTask<MerkleNode> learnerThread =
-                new LearnerPushTask<>(workGroup, in, out, rootsToReceive, reconstructedRoot, this, nodeCount);
+        final LearnerPushTask<MerkleNode> learnerThread = new LearnerPushTask<>(
+                workGroup, in, out, rootsToReceive, reconstructedRoot, this, learningSynchronizer);
         learnerThread.start();
     }
 

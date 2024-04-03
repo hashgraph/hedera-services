@@ -35,7 +35,6 @@ import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.LearnerPushTask;
 import com.swirlds.common.merkle.synchronization.task.Lesson;
 import com.swirlds.common.merkle.synchronization.task.QueryResponse;
-import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -149,15 +148,14 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,
             final Queue<MerkleNode> rootsToReceive,
-            final AtomicReference<Long> reconstructedRoot,
-            final ReconnectNodeCount nodeCount) {
+            final AtomicReference<Long> reconstructedRoot) {
         in = new AsyncInputStream<>(inputStream, workGroup, () -> new Lesson<>(this), reconnectConfig);
         in.start();
         final AsyncOutputStream<QueryResponse> out = learningSynchronizer.buildOutputStream(workGroup, outputStream);
         out.start();
 
-        final LearnerPushTask<Long> learnerThread =
-                new LearnerPushTask<>(workGroup, in, out, rootsToReceive, reconstructedRoot, this, nodeCount);
+        final LearnerPushTask<Long> learnerThread = new LearnerPushTask<>(
+                workGroup, in, out, rootsToReceive, reconstructedRoot, this, learningSynchronizer);
         learnerThread.start();
     }
 

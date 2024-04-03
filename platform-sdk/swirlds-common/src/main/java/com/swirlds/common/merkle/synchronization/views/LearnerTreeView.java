@@ -24,7 +24,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
-import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
@@ -59,8 +58,7 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
             final MerkleDataInputStream inputStream,
             final MerkleDataOutputStream outputStream,
             final Queue<MerkleNode> rootsToReceive,
-            final AtomicReference<T> reconstructedRoot,
-            final ReconnectNodeCount nodeCount);
+            final AtomicReference<T> reconstructedRoot);
 
     /**
      * Aborts the reconnect process on the learner side. It may be used to release resources, when

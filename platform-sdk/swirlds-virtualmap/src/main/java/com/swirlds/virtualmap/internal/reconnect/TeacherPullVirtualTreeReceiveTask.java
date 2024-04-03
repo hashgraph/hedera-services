@@ -20,6 +20,8 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
@@ -47,7 +49,7 @@ public class TeacherPullVirtualTreeReceiveTask {
     private final StandardWorkGroup workGroup;
     private final SerializableDataInputStream in;
     private final AsyncOutputStream<PullVirtualTreeResponse> out;
-    private final VirtualTeacherTreeView view;
+    private final TeacherPullVirtualTreeView view;
 
     private final RateLimiter rateLimiter;
     private final int sleepNanos;
@@ -68,7 +70,7 @@ public class TeacherPullVirtualTreeReceiveTask {
             final StandardWorkGroup workGroup,
             final SerializableDataInputStream in,
             final AsyncOutputStream<PullVirtualTreeResponse> out,
-            final VirtualTeacherTreeView view) {
+            final TeacherPullVirtualTreeView view) {
         this.workGroup = workGroup;
         this.in = in;
         this.out = out;
@@ -111,14 +113,23 @@ public class TeacherPullVirtualTreeReceiveTask {
         try (out) {
             while (true) {
                 rateLimit();
-                final PullVirtualTreeRequest request = new PullVirtualTreeRequest(view);
+                final PullVirtualTreeRequest request = new PullVirtualTreeRequest();
                 request.deserialize(in, 0);
                 logger.debug(RECONNECT.getMarker(), "Teacher receive path: " + request.getPath());
                 if (request.getPath() == Path.INVALID_PATH) {
                     logger.info(RECONNECT.getMarker(), "Teacher receiver is complete as requested by the learner");
                     break;
                 }
-                final PullVirtualTreeResponse response = new PullVirtualTreeResponse(view, request);
+                final long path = request.getPath();
+                final Hash learnerHash = request.getHash();
+                final Hash teacherHash = view.loadHash(path);
+                // The only valid scenario, when teacherHash may be null, is the empty tree
+                if ((teacherHash == null) && (path != 0)) {
+                    throw new MerkleSerializationException(
+                            "Cannot load node hash (bad request from learner?), path = " + path);
+                }
+                final PullVirtualTreeResponse response =
+                        new PullVirtualTreeResponse(view, path, learnerHash, teacherHash);
                 // All real work is done in the async output thread. This call just registers a response
                 // and returns immediately
                 out.sendAsync(response);

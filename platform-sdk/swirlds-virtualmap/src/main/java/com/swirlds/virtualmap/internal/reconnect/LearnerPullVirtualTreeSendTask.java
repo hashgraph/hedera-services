@@ -19,10 +19,12 @@ package com.swirlds.virtualmap.internal.reconnect;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.internal.Path;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,13 +52,16 @@ public class LearnerPullVirtualTreeSendTask {
 
     private final StandardWorkGroup workGroup;
     private final AsyncOutputStream<PullVirtualTreeRequest> out;
-    private final VirtualLearnerTreeView view;
+    private final LearnerPullVirtualTreeView view;
     private final NodeTraversalOrder traversalOrder;
 
     // Indicates if the learner sender task is done sending all requests to the teacher
     private final AtomicBoolean senderIsFinished;
 
-    // Indicates if a response for path 0 (virtual root node) has been received
+    // Max time to wait for path 0 (virtual root) response from the teacher
+    private final Duration rootResponseTimeout;
+
+    // Indicates if a response for path 0 (virtual root) has been received
     private final CountDownLatch rootResponseReceived;
 
     // Number of requests sent to teacher / responses expected from the teacher. Increased in
@@ -66,6 +71,8 @@ public class LearnerPullVirtualTreeSendTask {
     /**
      * Create a thread for sending node requests to the teacher.
      *
+     * @param reconnectConfig
+     *      the reconnect configuration
      * @param workGroup
      * 		the work group that will manage this thread
      * @param out
@@ -79,9 +86,10 @@ public class LearnerPullVirtualTreeSendTask {
      *      is sent
      */
     public LearnerPullVirtualTreeSendTask(
+            final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
             final AsyncOutputStream<PullVirtualTreeRequest> out,
-            final VirtualLearnerTreeView view,
+            final LearnerPullVirtualTreeView view,
             final NodeTraversalOrder traversalOrder,
             final AtomicBoolean senderIsFinished,
             final CountDownLatch rootResponseReceived,
@@ -93,6 +101,8 @@ public class LearnerPullVirtualTreeSendTask {
         this.senderIsFinished = senderIsFinished;
         this.rootResponseReceived = rootResponseReceived;
         this.responsesExpected = responsesExpected;
+
+        this.rootResponseTimeout = reconnectConfig.pullLearnerRootResponseTimeout();
     }
 
     void exec() {
@@ -101,10 +111,10 @@ public class LearnerPullVirtualTreeSendTask {
 
     private void run() {
         try (out) {
-            // Assuming root is always dirty. Root response will contain virtual tree path range
-            out.sendAsync(new PullVirtualTreeRequest(view, Path.ROOT_PATH, new Hash()));
+            // Send a request for the root node first. The response will contain virtual tree path range
+            out.sendAsync(new PullVirtualTreeRequest(Path.ROOT_PATH, new Hash()));
             responsesExpected.incrementAndGet();
-            if (!rootResponseReceived.await(60, TimeUnit.SECONDS)) {
+            if (!rootResponseReceived.await(rootResponseTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
                 throw new MerkleSynchronizationException("Timed out waiting for root node response from the teacher");
             }
 
@@ -116,7 +126,7 @@ public class LearnerPullVirtualTreeSendTask {
                     continue;
                 }
                 final Hash hash = path == Path.INVALID_PATH ? null : view.getNodeHash(path);
-                out.sendAsync(new PullVirtualTreeRequest(view, path, hash));
+                out.sendAsync(new PullVirtualTreeRequest(path, hash));
                 if (path == Path.INVALID_PATH) {
                     break;
                 }

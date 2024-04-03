@@ -286,7 +286,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
                 .withValue("reconnect.reconnectWindowSeconds", "0")
                 .withValue("reconnect.fallenBehindThreshold", "0")
                 // This is important! A low value will cause a failed reconnect to finish more quicly.
-                .withValue("reconnect.asyncStreamTimeout", "500000ms")
+                .withValue("reconnect.asyncStreamTimeout", "500ms")
                 .withValue("reconnect.asyncOutputStreamFlush", "10ms")
                 .withValue("reconnect.asyncStreamBufferSize", "1000")
                 .withValue("reconnect.maximumReconnectFailuresBeforeShutdown", "0")

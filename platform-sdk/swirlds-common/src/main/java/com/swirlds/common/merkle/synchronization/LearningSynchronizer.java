@@ -280,7 +280,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
 
         final AtomicReference<T> reconstructedRoot = new AtomicReference<>();
 
-        view.startLearnerTasks(this, workGroup, inputStream, outputStream, rootsToReceive, reconstructedRoot, this);
+        view.startLearnerTasks(this, workGroup, inputStream, outputStream, rootsToReceive, reconstructedRoot);
         InterruptedException interruptException = null;
         try {
             workGroup.waitForTermination();

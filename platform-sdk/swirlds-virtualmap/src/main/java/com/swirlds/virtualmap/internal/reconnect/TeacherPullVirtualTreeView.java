@@ -61,7 +61,7 @@ import org.apache.logging.log4j.Logger;
  * 		The value
  */
 public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualValue>
-        extends VirtualTreeViewBase<K, V> implements VirtualTeacherTreeView {
+        extends VirtualTreeViewBase<K, V> implements TeacherTreeView<Long> {
 
     private static final Logger logger = LogManager.getLogger(TeacherPullVirtualTreeView.class);
 
@@ -130,7 +130,20 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
         return (path >= reconnectState.getFirstLeafPath()) && (path <= reconnectState.getLastLeafPath());
     }
 
-    @Override
+    /**
+     * Writes the virtual node identified by a given path to the output stream.
+     *
+     * <p>For the root node (path 0), reconnect state information is written: the first leaf path (long)
+     * and the last leaf path (long). Other internal nodes are not written at all.
+     *
+     * <p>For dirty leaf nodes, the corresponding leaf records are written. Clean leaf nodes aren't
+     * written at all.
+     *
+     * @param out the output stream
+     * @param path the virtual path
+     * @param isClean indicates if the virtual node on the learner side matches what's on the teacher
+     * @throws IOException if an I/O error occurs
+     */
     public void writeNode(final SerializableDataOutputStream out, final long path, final boolean isClean)
             throws IOException {
         checkValidNode(path, reconnectState);
@@ -143,7 +156,12 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
         }
     }
 
-    @Override
+    /**
+     * Read the virtual node hash identified by a given path.
+     *
+     * @param path the virtual path
+     * @return the virtual node hash
+     */
     public Hash loadHash(final long path) {
         return records.findHash(path);
     }

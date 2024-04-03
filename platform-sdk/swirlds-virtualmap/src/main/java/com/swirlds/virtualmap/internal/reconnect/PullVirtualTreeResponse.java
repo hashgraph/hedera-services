@@ -18,7 +18,6 @@ package com.swirlds.virtualmap.internal.reconnect;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
@@ -33,6 +32,7 @@ import java.io.IOException;
  * com.swirlds.virtualmap.datasource.VirtualLeafRecord} for the node is included in the end of the
  * response.
  */
+@SuppressWarnings("rawtypes")
 public class PullVirtualTreeResponse implements SelfSerializable {
 
     private static final long CLASS_ID = 0xecfbef49a90334e3L;
@@ -42,17 +42,19 @@ public class PullVirtualTreeResponse implements SelfSerializable {
     }
 
     // Only used on the teacher side
-    private final VirtualTeacherTreeView teacherView;
+    private final TeacherPullVirtualTreeView teacherView;
 
     // Only used on the learner side
-    private final VirtualLearnerTreeView learnerView;
+    private final LearnerPullVirtualTreeView learnerView;
 
     // Virtual node path
     private long path;
 
     // Virtual node hash on the learner side. May be NULL_HASH, if the path is outside of path range
     // in the old learner virtual tree
-    private Hash originalHash;
+    private Hash learnerHash;
+
+    private Hash teacherHash;
 
     /**
      * Zero-arg constructor for constructable registry.
@@ -65,12 +67,18 @@ public class PullVirtualTreeResponse implements SelfSerializable {
     /**
      * This constructor is used by the teacher to create new responses.
      */
-    public PullVirtualTreeResponse(final VirtualTeacherTreeView teacherView, final PullVirtualTreeRequest request) {
+    public PullVirtualTreeResponse(
+            final TeacherPullVirtualTreeView teacherView,
+            final long path,
+            final Hash learnerHash,
+            final Hash teacherHash) {
         this.teacherView = teacherView;
         this.learnerView = null;
-        this.path = request.getPath();
-        this.originalHash = request.getHash();
-        assert originalHash != null;
+        this.path = path;
+        this.learnerHash = learnerHash;
+        assert learnerHash != null;
+        this.teacherHash = teacherHash;
+        // teacherHash may be null (in case the tree is empty)
     }
 
     /**
@@ -79,7 +87,7 @@ public class PullVirtualTreeResponse implements SelfSerializable {
      * @param learnerTreeView
      * 		the learner's view
      */
-    public PullVirtualTreeResponse(final VirtualLearnerTreeView learnerTreeView) {
+    public PullVirtualTreeResponse(final LearnerPullVirtualTreeView learnerTreeView) {
         this.teacherView = null;
         this.learnerView = learnerTreeView;
     }
@@ -91,12 +99,7 @@ public class PullVirtualTreeResponse implements SelfSerializable {
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         assert teacherView != null;
         out.writeLong(path);
-        Hash teacherHash = teacherView.loadHash(path);
-        // The only valid scenario, when teacherHash may be null, is the empty tree
-        if ((teacherHash == null) && (path != 0)) {
-            throw new MerkleSerializationException("Cannot load node hash (bad request from learner?), path = " + path);
-        }
-        final boolean isClean = (teacherHash == null) || teacherHash.equals(originalHash);
+        final boolean isClean = (teacherHash == null) || teacherHash.equals(learnerHash);
         out.write(isClean ? 0 : 1);
         teacherView.writeNode(out, path, isClean);
     }

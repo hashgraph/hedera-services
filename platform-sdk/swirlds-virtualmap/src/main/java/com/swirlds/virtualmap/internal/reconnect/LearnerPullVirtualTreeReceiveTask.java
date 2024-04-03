@@ -44,7 +44,7 @@ public class LearnerPullVirtualTreeReceiveTask {
 
     private final StandardWorkGroup workGroup;
     private final SerializableDataInputStream in;
-    private final VirtualLearnerTreeView view;
+    private final LearnerPullVirtualTreeView view;
 
     // Indicates if the learner sender task is done sending all requests to the teacher
     private final AtomicBoolean senderIsFinished;
@@ -71,7 +71,7 @@ public class LearnerPullVirtualTreeReceiveTask {
     public LearnerPullVirtualTreeReceiveTask(
             final StandardWorkGroup workGroup,
             final SerializableDataInputStream in,
-            final VirtualLearnerTreeView view,
+            final LearnerPullVirtualTreeView view,
             final AtomicBoolean senderIsFinished,
             final AtomicLong expectedResponses,
             final CountDownLatch rootResponseReceived) {

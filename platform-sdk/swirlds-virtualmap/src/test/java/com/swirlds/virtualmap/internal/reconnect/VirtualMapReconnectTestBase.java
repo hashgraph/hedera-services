@@ -121,7 +121,7 @@ public abstract class VirtualMapReconnectTestBase {
         new TestConfigBuilder()
                 .withValue(ReconnectConfig_.ACTIVE, "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "500000ms")
+                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
                 .getOrCreateConfig();
     }
 

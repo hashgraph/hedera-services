@@ -39,42 +39,23 @@ public class PullVirtualTreeRequest implements SelfSerializable {
         public static final int ORIGINAL = 1;
     }
 
-    // Only used on the teacher side
-    private final VirtualTeacherTreeView teacherView;
-
-    // Only used on the learner side
-    private final VirtualLearnerTreeView learnerView;
-
     // Virtual node path. If the path is Path.INVALID_PATH, it indicates that the learner will
     // not send any more node requests to the teacher
     private long path;
 
-    // Virtual node hash. If a node with the given path does not exists on the learner (path is
+    // Virtual node hash. If a node with the given path does not exist on the learner (path is
     // outside of range), NULL_HASH is used. If the path is Path.INVALID_PATH, the hash is null
     private Hash hash;
 
     /**
-     * Zero-arg constructor for constructable registry.
-     */
-    public PullVirtualTreeRequest() {
-        teacherView = null;
-        learnerView = null;
-    }
-
-    /**
      * This constructor is used by the teacher to deserialize the request from the stream.
      */
-    public PullVirtualTreeRequest(final VirtualTeacherTreeView teacherView) {
-        this.teacherView = teacherView;
-        this.learnerView = null;
-    }
+    public PullVirtualTreeRequest() {}
 
     /**
      * This constructor is used by the learner to send requests to the teacher.
      */
-    public PullVirtualTreeRequest(final VirtualLearnerTreeView learnerTreeView, final long path, final Hash hash) {
-        this.teacherView = null;
-        this.learnerView = learnerTreeView;
+    public PullVirtualTreeRequest(final long path, final Hash hash) {
         // Null hash for the terminating requests, non-null otherwise
         assert path == Path.INVALID_PATH || (path >= 0 && hash != null);
         this.path = path;
@@ -86,7 +67,6 @@ public class PullVirtualTreeRequest implements SelfSerializable {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        assert learnerView != null;
         out.writeLong(path);
         if (hash != null) {
             out.write(hash.getValue());
@@ -98,7 +78,6 @@ public class PullVirtualTreeRequest implements SelfSerializable {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        assert teacherView != null;
         path = in.readLong();
         if (path >= 0) {
             hash = new Hash(DigestType.SHA_384);

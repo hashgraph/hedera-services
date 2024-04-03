@@ -53,11 +53,6 @@ import java.util.stream.Stream;
 public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> {
 
     /**
-     * The first leaf path of the new tree being received.
-     */
-    private long newFirstLeafPath;
-
-    /**
      * The last leaf path of the new tree being received.
      */
     private long newLastLeafPath;
@@ -106,13 +101,16 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
      * Set the first/last leaf path for the tree as it will be after reconnect is completed. Expected
      * to be called before the first node is passed to this object.
      *
+     * <p>If the old learner tree contained fewer elements than the new tree from the teacher, all leaves
+     * from the old {@code firstLeafPath} inclusive to the new {@code firstLeafPath} exclusive are
+     * marked for deletion.
+     *
      * @param newFirstLeafPath
      * 		the first leaf path after reconnect completes
      * @param newLastLeafPath
      * 		the last leaf path after reconnect completes
      */
     public void setPathInformation(final long newFirstLeafPath, final long newLastLeafPath) {
-        this.newFirstLeafPath = newFirstLeafPath;
         this.newLastLeafPath = newLastLeafPath;
 
         if (oldLastLeafPath > 0) {
