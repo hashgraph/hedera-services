@@ -63,6 +63,9 @@ public class DefaultStateGarbageCollector implements StateGarbageCollector {
      */
     @Override
     public void registerState(@NonNull final ReservedSignedState state) {
+
+        // TODO log error for states not configured to be deleted on background thread
+
         try (state) {
             // Intentionally hold a java reference without a signed state reference count.
             // This is the only place in the codebase that is allowed to do this.

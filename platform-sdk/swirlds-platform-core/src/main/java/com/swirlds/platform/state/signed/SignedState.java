@@ -155,26 +155,29 @@ public class SignedState implements SignedStateInfo {
      * deletion handler delete the state. This should be true in production environments and false in unit test
      * environments that are not set up with a {@link StateGarbageCollector}.
      */
-    private final AtomicBoolean deleteOnBackgroundThread = new AtomicBoolean(false);
+    private final boolean deleteOnBackgroundThread;
 
     /**
      * Instantiate a signed state.
      *
-     * @param platformContext   the platform context
-     * @param signatureVerifier the signature verifier
-     * @param state             a fast copy of the state resulting from all transactions in consensus order from all
-     *                          events with received rounds up through the round this SignedState represents
-     * @param reason            a short description of why this SignedState is being created. Each location where a
-     *                          SignedState is created should attempt to use a unique reason, as this makes debugging
-     *                          reservation bugs easier.
-     * @param freezeState       specifies whether this state is the last one saved before the freeze
+     * @param platformContext          the platform context
+     * @param signatureVerifier        the signature verifier
+     * @param state                    a fast copy of the state resulting from all transactions in consensus order from
+     *                                 all events with received rounds up through the round this SignedState represents
+     * @param reason                   a short description of why this SignedState is being created. Each location where
+     *                                 a SignedState is created should attempt to use a unique reason, as this makes
+     *                                 debugging reservation bugs easier.
+     * @param freezeState              specifies whether this state is the last one saved before the freeze
+     * @param deleteOnBackgroundThread if true, delete this state on the background thread, otherwise delete on the
+     *                                 thread that removes the last reference count
      */
     public SignedState(
             @NonNull final PlatformContext platformContext,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final State state,
             @NonNull final String reason,
-            final boolean freezeState) {
+            final boolean freezeState,
+            final boolean deleteOnBackgroundThread) {
 
         state.reserve();
 
@@ -193,6 +196,7 @@ public class SignedState implements SignedStateInfo {
         sigSet = new SigSet();
 
         this.freezeState = freezeState;
+        this.deleteOnBackgroundThread = deleteOnBackgroundThread;
     }
 
     /**
@@ -319,26 +323,13 @@ public class SignedState implements SignedStateInfo {
         reservations.release();
     }
 
-    // TODO this is SUPER clunky... probably should move to the constructor
-    /**
-     * Specify if this state should be deleted on the background thread or on the thread that removes the last reference
-     * count. By default this is false.
-     *
-     * @param enabled true if this state should be deleted on the background thread, false if it should be deleted on
-     *                the thread that removes the last reference count
-     */
-    public void setBackgroundDeletionEnabled(
-            final boolean enabled) { // TODO make sure all production states have this toggled
-        deleteOnBackgroundThread.set(enabled);
-    }
-
     /**
      * Mark this state as eligible for deletion. If configured to delete on the calling thread, then this method will
      * also delete the state.
      */
     private void markEligibleForDeletion() {
         eligibleForDeletion.set(true);
-        if (!deleteOnBackgroundThread.get()) {
+        if (!deleteOnBackgroundThread) {
             delete();
         }
     }

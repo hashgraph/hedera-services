@@ -71,7 +71,7 @@ public class StateEditor {
                 configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         final DeserializedSignedState deserializedSignedState =
-                SignedStateFileReader.readStateFile(platformContext, statePath);
+                SignedStateFileReader.readStateFile(platformContext, statePath, false);
 
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             System.out.println("\nLoading state from " + statePath);
@@ -211,7 +211,8 @@ public class StateEditor {
                     CryptoStatic::verifySignature,
                     reservedSignedState.get().getState().copy(),
                     "StateEditor.getSignedStateCopy()",
-                    reservedSignedState.get().isFreezeState());
+                    reservedSignedState.get().isFreezeState(),
+                    false);
 
             signedState.set(newSignedState, "StateEditor.getSignedStateCopy() 2");
 

@@ -284,8 +284,8 @@ public class ConsensusRoundHandler {
                 CryptoStatic::verifySignature,
                 immutableStateCons,
                 "ConsensusRoundHandler.createSignedState()",
-                freezeRoundReceived);
-        signedState.setBackgroundDeletionEnabled(true);
+                freezeRoundReceived,
+                true);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("round handler output");
         return new StateAndRound(reservedSignedState, consensusRound);

@@ -49,7 +49,12 @@ class SignedStateReserverTest {
                 TestPlatformContextBuilder.create().build();
 
         final SignedState signedState = new SignedState(
-                platformContext, Mockito.mock(SignatureVerifier.class), Mockito.mock(State.class), "create", false);
+                platformContext,
+                Mockito.mock(SignatureVerifier.class),
+                Mockito.mock(State.class),
+                "create",
+                false,
+                false);
 
         final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
         final TaskScheduler<ReservedSignedState> taskScheduler = model.schedulerBuilder("scheduler")

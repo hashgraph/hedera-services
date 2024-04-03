@@ -245,7 +245,8 @@ public final class StartupStateUtils {
                 CryptoStatic::verifySignature,
                 stateCopy,
                 "StartupStateUtils: copy initial state",
-                false);
+                false,
+                true);
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 
         return signedStateCopy.reserve("Copied initial state");
@@ -505,7 +506,7 @@ public final class StartupStateUtils {
 
         final DeserializedSignedState deserializedSignedState;
         try {
-            deserializedSignedState = readStateFile(platformContext, savedStateFile.stateFile());
+            deserializedSignedState = readStateFile(platformContext, savedStateFile.stateFile(), true);
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "unable to load state file {}", savedStateFile.stateFile(), e);
 

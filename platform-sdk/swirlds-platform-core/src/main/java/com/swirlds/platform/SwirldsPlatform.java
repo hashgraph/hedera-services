@@ -322,7 +322,6 @@ public class SwirldsPlatform implements Platform {
 
         // The reservation on this state is held by the caller of this constructor.
         final SignedState initialState = blocks.initialState().get();
-        initialState.setBackgroundDeletionEnabled(true); // TODO is this the right place to do this?
 
         // This method is a no-op if we are not in birth round mode, or if we have already migrated.
         final SoftwareVersion appVersion = blocks.appVersion();
@@ -971,7 +970,6 @@ public class SwirldsPlatform implements Platform {
                             signedState.getConsensusTimestamp(),
                             signedState.getState().getSwirldState()));
 
-            signedState.setBackgroundDeletionEnabled(true); // TODO is this the right place to do this?
             platformWiring
                     .getStateGarbageCollectorInput()
                     .put(signedState.reserve("reconnect state to garbage collector"));

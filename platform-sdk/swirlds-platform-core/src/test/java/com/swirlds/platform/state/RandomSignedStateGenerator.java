@@ -206,7 +206,8 @@ public class RandomSignedStateGenerator {
                 signatureVerifier,
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
-                freezeStateInstance);
+                freezeStateInstance,
+                false);
 
         MerkleCryptoFactory.getInstance().digestTreeSync(stateInstance);
         if (stateHash != null) {

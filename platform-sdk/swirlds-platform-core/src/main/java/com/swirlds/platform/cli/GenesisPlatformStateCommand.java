@@ -77,7 +77,7 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
 
         System.out.printf("Reading from %s %n", statePath.toAbsolutePath());
         final DeserializedSignedState deserializedSignedState =
-                SignedStateFileReader.readStateFile(platformContext, statePath);
+                SignedStateFileReader.readStateFile(platformContext, statePath, false);
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             final PlatformState platformState =
                     reservedSignedState.get().getState().getPlatformState();
