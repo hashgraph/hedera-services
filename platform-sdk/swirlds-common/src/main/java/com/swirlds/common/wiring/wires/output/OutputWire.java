@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.wires.output;
 
-import com.swirlds.common.wiring.model.internal.TraceableWiringModel;
+import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;
@@ -41,7 +41,7 @@ import java.util.function.Predicate;
  */
 public abstract class OutputWire<OUT> {
 
-    private final TraceableWiringModel model;
+    private final StandardWiringModel model;
     private final String name;
 
     /**
@@ -50,7 +50,7 @@ public abstract class OutputWire<OUT> {
      * @param model the wiring model containing this output wire
      * @param name  the name of the output wire
      */
-    public OutputWire(@NonNull final TraceableWiringModel model, @NonNull final String name) {
+    public OutputWire(@NonNull final StandardWiringModel model, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
     }
@@ -72,7 +72,7 @@ public abstract class OutputWire<OUT> {
      * @return the wiring model
      */
     @NonNull
-    protected TraceableWiringModel getModel() {
+    protected StandardWiringModel getModel() {
         return model;
     }
 
