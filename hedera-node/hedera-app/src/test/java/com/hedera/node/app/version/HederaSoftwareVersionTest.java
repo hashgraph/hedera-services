@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.version;
 
+import static com.hedera.node.app.version.HederaSoftwareVersion.RELEASE_027_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.config.converter.SemanticVersionConverter;
@@ -30,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
@@ -93,6 +97,48 @@ final class HederaSoftwareVersionTest {
         final HederaSoftwareVersion v3 = in.readSerializable();
 
         assertEquals(0, v1.compareTo(v3));
+    }
+
+    @Test
+    void byteFormatDoesNotChangeAfterMigration() throws IOException, ConstructableRegistryException {
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(HederaSoftwareVersion.class, HederaSoftwareVersion::new));
+
+        /*
+        // The following code was used to generate the serialized software version on disk.
+        // File was generated using the branch release/0.47.
+
+        final HederaSoftwareVersion version = new HederaSoftwareVersion(semver("1.2.3"), semver("4.5.6"));
+        final FileOutputStream fos = new FileOutputStream("hederaSoftwareVersion_27.dat");
+        final SerializableDataOutputStream out = new SerializableDataOutputStream(fos);
+        out.writeSerializable(version, true);
+        out.close();
+         */
+
+        final byte[] legacyBytes;
+        try (final InputStream legacyFile =
+                HederaSoftwareVersion.class.getClassLoader().getResourceAsStream("hederaSoftwareVersion_27.dat")) {
+            assertNotNull(legacyFile);
+            legacyBytes = legacyFile.readAllBytes();
+        }
+
+        final SerializableDataInputStream legacyIn =
+                new SerializableDataInputStream(new ByteArrayInputStream(legacyBytes));
+        final HederaSoftwareVersion deserializedVersion = legacyIn.readSerializable();
+
+        assertEquals(RELEASE_027_VERSION, deserializedVersion.getVersion());
+        assertEquals(semver("1.2.3"), deserializedVersion.getHapiVersion());
+        assertEquals(semver("4.5.6"), deserializedVersion.getServicesVersion());
+
+        // Write the deserialized version back to a byte array. It should exactly match the original byte array.
+        final ByteArrayOutputStream newBytes = new ByteArrayOutputStream();
+        final SerializableDataOutputStream newOut = new SerializableDataOutputStream(newBytes);
+        newOut.writeSerializable(deserializedVersion, true);
+        newOut.close();
+        final byte[] newBytesArray = newBytes.toByteArray();
+
+        assertArrayEquals(legacyBytes, newBytesArray);
     }
 
     @Test

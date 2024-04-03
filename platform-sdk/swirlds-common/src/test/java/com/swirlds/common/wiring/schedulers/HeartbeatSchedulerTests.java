@@ -38,10 +38,10 @@ class HeartbeatSchedulerTests {
 
     @Test
     void heartbeatByFrequencyTest() throws InterruptedException {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().withTime(fakeTime).build();
+        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -67,10 +67,10 @@ class HeartbeatSchedulerTests {
 
     @Test
     void heartbeatByPeriodTest() throws InterruptedException {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().withTime(fakeTime).build();
+        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -96,10 +96,10 @@ class HeartbeatSchedulerTests {
 
     @Test
     void heartbeatsAtDifferentRates() throws InterruptedException {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().withTime(fakeTime).build();
+        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
