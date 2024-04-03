@@ -267,6 +267,13 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .get(fungibleTokenId)
                 .copyBuilder()
                 .adminKey((Key) null)
+                .wipeKey((Key) null)
+                .kycKey((Key) null)
+                .supplyKey((Key) null)
+                .freezeKey((Key) null)
+                .feeScheduleKey((Key) null)
+                .pauseKey((Key) null)
+                .metadataKey((Key) null)
                 .build();
         writableTokenStore.put(copyToken);
         given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
