@@ -28,7 +28,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.extraRewardReceivers;
-import static java.util.Collections.emptySet;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -104,10 +104,10 @@ import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -156,7 +156,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private AttributeValidator attributeValidator;
     private ExpiryValidator expiryValidator;
     private ExchangeRateInfo exchangeRateInfo;
-    private Set<AccountID> dispatchPaidStakerIds;
+    private Map<AccountID, Long> dispatchPaidRewards;
     private PlatformState platformState;
 
     /**
@@ -644,8 +644,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
 
-    public @NonNull Set<AccountID> dispatchPaidStakerIds() {
-        return dispatchPaidStakerIds == null ? emptySet() : dispatchPaidStakerIds;
+    public @NonNull Map<AccountID, Long> dispatchPaidRewards() {
+        return dispatchPaidRewards == null ? emptyMap() : dispatchPaidRewards;
     }
 
     private void dispatchSyntheticTxn(
@@ -783,36 +783,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     payer, finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
             final var paidStakingRewards = childRecordBuilder.getPaidStakingRewards();
             if (!paidStakingRewards.isEmpty()) {
-                if (dispatchPaidStakerIds == null) {
-                    dispatchPaidStakerIds = new LinkedHashSet<>();
+                if (dispatchPaidRewards == null) {
+                    dispatchPaidRewards = new LinkedHashMap<>();
                 }
-                paidStakingRewards.forEach(aa -> dispatchPaidStakerIds.add(aa.accountIDOrThrow()));
-            }
-        } else {
-            final var finalizeContext = new ChildFinalizeContextImpl(
-                    new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
-                    childRecordBuilder);
-            childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
-        }
-        // For mono-service fidelity, we need to attach staking rewards for a
-        // triggered transaction to the record of the child here, and not the
-        // "parent" ScheduleCreate or ScheduleSign transaction
-        if (childCategory == SCHEDULED) {
-            final var finalizeContext = new TriggeredFinalizeContext(
-                    new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
-                    childRecordBuilder,
-                    consensusNow(),
-                    configuration);
-            parentRecordFinalizer.finalizeParentRecord(
-                    payer, finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
-            final var paidStakingRewards = childRecordBuilder.getPaidStakingRewards();
-            if (!paidStakingRewards.isEmpty()) {
-                if (dispatchPaidStakerIds == null) {
-                    dispatchPaidStakerIds = new LinkedHashSet<>();
-                }
-                paidStakingRewards.forEach(aa -> dispatchPaidStakerIds.add(aa.accountIDOrThrow()));
+                paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
             }
         } else {
             final var finalizeContext = new ChildFinalizeContextImpl(
