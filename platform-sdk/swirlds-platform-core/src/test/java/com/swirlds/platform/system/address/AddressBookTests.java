@@ -463,6 +463,12 @@ class AddressBookTests {
     void roundTripSerializeAndDeserializeCompatibleWithConfigTxt() throws ParseException {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed());
         final AddressBook addressBook = generator.build();
+        // FQDN Support: modify address in address book to have a text based host name.
+        addressBook.add(addressBook
+                .getAddress(addressBook.getNodeId(0))
+                .copySetHostnameInternal("localhost")
+                .copySetHostnameExternal("localhost"));
+
         // make one of the memo fields an empty string
         final NodeId firstNode = addressBook.getNodeId(0);
         addressBook.add(addressBook.getAddress(firstNode).copySetMemo(""));
