@@ -63,7 +63,7 @@ public record PlatformBuildingBlocks(
         @NonNull SoftwareVersion appVersion,
         @NonNull ReservedSignedState initialState,
         @NonNull EmergencyRecoveryManager emergencyRecoveryManager,
-        @NonNull Consumer<GossipEvent> preconsensusEventConsumer,
+        @Nullable Consumer<GossipEvent> preconsensusEventConsumer,
         @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
-        @Nullable IntakeEventCounter intakeEventCounter,
+        @NonNull IntakeEventCounter intakeEventCounter,
         boolean firstPlatform) {}
