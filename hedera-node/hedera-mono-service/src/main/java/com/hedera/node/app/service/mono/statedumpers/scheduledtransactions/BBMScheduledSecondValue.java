@@ -16,17 +16,22 @@
 
 package com.hedera.node.app.service.mono.statedumpers.scheduledtransactions;
 
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.List;
 import java.util.NavigableMap;
-import org.eclipse.collections.api.list.primitive.ImmutableLongList;
+import java.util.TreeMap;
 
 @SuppressWarnings("java:S6218")
-public // "Equals/hashcode methods should be overridden in records containing array fields"
-record BBMScheduledSecondValue(long number, NavigableMap<RichInstant, ImmutableLongList> ids) {
+public record BBMScheduledSecondValue(NavigableMap<Instant, List<Long>> ids) {
 
     static BBMScheduledSecondValue fromMono(@NonNull final ScheduleSecondVirtualValue scheduleVirtualValue) {
-        return new BBMScheduledSecondValue(scheduleVirtualValue.getKey().getKeyAsLong(), scheduleVirtualValue.getIds());
+        final var newMap = new TreeMap<Instant, List<Long>>();
+        scheduleVirtualValue
+                .getIds()
+                .forEach((key, value) -> newMap.put(
+                        key.toJava(), value.collect(Long::valueOf).stream().toList()));
+        return new BBMScheduledSecondValue(newMap);
     }
 }

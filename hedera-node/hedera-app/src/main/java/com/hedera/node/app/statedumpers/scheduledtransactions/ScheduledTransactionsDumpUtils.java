@@ -17,6 +17,7 @@
 package com.hedera.node.app.statedumpers.scheduledtransactions;
 
 import static com.hedera.node.app.service.mono.statedumpers.associations.BBMTokenAssociation.entityIdFrom;
+import static com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.ScheduledTransactionsDumpUtils.reportOnScheduledTransactionsByExpiry;
 import static com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.ScheduledTransactionsDumpUtils.reportOnScheduledTransactionsById;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
@@ -31,6 +32,7 @@ import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledId;
+import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledSecondValue;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledTransaction;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
@@ -42,8 +44,10 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ScheduledTransactionsDumpUtils {
@@ -60,7 +64,37 @@ public class ScheduledTransactionsDumpUtils {
             System.out.printf(
                     "=== mod scheduled transactions report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
+            // Not sure how to compare Equality Virtual map in mono and mod
+            final var byExpiryDump = gatherModScheduledTransactionsByExpiry(byExpiry);
+            reportOnScheduledTransactionsByExpiry(writer, byExpiryDump);
+            System.out.printf(
+                    "=== mod scheduled transactions by expiry report is %d bytes at checkpoint %s%n",
+                    writer.getSize(), checkpoint.name());
         }
+    }
+
+    private static Map<BBMScheduledId, BBMScheduledSecondValue> gatherModScheduledTransactionsByExpiry(
+            final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> source) {
+        final var r = new HashMap<BBMScheduledId, BBMScheduledSecondValue>();
+        final var scheduledTransactions = new ConcurrentLinkedQueue<Pair<BBMScheduledId, BBMScheduledSecondValue>>();
+
+        try {
+            VirtualMapLike.from(source)
+                    .extractVirtualMapDataC(
+                            getStaticThreadManager(),
+                            p -> scheduledTransactions.add(Pair.of(
+                                    new BBMScheduledId(p.key().getKey().value()),
+                                    fromMod(p.key().getKey(), p.value().getValue()))),
+                            8);
+        } catch (final InterruptedException ex) {
+            System.err.println("*** Traversal of scheduledTransactions virtual map interrupted!");
+            Thread.currentThread().interrupt();
+        }
+        while (!scheduledTransactions.isEmpty()) {
+            final var mapping = scheduledTransactions.poll();
+            r.put(mapping.key(), mapping.value());
+        }
+        return r;
     }
 
     @NonNull
@@ -74,13 +108,9 @@ public class ScheduledTransactionsDumpUtils {
                     .extractVirtualMapDataC(
                             getStaticThreadManager(),
                             p -> {
-                                try {
-                                    scheduledTransactions.add(Pair.of(
-                                            fromMod(p.key().getKey()),
-                                            fromMod(p.value().getValue())));
-                                } catch (InvalidKeyException e) {
-                                    throw new RuntimeException(e);
-                                }
+                                scheduledTransactions.add(Pair.of(
+                                        fromMod(p.key().getKey()),
+                                        fromMod(p.value().getValue())));
                             },
                             8);
         } catch (final InterruptedException ex) {
@@ -94,10 +124,26 @@ public class ScheduledTransactionsDumpUtils {
         return r;
     }
 
-    static BBMScheduledTransaction fromMod(@NonNull final Schedule value) throws InvalidKeyException {
+    static BBMScheduledSecondValue fromMod(final ProtoLong expiry, @NonNull final ScheduleList value) {
+        final var newMap = new TreeMap<Instant, List<Long>>();
+        final var longsList = value.schedules().stream()
+                .map(a -> a.scheduleId().scheduleNum())
+                .toList();
+        newMap.put(Instant.ofEpochSecond(expiry.value()), longsList);
+        return new BBMScheduledSecondValue(newMap);
+    }
+
+    static BBMScheduledTransaction fromMod(@NonNull final Schedule value) {
+        Optional<JKey> adminKey;
+        try {
+            adminKey = value.adminKey() != null ? Optional.of(JKey.mapKey(value.adminKey())) : Optional.empty();
+        } catch (InvalidKeyException e) {
+            adminKey = Optional.empty();
+        }
+
         return new BBMScheduledTransaction(
                 value.scheduleId().scheduleNum(),
-                value.adminKey() != null ? Optional.of(JKey.mapKey(value.adminKey())) : Optional.empty(),
+                adminKey,
                 value.memo(),
                 value.deleted(),
                 value.executed(),
