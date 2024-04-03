@@ -232,15 +232,18 @@ public class SidecarWatcher {
             final var faultySidecars = kv.getValue();
             final var specName = kv.getKey();
             for (final var pair : faultySidecars) {
-                if (!pair.expectedSidecarRecord().hasActions() && !pair.actualSidecarRecord().hasActions()) {
+                if (!pair.expectedSidecarRecord().hasActions()
+                        && !pair.actualSidecarRecord().hasActions()) {
                     continue;
                 }
 
                 Set<ContractAction> actualActions = new HashSet<>(
-                        withZeroedGasValues(pair.actualSidecarRecord().getActions()).getContractActionsList());
+                        withZeroedGasValues(pair.actualSidecarRecord().getActions())
+                                .getContractActionsList());
 
                 Set<ContractAction> expectedActions = new HashSet<>(
-                        withZeroedGasValues(pair.expectedSidecarRecord().getActions()).getContractActionsList());
+                        withZeroedGasValues(pair.expectedSidecarRecord().getActions())
+                                .getContractActionsList());
 
                 if (!actualActions.containsAll(expectedActions)) {
                     log.error(

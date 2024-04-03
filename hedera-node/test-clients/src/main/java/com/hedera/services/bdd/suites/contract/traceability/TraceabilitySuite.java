@@ -199,7 +199,8 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                 vanillaBytecodeSidecar2(),
                 actionsShowPropagatedRevert(),
                 ethereumLazyCreateExportsExpectedSidecars(),
-                hollowAccountCreate2MergeExportsExpectedSidecars());
+                hollowAccountCreate2MergeExportsExpectedSidecars(),
+                assertSidecars());
     }
 
     @HapiTest

@@ -267,8 +267,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
-// TODO: Set fuzzyMatch to true
-@HapiTestSuite(fuzzyMatch = false)
+@HapiTestSuite(fuzzyMatch = true)
 @TestMethodOrder(
         MethodOrderer.OrderAnnotation
                 .class) // define same running order for mod specs as in getSpecsInSuite() definition used in mono
@@ -2191,10 +2190,9 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                     expectContractStateChangesSidecarFor(
                                             payTxn,
                                             List.of(StateChange.stateChangeFor(LAZY_CREATE_CONTRACT)
-                                                    .withStorageChanges(
-                                                            StorageChange.onlyRead(
-                                                                    formattedAssertionValue(0L),
-                                                                    formattedAssertionValue(2809624877451934192L))))),
+                                                    .withStorageChanges(StorageChange.onlyRead(
+                                                            formattedAssertionValue(0L),
+                                                            formattedAssertionValue(2809624877451934192L))))),
                                     expectContractActionSidecarFor(
                                             payTxn,
                                             List.of(ContractAction.newBuilder()
