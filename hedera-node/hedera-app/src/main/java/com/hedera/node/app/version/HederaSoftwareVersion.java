@@ -49,6 +49,12 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     private SemanticVersion hapiVersion;
     private SemanticVersion servicesVersion;
 
+    /**
+     * The version of this object that was deserialized. When serializing a software version, we need to write it
+     * to the stream using the same format as when it was deserialized.
+     */
+    private int deserializedVersion = RELEASE_048_VERSION;
+
     public HederaSoftwareVersion() {
         // For ConstructableRegistry. Do not use.
     }
@@ -75,7 +81,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
 
     @Override
     public int getVersion() {
-        return RELEASE_048_VERSION;
+        return deserializedVersion;
     }
 
     @Override
@@ -101,7 +107,9 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
+        deserializedVersion = version;
+
         hapiVersion = deserializeSemVer(in);
         servicesVersion = deserializeSemVer(in);
         if (version >= RELEASE_048_VERSION) {
@@ -125,7 +133,9 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     public void serialize(SerializableDataOutputStream out) throws IOException {
         serializeSemVer(hapiVersion, out);
         serializeSemVer(servicesVersion, out);
-        out.writeInt(configVersion);
+        if (deserializedVersion >= RELEASE_048_VERSION) {
+            out.writeInt(configVersion);
+        }
     }
 
     private static void serializeSemVer(final SemanticVersion semVer, final SerializableDataOutputStream out)
