@@ -2192,7 +2192,8 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                             List.of(StateChange.stateChangeFor(LAZY_CREATE_CONTRACT)
                                                     .withStorageChanges(StorageChange.onlyRead(
                                                             formattedAssertionValue(0L),
-                                                            formattedAssertionValue(2809624877451934192L))))),
+                                                            formattedAssertionValue(
+                                                                    "0x26fdcaf0a49f79f0b0fc7e3e32db6e076ad4ef74"))))),
                                     expectContractActionSidecarFor(
                                             payTxn,
                                             List.of(ContractAction.newBuilder()
@@ -2208,7 +2209,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                                     .build())));
                         }),
                         tearDownSidecarWatcher(),
-                        assertContainsAllExpectedContractActions());
+                        assertContainsAllExpectedSidecarRecords());
     }
 
     // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys

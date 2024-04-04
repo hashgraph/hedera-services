@@ -50,6 +50,7 @@ module com.hedera.node.test.clients {
     requires transitive org.junit.platform.engine;
     requires transitive org.testcontainers;
     requires transitive org.yaml.snakeyaml;
+    requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app;
@@ -74,7 +75,6 @@ module com.hedera.node.test.clients {
     requires org.hyperledger.besu.internal.crypto;
     requires org.json;
     requires org.opentest4j;
-    requires tuweni.bytes;
     requires tuweni.units;
     requires static com.github.spotbugs.annotations;
 }

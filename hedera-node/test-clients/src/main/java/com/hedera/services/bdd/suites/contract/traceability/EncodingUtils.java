@@ -75,4 +75,9 @@ public class EncodingUtils {
         return ByteString.copyFrom(
                 Bytes.wrap(UInt256.valueOf(value)).trimLeadingZeros().toArrayUnsafe());
     }
+
+    public static ByteString formattedAssertionValue(final String hexString) {
+        return ByteString.copyFrom(
+                Bytes.wrap(UInt256.fromHexString(hexString)).trimLeadingZeros().toArrayUnsafe());
+    }
 }

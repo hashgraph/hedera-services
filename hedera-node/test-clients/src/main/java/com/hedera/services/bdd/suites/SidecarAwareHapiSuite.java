@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
+import com.hedera.services.bdd.spec.verification.traceability.MismatchedSidecar;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActions;
@@ -103,9 +104,14 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
         });
     }
 
-    protected static CustomSpecAssert assertContainsAllExpectedContractActions() {
+    protected static CustomSpecAssert assertContainsAllExpectedSidecarRecords() {
         return assertionsHold((spec, assertLog) -> {
-            assertTrue(sidecarWatcher.containsAllExpectedContractActions(), sidecarWatcher.getMismatchErrors());
+            assertTrue(
+                    sidecarWatcher.containsAllExpectedStateChanges(),
+                    sidecarWatcher.getMismatchErrors(MismatchedSidecar::hasStateChanges));
+            assertTrue(
+                    sidecarWatcher.containsAllExpectedContractActions(),
+                    sidecarWatcher.getMismatchErrors(MismatchedSidecar::hasActions));
             assertTrue(
                     sidecarWatcher.thereAreNoPendingSidecars(),
                     "There are some sidecars that have not been yet"

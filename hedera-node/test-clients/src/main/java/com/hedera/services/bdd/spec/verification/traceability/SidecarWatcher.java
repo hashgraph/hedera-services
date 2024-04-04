@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActions;
+import com.hedera.services.stream.proto.ContractStateChange;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
@@ -41,6 +43,7 @@ import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@SuppressWarnings("java:S1192") // "String literals should not be duplicated" - would impair readability here
 public class SidecarWatcher {
 
     public SidecarWatcher(final Path recordStreamFolderPath) {
@@ -228,10 +231,11 @@ public class SidecarWatcher {
     }
 
     public boolean containsAllExpectedContractActions() {
-        for (final var kv : failedSidecars.entrySet()) {
-            final var faultySidecars = kv.getValue();
-            final var specName = kv.getKey();
-            for (final var pair : faultySidecars) {
+        for (final var entry : failedSidecars.entrySet()) {
+            final var specName = entry.getKey();
+            final var faultySidecars = entry.getValue();
+
+            for (final MismatchedSidecar pair : faultySidecars) {
                 if (!pair.expectedSidecarRecord().hasActions()
                         && !pair.actualSidecarRecord().hasActions()) {
                     continue;
@@ -258,7 +262,41 @@ public class SidecarWatcher {
         return true;
     }
 
+    public boolean containsAllExpectedStateChanges() {
+        for (final var entry : failedSidecars.entrySet()) {
+            final var specName = entry.getKey();
+            final var faultySidecars = entry.getValue();
+
+            for (final MismatchedSidecar pair : faultySidecars) {
+                if (!pair.expectedSidecarRecord().hasStateChanges()
+                        && !pair.actualSidecarRecord().hasStateChanges()) {
+                    continue;
+                }
+
+                Set<ContractStateChange> actualStateChanges = new HashSet<>(
+                        pair.actualSidecarRecord().getStateChanges().getContractStateChangesList());
+
+                Set<ContractStateChange> expectedStateChanges = new HashSet<>(
+                        pair.expectedSidecarRecord().getStateChanges().getContractStateChangesList());
+
+                if (!actualStateChanges.containsAll(expectedStateChanges)) {
+                    log.error(
+                            "Some expected state changes are missing for spec {}: \nExpected: {}\nActual: {}",
+                            specName,
+                            expectedStateChanges,
+                            actualStateChanges);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public String getMismatchErrors() {
+        return getMismatchErrors(pair -> true);
+    }
+
+    public String getMismatchErrors(Predicate<MismatchedSidecar> filter) {
         final var messageBuilder = new StringBuilder();
         messageBuilder.append("Mismatch(es) between actual/expected sidecars present: ");
         for (final var kv : failedSidecars.entrySet()) {
@@ -271,6 +309,9 @@ public class SidecarWatcher {
                     .append("}:");
             int i = 1;
             for (final var pair : faultySidecars) {
+                if (!filter.test(pair)) {
+                    continue;
+                }
                 messageBuilder
                         .append("\n******FAILURE #")
                         .append(i++)
