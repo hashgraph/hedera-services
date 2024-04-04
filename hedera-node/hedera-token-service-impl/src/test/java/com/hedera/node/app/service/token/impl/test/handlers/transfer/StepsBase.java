@@ -219,7 +219,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(syntheticPayer)))
                 .will((invocation) -> {
-                    final var copy = hbarReceiverAccount
+                    final var copy = writableAccountStore
+                            .get(hbarReceiverId)
                             .copyBuilder()
                             .alias(ecKeyAlias.value())
                             .build();
@@ -228,7 +229,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
-                    final var copy = tokenReceiverAccount
+                    final var copy = writableAccountStore
+                            .get(tokenReceiverId)
                             .copyBuilder()
                             .alias(edKeyAlias.value())
                             .build();
