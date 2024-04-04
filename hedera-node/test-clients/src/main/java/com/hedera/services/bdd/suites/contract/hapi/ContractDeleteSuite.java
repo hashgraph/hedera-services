@@ -375,7 +375,10 @@ public class ContractDeleteSuite extends HapiSuite {
     @HapiTest
     HapiSpec localCallToDeletedContract() {
         return defaultHapiSpec("LocalCallToDeletedContract")
-                .given(uploadInitCode(SIMPLE_STORAGE_CONTRACT), contractCreate(SIMPLE_STORAGE_CONTRACT))
+                // refuse eth conversion because MODIFYING_IMMUTABLE_CONTRACT
+                .given(
+                        uploadInitCode(SIMPLE_STORAGE_CONTRACT),
+                        contractCreate(SIMPLE_STORAGE_CONTRACT).refusingEthConversion())
                 .when(
                         contractCallLocal(SIMPLE_STORAGE_CONTRACT, "get")
                                 .hasCostAnswerPrecheck(OK)
