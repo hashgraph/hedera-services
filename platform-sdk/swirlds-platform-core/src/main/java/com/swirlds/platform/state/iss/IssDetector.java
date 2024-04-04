@@ -553,10 +553,10 @@ public class IssDetector {
     /**
      * Checks equality of hashes when they are stored in different formats.
      */
-    private static boolean hashEquals(@Nullable final Hash a, @NonNull final Bytes b) {
-        if (a == null && b.length() == 0) {
+    private static boolean hashEquals(@Nullable final Hash hash, @NonNull final Bytes bytes) {
+        if (hash == null && bytes.length() == 0) {
             return true;
         }
-        return a != null && a.equalBytes(b);
+        return hash != null && hash.equalBytes(bytes);
     }
 }

@@ -105,6 +105,9 @@ public final class StateSignatureTransaction extends SystemTransaction {
         return round;
     }
 
+    /**
+     * @return the signature on the state
+     */
     @NonNull
     public Bytes signature() {
         return stateSignature == null ? Bytes.EMPTY : Bytes.wrap(stateSignature.getSignatureBytes());
