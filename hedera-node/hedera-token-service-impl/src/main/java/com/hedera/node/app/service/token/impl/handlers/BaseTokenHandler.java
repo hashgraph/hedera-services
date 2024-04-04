@@ -319,8 +319,6 @@ public class BaseTokenHandler {
         final var usedAutoAssociations = account.usedAutoAssociations();
         validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
-        final var existingFirstTokenId = account.headTokenId();
-        final var existingFirstTokenRel = tokenRelStore.get(accountId, existingFirstTokenId);
         // Create new token relation and commit to store
         final var newTokenRel = TokenRelation.newBuilder()
                 .tokenId(tokenId)
@@ -338,9 +336,15 @@ public class BaseTokenHandler {
                 .headTokenId(tokenId)
                 .build();
 
-        if (existingFirstTokenRel != null) {
-            tokenRelStore.put(
-                    existingFirstTokenRel.copyBuilder().previousToken(tokenId).build());
+        final var existingFirstTokenId = account.headTokenId();
+        if (existingFirstTokenId != null) {
+            final var existingFirstTokenRel = tokenRelStore.get(accountId, existingFirstTokenId);
+            if (existingFirstTokenRel != null) {
+                tokenRelStore.put(existingFirstTokenRel
+                        .copyBuilder()
+                        .previousToken(tokenId)
+                        .build());
+            }
         }
         accountStore.put(copyAccount);
         tokenRelStore.put(newTokenRel);
