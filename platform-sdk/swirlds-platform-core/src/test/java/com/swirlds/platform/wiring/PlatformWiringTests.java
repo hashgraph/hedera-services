@@ -99,8 +99,8 @@ class PlatformWiringTests {
                 mock(SavedStateController.class),
                 mock(SignedStateHasher.class),
                 mock(AppNotifier.class),
-                mock(PlatformPublisher.class),
-                mock(StateGarbageCollector.class));
+                mock(StateGarbageCollector.class),
+                mock(PlatformPublisher.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
     }

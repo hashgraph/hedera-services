@@ -72,7 +72,6 @@ import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
@@ -623,12 +622,8 @@ public class SwirldsPlatform implements Platform {
 
         final AppNotifier appNotifier = new DefaultAppNotifier(notificationEngine);
 
-        final PlatformPublisher publisher;
-        if (preconsensusEventConsumer != null || snapshotOverrideConsumer != null) {
-            publisher = new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
-        } else {
-            publisher = null;
-        }
+        final PlatformPublisher publisher =
+                new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
 
         platformWiring.bind(
                 builder.buildEventHasher(),
@@ -661,8 +656,8 @@ public class SwirldsPlatform implements Platform {
                 savedStateController,
                 signedStateHasher,
                 appNotifier,
-                publisher,
-                builder.buildStateGarbageCollector());
+                builder.buildStateGarbageCollector(),
+                publisher);
 
         platformWiring
                 .getStateGarbageCollectorInput()
@@ -770,10 +765,6 @@ public class SwirldsPlatform implements Platform {
                         Pair.of(platformWiring, "platformWiring"),
                         Pair.of(shadowGraph, "shadowGraph"),
                         Pair.of(transactionPool, "transactionPool")));
-
-        if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {
-            thingsToStart.add(new JvmAnchor(threadManager));
-        }
     }
 
     /**
@@ -1000,6 +991,7 @@ public class SwirldsPlatform implements Platform {
     @Override
     public void start() {
         logger.info(STARTUP.getMarker(), "Starting platform {}", selfId);
+        platformWiring.getModel().preventJvmExit();
 
         thingsToStart.start();
 

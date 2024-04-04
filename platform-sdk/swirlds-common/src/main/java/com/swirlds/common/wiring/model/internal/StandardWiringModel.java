@@ -19,9 +19,13 @@ package com.swirlds.common.wiring.model.internal;
 import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.threading.locks.AutoClosableLock;
+import com.swirlds.common.threading.locks.internal.AutoLock;
+import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.ModelManualLink;
@@ -103,6 +107,13 @@ public class StandardWiringModel implements WiringModel {
     private boolean started = false;
 
     /**
+     * Used to protect access to the JVM anchor.
+     */
+    private final AutoClosableLock jvmExitLock = new AutoLock();
+
+    private JvmAnchor anchor;
+
+    /**
      * Constructor.
      *
      * @param platformContext the platform context
@@ -143,6 +154,32 @@ public class StandardWiringModel implements WiringModel {
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
         throwIfStarted();
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void preventJvmExit() {
+        try (final Locked ignored = jvmExitLock.lock()) {
+            if (anchor == null) {
+                anchor = new JvmAnchor();
+                anchor.start();
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void permitJvmExit() {
+        try (final Locked ignored = jvmExitLock.lock()) {
+            if (anchor != null) {
+                anchor.stop();
+                anchor = null;
+            }
+        }
     }
 
     /**
@@ -216,6 +253,12 @@ public class StandardWiringModel implements WiringModel {
      */
     public void registerScheduler(@NonNull final TaskScheduler<?> scheduler, @Nullable final String hyperlink) {
         throwIfStarted();
+
+        if (scheduler.getType() == NO_OP) {
+            // Ignore no-op schedulers.
+            return;
+        }
+
         registerVertex(scheduler.getName(), scheduler.getType(), hyperlink, scheduler.isInsertionBlocking());
         if (scheduler.getType() == SEQUENTIAL_THREAD) {
             threadSchedulers.add((SequentialThreadTaskScheduler<?>) scheduler);
@@ -371,6 +414,8 @@ public class StandardWiringModel implements WiringModel {
         for (final SequentialThreadTaskScheduler<?> threadScheduler : threadSchedulers) {
             threadScheduler.stop();
         }
+
+        permitJvmExit();
     }
 
     /**

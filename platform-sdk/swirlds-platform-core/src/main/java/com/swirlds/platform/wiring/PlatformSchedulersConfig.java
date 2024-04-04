@@ -91,6 +91,7 @@ import java.time.Duration;
  * @param stateGarbageCollector                             configuration for the state garbage collector scheduler
  * @param stateGarbageCollectorHeartbeatPeriod              the frequency that heartbeats should be sent to the state
  *                                                          garbage collector
+ * @param platformPublisher                                 configuration for the platform publisher scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -138,4 +139,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateGarbageCollector,
-        @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod) {}
+        @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration platformPublisher) {}

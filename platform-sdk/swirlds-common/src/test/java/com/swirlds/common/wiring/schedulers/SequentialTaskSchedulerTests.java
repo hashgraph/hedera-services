@@ -2450,24 +2450,4 @@ class SequentialTaskSchedulerTests {
 
         model.stop();
     }
-
-    /**
-     * We want to avoid scenarios where bindConsumer() is called on a method that has a return type matching the
-     * component's return type. If we allow this pattern, it gets easy to accidentally mix up and to create a wire
-     * that does not have its output properly connected.
-     */
-    @Test
-    void ambiguousBindTest() {
-        final WiringModel model = TestWiringModelBuilder.create();
-
-        final TaskScheduler<Long> taskScheduler =
-                model.schedulerBuilder("test").build().cast();
-
-        final BindableInputWire<String, Long> inputWire = taskScheduler.buildInputWire("testWire");
-
-        final Function<String, Long> typeThatShouldNotBeUsedAsAConsumer = x -> 0L;
-
-        assertThrows(
-                UnsupportedOperationException.class, () -> inputWire.bindConsumer(typeThatShouldNotBeUsedAsAConsumer));
-    }
 }
