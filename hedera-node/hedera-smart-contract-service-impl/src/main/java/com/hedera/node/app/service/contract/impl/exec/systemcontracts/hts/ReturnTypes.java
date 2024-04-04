@@ -66,7 +66,7 @@ public class ReturnTypes {
     public static final String UINT256 = "(uint256)";
     public static final String RESPONSE_CODE_EXPIRY = "(int32,"
             // Expiry
-            + "(uint32,address,uint32)" // second, autoRenewAccount, autoRenewPeriod
+            + "(int64,address,int64)" // second, autoRenewAccount, autoRenewPeriod
             + ")";
     public static final String RESPONSE_CODE_TOKEN_KEY = "(int32,"
             // KeyValue
