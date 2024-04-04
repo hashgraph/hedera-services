@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.schedulers.builders.internal;
 
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
@@ -41,8 +42,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A builder for {@link TaskScheduler}s.
@@ -51,8 +50,6 @@ import org.apache.logging.log4j.Logger;
  *            no output)
  */
 public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuilder<OUT> {
-
-    private static final Logger logger = LogManager.getLogger(StandardTaskSchedulerBuilder.class);
 
     /**
      * Constructor.
@@ -105,6 +102,11 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
      */
     @NonNull
     private Counters buildCounters() {
+
+        if (type == NO_OP) {
+            return new Counters(NoOpObjectCounter.getInstance(), NoOpObjectCounter.getInstance());
+        }
+
         final ObjectCounter innerCounter;
 
         // If we need to enforce a maximum capacity, we have no choice but to use a backpressure object counter.
@@ -136,7 +138,7 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
      */
     @NonNull
     private FractionalTimer buildBusyTimer() {
-        if (!busyFractionMetricEnabled) {
+        if (!busyFractionMetricEnabled || type == NO_OP) {
             return NoOpFractionalTimer.getInstance();
         }
         if (type == TaskSchedulerType.CONCURRENT) {
@@ -152,6 +154,10 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
      */
     private void registerMetrics(
             @Nullable final ObjectCounter unhandledTaskCounter, @NonNull final FractionalTimer busyFractionTimer) {
+
+        if (type == NO_OP) {
+            return;
+        }
 
         if (unhandledTaskMetricEnabled) {
             Objects.requireNonNull(unhandledTaskCounter);
@@ -183,7 +189,8 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
 
         registerMetrics(counters.onRamp(), busyFractionTimer);
 
-        final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY || externalBackPressure;
+        final boolean insertionIsBlocking =
+                ((unhandledTaskCapacity != UNLIMITED_CAPACITY) || externalBackPressure) && (type != NO_OP);
 
         final TaskScheduler<OUT> scheduler =
                 switch (type) {
