@@ -115,42 +115,6 @@ class TransactionSerializationTest {
         TestExpectedSerializationLength(deserialized, false);
     }
 
-    @ParameterizedTest
-    @Tag(TIME_CONSUMING)
-    @ValueSource(ints = {1, 1024})
-    void ApplicationWithSignatures(final int contentSize) throws IOException {
-        byte[] nbyte = null;
-        if (contentSize > 0) {
-            nbyte = new byte[contentSize];
-            random.nextBytes(nbyte);
-        }
-        final SignaturePool signaturePool = new SignaturePool(1024, 4096, true);
-
-        final SwirldTransaction applicationTransaction;
-        if (contentSize == 0) {
-            // should throw NPE error
-            try {
-                applicationTransaction = new SwirldTransaction(nbyte);
-            } catch (final NullPointerException e) {
-                assertEquals("contents", e.getMessage());
-                return;
-            }
-        } else {
-            applicationTransaction = new SwirldTransaction(nbyte);
-        }
-
-        TestExpectedSerializationLength(applicationTransaction, true);
-        TestExpectedSerializationLength(applicationTransaction, false);
-
-        applicationTransaction.add(signaturePool.next());
-        TestExpectedSerializationLength(applicationTransaction, true);
-        TestExpectedSerializationLength(applicationTransaction, false);
-
-        applicationTransaction.add(signaturePool.next());
-        TestExpectedSerializationLength(applicationTransaction, true);
-        TestExpectedSerializationLength(applicationTransaction, false);
-    }
-
     static void TestExpectedSerializationLength(
             final SerializableWithKnownLength transaction, final boolean writeClassId) throws IOException {
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {

@@ -109,22 +109,6 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public byte getContents(final int index) {
-        if (contents == null || contents.length == 0) {
-            throw new IllegalArgumentException(CONTENT_ERROR);
-        }
-
-        if (index < 0 || index >= contents.length) {
-            throw new ArrayIndexOutOfBoundsException();
-        }
-
-        return contents[index];
-    }
-
-    /**
      * Returns the size of the transaction content/payload.
      *
      * This method is thread-safe and guaranteed to be atomic in nature.
@@ -165,73 +149,6 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      * {@inheritDoc}
      */
     @Override
-    public void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength) {
-        add(new TransactionSignature(
-                contents,
-                signatureOffset,
-                signatureLength,
-                publicKeyOffset,
-                publicKeyLength,
-                messageOffset,
-                messageLength));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength,
-            final SignatureType sigType) {
-        add(new TransactionSignature(
-                contents,
-                signatureOffset,
-                signatureLength,
-                publicKeyOffset,
-                publicKeyLength,
-                messageOffset,
-                messageLength,
-                sigType));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final byte[] expandedPublicKey,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength) {
-        add(new TransactionSignature(
-                contents,
-                signatureOffset,
-                signatureLength,
-                expandedPublicKey,
-                publicKeyOffset,
-                publicKeyLength,
-                messageOffset,
-                messageLength));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void add(final TransactionSignature signature) {
         if (signature == null) {
             throw new IllegalArgumentException("signature");
@@ -246,94 +163,6 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
             }
 
             signatures.add(signature);
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void addAll(final TransactionSignature... signatures) {
-        if (signatures == null || signatures.length == 0) {
-            return;
-        }
-
-        final Lock writeLock = readWriteLock.writeLock();
-
-        try {
-            writeLock.lock();
-            if (this.signatures == null) {
-                this.signatures = new ArrayList<>(signatures.length);
-            }
-
-            this.signatures.addAll(Arrays.asList(signatures));
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean remove(final TransactionSignature signature) {
-        if (signature == null) {
-            return false;
-        }
-
-        final Lock writeLock = readWriteLock.writeLock();
-
-        try {
-            writeLock.lock();
-            if (signatures == null) {
-                return false;
-            }
-
-            return signatures.remove(signature);
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean removeAll(final TransactionSignature... signatures) {
-        if (signatures == null || signatures.length == 0) {
-            return false;
-        }
-
-        final Lock writeLock = readWriteLock.writeLock();
-
-        try {
-            writeLock.lock();
-            if (this.signatures == null) {
-                return false;
-            }
-
-            return this.signatures.removeAll(Arrays.asList(signatures));
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void clearSignatures() {
-        final Lock writeLock = readWriteLock.writeLock();
-
-        try {
-            writeLock.lock();
-            if (signatures == null) {
-                return;
-            }
-
-            signatures = null;
         } finally {
             writeLock.unlock();
         }

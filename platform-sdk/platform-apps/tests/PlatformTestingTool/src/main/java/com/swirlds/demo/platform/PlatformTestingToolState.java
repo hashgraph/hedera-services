@@ -1083,7 +1083,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
     protected void preHandleTransaction(final Transaction transaction) {
         expandSignatures(transaction);
-        transaction.setMetadata(true);
     }
 
     @Override
@@ -1393,7 +1392,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                         .put(signature)
                         .array();
 
-                trans.add(new TransactionSignature(
+                trans.setMetadata(new TransactionSignature(
                         contents, sigOffset, signature.length, msgLen, publicKey.length, 0, msgLen, signatureType));
 
                 CryptographyHolder.get().verifyAsync(trans.getSignatures());

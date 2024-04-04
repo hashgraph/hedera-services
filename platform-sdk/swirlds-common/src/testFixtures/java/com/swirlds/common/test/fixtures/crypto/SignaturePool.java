@@ -174,8 +174,9 @@ public class SignaturePool {
         }
 
         final SwirldTransaction tx = transactions.get(nextIdx);
-        tx.clearSignatures();
-        tx.extractSignature(
+        tx.setMetadata(null);//TODO maybe not
+        final TransactionSignature transactionSignature = new TransactionSignature(
+                tx.getContents(),
                 transactionSize + PUBLIC_KEY_LENGTH,
                 SIGNATURE_LENGTH,
                 transactionSize,
@@ -184,13 +185,7 @@ public class SignaturePool {
                 transactionSize,
                 SignatureType.ED25519);
 
-        final List<TransactionSignature> signatures = tx.getSignatures();
-
-        if (signatures.isEmpty()) {
-            return null;
-        }
-
-        return signatures.get(0);
+        return transactionSignature;
     }
 
     /**

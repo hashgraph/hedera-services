@@ -57,17 +57,6 @@ public abstract class SystemTransaction extends ConsensusTransactionImpl {
     /**
      * {@inheritDoc}
      *
-     * @throws ArrayIndexOutOfBoundsException
-     * 		the contents of system transactions is always empty
-     */
-    @Override
-    public byte getContents(final int index) {
-        throw new ArrayIndexOutOfBoundsException();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
      * System transactions do not store metadata, so this returns {@code null}.
      */
     @Override
@@ -95,55 +84,6 @@ public abstract class SystemTransaction extends ConsensusTransactionImpl {
         return Collections.emptyList();
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * System transactions do not have additional signatures, so this method does nothing.
-     */
-    @Override
-    public void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength) {
-        // do nothing
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * System transactions do not have additional signatures, so this method does nothing.
-     */
-    @Override
-    public void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength,
-            final SignatureType sigType) {
-        // do nothing
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * System transactions do not have additional signatures, so this method does nothing.
-     */
-    @Override
-    public void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final byte[] expandedPublicKey,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength) {
-        // do nothing
-    }
 
     /**
      * {@inheritDoc}
@@ -152,48 +92,6 @@ public abstract class SystemTransaction extends ConsensusTransactionImpl {
      */
     @Override
     public void add(final TransactionSignature signature) {
-        // do nothing
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * System transactions do not have additional signatures, so this method does nothing.
-     */
-    @Override
-    public void addAll(final TransactionSignature... signatures) {
-        // do nothing
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * System transactions do not have additional signatures, so this method does nothing and always returns {@code
-     * false}.
-     */
-    @Override
-    public boolean remove(final TransactionSignature signature) {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * System transactions do not have additional signatures, so this method does nothing and always returns {@code
-     * false}.
-     */
-    @Override
-    public boolean removeAll(final TransactionSignature... signatures) {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * System transactions do not have additional signatures, so this method does nothing.
-     */
-    @Override
-    public void clearSignatures() {
         // do nothing
     }
 }
