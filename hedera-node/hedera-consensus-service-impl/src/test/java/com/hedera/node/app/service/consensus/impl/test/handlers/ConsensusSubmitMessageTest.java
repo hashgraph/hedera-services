@@ -153,6 +153,19 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     }
 
     @Test
+    @DisplayName("Topic without id returns error")
+    void topicWithoutIdNotFound() throws PreCheckException {
+        mockPayerLookup();
+        readableTopicState = emptyReadableTopicState();
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
+        readableStore = new ReadableTopicStoreImpl(readableStates);
+        final var context = new FakePreHandleContext(accountStore, newDefaultSubmitMessageTxn());
+        context.registerStore(ReadableTopicStore.class, readableStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
+    }
+
+    @Test
     @DisplayName("Topic without submit key does not error")
     void noTopicSubmitKey() throws PreCheckException {
         readableStore = mock(ReadableTopicStore.class);
@@ -323,6 +336,21 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
                         .topicNum(topicEntityNum.longValue())
                         .build())
                 .message(Bytes.wrap(message));
+        return TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .consensusSubmitMessage(submitMessageBuilder.build())
+                .build();
+    }
+
+    private TransactionBody newDefaultSubmitMessageTxn() {
+        return newSubmitMessageTxnWithoutId(
+                "Message for test-" + Instant.now() + "." + Instant.now().getNano());
+    }
+
+    private TransactionBody newSubmitMessageTxnWithoutId(final String message) {
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var submitMessageBuilder =
+                ConsensusSubmitMessageTransactionBody.newBuilder().message(Bytes.wrap(message));
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusSubmitMessage(submitMessageBuilder.build())
