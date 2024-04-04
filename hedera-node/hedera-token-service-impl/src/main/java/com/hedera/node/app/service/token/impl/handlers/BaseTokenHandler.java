@@ -445,9 +445,8 @@ public class BaseTokenHandler {
 
     /**
      * Check if a given token already has some of the low priority keys
-     * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or metadataKey
      */
-    public static boolean hasAlreadySomeLowPriorityKeys(@NonNull final Token token) {
+    public static boolean hasAlreadySomeNonAdminKeys(@NonNull final Token token) {
         return token.hasWipeKey()
                 || token.hasKycKey()
                 || token.hasSupplyKey()

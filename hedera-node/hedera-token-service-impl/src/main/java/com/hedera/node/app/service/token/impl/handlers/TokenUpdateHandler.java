@@ -431,34 +431,12 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
 
+        List<Key> lowPriorityKeys;
         if (originalToken.hasAdminKey()) {
             // if we update any of the low priority keys, we should allow either admin key
             // or the respective low priority key to sign.
             if (noOtherFieldThanLowPriorityKeyOrMetadataWillBeUpdated(op)) {
-                List<Key> lowPriorityKeys = new ArrayList<>();
-                addRequiredLowPrioritySigner(
-                        lowPriorityKeys, originalToken.hasWipeKey(), originalToken.wipeKey(), op.hasWipeKey());
-                addRequiredLowPrioritySigner(
-                        lowPriorityKeys, originalToken.hasKycKey(), originalToken.kycKey(), op.hasKycKey());
-                addRequiredLowPrioritySigner(
-                        lowPriorityKeys, originalToken.hasSupplyKey(), originalToken.supplyKey(), op.hasSupplyKey());
-                addRequiredLowPrioritySigner(
-                        lowPriorityKeys, originalToken.hasFreezeKey(), originalToken.freezeKey(), op.hasFreezeKey());
-                addRequiredLowPrioritySigner(
-                        lowPriorityKeys,
-                        originalToken.hasFeeScheduleKey(),
-                        originalToken.feeScheduleKey(),
-                        op.hasFeeScheduleKey());
-                addRequiredLowPrioritySigner(
-                        lowPriorityKeys, originalToken.hasPauseKey(), originalToken.pauseKey(), op.hasPauseKey());
-                addRequiredLowPrioritySigner(
-                        lowPriorityKeys,
-                        originalToken.hasMetadataKey(),
-                        originalToken.metadataKey(),
-                        op.hasMetadataKey());
-                addRequiredLowPrioritySigner(
-                        lowPriorityKeys, originalToken.hasMetadataKey(), originalToken.metadataKey(), op.hasMetadata());
-
+                lowPriorityKeys = getAllRequiredLowPrioritySigners(originalToken, op);
                 Key requiredKey;
                 if (lowPriorityKeys.isEmpty()) {
                     requiredKey = originalToken.adminKey();
@@ -487,10 +465,39 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 // note: for expiry only op admin key is not required
                 context.requireKey(originalToken.adminKey());
             }
+        } else {
+            lowPriorityKeys = getAllRequiredLowPrioritySigners(originalToken, op);
+            final Key lowPriorityKeyList = Key.newBuilder()
+                    .keyList(KeyList.newBuilder().keys(lowPriorityKeys).build())
+                    .build();
+            context.requireKey(lowPriorityKeyList);
         }
     }
 
-    private void addRequiredLowPrioritySigner(
+    private List<Key> getAllRequiredLowPrioritySigners(
+            @NonNull final Token originalToken, @NonNull final TokenUpdateTransactionBody op) {
+        List<Key> lowPriorityKeys = new ArrayList<>();
+        addLowPrioritySigner(lowPriorityKeys, originalToken.hasWipeKey(), originalToken.wipeKey(), op.hasWipeKey());
+        addLowPrioritySigner(lowPriorityKeys, originalToken.hasKycKey(), originalToken.kycKey(), op.hasKycKey());
+        addLowPrioritySigner(
+                lowPriorityKeys, originalToken.hasSupplyKey(), originalToken.supplyKey(), op.hasSupplyKey());
+        addLowPrioritySigner(
+                lowPriorityKeys, originalToken.hasFreezeKey(), originalToken.freezeKey(), op.hasFreezeKey());
+        addLowPrioritySigner(
+                lowPriorityKeys,
+                originalToken.hasFeeScheduleKey(),
+                originalToken.feeScheduleKey(),
+                op.hasFeeScheduleKey());
+        addLowPrioritySigner(lowPriorityKeys, originalToken.hasPauseKey(), originalToken.pauseKey(), op.hasPauseKey());
+        addLowPrioritySigner(
+                lowPriorityKeys, originalToken.hasMetadataKey(), originalToken.metadataKey(), op.hasMetadataKey());
+        addLowPrioritySigner(
+                lowPriorityKeys, originalToken.hasMetadataKey(), originalToken.metadataKey(), op.hasMetadata());
+
+        return lowPriorityKeys;
+    }
+
+    private void addLowPrioritySigner(
             @NonNull List<Key> lowPriorityKeys,
             final boolean tokenHasKey,
             @NonNull final Key originalKey,

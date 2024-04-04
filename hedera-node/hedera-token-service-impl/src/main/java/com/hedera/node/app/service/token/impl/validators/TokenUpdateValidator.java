@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.hasAlreadySomeLowPriorityKeys;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.hasAlreadySomeNonAdminKeys;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.isExpiryOnlyUpdateOp;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
@@ -62,7 +62,7 @@ public class TokenUpdateValidator {
         // metadataKey)
         // the transaction should have admin key or the respective low priority key signature
         if (isEmpty(token.adminKey())) {
-            validateTrue(isExpiryOnlyUpdateOp(op) || hasAlreadySomeLowPriorityKeys(token), TOKEN_IS_IMMUTABLE);
+            validateTrue(isExpiryOnlyUpdateOp(op) || hasAlreadySomeNonAdminKeys(token), TOKEN_IS_IMMUTABLE);
         }
         // validate memo
         if (op.hasMemo()) {

@@ -183,7 +183,6 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
         final var admin = "admin";
         final var feeSchedule = "feeSchedule";
         final var feeScheduleKey2 = "feeScheduleKey2";
-        final var newFeeScheduleKey = "feeScheduleRedux";
 
         return defaultHapiSpec("tokenUpdateFeeScheduleKey")
                 .given(
@@ -192,7 +191,6 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         newKeyNamed(freezeKey),
                         newKeyNamed(feeScheduleKey),
                         newKeyNamed(feeScheduleKey2),
-                        newKeyNamed(newFeeScheduleKey),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
                         cryptoCreate(feeSchedule).key(feeScheduleKey).balance(ONE_MILLION_HBARS),
