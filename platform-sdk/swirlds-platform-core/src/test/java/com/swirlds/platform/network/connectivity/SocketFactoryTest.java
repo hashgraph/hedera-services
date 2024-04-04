@@ -70,17 +70,16 @@ class SocketFactoryTest {
     }
 
     /**
-     * Calls {@link #testSockets(SocketFactory, SocketFactory, List)} twice, to test both factories as server and as client
+     * Calls {@link #testSockets(SocketFactory, SocketFactory)} twice, to test both factories as server and as client
      *
      * @param socketFactory1 a factory for both server and client sockets
      * @param socketFactory2 a factory for both server and client sockets
-     * @param peerInfoList a list of peers
      */
     private static void testSocketsBoth(
-            final SocketFactory socketFactory1, final SocketFactory socketFactory2, final List<PeerInfo> peerInfoList)
+            final SocketFactory socketFactory1, final SocketFactory socketFactory2)
             throws Throwable {
-        testSockets(socketFactory1, socketFactory2, peerInfoList);
-        testSockets(socketFactory2, socketFactory1, peerInfoList);
+        testSockets(socketFactory1, socketFactory2);
+        testSockets(socketFactory2, socketFactory1);
     }
 
     /**
@@ -89,10 +88,9 @@ class SocketFactoryTest {
      *
      * @param serverFactory factory to create the server socket
      * @param clientFactory factory to create the client socket
-     * @param peerInfoList a list of peers
      */
     private static void testSockets(
-            final SocketFactory serverFactory, final SocketFactory clientFactory, final List<PeerInfo> peerInfoList)
+            final SocketFactory serverFactory, final SocketFactory clientFactory)
             throws Throwable {
 
         final ServerSocket serverSocket = serverFactory.createServerSocket(PORT);
@@ -171,17 +169,15 @@ class SocketFactoryTest {
 
         testSocketsBoth(
                 NetworkUtils.createSocketFactory(node1, addressBook, keysAndCerts1, TLS_NO_IP_TOS_CONFIG),
-                NetworkUtils.createSocketFactory(node2, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG),
-                peerInfoList);
+                NetworkUtils.createSocketFactory(node2, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG));
         testSocketsBoth(
                 NetworkUtils.createSocketFactory(node1, addressBook, keysAndCerts1, TLS_IP_TOS_CONFIG),
-                NetworkUtils.createSocketFactory(node2, addressBook, keysAndCerts2, TLS_IP_TOS_CONFIG),
-                peerInfoList);
+                NetworkUtils.createSocketFactory(node2, addressBook, keysAndCerts2, TLS_IP_TOS_CONFIG));
     }
 
     @Test
     void tcpFactoryTest() throws Throwable {
-        testSocketsBoth(new TcpFactory(NO_IP_TOS), new TcpFactory(NO_IP_TOS), null);
-        testSocketsBoth(new TcpFactory(IP_TOS), new TcpFactory(IP_TOS), null);
+        testSocketsBoth(new TcpFactory(NO_IP_TOS), new TcpFactory(NO_IP_TOS));
+        testSocketsBoth(new TcpFactory(IP_TOS), new TcpFactory(IP_TOS));
     }
 }
