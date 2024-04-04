@@ -17,7 +17,6 @@
 package com.swirlds.platform.system.transaction;
 
 import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
-import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_STATE_SIG;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -135,14 +134,6 @@ public final class StateSignatureTransaction extends SystemTransaction {
     @Override
     public int getSize() {
         return getSerializedLength();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public SystemTransactionType getType() {
-        return SYS_TRANS_STATE_SIG;
     }
 
     /**

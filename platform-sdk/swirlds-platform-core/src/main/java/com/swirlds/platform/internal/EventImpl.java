@@ -40,18 +40,14 @@ import com.swirlds.platform.system.events.EventSerializationOptions;
 import com.swirlds.platform.system.events.PlatformEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.SystemTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.util.iterator.SkippingIterator;
-import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -96,9 +92,6 @@ public class EventImpl extends EventMetadata
      * highest.
      */
     private Set<Integer> systemTransactionIndices;
-
-    /** A list of references to the system transactions in the array of all transactions */
-    private List<SystemTransaction> systemTransactions;
 
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
@@ -306,22 +299,18 @@ public class EventImpl extends EventMetadata
         final ConsensusTransactionImpl[] transactions = getTransactions();
         if (transactions == null || transactions.length == 0) {
             systemTransactionIndices = Collections.emptySet();
-            systemTransactions = Collections.emptyList();
             return;
         }
 
         final Set<Integer> indices = new TreeSet<>();
-        final List<SystemTransaction> sysTrans = new ArrayList<>();
         for (int i = 0; i < transactions.length; i++) {
             if (transactions[i].isSystem()) {
                 indices.add(i);
-                sysTrans.add((SystemTransaction) getTransactions()[i]);
             } else {
                 numAppTransactions++;
             }
         }
         this.systemTransactionIndices = Collections.unmodifiableSet(indices);
-        this.systemTransactions = Collections.unmodifiableList(sysTrans);
     }
 
     /**
@@ -331,16 +320,6 @@ public class EventImpl extends EventMetadata
      */
     public int getNumAppTransactions() {
         return numAppTransactions;
-    }
-
-    /**
-     * An iterator over all system transactions in this event.
-     *
-     * @return system transaction iterator
-     */
-    public Iterator<SystemTransaction> systemTransactionIterator() {
-        // FUTURE WORK: remove this once ConsensusSystemTransactionManager is removed
-        return new TypedIterator<>(systemTransactions.iterator());
     }
 
     /**

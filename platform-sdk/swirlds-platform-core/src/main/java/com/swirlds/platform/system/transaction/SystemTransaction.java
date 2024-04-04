@@ -30,13 +30,6 @@ public abstract class SystemTransaction extends ConsensusTransactionImpl {
     private static final byte[] EMPTY_CONTENTS = new byte[0];
 
     /**
-     * The type of system transaction
-     *
-     * @return transaction type
-     */
-    public abstract SystemTransactionType getType();
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -71,27 +64,6 @@ public abstract class SystemTransaction extends ConsensusTransactionImpl {
      */
     @Override
     public <T> void setMetadata(final T metadata) {
-        // do nothing
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * System transactions do not have additional signatures, so an empty list is always returned.
-     */
-    @Override
-    public List<TransactionSignature> getSignatures() {
-        return Collections.emptyList();
-    }
-
-
-    /**
-     * {@inheritDoc}
-     *
-     * System transactions do not have additional signatures, so this method does nothing.
-     */
-    @Override
-    public void add(final TransactionSignature signature) {
         // do nothing
     }
 }

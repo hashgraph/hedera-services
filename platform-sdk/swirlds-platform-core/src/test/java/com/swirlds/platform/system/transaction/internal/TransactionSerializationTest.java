@@ -20,8 +20,6 @@ import static com.swirlds.common.io.streams.SerializableDataOutputStream.getInst
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
-import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_STATE_SIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -30,14 +28,12 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.test.fixtures.crypto.SignaturePool;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -73,8 +69,6 @@ class TransactionSerializationTest {
                 systemTransactionSignature.getMinimumSupportedVersion(), deserialized.getMinimumSupportedVersion());
 
         assertEquals(systemTransactionSignature, deserialized);
-        assertEquals(systemTransactionSignature.getType(), SYS_TRANS_STATE_SIG);
-        assertEquals(deserialized.getType(), SYS_TRANS_STATE_SIG);
 
         TestExpectedSerializationLength(systemTransactionSignature, true);
         TestExpectedSerializationLength(deserialized, true);

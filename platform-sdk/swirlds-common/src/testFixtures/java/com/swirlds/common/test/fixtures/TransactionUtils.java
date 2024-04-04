@@ -151,8 +151,8 @@ public class TransactionUtils {
         buffer.putLong(nextLong.getAndIncrement());
         return new SwirldTransaction(buffer.array());
     }
-
-    public static SystemTransaction incrementingSystemTransaction() {
+    
+    public static StateSignatureTransaction incrementingSystemTransaction() {
         return new StateSignatureTransaction(0, randomSignature(random), randomHash(random));
     }
 
