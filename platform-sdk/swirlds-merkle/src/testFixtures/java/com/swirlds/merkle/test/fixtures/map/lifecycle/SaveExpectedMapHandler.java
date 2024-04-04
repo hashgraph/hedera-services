@@ -53,7 +53,8 @@ public class SaveExpectedMapHandler {
     public static final String STORAGE_DIRECTORY = "data/lifecycle";
     private static final String JSON_FILE_NAME_TEMPLATE = "Node%04d_ExpectedMap_%d_%d.json";
 
-    private static final ObjectMapper objectMapper = new ObjectMapper().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+    private static final ObjectMapper objectMapper =
+            new ObjectMapper().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
     private static final ObjectWriter objectWriter = objectMapper.writer(new DefaultPrettyPrinter());
 
     /**
