@@ -137,6 +137,18 @@ public interface WiringModel extends Startable, Stoppable {
     OutputWire<Instant> buildHeartbeatWire(final double frequency);
 
     /**
+     * Prevent the JVM from exiting even if there are no non-daemon threads outside the wiring model. Calling this
+     * method while the JVM exit is already prevented has no effect.
+     */
+    void preventJvmExit();
+
+    /**
+     * If the JVM is currently being prevented from exiting due to a call to {@link #preventJvmExit()}, then this method
+     * will allow the JVM to exit. Calling this method while the JVM exit is already permitted has no effect.
+     */
+    void permitJvmExit();
+
+    /**
      * Start everything in the model that needs to be started. Performs static analysis of the wiring topology and
      * writes errors to the logs if problems are detected.
      */

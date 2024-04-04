@@ -8,6 +8,7 @@ module com.swirlds.platform.core {
 
     /* Public Package Exports. This list should remain alphabetized. */
     exports com.swirlds.platform;
+    exports com.swirlds.platform.builder;
     exports com.swirlds.platform.gossip.chatter;
     exports com.swirlds.platform.gossip.chatter.communication;
     exports com.swirlds.platform.network.communication.handshake;
