@@ -628,12 +628,8 @@ public class SwirldsPlatform implements Platform {
 
         final AppNotifier appNotifier = new DefaultAppNotifier(notificationEngine);
 
-        final PlatformPublisher publisher;
-        if (preconsensusEventConsumer != null || snapshotOverrideConsumer != null) {
-            publisher = new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
-        } else {
-            publisher = null;
-        }
+        final PlatformPublisher publisher =
+                new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
 
         platformWiring.bind(
                 builder.buildEventHasher(),
