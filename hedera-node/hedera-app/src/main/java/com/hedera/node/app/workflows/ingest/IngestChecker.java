@@ -208,6 +208,9 @@ public final class IngestChecker {
             throw new PreCheckException(BUSY);
         }
 
+        // 4a. Run pure checks
+        dispatcher.dispatchPureChecks(txBody);
+
         // 5. Get payer account
         final var storeFactory = new ReadableStoreFactory(state);
         final var payer = solvencyPreCheck.getPayerAccount(storeFactory, txInfo.payerID());
