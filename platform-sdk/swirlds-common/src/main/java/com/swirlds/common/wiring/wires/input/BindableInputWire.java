@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.wires.input;
 
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.internal.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -34,7 +34,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
 
     private final TaskSchedulerInput<OUT> taskSchedulerInput;
     private final String taskSchedulerName;
-    private final StandardWiringModel model;
+    private final TraceableWiringModel model;
 
     /**
      * Supplier for whether the task scheduler is currently squelching.
@@ -51,7 +51,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
      * @param name          the name of the input wire
      */
     public BindableInputWire(
-            @NonNull final StandardWiringModel model,
+            @NonNull final TraceableWiringModel model,
             @NonNull final TaskScheduler<OUT> taskScheduler,
             @NonNull final String name) {
         super(taskScheduler, name);
