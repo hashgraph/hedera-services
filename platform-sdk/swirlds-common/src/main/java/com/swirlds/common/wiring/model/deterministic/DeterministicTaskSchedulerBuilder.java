@@ -23,7 +23,7 @@ import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.internal.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.internal.AbstractTaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.internal.DirectTaskScheduler;
@@ -53,7 +53,7 @@ public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedule
      */
     public DeterministicTaskSchedulerBuilder(
             @NonNull final PlatformContext platformContext,
-            @NonNull final StandardWiringModel model,
+            @NonNull final TraceableWiringModel model,
             @NonNull final String name,
             @NonNull final Consumer<Runnable> submitWork) {
         super(platformContext, model, name, ForkJoinPool.commonPool());

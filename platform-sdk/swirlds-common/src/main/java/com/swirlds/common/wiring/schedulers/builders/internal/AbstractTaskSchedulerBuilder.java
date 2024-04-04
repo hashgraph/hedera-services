@@ -20,7 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.internal.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
@@ -44,7 +44,7 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
 
     private static final Logger logger = LogManager.getLogger(AbstractTaskSchedulerBuilder.class);
 
-    protected final StandardWiringModel model;
+    protected final TraceableWiringModel model;
 
     protected TaskSchedulerType type = TaskSchedulerType.SEQUENTIAL;
     protected final String name;
@@ -76,7 +76,7 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
      */
     public AbstractTaskSchedulerBuilder(
             @NonNull final PlatformContext platformContext,
-            @NonNull final StandardWiringModel model,
+            @NonNull final TraceableWiringModel model,
             @NonNull final String name,
             @NonNull final ForkJoinPool defaultPool) {
 
