@@ -39,8 +39,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * A suite that is aware of externalized sidecar files, provides utilities to verify sidecar records.
@@ -49,7 +47,6 @@ import org.junit.jupiter.api.TestMethodOrder;
  * @author vyanev
  */
 @SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public abstract class SidecarAwareHapiSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(SidecarAwareHapiSuite.class);
@@ -58,6 +55,34 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * The sidecar watcher instance that will be used for incoming sidecar files.
      */
     private static SidecarWatcher sidecarWatcher;
+
+    /**
+     * Initialize the sidecar watcher for the current spec.
+     * @return A {@link CustomSpecAssert} that will initialize the sidecar watcher.
+     */
+    protected static CustomSpecAssert initializeSidecarWatcher() {
+        return withOpContext((spec, opLog) -> {
+            final Path path = Paths.get(recordStreamLocFor(spec));
+            if (LOG.isInfoEnabled()) {
+                LOG.info("Watching for sidecars at absolute path {}", path.toAbsolutePath());
+            }
+            sidecarWatcher = new SidecarWatcher(path);
+            sidecarWatcher.watch();
+        });
+    }
+
+    /**
+     * Waits for expected sidecars and tears down the sidecar watcher for the current spec.
+     * @return A {@link CustomSpecAssert} that will tear down the sidecar watcher.
+     */
+    protected static CustomSpecAssert tearDownSidecarWatcher() {
+        return withOpContext((spec, opLog) -> {
+            // send a dummy transaction to trigger externalization of last sidecars
+            allRunFor(spec, cryptoCreate("externalizeFinalSidecars").delayBy(2000));
+            sidecarWatcher.waitUntilFinished();
+            sidecarWatcher.tearDown();
+        });
+    }
 
     /**
      * Add an expected sidecar to the sidecar watcher instance.
@@ -108,34 +133,6 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
                                     .addAllContractStateChanges(stateChangesToGrpc(stateChanges, spec))
                                     .build())
                             .build()));
-        });
-    }
-
-    /**
-     * Initialize the sidecar watcher for the current spec.
-     * @return A {@link CustomSpecAssert} that will initialize the sidecar watcher.
-     */
-    protected static CustomSpecAssert initializeSidecarWatcher() {
-        return withOpContext((spec, opLog) -> {
-            final Path path = Paths.get(recordStreamLocFor(spec));
-            if (LOG.isInfoEnabled()) {
-                LOG.info("Watching for sidecars at absolute path {}", path.toAbsolutePath());
-            }
-            sidecarWatcher = new SidecarWatcher(path);
-            sidecarWatcher.watch();
-        });
-    }
-
-    /**
-     * Waits for expected sidecars and tears down the sidecar watcher for the current spec.
-     * @return A {@link CustomSpecAssert} that will tear down the sidecar watcher.
-     */
-    protected static CustomSpecAssert tearDownSidecarWatcher() {
-        return withOpContext((spec, opLog) -> {
-            // send a dummy transaction to trigger externalization of last sidecars
-            allRunFor(spec, cryptoCreate("externalizeFinalSidecars").delayBy(2000));
-            sidecarWatcher.waitUntilFinished();
-            sidecarWatcher.tearDown();
         });
     }
 
