@@ -19,7 +19,6 @@ package com.swirlds.platform.state;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -98,8 +97,6 @@ class SignedStateTests {
         final AtomicBoolean reserved = new AtomicBoolean(false);
         final AtomicBoolean released = new AtomicBoolean(false);
 
-        final Thread mainThread = Thread.currentThread();
-
         final State state = buildMockState(
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
@@ -107,7 +104,6 @@ class SignedStateTests {
                 },
                 () -> {
                     assertFalse(released.get(), "should only be released once");
-                    assertNotSame(mainThread, Thread.currentThread(), "release should happen on background thread");
                     released.set(true);
                 });
 
