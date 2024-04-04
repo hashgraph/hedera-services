@@ -25,7 +25,6 @@ import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.io.streams.AugmentedDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
@@ -240,7 +239,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      * 		the bytes to compare
      * @return true if the bytes are equal, false otherwise
      */
-    public boolean equalBytes(@Nullable final Bytes bytes){
+    public boolean equalBytes(@Nullable final Bytes bytes) {
         return bytes != null && value.length == bytes.length() && bytes.contains(0, value);
     }
 
