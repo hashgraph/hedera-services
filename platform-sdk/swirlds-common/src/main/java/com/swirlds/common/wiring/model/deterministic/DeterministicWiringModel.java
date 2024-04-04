@@ -81,7 +81,7 @@ public class DeterministicWiringModel extends TraceableWiringModel {
     @NonNull
     @Override
     public <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name) {
-        return new DeterministicTaskSchedulerBuilder<>(platformContext, null, name, this::submitWork);
+        return new DeterministicTaskSchedulerBuilder<>(platformContext, this, name, this::submitWork);
     }
 
     /**
@@ -90,7 +90,7 @@ public class DeterministicWiringModel extends TraceableWiringModel {
     @NonNull
     @Override
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
-        return null; // TODO
+        throw new UnsupportedOperationException("TODO");
     }
 
     /**
@@ -99,17 +99,17 @@ public class DeterministicWiringModel extends TraceableWiringModel {
     @NonNull
     @Override
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
-        return null; // TODO
+        throw new UnsupportedOperationException("TODO");
     }
 
     @Override
     public void preventJvmExit() {
-        // TODO
+        throw new UnsupportedOperationException("TODO");
     }
 
     @Override
     public void permitJvmExit() {
-        // TODO
+        throw new UnsupportedOperationException("TODO");
     }
 
     /**

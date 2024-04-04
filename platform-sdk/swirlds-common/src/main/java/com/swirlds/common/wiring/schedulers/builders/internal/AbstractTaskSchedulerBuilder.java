@@ -16,10 +16,17 @@
 
 package com.swirlds.common.wiring.schedulers.builders.internal;
 
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
+import com.swirlds.common.wiring.counters.MultiObjectCounter;
+import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.model.internal.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
@@ -270,5 +277,67 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
             return (thread, throwable) ->
                     logger.error(EXCEPTION.getMarker(), "Uncaught exception in scheduler {}", name, throwable);
         }
+    }
+
+    protected record Counters(@NonNull ObjectCounter onRamp, @NonNull ObjectCounter offRamp) {}
+
+    /**
+     * Combine two counters into one.
+     *
+     * @param innerCounter the counter needed for internal implementation details, or null if not needed
+     * @param outerCounter the counter provided by the outer scope, or null if not provided
+     * @return the combined counter, or a no op counter if both are null
+     */
+    @NonNull
+    protected static ObjectCounter combineCounters(
+            @Nullable final ObjectCounter innerCounter, @Nullable final ObjectCounter outerCounter) {
+        if (innerCounter == null) {
+            if (outerCounter == null) {
+                return NoOpObjectCounter.getInstance();
+            } else {
+                return outerCounter;
+            }
+        } else {
+            if (outerCounter == null) {
+                return innerCounter;
+            } else {
+                return new MultiObjectCounter(innerCounter, outerCounter);
+            }
+        }
+    }
+
+    /**
+     * Figure out which counters to use for this task scheduler (if any), constructing them if they need to be
+     * constructed.
+     */
+    @NonNull
+    protected Counters buildCounters() {
+        if (type == NO_OP) {
+            return new Counters(NoOpObjectCounter.getInstance(), NoOpObjectCounter.getInstance());
+        }
+
+        final ObjectCounter innerCounter;
+
+        // If we need to enforce a maximum capacity, we have no choice but to use a backpressure object counter.
+        //
+        // If we don't need to enforce a maximum capacity, we need to use a standard object counter if any
+        // of the following conditions are true:
+        //  - we have unhandled task metrics enabled
+        //  - flushing is enabled. This is because our flush implementation is not
+        //    compatible with a no-op counter.
+        //
+        // In all other cases, better to use a no-op counter. Counters have overhead, and if we don't need one
+        // then we shouldn't use one.
+
+        if (unhandledTaskCapacity != UNLIMITED_CAPACITY && type != DIRECT && type != DIRECT_THREADSAFE) {
+            // TODO figure out how to fully disable regular back pressure when running in deterministic mode
+            innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration);
+        } else if (unhandledTaskMetricEnabled || flushingEnabled) {
+            innerCounter = new StandardObjectCounter(sleepDuration);
+        } else {
+            innerCounter = null;
+        }
+
+        return new Counters(combineCounters(innerCounter, onRamp), combineCounters(innerCounter, offRamp));
     }
 }

@@ -16,6 +16,7 @@
 
 package com.swirlds.common.wiring.model.deterministic;
 
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.internal.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
@@ -32,7 +33,8 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
 
     private final Consumer<Runnable> submitWork;
 
-    // TODO off/on ramps
+    private final ObjectCounter onRamp;
+    private final ObjectCounter offRamp;
 
     /**
      * Constructor.
@@ -40,6 +42,8 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param model               the wiring model containing this task scheduler
      * @param name                the name of the task scheduler
      * @param type                the type of task scheduler
+     * @param onRamp              counts when things are added to this scheduler to be eventually handled
+     * @param offRamp             counts when things are handled by this scheduler
      * @param flushEnabled        if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param squelchingEnabled   if true, then squelching will be enabled, otherwise trying to squelch will throw.
      * @param insertionIsBlocking when data is inserted into this task scheduler, will it block until capacity is
@@ -50,12 +54,16 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
             @NonNull final TraceableWiringModel model,
             @NonNull final String name,
             @NonNull final TaskSchedulerType type,
+            @NonNull final ObjectCounter onRamp,
+            @NonNull final ObjectCounter offRamp,
             final boolean flushEnabled,
             final boolean squelchingEnabled,
             final boolean insertionIsBlocking,
             @NonNull final Consumer<Runnable> submitWork) {
         super(model, name, type, flushEnabled, squelchingEnabled, insertionIsBlocking);
 
+        this.onRamp = Objects.requireNonNull(onRamp);
+        this.offRamp = Objects.requireNonNull(offRamp);
         this.submitWork = Objects.requireNonNull(submitWork);
     }
 
@@ -64,7 +72,7 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     public long getUnprocessedTaskCount() {
-        return 0; // TODO
+        return onRamp.getCount();
     }
 
     /**
@@ -72,7 +80,7 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     public void flush() {
-        // TODO is this meaningful on a single thread?
+        throw new UnsupportedOperationException("Flush is not supported on deterministic task schedulers");
     }
 
     /**
@@ -80,7 +88,11 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        submitWork.accept(() -> handler.accept(data));
+        onRamp.onRamp();
+        submitWork.accept(() -> {
+            handler.accept(data);
+            offRamp.offRamp();
+        });
     }
 
     /**
@@ -88,8 +100,14 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        submitWork.accept(() -> handler.accept(data));
-        return true;
+        if (onRamp.attemptOnRamp()) {
+            submitWork.accept(() -> {
+                handler.accept(data);
+                offRamp.offRamp();
+            });
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -97,6 +115,10 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        submitWork.accept(() -> handler.accept(data));
+        onRamp.forceOnRamp();
+        submitWork.accept(() -> {
+            handler.accept(data);
+            offRamp.offRamp();
+        });
     }
 }

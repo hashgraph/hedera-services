@@ -40,6 +40,7 @@ import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
@@ -316,9 +317,15 @@ class DeterministicModelTests {
 
     /**
      * Feed a bunch of data into the mesh and return the value once all data has been processed.
+     *
+     * @param seed             the seed to use for the random number generator
+     * @param mesh             the wiring mesh to evaluate
+     * @param waitForNextCycle a runnable that will be called each time the mesh is checked for quiescence
      */
-    private static long evaluateMesh(@NonNull final Random random, @NonNull final WiringMesh mesh)
-            throws InterruptedException {
+    private static long evaluateMesh(
+            @NonNull final long seed, @NonNull final WiringMesh mesh, @NonNull final Runnable waitForNextCycle) {
+
+        final Random random = new Random(seed);
 
         // Feed in data
         for (long i = 0; i < 100; i++) {
@@ -328,8 +335,7 @@ class DeterministicModelTests {
 
         int maxIterations = 10_000;
         while (!mesh.isQuiescent.getAsBoolean()) {
-            // Wait for the system to quiesce
-            MILLISECONDS.sleep(1);
+            waitForNextCycle.run();
 
             maxIterations--;
             assertTrue(maxIterations > 0, "mesh did not quiesce in time");
@@ -343,35 +349,59 @@ class DeterministicModelTests {
      * model.
      */
     @Test
-    void verifyStandardNondeterminism() throws InterruptedException {
+    void verifyStandardNondeterminism() {
         final Random random = getRandomPrintSeed();
-        final long seed = random.nextLong();
+        final long meshSeed = random.nextLong();
+        final long dataSeed = random.nextLong();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
         final long value1 = evaluateMesh(
-                random, generateWiringMesh(seed, new StandardWiringModel(platformContext, ForkJoinPool.commonPool())));
+                dataSeed,
+                generateWiringMesh(meshSeed, new StandardWiringModel(platformContext, ForkJoinPool.commonPool())),
+                () -> {
+                    try {
+                        MILLISECONDS.sleep(1);
+                    } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
+                });
 
         final long value2 = evaluateMesh(
-                random, generateWiringMesh(seed, new StandardWiringModel(platformContext, ForkJoinPool.commonPool())));
+                dataSeed,
+                generateWiringMesh(meshSeed, new StandardWiringModel(platformContext, ForkJoinPool.commonPool())),
+                () -> {
+                    try {
+                        MILLISECONDS.sleep(1);
+                    } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
+                });
 
         assertNotEquals(value1, value2);
     }
 
     @Test
-    void verifyDeterministicModel() throws InterruptedException {
-        final Random random = getRandomPrintSeed();
-        final long seed = random.nextLong();
+    void verifyDeterministicModel() {
+        final Random random = getRandomPrintSeed(0); // TODO
+        final long meshSeed = random.nextLong();
+        final long dataSeed = random.nextLong();
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
         final DeterministicWiringModel deterministicWiringModel1 = new DeterministicWiringModel(platformContext);
-        final long value1 = evaluateMesh(random, generateWiringMesh(seed, deterministicWiringModel1));
+        final long value1 = evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel1), () -> {
+            deterministicWiringModel1.tick(Duration.ofMillis(1));
+        });
 
         final DeterministicWiringModel deterministicWiringModel2 = new DeterministicWiringModel(platformContext);
-        final long value2 = evaluateMesh(random, generateWiringMesh(seed, deterministicWiringModel2));
+        final long value2 = evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel2), () -> {
+            deterministicWiringModel2.tick(Duration.ofMillis(1));
+        });
 
         assertEquals(value1, value2);
     }

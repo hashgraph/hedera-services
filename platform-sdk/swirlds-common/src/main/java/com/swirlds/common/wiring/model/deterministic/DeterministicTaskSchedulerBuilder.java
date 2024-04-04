@@ -21,8 +21,6 @@ import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DI
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
-import com.swirlds.common.wiring.counters.NoOpObjectCounter;
-import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.internal.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.internal.AbstractTaskSchedulerBuilder;
@@ -69,19 +67,27 @@ public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedule
 
         final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY || externalBackPressure;
 
-        final ObjectCounter counter = NoOpObjectCounter.getInstance(); // TODO
-        final FractionalTimer busyFractionTimer = NoOpFractionalTimer.getInstance(); // TODO
+        final Counters counters = buildCounters();
+        final FractionalTimer busyFractionTimer = NoOpFractionalTimer.getInstance();
 
         final TaskScheduler<OUT> scheduler =
                 switch (type) {
                     case CONCURRENT, SEQUENTIAL, SEQUENTIAL_THREAD -> new DeterministicTaskScheduler<>(
-                            model, name, type, flushingEnabled, squelchingEnabled, insertionIsBlocking, submitWork);
+                            model,
+                            name,
+                            type,
+                            counters.onRamp(),
+                            counters.offRamp(),
+                            flushingEnabled,
+                            squelchingEnabled,
+                            insertionIsBlocking,
+                            submitWork);
                     case DIRECT, DIRECT_THREADSAFE -> new DirectTaskScheduler<>(
                             model,
                             name,
                             buildUncaughtExceptionHandler(),
-                            counter,
-                            counter,
+                            counters.onRamp(),
+                            counters.offRamp(),
                             squelchingEnabled,
                             busyFractionTimer,
                             type == DIRECT_THREADSAFE);
