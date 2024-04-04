@@ -24,17 +24,14 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
-import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConfig_;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -72,25 +69,29 @@ class SocketFactoryTest {
     /**
      * Calls {@link #testSockets(SocketFactory, SocketFactory)} twice, to test both factories as server and as client
      *
-     * @param socketFactory1 a factory for both server and client sockets
-     * @param socketFactory2 a factory for both server and client sockets
+     * @param socketFactory1
+     * 		a factory for both server and client sockets
+     * @param socketFactory2
+     * 		a factory for both server and client sockets
      */
-    private static void testSocketsBoth(
-            final SocketFactory socketFactory1, final SocketFactory socketFactory2)
+    private static void testSocketsBoth(final SocketFactory socketFactory1, final SocketFactory socketFactory2)
             throws Throwable {
         testSockets(socketFactory1, socketFactory2);
         testSockets(socketFactory2, socketFactory1);
     }
 
     /**
-     * - establishes a connection using the provided factories - transfers some data - verifies the transferred data is
-     * correct - closes the sockets
+     * - establishes a connection using the provided factories
+     * - transfers some data
+     * - verifies the transferred data is correct
+     * - closes the sockets
      *
-     * @param serverFactory factory to create the server socket
-     * @param clientFactory factory to create the client socket
+     * @param serverFactory
+     * 		factory to create the server socket
+     * @param clientFactory
+     * 		factory to create the client socket
      */
-    private static void testSockets(
-            final SocketFactory serverFactory, final SocketFactory clientFactory)
+    private static void testSockets(final SocketFactory serverFactory, final SocketFactory clientFactory)
             throws Throwable {
 
         final ServerSocket serverSocket = serverFactory.createServerSocket(PORT);
@@ -152,20 +153,6 @@ class SocketFactoryTest {
         final NodeId node2 = addressBook.getNodeId(nodeIndexes.get(1));
         final KeysAndCerts keysAndCerts1 = keysAndCerts.get(node1);
         final KeysAndCerts keysAndCerts2 = keysAndCerts.get(node2);
-
-        final Address address1 = addressBook.getAddress(node1);
-        final Address address2 = addressBook.getAddress(node2);
-        final PeerInfo peer1 = new PeerInfo(
-                node1,
-                address1.getSelfName(),
-                Objects.requireNonNull(address1.getHostnameExternal()),
-                Objects.requireNonNull(address1.getSigCert()));
-        final PeerInfo peer2 = new PeerInfo(
-                node2,
-                address2.getSelfName(),
-                Objects.requireNonNull(address2.getHostnameExternal()),
-                Objects.requireNonNull(address2.getSigCert()));
-        final List<PeerInfo> peerInfoList = List.of(peer1, peer2);
 
         testSocketsBoth(
                 NetworkUtils.createSocketFactory(node1, addressBook, keysAndCerts1, TLS_NO_IP_TOS_CONFIG),
