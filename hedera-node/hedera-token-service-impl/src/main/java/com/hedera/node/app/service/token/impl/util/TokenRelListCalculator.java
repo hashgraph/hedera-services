@@ -272,7 +272,7 @@ public class TokenRelListCalculator {
             @NonNull final Map<TokenID, TokenRelation> tokenRelsToDeleteByTokenId) {
         final var accountId = account.accountId();
 
-        if(currentHeadTokenId == null) {
+        if (currentHeadTokenId == null) {
             // there is no head token number to begin with, so we return null
             return null;
         }
