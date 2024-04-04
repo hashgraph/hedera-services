@@ -40,11 +40,11 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.AppNotifier;
-import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.CompleteStateNotificationWithCleanup;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -408,13 +408,17 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring
                 .eventOutput()
                 .solderTo(pcesSequencerWiring.getInputWire(PcesSequencer::assignStreamSequenceNumber));
-        pcesSequencerWiring.getOutputWire().solderTo(inOrderLinkerWiring.eventInput());
         pcesSequencerWiring.getOutputWire().solderTo(pcesWriterWiring.eventInputWire());
-        inOrderLinkerWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+
+        pcesSequencerWiring.getOutputWire().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+
         inOrderLinkerWiring.eventOutput().solderTo(shadowgraphWiring.eventInput());
+
         orphanBufferWiring
                 .eventOutput()
                 .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
+
+        orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
 
         final double eventCreationHeartbeatFrequency = platformContext
                 .getConfiguration()
