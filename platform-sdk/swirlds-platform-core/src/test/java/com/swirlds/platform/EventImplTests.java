@@ -145,7 +145,6 @@ public class EventImplTests {
         event.consensusReached();
 
         for (int i = 0; i < mixedTransactions.length; i++) {
-            assertEquals(3L, mixedTransactions[i].getConsensusOrder(), "Consensus order does not match.");
             final Instant transConsTime = eventConsTime.plusNanos(i * MIN_TRANS_TIMESTAMP_INCR_NANOS);
             assertEquals(
                     transConsTime,

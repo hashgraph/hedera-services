@@ -26,36 +26,12 @@ import java.time.Instant;
 public abstract non-sealed class ConsensusTransactionImpl implements ConsensusTransaction {
 
     /**
-     * The consensus order of the event that contains this transaction, or -1 if consensus has not yet been reached.
-     * NOT serialized and not part of object equality or hash code
-     */
-    private long consensusOrder = NO_CONSENSUS;
-
-    /**
      * The consensus timestamp of this transaction, or null if consensus has not yet been reached.
      * NOT serialized and not part of object equality or hash code
      */
     private Instant consensusTimestamp;
     /** An optional metadata object set by the application */
     private Object metadata;
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getConsensusOrder() {
-        return consensusOrder;
-    }
-
-    /**
-     * Sets the consensus order of this transaction
-     *
-     * @param consensusOrder
-     * 		the consensus order
-     */
-    public void setConsensusOrder(final long consensusOrder) {
-        this.consensusOrder = consensusOrder;
-    }
 
     /**
      * {@inheritDoc}
