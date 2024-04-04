@@ -16,7 +16,11 @@
 
 package com.hedera.node.app;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuilder.buildPlatformContext;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
@@ -27,13 +31,14 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.platform.CommandLineArgs;
-import com.swirlds.platform.PlatformBuilder;
+import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -124,7 +129,7 @@ public class ServicesMain implements SwirldMain {
 
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
-        final AddressBook addressBook = loadAddressBook(PlatformBuilder.DEFAULT_CONFIG_FILE_NAME);
+        final AddressBook addressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
         // parse command line arguments
         final CommandLineArgs commandLineArgs = CommandLineArgs.parse(args);
 
@@ -151,10 +156,15 @@ public class ServicesMain implements SwirldMain {
 
         SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
-        final PlatformBuilder builder = new PlatformBuilder(
-                        Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId)
-                .withPreviousSoftwareVersionClassId(0x6f2b1bc2df8cbd0bL /* SerializableSemVers.CLASS_ID */)
-                .withConfigurationBuilder(config);
+
+        final PlatformContext platformContext =
+                buildPlatformContext(config, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME), selfId);
+
+        final PlatformBuilder builder =
+                PlatformBuilder.create(Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId);
+
+        builder.withPreviousSoftwareVersionClassId(0x6f2b1bc2df8cbd0bL /* SerializableSemVers.CLASS_ID */);
+        builder.withPlatformContext(platformContext);
 
         final Platform platform = builder.build();
         hedera.init(platform, selfId);
@@ -165,7 +175,7 @@ public class ServicesMain implements SwirldMain {
     /**
      * Selects the node to run locally from either the command line arguments or the address book.
      *
-     * @param nodesToRun the list of nodes configured to run based on the address book.
+     * @param nodesToRun        the list of nodes configured to run based on the address book.
      * @param localNodesToStart the node ids specified on the command line.
      * @return the node which should be run locally.
      * @throws ConfigurationException if more than one node would be started or the requested node is not configured.

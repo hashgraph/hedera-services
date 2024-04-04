@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.ValueReference;
@@ -31,6 +30,7 @@ import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -48,6 +48,7 @@ class SignedStateReserverTest {
         final int numConsumers = 3;
         final SignedState signedState = new SignedState(
                 new TestConfigBuilder(StateConfig.class).getOrCreateConfig().getConfigData(StateConfig.class),
+                Mockito.mock(SignatureVerifier.class),
                 Mockito.mock(State.class),
                 "create",
                 false);
@@ -55,7 +56,7 @@ class SignedStateReserverTest {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
         final TaskScheduler<ReservedSignedState> taskScheduler = model.schedulerBuilder("scheduler")
                 .withType(TaskSchedulerType.DIRECT)
                 .build()
