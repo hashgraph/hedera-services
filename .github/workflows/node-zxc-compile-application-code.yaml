@@ -383,7 +383,7 @@ jobs:
           name: HAPI Test (Token) Network Logs
           path: |
             hedera-node/test-clients/build/hapi-test/**/output/**
-          retention-days: 7  
+          retention-days: 7
 
       - name: HAPI Testing (Smart Contract)
         id: gradle-hapi-smart-contract
