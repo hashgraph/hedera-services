@@ -299,7 +299,7 @@ public class InitialModServiceTokenSchema extends Schema {
             // ---------- Staking Info
             log.info("BBM: starting staking info");
             var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
-            stakingFs.forEach((entityNum, merkleStakingInfo) -> {
+            MerkleMapLike.from(stakingFs).forEachNode((entityNum, merkleStakingInfo) -> {
                 var toStakingInfo = StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(merkleStakingInfo);
                 stakingToState.put(
                         EntityNumber.newBuilder()
@@ -381,7 +381,7 @@ public class InitialModServiceTokenSchema extends Schema {
             }
             if (acctsToState.get().isModified()) ((WritableKVStateBase) acctsToState.get()).commit();
             // Also persist the per-node pending reward information
-            stakingFs.forEach((entityNum, ignore) -> {
+            MerkleMapLike.from(stakingFs).forEachNode((entityNum, ignore) -> {
                 final var toKey = new EntityNumber(entityNum.longValue());
                 final var info = requireNonNull(stakingToState.get(toKey));
                 stakingToState.put(

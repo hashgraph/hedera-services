@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.event.tipset;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +38,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -53,14 +52,13 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -798,37 +796,29 @@ class TipsetEventCreatorTests {
     }
 
     @NonNull
-    private GossipEvent createMockEvent(
+    private GossipEvent createTestEvent(
             @NonNull final Random random,
             @NonNull final NodeId creator,
             long selfParentGeneration,
             @Nullable final NodeId otherParentId,
             final long otherParentGeneration) {
-        final GossipEvent event = mock(GossipEvent.class);
 
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        when(hashedData.getCreatorId()).thenReturn(creator);
-        when(hashedData.getCreatorId()).thenReturn(creator);
-        final long generation = Math.max(selfParentGeneration, otherParentGeneration) + 1;
-        when(hashedData.getGeneration()).thenReturn(generation);
-        when(event.getGeneration()).thenReturn(generation);
+        final GossipEvent selfParent =
+                new TestingEventBuilder(random).setCreatorId(creator).build();
 
-        final Hash hash = randomHash(random);
-        when(hashedData.getHash()).thenReturn(hash);
+        final TestingEventBuilder eventBuilder = new TestingEventBuilder(random)
+                .setCreatorId(creator)
+                .setSelfParent(selfParent)
+                .overrideSelfParentGeneration(selfParentGeneration);
 
-        final EventDescriptor descriptor =
-                new EventDescriptor(hash, creator, generation, -EventConstants.BIRTH_ROUND_UNDEFINED);
+        if (otherParentId != null) {
+            final GossipEvent otherParent =
+                    new TestingEventBuilder(random).setCreatorId(otherParentId).build();
 
-        when(hashedData.createEventDescriptor()).thenReturn(descriptor);
-        when(event.getDescriptor()).thenReturn(descriptor);
+            eventBuilder.setOtherParent(otherParent).overrideOtherParentGeneration(otherParentGeneration);
+        }
 
-        when(event.getHashedData()).thenReturn(hashedData);
-
-        final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
-        when(unhashedData.getOtherId()).thenReturn(otherParentId);
-        when(event.getUnhashedData()).thenReturn(unhashedData);
-
-        return event;
+        return eventBuilder.build();
     }
 
     /**
@@ -863,11 +853,11 @@ class TipsetEventCreatorTests {
         final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final GossipEvent eventB1 = createMockEvent(
+        final GossipEvent eventB1 = createTestEvent(
                 random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventC1 = createMockEvent(
+        final GossipEvent eventC1 = createTestEvent(
                 random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventD1 = createMockEvent(
+        final GossipEvent eventD1 = createTestEvent(
                 random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
@@ -896,7 +886,7 @@ class TipsetEventCreatorTests {
         // but has not been updated in the current snapshot.
 
         final NodeId otherParentId = eventA2.getUnhashedData().getOtherId();
-        final GossipEvent legalOtherParent = createMockEvent(random, otherParentId, 0, nodeA, 0);
+        final GossipEvent legalOtherParent = createTestEvent(random, otherParentId, 0, nodeA, 0);
 
         eventCreator.registerEvent(legalOtherParent);
 
@@ -936,13 +926,13 @@ class TipsetEventCreatorTests {
         final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final GossipEvent eventB1 = createMockEvent(
+        final GossipEvent eventB1 = createTestEvent(
                 random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventC1 = createMockEvent(
+        final GossipEvent eventC1 = createTestEvent(
                 random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventD1 = createMockEvent(
+        final GossipEvent eventD1 = createTestEvent(
                 random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventE1 = createMockEvent(
+        final GossipEvent eventE1 = createTestEvent(
                 random, nodeE, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
@@ -1080,10 +1070,14 @@ class TipsetEventCreatorTests {
 
                 if (eventIndex == 0) {
                     final long birthRound = event.getHashedData().getBirthRound();
-                    assertEquals(ConsensusConstants.ROUND_FIRST, birthRound);
+                    assertEquals(ROUND_FIRST, birthRound);
                 } else {
                     final long birthRound = event.getHashedData().getBirthRound();
-                    assertEquals(pendingConsensusRound, birthRound);
+                    if (useBirthRoundForAncient) {
+                        assertEquals(pendingConsensusRound, birthRound);
+                    } else {
+                        assertEquals(ROUND_FIRST, birthRound);
+                    }
                 }
             }
         }

@@ -46,6 +46,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAY
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
@@ -126,6 +127,7 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
@@ -355,7 +357,7 @@ public class HandleWorkflow {
         AccountID payer = null;
         Fees fees = null;
         TransactionInfo transactionInfo = null;
-        Set<AccountID> prePaidRewardReceivers = emptySet();
+        Map<AccountID, Long> prePaidRewards = emptyMap();
         try {
             final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
 
@@ -549,7 +551,7 @@ public class HandleWorkflow {
                     recordBuilder.status(SUCCESS);
                     // Only ScheduleCreate and ScheduleSign can trigger paid staking rewards via
                     // dispatch; and only if this top-level transaction was successful
-                    prePaidRewardReceivers = context.dispatchPaidStakerIds();
+                    prePaidRewards = context.dispatchPaidRewards();
 
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
@@ -625,7 +627,7 @@ public class HandleWorkflow {
                 tokenServiceContext,
                 function,
                 extraRewardReceivers(transactionInfo, recordBuilder),
-                prePaidRewardReceivers);
+                prePaidRewards);
 
         // Commit all state changes
         stack.commitFullStack();
@@ -829,25 +831,6 @@ public class HandleWorkflow {
             }
         }
 
-        // verify all the keys
-        for (final var key : preHandleResult.getRequiredKeys()) {
-            final var verification = verifier.verificationFor(key);
-            if (verification.failed()) {
-                utilizationManager.trackFeePayments(consensusNow, state);
-                final var fees = dispatcher.dispatchComputeFees(context);
-                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
-            }
-        }
-        // If there are any hollow accounts whose signatures need to be verified, verify them
-        for (final var hollowAccount : preHandleResult.getHollowAccounts()) {
-            final var verification = verifier.verificationFor(hollowAccount.alias());
-            if (verification.failed()) {
-                utilizationManager.trackFeePayments(consensusNow, state);
-                final var fees = dispatcher.dispatchComputeFees(context);
-                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
-            }
-        }
-
         // Notice that above, we computed fees assuming network utilization for
         // just a fee payment. Here we instead calculate fees based on tracking the
         // user transaction. This is for mono-service fidelity, but does not have any
@@ -907,6 +890,23 @@ public class HandleWorkflow {
         }
         if (privileges == SystemPrivilege.IMPERMISSIBLE) {
             return new ValidationResult(PRE_HANDLE_FAILURE, ENTITY_NOT_ALLOWED_TO_DELETE, fees);
+        }
+
+        // verify all the keys
+        for (final var key : preHandleResult.getRequiredKeys()) {
+            final var verification = verifier.verificationFor(key);
+            if (verification.failed()) {
+                utilizationManager.trackFeePayments(consensusNow, state);
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
+            }
+        }
+        // If there are any hollow accounts whose signatures need to be verified, verify them
+        for (final var hollowAccount : preHandleResult.getHollowAccounts()) {
+            final var verification = verifier.verificationFor(hollowAccount.alias());
+            if (verification.failed()) {
+                utilizationManager.trackFeePayments(consensusNow, state);
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
+            }
         }
 
         return new ValidationResult(SO_FAR_SO_GOOD, OK, fees);
