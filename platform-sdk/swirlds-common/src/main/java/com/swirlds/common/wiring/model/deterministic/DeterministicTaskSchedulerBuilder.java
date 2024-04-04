@@ -16,14 +16,30 @@
 
 package com.swirlds.common.wiring.model.deterministic;
 
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
+
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.extensions.FractionalTimer;
+import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
+import com.swirlds.common.wiring.counters.NoOpObjectCounter;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.internal.AbstractTaskSchedulerBuilder;
+import com.swirlds.common.wiring.schedulers.internal.DirectTaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Consumer;
 
+/**
+ * Builds schedulers for a {@link DeterministicWiringModel}.
+ *
+ * @param <OUT>
+ */
 public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuilder<OUT> {
+
+    private final Consumer<Runnable> submitWork;
 
     /**
      * Constructor.
@@ -32,14 +48,15 @@ public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedule
      * @param model           the wiring model
      * @param name            the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only
      *                        contain alphanumeric characters and underscores.
-     * @param defaultPool     the default fork join pool, if none is provided then this pool will be used
+     * @param submitWork      a method where all work should be submitted
      */
     public DeterministicTaskSchedulerBuilder(
             @NonNull final PlatformContext platformContext,
             @NonNull final StandardWiringModel model,
             @NonNull final String name,
-            @NonNull final ForkJoinPool defaultPool) {
-        super(platformContext, model, name, defaultPool);
+            @NonNull final Consumer<Runnable> submitWork) {
+        super(platformContext, model, name, ForkJoinPool.commonPool());
+        this.submitWork = Objects.requireNonNull(submitWork);
     }
 
     /**
@@ -48,6 +65,29 @@ public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedule
     @NonNull
     @Override
     public TaskScheduler<OUT> build() {
-        return null;
+
+        final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY || externalBackPressure;
+
+        final ObjectCounter counter = NoOpObjectCounter.getInstance(); // TODO
+        final FractionalTimer busyFractionTimer = NoOpFractionalTimer.getInstance(); // TODO
+
+        final TaskScheduler<OUT> scheduler =
+                switch (type) {
+                    case CONCURRENT, SEQUENTIAL, SEQUENTIAL_THREAD -> new DeterministicTaskScheduler<>(
+                            model, name, type, flushingEnabled, squelchingEnabled, insertionIsBlocking, submitWork);
+                    case DIRECT, DIRECT_THREADSAFE -> new DirectTaskScheduler<>(
+                            model,
+                            name,
+                            buildUncaughtExceptionHandler(),
+                            counter,
+                            counter,
+                            squelchingEnabled,
+                            busyFractionTimer,
+                            type == DIRECT_THREADSAFE);
+                };
+
+        model.registerScheduler(scheduler, hyperlink);
+
+        return scheduler;
     }
 }

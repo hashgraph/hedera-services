@@ -18,7 +18,6 @@ package com.swirlds.common.wiring.schedulers.builders.internal;
 
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
@@ -39,7 +38,6 @@ import com.swirlds.common.wiring.schedulers.internal.SequentialTaskScheduler;
 import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import org.apache.logging.log4j.LogManager;
@@ -71,21 +69,6 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
             @NonNull final ForkJoinPool defaultPool) {
 
         super(platformContext, model, name, defaultPool);
-    }
-
-    /**
-     * Build an uncaught exception handler if one was not provided.
-     *
-     * @return the uncaught exception handler
-     */
-    @NonNull
-    private UncaughtExceptionHandler buildUncaughtExceptionHandler() {
-        if (uncaughtExceptionHandler != null) {
-            return uncaughtExceptionHandler;
-        } else {
-            return (thread, throwable) ->
-                    logger.error(EXCEPTION.getMarker(), "Uncaught exception in scheduler {}", name, throwable);
-        }
     }
 
     private record Counters(@NonNull ObjectCounter onRamp, @NonNull ObjectCounter offRamp) {}
@@ -235,7 +218,7 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
                             flushingEnabled,
                             squelchingEnabled,
                             insertionIsBlocking);
-                    case DIRECT -> new DirectTaskScheduler<>(
+                    case DIRECT, DIRECT_THREADSAFE -> new DirectTaskScheduler<>(
                             model,
                             name,
                             buildUncaughtExceptionHandler(),
@@ -243,16 +226,7 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
                             counters.offRamp(),
                             squelchingEnabled,
                             busyFractionTimer,
-                            false);
-                    case DIRECT_THREADSAFE -> new DirectTaskScheduler<>(
-                            model,
-                            name,
-                            buildUncaughtExceptionHandler(),
-                            counters.onRamp(),
-                            counters.offRamp(),
-                            squelchingEnabled,
-                            busyFractionTimer,
-                            true);
+                            type == DIRECT_THREADSAFE);
                 };
 
         model.registerScheduler(scheduler, hyperlink);

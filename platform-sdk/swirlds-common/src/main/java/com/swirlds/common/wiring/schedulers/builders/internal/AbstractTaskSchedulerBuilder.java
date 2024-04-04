@@ -16,6 +16,8 @@
 
 package com.swirlds.common.wiring.schedulers.builders.internal;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
@@ -253,5 +255,20 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
     public AbstractTaskSchedulerBuilder<OUT> withHyperlink(@Nullable final String hyperlink) {
         this.hyperlink = hyperlink;
         return this;
+    }
+
+    /**
+     * Build an uncaught exception handler if one was not provided.
+     *
+     * @return the uncaught exception handler
+     */
+    @NonNull
+    protected UncaughtExceptionHandler buildUncaughtExceptionHandler() {
+        if (uncaughtExceptionHandler != null) {
+            return uncaughtExceptionHandler;
+        } else {
+            return (thread, throwable) ->
+                    logger.error(EXCEPTION.getMarker(), "Uncaught exception in scheduler {}", name, throwable);
+        }
     }
 }
