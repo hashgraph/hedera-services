@@ -12,7 +12,6 @@ module com.hedera.storage.blocknode.core {
     requires com.hedera.storage.blocknode.filesystem.api;
     requires com.hedera.storage.blocknode.filesystem.local;
     requires com.hedera.storage.blocknode.filesystem.s3;
-    requires com.hedera.node.config;
     requires com.hedera.node.hapi;
     requires com.swirlds.config.api;
     requires grpc.netty;

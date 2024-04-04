@@ -125,6 +125,7 @@ include(":blocknode-filesystem-s3", "block-node/blocknode-filesystem-s3")
 include(":blocknode-grpc-api", "block-node/blocknode-grpc-api")
 include(":blocknode-state", "block-node/blocknode-state")
 include(":blocknode-config", "block-node/blocknode-config")
+include(":blocknode-util", "block-node/blocknode-util")
 
 fun include(name: String, path: String) {
     include(name)

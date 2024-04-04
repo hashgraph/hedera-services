@@ -16,7 +16,6 @@
 
 package com.hedera.node.blocknode.filesystem.api.test;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.node.blocknode.filesystem.api.FileSystemApi;
@@ -35,11 +34,6 @@ class FileSystemApiTest {
     void dummySpiDoSomethingCheck() {
         final FileSystemApi fileSystemApi = new FileSystemApi() {
             @Override
-            public void doSomething() {
-                // Do nothing.
-            }
-
-            @Override
             public void writeBlock(Block block) {}
 
             @Override
@@ -47,7 +41,5 @@ class FileSystemApiTest {
                 return null;
             }
         };
-
-        assertDoesNotThrow(fileSystemApi::doSomething);
     }
 }
