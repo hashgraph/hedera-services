@@ -276,7 +276,8 @@ public final class IngestChecker {
             // This adds a mild restriction that privileged transactions can only
             // be issued by system accounts; (FUTURE) consider giving non-trivial
             // minimum fees to privileged transactions that fail with UNAUTHORIZED
-            // at consensus, and adding them to normal throttle buckets
+            // at consensus, and adding them to normal throttle buckets, c.f.
+            // https://github.com/hashgraph/hedera-services/issues/12559
             if (payerNum >= hederaConfig.firstUserEntity()) {
                 throw new PreCheckException(UNAUTHORIZED);
             }
