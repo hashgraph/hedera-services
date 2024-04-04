@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.merkle.test.fixtures.map.serialization.MapKeyDeserializer;
@@ -52,7 +53,7 @@ public class SaveExpectedMapHandler {
     public static final String STORAGE_DIRECTORY = "data/lifecycle";
     private static final String JSON_FILE_NAME_TEMPLATE = "Node%04d_ExpectedMap_%d_%d.json";
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
     private static final ObjectWriter objectWriter = objectMapper.writer(new DefaultPrettyPrinter());
 
     /**
