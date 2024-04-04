@@ -42,18 +42,37 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.TestMethodOrder;
 
+/**
+ * A suite that is aware of externalized sidecar files, provides utilities to verify sidecar records.
+ * This suite is meant to be extended by other suites that need to test sidecar files.
+ *
+ * @author vyanev
+ */
 @SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public abstract class SidecarAwareHapiSuite extends HapiSuite {
 
-    private static final Logger log = LogManager.getLogger(SidecarAwareHapiSuite.class);
+    private static final Logger LOG = LogManager.getLogger(SidecarAwareHapiSuite.class);
 
+    /**
+     * The sidecar watcher instance that will be used for incoming sidecar files.
+     */
     private static SidecarWatcher sidecarWatcher;
 
-    protected static void addExpectedSidecar(ExpectedSidecar expectedSidecar) {
+    /**
+     * Add an expected sidecar to the sidecar watcher instance.
+     * @param expectedSidecar The {@link ExpectedSidecar} to add.
+     */
+    protected static void addExpectedSidecar(final ExpectedSidecar expectedSidecar) {
         sidecarWatcher.addExpectedSidecar(expectedSidecar);
     }
 
+    /**
+     * Expect a sidecar file to be generated for the given transaction name with the given contract actions.
+     * @param txnName The name of the transaction to expect the sidecar for.
+     * @param actions The contract actions to expect in the sidecar.
+     * @return A {@link CustomSpecAssert} that will expect the sidecar file to be generated.
+     */
     protected static CustomSpecAssert expectContractActionSidecarFor(
             final String txnName, final List<ContractAction> actions) {
         return withOpContext((spec, opLog) -> {
@@ -70,6 +89,12 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
         });
     }
 
+    /**
+     * Expect a sidecar file to be generated for the given transaction name with the given contract state changes.
+     * @param txnName The name of the transaction to expect the sidecar for.
+     * @param stateChanges The contract state changes to expect in the sidecar.
+     * @return A {@link CustomSpecAssert} that will expect the sidecar file to be generated.
+     */
     protected static CustomSpecAssert expectContractStateChangesSidecarFor(
             final String txnName, final List<StateChange> stateChanges) {
         return withOpContext((spec, opLog) -> {
@@ -86,15 +111,25 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
         });
     }
 
+    /**
+     * Initialize the sidecar watcher for the current spec.
+     * @return A {@link CustomSpecAssert} that will initialize the sidecar watcher.
+     */
     protected static CustomSpecAssert initializeSidecarWatcher() {
         return withOpContext((spec, opLog) -> {
-            Path path = Paths.get(recordStreamLocFor(spec));
-            log.info("Watching for sidecars at absolute path {}", path.toAbsolutePath());
+            final Path path = Paths.get(recordStreamLocFor(spec));
+            if (LOG.isInfoEnabled()) {
+                LOG.info("Watching for sidecars at absolute path {}", path.toAbsolutePath());
+            }
             sidecarWatcher = new SidecarWatcher(path);
             sidecarWatcher.watch();
         });
     }
 
+    /**
+     * Waits for expected sidecars and tears down the sidecar watcher for the current spec.
+     * @return A {@link CustomSpecAssert} that will tear down the sidecar watcher.
+     */
     protected static CustomSpecAssert tearDownSidecarWatcher() {
         return withOpContext((spec, opLog) -> {
             // send a dummy transaction to trigger externalization of last sidecars
@@ -104,6 +139,10 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
         });
     }
 
+    /**
+     * Asserts that all expected sidecar records have been externalized.
+     * @return A {@link CustomSpecAssert} that will assert that all expected sidecar records have been externalized.
+     */
     protected static CustomSpecAssert assertContainsAllExpectedSidecarRecords() {
         return assertionsHold((spec, assertLog) -> {
             assertTrue(
@@ -120,6 +159,10 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
         });
     }
 
+    /**
+     * Asserts that there are no mismatched sidecars.
+     * @return A {@link CustomSpecAssert} that will assert that there are no mismatched sidecars.
+     */
     protected static CustomSpecAssert assertNoMismatchedSidecars() {
         return assertionsHold((spec, assertLog) -> {
             assertTrue(sidecarWatcher.thereAreNoMismatchedSidecars(), sidecarWatcher.getMismatchErrors());

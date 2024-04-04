@@ -20,10 +20,19 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 public record MismatchedSidecar(
         TransactionSidecarRecord expectedSidecarRecord, TransactionSidecarRecord actualSidecarRecord) {
+
+    /**
+     * Check if the expected or actual sidecar record has actions.
+     * @return {@code true} if the expected sidecar record has actions, {@code false} otherwise.
+     */
     public boolean hasActions() {
         return expectedSidecarRecord.hasActions() || actualSidecarRecord.hasActions();
     }
 
+    /**
+     * Check if the expected or actual sidecar record has state changes.
+     * @return {@code true} if the expected sidecar record has state changes, {@code false} otherwise.
+     */
     public boolean hasStateChanges() {
         return expectedSidecarRecord.hasStateChanges() || actualSidecarRecord.hasStateChanges();
     }
