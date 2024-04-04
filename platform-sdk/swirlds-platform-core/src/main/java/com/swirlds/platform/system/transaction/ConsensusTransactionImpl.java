@@ -36,6 +36,8 @@ public abstract non-sealed class ConsensusTransactionImpl implements ConsensusTr
      * NOT serialized and not part of object equality or hash code
      */
     private Instant consensusTimestamp;
+    /** An optional metadata object set by the application */
+    private Object metadata;
 
     /**
      * {@inheritDoc}
@@ -71,5 +73,21 @@ public abstract non-sealed class ConsensusTransactionImpl implements ConsensusTr
      */
     public void setConsensusTimestamp(final Instant consensusTimestamp) {
         this.consensusTimestamp = consensusTimestamp;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T> T getMetadata() {
+        return (T) metadata;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T> void setMetadata(final T metadata) {
+        this.metadata = metadata;
     }
 }

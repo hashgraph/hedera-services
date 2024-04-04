@@ -29,7 +29,7 @@ import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.SystemTransaction;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +48,7 @@ public final class TransactionHandlingTestUtils {
      * @return the new event
      */
     public static EventImpl newDummyEvent(final int transactionCount) {
-        final SystemTransaction[] transactions = new SystemTransaction[transactionCount];
+        final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
 
         for (int index = 0; index < transactionCount; index++) {
             transactions[index] = new DummySystemTransaction();

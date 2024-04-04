@@ -20,20 +20,12 @@ import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySe
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.config.TransactionConfig;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * A container for an application transaction that contains extra information.
@@ -52,9 +44,6 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
 
     /** The content (payload) of the transaction */
     private byte[] contents;
-
-    /** An optional metadata object set by the application */
-    private Object metadata;
 
     public SwirldTransaction() {
     }
@@ -291,22 +280,6 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
     @Override
     public int getSize() {
         return contents == null ? 0 : contents.length;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <T> T getMetadata() {
-        return (T) metadata;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <T> void setMetadata(final T metadata) {
-        this.metadata = metadata;
     }
 
     /**

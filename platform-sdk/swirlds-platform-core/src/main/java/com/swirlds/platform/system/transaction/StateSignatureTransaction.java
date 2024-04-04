@@ -33,7 +33,7 @@ import java.util.Objects;
  * Every round, the signature of a signed state is put in this transaction
  * and gossiped to other nodes
  */
-public final class StateSignatureTransaction extends SystemTransaction {
+public final class StateSignatureTransaction extends ConsensusTransactionImpl {
 
     /**
      * class identifier for the purposes of serialization
@@ -238,5 +238,15 @@ public final class StateSignatureTransaction extends SystemTransaction {
     @Override
     public int hashCode() {
         return Objects.hash(stateSignature, stateHash, round, epochHash);
+    }
+
+    @Override
+    public byte[] getContents() {
+        return null;
+    }
+
+    @Override
+    public boolean isSystem() {
+        return true;
     }
 }
