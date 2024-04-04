@@ -45,6 +45,13 @@ public record TaskSchedulerConfiguration(
         @Nullable Boolean squelchingEnabled) {
 
     /**
+     * This configuration is for a no-op task scheduler. It is not necessary to use this constant for a no-op task
+     * scheduler, but it is provided for convenience.
+     */
+    public static final TaskSchedulerConfiguration NO_OP_CONFIGURATION =
+            new TaskSchedulerConfiguration(TaskSchedulerType.NO_OP, 0L, false, false, false, false);
+
+    /**
      * Parse a string representation of a task scheduler configuration.
      * <p>
      * Syntax is as follows:
