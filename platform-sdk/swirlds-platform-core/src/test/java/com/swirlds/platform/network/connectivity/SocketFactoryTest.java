@@ -17,11 +17,7 @@
 package com.swirlds.platform.network.connectivity;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockingDetails;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -36,18 +32,14 @@ import com.swirlds.platform.system.address.AddressBook;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.net.ssl.SSLSocket;
-import javax.security.auth.x500.X500Principal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 
 class SocketFactoryTest {
     private static final byte[] DATA = {1, 2, 3};
@@ -108,18 +100,6 @@ class SocketFactoryTest {
         final Thread server = new Thread(() -> {
             try {
                 final Socket s = serverSocket.accept();
-                if (s instanceof SSLSocket) {
-                    if (peerInfoList.stream().anyMatch(peer -> mockingDetails(peer.signingCertificate())
-                            .isMock())) {
-                        // we've passed a mocked peer's certificate as an example of an invalid agreement
-                        // certificate - it possesses no valid issuer's principal
-                        assertNull(NetworkUtils.identifyTlsPeer(
-                                ((SSLSocket) s).getSession().getPeerCertificates(), peerInfoList));
-                    } else {
-                        assertNotNull(NetworkUtils.identifyTlsPeer(
-                                ((SSLSocket) s).getSession().getPeerCertificates(), peerInfoList));
-                    }
-                }
                 final byte[] bytes = s.getInputStream().readNBytes(DATA.length);
                 assertArrayEquals(DATA, bytes, "Data read from socket must be the same as the data written");
                 s.close();
@@ -197,20 +177,6 @@ class SocketFactoryTest {
                 NetworkUtils.createSocketFactory(node1, addressBook, keysAndCerts1, TLS_IP_TOS_CONFIG),
                 NetworkUtils.createSocketFactory(node2, addressBook, keysAndCerts2, TLS_IP_TOS_CONFIG),
                 peerInfoList);
-
-        final PeerInfo peer3 = new PeerInfo(
-                node1,
-                address1.getSelfName(),
-                Objects.requireNonNull(address1.getHostnameExternal()),
-                mock(X509Certificate.class));
-        Mockito.when(((X509Certificate) peer3.signingCertificate()).getSubjectX500Principal())
-                .thenReturn(mock(X500Principal.class));
-
-        final List<PeerInfo> peerInfoListNonMatchingCertPeers = List.of(peer3);
-        testSocketsBoth(
-                NetworkUtils.createSocketFactory(node1, addressBook, keysAndCerts1, TLS_NO_IP_TOS_CONFIG),
-                NetworkUtils.createSocketFactory(node2, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG),
-                peerInfoListNonMatchingCertPeers);
     }
 
     @Test

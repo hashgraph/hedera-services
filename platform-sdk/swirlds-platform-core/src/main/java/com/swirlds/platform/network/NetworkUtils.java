@@ -122,10 +122,10 @@ public final class NetworkUtils {
      */
     public static Marker determineExceptionMarker(final Exception e) {
         return Utilities.isCausedByIOException(e)
-                        || Utilities.isRootCauseSuppliedType(e, SyncTimeoutException.class)
-                        // All SSLExceptions regardless of nested root cause need to be classified as SOCKET_EXCEPTIONS.
-                        // https://github.com/hashgraph/hedera-services/issues/7762
-                        || Utilities.hasAnyCauseSuppliedType(e, SSLException.class)
+                || Utilities.isRootCauseSuppliedType(e, SyncTimeoutException.class)
+                // All SSLExceptions regardless of nested root cause need to be classified as SOCKET_EXCEPTIONS.
+                // https://github.com/hashgraph/hedera-services/issues/7762
+                || Utilities.hasAnyCauseSuppliedType(e, SSLException.class)
                 ? SOCKET_EXCEPTIONS.getMarker()
                 : EXCEPTION.getMarker();
     }
@@ -145,13 +145,13 @@ public final class NetworkUtils {
     }
 
     /**
-     * Create a {@link SocketFactory} based on the configuration and the provided keys and certificates.
-     * NOTE: This method is a stepping stone to decoupling the networking from the platform.
+     * Create a {@link SocketFactory} based on the configuration and the provided keys and certificates. NOTE: This
+     * method is a stepping stone to decoupling the networking from the platform.
      *
-     * @param selfId         the ID of the node
-     * @param addressBook    the address book of the network
-     * @param keysAndCerts   the keys and certificates to use for the TLS connections
-     * @param configuration  the configuration of the network
+     * @param selfId        the ID of the node
+     * @param addressBook   the address book of the network
+     * @param keysAndCerts  the keys and certificates to use for the TLS connections
+     * @param configuration the configuration of the network
      * @return the created {@link SocketFactory}
      */
     public static @NonNull SocketFactory createSocketFactory(
@@ -178,11 +178,11 @@ public final class NetworkUtils {
                     socketConfig,
                     cryptoConfig);
         } catch (final NoSuchAlgorithmException
-                | UnrecoverableKeyException
-                | KeyStoreException
-                | KeyManagementException
-                | CertificateException
-                | IOException e) {
+                       | UnrecoverableKeyException
+                       | KeyStoreException
+                       | KeyManagementException
+                       | CertificateException
+                       | IOException e) {
             throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
         }
     }
@@ -190,7 +190,8 @@ public final class NetworkUtils {
     /**
      * identifies the client on the other end of the socket using their signing certificate.
      *
-     * @param certs        the list of all certificates in the public keystore
+     * @param certs        a list of TLS certificates (e.g. the certificates presented by a peer during a TLS
+     *                     handshake)
      * @param peerInfoList List of known peers
      * @return info of the identified peer
      */
@@ -210,10 +211,10 @@ public final class NetworkUtils {
                     "Unable to find a matching peer with the presented certificate {}.",
                     agreementCert);
         } else {
-            rateLimitedLogger.info(
-                    SOCKET_EXCEPTIONS.getMarker(),
-                    "Found {} matching peers for the presented certificate",
-                    peers.size());
+            if (peers.size() > 1) {
+                rateLimitedLogger.info(
+                        EXCEPTION.getMarker(), "Found {} matching peers for the presented certificate", peers.size());
+            }
             matchingPair = peer.get();
         }
         return matchingPair;

@@ -199,8 +199,8 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final OutboundConnectionCreator connectionCreator =
                 new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
-        final InboundConnectionHandler inboundConnectionHandler =
-                new InboundConnectionHandler(platformContext, this, selfId, connectionManagers::newConnection, time);
+        final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
+                platformContext, this, selfId, addressBook, connectionManagers::newConnection, time);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(

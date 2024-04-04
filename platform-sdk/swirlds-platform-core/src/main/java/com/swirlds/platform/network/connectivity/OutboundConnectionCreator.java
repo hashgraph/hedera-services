@@ -25,6 +25,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
+import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
@@ -36,10 +37,12 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Objects;
+import javax.net.ssl.SSLSocket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -94,6 +97,17 @@ public class OutboundConnectionCreator {
                     platformContext, clientSocket.getOutputStream(), socketConfig.bufferSize());
             dis = SyncInputStream.createSyncInputStream(
                     platformContext, clientSocket.getInputStream(), socketConfig.bufferSize());
+
+            if (!(clientSocket instanceof SSLSocket)) {
+                // tell the peer who I am, the old way.
+                dos.writeUTF(addressBook.getAddress(selfId).getNickname());
+                dos.flush();
+
+                final int ack = dis.readInt(); // read the ACK for creating the connection
+                if (ack != ByteConstants.COMM_CONNECT) { // this is an ACK for creating the connection
+                    throw new ConnectException("ack is not " + ByteConstants.COMM_CONNECT + ", it is " + ack);
+                }
+            }
 
             logger.debug(NETWORK.getMarker(), "`connect` : finished, {} connected to {}", selfId, otherId);
 

@@ -22,17 +22,15 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.Utilities;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.SocketFactory;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.security.cert.Certificate;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,15 +56,12 @@ class ConnectionServerTest {
         doAnswer(i -> serverSocket).when(socketFactory).createServerSocket(anyInt());
         final AtomicReference<Pair<Socket, List<PeerInfo>>> connectionHandler = new AtomicReference<>(null);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(RandomUtils.getRandomPrintSeed())
-                .setSize(2)
-                .build();
         final ConnectionServer server = new ConnectionServer(
                 getStaticThreadManager(),
                 0,
                 socketFactory,
                 (a, b) -> connectionHandler.set(Pair.of(a, b)),
-                Utilities.createPeerInfoList(addressBook, addressBook.getNodeId(0)));
+                List.of(new PeerInfo(new NodeId(1), "test", "host1", mock(Certificate.class))));
 
         server.run();
         Assertions.assertSame(
