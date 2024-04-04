@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.addOrReplace;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.ScheduleID;
@@ -119,26 +120,18 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     @Override
     public void put(@NonNull final Schedule scheduleToAdd) {
         schedulesByIdMutable.put(scheduleToAdd.scheduleIdOrThrow(), scheduleToAdd);
+
         final ProtoBytes newHash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(scheduleToAdd));
         final ScheduleList inStateEquality = schedulesByEqualityMutable.get(newHash);
-        List<Schedule> byEquality =
-                inStateEquality != null ? new LinkedList<>(inStateEquality.schedulesOrElse(emptyList())) : null;
-        if (byEquality == null) {
-            byEquality = new LinkedList<>();
-        }
-        byEquality.add(scheduleToAdd);
-        schedulesByEqualityMutable.put(newHash, new ScheduleList(byEquality));
+        final var newEqualityScheduleList = addOrReplace(scheduleToAdd, inStateEquality);
+        schedulesByEqualityMutable.put(newHash, newEqualityScheduleList);
+
         // calculated expiration time is never null...
         final ProtoLong expirationSecond = new ProtoLong(scheduleToAdd.calculatedExpirationSecond());
         final ScheduleList inStateExpiration = schedulesByExpirationMutable.get(expirationSecond);
         // we should not be modifying the schedules list directly. This could cause ISS
-        List<Schedule> byExpiration = inStateExpiration != null ? new ArrayList<>(inStateExpiration.schedules()) : null;
-        if (byExpiration == null) {
-            byExpiration = new LinkedList<>();
-        }
-        byExpiration.add(scheduleToAdd);
-        final var newScheduleList = new ScheduleList(byExpiration);
-        schedulesByExpirationMutable.put(expirationSecond, newScheduleList);
+        final var newExpiryScheduleList = addOrReplace(scheduleToAdd, inStateExpiration);
+        schedulesByExpirationMutable.put(expirationSecond, newExpiryScheduleList);
     }
 
     @NonNull
