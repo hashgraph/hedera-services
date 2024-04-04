@@ -340,6 +340,16 @@ public class BaseTokenHandler {
                 .headTokenId(tokenId)
                 .build();
 
+        final var existingFirstTokenId = account.headTokenId();
+        if (existingFirstTokenId != null) {
+            final var existingFirstTokenRel = tokenRelStore.get(accountId, existingFirstTokenId);
+            if (existingFirstTokenRel != null) {
+                tokenRelStore.put(existingFirstTokenRel
+                        .copyBuilder()
+                        .previousToken(tokenId)
+                        .build());
+            }
+        }
         accountStore.put(copyAccount);
         tokenRelStore.put(newTokenRel);
         return newTokenRel;
