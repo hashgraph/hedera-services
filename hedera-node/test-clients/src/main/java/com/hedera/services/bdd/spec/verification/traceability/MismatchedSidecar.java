@@ -23,7 +23,7 @@ public record MismatchedSidecar(
 
     /**
      * Check if the expected or actual sidecar record has actions.
-     * @return {@code true} if the expected sidecar record has actions, {@code false} otherwise.
+     * @return {@code true} if either of the records has actions.
      */
     public boolean hasActions() {
         return expectedSidecarRecord.hasActions() || actualSidecarRecord.hasActions();
@@ -31,7 +31,7 @@ public record MismatchedSidecar(
 
     /**
      * Check if the expected or actual sidecar record has state changes.
-     * @return {@code true} if the expected sidecar record has state changes, {@code false} otherwise.
+     * @return {@code true} if either of the records has state changes.
      */
     public boolean hasStateChanges() {
         return expectedSidecarRecord.hasStateChanges() || actualSidecarRecord.hasStateChanges();
