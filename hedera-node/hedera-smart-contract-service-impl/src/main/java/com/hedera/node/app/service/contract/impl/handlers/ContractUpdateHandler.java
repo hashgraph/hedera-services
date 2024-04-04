@@ -40,6 +40,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractUpdateResourceUsage;
@@ -96,6 +97,11 @@ public class ContractUpdateHandler implements TransactionHandler {
         if (op.hasAutoRenewAccountId() && !op.autoRenewAccountIdOrThrow().equals(AccountID.DEFAULT)) {
             context.requireKeyOrThrow(op.autoRenewAccountIdOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        // nothing to do
     }
 
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {

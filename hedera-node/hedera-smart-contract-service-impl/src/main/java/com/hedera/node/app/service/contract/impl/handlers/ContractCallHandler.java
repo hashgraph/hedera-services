@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
@@ -32,6 +33,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -70,6 +72,11 @@ public class ContractCallHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) {
         // No non-payer signatures to verify
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        // nothing to do
     }
 
     @NonNull
