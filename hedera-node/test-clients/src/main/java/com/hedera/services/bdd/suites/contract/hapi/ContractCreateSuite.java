@@ -714,7 +714,7 @@ public class ContractCreateSuite extends HapiSuite {
                 BigInteger.ONE.toByteArray(),
                 BigInteger.ONE.toByteArray(),
                 150_000,
-                new byte[] {},
+                new byte[] {1, 2, 3},
                 BigInteger.ONE,
                 new byte[] {},
                 new byte[] {},
