@@ -1139,12 +1139,14 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
     private static void waitForSignatureValidation(final ConsensusTransaction transaction)
             throws InterruptedException, ExecutionException {
-        for (final TransactionSignature sig : transaction.getSignatures()) {
-            final Future<Void> future = sig.waitForFuture();
-
-            // Block & Ignore the Void return
-            future.get();
+        final TransactionSignature sig = transaction.getMetadata();
+        if (sig == null) {
+            return;
         }
+        final Future<Void> future = sig.waitForFuture();
+
+        // Block & Ignore the Void return
+        future.get();
     }
 
     private void handleTransaction(
@@ -1174,34 +1176,34 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                     }
                 }
                 totalTransactionSignatureCount.incrementAndGet();
-                for (final TransactionSignature s : trans.getSignatures()) {
-                    if (s.getSignatureStatus() != VerificationStatus.VALID && (!expectingInvalidSignature)) {
-                        logger.error(
-                                EXCEPTION.getMarker(),
-                                "Invalid Transaction Signature [status = {}, signatureType = {}, "
-                                        + "publicKey = {}, signature = {}, data = {}, "
-                                        + "actualPublicKey = {}, actualSignature = {}, actualData = {} ]",
-                                s.getSignatureStatus(),
-                                s.getSignatureType(),
-                                hex(publicKey),
-                                hex(signature),
-                                hex(testTransactionRawBytes),
-                                hex(Arrays.copyOfRange(
-                                        s.getContentsDirect(),
-                                        s.getPublicKeyOffset(),
-                                        s.getPublicKeyOffset() + s.getPublicKeyLength())),
-                                hex(Arrays.copyOfRange(
-                                        s.getContentsDirect(),
-                                        s.getSignatureOffset(),
-                                        s.getSignatureOffset() + s.getSignatureLength())),
-                                hex(Arrays.copyOfRange(
-                                        s.getContentsDirect(),
-                                        s.getMessageOffset(),
-                                        s.getMessageOffset() + s.getMessageLength())));
-                    } else if (s.getSignatureStatus() != VerificationStatus.VALID && expectingInvalidSignature) {
-                        expectedInvalidSignatureCount.incrementAndGet();
-                    }
+                final TransactionSignature s = trans.getMetadata();
+                if (s!= null && s.getSignatureStatus() != VerificationStatus.VALID && (!expectingInvalidSignature)) {
+                    logger.error(
+                            EXCEPTION.getMarker(),
+                            "Invalid Transaction Signature [status = {}, signatureType = {}, "
+                                    + "publicKey = {}, signature = {}, data = {}, "
+                                    + "actualPublicKey = {}, actualSignature = {}, actualData = {} ]",
+                            s.getSignatureStatus(),
+                            s.getSignatureType(),
+                            hex(publicKey),
+                            hex(signature),
+                            hex(testTransactionRawBytes),
+                            hex(Arrays.copyOfRange(
+                                    s.getContentsDirect(),
+                                    s.getPublicKeyOffset(),
+                                    s.getPublicKeyOffset() + s.getPublicKeyLength())),
+                            hex(Arrays.copyOfRange(
+                                    s.getContentsDirect(),
+                                    s.getSignatureOffset(),
+                                    s.getSignatureOffset() + s.getSignatureLength())),
+                            hex(Arrays.copyOfRange(
+                                    s.getContentsDirect(),
+                                    s.getMessageOffset(),
+                                    s.getMessageOffset() + s.getMessageLength())));
+                } else if (s!= null && s.getSignatureStatus() != VerificationStatus.VALID && expectingInvalidSignature) {
+                    expectedInvalidSignatureCount.incrementAndGet();
                 }
+
             } catch (final InvalidProtocolBufferException ex) {
                 exceptionRateLimiter.handle(
                         ex,
@@ -1392,10 +1394,11 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                         .put(signature)
                         .array();
 
-                trans.setMetadata(new TransactionSignature(
-                        contents, sigOffset, signature.length, msgLen, publicKey.length, 0, msgLen, signatureType));
+                final TransactionSignature transactionSignature = new TransactionSignature(
+                        contents, sigOffset, signature.length, msgLen, publicKey.length, 0, msgLen, signatureType);
+                trans.setMetadata(transactionSignature);
 
-                CryptographyHolder.get().verifyAsync(trans.getSignatures());
+                CryptographyHolder.get().verifyAsync(List.of(transactionSignature));
 
             } catch (final InvalidProtocolBufferException ex) {
                 exceptionRateLimiter.handle(
@@ -1450,20 +1453,18 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private static boolean validateSignatures(final Transaction trans) {
         // Verify signatures if appendSig is true
         boolean invalidSig = false;
-        final List<TransactionSignature> signatureList = trans.getSignatures();
-        if (signatureList != null) {
-            for (final TransactionSignature signature : signatureList) {
-                if (VerificationStatus.UNKNOWN.equals(signature.getSignatureStatus())) {
-                    try {
-                        final Future<Void> future = signature.waitForFuture();
-                        future.get();
-                    } catch (final ExecutionException | InterruptedException ex) {
-                        logger.info(EXCEPTION.getMarker(), "Error when verifying signature", ex);
-                    }
+        final TransactionSignature signature = trans.getMetadata();
+        if (signature != null) {
+            if (VerificationStatus.UNKNOWN.equals(signature.getSignatureStatus())) {
+                try {
+                    final Future<Void> future = signature.waitForFuture();
+                    future.get();
+                } catch (final ExecutionException | InterruptedException ex) {
+                    logger.info(EXCEPTION.getMarker(), "Error when verifying signature", ex);
                 }
-                if (VerificationStatus.INVALID.equals(signature.getSignatureStatus())) {
-                    invalidSig = true;
-                }
+            }
+            if (VerificationStatus.INVALID.equals(signature.getSignatureStatus())) {
+                invalidSig = true;
             }
         }
         return invalidSig;

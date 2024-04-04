@@ -77,26 +77,4 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * 		the object to attach
      */
     <T> void setMetadata(T metadata);
-
-    /**
-     * Returns a {@link List} of {@link TransactionSignature} objects associated with this transaction. This method
-     * returns a shallow copy of the original list. This method can return an unmodifiable list.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @return a shallow copy of the original signature list
-     */
-    List<TransactionSignature> getSignatures();
-
-    /**
-     * Adds a new {@link TransactionSignature} to this transaction.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @param signature
-     * 		the signature to be added
-     * @throws IllegalArgumentException
-     * 		if the {@code signature} parameter is null
-     */
-    void add(final TransactionSignature signature);
 }

@@ -49,22 +49,14 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
     private static final int CLASS_VERSION = 1;
 
     private static final String CONTENT_ERROR = "content is null or length is 0";
-    private static final int DEFAULT_SIGNATURE_LIST_SIZE = 5;
-
-    /** A per-transaction read/write lock to ensure thread safety of the signature list */
-    private final ReadWriteLock readWriteLock;
 
     /** The content (payload) of the transaction */
     private byte[] contents;
-
-    /** The list of optional signatures attached to this transaction */
-    private List<TransactionSignature> signatures;
 
     /** An optional metadata object set by the application */
     private Object metadata;
 
     public SwirldTransaction() {
-        this.readWriteLock = new ReentrantReadWriteLock(false);
     }
 
     /**
@@ -80,7 +72,6 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
             throw new IllegalArgumentException(CONTENT_ERROR);
         }
         this.contents = contents.clone();
-        this.readWriteLock = new ReentrantReadWriteLock(false);
     }
 
     /**
@@ -128,44 +119,6 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     public int size() {
         return getLength();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<TransactionSignature> getSignatures() {
-        final Lock readLock = readWriteLock.readLock();
-
-        try {
-            readLock.lock();
-            return (signatures != null) ? new ArrayList<>(signatures) : Collections.emptyList();
-        } finally {
-            readLock.unlock();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void add(final TransactionSignature signature) {
-        if (signature == null) {
-            throw new IllegalArgumentException("signature");
-        }
-
-        final Lock writeLock = readWriteLock.writeLock();
-
-        try {
-            writeLock.lock();
-            if (signatures == null) {
-                signatures = new ArrayList<>(DEFAULT_SIGNATURE_LIST_SIZE);
-            }
-
-            signatures.add(signature);
-        } finally {
-            writeLock.unlock();
-        }
     }
 
     /**
@@ -305,7 +258,6 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
     public String toString() {
         return new ToStringBuilder(this)
                 .append("contents", contents)
-                .append("signatures", signatures)
                 .toString();
     }
 
