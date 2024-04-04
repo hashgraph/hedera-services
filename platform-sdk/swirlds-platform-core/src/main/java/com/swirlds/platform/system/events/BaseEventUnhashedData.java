@@ -157,16 +157,6 @@ public class BaseEventUnhashedData implements SelfSerializable {
     }
 
     /**
-     * Get the other parent's NodeId
-     *
-     * @return the other parent's NodeId
-     */
-    @Nullable
-    public NodeId getOtherId() {
-        return otherId;
-    }
-
-    /**
      * Get the signature
      *
      * @return the signature

@@ -77,7 +77,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             @NonNull final FinalizeContext context,
             @NonNull final HederaFunctionality functionality,
             @NonNull final Set<AccountID> explicitRewardReceivers,
-            @NonNull final Set<AccountID> prePaidRewardReceivers) {
+            @NonNull final Map<AccountID, Long> prePaidRewards) {
         final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
@@ -97,7 +97,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             // Calculate staking rewards and add them also to hbarChanges here, before assessing
             // net changes for transaction record
             final var rewardsPaid =
-                    stakingRewardsHandler.applyStakingRewards(context, explicitRewardReceivers, prePaidRewardReceivers);
+                    stakingRewardsHandler.applyStakingRewards(context, explicitRewardReceivers, prePaidRewards);
             if (requiresExternalization(rewardsPaid)) {
                 recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
             }
