@@ -335,7 +335,6 @@ public class EventImpl extends EventMetadata
         for (int i = 0; i < transactions.length; i++) {
             final Instant transConsTime = getConsensusTimestamp().plusNanos(i * MIN_TRANS_TIMESTAMP_INCR_NANOS);
             transactions[i].setConsensusTimestamp(transConsTime);
-            transactions[i].setConsensusOrder(getConsensusOrder());
         }
     }
 
