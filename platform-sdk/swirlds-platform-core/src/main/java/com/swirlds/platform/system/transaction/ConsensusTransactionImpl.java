@@ -24,7 +24,6 @@ import java.time.Instant;
  * A transaction that may or may not reach consensus.
  */
 public abstract non-sealed class ConsensusTransactionImpl implements ConsensusTransaction {
-
     /**
      * The consensus timestamp of this transaction, or null if consensus has not yet been reached.
      * NOT serialized and not part of object equality or hash code
