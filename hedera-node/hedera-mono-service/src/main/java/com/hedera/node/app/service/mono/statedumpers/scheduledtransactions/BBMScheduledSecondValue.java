@@ -20,6 +20,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVir
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -33,5 +34,26 @@ public record BBMScheduledSecondValue(NavigableMap<Instant, List<Long>> ids) {
                 .forEach((key, value) -> newMap.put(
                         key.toJava(), value.collect(Long::valueOf).stream().toList()));
         return new BBMScheduledSecondValue(newMap);
+    }
+
+    @Override
+    public String toString() {
+        return "BBMScheduledSecondValue{" + "ids=" + idsToString(ids) + '}';
+    }
+
+    public static String idsToString(NavigableMap<Instant, List<Long>> ids) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        for (Map.Entry<Instant, List<Long>> entry : ids.entrySet()) {
+            Instant key = entry.getKey();
+            List<Long> values = entry.getValue();
+            sb.append(key).append(": ").append(values).append(", ");
+        }
+        if (!ids.isEmpty()) {
+            // Remove the trailing comma and space
+            sb.setLength(sb.length() - 2);
+        }
+        sb.append("}");
+        return sb.toString();
     }
 }

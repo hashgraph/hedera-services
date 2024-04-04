@@ -19,6 +19,8 @@ package com.hedera.node.app.service.mono.statedumpers.scheduledtransactions;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
@@ -29,6 +31,7 @@ import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,12 +49,12 @@ public class ScheduledTransactionsDumpUtils {
             final var byId = scheduledTransactions.byId();
             final var byEquality = scheduledTransactions.byEquality();
             final var byExpirationSecond = scheduledTransactions.byExpirationSecond();
+            System.out.printf("=== Dumping schedule transactions %s%n ======");
+            final var byIdDump = gatherMonoScheduledTransactionsByID(byId);
+            reportOnScheduledTransactionsById(writer, byIdDump);
 
-            final var byIdBump = gatherMonoScheduledTransactionsByID(byId);
-            reportOnScheduledTransactionsById(writer, byIdBump);
-            System.out.printf(
-                    "=== mono scheduled transactions report by id is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
+            final var byEqualityDump = gatherMonoScheduledTransactionsByEquality(byEquality);
+            reportOnScheduledTransactionsByEquality(writer, byEqualityDump);
             // Not sure how to compare Equality Virtual map in mono and mod
             final var byExpiryDump = gatherMonoScheduledTransactionsByExpiry(byExpirationSecond);
             reportOnScheduledTransactionsByExpiry(writer, byExpiryDump);
@@ -59,6 +62,20 @@ public class ScheduledTransactionsDumpUtils {
                     "=== mono scheduled transactions report by expiry is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
         }
+    }
+
+    public static void reportOnScheduledTransactionsByEquality(
+            final Writer writer, final List<BBMScheduledEqualityValue> source) {
+        writer.writeln("=== Scheduled Transactions by Equality ===");
+        source.stream().forEach(e -> writer.writeln(e.toString()));
+        writer.writeln("");
+    }
+
+    private static List<BBMScheduledEqualityValue> gatherMonoScheduledTransactionsByEquality(
+            final MerkleMapLike<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> source) {
+        final List<BBMScheduledEqualityValue> r = new ArrayList<>();
+        source.forEach((k, v) -> r.add(BBMScheduledEqualityValue.fromMono(v)));
+        return r;
     }
 
     @NonNull
@@ -80,6 +97,7 @@ public class ScheduledTransactionsDumpUtils {
     public static void reportOnScheduledTransactionsById(
             @NonNull final Writer writer,
             @NonNull final Map<BBMScheduledId, BBMScheduledTransaction> scheduledTransactions) {
+        writer.writeln("=== Scheduled Transactions by ID ===");
         writer.writeln(formatHeader());
         scheduledTransactions.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -90,10 +108,10 @@ public class ScheduledTransactionsDumpUtils {
     public static void reportOnScheduledTransactionsByExpiry(
             @NonNull final Writer writer,
             @NonNull final Map<BBMScheduledId, BBMScheduledSecondValue> scheduledTransactions) {
-        writer.writeln(formatHeader());
+        writer.writeln("=== Scheduled Transactions by Expiry ===");
         scheduledTransactions.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> formatScheduledTransaction(writer, e.getValue()));
+                .forEach(e -> writer.writeln(e.getValue().toString()));
         writer.writeln("");
     }
 
@@ -130,24 +148,6 @@ public class ScheduledTransactionsDumpUtils {
                 if (sb.length() >= subfieldSeparator.length()) sb.setLength(sb.length() - subfieldSeparator.length());
                 return sb.toString();
             } else return "";
-        };
-    }
-
-    public static <K, V> Function<Map<K, V>, String> getMapFormatter(
-            final Function<Map.Entry<K, V>, String> formatter, final String entrySeparator) {
-        return map -> {
-            if (!map.isEmpty()) {
-                final StringBuilder sb = new StringBuilder();
-                for (final Map.Entry<K, V> entry : map.entrySet()) {
-                    final String formattedEntry = formatter.apply(entry);
-                    sb.append(formattedEntry).append(entrySeparator);
-                }
-                if (sb.length() >= entrySeparator.length()) {
-                    sb.setLength(sb.length() - entrySeparator.length());
-                }
-                return sb.toString();
-            }
-            return "";
         };
     }
 
@@ -223,44 +223,8 @@ public class ScheduledTransactionsDumpUtils {
                                     getListFormatter(ThingsToStrings::toStringOfByteArray, SUBFIELD_SEPARATOR))));
 
     @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMScheduledEqualityValue>>>
-            fieldFormattersForScheduleByEquality = List.of(
-                    Pair.of(
-                            "number",
-                            getFieldFormatterForScheduledByEquality(
-                                    BBMScheduledEqualityValue::number, Object::toString)),
-                    Pair.of(
-                            "ids",
-                            getFieldFormatterForScheduledByEquality(
-                                    BBMScheduledEqualityValue::ids,
-                                    getMapFormatter(e -> e.getKey() + "=" + e.getValue(), SUBFIELD_SEPARATOR))));
-
-    @NonNull
-    private static final List<Pair<String, BiConsumer<FieldBuilder, BBMScheduledSecondValue>>>
-            fieldFormattersForScheduleByExpiry = List.of(Pair.of(
-            "ids",
-            getFieldFormatterForScheduledByExpiry(
-                    BBMScheduledSecondValue::ids,
-                    getMapFormatter(
-                            e -> ThingsToStrings.toStringOfInstant(e.getKey()) + "="
-                                    + getListFormatter(Object::toString, SUBFIELD_SEPARATOR),
-                            SUBFIELD_SEPARATOR))));
-
-    @NonNull
     static <T> BiConsumer<FieldBuilder, BBMScheduledTransaction> getFieldFormatterForScheduledTxn(
             @NonNull final Function<BBMScheduledTransaction, T> fun, @NonNull final Function<T, String> formatter) {
-        return (fb, u) -> fb.append(formatter.apply(fun.apply(u)));
-    }
-
-    @NonNull
-    static <T> BiConsumer<FieldBuilder, BBMScheduledEqualityValue> getFieldFormatterForScheduledByEquality(
-            @NonNull final Function<BBMScheduledEqualityValue, T> fun, @NonNull final Function<T, String> formatter) {
-        return (fb, u) -> fb.append(formatter.apply(fun.apply(u)));
-    }
-
-    @NonNull
-    static <T> BiConsumer<FieldBuilder, BBMScheduledSecondValue> getFieldFormatterForScheduledByExpiry(
-            @NonNull final Function<BBMScheduledSecondValue, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, u) -> fb.append(formatter.apply(fun.apply(u)));
     }
 
@@ -268,22 +232,6 @@ public class ScheduledTransactionsDumpUtils {
             @NonNull final Writer writer, @NonNull final BBMScheduledTransaction scheduledTransaction) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
         fieldFormattersForScheduleById.stream().map(Pair::right).forEach(ff -> ff.accept(fb, scheduledTransaction));
-        writer.writeln(fb);
-    }
-
-    private static void formatScheduledTransaction(
-            @NonNull final Writer writer, @NonNull final BBMScheduledSecondValue scheduledTransaction) {
-        final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormattersForScheduleByExpiry.stream().map(Pair::right).forEach(ff -> ff.accept(fb, scheduledTransaction));
-        writer.writeln(fb);
-    }
-
-    private static void formatScheduledTransaction(
-            @NonNull final Writer writer, @NonNull final BBMScheduledEqualityValue scheduledTransaction) {
-        final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormattersForScheduleByEquality.stream()
-                .map(Pair::right)
-                .forEach(ff -> ff.accept(fb, scheduledTransaction));
         writer.writeln(fb);
     }
 }

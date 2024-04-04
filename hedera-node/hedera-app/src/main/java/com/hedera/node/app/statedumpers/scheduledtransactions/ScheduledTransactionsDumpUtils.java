@@ -17,6 +17,7 @@
 package com.hedera.node.app.statedumpers.scheduledtransactions;
 
 import static com.hedera.node.app.service.mono.statedumpers.associations.BBMTokenAssociation.entityIdFrom;
+import static com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.ScheduledTransactionsDumpUtils.reportOnScheduledTransactionsByEquality;
 import static com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.ScheduledTransactionsDumpUtils.reportOnScheduledTransactionsByExpiry;
 import static com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.ScheduledTransactionsDumpUtils.reportOnScheduledTransactionsById;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -31,6 +32,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledEqualityValue;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledId;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledSecondValue;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledTransaction;
@@ -43,12 +45,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ScheduledTransactionsDumpUtils {
 
@@ -64,6 +68,8 @@ public class ScheduledTransactionsDumpUtils {
             System.out.printf(
                     "=== mod scheduled transactions report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
+            final var byEqualityDump = gatherModScheduledTransactionsByEquality(byEquality);
+            reportOnScheduledTransactionsByEquality(writer, byEqualityDump);
             // Not sure how to compare Equality Virtual map in mono and mod
             final var byExpiryDump = gatherModScheduledTransactionsByExpiry(byExpiry);
             reportOnScheduledTransactionsByExpiry(writer, byExpiryDump);
@@ -71,6 +77,25 @@ public class ScheduledTransactionsDumpUtils {
                     "=== mod scheduled transactions by expiry report is %d bytes at checkpoint %s%n",
                     writer.getSize(), checkpoint.name());
         }
+    }
+
+    private static List<BBMScheduledEqualityValue> gatherModScheduledTransactionsByEquality(
+            final VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<ScheduleList>> source) {
+        final List<BBMScheduledEqualityValue> r = new ArrayList<>();
+        final var scheduledTransactions = new CopyOnWriteArrayList<BBMScheduledEqualityValue>();
+
+        try {
+            VirtualMapLike.from(source)
+                    .extractVirtualMapDataC(
+                            getStaticThreadManager(),
+                            p -> scheduledTransactions.add(
+                                    fromMod(p.key().getKey(), p.value().getValue())),
+                            8);
+        } catch (final InterruptedException ex) {
+            System.err.println("*** Traversal of scheduledTransactions by equality virtual map interrupted!");
+            Thread.currentThread().interrupt();
+        }
+        return r;
     }
 
     private static Map<BBMScheduledId, BBMScheduledSecondValue> gatherModScheduledTransactionsByExpiry(
@@ -131,6 +156,15 @@ public class ScheduledTransactionsDumpUtils {
                 .toList();
         newMap.put(Instant.ofEpochSecond(expiry.value()), longsList);
         return new BBMScheduledSecondValue(newMap);
+    }
+
+    static BBMScheduledEqualityValue fromMod(final ProtoBytes hash, @NonNull final ScheduleList value) {
+        final var newMap = new TreeMap<String, Long>();
+        final var longsList = value.schedules().stream()
+                .map(a -> a.scheduleId().scheduleNum())
+                .toList();
+        newMap.put(hash.value().asUtf8String(), longsList.get(0));
+        return new BBMScheduledEqualityValue(newMap);
     }
 
     static BBMScheduledTransaction fromMod(@NonNull final Schedule value) {
