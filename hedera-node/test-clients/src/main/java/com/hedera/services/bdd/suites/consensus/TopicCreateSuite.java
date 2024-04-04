@@ -200,8 +200,7 @@ public class TopicCreateSuite extends HapiSuite {
                         // In hedera-app, we'll allow contracts with admin keys to be auto-renew accounts
                         createTopic("withContractAutoRenew")
                                 .adminKeyName("adminKey")
-                                .autoRenewAccountId(contractWithAdminKey)
-                                .signedBy("payer", "adminKey", contractWithAdminKey))
+                                .autoRenewAccountId(contractWithAdminKey))
                 .then(
                         createTopic("noAdminKeyNoAutoRenewAccount"),
                         getTopicInfo("noAdminKeyNoAutoRenewAccount")
