@@ -335,6 +335,15 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
+     * Check if this state should be deleted on the background thread.
+     *
+     * @return true if this state should be deleted on the background thread
+     */
+    boolean shouldDeleteOnBackgroundThread() {
+        return deleteOnBackgroundThread;
+    }
+
+    /**
      * This method is called when there is a reference count exception.
      */
     private void onReferenceCountException() {

@@ -73,6 +73,7 @@ public class RandomSignedStateGenerator {
     private Hash epoch = null;
     private ConsensusSnapshot consensusSnapshot;
     private SignatureVerifier signatureVerifier;
+    private boolean deleteOnBackgroundThread;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -207,7 +208,7 @@ public class RandomSignedStateGenerator {
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
                 freezeStateInstance,
-                false);
+                deleteOnBackgroundThread);
 
         MerkleCryptoFactory.getInstance().digestTreeSync(stateInstance);
         if (stateHash != null) {
@@ -261,6 +262,19 @@ public class RandomSignedStateGenerator {
         }
 
         return states;
+    }
+
+    /**
+     * Set if this state should be deleted on a background thread.
+     * ({@link com.swirlds.platform.state.signed.StateGarbageCollector} must be wired up in order for this to happen)
+     *
+     * @param deleteOnBackgroundThread if true, delete on a background thread
+     * @return this object
+     */
+    @NonNull
+    public RandomSignedStateGenerator setDeleteOnBackgroundThread(final boolean deleteOnBackgroundThread) {
+        this.deleteOnBackgroundThread = deleteOnBackgroundThread;
+        return this;
     }
 
     /**

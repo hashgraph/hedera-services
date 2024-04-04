@@ -18,6 +18,7 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.RunningAverageMetric;
@@ -27,12 +28,16 @@ import java.time.Instant;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class is responsible for the deletion of signed states. In case signed state deletion is expensive, we never
  * want to delete a signed state on the last thread that releases it.
  */
 public class DefaultStateGarbageCollector implements StateGarbageCollector {
+
+    private static final Logger logger = LogManager.getLogger(DefaultStateGarbageCollector.class);
 
     private final List<SignedState> states = new LinkedList<>();
 
@@ -63,13 +68,17 @@ public class DefaultStateGarbageCollector implements StateGarbageCollector {
      */
     @Override
     public void registerState(@NonNull final ReservedSignedState state) {
-
-        // TODO log error for states not configured to be deleted on background thread
-
         try (state) {
-            // Intentionally hold a java reference without a signed state reference count.
-            // This is the only place in the codebase that is allowed to do this.
-            states.add(state.get());
+            if (state.get().shouldDeleteOnBackgroundThread()) {
+                // Intentionally hold a java reference without a signed state reference count.
+                // This is the only place in the codebase that is allowed to do this.
+                states.add(state.get());
+            } else {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "State for round {} is not configured to be deleted on background thread",
+                        state.get().getRound());
+            }
         }
     }
 
