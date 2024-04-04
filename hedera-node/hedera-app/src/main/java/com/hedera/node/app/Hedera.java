@@ -463,7 +463,9 @@ public final class Hedera implements SwirldMain {
             final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqTokensFromState = state.getChild(UNIQUE_TOKENS);
             if (uniqTokensFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
-                MONO_VIRTUAL_MAPS.add(uniqTokensFromState.copy());
+                final var copy = uniqTokensFromState.copy();
+                copy.registerMetrics(metrics);
+                MONO_VIRTUAL_MAPS.add(copy);
                 TOKEN_SERVICE.setNftsFromState(uniqTokensFromState);
             }
 
@@ -472,7 +474,9 @@ public final class Hedera implements SwirldMain {
                     state.getChild(TOKEN_ASSOCIATIONS);
             if (tokenRelsFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
-                MONO_VIRTUAL_MAPS.add(tokenRelsFromState.copy());
+                final var copy = tokenRelsFromState.copy();
+                copy.registerMetrics(metrics);
+                MONO_VIRTUAL_MAPS.add(copy);
                 TOKEN_SERVICE.setTokenRelsFromState(tokenRelsFromState);
             }
 
@@ -486,7 +490,9 @@ public final class Hedera implements SwirldMain {
             final VirtualMap<VirtualBlobKey, VirtualBlobValue> filesFromState = state.getChild(STORAGE);
             if (filesFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
-                MONO_VIRTUAL_MAPS.add(filesFromState.copy());
+                final var copy = filesFromState.copy();
+                copy.registerMetrics(metrics);
+                MONO_VIRTUAL_MAPS.add(copy);
 
                 // Note: some files have no metadata, e.g. contract bytecode files
                 FILE_SERVICE.setFs(() -> VirtualMapLike.from(filesFromState));
@@ -499,7 +505,9 @@ public final class Hedera implements SwirldMain {
             final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFromState = state.getChild(ACCOUNTS);
             if (acctsFromState != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
-                MONO_VIRTUAL_MAPS.add(acctsFromState.copy());
+                final var copy = acctsFromState.copy();
+                copy.registerMetrics(metrics);
+                MONO_VIRTUAL_MAPS.add(copy);
                 TOKEN_SERVICE.setAcctsFromState(acctsFromState);
             }
 
@@ -536,7 +544,9 @@ public final class Hedera implements SwirldMain {
             final VirtualMap<ContractKey, IterableContractValue> contractFromStorage = state.getChild(CONTRACT_STORAGE);
             if (contractFromStorage != null) {
                 // Copy this virtual map, so it doesn't get released before the migration is done
-                MONO_VIRTUAL_MAPS.add(contractFromStorage.copy());
+                final var copy = contractFromStorage.copy();
+                copy.registerMetrics(metrics);
+                MONO_VIRTUAL_MAPS.add(copy);
                 CONTRACT_SERVICE.setStorageFromState(VirtualMapLike.from(contractFromStorage));
             }
 
@@ -616,7 +626,7 @@ public final class Hedera implements SwirldMain {
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
         try {
             switch (trigger) {
-                case GENESIS -> genesis(state, platformState);
+                case GENESIS -> genesis(state, platformState, metrics);
                 case RECONNECT -> reconnect(state, deserializedVersion, platformState, metrics);
                 case RESTART, EVENT_STREAM_RECOVERY -> restart(
                         state, deserializedVersion, trigger, platformState, metrics);
@@ -653,7 +663,8 @@ public final class Hedera implements SwirldMain {
     private void onMigrate(
             @NonNull final MerkleHederaState state,
             @Nullable final HederaSoftwareVersion deserializedVersion,
-            @NonNull final InitTrigger trigger) {
+            @NonNull final InitTrigger trigger,
+            @NonNull final Metrics metrics) {
         final var currentVersion = version.getServicesVersion();
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getServicesVersion();
         logger.info(
@@ -669,7 +680,8 @@ public final class Hedera implements SwirldMain {
 
         final var migrator = new OrderedServiceMigrator(servicesRegistry);
         logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
-        migrator.doMigrations(state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo);
+        migrator.doMigrations(
+                state, currentVersion, previousVersion, configProvider.getConfiguration(), networkInfo, metrics);
 
         // Now that migrations are complete, clean up the leftover virtual maps
         MONO_VIRTUAL_MAPS.forEach(vm -> {
@@ -976,10 +988,13 @@ public final class Hedera implements SwirldMain {
     /**
      * Implements the code flow for initializing the state of a new Hedera node with NO SAVED STATE.
      */
-    private void genesis(@NonNull final MerkleHederaState state, @NonNull final PlatformState platformState) {
+    private void genesis(
+            @NonNull final MerkleHederaState state,
+            @NonNull final PlatformState platformState,
+            @NonNull final Metrics metrics) {
         logger.debug("Genesis Initialization");
         // Create all the nodes in the merkle tree for all the services
-        onMigrate(state, null, GENESIS);
+        onMigrate(state, null, GENESIS, metrics);
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, GENESIS, platformState);
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
@@ -1051,7 +1066,7 @@ public final class Hedera implements SwirldMain {
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
         //       the config provider to the migration code and let it get the right version of config as it goes.
-        onMigrate(state, deserializedVersion, trigger);
+        onMigrate(state, deserializedVersion, trigger, metrics);
         if (trigger == EVENT_STREAM_RECOVERY) {
             // (FUTURE) Dump post-migration mod-service state
         }

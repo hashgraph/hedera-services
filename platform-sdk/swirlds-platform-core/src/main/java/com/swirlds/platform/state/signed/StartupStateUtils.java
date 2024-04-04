@@ -198,8 +198,7 @@ public final class StartupStateUtils {
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager)
-            throws SignedStateLoadingException {
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);

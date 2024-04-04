@@ -21,20 +21,21 @@ import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DI
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.threading.locks.AutoClosableLock;
+import com.swirlds.common.threading.locks.internal.AutoLock;
+import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.ModelManualLink;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.internal.HeartbeatScheduler;
 import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -54,8 +55,10 @@ import java.util.concurrent.ForkJoinPool;
  */
 public class StandardWiringModel implements WiringModel {
 
-    private final Metrics metrics;
-    private final Time time;
+    /**
+     * The platform context.
+     */
+    private final PlatformContext platformContext;
 
     /**
      * A map of vertex names to vertices.
@@ -103,17 +106,22 @@ public class StandardWiringModel implements WiringModel {
     private boolean started = false;
 
     /**
+     * Used to protect access to the JVM anchor.
+     */
+    private final AutoClosableLock jvmExitLock = new AutoLock();
+
+    private JvmAnchor anchor;
+
+    /**
      * Constructor.
      *
-     * @param metrics     provides metrics
-     * @param time        provides wall clock time
-     * @param defaultPool the default fork join pool, schedulers not explicitly assigned a pool will use this one
+     * @param platformContext the platform context
+     * @param defaultPool     the default fork join pool, schedulers not explicitly assigned a pool will use this one
      */
     public StandardWiringModel(
-            @NonNull final Metrics metrics, @NonNull final Time time, @NonNull final ForkJoinPool defaultPool) {
+            @NonNull final PlatformContext platformContext, @NonNull final ForkJoinPool defaultPool) {
 
-        this.metrics = Objects.requireNonNull(metrics);
-        this.time = Objects.requireNonNull(time);
+        this.platformContext = Objects.requireNonNull(platformContext);
         this.defaultPool = Objects.requireNonNull(defaultPool);
     }
 
@@ -124,17 +132,7 @@ public class StandardWiringModel implements WiringModel {
     @Override
     public final <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name) {
         throwIfStarted();
-        return new TaskSchedulerBuilder<>(this, name, defaultPool);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public final TaskSchedulerMetricsBuilder metricsBuilder() {
-        throwIfStarted();
-        return new TaskSchedulerMetricsBuilder(metrics, time);
+        return new TaskSchedulerBuilder<>(platformContext, this, name, defaultPool);
     }
 
     /**
@@ -155,6 +153,32 @@ public class StandardWiringModel implements WiringModel {
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
         throwIfStarted();
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void preventJvmExit() {
+        try (final Locked ignored = jvmExitLock.lock()) {
+            if (anchor == null) {
+                anchor = new JvmAnchor();
+                anchor.start();
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void permitJvmExit() {
+        try (final Locked ignored = jvmExitLock.lock()) {
+            if (anchor != null) {
+                anchor.stop();
+                anchor = null;
+            }
+        }
     }
 
     /**
@@ -383,6 +407,8 @@ public class StandardWiringModel implements WiringModel {
         for (final SequentialThreadTaskScheduler<?> threadScheduler : threadSchedulers) {
             threadScheduler.stop();
         }
+
+        permitJvmExit();
     }
 
     /**
@@ -393,7 +419,7 @@ public class StandardWiringModel implements WiringModel {
     @NonNull
     private HeartbeatScheduler getHeartbeatScheduler() {
         if (heartbeatScheduler == null) {
-            heartbeatScheduler = new HeartbeatScheduler(this, time, "heartbeat");
+            heartbeatScheduler = new HeartbeatScheduler(this, platformContext.getTime(), "heartbeat");
         }
         return heartbeatScheduler;
     }
