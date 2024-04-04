@@ -83,6 +83,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void put(@NonNull final Account account) {
         Objects.requireNonNull(account);
+        requireNotDefault(account.accountIdOrThrow());
         accountState().put(account.accountIdOrThrow(), account);
     }
 
@@ -94,6 +95,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void putAlias(@NonNull final Bytes alias, final AccountID accountId) {
         requireNonNull(alias);
+        requireNotDefault(alias);
+        requireNotDefault(accountId);
 
         // The specified account ID must always have an account number, and not an alias. If it doesn't have
         // an account number, or if it has both an account number and alias, then we are going to throw an
@@ -116,6 +119,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void removeAlias(@NonNull final Bytes alias) {
         requireNonNull(alias);
+        // FUTURE: We explicitly set alias to Bytes.EMPTY when deleting Contract. So cannot assert it cannot be default.
+        // Need to validate if that is correct behavior.
         // We really shouldn't ever see an empty alias. But, if we do, we don't want to do any additional work.
         // FUTURE: It might be worth adding a log statement here if we see an empty alias, but maybe not.
         if (alias.length() > 0) {
@@ -239,5 +244,17 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     @NonNull
     public Set<ProtoBytes> modifiedAliasesInState() {
         return aliases().modifiedKeys();
+    }
+
+    public static void requireNotDefault(@NonNull final AccountID accountId) {
+        if (accountId.equals(AccountID.DEFAULT)) {
+            throw new IllegalArgumentException("Account ID cannot be default");
+        }
+    }
+
+    private void requireNotDefault(@NonNull final Bytes alias) {
+        if (alias.equals(Bytes.EMPTY)) {
+            throw new IllegalArgumentException("Account ID cannot be default");
+        }
     }
 }

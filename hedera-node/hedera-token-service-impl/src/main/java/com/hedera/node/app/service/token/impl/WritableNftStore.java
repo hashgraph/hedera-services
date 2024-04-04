@@ -70,6 +70,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      */
     public void put(@NonNull final Nft nft) {
         Objects.requireNonNull(nft);
+        requireNotDefault(nft.nftId());
         nftState.put(nft.nftId(), nft);
     }
 
@@ -120,7 +121,10 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * @param serialNum - the serial number of the NFT to remove
      */
     public void remove(final @NonNull TokenID tokenId, final long serialNum) {
-        remove(NftID.newBuilder().tokenId(tokenId).serialNumber(serialNum).build());
+        final var nftId =
+                NftID.newBuilder().tokenId(tokenId).serialNumber(serialNum).build();
+        requireNotDefault(nftId);
+        remove(nftId);
     }
 
     /**
@@ -135,5 +139,11 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     public Nft getOriginalValue(@NonNull final NftID nftId) {
         requireNonNull(nftId);
         return nftState.getOriginalValue(nftId);
+    }
+
+    private void requireNotDefault(@NonNull final NftID nftId) {
+        if (nftId.equals(NftID.DEFAULT)) {
+            throw new IllegalArgumentException("Nft ID cannot be default");
+        }
     }
 }

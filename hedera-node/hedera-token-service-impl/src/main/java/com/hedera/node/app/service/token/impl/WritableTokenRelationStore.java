@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.token.impl.WritableAccountStore.requireNotDefault;
+import static com.hedera.node.app.service.token.impl.WritableTokenStore.requireNotDefault;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -68,6 +70,8 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * @param tokenRelation - the tokenRelation to be persisted
      */
     public void put(@NonNull final TokenRelation tokenRelation) {
+        requireNotDefault(tokenRelation.accountIdOrThrow());
+        requireNotDefault(tokenRelation.tokenIdOrThrow());
         tokenRelState.put(
                 EntityIDPair.newBuilder()
                         .accountId(tokenRelation.accountId())

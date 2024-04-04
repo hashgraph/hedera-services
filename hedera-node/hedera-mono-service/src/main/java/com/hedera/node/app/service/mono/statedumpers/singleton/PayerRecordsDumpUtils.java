@@ -66,7 +66,9 @@ public class PayerRecordsDumpUtils {
     public static void reportOnTxnRecords(@NonNull Writer writer, @NonNull List<BBMPayerRecord> records) {
         writer.writeln(formatHeader());
         records.stream()
-                .sorted(Comparator.comparing(BBMPayerRecord::consensusTime))
+                .sorted(Comparator.<BBMPayerRecord>comparingLong(
+                                r -> r.consensusTime().getSeconds())
+                        .thenComparingLong(r -> r.consensusTime().getNanos()))
                 .forEach(e -> formatRecords(writer, e));
         writer.writeln("");
     }
@@ -78,7 +80,7 @@ public class PayerRecordsDumpUtils {
     }
 
     @NonNull
-    static String formatHeader() {
+    public static String formatHeader() {
         return payerRecordFieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
     }
 

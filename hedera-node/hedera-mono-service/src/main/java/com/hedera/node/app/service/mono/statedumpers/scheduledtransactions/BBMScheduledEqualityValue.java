@@ -18,13 +18,35 @@ package com.hedera.node.app.service.mono.statedumpers.scheduledtransactions;
 
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Map;
 import java.util.SortedMap;
 
-@SuppressWarnings("java:S6218") // "Equals/hashcode methods should be overridden in records containing array fields"
-record BBMScheduledEqualityValue(long number, SortedMap<String, Long> ids) {
+@SuppressWarnings("java:S6218")
+public // "Equals/hashcode methods should be overridden in records containing array fields"
+record BBMScheduledEqualityValue(SortedMap<String, Long> ids) {
 
     static BBMScheduledEqualityValue fromMono(@NonNull final ScheduleEqualityVirtualValue scheduleVirtualValue) {
-        return new BBMScheduledEqualityValue(
-                scheduleVirtualValue.getKey().getKeyAsLong(), scheduleVirtualValue.getIds());
+        return new BBMScheduledEqualityValue(scheduleVirtualValue.getIds());
+    }
+
+    @Override
+    public String toString() {
+        return "BBMScheduledEqualityValue{" + "ids=" + idsToString(ids) + '}';
+    }
+
+    public static String idsToString(SortedMap<String, Long> ids) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        for (Map.Entry<String, Long> entry : ids.entrySet()) {
+            final var key = entry.getKey();
+            final var value = entry.getValue();
+            sb.append(key).append(": ").append(value).append(", ");
+        }
+        if (!ids.isEmpty()) {
+            // Remove the trailing comma and space
+            sb.setLength(sb.length() - 2);
+        }
+        sb.append("}");
+        return sb.toString();
     }
 }

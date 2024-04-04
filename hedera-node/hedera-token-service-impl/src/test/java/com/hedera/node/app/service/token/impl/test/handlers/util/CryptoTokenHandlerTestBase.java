@@ -363,6 +363,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected Account delegatingSpenderAccount;
     protected Account treasuryAccount;
     protected Account stakingRewardAccount;
+    protected Account tokenReceiverAccount;
+    protected Account hbarReceiverAccount;
 
     /* ---------- Maps for updating both readable and writable stores ---------- */
     private Map<AccountID, Account> accountsMap;
@@ -404,18 +406,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         accountsMap = new HashMap<>();
         accountsMap.put(payerId, account);
         if (prepopulateReceiverIds) {
-            accountsMap.put(
-                    hbarReceiverId,
-                    Account.newBuilder()
-                            .accountId(hbarReceiverId)
-                            .tinybarBalance(Long.MAX_VALUE)
-                            .build());
-            accountsMap.put(
-                    tokenReceiverId,
-                    Account.newBuilder()
-                            .accountId(tokenReceiverId)
-                            .tinybarBalance(Long.MAX_VALUE)
-                            .build());
+            accountsMap.put(hbarReceiverId, hbarReceiverAccount);
+            accountsMap.put(tokenReceiverId, tokenReceiverAccount);
         }
         accountsMap.put(deleteAccountId, deleteAccount);
         accountsMap.put(transferAccountId, transferAccount);
@@ -746,14 +738,18 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                         .build()))
                 .build();
         nonFungibleToken = givenValidNonFungibleToken(true);
-        nftSl1 = givenNft(nftIdSl1);
-        nftSl2 = givenNft(nftIdSl2);
+        nftSl1 = givenNft(nftIdSl1).copyBuilder().ownerNextNftId(nftIdSl2).build();
+        nftSl2 = givenNft(nftIdSl2).copyBuilder().ownerPreviousNftId(nftIdSl1).build();
     }
 
     private void givenValidAccounts() {
         account = givenValidAccountBuilder().stakedNodeId(1L).build();
-        spenderAccount =
-                givenValidAccountBuilder().key(spenderKey).accountId(spenderId).build();
+        spenderAccount = givenValidAccountBuilder()
+                .key(spenderKey)
+                .accountId(spenderId)
+                .headNftSerialNumber(0L)
+                .headNftId((NftID) null)
+                .build();
         ownerAccount = givenValidAccountBuilder()
                 .accountId(ownerId)
                 .cryptoAllowances(AccountCryptoAllowance.newBuilder()
@@ -782,6 +778,18 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         stakingRewardAccount = givenValidAccountBuilder()
                 .accountId(stakingRewardId)
                 .key(EMPTY_KEYLIST)
+                .build();
+        tokenReceiverAccount = givenValidAccountBuilder()
+                .accountId(tokenReceiverId)
+                .tinybarBalance(Long.MAX_VALUE)
+                .headNftId((NftID) null)
+                .headNftSerialNumber(0L)
+                .build();
+        hbarReceiverAccount = givenValidAccountBuilder()
+                .accountId(hbarReceiverId)
+                .tinybarBalance(Long.MAX_VALUE)
+                .headNftId((NftID) null)
+                .headNftSerialNumber(0L)
                 .build();
     }
 
@@ -858,6 +866,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .headTokenId(TokenID.newBuilder().tokenNum(3L).build())
                 .headNftId(NftID.newBuilder()
                         .tokenId(TokenID.newBuilder().tokenNum(2L))
+                        .serialNumber(1L)
                         .build())
                 .headNftSerialNumber(1L)
                 .numberOwnedNfts(2L)

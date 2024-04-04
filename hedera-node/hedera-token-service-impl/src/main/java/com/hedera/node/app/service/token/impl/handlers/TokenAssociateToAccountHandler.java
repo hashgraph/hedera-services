@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -82,7 +83,9 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         requireNonNull(context);
         final var tokenStore = requireNonNull(context.readableStore(ReadableTokenStore.class));
         final var op = context.body().tokenAssociateOrThrow();
-        final var tokenIds = op.tokensOrElse(Collections.emptyList());
+        final var tokenIds = op.tokensOrElse(Collections.emptyList()).stream()
+                .sorted(TOKEN_ID_COMPARATOR)
+                .toList();
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var accountStore = context.writableStore(WritableAccountStore.class);
