@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.system.transaction;
 
-import static com.swirlds.platform.system.events.ConsensusData.NO_CONSENSUS;
-
 import java.time.Instant;
 
 /**

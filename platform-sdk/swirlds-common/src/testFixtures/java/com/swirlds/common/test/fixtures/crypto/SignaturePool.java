@@ -27,7 +27,6 @@ import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
@@ -174,7 +173,7 @@ public class SignaturePool {
         }
 
         final SwirldTransaction tx = transactions.get(nextIdx);
-        tx.setMetadata(null);//TODO maybe not
+        tx.setMetadata(null); // TODO maybe not
         final TransactionSignature transactionSignature = new TransactionSignature(
                 tx.getContents(),
                 transactionSize + PUBLIC_KEY_LENGTH,

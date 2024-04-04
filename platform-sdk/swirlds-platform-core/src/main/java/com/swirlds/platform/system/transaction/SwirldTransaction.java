@@ -45,8 +45,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
     /** The content (payload) of the transaction */
     private byte[] contents;
 
-    public SwirldTransaction() {
-    }
+    public SwirldTransaction() {}
 
     /**
      * Constructs a new transaction with no associated signatures.
@@ -245,9 +244,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .append("contents", contents)
-                .toString();
+        return new ToStringBuilder(this).append("contents", contents).toString();
     }
 
     /**

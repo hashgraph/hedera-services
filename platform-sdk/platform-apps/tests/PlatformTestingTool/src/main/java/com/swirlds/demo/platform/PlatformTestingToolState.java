@@ -1177,7 +1177,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 }
                 totalTransactionSignatureCount.incrementAndGet();
                 final TransactionSignature s = trans.getMetadata();
-                if (s!= null && s.getSignatureStatus() != VerificationStatus.VALID && (!expectingInvalidSignature)) {
+                if (s != null && s.getSignatureStatus() != VerificationStatus.VALID && (!expectingInvalidSignature)) {
                     logger.error(
                             EXCEPTION.getMarker(),
                             "Invalid Transaction Signature [status = {}, signatureType = {}, "
@@ -1200,7 +1200,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                                     s.getContentsDirect(),
                                     s.getMessageOffset(),
                                     s.getMessageOffset() + s.getMessageLength())));
-                } else if (s!= null && s.getSignatureStatus() != VerificationStatus.VALID && expectingInvalidSignature) {
+                } else if (s != null
+                        && s.getSignatureStatus() != VerificationStatus.VALID
+                        && expectingInvalidSignature) {
                     expectedInvalidSignatureCount.incrementAndGet();
                 }
 

@@ -63,9 +63,7 @@ public class DummySystemTransaction extends ConsensusTransactionImpl {
     }
 
     @Override
-    public <T> void setMetadata(final T metadata) {
-
-    }
+    public <T> void setMetadata(final T metadata) {}
 
     @Override
     public byte[] getContents() {

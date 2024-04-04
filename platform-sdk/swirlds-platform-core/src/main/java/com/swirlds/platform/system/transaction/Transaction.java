@@ -16,10 +16,8 @@
 
 package com.swirlds.platform.system.transaction;
 
-import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
-import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
