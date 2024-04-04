@@ -616,7 +616,13 @@ class TipsetEventCreatorTests {
                 }
                 atLeastOneEventCreated = true;
 
-                final NodeId otherId = event.getUnhashedData().getOtherId();
+                final NodeId otherId;
+                if (event.getHashedData().hasOtherParent()) {
+                    otherId = event.getHashedData().getOtherParents().getFirst().getCreator();
+                } else {
+                    otherId = null;
+                }
+
                 if (otherId != null && otherId.equals(zeroWeightNode)) {
                     zeroWeightNodeOtherParentCount++;
                 }
@@ -707,7 +713,13 @@ class TipsetEventCreatorTests {
                 }
                 atLeastOneEventCreated = true;
 
-                final NodeId otherId = event.getUnhashedData().getOtherId();
+                final NodeId otherId;
+                if (event.getHashedData().hasOtherParent()) {
+                    otherId = event.getHashedData().getOtherParents().getFirst().getCreator();
+                } else {
+                    otherId = null;
+                }
+
                 if (otherId != null && otherId.equals(zeroWeightNode)) {
                     zeroWeightNodeOtherParentCount++;
                 }
@@ -885,7 +897,13 @@ class TipsetEventCreatorTests {
         // Create an event from one of the other nodes that was updated in the previous snapshot,
         // but has not been updated in the current snapshot.
 
-        final NodeId otherParentId = eventA2.getUnhashedData().getOtherId();
+        final NodeId otherParentId;
+        if (eventA2.getHashedData().hasOtherParent()) {
+            otherParentId = eventA2.getHashedData().getOtherParents().getFirst().getCreator();
+        } else {
+            otherParentId = null;
+        }
+
         final GossipEvent legalOtherParent = createTestEvent(random, otherParentId, 0, nodeA, 0);
 
         eventCreator.registerEvent(legalOtherParent);

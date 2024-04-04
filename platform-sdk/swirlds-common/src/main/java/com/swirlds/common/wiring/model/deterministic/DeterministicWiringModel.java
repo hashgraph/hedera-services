@@ -69,6 +69,16 @@ public class DeterministicWiringModel extends TraceableWiringModel {
         return null; // TODO
     }
 
+    @Override
+    public void preventJvmExit() {
+        // TODO
+    }
+
+    @Override
+    public void permitJvmExit() {
+        // TODO
+    }
+
     /**
      * {@inheritDoc}
      */

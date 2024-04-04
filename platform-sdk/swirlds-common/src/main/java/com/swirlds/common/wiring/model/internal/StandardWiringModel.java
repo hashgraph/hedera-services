@@ -19,6 +19,9 @@ package com.swirlds.common.wiring.model.internal;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.threading.locks.AutoClosableLock;
+import com.swirlds.common.threading.locks.internal.AutoLock;
+import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.internal.StandardTaskSchedulerBuilder;
@@ -58,6 +61,13 @@ public class StandardWiringModel extends TraceableWiringModel {
      * The default fork join pool, schedulers not explicitly assigned a pool will use this one.
      */
     private final ForkJoinPool defaultPool;
+
+    /**
+     * Used to protect access to the JVM anchor.
+     */
+    private final AutoClosableLock jvmExitLock = new AutoLock();
+
+    private JvmAnchor anchor;
 
     /**
      * Constructor.
@@ -100,6 +110,28 @@ public class StandardWiringModel extends TraceableWiringModel {
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
         throwIfStarted();
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
+    }
+
+    public void preventJvmExit() {
+        try (final Locked ignored = jvmExitLock.lock()) {
+            if (anchor == null) {
+                anchor = new JvmAnchor();
+                anchor.start();
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void permitJvmExit() {
+        try (final Locked ignored = jvmExitLock.lock()) {
+            if (anchor != null) {
+                anchor.stop();
+                anchor = null;
+            }
+        }
     }
 
     /**
@@ -149,6 +181,8 @@ public class StandardWiringModel extends TraceableWiringModel {
         for (final SequentialThreadTaskScheduler<?> threadScheduler : threadSchedulers) {
             threadScheduler.stop();
         }
+
+        permitJvmExit();
     }
 
     /**

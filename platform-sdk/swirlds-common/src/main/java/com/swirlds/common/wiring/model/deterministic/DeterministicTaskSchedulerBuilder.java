@@ -27,6 +27,7 @@ import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.internal.AbstractTaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.internal.DirectTaskScheduler;
+import com.swirlds.common.wiring.schedulers.internal.NoOpTaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
@@ -84,6 +85,7 @@ public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedule
                             squelchingEnabled,
                             busyFractionTimer,
                             type == DIRECT_THREADSAFE);
+                    case NO_OP -> new NoOpTaskScheduler<>(model, name, type, flushingEnabled, squelchingEnabled);
                 };
 
         model.registerScheduler(scheduler, hyperlink);

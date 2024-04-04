@@ -34,6 +34,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.internal.ConcurrentTaskScheduler;
 import com.swirlds.common.wiring.schedulers.internal.DirectTaskScheduler;
+import com.swirlds.common.wiring.schedulers.internal.NoOpTaskScheduler;
 import com.swirlds.common.wiring.schedulers.internal.SequentialTaskScheduler;
 import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -227,6 +228,7 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
                             squelchingEnabled,
                             busyFractionTimer,
                             type == DIRECT_THREADSAFE);
+                    case NO_OP -> new NoOpTaskScheduler<>(model, name, type, flushingEnabled, squelchingEnabled);
                 };
 
         model.registerScheduler(scheduler, hyperlink);

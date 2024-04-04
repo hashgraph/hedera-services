@@ -92,7 +92,7 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
             this.squelcher = new ThrowingSquelcher();
         }
 
-        primaryOutputWire = new StandardOutputWire<>(model, name);
+        primaryOutputWire = buildPrimaryOutputWire(model, name);
         this.insertionIsBlocking = insertionIsBlocking;
     }
 
@@ -105,8 +105,21 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
      * @return the input wire
      */
     @NonNull
-    public final <I> BindableInputWire<I, OUT> buildInputWire(@NonNull final String name) {
+    public <I> BindableInputWire<I, OUT> buildInputWire(@NonNull final String name) {
         return new BindableInputWire<>(model, this, name);
+    }
+
+    /**
+     * Build the primary output wire for this scheduler.
+     *
+     * @param model the wiring model that contains this scheduler
+     * @param name  the name of this scheduler
+     * @return the primary output wire
+     */
+    @NonNull
+    protected StandardOutputWire<OUT> buildPrimaryOutputWire(
+            @NonNull final TraceableWiringModel model, @NonNull final String name) {
+        return new StandardOutputWire<>(model, name);
     }
 
     /**
