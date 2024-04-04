@@ -21,6 +21,7 @@ import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SE
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
+import com.swirlds.common.wiring.schedulers.builders.internal.StandardTaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.internal.HeartbeatScheduler;
 import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -78,7 +79,7 @@ public class StandardWiringModel extends TraceableWiringModel {
     @Override
     public final <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name) {
         throwIfStarted();
-        return new TaskSchedulerBuilder<>(platformContext, this, name, defaultPool);
+        return new StandardTaskSchedulerBuilder<>(platformContext, this, name, defaultPool);
     }
 
     /**

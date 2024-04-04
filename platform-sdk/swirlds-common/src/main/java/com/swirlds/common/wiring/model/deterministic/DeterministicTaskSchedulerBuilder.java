@@ -18,11 +18,12 @@ package com.swirlds.common.wiring.model.deterministic;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
+import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.internal.AbstractTaskSchedulerBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ForkJoinPool;
 
-public class DeterministicTaskSchedulerBuilder<OUT> extends TaskSchedulerBuilder<OUT> {
+public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuilder<OUT> {
 
     /**
      * Constructor.
@@ -39,5 +40,14 @@ public class DeterministicTaskSchedulerBuilder<OUT> extends TaskSchedulerBuilder
             @NonNull final String name,
             @NonNull final ForkJoinPool defaultPool) {
         super(platformContext, model, name, defaultPool);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public TaskScheduler<OUT> build() {
+        return null;
     }
 }
