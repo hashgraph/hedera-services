@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -101,7 +102,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.cryptoUpdateAccountOrThrow();
-        validateTruePreCheck(op.hasAccountIDToUpdate(), INVALID_ACCOUNT_ID);
+        validateTruePreCheck(op.hasAccountIDToUpdate(), ACCOUNT_ID_DOES_NOT_EXIST);
         validateFalsePreCheck(
                 op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT),
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
@@ -129,7 +130,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         // 4. Including above 3 conditions, if the target account is 0.0.2, new key must sign the transaction
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         if (targetAccountKeyMustSign) {
-            context.requireKeyOrThrow(updateAccountId, INVALID_ACCOUNT_ID);
+            context.requireKeyOrThrow(updateAccountId, ACCOUNT_ID_DOES_NOT_EXIST);
         }
         if (newAccountKeyMustSign && op.hasKey()) {
             context.requireKeyOrThrow(op.key(), INVALID_ADMIN_KEY);
