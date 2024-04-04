@@ -119,7 +119,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void removeAlias(@NonNull final Bytes alias) {
         requireNonNull(alias);
-        requireNotDefault(alias);
+        // FUTURE: We explicitly set alias to Bytes.EMPTY when deleting Contract. So cannot assert it cannot be default.
+        // Need to validate if that is correct behavior.
         // We really shouldn't ever see an empty alias. But, if we do, we don't want to do any additional work.
         // FUTURE: It might be worth adding a log statement here if we see an empty alias, but maybe not.
         if (alias.length() > 0) {
