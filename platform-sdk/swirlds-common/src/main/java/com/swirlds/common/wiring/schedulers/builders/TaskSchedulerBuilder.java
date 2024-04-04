@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.schedulers.builders;
 
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
@@ -34,6 +35,7 @@ import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.internal.ConcurrentTaskScheduler;
 import com.swirlds.common.wiring.schedulers.internal.DirectTaskScheduler;
+import com.swirlds.common.wiring.schedulers.internal.NoOpTaskScheduler;
 import com.swirlds.common.wiring.schedulers.internal.SequentialTaskScheduler;
 import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -362,7 +364,9 @@ public class TaskSchedulerBuilder<O> {
      */
     @NonNull
     private Counters buildCounters() {
-        final ObjectCounter innerCounter;
+        if (type == NO_OP) {
+            return new Counters(NoOpObjectCounter.getInstance(), NoOpObjectCounter.getInstance());
+        }
 
         // If we need to enforce a maximum capacity, we have no choice but to use a backpressure object counter.
         //
@@ -375,6 +379,7 @@ public class TaskSchedulerBuilder<O> {
         // In all other cases, better to use a no-op counter. Counters have overhead, and if we don't need one
         // then we shouldn't use one.
 
+        final ObjectCounter innerCounter;
         if (unhandledTaskCapacity != UNLIMITED_CAPACITY && type != DIRECT && type != DIRECT_THREADSAFE) {
             innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration);
         } else if (unhandledTaskMetricEnabled || flushingEnabled) {
@@ -393,7 +398,7 @@ public class TaskSchedulerBuilder<O> {
      */
     @NonNull
     private FractionalTimer buildBusyTimer() {
-        if (!busyFractionMetricEnabled) {
+        if (!busyFractionMetricEnabled || type == NO_OP) {
             return NoOpFractionalTimer.getInstance();
         }
         if (type == TaskSchedulerType.CONCURRENT) {
@@ -409,6 +414,10 @@ public class TaskSchedulerBuilder<O> {
      */
     private void registerMetrics(
             @Nullable final ObjectCounter unhandledTaskCounter, @NonNull final FractionalTimer busyFractionTimer) {
+
+        if (type == NO_OP) {
+            return;
+        }
 
         if (unhandledTaskMetricEnabled) {
             Objects.requireNonNull(unhandledTaskCounter);
@@ -495,6 +504,7 @@ public class TaskSchedulerBuilder<O> {
                             squelchingEnabled,
                             busyFractionTimer,
                             true);
+                    case NO_OP -> new NoOpTaskScheduler<>(model, name, type, flushingEnabled, squelchingEnabled);
                 };
 
         model.registerScheduler(scheduler, hyperlink);

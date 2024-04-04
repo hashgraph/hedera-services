@@ -62,15 +62,15 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
-import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.DefaultAppNotifier;
-import com.swirlds.platform.components.DefaultConsensusEngine;
 import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
+import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -81,6 +81,7 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
+import com.swirlds.platform.event.linking.GossipLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
@@ -106,8 +107,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
-import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -171,7 +170,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -193,12 +191,6 @@ public class SwirldsPlatform implements Platform {
      * Hashgraph Event graph. Used for gossiping.
      */
     private final Shadowgraph shadowGraph;
-
-    /**
-     * the object used to calculate consensus. it is volatile because the whole object is replaced when reading a state
-     * from disk or getting it through reconnect
-     */
-    private final AtomicReference<Consensus> consensusRef = new AtomicReference<>();
 
     /**
      * the current nodes in the network and their information
@@ -391,12 +383,10 @@ public class SwirldsPlatform implements Platform {
 
         registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
-        final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(selfId, metrics);
-
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        shadowGraph = new Shadowgraph(platformContext, currentAddressBook);
+        shadowGraph = new Shadowgraph(platformContext, currentAddressBook, blocks.intakeEventCounter());
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
@@ -581,9 +571,9 @@ public class SwirldsPlatform implements Platform {
         final PcesSequencer sequencer = new DefaultPcesSequencer();
 
         final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, blocks.intakeEventCounter());
-        final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, blocks.intakeEventCounter());
-        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(
-                platformContext, selfId, consensusRef::get, shadowGraph, blocks.intakeEventCounter(), e -> {});
+        final InOrderLinker inOrderLinker = new GossipLinker(platformContext, blocks.intakeEventCounter());
+
+        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, currentAddressBook, selfId);
 
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
@@ -617,12 +607,8 @@ public class SwirldsPlatform implements Platform {
 
         final AppNotifier appNotifier = new DefaultAppNotifier(notificationEngine);
 
-        final PlatformPublisher publisher;
-        if (preconsensusEventConsumer != null || snapshotOverrideConsumer != null) {
-            publisher = new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
-        } else {
-            publisher = null;
-        }
+        final PlatformPublisher publisher =
+                new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
 
         platformWiring.bind(
                 builder.buildEventHasher(),
@@ -709,8 +695,6 @@ public class SwirldsPlatform implements Platform {
                 this::clearAllPipelines,
                 blocks.intakeEventCounter(),
                 () -> emergencyState.getState("emergency reconnect")) {};
-
-        consensusRef.set(new ConsensusImpl(platformContext, consensusMetrics, getAddressBook()));
 
         latestImmutableStateNexus.setState(initialState.reserve("set latest immutable to initial state"));
 
