@@ -110,7 +110,7 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
      * @param newLastLeafPath
      * 		the last leaf path after reconnect completes
      */
-    public void setPathInformation(final long newFirstLeafPath, final long newLastLeafPath) {
+    public synchronized void setPathInformation(final long newFirstLeafPath, final long newLastLeafPath) {
         this.newLastLeafPath = newLastLeafPath;
 
         if (oldLastLeafPath > 0) {
