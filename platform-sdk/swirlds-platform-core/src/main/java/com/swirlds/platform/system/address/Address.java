@@ -67,7 +67,6 @@ public class Address implements SelfSerializable {
         public static final int X509_CERT_SUPPORT = 6;
     }
 
-    private static final int MAX_IP_LENGTH = 16;
     private static final int STRING_MAX_BYTES = 512;
 
     /** The serialization version of this class, defaulting to most recent version.  Deserialization will override. */
@@ -579,9 +578,9 @@ public class Address implements SelfSerializable {
         selfName = inStream.readNormalisedString(STRING_MAX_BYTES);
         weight = inStream.readLong();
 
-        hostnameInternal = inStream.readNormalisedString(MAX_IP_LENGTH);
+        hostnameInternal = inStream.readNormalisedString(STRING_MAX_BYTES);
         portInternal = inStream.readInt();
-        hostnameExternal = inStream.readNormalisedString(MAX_IP_LENGTH);
+        hostnameExternal = inStream.readNormalisedString(STRING_MAX_BYTES);
         portExternal = inStream.readInt();
 
         if (version < ClassVersion.X509_CERT_SUPPORT) {
