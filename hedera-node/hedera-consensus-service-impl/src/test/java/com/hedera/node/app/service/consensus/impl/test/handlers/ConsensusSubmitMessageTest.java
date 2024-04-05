@@ -64,6 +64,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TxnUtils;
+import com.swirlds.metrics.api.Metrics;
 import java.time.Instant;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,7 +108,7 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         given(handleContext.readableStore(ReadableTopicStore.class)).willReturn(readableStore);
-        writableStore = new WritableTopicStore(writableStates);
+        writableStore = new WritableTopicStore(writableStates, config, mock(Metrics.class));
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         given(handleContext.configuration()).willReturn(config);
