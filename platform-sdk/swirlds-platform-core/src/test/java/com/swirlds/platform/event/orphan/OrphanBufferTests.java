@@ -158,7 +158,6 @@ class OrphanBufferTests {
                 .thenReturn(otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent));
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
-        when(unhashedData.getOtherId()).thenReturn(otherParent.getCreator());
 
         final GossipEvent event = mock(GossipEvent.class);
         when(event.getHashedData()).thenReturn(hashedData);

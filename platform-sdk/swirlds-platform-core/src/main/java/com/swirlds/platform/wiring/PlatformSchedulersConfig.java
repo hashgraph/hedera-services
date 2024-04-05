@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
@@ -34,12 +35,8 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          negative number.
  * @param eventHasherUnhandledCapacity                      number of unhandled tasks allowed in the event hasher
  *                                                          scheduler
- * @param internalEventValidatorSchedulerType               the internal event validator scheduler type
- * @param internalEventValidatorUnhandledCapacity           number of unhandled events allowed in the internal event
- *                                                          validator scheduler
- * @param eventDeduplicatorSchedulerType                    the event deduplicator scheduler type
- * @param eventDeduplicatorUnhandledCapacity                number of unhandled tasks allowed in the event deduplicator
- *                                                          scheduler
+ * @param internalEventValidator                            configuration for the internal event validator scheduler
+ * @param eventDeduplicator                                 configuration for the event deduplicator scheduler
  * @param eventSignatureValidatorSchedulerType              the event signature validator scheduler type
  * @param eventSignatureValidatorUnhandledCapacity          number of unhandled tasks allowed in the event signature
  *                                                          validator scheduler
@@ -90,16 +87,17 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          notifier
  * @param stateHasherSchedulerType                          the state hasher scheduler type
  * @param stateHasherUnhandledCapacity                      number of unhandled tasks allowed for the state hasher
+ * @param platformPublisher                                 configuration for the platform publisher scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
         @ConfigProperty(defaultValue = "0") int defaultPoolConstant,
         @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType internalEventValidatorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int internalEventValidatorUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventDeduplicatorSchedulerType,
-        @ConfigProperty(defaultValue = "500") int eventDeduplicatorUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration internalEventValidator,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration eventDeduplicator,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventSignatureValidatorSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventSignatureValidatorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType orphanBufferSchedulerType,
@@ -134,4 +132,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "100") int hashLoggerUnhandledTaskCapacity,
         @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
-        @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity) {}
+        @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration platformPublisher) {}

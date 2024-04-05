@@ -72,7 +72,7 @@ public class ContractBytecodesDumpUtils {
         final var totalContractsRegisteredWithAccounts = contractsWithBytecode.registeredContractsCount();
         final var totalContractsPresentInFileStore =
                 contractsWithBytecode.contracts().size();
-        int totalUniqueContractsPresentInFileStore = totalContractsPresentInFileStore;
+        int totalUniqueContractsPresentInFileStore;
 
         r = uniqifyContracts(contractsWithBytecode, zeroLengthContracts);
         contractsWithBytecode = r.getLeft();

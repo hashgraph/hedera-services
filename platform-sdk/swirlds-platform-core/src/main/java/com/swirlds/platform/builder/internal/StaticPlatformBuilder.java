@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.builder.internal;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThread;
 import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
 import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
@@ -28,6 +29,7 @@ import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.NodeStartPayload;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.CryptoMetrics;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -39,9 +41,7 @@ import org.apache.logging.log4j.Logger;
  * Static setup code for a platform. Logic in this class should gradually disappear as we move away from the use of
  * static stateful objects.
  */
-final class StaticPlatformBuilder {
-
-    public static final String LOG4J_FILE_NAME = "log4j2.xml";
+public final class StaticPlatformBuilder {
 
     private static final Logger logger = LogManager.getLogger(StaticPlatformBuilder.class);
 
@@ -70,7 +70,7 @@ final class StaticPlatformBuilder {
      *
      * @param configuration the configuration for this node
      */
-    static void setupGlobalMetrics(@NonNull final Configuration configuration) {
+    public static void setupGlobalMetrics(@NonNull final Configuration configuration) {
         if (metricsProvider == null) {
             metricsProvider = new DefaultMetricsProvider(configuration);
             globalMetrics = metricsProvider.createGlobalMetrics();
@@ -85,7 +85,7 @@ final class StaticPlatformBuilder {
      * @param configuration the configuration for this node
      * @return true if this is the first time this method has been called, false otherwise
      */
-    static boolean doStaticSetup(@NonNull final Configuration configuration, @Nullable final Path configPath) {
+    public static boolean doStaticSetup(@NonNull final Configuration configuration, @Nullable final Path configPath) {
 
         if (staticSetupCompleted) {
             // Only setup static utilities once
@@ -126,7 +126,7 @@ final class StaticPlatformBuilder {
      * Get the static metrics provider.
      */
     @NonNull
-    static DefaultMetricsProvider getMetricsProvider() {
+    public static DefaultMetricsProvider getMetricsProvider() {
         if (metricsProvider == null) {
             throw new IllegalStateException("Metrics provider has not been initialized");
         }
@@ -137,7 +137,7 @@ final class StaticPlatformBuilder {
      * Get the static global metrics.
      */
     @NonNull
-    static Metrics getGlobalMetrics() {
+    public static Metrics getGlobalMetrics() {
         if (globalMetrics == null) {
             throw new IllegalStateException("Global metrics have not been initialized");
         }

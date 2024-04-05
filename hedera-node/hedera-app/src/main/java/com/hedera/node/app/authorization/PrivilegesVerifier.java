@@ -145,6 +145,10 @@ public class PrivilegesVerifier {
         return accountID.accountNumOrThrow() == accountsConfig.systemAdmin();
     }
 
+    private boolean hasSoftwareUpdatePrivilege(@NonNull final AccountID accountID) {
+        return accountID.accountNumOrThrow() == accountsConfig.softwareUpdateAdmin() || isSuperUser(accountID);
+    }
+
     private boolean hasFreezePrivilege(@NonNull final AccountID accountID) {
         return accountID.accountNumOrThrow() == accountsConfig.freezeAdmin() || isSuperUser(accountID);
     }
@@ -215,7 +219,7 @@ public class PrivilegesVerifier {
             return hasExchangeRatePrivilige(accountID) ? AUTHORIZED : UNAUTHORIZED;
         } else if (filesConfig.softwareUpdateRange().left() <= entityNum
                 && entityNum <= filesConfig.softwareUpdateRange().right()) {
-            return hasFreezePrivilege(accountID) ? AUTHORIZED : UNAUTHORIZED;
+            return hasSoftwareUpdatePrivilege(accountID) ? AUTHORIZED : UNAUTHORIZED;
         } else if (entityNum == filesConfig.throttleDefinitions()) {
             return hasAddressBookPrivilege(accountID) || hasExchangeRatePrivilige(accountID)
                     ? AUTHORIZED

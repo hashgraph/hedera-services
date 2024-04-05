@@ -53,7 +53,6 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -398,7 +397,9 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                         NEGATIVE_ASSOCIATIONS_CONTRACT,
                                         "associateTokensWithEmptyTokensArray",
                                         accountAddress.get())
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                // match mono behaviour, this is a successful call, but it should not associate any
+                                // tokens
+                                .hasKnownStatus(SUCCESS)
                                 .gas(GAS_TO_OFFER)
                                 .signingWith(ACCOUNT)
                                 .via(nonExistingTokenArray)
@@ -447,9 +448,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_ACCOUNT_ID)),
                         childRecordsCheck(
-                                nonExistingTokenArray,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(REVERTED_SUCCESS)),
+                                nonExistingTokenArray, SUCCESS, recordWith().status(SUCCESS)),
                         childRecordsCheck(
                                 someNonExistingTokenArray, SUCCESS, recordWith().status(SUCCESS)),
                         childRecordsCheck(
