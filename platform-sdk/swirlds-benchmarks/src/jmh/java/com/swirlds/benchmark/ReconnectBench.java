@@ -72,11 +72,25 @@ public class ReconnectBench extends VirtualMapBaseBench {
     public long delayStorageMicroseconds;
 
     /**
+     * A percentage fuzz range for the delayStorageMicroseconds values,
+     * e.g. 0.15 for a -15%..+15% range around the value.
+     */
+    @Param({"0.15"})
+    public double delayStorageFuzzRangePercent;
+
+    /**
      * Emulated delay for serializeMessage() calls in both Teaching- and Learning-Synchronizers,
      * or zero for no delay. This emulates slow network I/O when sending data.
      */
     @Param({"0"})
     public long delayNetworkMicroseconds;
+
+    /**
+     * A percentage fuzz range for the delayNetworkMicroseconds values,
+     * e.g. 0.15 for a -15%..+15% range around the value.
+     */
+    @Param({"0.15"})
+    public double delayNetworkFuzzRangePercent;
 
     private VirtualMap<BenchmarkKey, BenchmarkValue> teacherMap;
     private VirtualMap<BenchmarkKey, BenchmarkValue> learnerMap;
@@ -214,6 +228,13 @@ public class ReconnectBench extends VirtualMapBaseBench {
     @Benchmark
     public void reconnect() throws Exception {
         node = MerkleBenchmarkUtils.hashAndTestSynchronization(
-                learnerTree, teacherTree, delayStorageMicroseconds, delayNetworkMicroseconds, configuration);
+                learnerTree,
+                teacherTree,
+                randomSeed,
+                delayStorageMicroseconds,
+                delayStorageFuzzRangePercent,
+                delayNetworkMicroseconds,
+                delayNetworkFuzzRangePercent,
+                configuration);
     }
 }

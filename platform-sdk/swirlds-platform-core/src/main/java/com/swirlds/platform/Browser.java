@@ -19,9 +19,9 @@ package com.swirlds.platform;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
-import static com.swirlds.platform.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
-import static com.swirlds.platform.StaticPlatformBuilder.LOG4J_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
@@ -40,6 +40,7 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.GuiEventStorage;
@@ -206,7 +207,7 @@ public class Browser {
                 configBuilder.withConfigDataType(configType);
             }
 
-            final PlatformBuilder builder = new PlatformBuilder(
+            final PlatformBuilder builder = PlatformBuilder.create(
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     appMain.getSoftwareVersion(),

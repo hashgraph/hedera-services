@@ -132,6 +132,11 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     }
 
     @Override
+    public boolean isScheduleDispatch() {
+        return false;
+    }
+
+    @Override
     public void markMigrationRecordsStreamed() {
         blockRecordManager.markMigrationRecordsStreamed();
     }

@@ -22,6 +22,7 @@ import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("accounts")
 public record AccountsConfig(
+        @ConfigProperty(defaultValue = "54") @NetworkProperty long softwareUpdateAdmin,
         @ConfigProperty(defaultValue = "55") @NetworkProperty long addressBookAdmin,
         @ConfigProperty(defaultValue = "57") @NetworkProperty long exchangeRatesAdmin,
         @ConfigProperty(defaultValue = "56") @NetworkProperty long feeSchedulesAdmin,

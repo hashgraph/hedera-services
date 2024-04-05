@@ -59,4 +59,13 @@ public interface FinalizeContext extends ChildFinalizeContext {
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer);
+
+    /**
+     * Whether this context represents a {@code SCHEDULED} dispatch, which should defer
+     * updating stake metadata for modified accounts until the triggering {@code SCHEDULE_SIGN}
+     * or {@code SCHEDULE_CREATE} transaction is finalized.
+     *
+     * @return {@code true} if this context represents a scheduled dispatch; otherwise {@code false}
+     */
+    boolean isScheduleDispatch();
 }
