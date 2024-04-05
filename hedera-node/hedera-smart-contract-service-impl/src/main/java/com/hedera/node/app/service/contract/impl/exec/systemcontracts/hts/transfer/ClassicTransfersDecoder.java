@@ -158,7 +158,7 @@ public class ClassicTransfersDecoder {
         final long[] serialNo = call.get(3);
         // Match mono behaviour
         if (from.length == 0) {
-            return bodyOf(tokenTransfers(TokenTransferList.DEFAULT));
+            return bodyOf(tokenTransfers(TokenTransferList.newBuilder().build()));
         }
 
         if (from.length != to.length || from.length != serialNo.length) {
@@ -538,7 +538,7 @@ public class ClassicTransfersDecoder {
             @NonNull final AddressIdConverter addressIdConverter) {
         final var tokenId = ConversionUtils.asTokenId(token);
         // Match mono behaviour
-        if (party.length == 0) return TokenTransferList.DEFAULT;
+        if (party.length == 0) return TokenTransferList.newBuilder().build();
 
         if (party.length != amount.length) {
             throw new IllegalArgumentException(
