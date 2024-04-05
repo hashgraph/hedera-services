@@ -45,7 +45,6 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NOD
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
@@ -402,7 +401,7 @@ public class HandleWorkflow {
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
             final var legacyFeeCalcNetworkVpt =
-                    transactionInfo.signatureMap().sigPairOrElse(emptyList()).size();
+                    transactionInfo.signatureMap().sigPair().size();
             final var verifier = new DefaultKeyVerifier(
                     legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.getVerificationResults());
             final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
@@ -685,7 +684,7 @@ public class HandleWorkflow {
         return switch (function) {
             case CRYPTO_TRANSFER -> zeroAdjustIdsFrom(body.cryptoTransferOrThrow()
                     .transfersOrElse(TransferList.DEFAULT)
-                    .accountAmountsOrElse(emptyList()));
+                    .accountAmounts());
             case ETHEREUM_TRANSACTION, CONTRACT_CALL, CONTRACT_CREATE -> recordBuilder.explicitRewardSituationIds();
             default -> emptySet();
         };

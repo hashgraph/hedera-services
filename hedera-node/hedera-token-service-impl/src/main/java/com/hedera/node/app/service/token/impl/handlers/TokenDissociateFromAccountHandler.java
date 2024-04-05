@@ -104,7 +104,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         final var expiryValidator = context.expiryValidator();
         final var txn = context.body();
         final var op = txn.tokenDissociateOrThrow();
-        final var tokenIds = op.tokensOrThrow();
+        final var tokenIds = op.tokens();
         final var validated = validateSemantics(
                 op.accountOrThrow(), tokenIds, accountStore, tokenStore, tokenRelStore, expiryValidator);
 
@@ -207,7 +207,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
 
         validateTruePreCheck(op.hasAccount(), INVALID_ACCOUNT_ID);
 
-        validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokensOrThrow()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+        validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokens()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
     }
 
     /**

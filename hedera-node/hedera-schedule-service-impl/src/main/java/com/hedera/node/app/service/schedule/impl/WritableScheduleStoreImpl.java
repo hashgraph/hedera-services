@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
-import static java.util.Collections.emptyList;
-
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -121,8 +119,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
         schedulesByIdMutable.put(scheduleToAdd.scheduleIdOrThrow(), scheduleToAdd);
         final ProtoBytes newHash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(scheduleToAdd));
         final ScheduleList inStateEquality = schedulesByEqualityMutable.get(newHash);
-        List<Schedule> byEquality =
-                inStateEquality != null ? new LinkedList<>(inStateEquality.schedulesOrElse(emptyList())) : null;
+        List<Schedule> byEquality = inStateEquality != null ? new LinkedList<>(inStateEquality.schedules()) : null;
         if (byEquality == null) {
             byEquality = new LinkedList<>();
         }

@@ -31,7 +31,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -56,7 +55,7 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
         final Map<AccountID, Long> netHbarTransfers = new LinkedHashMap<>();
         // Allowance transfers is only for negative amounts, it is used to reduce allowance for the spender
         final Map<AccountID, Long> allowanceTransfers = new LinkedHashMap<>();
-        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(Collections.emptyList())) {
+        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
             netHbarTransfers.merge(aa.accountID(), aa.amount(), Long::sum);
             if (aa.isApproval() && aa.amount() < 0) {
                 allowanceTransfers.merge(aa.accountID(), aa.amount(), Long::sum);
@@ -87,7 +86,7 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
                     accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
             final var accountCopy = ownerAccount.copyBuilder();
 
-            final var cryptoAllowances = new ArrayList<>(ownerAccount.cryptoAllowancesOrElse(Collections.emptyList()));
+            final var cryptoAllowances = new ArrayList<>(ownerAccount.cryptoAllowances());
             var haveSpenderAllowance = false;
 
             for (int i = 0; i < cryptoAllowances.size(); i++) {

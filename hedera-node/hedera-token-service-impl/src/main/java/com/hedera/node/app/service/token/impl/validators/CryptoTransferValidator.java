@@ -33,7 +33,6 @@ import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -67,7 +66,7 @@ public class CryptoTransferValidator {
      * @throws PreCheckException if any of the checks fail
      */
     public void pureChecks(@NonNull final CryptoTransferTransactionBody op) throws PreCheckException {
-        final var acctAmounts = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
+        final var acctAmounts = op.transfersOrElse(TransferList.DEFAULT).accountAmounts();
         final var uniqueAcctIds = new HashSet<Pair<AccountID, Boolean>>();
         long netBalance = 0;
         // Validate hbar transfers
@@ -81,7 +80,7 @@ public class CryptoTransferValidator {
         validateFalsePreCheck(uniqueAcctIds.size() < acctAmounts.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
         // Validate token transfers
-        final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
+        final var tokenTransfers = op.tokenTransfers();
         final var nftIds = new HashSet<Long>();
         final var tokenIds = new HashSet<TokenID>();
         for (final TokenTransferList tokenTransfer : tokenTransfers) {
@@ -91,7 +90,7 @@ public class CryptoTransferValidator {
 
             // Validate the fungible transfers
             final var uniqueTokenAcctIds = new HashSet<Pair<AccountID, Boolean>>();
-            final var fungibleTransfers = tokenTransfer.transfersOrElse(emptyList());
+            final var fungibleTransfers = tokenTransfer.transfers();
             long netTokenBalance = 0;
             boolean nonZeroFungibleValueFound = false;
             for (final AccountAmount acctAmount : fungibleTransfers) {
@@ -107,7 +106,7 @@ public class CryptoTransferValidator {
             validateTruePreCheck(netTokenBalance == 0, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
             // Validate the nft transfers
-            final var nftTransfers = tokenTransfer.nftTransfersOrElse(emptyList());
+            final var nftTransfers = tokenTransfer.nftTransfers();
             nftIds.clear();
             for (final NftTransfer nftTransfer : nftTransfers) {
                 validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
@@ -142,7 +141,7 @@ public class CryptoTransferValidator {
         final var transfers = op.transfersOrElse(TransferList.DEFAULT);
 
         // Validate that there aren't too many hbar transfers
-        final var hbarTransfers = transfers.accountAmountsOrElse(emptyList());
+        final var hbarTransfers = transfers.accountAmounts();
         validateTrue(hbarTransfers.size() <= ledgerConfig.transfersMaxLen(), TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
         // Validate that allowances are enabled, or that no hbar transfers are an allowance transfer
@@ -150,18 +149,18 @@ public class CryptoTransferValidator {
         validateTrue(allowancesEnabled || !isTransferWithApproval(hbarTransfers), NOT_SUPPORTED);
 
         // The loop below will validate the counts for token transfers (both fungible and non-fungible)
-        final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
+        final var tokenTransfers = op.tokenTransfers();
         var totalFungibleTransfers = 0;
         var totalNftTransfers = 0;
         final var nftsEnabled = tokensConfig.nftsAreEnabled();
         for (final TokenTransferList tokenTransfer : tokenTransfers) {
             // Validate the fungible token transfer(s) (if present)
-            final var fungibleTransfers = tokenTransfer.transfersOrElse(emptyList());
+            final var fungibleTransfers = tokenTransfer.transfers();
             validateTrue(allowancesEnabled || !isTransferWithApproval(fungibleTransfers), NOT_SUPPORTED);
             totalFungibleTransfers += fungibleTransfers.size();
 
             // Validate the nft transfer(s) (if present)
-            final var nftTransfers = tokenTransfer.nftTransfersOrElse(emptyList());
+            final var nftTransfers = tokenTransfer.nftTransfers();
             validateTrue(nftsEnabled || nftTransfers.isEmpty(), NOT_SUPPORTED);
             validateTrue(allowancesEnabled || !isNftTransferWithApproval(nftTransfers), NOT_SUPPORTED);
             totalNftTransfers += nftTransfers.size();

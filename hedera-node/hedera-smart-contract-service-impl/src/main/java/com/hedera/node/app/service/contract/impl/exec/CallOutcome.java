@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -59,8 +58,7 @@ public record CallOutcome(
     }
 
     public boolean hasStateChanges() {
-        return stateChanges != null
-                && !stateChanges.contractStateChangesOrElse(emptyList()).isEmpty();
+        return stateChanges != null && !stateChanges.contractStateChanges().isEmpty();
     }
 
     public static CallOutcome fromResultsWithMaybeSidecars(

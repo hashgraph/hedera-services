@@ -53,7 +53,6 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -83,9 +82,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         requireNonNull(context);
         final var tokenStore = requireNonNull(context.readableStore(ReadableTokenStore.class));
         final var op = context.body().tokenAssociateOrThrow();
-        final var tokenIds = op.tokensOrElse(Collections.emptyList()).stream()
-                .sorted(TOKEN_ID_COMPARATOR)
-                .toList();
+        final var tokenIds = op.tokens().stream().sorted(TOKEN_ID_COMPARATOR).toList();
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var accountStore = context.writableStore(WritableAccountStore.class);
@@ -106,7 +103,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
             throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
         }
 
-        if (TokenListChecks.repeatsItself(op.tokensOrThrow())) {
+        if (TokenListChecks.repeatsItself(op.tokens())) {
             throw new PreCheckException(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
         }
     }
