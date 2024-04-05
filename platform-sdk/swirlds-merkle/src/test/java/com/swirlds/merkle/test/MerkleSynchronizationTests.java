@@ -32,11 +32,9 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.utility.MerkleUtils;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyCustomReconnectRoot;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
@@ -59,19 +57,25 @@ import org.junit.jupiter.api.Timeout;
 @Tag(TIMING_SENSITIVE)
 @DisplayName("Merkle Synchronization Tests")
 public class MerkleSynchronizationTests {
-    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+
+    private final Configuration configuration = new TestConfigBuilder()
+            .withValue("reconnect.active", "true")
+            .withValue("reconnect.reconnectWindowSeconds", "0")
+            .withValue("reconnect.fallenBehindThreshold", "0")
+            // This is important! A low value will cause a failed reconnect to finish more quicly.
+            .withValue("reconnect.asyncStreamTimeout", "500ms")
+            .withValue("reconnect.asyncOutputStreamFlush", "10ms")
+            .withValue("reconnect.asyncStreamBufferSize", "1000")
+            .withValue("reconnect.maximumReconnectFailuresBeforeShutdown", "0")
+            .withValue("reconnect.minimumTimeBetweenReconnects", "0s")
+            .getOrCreateConfig();
+
     private final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 
     @BeforeAll
     public static void startup() throws ConstructableRegistryException, FileNotFoundException {
         loadLog4jContext();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
-
-        new TestConfigBuilder()
-                .withValue(ReconnectConfig_.ACTIVE, "true")
-                // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "500ms")
-                .getOrCreateConfig();
     }
 
     /**
@@ -152,7 +156,6 @@ public class MerkleSynchronizationTests {
     @Timeout(value = 5, unit = TimeUnit.MINUTES)
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Synchronization Tests")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void synchronizationTests() throws Exception {
 
         final long seed = new Random().nextLong();
@@ -264,7 +267,6 @@ public class MerkleSynchronizationTests {
 
     @Test
     @Tag(TestComponentTags.MERKLE)
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Verify exception handling")
     void verifyExceptionHandling() {
         // Sending an un-hashed tree should result in an exception
