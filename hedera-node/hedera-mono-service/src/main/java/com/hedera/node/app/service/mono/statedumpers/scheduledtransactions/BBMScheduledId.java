@@ -22,17 +22,17 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityV
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public record BBMScheduledTransactionId(long num) implements Comparable<BBMScheduledTransactionId> {
-    static BBMScheduledTransactionId fromMono(@NonNull final EntityNumVirtualKey key) {
-        return new BBMScheduledTransactionId(key.getKeyAsLong());
+public record BBMScheduledId(long num) implements Comparable<BBMScheduledId> {
+    static BBMScheduledId fromMono(@NonNull final EntityNumVirtualKey key) {
+        return new BBMScheduledId(key.getKeyAsLong());
     }
 
-    static BBMScheduledTransactionId fromMono(@NonNull final SecondSinceEpocVirtualKey key) {
-        return new BBMScheduledTransactionId(key.getKeyAsLong());
+    static BBMScheduledId fromMono(@NonNull final SecondSinceEpocVirtualKey key) {
+        return new BBMScheduledId(key.getKeyAsLong());
     }
 
-    static BBMScheduledTransactionId fromMono(@NonNull final ScheduleEqualityVirtualKey key) {
-        return new BBMScheduledTransactionId(key.getKeyAsLong());
+    static BBMScheduledId fromMono(@NonNull final ScheduleEqualityVirtualKey key) {
+        return new BBMScheduledId(key.getKeyAsLong());
     }
 
     @Override
@@ -41,7 +41,7 @@ public record BBMScheduledTransactionId(long num) implements Comparable<BBMSched
     }
 
     @Override
-    public int compareTo(BBMScheduledTransactionId o) {
+    public int compareTo(BBMScheduledId o) {
         return ComparisonChain.start().compare(this.num, o.num).result();
     }
 }

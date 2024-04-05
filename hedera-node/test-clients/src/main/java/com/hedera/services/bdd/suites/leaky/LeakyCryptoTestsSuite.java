@@ -155,6 +155,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
@@ -217,6 +218,7 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
     public static final String V_0_34 = "v0.34";
     private static final String ERC20_ABI = "ERC20ABI";
     private static final String SENDER_TXN = "senderTxn";
+    private static final long GAS_PRICE = 71L;
 
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
@@ -1150,7 +1152,7 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                                     .nonce(1)
                                     .maxFeePerGas(0L)
                                     .maxGasAllowance(FIVE_HBARS)
-                                    .gasLimit(2_000_000L)
+                                    .gasLimit(650_000L)
                                     .via(lazyCreateTxn)
                                     .hasKnownStatus(SUCCESS),
                             assertionsHold((assertSpec, assertLog) -> {
@@ -1177,13 +1179,19 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                                         childRecordsCheck(
                                                 lazyCreateTxn,
                                                 SUCCESS,
-                                                recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(ByteString.EMPTY)),
+                                                recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(EMPTY)),
                                         getTxnRecord(lazyCreateTxn)
                                                 .hasPriority(recordWith()
                                                         .targetedContractId(contractIdReference.get())
                                                         .contractCallResult(ContractFnResultAsserts.resultWith()
                                                                 .contract(asContractString(contractIdReference.get()))))
                                                 .andAllChildRecords()
+                                                .exposingAllTo(records -> {
+                                                    final long gasUsed =
+                                                            records.get(0).getContractCallResult().getGasUsed();
+                                                    final long transactionFee = records.get(1).getTransactionFee();
+                                                    assertEquals(GAS_PRICE, transactionFee / (gasUsed - 21_000L));
+                                                })
                                                 .logged(),
                                         expectContractActionSidecarFor(
                                                 lazyCreateTxn,
