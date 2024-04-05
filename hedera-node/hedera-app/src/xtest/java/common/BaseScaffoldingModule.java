@@ -311,7 +311,8 @@ public interface BaseScaffoldingModule {
                     parentRecordFinalizer,
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
-                    platformState.getPlatformState());
+                    platformState.getPlatformState(),
+                    metrics);
         };
     }
 

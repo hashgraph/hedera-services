@@ -24,6 +24,9 @@ import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
@@ -35,10 +38,28 @@ public class WritableContractStateStore implements ContractStateStore {
     private final WritableKVState<SlotKey, SlotValue> storage;
     private final WritableKVState<ContractID, Bytecode> bytecode;
 
-    public WritableContractStateStore(@NonNull final WritableStates states) {
+    /**
+     * Create a new {@link WritableContractStateStore} instance.
+     *
+     * @param states The state to use.
+     * @param configuration The configuration used to read the maximum capacity.
+     * @param metrics The metrics-API used to report utilization.
+     */
+    public WritableContractStateStore(
+            @NonNull final WritableStates states,
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics) {
         requireNonNull(states);
         this.storage = states.get(InitialModServiceContractSchema.STORAGE_KEY);
         this.bytecode = states.get(InitialModServiceContractSchema.BYTECODE_KEY);
+
+        final ContractsConfig contractsConfig = configuration.getConfigData(ContractsConfig.class);
+
+        final long maxSlotStorageCapacity = contractsConfig.maxKvPairsAggregate();
+        storage.setupMetrics(metrics, "storageSlots", "storage slots", maxSlotStorageCapacity);
+
+        final long maxContractsCapacity = contractsConfig.maxNumber();
+        bytecode.setupMetrics(metrics, "contracts", maxContractsCapacity);
     }
 
     /**

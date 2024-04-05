@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Base class for both {@link com.hedera.node.app.service.token.records.ParentRecordFinalizer} and {@link
@@ -99,7 +100,7 @@ public class RecordFinalizerBase {
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull TokenType tokenType,
             final boolean filterZeroAmounts) {
-        final var tokenChanges = new HashMap<EntityIDPair, Long>();
+        final var tokenRelChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
             final var relAcctId = modifiedRel.accountIdOrThrow();
             final var relTokenId = modifiedRel.tokenIdOrThrow();
@@ -122,12 +123,25 @@ public class RecordFinalizerBase {
 
             // If the token rel's balance has changed, add it to the list of changes
             final var netFungibleChange = modifiedTokenRelBalance - persistedBalance;
-            if (netFungibleChange != 0 || !filterZeroAmounts) {
-                tokenChanges.put(modifiedRel, netFungibleChange);
+            if (netFungibleChange != 0) {
+                tokenRelChanges.put(modifiedRel, netFungibleChange);
+            } else {
+                // It is possible that we have updated pointers in the token relation during crypto transfer
+                // but the balance has not changed.Since we don't filter zero amounts in crypto transfer, we need to
+                // check they
+                // are not just pointer changes to avoid adding them to record
+                // We don't check next pointer here, because the next pointer can change during associate or
+                // dissociate, and we filter zero amounts for those records
+                final var prevPointerChanged = !Objects.equals(
+                        persistedTokenRel != null ? persistedTokenRel.previousToken() : null,
+                        modifiedTokenRel != null ? modifiedTokenRel.previousToken() : null);
+                if (!filterZeroAmounts && !prevPointerChanged) {
+                    tokenRelChanges.put(modifiedRel, 0L);
+                }
             }
         }
 
-        return tokenChanges;
+        return tokenRelChanges;
     }
 
     /**
