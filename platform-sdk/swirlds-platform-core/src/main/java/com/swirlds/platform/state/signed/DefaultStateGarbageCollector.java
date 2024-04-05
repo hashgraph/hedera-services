@@ -41,9 +41,10 @@ public class DefaultStateGarbageCollector implements StateGarbageCollector {
 
     private final List<SignedState> states = new LinkedList<>();
 
-    private static final RunningAverageMetric.Config UNDELETABLE_STATES_CONFIG = new RunningAverageMetric.Config(
-                    "platform", "undeletableStates")
-            .withDescription("Average number of undeletable states in the state garbage collector")
+    private static final RunningAverageMetric.Config STATES_INELIGIBLE_FOR_DELETION = new RunningAverageMetric.Config(
+                    "platform", "statesIneligibleForDeletion")
+            .withDescription(
+                    "Average number of states in the state garbage collector that are not yet eligible for deletion")
             .withUnit("count");
     private final RunningAverageMetric undeletableStates;
 
@@ -59,7 +60,7 @@ public class DefaultStateGarbageCollector implements StateGarbageCollector {
      * @param platformContext the platform context
      */
     public DefaultStateGarbageCollector(@NonNull final PlatformContext platformContext) {
-        undeletableStates = platformContext.getMetrics().getOrCreate(UNDELETABLE_STATES_CONFIG);
+        undeletableStates = platformContext.getMetrics().getOrCreate(STATES_INELIGIBLE_FOR_DELETION);
         timeToDeleteState = platformContext.getMetrics().getOrCreate(TIME_TO_DELETE_STATE_CONFIG);
     }
 
@@ -86,7 +87,7 @@ public class DefaultStateGarbageCollector implements StateGarbageCollector {
      * {@inheritDoc}
      */
     @Override
-    public void heartbeat(@NonNull final Instant now) {
+    public void heartbeat() {
         final Iterator<SignedState> iterator = states.iterator();
         while (iterator.hasNext()) {
             final SignedState signedState = iterator.next();

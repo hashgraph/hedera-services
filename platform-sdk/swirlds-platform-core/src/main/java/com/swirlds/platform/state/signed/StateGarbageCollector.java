@@ -17,7 +17,6 @@
 package com.swirlds.platform.state.signed;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 
 /**
  * This component is responsible for the deletion of signed states. In case signed state deletion is expensive, we never
@@ -35,8 +34,6 @@ public interface StateGarbageCollector {
 
     /**
      * This method is called periodically to give the signed state manager a chance to delete states.
-     *
-     * @param now the current time
      */
-    void heartbeat(@NonNull Instant now);
+    void heartbeat();
 }

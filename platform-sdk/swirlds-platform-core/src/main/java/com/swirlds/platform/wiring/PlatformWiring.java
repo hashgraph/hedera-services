@@ -39,6 +39,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;

@@ -192,12 +192,7 @@ public class ReconnectLearner {
 
         final State state = (State) synchronizer.getRoot();
         final SignedState newSignedState = new SignedState(
-                platformContext,
-                CryptoStatic::verifySignature,
-                state,
-                "ReconnectLearner.reconnect()",
-                false,
-                true); // TODO will this cause things to be deleted incorrectly during tests?
+                platformContext, CryptoStatic::verifySignature, state, "ReconnectLearner.reconnect()", false, true);
         newSignedState.setSigSet(sigSet);
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();

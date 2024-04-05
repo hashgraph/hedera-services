@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import java.time.Instant;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -67,7 +66,7 @@ class StateGarbageCollectorTests {
             }
 
             // Send a time pulse to the garbage collector. This should cause it to delete released states.
-            garbageCollector.heartbeat(Instant.now());
+            garbageCollector.heartbeat();
 
             // Make sure all of the deleted states are actually destroyed.
             for (final SignedState releasedState : releasedStates) {

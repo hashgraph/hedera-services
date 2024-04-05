@@ -70,7 +70,9 @@ public final class SignedStateFileReader {
      * @param stateFile                     the file to read from
      * @param deleteStateOnBackgroundThread if true, the state file will be deleted on a background thread. If false,
      *                                      the state file will be deleted on the thread that releases the last
-     *                                      reference to the state.
+     *                                      reference to the state. In production use cases this should always be true.
+     *                                      In unit tests, it should be false unless the test is specifically configured
+     *                                      to delete states on a background thread.
      * @return a signed state with it's associated hash (as computed when the state was serialized)
      * @throws IOException if there is any problems with reading from a file
      */
