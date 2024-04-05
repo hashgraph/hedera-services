@@ -26,23 +26,35 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class WritableTopicStoreTest extends ConsensusTestBase {
+
+    private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
+
+    @Mock
+    private Metrics metrics;
+
     private Topic topic;
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableTopicStore(null));
+        assertThrows(NullPointerException.class, () -> new WritableTopicStore(null, CONFIGURATION, metrics));
+        assertThrows(NullPointerException.class, () -> new WritableTopicStore(writableStates, null, metrics));
+        assertThrows(NullPointerException.class, () -> new WritableTopicStore(writableStates, CONFIGURATION, null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
 
     @Test
     void constructorCreatesTopicState() {
-        final var store = new WritableTopicStore(writableStates);
+        final var store = new WritableTopicStore(writableStates, CONFIGURATION, metrics);
         assertNotNull(store);
     }
 
