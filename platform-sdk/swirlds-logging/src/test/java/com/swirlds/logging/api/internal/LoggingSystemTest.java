@@ -385,7 +385,12 @@ public class LoggingSystemTest {
             }
 
             @Override
-            public void accept(LogEvent event) {
+            public boolean isEnabled(final String name, final Level level, final Marker marker) {
+                return true;
+            }
+
+            @Override
+            public void handle(LogEvent event) {
                 Assertions.fail("Should not invoke handler");
             }
         });
@@ -691,7 +696,12 @@ public class LoggingSystemTest {
             }
 
             @Override
-            public void accept(LogEvent event) {
+            public boolean isEnabled(final String name, final Level level, final Marker marker) {
+                return true;
+            }
+
+            @Override
+            public void handle(LogEvent event) {
                 throw new RuntimeException("Exception in handler");
             }
         });
@@ -812,10 +822,15 @@ public class LoggingSystemTest {
                 .build()
                 .verifyAssertionRules(c -> {
                     final LoggingSystem loggingSystem = new LoggingSystem(c);
-                    LogHandler handler = logEvent -> {
-                        // We do not handle any events
-                    };
-                    loggingSystem.addHandler(handler);
+                    loggingSystem.addHandler(new LogHandler() {
+                        @Override
+                        public boolean isEnabled(final String name, final Level level, final Marker marker) {
+                            return true;
+                        }
+
+                        @Override
+                        public void handle(final LogEvent event) {}
+                    });
                     return loggingSystem;
                 });
     }
@@ -825,10 +840,15 @@ public class LoggingSystemTest {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        LogHandler handler = logEvent -> {
-            // We do not handle any events
-        };
-        loggingSystem.addHandler(handler);
+        loggingSystem.addHandler(new LogHandler() {
+            @Override
+            public boolean isEnabled(final String name, final Level level, final Marker marker) {
+                return true;
+            }
+
+            @Override
+            public void handle(final LogEvent event) {}
+        });
 
         // then // when
         final LoggerImpl logger = loggingSystem.getLogger(null);

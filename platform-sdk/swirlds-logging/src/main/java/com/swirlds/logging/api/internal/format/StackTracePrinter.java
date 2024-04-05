@@ -65,6 +65,7 @@ public class StackTracePrinter {
             for (int i = 0; i <= m; i++) {
                 final StackTraceElement stackTraceElement = stackTrace[i];
                 final String moduleName = stackTraceElement.getModuleName();
+                final String fileName = stackTraceElement.getFileName();
                 writer.append("\tat ");
                 if (moduleName != null) {
                     writer.append(moduleName);
@@ -73,11 +74,16 @@ public class StackTracePrinter {
                 writer.append(stackTraceElement.getClassName());
                 writer.append(".");
                 writer.append(stackTraceElement.getMethodName());
-                writer.append("(");
-                writer.append(stackTraceElement.getFileName());
-                writer.append(":");
-                writer.append(stackTraceElement.getLineNumber());
-                writer.append(")");
+                if (fileName != null) {
+                    writer.append("(");
+                    writer.append(fileName);
+                    writer.append(":");
+                    writer.append(stackTraceElement.getLineNumber());
+                    writer.append(")");
+                } else {
+                    writer.append("(Unknown Source)");
+                }
+
                 writer.append(System.lineSeparator());
             }
             if (skippedFrames != 0) {

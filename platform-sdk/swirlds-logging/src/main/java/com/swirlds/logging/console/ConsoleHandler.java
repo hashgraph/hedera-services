@@ -62,7 +62,7 @@ public class ConsoleHandler extends AbstractLogHandler {
      * @param event The log event to be printed.
      */
     @Override
-    public void accept(@NonNull final LogEvent event) {
+    public void handle(@NonNull final LogEvent event) {
         StringBuilder builder = new StringBuilder();
         format.print(builder, event);
         try {

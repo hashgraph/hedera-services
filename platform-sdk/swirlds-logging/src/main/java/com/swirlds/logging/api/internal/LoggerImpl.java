@@ -22,6 +22,7 @@ import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEvent;
+import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import com.swirlds.logging.api.internal.event.ParameterizedLogMessage;
@@ -61,7 +62,7 @@ public class LoggerImpl implements Logger {
     /**
      * The consumer that is used to consume the log events.
      */
-    private final LoggingSystem logEventConsumer;
+    private final LogEventConsumer logEventConsumer;
 
     /**
      * The factory that is used to create the log events.
@@ -82,7 +83,7 @@ public class LoggerImpl implements Logger {
             @Nullable final Marker marker,
             @Nullable final Map<String, String> context,
             @NonNull final LogEventFactory logEventFactory,
-            @NonNull final LoggingSystem logEventConsumer) {
+            @NonNull final LogEventConsumer logEventConsumer) {
         this.name = Objects.requireNonNull(
                 name, "name must not be null"); // Callers of this method need to make sure this is never possible
         this.marker = marker;
@@ -101,7 +102,7 @@ public class LoggerImpl implements Logger {
     public LoggerImpl(
             @NonNull final String name,
             @NonNull final LogEventFactory logEventFactory,
-            @NonNull final LoggingSystem logEventConsumer) {
+            @NonNull final LogEventConsumer logEventConsumer) {
         this(name, null, Map.of(), logEventFactory, logEventConsumer);
     }
 

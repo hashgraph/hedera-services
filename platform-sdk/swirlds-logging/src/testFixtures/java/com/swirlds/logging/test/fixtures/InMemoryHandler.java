@@ -84,7 +84,7 @@ public class InMemoryHandler extends AbstractLogHandler {
      * @param event the log event to be accepted and recorded
      */
     @Override
-    public void accept(@NonNull LogEvent event) {
+    public void handle(@NonNull LogEvent event) {
         events.add(event);
     }
 

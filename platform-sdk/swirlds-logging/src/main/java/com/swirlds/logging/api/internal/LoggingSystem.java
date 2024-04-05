@@ -22,6 +22,7 @@ import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEvent;
+import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.extensions.handler.LogHandlerFactory;
@@ -47,7 +48,7 @@ import java.util.stream.Collectors;
 /**
  * The implementation of the logging system.
  */
-public class LoggingSystem {
+public class LoggingSystem implements LogEventConsumer {
     private static final String LOGGING_HANDLER_PREFIX = "logging.handler.";
     private static final int LOGGING_HANDLER_PREFIX_LENGTH = LOGGING_HANDLER_PREFIX.length();
     private static final String LOGGING_HANDLER_TYPE = LOGGING_HANDLER_PREFIX + "%s.type";
@@ -80,7 +81,7 @@ public class LoggingSystem {
     /**
      * The level configuration of the logging system that checks if a specific logger is enabled for a specific level.
      */
-    private AtomicReference<HandlerLoggingLevelConfig> levelConfig;
+    private final AtomicReference<HandlerLoggingLevelConfig> levelConfig;
 
     /**
      * The factory that is used to create log events.
@@ -181,6 +182,11 @@ public class LoggingSystem {
         }
     }
 
+    /**
+     * Process the event if any of the handlers is able to handle it
+     *
+     * @param event     the event to process
+     */
     public void accept(@NonNull final LogEvent event) {
         if (event == null) {
             EMERGENCY_LOGGER.logNPE("event");
@@ -191,7 +197,7 @@ public class LoggingSystem {
             for (LogHandler logHandler : handlers) {
                 if (logHandler.isEnabled(event.loggerName(), event.level(), event.marker())) {
                     try {
-                        logHandler.accept(event);
+                        logHandler.handle(event);
                         handled = true;
                     } catch (final Throwable throwable) {
                         EMERGENCY_LOGGER.log(
