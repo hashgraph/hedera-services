@@ -92,7 +92,7 @@ class NetworkPeerIdentifierTest {
             "asserts that when none of the peer's certificate matches any of the certs in the trust store, identifyTlsPeer returns null")
     void testIdentifyTlsPeerReturnsNull()
             throws URISyntaxException, KeyLoadingException, KeyStoreException, NoSuchAlgorithmException,
-            NoSuchProviderException, KeyGeneratingException {
+                    NoSuchProviderException, KeyGeneratingException {
         final List<String> names =
                 List.of("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10");
         // sample pfx file grabbed from mainnet
@@ -126,7 +126,7 @@ class NetworkPeerIdentifierTest {
                 CryptoStatic.generateCertificate(name, rsaKeyPair1, name, rsaKeyPair1, secureRandom);
         final X509Certificate ecCert =
                 CryptoStatic.generateCertificate(name, rsaKeyPair2, name, rsaKeyPair2, secureRandom);
-        final Certificate[] certificates = new Certificate[]{rsaCert, ecCert};
+        final Certificate[] certificates = new Certificate[] {rsaCert, ecCert};
 
         final PeerInfo matchedPeer = new NetworkPeerIdentifier().identifyTlsPeer(certificates, peerInfoList);
         Assertions.assertNull(matchedPeer);

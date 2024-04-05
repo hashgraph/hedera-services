@@ -133,8 +133,7 @@ class InboundConnectionHandlerTest {
         doAnswer(i -> null).when(identifier).identifyTlsPeer(any(), anyList());
 
         final InboundConnectionHandler inbound =
-                new InboundConnectionHandler(platformContext, ct, identifier, thisNodeId, x -> {
-                }, Time.getCurrent());
+                new InboundConnectionHandler(platformContext, ct, identifier, thisNodeId, x -> {}, Time.getCurrent());
         inbound.handle(clientSocket, Collections.emptyList());
         try {
             verify(clientSocket, times(1)).close();

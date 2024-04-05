@@ -107,10 +107,10 @@ public final class NetworkUtils {
      */
     public static Marker determineExceptionMarker(final Exception e) {
         return Utilities.isCausedByIOException(e)
-                || Utilities.isRootCauseSuppliedType(e, SyncTimeoutException.class)
-                // All SSLExceptions regardless of nested root cause need to be classified as SOCKET_EXCEPTIONS.
-                // https://github.com/hashgraph/hedera-services/issues/7762
-                || Utilities.hasAnyCauseSuppliedType(e, SSLException.class)
+                        || Utilities.isRootCauseSuppliedType(e, SyncTimeoutException.class)
+                        // All SSLExceptions regardless of nested root cause need to be classified as SOCKET_EXCEPTIONS.
+                        // https://github.com/hashgraph/hedera-services/issues/7762
+                        || Utilities.hasAnyCauseSuppliedType(e, SSLException.class)
                 ? SOCKET_EXCEPTIONS.getMarker()
                 : EXCEPTION.getMarker();
     }
@@ -163,11 +163,11 @@ public final class NetworkUtils {
                     socketConfig,
                     cryptoConfig);
         } catch (final NoSuchAlgorithmException
-                       | UnrecoverableKeyException
-                       | KeyStoreException
-                       | KeyManagementException
-                       | CertificateException
-                       | IOException e) {
+                | UnrecoverableKeyException
+                | KeyStoreException
+                | KeyManagementException
+                | CertificateException
+                | IOException e) {
             throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
         }
     }
