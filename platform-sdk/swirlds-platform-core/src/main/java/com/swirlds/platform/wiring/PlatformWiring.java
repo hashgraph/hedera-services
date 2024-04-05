@@ -224,8 +224,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         internalEventValidatorWiring =
                 new ComponentWiring<>(model, InternalEventValidator.class, config.internalEventValidator());
         eventDeduplicatorWiring = new ComponentWiring<>(model, EventDeduplicator.class, config.eventDeduplicator());
-        eventSignatureValidatorWiring = new ComponentWiring<>(
-                model, EventSignatureValidator.class, schedulers.eventSignatureValidatorScheduler());
+        eventSignatureValidatorWiring =
+                new ComponentWiring<>(model, EventSignatureValidator.class, config.eventSignatureValidator());
         orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
         inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
         consensusEngineWiring =
@@ -590,7 +590,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Bind components to the wiring.
      *
      * @param builder                   builds platform components that need to be bound to wires
-     * @param eventSignatureValidator   the event signature validator to bind
      * @param orphanBuffer              the orphan buffer to bind
      * @param inOrderLinker             the in order linker to bind
      * @param consensusEngine           the consensus engine to bind
@@ -622,7 +621,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public void bind(
             @NonNull final PlatformComponentBuilder builder,
-            @NonNull final EventSignatureValidator eventSignatureValidator,
             @NonNull final OrphanBuffer orphanBuffer,
             @NonNull final InOrderLinker inOrderLinker,
             @NonNull final ConsensusEngine consensusEngine,
@@ -654,7 +652,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventHasherWiring.bind(builder.buildEventHasher());
         internalEventValidatorWiring.bind(builder.buildInternalEventValidator());
         eventDeduplicatorWiring.bind(builder.buildEventDeduplicator());
-        eventSignatureValidatorWiring.bind(eventSignatureValidator);
+        eventSignatureValidatorWiring.bind(builder.buildEventSignatureValidator());
         orphanBufferWiring.bind(orphanBuffer);
         inOrderLinkerWiring.bind(inOrderLinker);
         consensusEngineWiring.bind(consensusEngine);

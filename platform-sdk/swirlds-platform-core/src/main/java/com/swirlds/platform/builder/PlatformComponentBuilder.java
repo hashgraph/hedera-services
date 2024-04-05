@@ -21,11 +21,14 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
+import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -59,6 +62,7 @@ public class PlatformComponentBuilder {
     private EventHasher eventHasher;
     private InternalEventValidator internalEventValidator;
     private EventDeduplicator eventDeduplicator;
+    private EventSignatureValidator eventSignatureValidator;
     private StateGarbageCollector stateGarbageCollector;
 
     /**
@@ -222,6 +226,44 @@ public class PlatformComponentBuilder {
             eventDeduplicator = new StandardEventDeduplicator(blocks.platformContext(), blocks.intakeEventCounter());
         }
         return eventDeduplicator;
+    }
+
+    /**
+     * Provide an event signature validator in place of the platform's default event signature validator.
+     *
+     * @param eventSignatureValidator the event signature validator to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withEventSignatureValidator(
+            @NonNull final EventSignatureValidator eventSignatureValidator) {
+        throwIfAlreadyUsed();
+        if (this.eventSignatureValidator != null) {
+            throw new IllegalStateException("Event signature validator has already been set");
+        }
+        this.eventSignatureValidator = Objects.requireNonNull(eventSignatureValidator);
+
+        return this;
+    }
+
+    /**
+     * Build the event signature validator if it has not yet been built.If one has been provided via
+     * {@link #withEventSignatureValidator(EventSignatureValidator)}, that validator will be used. If this method is
+     * called more than once, only the first call will build the event signature validator.Otherwise, the default
+     * validator will be created and returned.
+     */
+    @NonNull
+    public EventSignatureValidator buildEventSignatureValidator() {
+        if (eventSignatureValidator == null) {
+            eventSignatureValidator = new DefaultEventSignatureValidator(
+                    blocks.platformContext(),
+                    CryptoStatic::verifySignature,
+                    blocks.appVersion(),
+                    blocks.initialState().get().getState().getPlatformState().getPreviousAddressBook(),
+                    blocks.initialState().get().getState().getPlatformState().getAddressBook(),
+                    blocks.intakeEventCounter());
+        }
+        return eventSignatureValidator;
     }
 
     /**

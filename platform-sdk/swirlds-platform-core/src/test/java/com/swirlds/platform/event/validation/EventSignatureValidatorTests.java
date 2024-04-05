@@ -128,8 +128,8 @@ class EventSignatureValidatorTests {
     @BeforeEach
     void setup() {
         random = getRandomPrintSeed();
-        platformContext = TestPlatformContextBuilder.create().build();
         time = new FakeTime();
+        platformContext = TestPlatformContextBuilder.create().withTime(time).build();
 
         exitedIntakePipelineCount = new AtomicLong(0);
         intakeEventCounter = mock(IntakeEventCounter.class);
@@ -151,7 +151,6 @@ class EventSignatureValidatorTests {
 
         validatorWithTrueVerifier = new DefaultEventSignatureValidator(
                 platformContext,
-                time,
                 trueVerifier,
                 defaultVersion,
                 previousAddressBook,
@@ -160,7 +159,6 @@ class EventSignatureValidatorTests {
 
         validatorWithFalseVerifier = new DefaultEventSignatureValidator(
                 platformContext,
-                time,
                 falseVerifier,
                 defaultVersion,
                 previousAddressBook,
@@ -182,7 +180,7 @@ class EventSignatureValidatorTests {
     @DisplayName("Lower version event with missing previous address book")
     void versionMismatchWithNullPreviousAddressBook() {
         final EventSignatureValidator signatureValidator = new DefaultEventSignatureValidator(
-                platformContext, time, trueVerifier, defaultVersion, null, currentAddressBook, intakeEventCounter);
+                platformContext, trueVerifier, defaultVersion, null, currentAddressBook, intakeEventCounter);
 
         final GossipEvent event =
                 generateMockEvent(new BasicSoftwareVersion(1), randomHash(random), previousNodeAddress.getNodeId());
@@ -259,7 +257,6 @@ class EventSignatureValidatorTests {
 
         final EventSignatureValidator validator = new DefaultEventSignatureValidator(
                 platformContext,
-                time,
                 trueVerifier,
                 defaultVersion,
                 previousAddressBook,

@@ -75,11 +75,11 @@ class PlatformWiringTests {
         componentBuilder.withEventHasher(mock(EventHasher.class));
         componentBuilder.withInternalEventValidator(mock(InternalEventValidator.class));
         componentBuilder.withEventDeduplicator(mock(EventDeduplicator.class));
+        componentBuilder.withEventSignatureValidator(mock(EventSignatureValidator.class));
         componentBuilder.withStateGarbageCollector(mock(StateGarbageCollector.class));
 
         wiring.bind(
                 componentBuilder,
-                mock(EventSignatureValidator.class),
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
                 mock(ConsensusEngine.class),
