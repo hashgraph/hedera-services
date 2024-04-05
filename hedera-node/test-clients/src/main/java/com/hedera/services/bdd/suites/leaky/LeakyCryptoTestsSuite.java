@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.leaky;
 
+import static com.google.protobuf.ByteString.EMPTY;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
@@ -69,6 +70,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.roy
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -128,6 +130,7 @@ import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderi
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.UNIQUE;
+import static com.hedera.services.stream.proto.ContractActionType.CALL;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -154,7 +157,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -168,8 +170,10 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.SidecarAwareHapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
+import com.hedera.services.stream.proto.CallOperationType;
+import com.hedera.services.stream.proto.ContractAction;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -197,7 +201,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestMethodOrder(
         MethodOrderer.OrderAnnotation
                 .class) // define same running order for mod specs as in getSpecsInSuite() definition used in mono
-public class LeakyCryptoTestsSuite extends HapiSuite {
+public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
     private static final Logger log = LogManager.getLogger(LeakyCryptoTestsSuite.class);
     private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
     private static final String DEFAULT_ASSOCIATIONS_LIMIT =
@@ -1068,6 +1072,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         NONDETERMINISTIC_NONCE)
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
+                        initializeSidecarWatcher(),
                         overridingThree(
                                 CHAIN_ID_PROP,
                                 "298",
@@ -1081,67 +1086,122 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via(AUTO_ACCOUNT),
                         getTxnRecord(AUTO_ACCOUNT).andAllChildRecords())
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        TxnVerbs.ethereumCryptoTransferToAlias(
-                                        spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1(), FIVE_HBARS)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .nonce(0)
-                                .maxFeePerGas(0L)
-                                .maxGasAllowance(FIVE_HBARS)
-                                .gasLimit(200_000L)
-                                .via(failedLazyCreateTxn)
-                                .hasKnownStatus(INSUFFICIENT_GAS),
-                        TxnVerbs.ethereumCryptoTransferToAlias(
-                                        spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1(), FIVE_HBARS)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .nonce(1)
-                                .maxFeePerGas(0L)
-                                .maxGasAllowance(FIVE_HBARS)
-                                .gasLimit(2_000_000L)
-                                .via(lazyCreateTxn)
-                                .hasKnownStatus(SUCCESS))))
-                .then(withOpContext((spec, opLog) -> {
-                    final var failedLazyTxnRecord = getTxnRecord(failedLazyCreateTxn)
-                            .hasPriority(recordWith()
-                                    .targetedContractId(ContractID.newBuilder().getDefaultInstanceForType()))
-                            .logged();
-                    final var failedLazyTxnChildRecordsCheck =
-                            emptyChildRecordsCheck(failedLazyCreateTxn, INSUFFICIENT_GAS);
-                    allRunFor(spec, failedLazyTxnRecord, failedLazyTxnChildRecordsCheck);
-
+                .when(withOpContext((spec, opLog) -> {
                     final var ecdsaSecp256K1 =
                             spec.registry().getKey(RECIPIENT_KEY).getECDSASecp256K1();
                     final var aliasAsByteString =
-                            ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(ecdsaSecp256K1.toByteArray()));
-                    AtomicReference<AccountID> lazyAccountIdReference = new AtomicReference<>();
-                    final var lazyAccountInfoCheck = getAliasedAccountInfo(aliasAsByteString)
-                            .logged()
-                            .has(accountWith().balance(FIVE_HBARS).key(EMPTY_KEY))
-                            .exposingIdTo(lazyAccountIdReference::set);
-                    allRunFor(spec, lazyAccountInfoCheck);
-                    final var id = ContractID.newBuilder()
-                            .setContractNum(lazyAccountIdReference.get().getAccountNum())
-                            .setShardNum(lazyAccountIdReference.get().getShardNum())
-                            .setRealmNum(lazyAccountIdReference.get().getRealmNum())
-                            .build();
-                    final var payTxn = getTxnRecord(lazyCreateTxn)
-                            .hasPriority(recordWith()
-                                    .targetedContractId(id)
-                                    .contractCallResult(
-                                            ContractFnResultAsserts.resultWith().contract(asContractString(id))))
-                            .andAllChildRecords()
-                            .logged();
-                    final var childRecordsCheck = childRecordsCheck(
-                            lazyCreateTxn,
-                            SUCCESS,
-                            recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(ByteString.EMPTY));
-                    allRunFor(spec, payTxn, childRecordsCheck);
-                }));
+                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaSecp256K1.toByteArray()));
+                    allRunFor(
+                            spec,
+                            // given a non-existing public address and not enough gas,
+                            // should fail with INSUFFICIENT_GAS,
+                            // should not create a Hollow account,
+                            // should export a contract action with targeted_address = tx.to
+                            TxnVerbs.ethereumCryptoTransferToAlias(ecdsaSecp256K1, FIVE_HBARS)
+                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                    .payingWith(RELAYER)
+                                    .nonce(0)
+                                    .maxFeePerGas(0L)
+                                    .maxGasAllowance(FIVE_HBARS)
+                                    .gasLimit(200_000L)
+                                    .via(failedLazyCreateTxn)
+                                    .hasKnownStatus(INSUFFICIENT_GAS),
+                            assertionsHold((assertSpec, assertLog) -> {
+                                final var senderAccountIdReference = new AtomicReference<AccountID>();
+                                allRunFor(
+                                        assertSpec,
+                                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                .exposingIdTo(senderAccountIdReference::set),
+                                        getAliasedAccountInfo(aliasAsByteString)
+                                                .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
+                                allRunFor(
+                                        assertSpec,
+                                        emptyChildRecordsCheck(failedLazyCreateTxn, INSUFFICIENT_GAS),
+                                        getTxnRecord(failedLazyCreateTxn)
+                                                .hasPriority(recordWith()
+                                                        .status(INSUFFICIENT_GAS)
+                                                        .targetedContractId(
+                                                                ContractID.newBuilder().getDefaultInstanceForType()))
+                                                .andAllChildRecords()
+                                                .logged(),
+                                        expectContractActionSidecarFor(
+                                                failedLazyCreateTxn,
+                                                List.of(ContractAction.newBuilder()
+                                                        .setCallType(CALL)
+                                                        .setCallOperationType(CallOperationType.OP_CALL)
+                                                        .setCallingAccount(senderAccountIdReference.get())
+                                                        .setTargetedAddress(aliasAsByteString)
+                                                        .setGas(200_000L)
+                                                        .setGasUsed(179_000L)
+                                                        .setValue(FIVE_HBARS)
+                                                        .setOutput(EMPTY)
+                                                        .setError(ByteString.copyFromUtf8(INSUFFICIENT_GAS.name()))
+                                                        .build())));
+                            }),
+                            // given a non-existing public address and enough gas,
+                            // should respond with SUCCESS
+                            // should create a Hollow account with alias = tx.to and balance = tx.value
+                            // should export a contract action with the AccountID of the hollow account as recipient
+                            TxnVerbs.ethereumCryptoTransferToAlias(ecdsaSecp256K1, FIVE_HBARS)
+                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                    .payingWith(RELAYER)
+                                    .nonce(1)
+                                    .maxFeePerGas(0L)
+                                    .maxGasAllowance(FIVE_HBARS)
+                                    .gasLimit(2_000_000L)
+                                    .via(lazyCreateTxn)
+                                    .hasKnownStatus(SUCCESS),
+                            assertionsHold((assertSpec, assertLog) -> {
+                                final var senderAccountIdReference = new AtomicReference<AccountID>();
+                                final var lazyAccountIdReference = new AtomicReference<AccountID>();
+                                final var contractIdReference = new AtomicReference<ContractID>();
+                                allRunFor(
+                                        assertSpec,
+                                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                .exposingIdTo(senderAccountIdReference::set),
+                                        getAliasedAccountInfo(aliasAsByteString)
+                                                .has(accountWith().balance(FIVE_HBARS).key(EMPTY_KEY).memo(LAZY_MEMO))
+                                                .exposingIdTo(accountId -> {
+                                                    lazyAccountIdReference.set(accountId);
+                                                    contractIdReference.set(
+                                                            ContractID.newBuilder()
+                                                                    .setContractNum(accountId.getAccountNum())
+                                                                    .setShardNum(accountId.getShardNum())
+                                                                    .setRealmNum(accountId.getRealmNum())
+                                                                    .build());
+                                                }));
+                                allRunFor(
+                                        assertSpec,
+                                        childRecordsCheck(
+                                                lazyCreateTxn,
+                                                SUCCESS,
+                                                recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(ByteString.EMPTY)),
+                                        getTxnRecord(lazyCreateTxn)
+                                                .hasPriority(recordWith()
+                                                        .targetedContractId(contractIdReference.get())
+                                                        .contractCallResult(ContractFnResultAsserts.resultWith()
+                                                                .contract(asContractString(contractIdReference.get()))))
+                                                .andAllChildRecords()
+                                                .logged(),
+                                        expectContractActionSidecarFor(
+                                                lazyCreateTxn,
+                                                List.of(ContractAction.newBuilder()
+                                                        .setCallType(CALL)
+                                                        .setCallOperationType(CallOperationType.OP_CALL)
+                                                        .setCallingAccount(senderAccountIdReference.get())
+                                                        .setRecipientAccount(lazyAccountIdReference.get())
+                                                        .setGas(2_000_000L)
+                                                        .setGasUsed(555_112L)
+                                                        .setValue(FIVE_HBARS)
+                                                        .setOutput(EMPTY)
+                                                        .build())));
+                            }));
+                }))
+                .then(
+                        tearDownSidecarWatcher(),
+                        assertContainsAllExpectedContractActions());
     }
 
     @HapiTest
