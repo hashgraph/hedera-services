@@ -58,15 +58,6 @@ public class DeterministicHeartbeatScheduler extends AbstractHeartbeatScheduler 
     public DeterministicHeartbeatScheduler(
             @NonNull final TraceableWiringModel model, @NonNull final Time time, @NonNull final String name) {
         super(model, time, name);
-
-        final Instant currentTime = time.now();
-
-        for (final HeartbeatTask task : tasks) {
-            final List<HeartbeatTask> tasksForPeriod =
-                    heartbeatsByPeriod.computeIfAbsent(task.getPeriod(), k -> new ArrayList<>());
-            tasksForPeriod.add(task);
-            lastHeartbeats.put(task.getPeriod(), currentTime);
-        }
     }
 
     /**
@@ -103,7 +94,13 @@ public class DeterministicHeartbeatScheduler extends AbstractHeartbeatScheduler 
         }
         started = true;
 
-        // No additional logic is needed here
+        final Instant currentTime = time.now();
+        for (final HeartbeatTask task : tasks) {
+            final List<HeartbeatTask> tasksForPeriod =
+                    heartbeatsByPeriod.computeIfAbsent(task.getPeriod(), k -> new ArrayList<>());
+            tasksForPeriod.add(task);
+            lastHeartbeats.put(task.getPeriod(), currentTime);
+        }
     }
 
     @Override
@@ -111,7 +108,5 @@ public class DeterministicHeartbeatScheduler extends AbstractHeartbeatScheduler 
         if (!started) {
             throw new IllegalStateException("Cannot stop the heartbeat before it has started");
         }
-
-        // No additional logic is needed here
     }
 }

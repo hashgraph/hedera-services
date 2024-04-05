@@ -51,8 +51,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
-
-// TODO make sure this also tests a heartbeat scheduler
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class DeterministicModelTests {
 
@@ -115,12 +115,15 @@ class DeterministicModelTests {
      * Generates a wiring mesh that yields non-deterministic results when data is fed in using the standard wiring
      * model.
      *
-     * @param seed        the seed to use for the random number generator
-     * @param wiringModel the wiring model to use
+     * @param seed            the seed to use for the random number generator
+     * @param wiringModel     the wiring model to use
+     * @param enableHeartbeat whether to enable a heartbeat scheduler, useful for ensuring that the standard case is
+     *                        non-deterministic even without a heartbeat introducing artifacts from the wall clock
      * @return the input wire to feed data into the mesh
      */
     @NonNull
-    private static WiringMesh generateWiringMesh(final long seed, @NonNull final WiringModel wiringModel) {
+    private static WiringMesh generateWiringMesh(
+            final long seed, @NonNull final WiringModel wiringModel, final boolean enableHeartbeat) {
 
         // - Data is fed into A
         // - Data comes out of J
@@ -177,7 +180,7 @@ class DeterministicModelTests {
         final BindableInputWire<Instant, Long> schedulerBHeartbeat = schedulerB.buildInputWire("heartbeatB");
         final Function<Long, Long> heartbeatHandler = buildHandler(random, 0, lock);
         schedulerBHeartbeat.bind(instant -> {
-            System.out.println(instant); // TODO
+            System.out.println(instant);
             return heartbeatHandler.apply(instant.toEpochMilli());
         });
         final OutputWire<Long> outB = schedulerB.getOutputWire();
@@ -281,7 +284,9 @@ class DeterministicModelTests {
         inK.bind(buildHandler(random, 0.01, lock));
 
         outA.solderTo(inB);
-        wiringModel.buildHeartbeatWire(Duration.ofMillis(5)).solderTo(schedulerBHeartbeat);
+        if (enableHeartbeat) {
+            wiringModel.buildHeartbeatWire(Duration.ofMillis(5)).solderTo(schedulerBHeartbeat);
+        }
         outB.solderTo(inC);
         outC.solderTo(inD);
         outD.solderTo(inE);
@@ -358,8 +363,9 @@ class DeterministicModelTests {
      * The purpose of this test is to verify that the test setup is non-deterministic when using the standard wiring
      * model.
      */
-    @Test
-    void verifyStandardNondeterminism() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void verifyStandardNondeterminism(final boolean enableHeartbeat) {
         final Random random = getRandomPrintSeed();
         final long meshSeed = random.nextLong();
         final long dataSeed = random.nextLong();
@@ -369,7 +375,8 @@ class DeterministicModelTests {
 
         final long value1 = evaluateMesh(
                 dataSeed,
-                generateWiringMesh(meshSeed, new StandardWiringModel(platformContext, ForkJoinPool.commonPool())),
+                generateWiringMesh(
+                        meshSeed, new StandardWiringModel(platformContext, ForkJoinPool.commonPool()), enableHeartbeat),
                 () -> {
                     try {
                         MILLISECONDS.sleep(1);
@@ -381,7 +388,8 @@ class DeterministicModelTests {
 
         final long value2 = evaluateMesh(
                 dataSeed,
-                generateWiringMesh(meshSeed, new StandardWiringModel(platformContext, ForkJoinPool.commonPool())),
+                generateWiringMesh(
+                        meshSeed, new StandardWiringModel(platformContext, ForkJoinPool.commonPool()), enableHeartbeat),
                 () -> {
                     try {
                         MILLISECONDS.sleep(1);
@@ -395,7 +403,7 @@ class DeterministicModelTests {
     }
 
     @Test
-    void verifyDeterministicModel() { // TODO this is not producing heartbeats
+    void verifyDeterministicModel() {
         final Random random = getRandomPrintSeed();
         final long meshSeed = random.nextLong();
         final long dataSeed = random.nextLong();
@@ -405,17 +413,19 @@ class DeterministicModelTests {
                 TestPlatformContextBuilder.create().withTime(time).build();
 
         final DeterministicWiringModel deterministicWiringModel1 = new DeterministicWiringModel(platformContext);
-        final long value1 = evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel1), () -> {
-            time.tick(Duration.ofMillis(1));
-            deterministicWiringModel1.tick();
-        });
+        final long value1 =
+                evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel1, true), () -> {
+                    time.tick(Duration.ofMillis(1));
+                    deterministicWiringModel1.tick();
+                });
 
         time.reset();
         final DeterministicWiringModel deterministicWiringModel2 = new DeterministicWiringModel(platformContext);
-        final long value2 = evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel2), () -> {
-            time.tick(Duration.ofMillis(1));
-            deterministicWiringModel2.tick();
-        });
+        final long value2 =
+                evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel2, true), () -> {
+                    time.tick(Duration.ofMillis(1));
+                    deterministicWiringModel2.tick();
+                });
 
         assertEquals(value1, value2);
     }
