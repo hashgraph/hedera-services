@@ -49,7 +49,7 @@ import java.util.Set;
  * wiring that is appropriate for internal use by the framework, but should not be exposed to the end users of the
  * wiring framework.
  */
-public abstract class TraceableWiringModel implements WiringModel { // TODO consider making this an interface
+public abstract class TraceableWiringModel implements WiringModel {
 
     /**
      * A map of vertex names to vertices.
@@ -82,9 +82,27 @@ public abstract class TraceableWiringModel implements WiringModel { // TODO cons
     private boolean started = false;
 
     /**
-     * Constructor.
+     * True if backpressure is enabled.
      */
-    public TraceableWiringModel() {}
+    private final boolean backpressureEnabled;
+
+    /**
+     * Constructor.
+     *
+     * @param backpressureEnabled true if backpressure is enabled
+     */
+    public TraceableWiringModel(final boolean backpressureEnabled) {
+        this.backpressureEnabled = backpressureEnabled;
+    }
+
+    /**
+     * If true then backpressure is enabled. If false then this model will never apply backpressure internally.
+     *
+     * @return true if backpressure is enabled for this model
+     */
+    public boolean isBackpressureEnabled() {
+        return backpressureEnabled;
+    }
 
     /**
      * {@inheritDoc}

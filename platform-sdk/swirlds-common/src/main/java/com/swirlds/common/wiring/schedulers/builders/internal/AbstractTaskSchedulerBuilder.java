@@ -329,8 +329,11 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
         // In all other cases, better to use a no-op counter. Counters have overhead, and if we don't need one
         // then we shouldn't use one.
 
-        if (unhandledTaskCapacity != UNLIMITED_CAPACITY && type != DIRECT && type != DIRECT_THREADSAFE) {
-            // TODO figure out how to fully disable regular back pressure when running in deterministic mode
+        if (model.isBackpressureEnabled()
+                && unhandledTaskCapacity != UNLIMITED_CAPACITY
+                && type != DIRECT
+                && type != DIRECT_THREADSAFE) {
+
             innerCounter = new BackpressureObjectCounter(name, unhandledTaskCapacity, sleepDuration);
         } else if (unhandledTaskMetricEnabled || flushingEnabled) {
             innerCounter = new StandardObjectCounter(sleepDuration);

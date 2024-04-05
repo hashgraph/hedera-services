@@ -68,6 +68,7 @@ public class DeterministicWiringModel extends TraceableWiringModel {
      * @param platformContext the context for this node
      */
     public DeterministicWiringModel(@NonNull final PlatformContext platformContext) {
+        super(false);
         this.platformContext = Objects.requireNonNull(platformContext);
         this.heartbeatScheduler = new DeterministicHeartbeatScheduler(this, platformContext.getTime(), "heartbeat");
     }

@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.model;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
+import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.CONCURRENT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
@@ -27,6 +28,7 @@ import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SE
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,6 +48,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
@@ -428,5 +431,137 @@ class DeterministicModelTests {
                 });
 
         assertEquals(value1, value2);
+    }
+
+    /**
+     * Test a scenario where there is a circular data flow formed by wires.
+     * <p>
+     * In this test, all data is passed from A to B to C to D. All data that is a multiple of 7 is passed from D to A as
+     * a negative value, but is not passed around the loop again.
+     *
+     * <pre>
+     * A -------> B
+     * ^          |
+     * |          |
+     * |          V
+     * D <------- C
+     * </pre>
+     */
+    @Test
+    void circularDataFlowTest() {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final DeterministicWiringModel model = new DeterministicWiringModel(platformContext);
+
+        final AtomicInteger countA = new AtomicInteger();
+        final AtomicInteger negativeCountA = new AtomicInteger();
+        final AtomicInteger countB = new AtomicInteger();
+        final AtomicInteger countC = new AtomicInteger();
+        final AtomicInteger countD = new AtomicInteger();
+
+        final TaskScheduler<Integer> taskSchedulerToA = model.schedulerBuilder("wireToA")
+                .withType(SEQUENTIAL)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
+        final TaskScheduler<Integer> taskSchedulerToB = model.schedulerBuilder("wireToB")
+                .withType(SEQUENTIAL_THREAD)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
+        final TaskScheduler<Integer> taskSchedulerToC = model.schedulerBuilder("wireToC")
+                .withType(CONCURRENT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
+        final TaskScheduler<Integer> taskSchedulerToD = model.schedulerBuilder("wireToD")
+                .withType(DIRECT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
+
+        final BindableInputWire<Integer, Integer> channelToA = taskSchedulerToA.buildInputWire("channelToA");
+        final BindableInputWire<Integer, Integer> channelToB = taskSchedulerToB.buildInputWire("channelToB");
+        final BindableInputWire<Integer, Integer> channelToC = taskSchedulerToC.buildInputWire("channelToC");
+        final BindableInputWire<Integer, Integer> channelToD = taskSchedulerToD.buildInputWire("channelToD");
+
+        final Function<Integer, Integer> handlerA = x -> {
+            if (x > 0) {
+                countA.set(hash32(x, countA.get()));
+                return x;
+            } else {
+                negativeCountA.set(hash32(x, negativeCountA.get()));
+                // negative values are values that have been passed around the loop
+                // Don't pass them on again or else we will get an infinite loop
+                return null;
+            }
+        };
+
+        final Function<Integer, Integer> handlerB = x -> {
+            countB.set(hash32(x, countB.get()));
+            return x;
+        };
+
+        final Function<Integer, Integer> handlerC = x -> {
+            countC.set(hash32(x, countC.get()));
+            return x;
+        };
+
+        final Function<Integer, Integer> handlerD = x -> {
+            countD.set(hash32(x, countD.get()));
+            if (x % 7 == 0) {
+                return -x;
+            } else {
+                return null;
+            }
+        };
+
+        taskSchedulerToA.getOutputWire().solderTo(channelToB);
+        taskSchedulerToB.getOutputWire().solderTo(channelToC);
+        taskSchedulerToC.getOutputWire().solderTo(channelToD);
+        taskSchedulerToD.getOutputWire().solderTo(channelToA);
+
+        channelToA.bind(handlerA);
+        channelToB.bind(handlerB);
+        channelToC.bind(handlerC);
+        channelToD.bind(handlerD);
+
+        model.start();
+
+        int expectedCountA = 0;
+        int expectedNegativeCountA = 0;
+        int expectedCountB = 0;
+        int expectedCountC = 0;
+        int expectedCountD = 0;
+
+        for (int i = 1; i < 1000; i++) {
+            channelToA.put(i);
+
+            expectedCountA = hash32(i, expectedCountA);
+            expectedCountB = hash32(i, expectedCountB);
+            expectedCountC = hash32(i, expectedCountC);
+            expectedCountD = hash32(i, expectedCountD);
+
+            if (i % 7 == 0) {
+                expectedNegativeCountA = hash32(-i, expectedNegativeCountA);
+            }
+        }
+
+        int maxTicks = 10_000;
+        while (true) {
+            if (maxTicks-- == 0) {
+                fail("Model did not quiesce in time");
+            }
+            model.tick();
+            if (expectedCountA == countA.get()
+                    && expectedNegativeCountA == negativeCountA.get()
+                    && expectedCountB == countB.get()
+                    && expectedCountC == countC.get()
+                    && expectedCountD == countD.get()) {
+                break;
+            }
+        }
+
+        model.stop();
     }
 }

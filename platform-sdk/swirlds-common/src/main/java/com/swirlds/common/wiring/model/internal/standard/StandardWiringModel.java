@@ -79,6 +79,7 @@ public class StandardWiringModel extends TraceableWiringModel {
      */
     public StandardWiringModel(
             @NonNull final PlatformContext platformContext, @NonNull final ForkJoinPool defaultPool) {
+        super(true);
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.defaultPool = Objects.requireNonNull(defaultPool);
