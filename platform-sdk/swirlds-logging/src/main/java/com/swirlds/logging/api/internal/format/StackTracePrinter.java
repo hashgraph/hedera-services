@@ -31,6 +31,7 @@ import java.util.Set;
 public class StackTracePrinter {
 
     private static final int MAX_STACK_TRACE_DEPTH = -1;
+    public static final String LINE_SEPARATOR = System.lineSeparator();
 
     /**
      * Prints the stack trace of a throwable to a provided Appendable writer. Avoids printing circular references and
@@ -49,7 +50,7 @@ public class StackTracePrinter {
             writer.append(currentThrowable.getClass().getName());
             writer.append(": ");
             writer.append(currentThrowable.getMessage());
-            writer.append(System.lineSeparator());
+            writer.append(LINE_SEPARATOR);
 
             final StackTraceElement[] stackTrace = currentThrowable.getStackTrace();
             int m = stackTrace.length - 1;
@@ -84,13 +85,13 @@ public class StackTracePrinter {
                     writer.append("(Unknown Source)");
                 }
 
-                writer.append(System.lineSeparator());
+                writer.append(LINE_SEPARATOR);
             }
             if (skippedFrames != 0) {
                 writer.append("\t... ");
                 writer.append(skippedFrames);
                 writer.append(" more");
-                writer.append(System.lineSeparator());
+                writer.append(LINE_SEPARATOR);
             }
 
             final Throwable cause = currentThrowable.getCause();
