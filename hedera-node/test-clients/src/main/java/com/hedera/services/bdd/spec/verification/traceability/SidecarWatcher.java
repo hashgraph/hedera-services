@@ -300,7 +300,7 @@ public class SidecarWatcher {
         final var messageBuilder = new StringBuilder();
         messageBuilder.append("Mismatch(es) between actual/expected sidecars present: ");
         for (final var kv : failedSidecars.entrySet()) {
-            final var faultySidecars = kv.getValue();
+            final var faultySidecars = kv.getValue().stream().filter(filter).toList();
             messageBuilder
                     .append("\n\n")
                     .append(faultySidecars.size())
@@ -309,9 +309,6 @@ public class SidecarWatcher {
                     .append("}:");
             int i = 1;
             for (final var pair : faultySidecars) {
-                if (!filter.test(pair)) {
-                    continue;
-                }
                 messageBuilder
                         .append("\n******FAILURE #")
                         .append(i++)

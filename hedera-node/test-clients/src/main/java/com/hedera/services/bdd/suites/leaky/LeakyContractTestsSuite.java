@@ -2189,11 +2189,13 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                     getAccountBalance(lazyAccountName).hasTinyBars(depositAmount),
                                     expectContractStateChangesSidecarFor(
                                             payTxn,
-                                            List.of(StateChange.stateChangeFor(LAZY_CREATE_CONTRACT)
-                                                    .withStorageChanges(StorageChange.onlyRead(
-                                                            formattedAssertionValue(0L),
-                                                            formattedAssertionValue(
-                                                                    "0x26fdcaf0a49f79f0b0fc7e3e32db6e076ad4ef74"))))),
+                                            List.of(
+                                                    StateChange.stateChangeFor(LAZY_CREATE_CONTRACT)
+                                                            .withStorageChanges(
+                                                                    StorageChange.onlyRead(
+                                                                            formattedAssertionValue(0L),
+                                                                            formattedAssertionValue(
+                                                                                    "0x2ac2b6c29522c39b246a044bc2a2681fc296c38dc3a1c2a3470fc297c2a9"))))),
                                     expectContractActionSidecarFor(
                                             payTxn,
                                             List.of(ContractAction.newBuilder()
