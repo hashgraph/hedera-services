@@ -36,8 +36,6 @@ import java.util.Map.Entry;
  */
 public class DeterministicHeartbeatScheduler extends AbstractHeartbeatScheduler {
 
-    // TODO test this
-
     /**
      * This maps from the period of the heartbeat to the list of heartbeats that want to be notified with that period.
      */
