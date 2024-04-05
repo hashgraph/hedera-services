@@ -894,7 +894,8 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
         return defaultHapiSpec("V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
-                        cryptoCreate(TOKEN_TREASURY).balance(THOUSAND_HBAR),
+                        newKeyNamed(THRESHOLD_KEY),
+                        cryptoCreate(TOKEN_TREASURY).key(THRESHOLD_KEY).balance(THOUSAND_HBAR),
                         cryptoCreate(RECEIVER),
                         cryptoCreate(SIGNER).balance(THOUSAND_HBAR),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -946,7 +947,9 @@ public class ContractMintHTSV2SecurityModelSuite extends HapiSuite {
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(0),
                         // Assert the token is NOT mined in the token treasury account
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 0L),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
+                        // `THRESHOLD_KEY` is the arleady existing admin key for `NON_FUNGIBLE_TOKEN` and we need to
+                        // sign with it
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(THRESHOLD_KEY),
                         // Test Case 2: Treasury account paying and signing a non fungible TOKEN MINT TRANSACTION,
                         // when the token is expected to be minted in the token treasury account
                         // SIGNER -> call -> CONTRACT -> callcode -> PRECOMPILE
