@@ -97,6 +97,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.OneOf;
@@ -104,7 +105,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -172,7 +172,7 @@ public class SigReqAdapterUtils {
      */
     public static WritableTokenStore wellKnownWritableTokenStoreAt() {
         return new WritableTokenStore(
-                mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())), CONFIGURATION, mock(Metrics.class));
+                mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())), CONFIGURATION, mock(StoreMetricsService.class));
     }
 
     private static WritableKVState<TokenID, Token> wellKnownTokenState() {
@@ -228,7 +228,7 @@ public class SigReqAdapterUtils {
 
         final var wrappedState = new MapWritableKVState<>(TOKEN_RELS_KEY, destination);
         return new WritableTokenRelationStore(
-                mockWritableStates(Map.of(TOKEN_RELS_KEY, wrappedState)), CONFIGURATION, mock(Metrics.class));
+                mockWritableStates(Map.of(TOKEN_RELS_KEY, wrappedState)), CONFIGURATION, mock(StoreMetricsService.class));
     }
 
     public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {
@@ -240,7 +240,7 @@ public class SigReqAdapterUtils {
         return new WritableAccountStore(
                 mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())),
                 CONFIGURATION,
-                mock(Metrics.class));
+                mock(StoreMetricsService.class));
     }
 
     private static WritableKVState<AccountID, Account> wrappedAccountState() {

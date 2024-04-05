@@ -76,6 +76,7 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -102,7 +103,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.PlatformState;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
@@ -200,7 +200,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private PlatformState platformState;
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     @BeforeEach
     void setup() {
@@ -256,7 +256,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 networkUtilizationManager,
                 synchronizedThrottleAccumulator,
                 platformState,
-                metrics);
+                storeMetricsService);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -290,7 +290,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             networkUtilizationManager,
             synchronizedThrottleAccumulator,
             platformState,
-            metrics
+                storeMetricsService
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -423,7 +423,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
                     platformState,
-                    metrics);
+                    storeMetricsService);
         }
 
         @Test
@@ -526,7 +526,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
                     platformState,
-                    metrics);
+                    storeMetricsService);
         }
 
         @Test
@@ -1019,7 +1019,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
                     platformState,
-                    metrics);
+                    storeMetricsService);
         }
 
         @SuppressWarnings("ConstantConditions")

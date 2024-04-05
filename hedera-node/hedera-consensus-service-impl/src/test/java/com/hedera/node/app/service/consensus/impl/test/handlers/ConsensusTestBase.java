@@ -36,12 +36,12 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -91,7 +91,7 @@ public class ConsensusTestBase {
     protected HandleContext handleContext;
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     protected MapReadableKVState<TopicID, Topic> readableTopicState;
     protected MapWritableKVState<TopicID, Topic> writableTopicState;
@@ -112,7 +112,7 @@ public class ConsensusTestBase {
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableTopicStore(writableStates, configuration, metrics);
+        writableStore = new WritableTopicStore(writableStates, configuration, storeMetricsService);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
@@ -123,7 +123,7 @@ public class ConsensusTestBase {
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableTopicStore(writableStates, configuration, metrics);
+        writableStore = new WritableTopicStore(writableStates, configuration, storeMetricsService);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
