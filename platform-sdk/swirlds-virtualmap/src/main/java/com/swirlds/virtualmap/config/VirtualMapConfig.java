@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.config;
 
+import static com.swirlds.virtualmap.config.VirtualMapReconnectMode.PUSH;
+
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
@@ -40,10 +42,7 @@ import java.time.Duration;
  *      The number of ranks minus one to handle in a single virtual hasher task. That is, when height is
  *      1, every task takes 2 inputs. Height 2 corresponds to tasks with 4 inputs. And so on.
  * @param reconnectMode
- *      Reconnect mode. Accepted values are "push" (teacher pushes lessons to learner, this is the model
- *      used for the rest of the merkle tree), "pullTopToBottom" (learner sends node requests to teacher
- *      starting from the root, rank by rank to leaves), and "pullTwoPhasePessimistic" (learner sends node
- *      requests to teacher starting from clean leaf parent nodes and then leaves).
+ *      Reconnect mode. For the list of accepted values, see {@link VirtualMapReconnectMode}.
  * @param reconnectFlushInterval
  *      During reconnect, virtual nodes are periodically flushed to disk after they are hashed. This
  *      interval indicates the number of nodes to hash before they are flushed to disk. If zero, all
@@ -53,7 +52,7 @@ import java.time.Duration;
  * 		cleaner threads. Ignored if an explicit number of threads is given via {@code virtualMap.numCleanerThreads}.
  * @param numCleanerThreads
  * 		The number of threads to devote to cache cleaning. If not set, defaults to the number of threads implied by
- *        {@code virtualMap.percentCleanerThreads} and {@link Runtime#availableProcessors()}.
+ *      {@code virtualMap.percentCleanerThreads} and {@link Runtime#availableProcessors()}.
  * @param maximumVirtualMapSize
  * 		The maximum number of entries allowed in the {@link VirtualMap} instance. If not set, defaults to
  * 		Integer.MAX_VALUE (2^31 - 1, or 2,147,483,647).
@@ -64,7 +63,7 @@ import java.time.Duration;
  * 		({@code getMaximumVirtualMapSize()}), we would log a warning message that there are only 5,000,000 slots left.
  * @param virtualMapWarningInterval
  * 		The threshold for each subsequent warning message to be logged, after the initial one, about the
- *        {@link VirtualMap} instance running close to the maximum allowable size. For example, if set to 100,000,
+ *      {@link VirtualMap} instance running close to the maximum allowable size. For example, if set to 100,000,
  * 		then for each 100,000 elements beyond {@code getVirtualMapWarningThreshold()} that we are closer to 0, we will
  * 		output an additional warning message that we are nearing the limit ({@code getMaximumVirtualMapSize()}), we
  * 		would log a warning message that there are only N slots left.
@@ -95,7 +94,7 @@ public record VirtualMapConfig(
                 double percentHashThreads, // FUTURE WORK: We need to add min/max support for double values
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numHashThreads,
         @Min(1) @Max(64) @ConfigProperty(defaultValue = "3") int virtualHasherChunkHeight,
-        @ConfigProperty(defaultValue = RECONNECT_MODE_PUSH) String reconnectMode,
+        @ConfigProperty(defaultValue = PUSH) String reconnectMode,
         @Min(0) @ConfigProperty(defaultValue = "500000") int reconnectFlushInterval,
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "25.0")
                 double percentCleanerThreads, // FUTURE WORK: We need to add min/max support for double values
@@ -111,18 +110,6 @@ public record VirtualMapConfig(
         @ConfigProperty(defaultValue = "10000") int preferredFlushQueueSize,
         @ConfigProperty(defaultValue = "200ms") Duration flushThrottleStepSize,
         @ConfigProperty(defaultValue = "5s") Duration maximumFlushThrottlePeriod) {
-
-    // "Push" reconnect mode, when teacher sends requests to learner, and learner responses if it has
-    // the same virtual nodes
-    private static final String RECONNECT_MODE_PUSH = "push";
-
-    // "Pull / top to bottom" reconnect mode, when learner sends requests to teacher, rank by rank
-    // starting from the root of the virtual tree, and teacher responses if it has the same virtual nodes
-    private static final String RECONNECT_MODE_PULL_TOP_TO_BOTTOM = "pullTopToBottom";
-
-    // "Pull / bottom to top" reconnect mode, when learner sends requests to teacher, starting from
-    // leaf parent nodes, then leaves, and teacher responses if it has the same virtual nodes
-    private static final String RECONNECT_MODE_PULL_TWO_PHASE_PESSIMISTIC = "pullTwoPhasePessimistic";
 
     private static final double UNIT_FRACTION_PERCENT = 100.0;
 

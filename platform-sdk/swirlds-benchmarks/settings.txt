@@ -9,6 +9,5 @@ benchmark.csvAppend,                           true
 virtualMap.flushInterval,                      20
 virtualMap.preferredFlushQueueSize,            1
 virtualMap.flushThrottleStepSize,              500ms
-virtualMap.reconnectMode,                      pullTwoPhasePessimistic
 merkleDb.hashesRamToDiskThreshold,             8388608
 

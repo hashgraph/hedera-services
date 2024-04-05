@@ -62,6 +62,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.config.VirtualMapReconnectMode;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
@@ -1378,11 +1379,11 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     @Override
     public TeacherTreeView<Long> buildTeacherView(final ReconnectConfig reconnectConfig) {
         return switch (config.reconnectMode()) {
-            case "push" -> new TeacherPushVirtualTreeView<>(
+            case VirtualMapReconnectMode.PUSH -> new TeacherPushVirtualTreeView<>(
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
-            case "pullTopToBottom" -> new TeacherPullVirtualTreeView<>(
+            case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM -> new TeacherPullVirtualTreeView<>(
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
-            case "pullTwoPhasePessimistic" -> new TeacherPullVirtualTreeView<>(
+            case VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC -> new TeacherPullVirtualTreeView<>(
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
             default -> throw new UnsupportedOperationException("Unknown reconnect mode: " + config.reconnectMode());
         };
@@ -1453,9 +1454,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         nodeRemover = new ReconnectNodeRemover<>(
                 originalMap.getRecords(), originalState.getFirstLeafPath(), originalState.getLastLeafPath());
         return switch (config.reconnectMode()) {
-            case "push" -> new LearnerPushVirtualTreeView<>(
+            case VirtualMapReconnectMode.PUSH -> new LearnerPushVirtualTreeView<>(
                     reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
-            case "pullTopToBottom" -> {
+            case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM -> {
                 final NodeTraversalOrder topToBottom = new TopToBottomTraversalOrder();
                 yield new LearnerPullVirtualTreeView<>(
                         reconnectConfig,
@@ -1466,7 +1467,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         nodeRemover,
                         topToBottom);
             }
-            case "pullTwoPhasePessimistic" -> {
+            case VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC -> {
                 final NodeTraversalOrder twoPhasePessimistic = new TwoPhasePessimisticTraversalOrder();
                 yield new LearnerPullVirtualTreeView<>(
                         reconnectConfig,
