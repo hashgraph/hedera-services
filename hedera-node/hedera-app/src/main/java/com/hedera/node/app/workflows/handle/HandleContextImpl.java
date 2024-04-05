@@ -101,7 +101,6 @@ import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -365,7 +364,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     @Override
     public long newEntityNum() {
-        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
+        final var entityIdsFactory =
+                new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return entityIdsFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
     }
 
@@ -374,7 +374,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     @Override
     public long peekAtNewEntityNum() {
-        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
+        final var entityIdsFactory =
+                new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return entityIdsFactory.getStore(WritableEntityIdStore.class).peekAtNextNumber();
     }
 

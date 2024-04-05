@@ -38,8 +38,10 @@ import javax.inject.Singleton;
 public interface ContractScaffoldingComponent extends BaseScaffoldingComponent {
     @Component.Factory
     interface Factory {
-        ContractScaffoldingComponent create(@BindsInstance Metrics metrics, @BindsInstance Configuration configuration, @BindsInstance
-                StoreMetricsService storeMetricsService);
+        ContractScaffoldingComponent create(
+                @BindsInstance Metrics metrics,
+                @BindsInstance Configuration configuration,
+                @BindsInstance StoreMetricsService storeMetricsService);
     }
 
     List<HtsCallTranslator> callTranslators();

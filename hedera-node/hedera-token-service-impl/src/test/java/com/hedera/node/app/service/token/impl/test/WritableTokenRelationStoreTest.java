@@ -76,9 +76,11 @@ class WritableTokenRelationStoreTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testNullConstructorArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(null, CONFIGURATION,
-                storeMetricsService));
-        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states, null, storeMetricsService));
+        assertThrows(
+                NullPointerException.class,
+                () -> new WritableTokenRelationStore(null, CONFIGURATION, storeMetricsService));
+        assertThrows(
+                NullPointerException.class, () -> new WritableTokenRelationStore(states, null, storeMetricsService));
         assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states, CONFIGURATION, null));
     }
 

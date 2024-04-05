@@ -37,7 +37,10 @@ import javax.inject.Singleton;
 public interface TokenScaffoldingComponent extends BaseScaffoldingComponent {
     @Component.Factory
     interface Factory {
-        TokenScaffoldingComponent create(@BindsInstance Metrics metrics, @BindsInstance Configuration configuration, @BindsInstance StoreMetricsService storeMetricsService);
+        TokenScaffoldingComponent create(
+                @BindsInstance Metrics metrics,
+                @BindsInstance Configuration configuration,
+                @BindsInstance StoreMetricsService storeMetricsService);
     }
 
     CryptoTransferHandler cryptoTransferHandler();

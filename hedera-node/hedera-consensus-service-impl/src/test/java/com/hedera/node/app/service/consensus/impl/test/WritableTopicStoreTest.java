@@ -46,8 +46,10 @@ class WritableTopicStoreTest extends ConsensusTestBase {
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableTopicStore(null, CONFIGURATION, storeMetricsService));
-        assertThrows(NullPointerException.class, () -> new WritableTopicStore(writableStates, null, storeMetricsService));
+        assertThrows(
+                NullPointerException.class, () -> new WritableTopicStore(null, CONFIGURATION, storeMetricsService));
+        assertThrows(
+                NullPointerException.class, () -> new WritableTopicStore(writableStates, null, storeMetricsService));
         assertThrows(NullPointerException.class, () -> new WritableTopicStore(writableStates, CONFIGURATION, null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }

@@ -290,7 +290,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             networkUtilizationManager,
             synchronizedThrottleAccumulator,
             platformState,
-                storeMetricsService
+            storeMetricsService
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];

@@ -17,8 +17,6 @@
 package com.hedera.node.app.metrics;
 
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
-import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowImpl;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.Platform;
 import dagger.Binds;
@@ -38,5 +36,4 @@ public interface MetricsInjectionModule {
 
     @Binds
     StoreMetricsService bindStoreMetricsService(@NonNull StoreMetricsServiceImpl storeMetricsService);
-
 }

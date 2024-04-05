@@ -57,7 +57,8 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
         this.isFirstTransaction = isFirstTransaction;
 
         this.readableStoreFactory = new ReadableStoreFactory(stack);
-        this.writableStoreFactory = new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
+        this.writableStoreFactory =
+                new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
     }
 
     @NonNull

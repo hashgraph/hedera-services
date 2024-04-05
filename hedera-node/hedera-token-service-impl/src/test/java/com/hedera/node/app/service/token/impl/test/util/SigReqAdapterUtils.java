@@ -172,7 +172,9 @@ public class SigReqAdapterUtils {
      */
     public static WritableTokenStore wellKnownWritableTokenStoreAt() {
         return new WritableTokenStore(
-                mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())), CONFIGURATION, mock(StoreMetricsService.class));
+                mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())),
+                CONFIGURATION,
+                mock(StoreMetricsService.class));
     }
 
     private static WritableKVState<TokenID, Token> wellKnownTokenState() {
@@ -228,7 +230,9 @@ public class SigReqAdapterUtils {
 
         final var wrappedState = new MapWritableKVState<>(TOKEN_RELS_KEY, destination);
         return new WritableTokenRelationStore(
-                mockWritableStates(Map.of(TOKEN_RELS_KEY, wrappedState)), CONFIGURATION, mock(StoreMetricsService.class));
+                mockWritableStates(Map.of(TOKEN_RELS_KEY, wrappedState)),
+                CONFIGURATION,
+                mock(StoreMetricsService.class));
     }
 
     public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {

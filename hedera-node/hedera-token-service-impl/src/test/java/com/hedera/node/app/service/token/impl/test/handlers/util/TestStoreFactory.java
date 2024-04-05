@@ -67,7 +67,9 @@ public final class TestStoreFactory {
     public static WritableTokenStore newWritableStoreWithTokens(Token... tokens) {
         final var wrappedState = newTokenStateFromTokens(tokens);
         return new WritableTokenStore(
-                new MapWritableStates(Map.of(TOKENS_KEY, wrappedState)), CONFIGURATION, mock(StoreMetricsService.class));
+                new MapWritableStates(Map.of(TOKENS_KEY, wrappedState)),
+                CONFIGURATION,
+                mock(StoreMetricsService.class));
     }
 
     public static ReadableAccountStore newReadableStoreWithAccounts(Account... accounts) {

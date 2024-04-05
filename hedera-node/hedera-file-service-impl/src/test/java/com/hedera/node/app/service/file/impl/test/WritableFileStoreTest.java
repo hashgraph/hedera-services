@@ -46,7 +46,8 @@ class WritableFileStoreTest extends FileTestBase {
     @Test
     void throwsIfNullValuesAsArgs() {
         assertThrows(NullPointerException.class, () -> new WritableFileStore(null, CONFIGURATION, storeMetricsService));
-        assertThrows(NullPointerException.class, () -> new WritableFileStore(writableStates, null, storeMetricsService));
+        assertThrows(
+                NullPointerException.class, () -> new WritableFileStore(writableStates, null, storeMetricsService));
         assertThrows(NullPointerException.class, () -> new WritableFileStore(writableStates, CONFIGURATION, null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }

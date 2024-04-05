@@ -464,7 +464,8 @@ public class ScheduleTestBase {
         accountStore = new ReadableAccountStoreImpl(states);
         scheduleStore = new ReadableScheduleStoreImpl(states);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableSchedules = new WritableScheduleStoreImpl(scheduleStates, configuration, mock(StoreMetricsService.class));
+        writableSchedules =
+                new WritableScheduleStoreImpl(scheduleStates, configuration, mock(StoreMetricsService.class));
         accountsMapById.put(scheduler, schedulerAccount);
         accountsMapById.put(payer, payerAccount);
         accountsMapById.put(admin, adminAccount);
