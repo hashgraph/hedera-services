@@ -64,8 +64,6 @@ import com.swirlds.config.extensions.validators.DefaultConfigViolation;
  * @param leafRecordCacheSize
  *      Cache size in bytes for reading virtual leaf records. Initialized in data source creation time from MerkleDb config.
  *      If the value is zero, leaf records cache isn't used.
- * @param usePbj
- *      If true, use PBJ format for new (flushed) and compacted data files, otherwise use JDB.
  * @param maxFileChannelsPerFileReader
  *     Maximum number of file channels per file reader.
  * @param maxThreadsPerFileChannel
@@ -87,7 +85,6 @@ public record MerkleDbConfig(
         @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads,
         @ConfigProperty(defaultValue = "262144") int reservedBufferLengthForLeafList,
         @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize,
-        @ConfigProperty(defaultValue = "true") boolean usePbj,
         @Min(1) @ConfigProperty(defaultValue = "8") int maxFileChannelsPerFileReader,
         @Min(1) @ConfigProperty(defaultValue = "8") int maxThreadsPerFileChannel) {
 
