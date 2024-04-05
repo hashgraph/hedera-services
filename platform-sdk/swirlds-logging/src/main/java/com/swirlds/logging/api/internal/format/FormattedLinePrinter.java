@@ -52,7 +52,7 @@ public class FormattedLinePrinter {
      * Creates a format
      *
      * @param formatTimestamp if true, timestamps will be converted to a human-readable format defined by
-     *                        {@link EpochFormatUtils}
+     *                        {@link TimestampPrinter}
      */
     public FormattedLinePrinter(boolean formatTimestamp) {
         this.formatTimestamp = formatTimestamp;
@@ -67,7 +67,7 @@ public class FormattedLinePrinter {
     public void print(@NonNull final StringBuilder appendable, @NonNull final LogEvent event) {
         try {
             if (formatTimestamp) {
-                appendable.append(EpochFormatUtils.timestampAsString(event.timestamp()));
+                TimestampPrinter.print(appendable, event.timestamp());
             } else {
                 appendable.append(event.timestamp());
             }

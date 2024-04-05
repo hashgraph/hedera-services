@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.benchmark.swirldslog.plain;
+package com.swirlds.logging.benchmark.bridged;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -28,14 +28,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Convenience methods for configuring swirlds-logging logger
  */
-public class SwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
+public class BridgedSwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
 
     /**
      * {@inheritDoc}
      * @param logFile
      */
     public @NonNull LoggingSystem configureFileLogging(final String logFile) {
-        final com.swirlds.config.api.Configuration configuration = ConfigurationBuilder.create()
+        final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
                 .withValue("logging.level", "trace")
@@ -44,6 +44,9 @@ public class SwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
                 .withValue("logging.handler.file.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", logFile)
+                .withValue("logging.handler.file.file-rolling.maxFileSize", "500MB")
+                .withValue("logging.handler.file.file-rolling.maxRollover", "1")
+                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
 
         return configure(configuration);
@@ -53,7 +56,7 @@ public class SwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
      * {@inheritDoc}
      */
     public @NonNull LoggingSystem configureConsoleLogging() {
-        final com.swirlds.config.api.Configuration configuration = ConfigurationBuilder.create()
+        final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
                 .withValue("logging.level", "trace")
@@ -61,6 +64,7 @@ public class SwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
                 .withValue("logging.handler.console.enabled", "true")
                 .withValue("logging.handler.console.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.console.level", "trace")
+                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
 
         return configure(configuration);
@@ -71,7 +75,7 @@ public class SwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
      * @param logFile
      */
     public @NonNull LoggingSystem configureFileAndConsoleLogging(final String logFile) {
-        final com.swirlds.config.api.Configuration configuration = ConfigurationBuilder.create()
+        final Configuration configuration = ConfigurationBuilder.create()
                 .withConverter(new ConfigLevelConverter())
                 .withConverter(new MarkerStateConverter())
                 .withValue("logging.level", "trace")
@@ -83,6 +87,8 @@ public class SwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
                 .withValue("logging.handler.console.type", "console")
                 .withValue("logging.handler.console.enabled", "true")
                 .withValue("logging.handler.console.formatTimestamp", ConfigManagement.formatTimestamp() + "")
+                .withValue("logging.handler.file.file-rolling.maxFileSize", "30MB")
+                .withValue("logging.handler.file.file-rolling.maxRollover", "1")
                 .withValue("logging.handler.console.level", "trace")
                 .build();
 
