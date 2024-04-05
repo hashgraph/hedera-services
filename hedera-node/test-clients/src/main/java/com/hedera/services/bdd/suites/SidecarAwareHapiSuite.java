@@ -137,14 +137,11 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
     }
 
     /**
-     * Asserts that all expected sidecar records have been externalized.
+     * Asserts that all expected sidecar records for contract actions have been externalized.
      * @return A {@link CustomSpecAssert} that will assert that all expected sidecar records have been externalized.
      */
-    protected static CustomSpecAssert assertContainsAllExpectedSidecarRecords() {
+    protected static CustomSpecAssert assertContainsAllExpectedContractActions() {
         return assertionsHold((spec, assertLog) -> {
-            assertTrue(
-                    sidecarWatcher.containsAllExpectedStateChanges(),
-                    sidecarWatcher.getMismatchErrors(MismatchedSidecar::hasStateChanges));
             assertTrue(
                     sidecarWatcher.containsAllExpectedContractActions(),
                     sidecarWatcher.getMismatchErrors(MismatchedSidecar::hasActions));

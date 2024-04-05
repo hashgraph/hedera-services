@@ -2211,7 +2211,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                                     .build())));
                         }),
                         tearDownSidecarWatcher(),
-                        assertContainsAllExpectedSidecarRecords());
+                        assertContainsAllExpectedContractActions());
     }
 
     // Requires legacy security model, cannot be enabled as @HapiTest without refactoring to use contract keys
