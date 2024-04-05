@@ -48,6 +48,7 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
+import com.swirlds.platform.network.NetworkPeerIdentifier;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
@@ -200,7 +201,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                 new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
-                platformContext, this, selfId, addressBook, connectionManagers::newConnection, time);
+                platformContext, this, new NetworkPeerIdentifier(), selfId, connectionManagers::newConnection, time);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(

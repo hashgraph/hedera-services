@@ -21,28 +21,24 @@ import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
-import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
+import com.swirlds.platform.network.NetworkPeerIdentifier;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConnection;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.Socket;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,29 +50,29 @@ public class InboundConnectionHandler {
     private static final Logger logger = LogManager.getLogger(InboundConnectionHandler.class);
     private final ConnectionTracker connectionTracker;
     private final NodeId selfId;
-    private final AddressBook addressBook;
     private final InterruptableConsumer<Connection> newConnectionConsumer;
     private final SocketConfig socketConfig;
     /** Rate Limited Logger for SocketExceptions */
     private final RateLimitedLogger socketExceptionLogger;
 
     private final PlatformContext platformContext;
+    private final NetworkPeerIdentifier networkPeerIdentifier;
 
     public InboundConnectionHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final ConnectionTracker connectionTracker,
+            @NonNull final NetworkPeerIdentifier networkPeerIdentifier,
             @NonNull final NodeId selfId,
-            @NonNull final AddressBook addressBook,
             @NonNull final InterruptableConsumer<Connection> newConnectionConsumer,
             @NonNull final Time time) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.selfId = Objects.requireNonNull(selfId);
-        this.addressBook = Objects.requireNonNull(addressBook);
         this.newConnectionConsumer = Objects.requireNonNull(newConnectionConsumer);
         Objects.requireNonNull(time);
         this.socketExceptionLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         this.socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
+        this.networkPeerIdentifier = networkPeerIdentifier;
     }
 
     /**
@@ -85,31 +81,23 @@ public class InboundConnectionHandler {
      * @param clientSocket the newly created socket
      */
     public void handle(final Socket clientSocket, final List<PeerInfo> peerInfoList) {
-        SerializableDataInputStream dis = null;
-        SerializableDataOutputStream dos = null;
-        NodeId otherId = null;
         long acceptTime = 0;
+        NodeId otherId = null;
         try {
             acceptTime = System.currentTimeMillis();
             clientSocket.setTcpNoDelay(socketConfig.tcpNoDelay());
             clientSocket.setSoTimeout(socketConfig.timeoutSyncClientSocket());
 
+            if (clientSocket instanceof final SSLSocket sslSocket) {
+                final PeerInfo connectedPeer = networkPeerIdentifier.identifyTlsPeer(
+                        sslSocket.getSession().getPeerCertificates(), peerInfoList);
+                otherId = Objects.requireNonNull(connectedPeer).nodeId();
+            }
+
             final SyncInputStream sis = SyncInputStream.createSyncInputStream(
                     platformContext, clientSocket.getInputStream(), socketConfig.bufferSize());
             final SyncOutputStream sos = SyncOutputStream.createSyncOutputStream(
                     platformContext, clientSocket.getOutputStream(), socketConfig.bufferSize());
-
-            if (clientSocket instanceof final SSLSocket sslSocket) {
-                final PeerInfo connectedPeer = getConnectedPeer(sslSocket, peerInfoList);
-                otherId = Objects.requireNonNull(connectedPeer).nodeId();
-            } else {
-                dis = new SerializableDataInputStream(sis);
-                dos = new SerializableDataOutputStream(sos);
-                final String otherKey = dis.readUTF();
-                otherId = addressBook.getNodeId(otherKey);
-                dos.writeInt(ByteConstants.COMM_CONNECT); // send an ACK for creating connection
-                dos.flush();
-            }
 
             final SocketConnection sc = SocketConnection.create(
                     selfId,
@@ -127,55 +115,29 @@ public class InboundConnectionHandler {
             logger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Inbound connection from {} to {} was interrupted: {}",
-                    otherId == null ? "unknown" : otherId,
+                    "unknown",
                     selfId,
                     formattedException);
-            NetworkUtils.close(dis, dos, clientSocket);
+            NetworkUtils.close(clientSocket);
         } catch (final IOException e) {
             final String formattedException = NetworkUtils.formatException(e);
             socketExceptionLogger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Inbound connection from {} to {} had IOException: {}",
-                    otherId == null ? "unknown" : otherId,
+                    "unknown",
                     selfId,
                     formattedException);
-            NetworkUtils.close(dis, dos, clientSocket);
+            NetworkUtils.close(clientSocket);
         } catch (final RuntimeException e) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "Inbound connection error, remote IP: {}\n" + "Time from accept to exception: {} ms",
-                    clientSocket.getInetAddress().toString(),
+                    clientSocket.getInetAddress() != null
+                            ? clientSocket.getInetAddress().toString()
+                            : "null IP",
                     acceptTime == 0 ? "N/A" : (System.currentTimeMillis() - acceptTime),
                     e);
-            NetworkUtils.close(dis, dos, clientSocket);
+            NetworkUtils.close(clientSocket);
         }
-    }
-
-    /**
-     * Returns the peer on the other end of the socket connection
-     */
-    private PeerInfo getConnectedPeer(@NonNull final SSLSocket sslSocket, @NonNull final List<PeerInfo> peers) {
-        PeerInfo peer = null;
-        try {
-            peer = NetworkUtils.identifyTlsPeer(sslSocket.getSession().getPeerCertificates(), peers);
-            if (peer == null) {
-                sslSocket.close();
-            }
-        } catch (final SSLPeerUnverifiedException e) {
-            socketExceptionLogger.warn(
-                    SOCKET_EXCEPTIONS.getMarker(),
-                    "Attempt to obtain certificate from an unverified peer {}:{} threw exception {}",
-                    sslSocket.getInetAddress(),
-                    sslSocket.getPort(),
-                    e.getMessage());
-        } catch (final IOException e) {
-            socketExceptionLogger.warn(
-                    SOCKET_EXCEPTIONS.getMarker(),
-                    "Attempt to close connection from {}:{} threw IO exception {}",
-                    sslSocket.getInetAddress(),
-                    sslSocket.getPort(),
-                    e.getMessage());
-        }
-        return peer;
     }
 }
