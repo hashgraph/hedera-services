@@ -182,7 +182,18 @@ public class GraphGeneratorTests {
 
         int count = 0;
         for (final IndexedEvent event : events) {
-            if (Objects.equals(event.getOtherId(), nodeId)) {
+            final NodeId otherParentId;
+            if (event.getBaseEvent().getHashedData().getOtherParents().isEmpty()) {
+                otherParentId = null;
+            } else {
+                otherParentId = event.getBaseEvent()
+                        .getHashedData()
+                        .getOtherParents()
+                        .getFirst()
+                        .getCreator();
+            }
+
+            if (Objects.equals(otherParentId, nodeId)) {
                 count++;
             }
         }

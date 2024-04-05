@@ -46,6 +46,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HexFormat;
@@ -530,5 +531,10 @@ public class ThingsToStrings {
         }
         sb.append(toStringPossibleHumanReadableByteArray(";", bytes.toByteArray()));
         return true;
+    }
+
+    @NonNull
+    public static String toStringOfInstant(@NonNull final Instant instant) {
+        return "%d.%d".formatted(instant.getEpochSecond(), instant.getNano());
     }
 }

@@ -119,7 +119,7 @@ class IntakeAndConsensusTests {
                 partitionedEvents.add(lastEvent);
             } else {
                 node1.addEvent(lastEvent.getBaseEvent());
-                final long node1NonAncGen = node1.getConsensus().getMinGenerationNonAncient();
+                final long node1NonAncGen = node1.getOutput().getEventWindow().getAncientThreshold();
                 if (partitionMaxGen > node1NonAncGen && partitionMinGen < node1NonAncGen) {
                     succeeded = true;
                 } else {

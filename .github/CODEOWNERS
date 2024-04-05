@@ -14,6 +14,7 @@
 
 # Hedera Node Deployments - Configuration & Grafana Dashboards
 /hedera-node/configuration/**                   @rbair23 @dalvizu @poulok @netopyr @Nana-EC @SimiHunjan @steven-sheehy @nathanklick
+/hedera-node/configuration/dev/**               @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/infrastructure/**                  @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-base @hashgraph/hedera-services
 
 # Hedera Node Docker Definitions

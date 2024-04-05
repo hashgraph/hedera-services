@@ -115,21 +115,4 @@ public class StakingInfoDumpUtils {
             @NonNull final Function<T, String> formatter) {
         fb.append(formatter.apply(fun.apply(stakingInfo)));
     }
-
-    static <T> Function<List<T>, String> getListFormatter(
-            @NonNull final Function<T, String> formatter, @NonNull final String subfieldSeparator) {
-        return lt -> {
-            if (!lt.isEmpty()) {
-                final var sb = new StringBuilder();
-                for (@NonNull final var e : lt) {
-                    final var v = formatter.apply(e);
-                    sb.append(v);
-                    sb.append(subfieldSeparator);
-                }
-                // Remove last subfield separator
-                if (sb.length() >= subfieldSeparator.length()) sb.setLength(sb.length() - subfieldSeparator.length());
-                return sb.toString();
-            } else return "";
-        };
-    }
 }
