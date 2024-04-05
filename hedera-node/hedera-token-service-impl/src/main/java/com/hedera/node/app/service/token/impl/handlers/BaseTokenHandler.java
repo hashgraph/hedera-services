@@ -409,25 +409,6 @@ public class BaseTokenHandler {
     }
 
     /**
-     * Returns true if the given token update op is a metadata-only update op.
-     * This is needed for validating whether a token update op has admin key present on the token,
-     * to update any other fields other than metadata.
-     * For updating metadata we need signature from either admin key or metadata key
-     * @param op the token update op to check
-     * @return true if the given token update op is an metadata-only update op
-     */
-    public static boolean isMetadataOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
-        if (!op.hasMetadata()) {
-            return false;
-        }
-        final var defaultWithMetadata = TokenUpdateTransactionBody.newBuilder()
-                .metadata(op.metadata())
-                .token(op.token())
-                .build();
-        return op.equals(defaultWithMetadata);
-    }
-
-    /**
      * Check if TokenUpdateOp wants to update only some of the low priority keys or the metadata field
      * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey or metadataKey
      */
