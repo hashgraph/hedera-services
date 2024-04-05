@@ -101,6 +101,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
@@ -651,7 +652,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .signedBy(GENESIS)
                                 .fee(ONE_HBAR)
-                                .hasKnownStatus(INVALID_ACCOUNT_ID),
+                                .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST),
                         cryptoDelete(STAKING_REWARD)
                                 .payingWith(GENESIS)
                                 .signedBy(GENESIS)
