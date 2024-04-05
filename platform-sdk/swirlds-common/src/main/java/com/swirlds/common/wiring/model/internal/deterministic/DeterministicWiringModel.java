@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+// TODO consider moving this to test framework. Might be best to leave it, need to think.
+
 /**
  * A deterministic implementation of a wiring model. Suitable for testing, not intended for production use cases.
  */
@@ -48,6 +50,8 @@ public class DeterministicWiringModel extends TraceableWiringModel {
      */
     private List<Runnable> nextCycleWork = new ArrayList<>();
 
+    private final DeterministicHeartbeatScheduler heartbeatScheduler;
+
     /**
      * Used to protect access to the JVM anchor.
      */
@@ -58,22 +62,27 @@ public class DeterministicWiringModel extends TraceableWiringModel {
      */
     private JvmAnchor anchor;
 
+    /**
+     * Constructor.
+     *
+     * @param platformContext the context for this node
+     */
     public DeterministicWiringModel(@NonNull final PlatformContext platformContext) {
-
         this.platformContext = Objects.requireNonNull(platformContext);
+        this.heartbeatScheduler = new DeterministicHeartbeatScheduler(this, platformContext.getTime(), "heartbeat");
     }
 
     /**
-     * Advance time by the given duration.
-     *
-     * @param duration the duration to advance time by
+     * Advance time. Amount of time that advances depends on how {@link com.swirlds.base.time.Time Time} has been
+     * advanced.
      */
-    public void tick(@NonNull final Duration duration) {
+    public void tick() {
         for (final Runnable work : currentCycleWork) {
             work.run();
         }
 
-        // TODO send out heartbeats here
+        // Note: heartbeats be handled at their destinations during the next cycle.
+        heartbeatScheduler.tick();
 
         currentCycleWork = nextCycleWork;
         nextCycleWork = new ArrayList<>();
@@ -104,7 +113,7 @@ public class DeterministicWiringModel extends TraceableWiringModel {
     @NonNull
     @Override
     public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
-        throw new UnsupportedOperationException("TODO");
+        return heartbeatScheduler.buildHeartbeatWire(period);
     }
 
     /**
@@ -113,7 +122,7 @@ public class DeterministicWiringModel extends TraceableWiringModel {
     @NonNull
     @Override
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
-        throw new UnsupportedOperationException("TODO");
+        return heartbeatScheduler.buildHeartbeatWire(frequency);
     }
 
     /**
@@ -149,6 +158,7 @@ public class DeterministicWiringModel extends TraceableWiringModel {
     public void start() {
         throwIfStarted();
         markAsStarted();
+        heartbeatScheduler.start();
     }
 
     /**

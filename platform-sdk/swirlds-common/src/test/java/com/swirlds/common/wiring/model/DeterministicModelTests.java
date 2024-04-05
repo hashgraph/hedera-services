@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.model;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.CONCURRENT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.NonCryptographicHashing;
@@ -41,6 +43,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Random;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
@@ -134,7 +137,7 @@ class DeterministicModelTests {
         A
         |
         v
-        B
+        B <---------- Heartbeat (5ms)
         |
         v
         C
@@ -171,6 +174,12 @@ class DeterministicModelTests {
                 .cast();
         final BindableInputWire<Long, Long> inB = schedulerB.buildInputWire("inB");
         inB.bind(buildHandler(random, 0.01, lock));
+        final BindableInputWire<Instant, Long> schedulerBHeartbeat = schedulerB.buildInputWire("heartbeatB");
+        final Function<Long, Long> heartbeatHandler = buildHandler(random, 0, lock);
+        schedulerBHeartbeat.bind(instant -> {
+            System.out.println(instant); // TODO
+            return heartbeatHandler.apply(instant.toEpochMilli());
+        });
         final OutputWire<Long> outB = schedulerB.getOutputWire();
 
         final TaskScheduler<Long> schedulerC = wiringModel
@@ -272,6 +281,7 @@ class DeterministicModelTests {
         inK.bind(buildHandler(random, 0.01, lock));
 
         outA.solderTo(inB);
+        wiringModel.buildHeartbeatWire(Duration.ofMillis(5)).solderTo(schedulerBHeartbeat);
         outB.solderTo(inC);
         outC.solderTo(inD);
         outD.solderTo(inE);
@@ -385,25 +395,27 @@ class DeterministicModelTests {
     }
 
     @Test
-    void verifyDeterministicModel() {
-        final Random random = getRandomPrintSeed(0); // TODO
+    void verifyDeterministicModel() { // TODO this is not producing heartbeats
+        final Random random = getRandomPrintSeed();
         final long meshSeed = random.nextLong();
         final long dataSeed = random.nextLong();
 
+        final FakeTime time = new FakeTime(randomInstant(random), Duration.ZERO);
         final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+                TestPlatformContextBuilder.create().withTime(time).build();
 
         final DeterministicWiringModel deterministicWiringModel1 = new DeterministicWiringModel(platformContext);
-        final long value1 = evaluateMesh(
-                dataSeed,
-                generateWiringMesh(meshSeed, deterministicWiringModel1),
-                () -> deterministicWiringModel1.tick(Duration.ofMillis(1)));
+        final long value1 = evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel1), () -> {
+            time.tick(Duration.ofMillis(1));
+            deterministicWiringModel1.tick();
+        });
 
+        time.reset();
         final DeterministicWiringModel deterministicWiringModel2 = new DeterministicWiringModel(platformContext);
-        final long value2 = evaluateMesh(
-                dataSeed,
-                generateWiringMesh(meshSeed, deterministicWiringModel2),
-                () -> deterministicWiringModel2.tick(Duration.ofMillis(1)));
+        final long value2 = evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel2), () -> {
+            time.tick(Duration.ofMillis(1));
+            deterministicWiringModel2.tick();
+        });
 
         assertEquals(value1, value2);
     }

@@ -28,7 +28,7 @@ import java.util.TimerTask;
 /**
  * A task that produces a heartbeat at a specified rate.
  */
-class HeartbeatTask extends TimerTask {
+public class HeartbeatTask extends TimerTask {
 
     private final Time time;
     private final Duration period;
@@ -41,7 +41,7 @@ class HeartbeatTask extends TimerTask {
      * @param period the period of the heartbeat
      */
     public HeartbeatTask(
-            @NonNull final StandardWiringModel model,
+            @NonNull final TraceableWiringModel model,
             @NonNull final String name,
             @NonNull final Time time,
             @NonNull final Duration period) {
