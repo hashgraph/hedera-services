@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.system.transaction;
 
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import java.util.concurrent.locks.ReadWriteLock;
+import com.swirlds.proto.event.EventPayload;
 
 /**
  * A hashgraph transaction that consists of an array of bytes and a list of immutable {@link TransactionSignature}
@@ -38,8 +40,12 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * behaviors.
      *
      * @return a direct reference to the transaction content/payload
+     * @deprecated use {@link #getPayload()} instead
      */
+    @Deprecated
     byte[] getContents();
+
+    OneOf<EventPayload.PayloadOneOfType> getPayload();
 
     /**
      * Get the size of the transaction

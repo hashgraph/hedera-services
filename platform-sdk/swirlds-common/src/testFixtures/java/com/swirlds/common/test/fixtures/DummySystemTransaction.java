@@ -16,9 +16,11 @@
 
 package com.swirlds.common.test.fixtures;
 
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.proto.event.EventPayload.PayloadOneOfType;
 import java.io.IOException;
 
 /**
@@ -59,6 +61,11 @@ public class DummySystemTransaction extends ConsensusTransactionImpl {
 
     @Override
     public byte[] getContents() {
+        return null;
+    }
+
+    @Override
+    public OneOf<PayloadOneOfType> getPayload() {
         return null;
     }
 }
