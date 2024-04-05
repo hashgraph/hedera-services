@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_I
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
@@ -525,6 +526,20 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void validateKeyRequired() {
         txn = new CryptoCreateBuilder().withStakedAccountId(3).withKey(null).build();
+        setupConfig();
+        setupExpiryValidator();
+
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertEquals(KEY_REQUIRED, msg.responseCode());
+    }
+
+    @Test
+    void validateKeyRequiredWithAlias() {
+        txn = new CryptoCreateBuilder()
+                .withStakedAccountId(3)
+                .withKey(null)
+                .withAlias(Bytes.wrap("alias"))
+                .build();
         setupConfig();
         setupExpiryValidator();
 
