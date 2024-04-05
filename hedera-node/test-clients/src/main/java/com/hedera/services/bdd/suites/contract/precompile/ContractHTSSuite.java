@@ -113,10 +113,10 @@ public class ContractHTSSuite extends HapiSuite {
     List<HapiSpec> negativeSpecs() {
         return List.of(
                 nonZeroTransfersFail(),
-                // transferTokensNegativeCasesFail(),
-                transferTokenNegativeCasesFail());
-        //  transferNFTsNegativeCasesFail(),
-        //    transferNFTNegativeCasesFail());
+                transferTokensNegativeCasesFail(),
+                transferTokenNegativeCasesFail(),
+                transferNFTsNegativeCasesFail(),
+                transferNFTNegativeCasesFail());
     }
 
     List<HapiSpec> positiveSpecs() {
