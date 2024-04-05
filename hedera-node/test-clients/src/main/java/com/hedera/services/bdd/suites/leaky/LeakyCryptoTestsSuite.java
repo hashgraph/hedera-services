@@ -1123,8 +1123,8 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                                         getTxnRecord(failedLazyCreateTxn)
                                                 .hasPriority(recordWith()
                                                         .status(INSUFFICIENT_GAS)
-                                                        .targetedContractId(
-                                                                ContractID.newBuilder().getDefaultInstanceForType()))
+                                                        .targetedContractId(ContractID.newBuilder()
+                                                                .getDefaultInstanceForType()))
                                                 .andAllChildRecords()
                                                 .logged(),
                                         expectContractActionSidecarFor(
@@ -1164,22 +1164,27 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                 .exposingIdTo(senderAccountIdReference::set),
                                         getAliasedAccountInfo(aliasAsByteString)
-                                                .has(accountWith().balance(FIVE_HBARS).key(EMPTY_KEY).memo(LAZY_MEMO))
+                                                .has(accountWith()
+                                                        .balance(FIVE_HBARS)
+                                                        .key(EMPTY_KEY)
+                                                        .memo(LAZY_MEMO))
                                                 .exposingIdTo(accountId -> {
                                                     lazyAccountIdReference.set(accountId);
-                                                    contractIdReference.set(
-                                                            ContractID.newBuilder()
-                                                                    .setContractNum(accountId.getAccountNum())
-                                                                    .setShardNum(accountId.getShardNum())
-                                                                    .setRealmNum(accountId.getRealmNum())
-                                                                    .build());
+                                                    contractIdReference.set(ContractID.newBuilder()
+                                                            .setContractNum(accountId.getAccountNum())
+                                                            .setShardNum(accountId.getShardNum())
+                                                            .setRealmNum(accountId.getRealmNum())
+                                                            .build());
                                                 }));
                                 allRunFor(
                                         assertSpec,
                                         childRecordsCheck(
                                                 lazyCreateTxn,
                                                 SUCCESS,
-                                                recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(EMPTY)),
+                                                recordWith()
+                                                        .status(SUCCESS)
+                                                        .memo(LAZY_MEMO)
+                                                        .alias(EMPTY)),
                                         getTxnRecord(lazyCreateTxn)
                                                 .hasPriority(recordWith()
                                                         .targetedContractId(contractIdReference.get())
@@ -1187,9 +1192,11 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                                                                 .contract(asContractString(contractIdReference.get()))))
                                                 .andAllChildRecords()
                                                 .exposingAllTo(records -> {
-                                                    final long gasUsed =
-                                                            records.get(0).getContractCallResult().getGasUsed();
-                                                    final long transactionFee = records.get(1).getTransactionFee();
+                                                    final long gasUsed = records.get(0)
+                                                            .getContractCallResult()
+                                                            .getGasUsed();
+                                                    final long transactionFee =
+                                                            records.get(1).getTransactionFee();
                                                     assertEquals(GAS_PRICE, transactionFee / (gasUsed - 21_000L));
                                                 })
                                                 .logged(),
@@ -1207,9 +1214,7 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                                                         .build())));
                             }));
                 }))
-                .then(
-                        tearDownSidecarWatcher(),
-                        assertContainsAllExpectedContractActions());
+                .then(tearDownSidecarWatcher(), assertContainsAllExpectedContractActions());
     }
 
     @HapiTest
