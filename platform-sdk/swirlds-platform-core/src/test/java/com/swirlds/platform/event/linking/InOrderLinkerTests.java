@@ -33,7 +33,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
@@ -202,7 +202,7 @@ class InOrderLinkerTests {
         inOrderLinkerSetup(ancientMode);
 
         // In the following test events are created with increasing generation and birth round numbers.
-        // The linking should fail to occur based on the advancing non-ancient event window.
+        // The linking should fail to occur based on the advancing event window.
         // The values used for birthRound and generation are just for this test and do not reflect real world values.
         // Each event lives for 2 rounds or generations before becoming ancient.
 
@@ -231,13 +231,13 @@ class InOrderLinkerTests {
         minRoundNonAncient += 1;
         minGenNonAncient += 1;
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setEventWindow(new EventWindow(
                     latestConsensusRound,
                     minRoundNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
                     ancientMode));
         } else {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setEventWindow(new EventWindow(
                     latestConsensusRound,
                     minGenNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
@@ -265,13 +265,13 @@ class InOrderLinkerTests {
         minRoundNonAncient += 1;
         minGenNonAncient += 1;
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setEventWindow(new EventWindow(
                     latestConsensusRound,
                     minRoundNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
                     ancientMode));
         } else {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setEventWindow(new EventWindow(
                     latestConsensusRound,
                     minGenNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
@@ -300,13 +300,13 @@ class InOrderLinkerTests {
         minRoundNonAncient += 2;
         minGenNonAncient += 2;
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setEventWindow(new EventWindow(
                     latestConsensusRound,
                     minRoundNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
                     ancientMode));
         } else {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setEventWindow(new EventWindow(
                     latestConsensusRound,
                     minGenNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
@@ -376,13 +376,13 @@ class InOrderLinkerTests {
         final long minRoundNonAncient = 3;
         final long minGenNonAncient = 3;
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setEventWindow(new EventWindow(
                     ConsensusConstants.ROUND_FIRST /* not consequential for this test */,
                     minRoundNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,
                     ancientMode));
         } else {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+            inOrderLinker.setEventWindow(new EventWindow(
                     ConsensusConstants.ROUND_FIRST /* not consequential for this test */,
                     minGenNonAncient,
                     ConsensusConstants.ROUND_FIRST /* ignored in this context */,

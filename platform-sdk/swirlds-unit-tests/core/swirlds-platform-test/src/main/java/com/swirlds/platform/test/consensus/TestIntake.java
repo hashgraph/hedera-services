@@ -35,7 +35,7 @@ import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
@@ -99,7 +99,7 @@ public class TestIntake {
         consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, directScheduler("consensusEngine"));
         consensusEngineWiring.bind(consensusEngine);
 
-        final ComponentWiring<EventWindowManager, NonAncientEventWindow> eventWindowManagerWiring =
+        final ComponentWiring<EventWindowManager, EventWindow> eventWindowManagerWiring =
                 new ComponentWiring<>(model, EventWindowManager.class, directScheduler("eventWindowManager"));
         eventWindowManagerWiring.bind(new DefaultEventWindowManager());
 
@@ -112,7 +112,7 @@ public class TestIntake {
                 eventWindowManagerWiring.getInputWire(EventWindowManager::extractEventWindow));
         consensusRoundOutputWire.solderTo("consensusOutputTestTool", "round output", output::consensusRound);
 
-        eventWindowManagerWiring.getOutputWire().solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
+        eventWindowManagerWiring.getOutputWire().solderTo(orphanBufferWiring.eventWindowInput(), INJECT);
 
         // Ensure unsoldered wires are created.
         hasherWiring.getInputWire(EventHasher::hashEvent);
@@ -159,13 +159,13 @@ public class TestIntake {
         // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
         // production.
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 snapshot.round(),
                 snapshot.getMinimumGenerationNonAncient(roundsNonAncient),
                 snapshot.getMinimumGenerationNonAncient(roundsNonAncient),
                 GENERATION_THRESHOLD);
 
-        orphanBufferWiring.nonAncientEventWindowInput().put(eventWindow);
+        orphanBufferWiring.eventWindowInput().put(eventWindow);
         consensusEngineWiring
                 .getInputWire(ConsensusEngine::outOfBandSnapshotUpdate)
                 .put(snapshot);

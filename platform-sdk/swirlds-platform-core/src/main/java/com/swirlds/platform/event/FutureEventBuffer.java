@@ -17,7 +17,7 @@
 package com.swirlds.platform.event;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.wiring.ClearTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -51,9 +51,9 @@ public interface FutureEventBuffer {
      * @param eventWindow the new event window
      * @return a list of events that were previously from the future but are now from the present
      */
-    @InputWireLabel("non-ancient event window")
+    @InputWireLabel("event window")
     @Nullable
-    List<GossipEvent> updateEventWindow(@NonNull NonAncientEventWindow eventWindow);
+    List<GossipEvent> updateEventWindow(@NonNull EventWindow eventWindow);
 
     /**
      * Clear all data from the future event buffer.

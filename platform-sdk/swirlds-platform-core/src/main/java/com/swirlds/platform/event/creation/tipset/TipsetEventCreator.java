@@ -29,7 +29,7 @@ import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
@@ -70,7 +70,7 @@ public class TipsetEventCreator implements EventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
-    private NonAncientEventWindow nonAncientEventWindow;
+    private EventWindow eventWindow;
 
     /**
      * The address book for the current network.
@@ -164,7 +164,7 @@ public class TipsetEventCreator implements EventCreator {
         zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
-        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
     }
 
     /**
@@ -172,7 +172,7 @@ public class TipsetEventCreator implements EventCreator {
      */
     @Override
     public void registerEvent(@NonNull final GossipEvent event) {
-        if (nonAncientEventWindow.isAncient(event)) {
+        if (eventWindow.isAncient(event)) {
             return;
         }
 
@@ -213,10 +213,10 @@ public class TipsetEventCreator implements EventCreator {
      * {@inheritDoc}
      */
     @Override
-    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
-        tipsetTracker.setNonAncientEventWindow(nonAncientEventWindow);
-        childlessOtherEventTracker.pruneOldEvents(nonAncientEventWindow);
+    public void setEventWindow(@NonNull final EventWindow eventWindow) {
+        this.eventWindow = Objects.requireNonNull(eventWindow);
+        tipsetTracker.setEventWindow(eventWindow);
+        childlessOtherEventTracker.pruneOldEvents(eventWindow);
     }
 
     /**
@@ -290,8 +290,8 @@ public class TipsetEventCreator implements EventCreator {
         if (bestOtherParent == null) {
             // If there are no available other parents, it is only legal to create a new event if we are
             // creating a genesis event. In order to create a genesis event, we must have never created
-            // an event before and the current non-ancient event window must have never been advanced.
-            if (!nonAncientEventWindow.isGenesis() || lastSelfEvent != null) {
+            // an event before and the current event window must have never been advanced.
+            if (!eventWindow.isGenesis() || lastSelfEvent != null) {
                 // event creation isn't legal
                 return null;
             }
@@ -437,8 +437,8 @@ public class TipsetEventCreator implements EventCreator {
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                nonAncientEventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
-                        ? nonAncientEventWindow.getPendingConsensusRound()
+                eventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
+                        ? eventWindow.getPendingConsensusRound()
                         : ConsensusConstants.ROUND_FIRST,
                 timeCreated,
                 transactionSupplier.getTransactions());
@@ -473,7 +473,7 @@ public class TipsetEventCreator implements EventCreator {
         tipsetTracker.clear();
         childlessOtherEventTracker.clear();
         tipsetWeightCalculator.clear();
-        nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         lastSelfEvent = null;
         lastSelfEventCreationTime = null;
         lastSelfEventTransactionCount = 0;
@@ -483,7 +483,7 @@ public class TipsetEventCreator implements EventCreator {
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append("Minimum generation non-ancient: ")
-                .append(tipsetTracker.getNonAncientEventWindow())
+                .append(tipsetTracker.getEventWindow())
                 .append("\n");
         sb.append("Latest self event: ").append(lastSelfEvent).append("\n");
         sb.append(tipsetWeightCalculator);

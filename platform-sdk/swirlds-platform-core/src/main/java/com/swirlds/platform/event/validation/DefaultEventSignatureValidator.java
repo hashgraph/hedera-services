@@ -24,7 +24,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.metrics.api.LongAccumulator;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -71,9 +71,9 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
     private final SoftwareVersion currentSoftwareVersion;
 
     /**
-     * The current non-ancient event window.
+     * The current event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow;
+    private EventWindow eventWindow;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -119,7 +119,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
 
         this.validationFailedAccumulator = platformContext.getMetrics().getOrCreate(VALIDATION_FAILED_CONFIG);
 
-        nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(platformContext
+        eventWindow = EventWindow.getGenesisEventWindow(platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode());
@@ -219,7 +219,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
     @Override
     @Nullable
     public GossipEvent validateSignature(@NonNull final GossipEvent event) {
-        if (nonAncientEventWindow.isAncient(event)) {
+        if (eventWindow.isAncient(event)) {
             // ancient events can be safely ignored
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return null;
@@ -239,8 +239,8 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
      * {@inheritDoc}
      */
     @Override
-    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
+    public void setEventWindow(@NonNull final EventWindow eventWindow) {
+        this.eventWindow = Objects.requireNonNull(eventWindow);
     }
 
     /**

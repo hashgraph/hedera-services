@@ -20,7 +20,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,15 +29,15 @@ import java.util.List;
 /**
  * Wiring for the {@link OrphanBuffer}.
  *
- * @param eventInput                       the input wire for unordered events
- * @param nonAncientEventWindowInput       the input wire for the non-ancient event window
- * @param clearInput                       the input wire to clear the internal state of the orphan buffer
- * @param eventOutput                      the output wire for topologically ordered events
- * @param flushRunnable                    the runnable to flush the buffer
+ * @param eventInput       the input wire for unordered events
+ * @param eventWindowInput the input wire for the event window
+ * @param clearInput       the input wire to clear the internal state of the orphan buffer
+ * @param eventOutput      the output wire for topologically ordered events
+ * @param flushRunnable    the runnable to flush the buffer
  */
 public record OrphanBufferWiring(
         @NonNull InputWire<GossipEvent> eventInput,
-        @NonNull InputWire<NonAncientEventWindow> nonAncientEventWindowInput,
+        @NonNull InputWire<EventWindow> eventWindowInput,
         @NonNull InputWire<ClearTrigger> clearInput,
         @NonNull OutputWire<GossipEvent> eventOutput,
         @NonNull Runnable flushRunnable) {
@@ -51,7 +51,7 @@ public record OrphanBufferWiring(
     public static OrphanBufferWiring create(@NonNull final TaskScheduler<List<GossipEvent>> taskScheduler) {
         return new OrphanBufferWiring(
                 taskScheduler.buildInputWire("unordered events"),
-                taskScheduler.buildInputWire("non-ancient event window"),
+                taskScheduler.buildInputWire("event window"),
                 taskScheduler.buildInputWire("clear"),
                 taskScheduler.getOutputWire().buildSplitter("orphanBufferSplitter", "event lists"),
                 taskScheduler::flush);
@@ -64,8 +64,7 @@ public record OrphanBufferWiring(
      */
     public void bind(@NonNull final OrphanBuffer orphanBuffer) {
         ((BindableInputWire<GossipEvent, List<GossipEvent>>) eventInput).bind(orphanBuffer::handleEvent);
-        ((BindableInputWire<NonAncientEventWindow, List<GossipEvent>>) nonAncientEventWindowInput)
-                .bind(orphanBuffer::setNonAncientEventWindow);
+        ((BindableInputWire<EventWindow, List<GossipEvent>>) eventWindowInput).bind(orphanBuffer::setEventWindow);
         ((BindableInputWire<ClearTrigger, List<GossipEvent>>) clearInput).bindConsumer(orphanBuffer::clear);
     }
 }

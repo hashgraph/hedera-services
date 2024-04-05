@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.creation;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -46,12 +46,12 @@ public interface EventCreationManager {
     void registerEvent(@NonNull GossipEvent event);
 
     /**
-     * Update the non-ancient event window, defining the minimum threshold for an event to be non-ancient.
+     * Update the event window, defining the minimum threshold for an event to be non-ancient.
      *
-     * @param nonAncientEventWindow the non-ancient event window
+     * @param eventWindow the event window
      */
-    @InputWireLabel("non-ancient event window")
-    void setNonAncientEventWindow(@NonNull NonAncientEventWindow nonAncientEventWindow);
+    @InputWireLabel("event window")
+    void setEventWindow(@NonNull EventWindow eventWindow);
 
     /**
      * Clear the internal state of the event creation manager.
