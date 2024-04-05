@@ -17,6 +17,7 @@
 package com.swirlds.platform.wiring;
 
 import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
@@ -30,7 +31,7 @@ import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -38,11 +39,11 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.AppNotifier;
-import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.CompleteStateNotificationWithCleanup;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -314,18 +315,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         this.publishPreconsensusEvents = publishPreconsensusEvents;
         this.publishSnapshotOverrides = publishSnapshotOverrides;
+
+        final TaskSchedulerConfiguration publisherConfiguration;
         if (publishPreconsensusEvents || publishSnapshotOverrides) {
-            // Although with the usual pattern we don't define schedulers in this class, this is a special case.
-            // We don't want to construct this scheduler in scenarios where we aren't using a publisher, and
-            // we don't have the ability to conditionally construct the scheduler using the standard pattern.
-            final TaskScheduler<Void> publisherScheduler = model.schedulerBuilder("platformPublisher")
-                    .withType(TaskSchedulerType.SEQUENTIAL)
-                    .build()
-                    .cast();
-            platformPublisherWiring = new ComponentWiring<>(model, PlatformPublisher.class, publisherScheduler);
+            publisherConfiguration = config.platformPublisher();
         } else {
-            platformPublisherWiring = null;
+            publisherConfiguration = NO_OP_CONFIGURATION;
         }
+        platformPublisherWiring = new ComponentWiring<>(model, PlatformPublisher.class, publisherConfiguration);
 
         wire();
     }
@@ -405,13 +402,17 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         orphanBufferWiring
                 .eventOutput()
                 .solderTo(pcesSequencerWiring.getInputWire(PcesSequencer::assignStreamSequenceNumber));
-        pcesSequencerWiring.getOutputWire().solderTo(inOrderLinkerWiring.eventInput());
         pcesSequencerWiring.getOutputWire().solderTo(pcesWriterWiring.eventInputWire());
-        inOrderLinkerWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+
+        pcesSequencerWiring.getOutputWire().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+
         inOrderLinkerWiring.eventOutput().solderTo(shadowgraphWiring.eventInput());
+
         orphanBufferWiring
                 .eventOutput()
                 .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
+
+        orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
 
         final double eventCreationHeartbeatFrequency = platformContext
                 .getConfiguration()
@@ -639,7 +640,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final SavedStateController savedStateController,
             @NonNull final SignedStateHasher signedStateHasher,
             @NonNull final AppNotifier notifier,
-            @Nullable final PlatformPublisher platformPublisher) {
+            @NonNull final PlatformPublisher platformPublisher) {
 
         eventHasherWiring.bind(eventHasher);
         internalEventValidatorWiring.bind(internalEventValidator);
@@ -673,10 +674,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         savedStateControllerWiring.bind(savedStateController);
         signedStateHasherWiring.bind(signedStateHasher);
         notifierWiring.bind(notifier);
-
-        if (platformPublisherWiring != null) {
-            platformPublisherWiring.bind(platformPublisher);
-        }
+        platformPublisherWiring.bind(platformPublisher);
     }
 
     /**

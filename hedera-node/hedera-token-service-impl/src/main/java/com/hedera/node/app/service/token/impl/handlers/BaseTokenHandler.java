@@ -170,11 +170,12 @@ public class BaseTokenHandler {
             @NonNull final WritableTokenRelationStore tokenRelStore) {
         // create list of token relations to be added
         final var newTokenRels = createTokenRelsToAccount(account, tokens);
-        // Link the new token relations to the account
-        linkTokenRels(account, newTokenRels, tokenRelStore);
 
         // FUTURE - We may need to return a proper error status when tokens are empty
         if (!newTokenRels.isEmpty()) {
+            // Link the new token relations to the account
+            linkTokenRels(account, newTokenRels, tokenRelStore);
+
             // Now replace the account's old head token number with the new head token number. This is
             // how we link the new tokenRels to the account
             final var firstOfNewTokenRels = newTokenRels.get(0);
@@ -339,6 +340,16 @@ public class BaseTokenHandler {
                 .headTokenId(tokenId)
                 .build();
 
+        final var existingFirstTokenId = account.headTokenId();
+        if (existingFirstTokenId != null) {
+            final var existingFirstTokenRel = tokenRelStore.get(accountId, existingFirstTokenId);
+            if (existingFirstTokenRel != null) {
+                tokenRelStore.put(existingFirstTokenRel
+                        .copyBuilder()
+                        .previousToken(tokenId)
+                        .build());
+            }
+        }
         accountStore.put(copyAccount);
         tokenRelStore.put(newTokenRel);
         return newTokenRel;
