@@ -63,24 +63,22 @@ public class BridgedFineGrainBenchmark {
     public String loggingType;
 
     private Logger logger;
-    private BridgedConfiguration config;
+    private BridgedLog4JConfiguration config;
     private LoggingBenchmarkConfig<LoggingSystem> swirldsConfig;
 
     private static final Marker MARKER = MarkerManager.getMarker("marker");
 
     @Setup(Level.Trial)
     public void init() {
-        config = new BridgedConfiguration();
+        config = new BridgedLog4JConfiguration();
+        swirldsConfig = new BridgedSwirldsLogConfig();
         if (Objects.equals(loggingType, CONSOLE_TYPE)) {
-            swirldsConfig = new SwirldsLogConfig();
             swirldsConfig.configureConsoleLogging();
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, FILE_TYPE)) {
-            swirldsConfig = new SwirldsLogConfig();
             swirldsConfig.configureFileLogging(LogFiles.provideLogFilePath(Constants.LOG4J2, FILE_TYPE, ""));
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
-            swirldsConfig = new SwirldsLogConfig();
             swirldsConfig.configureFileAndConsoleLogging(
                     LogFiles.provideLogFilePath(Constants.LOG4J2, CONSOLE_AND_FILE_TYPE, ""));
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);

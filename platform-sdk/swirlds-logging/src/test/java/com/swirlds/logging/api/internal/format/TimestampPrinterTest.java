@@ -25,23 +25,24 @@ import java.time.format.DateTimeFormatter;
 import org.junit.jupiter.api.Test;
 
 @WithSystemError
-public class EpochFormatUtilsTest {
+public class TimestampPrinterTest {
 
     @Test
-    void testTimestampAsString() {
+    void testPrint() {
         // given
         long timestamp = Instant.parse("2024-03-06T12:00:00Z").toEpochMilli();
 
         // when
-        String formattedTimestamp = EpochFormatUtils.timestampAsString(timestamp);
+        final StringBuilder sb = new StringBuilder();
+        TimestampPrinter.print(sb, timestamp);
 
         String expectedTimestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS   ")
                 .withZone(UTC)
                 .format(Instant.ofEpochMilli(timestamp));
 
         // then
-        assertThat(formattedTimestamp.length()).isEqualTo(26);
-        assertThat(formattedTimestamp).isEqualTo(expectedTimestamp);
+        assertThat(sb.toString().length()).isEqualTo(26);
+        assertThat(sb.toString()).isEqualTo(expectedTimestamp);
     }
 
     @Test
@@ -50,25 +51,28 @@ public class EpochFormatUtilsTest {
         long timestamp = -1; // Negative timestamp
 
         // when
-        String formattedTimestamp = EpochFormatUtils.timestampAsString(timestamp);
+        final StringBuilder sb = new StringBuilder();
+        TimestampPrinter.print(sb, timestamp);
 
         // then
-        assertThat(formattedTimestamp).isEqualTo("1969-12-31 23:59:59.999   ");
+        assertThat(sb.toString()).isEqualTo("1969-12-31 23:59:59.999   ");
     }
 
     @Test
     void testNegativeTimestampOverflowed26() {
         // given
-        String formattedTimestamp = EpochFormatUtils.timestampAsString(Long.MIN_VALUE);
+        final StringBuilder sb = new StringBuilder();
+        TimestampPrinter.print(sb, Long.MIN_VALUE);
         // then
-        assertThat(formattedTimestamp).isEqualTo("BROKEN-TIMESTAMP          ");
+        assertThat(sb.toString()).isEqualTo("BROKEN-TIMESTAMP          ");
     }
 
     @Test
     void testPositiveTimestampOverflowed26() {
         // given
-        String formattedTimestamp = EpochFormatUtils.timestampAsString(Long.MAX_VALUE);
+        final StringBuilder sb = new StringBuilder();
+        TimestampPrinter.print(sb, Long.MAX_VALUE);
         // then
-        assertThat(formattedTimestamp).isEqualTo("BROKEN-TIMESTAMP          ");
+        assertThat(sb.toString()).isEqualTo("BROKEN-TIMESTAMP          ");
     }
 }
