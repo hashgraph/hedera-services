@@ -23,7 +23,6 @@ mainModuleInfo {
     annotationProcessor("com.swirlds.config.processor")
     annotationProcessor("com.google.auto.service.processor")
     runtimeOnly("com.swirlds.config.impl")
-    runtimeOnly("loki.log4j2")
 }
 
 application.mainClass.set("com.swirlds.platform.base.example.Application")
