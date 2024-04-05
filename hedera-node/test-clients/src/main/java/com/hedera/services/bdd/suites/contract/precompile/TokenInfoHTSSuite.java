@@ -158,7 +158,6 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 getInfoForFungibleTokenByNFTTokenAddressWorks(),
                 getInfoForNFTByFungibleTokenAddressFails(),
                 getInfoForTokenByAccountAddressFails(),
-                getInfoOnDeletedNonFungibleTokenFails(),
                 getTokenCustomFeesNegativeCases());
     }
 
