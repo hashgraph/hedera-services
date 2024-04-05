@@ -254,7 +254,6 @@ public class DataFileCompactor<D> {
                     long newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
                     // update the index
                     index.putIfEqual(path, dataLocation, newLocation);
-
                 } catch (final ClosedByInterruptException e) {
                     logger.info(
                             MERKLE_DB.getMarker(),

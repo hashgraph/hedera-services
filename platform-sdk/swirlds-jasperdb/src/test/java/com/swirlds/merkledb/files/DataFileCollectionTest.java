@@ -739,8 +739,8 @@ class DataFileCollectionTest {
             List<DataFileReader<long[]>> allCompletedFiles = fileCollection.getAllCompletedFiles();
             DataFileReader<long[]> spy = Mockito.spy(allCompletedFiles.get(0));
             try {
-                when(spy.readDataItemBytes(anyLong())).thenAnswer(invocation -> {
-                    // on the first call to readDataItemBytes(), we interrupt the thread
+                when(spy.leaseFileChannel()).thenAnswer(invocation -> {
+                    // on the first call to leaseFileChannel(), we interrupt the thread
                     Thread.currentThread().interrupt();
                     return invocation.callRealMethod();
                 });
