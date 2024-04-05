@@ -31,8 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-// TODO consider moving this to test framework. Might be best to leave it, need to think.
-
 /**
  * A deterministic implementation of a wiring model. Suitable for testing, not intended for production use cases.
  */
