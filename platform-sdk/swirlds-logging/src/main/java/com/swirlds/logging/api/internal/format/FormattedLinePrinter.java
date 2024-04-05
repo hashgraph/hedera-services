@@ -71,11 +71,35 @@ public class FormattedLinePrinter {
             } else {
                 appendable.append(event.timestamp());
             }
-            dataAndLevel(appendable, event);
+            appendable.append(' ');
+            appendable.append(event.level().nameWithFixedSize());
+            appendable.append(" [");
+            final String threadName = event.threadName();
+            final String loggerName = event.loggerName();
+            appendable.append(threadName != null ? threadName : THREAD_SUFFIX);
+            appendable.append("] ");
+            appendable.append(loggerName != null ? loggerName : LOGGER_SUFFIX);
+            appendable.append(" - ");
+            final LogMessage message = event.message();
+            if (message != null) {
+                appendable.append(message.getMessage());
+            } else {
+                appendable.append(UNDEFINED_MESSAGE);
+                EMERGENCY_LOGGER.logNPE("message");
+            }
 
-            marker(appendable, event);
+            Marker marker = event.marker();
+            if (marker != null) {
+                appendable.append(" - [");
+                appendable.append(String.join(", ", marker.getAllMarkerNames()));
+                appendable.append("]");
+            }
 
-            context(appendable, event);
+            final Map<String, String> context = event.context();
+            if (context != null && !context.isEmpty()) {
+                appendable.append(" - ");
+                appendable.append(context);
+            }
 
             appendable.append(LINE_SEPARATOR);
 
@@ -86,42 +110,6 @@ public class FormattedLinePrinter {
 
         } catch (final Throwable e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format and print event", e);
-        }
-    }
-
-    private static void context(@NonNull final StringBuilder appendable, @NonNull final LogEvent event) {
-        final Map<String, String> context = event.context();
-        if (context != null && !context.isEmpty()) {
-            appendable.append(" - ");
-            appendable.append(context);
-        }
-    }
-
-    private static void marker(@NonNull final StringBuilder appendable, @NonNull final LogEvent event) {
-        Marker marker = event.marker();
-        if (marker != null) {
-            appendable.append(" - [");
-            appendable.append(String.join(", ", marker.getAllMarkerNames()));
-            appendable.append("]");
-        }
-    }
-
-    private static void dataAndLevel(@NonNull final StringBuilder appendable, @NonNull final LogEvent event) {
-        appendable.append(' ');
-        appendable.append(event.level().nameWithFixedSize());
-        appendable.append(" [");
-        final String threadName = event.threadName();
-        final String loggerName = event.loggerName();
-        appendable.append(threadName != null ? threadName : THREAD_SUFFIX);
-        appendable.append("] ");
-        appendable.append(loggerName != null ? loggerName : LOGGER_SUFFIX);
-        appendable.append(" - ");
-        final LogMessage message = event.message();
-        if (message != null) {
-            appendable.append(message.getMessage());
-        } else {
-            appendable.append(UNDEFINED_MESSAGE);
-            EMERGENCY_LOGGER.logNPE("message");
         }
     }
 
