@@ -21,8 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEED
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -87,7 +87,11 @@ public class CryptoTransferValidator {
         for (final TokenTransferList tokenTransfer : tokenTransfers) {
             final var tokenID = tokenTransfer.token();
             tokenIds.add(tokenID);
-            validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
+            final boolean nftTransfersNotEmpty = tokenTransfer.nftTransfers() != null
+                    && !tokenTransfer.nftTransfers().isEmpty();
+            validateTruePreCheck(
+                    tokenID != null && !tokenID.equals(TokenID.DEFAULT),
+                    nftTransfersNotEmpty ? INVALID_NFT_ID : INVALID_TOKEN_ID);
 
             // Validate the fungible transfers
             final var uniqueTokenAcctIds = new HashSet<Pair<AccountID, Boolean>>();
@@ -110,7 +114,8 @@ public class CryptoTransferValidator {
             final var nftTransfers = tokenTransfer.nftTransfersOrElse(emptyList());
             nftIds.clear();
             for (final NftTransfer nftTransfer : nftTransfers) {
-                validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+                // Using INVALID_NFT_ID instead of INVALID_TOKEN_NFT_SERIAL_NUMBER, to match mono behavior #
+                validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_NFT_ID);
                 validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                 validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                 validateFalsePreCheck(

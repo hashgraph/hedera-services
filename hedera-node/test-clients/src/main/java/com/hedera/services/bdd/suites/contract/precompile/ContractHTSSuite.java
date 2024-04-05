@@ -186,6 +186,7 @@ public class ContractHTSSuite extends HapiSuite {
                                                 htsPrecompileResult().withStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)))));
     }
 
+    @HapiTest
     final HapiSpec transferTokensNegativeCasesFail() {
         final var TXN_WITH_EMPTY_AMOUNTS_ARRAY = "TXN_WITH_EMPTY_AMOUNTS_ARRAY";
         final var TXN_WITH_EMPTY_ACCOUNTS_ARRAY = "TXN_WITH_EMPTY_ACCOUNTS_ARRAY";
@@ -442,6 +443,7 @@ public class ContractHTSSuite extends HapiSuite {
                                 recordWith().status(INSUFFICIENT_TOKEN_BALANCE)));
     }
 
+    @HapiTest
     final HapiSpec transferNFTsNegativeCasesFail() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_EMPTY_SENDER_ARRAY = "TXN_WITH_EMPTY_SENDER_ARRAY";
@@ -602,6 +604,7 @@ public class ContractHTSSuite extends HapiSuite {
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
     }
 
+    @HapiTest
     final HapiSpec transferNFTNegativeCasesFail() {
         final var TXN_WITH_INVALID_TOKEN_ADDRESS = "TXN_WITH_INVALID_TOKEN_ADDRESS";
         final var TXN_WITH_INVALID_RECEIVER_ADDRESS = "TXN_WITH_INVALID_RECEIVER_ADDRESS";

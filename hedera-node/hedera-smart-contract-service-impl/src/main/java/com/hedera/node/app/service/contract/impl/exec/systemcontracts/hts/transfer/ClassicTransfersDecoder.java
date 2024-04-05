@@ -236,6 +236,11 @@ public class ClassicTransfersDecoder {
             if (accountIds.length == 0) {
                 return ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
             }
+            final var tokenStore = attempt.enhancement().nativeOperations().readableTokenStore();
+            final var token = tokenStore.get(ConversionUtils.asTokenId(call.get(0)));
+            if (token == null) {
+                return ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+            }
         }
         if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFTS.selector())) {
             final var call = ClassicTransfersTranslator.TRANSFER_NFTS.decodeCall(attempt.inputBytes());
