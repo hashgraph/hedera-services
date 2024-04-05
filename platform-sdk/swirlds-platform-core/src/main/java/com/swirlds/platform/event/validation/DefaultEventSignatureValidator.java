@@ -19,7 +19,6 @@ package com.swirlds.platform.event.validation;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
@@ -96,7 +95,6 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
      * Constructor
      *
      * @param platformContext        the platform context
-     * @param time                   a time object, for rate limiting loggers
      * @param signatureVerifier      a verifier for checking event signatures
      * @param currentSoftwareVersion the current software version
      * @param previousAddressBook    the previous address book
@@ -105,14 +103,11 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
      */
     public DefaultEventSignatureValidator(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @Nullable final AddressBook previousAddressBook,
             @NonNull final AddressBook currentAddressBook,
             @NonNull final IntakeEventCounter intakeEventCounter) {
-
-        Objects.requireNonNull(time);
 
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
@@ -120,7 +115,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
         this.currentAddressBook = Objects.requireNonNull(currentAddressBook);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
-        this.rateLimitedLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
+        this.rateLimitedLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
 
         this.validationFailedAccumulator = platformContext.getMetrics().getOrCreate(VALIDATION_FAILED_CONFIG);
 

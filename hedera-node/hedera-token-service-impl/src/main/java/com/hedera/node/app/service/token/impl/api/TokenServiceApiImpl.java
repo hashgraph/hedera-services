@@ -52,6 +52,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
@@ -76,12 +77,13 @@ public class TokenServiceApiImpl implements TokenServiceApi {
 
     public TokenServiceApiImpl(
             @NonNull final Configuration config,
+            @NonNull final Metrics metrics,
             @NonNull final StakingValidator stakingValidator,
             @NonNull final WritableStates writableStates,
             @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest) {
         this.customFeeTest = customFeeTest;
         requireNonNull(config);
-        this.accountStore = new WritableAccountStore(writableStates);
+        this.accountStore = new WritableAccountStore(writableStates, config, metrics);
         this.stakingValidator = requireNonNull(stakingValidator);
 
         // Determine whether staking is enabled
