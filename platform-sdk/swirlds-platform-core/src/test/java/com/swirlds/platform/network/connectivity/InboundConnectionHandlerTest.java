@@ -114,7 +114,7 @@ class InboundConnectionHandlerTest {
 
     @Test
     @DisplayName("inbound connection unsuccessfully identifies a peer, connection is dropped")
-    void handleInboundConnectionTestNoPeer() throws IOException {
+    void handleInboundConnectionTestNoPeer() {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(getConfig())
                 .build();
