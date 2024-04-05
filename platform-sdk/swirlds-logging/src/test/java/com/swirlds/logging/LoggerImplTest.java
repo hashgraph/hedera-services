@@ -23,12 +23,12 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.event.LogEvent;
+import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.internal.LoggerImpl;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
-import com.swirlds.logging.util.LoggingTestUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -111,9 +111,8 @@ public class LoggerImplTest {
         LoggerApiSpecAssertions.assertSpecForLogger(new LoggerImpl("null", new SimpleLogEventFactory(), dummySystem()));
     }
 
-    private static LoggingSystem dummySystem() {
-        final Configuration orCreateConfig = LoggingTestUtils.getConfigBuilder().getOrCreateConfig();
-        return new LoggingSystem(orCreateConfig) {
+    private static LogEventConsumer dummySystem() {
+        return new LogEventConsumer() {
             @Override
             public boolean isEnabled(String name, Level level, Marker marker) {
                 return true;

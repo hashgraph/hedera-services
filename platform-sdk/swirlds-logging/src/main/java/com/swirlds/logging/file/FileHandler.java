@@ -85,7 +85,7 @@ public class FileHandler extends AbstractLogHandler {
      * @param event The log event to be printed.
      */
     @Override
-    public void accept(@NonNull final LogEvent event) {
+    public void handle(@NonNull final LogEvent event) {
         final StringBuilder writer = new StringBuilder(EVENT_LOG_PRINTER_SIZE);
         format.print(writer, event);
         try {
