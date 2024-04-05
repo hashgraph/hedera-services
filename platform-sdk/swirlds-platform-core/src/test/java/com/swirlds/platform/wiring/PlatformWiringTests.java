@@ -70,7 +70,8 @@ class PlatformWiringTests {
 
         final PlatformWiring wiring = new PlatformWiring(platformContext, true, true);
 
-        final PlatformComponentBuilder componentBuilder = new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
+        final PlatformComponentBuilder componentBuilder =
+                new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
         componentBuilder.withEventHasher(mock(EventHasher.class));
         componentBuilder.withInternalEventValidator(mock(InternalEventValidator.class));
         componentBuilder.withEventDeduplicator(mock(EventDeduplicator.class));
