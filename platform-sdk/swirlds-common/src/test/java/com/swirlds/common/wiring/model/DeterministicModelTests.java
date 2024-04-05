@@ -394,14 +394,16 @@ class DeterministicModelTests {
                 TestPlatformContextBuilder.create().build();
 
         final DeterministicWiringModel deterministicWiringModel1 = new DeterministicWiringModel(platformContext);
-        final long value1 = evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel1), () -> {
-            deterministicWiringModel1.tick(Duration.ofMillis(1));
-        });
+        final long value1 = evaluateMesh(
+                dataSeed,
+                generateWiringMesh(meshSeed, deterministicWiringModel1),
+                () -> deterministicWiringModel1.tick(Duration.ofMillis(1)));
 
         final DeterministicWiringModel deterministicWiringModel2 = new DeterministicWiringModel(platformContext);
-        final long value2 = evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel2), () -> {
-            deterministicWiringModel2.tick(Duration.ofMillis(1));
-        });
+        final long value2 = evaluateMesh(
+                dataSeed,
+                generateWiringMesh(meshSeed, deterministicWiringModel2),
+                () -> deterministicWiringModel2.tick(Duration.ofMillis(1)));
 
         assertEquals(value1, value2);
     }
