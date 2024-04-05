@@ -151,14 +151,14 @@ class ThrottleServiceManagerTest {
         inOrder.verify(congestionMultipliers).resetExpectations();
         inOrder.verify(cryptoTransferThrottle)
                 .resetUsageTo(fromPbj(
-                        MOCK_THROTTLE_USAGE_SNAPSHOTS.tpsThrottlesOrThrow().getFirst()));
+                        MOCK_THROTTLE_USAGE_SNAPSHOTS.tpsThrottles().getFirst()));
         inOrder.verify(gasThrottle).resetUsageTo(fromPbj(MOCK_THROTTLE_USAGE_SNAPSHOTS.gasThrottleOrThrow()));
         inOrder.verify(congestionMultipliers)
                 .resetUtilizationScaledThrottleMultiplierStarts(asNullTerminatedInstants(
-                        MOCK_CONGESTION_LEVEL_STARTS.genericLevelStartsOrThrow().getFirst()));
+                        MOCK_CONGESTION_LEVEL_STARTS.genericLevelStarts().getFirst()));
         inOrder.verify(congestionMultipliers)
                 .resetGasThrottleMultiplierStarts(asNullTerminatedInstants(
-                        MOCK_CONGESTION_LEVEL_STARTS.gasLevelStartsOrThrow().getFirst()));
+                        MOCK_CONGESTION_LEVEL_STARTS.gasLevelStarts().getFirst()));
     }
 
     @Test
@@ -168,10 +168,10 @@ class ThrottleServiceManagerTest {
         given(gasThrottle.usageSnapshot()).willReturn(MOCK_USAGE_SNAPSHOT);
         given(congestionMultipliers.entityUtilizationCongestionStarts())
                 .willReturn(asNullTerminatedInstants(
-                        MOCK_CONGESTION_LEVEL_STARTS.genericLevelStartsOrThrow().getFirst()));
+                        MOCK_CONGESTION_LEVEL_STARTS.genericLevelStarts().getFirst()));
         given(congestionMultipliers.gasThrottleMultiplierCongestionStarts())
                 .willReturn(asNullTerminatedInstants(
-                        MOCK_CONGESTION_LEVEL_STARTS.gasLevelStartsOrThrow().getFirst()));
+                        MOCK_CONGESTION_LEVEL_STARTS.gasLevelStarts().getFirst()));
 
         subject.saveThrottleSnapshotsAndCongestionLevelStartsTo(hederaState);
 

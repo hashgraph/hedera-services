@@ -73,7 +73,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .withValue("hedera.allowances.isEnabled", false)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
-        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(NOT_SUPPORTED));
@@ -84,7 +84,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         final var missingToken = TokenID.newBuilder().tokenNum(10000).build();
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, missingToken, List.of(1L, 2L));
         given(handleContext.configuration()).willReturn(configuration);
-        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
@@ -94,7 +94,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void failsForFungibleToken() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, fungibleTokenId, List.of(1L, 2L));
         given(handleContext.configuration()).willReturn(configuration);
-        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES));
@@ -105,7 +105,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         final var missingOwner = AccountID.newBuilder().accountNum(10000).build();
         final var txn = cryptoDeleteAllowanceTransaction(payerId, missingOwner, nonFungibleTokenId, List.of(1L, 2L));
         given(handleContext.configuration()).willReturn(configuration);
-        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_ALLOWANCE_OWNER_ID));
@@ -115,7 +115,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void considersPayerIfOwnerMissing() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, null, nonFungibleTokenId, List.of(1L, 2L));
         given(handleContext.configuration()).willReturn(configuration);
-        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();
         assertThatNoException()
                 .isThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore));
         assertThat(getEffectiveOwner(null, account, readableAccountStore, mock(ExpiryValidator.class)))
@@ -126,7 +126,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void failsIfTokenNotAssociatedToAccount() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, spenderId, nonFungibleTokenId, List.of(1L, 2L));
         given(handleContext.configuration()).willReturn(configuration);
-        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
@@ -140,7 +140,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .withValue("hedera.allowances.maxTransactionLimit", 1)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
-        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MAX_ALLOWANCES_EXCEEDED));
@@ -150,7 +150,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void happyPath() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, nonFungibleTokenId, List.of(1L, 2L));
         given(handleContext.configuration()).willReturn(configuration);
-        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();
 
         assertThatNoException()
                 .isThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore));
@@ -160,7 +160,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void validateSerialsExistence() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, nonFungibleTokenId, List.of(1L, 2L, 100L));
         given(handleContext.configuration()).willReturn(configuration);
-        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();
 
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
@@ -188,7 +188,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void validatesNegativeSerialsAreNotValid() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, nonFungibleTokenId, List.of(1L, -2L));
         given(handleContext.configuration()).willReturn(configuration);
-        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();
 
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)

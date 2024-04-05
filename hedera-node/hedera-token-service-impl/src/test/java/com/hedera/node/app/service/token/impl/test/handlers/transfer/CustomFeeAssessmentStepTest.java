@@ -108,10 +108,10 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                         ownerId, -1000L));
         final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
 
-        assertThatTransfersContains(level1Op.transfers().accountAmountsOrElse(emptyList()), expectedLevel1Trasfers);
+        assertThatTransfersContains(level1Op.transfers().accountAmounts(), expectedLevel1Trasfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(
-                givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
+                givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
     }
 
     @Test
@@ -158,7 +158,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(
-                givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
+                givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
 
         //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
@@ -197,10 +197,10 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                         ownerId, -1000L));
         final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
 
-        assertThatTransfersContains(level1Op.transfers().accountAmountsOrElse(emptyList()), expectedLevel1Trasfers);
+        assertThatTransfersContains(level1Op.transfers().accountAmounts(), expectedLevel1Trasfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(
-                givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
+                givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
     }
 
     @Test
@@ -240,7 +240,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
 
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(
-                givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
+                givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
 
         //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
@@ -294,11 +294,11 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                         feeCollectorId, 10L)); // fractional fees all are adjusted to input txn
         final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
 
-        assertThatTransfersContains(level1Op.transfers().accountAmountsOrElse(emptyList()), expectedLevel1Trasfers);
+        assertThatTransfersContains(level1Op.transfers().accountAmounts(), expectedLevel1Trasfers);
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(
-                givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
+                givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
     }
 
     @Test
@@ -355,7 +355,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(
-                givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
+                givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
 
         //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
