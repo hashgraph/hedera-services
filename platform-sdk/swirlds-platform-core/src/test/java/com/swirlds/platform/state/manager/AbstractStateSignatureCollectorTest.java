@@ -32,7 +32,7 @@ import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Map;
@@ -103,7 +103,7 @@ public class AbstractStateSignatureCollectorTest {
         // Although we normally want to avoid rebuilding the dispatcher over and over, the slight
         // performance overhead is worth the convenience during unit tests
 
-        final StateSignatureTransaction transaction = new StateSignatureTransaction(
+        final StateSignaturePayload transaction = new StateSignaturePayload(
                 round,
                 buildFakeSignatureBytes(addressBook.getAddress(nodeId).getSigPublicKey(), hash),
                 hash.getBytes(),

@@ -42,8 +42,8 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -293,8 +293,8 @@ public class IssDetector {
      * @return a list of ISS notifications, which may be empty, but will not contain null
      */
     private @NonNull List<IssNotification> handlePostconsensusSignatures(@NonNull final ConsensusRound round) {
-        final List<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions =
-                SystemTransactionExtractionUtils.extractFromRound(round, StateSignatureTransaction.class);
+        final List<ScopedSystemTransaction<StateSignaturePayload>> stateSignatureTransactions =
+                SystemTransactionExtractionUtils.extractFromRound(round, StateSignaturePayload.class);
 
         if (stateSignatureTransactions == null) {
             return List.of();
@@ -320,9 +320,9 @@ public class IssDetector {
      * @return an ISS notification, or null if no ISS occurred
      */
     private @Nullable IssNotification handlePostconsensusSignature(
-            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> transaction) {
+            @NonNull final ScopedSystemTransaction<StateSignaturePayload> transaction) {
         final NodeId signerId = transaction.submitterId();
-        final StateSignatureTransaction signatureTransaction = transaction.transaction();
+        final StateSignaturePayload signatureTransaction = transaction.transaction();
         final SoftwareVersion eventVersion = transaction.softwareVersion();
 
         if (eventVersion == null) {

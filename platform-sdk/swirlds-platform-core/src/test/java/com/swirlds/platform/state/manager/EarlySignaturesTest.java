@@ -31,6 +31,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.proto.event.StateSignaturePayload;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -101,7 +102,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
             // All node 0 and 2 signatures are sent very early.
             manager.handlePreconsensusSignatureTransaction(
                     addressBook.getNodeId(0),
-                    new StateSignatureTransaction(
+                    new StateSignaturePayload(
                             round,
                             buildFakeSignatureBytes(
                                     addressBook
@@ -112,7 +113,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
                             Bytes.EMPTY));
             manager.handlePreconsensusSignatureTransaction(
                     addressBook.getNodeId(2),
-                    new StateSignatureTransaction(
+                    new StateSignaturePayload(
                             round,
                             buildFakeSignatureBytes(
                                     addressBook
@@ -126,7 +127,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
             if (round % 2 == 0) {
                 manager.handlePreconsensusSignatureTransaction(
                         addressBook.getNodeId(3),
-                        new StateSignatureTransaction(
+                        new StateSignaturePayload(
                                 round,
                                 buildFakeSignatureBytes(
                                         addressBook

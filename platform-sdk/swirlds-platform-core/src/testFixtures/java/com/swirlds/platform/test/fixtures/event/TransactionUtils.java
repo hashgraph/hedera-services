@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.fixtures;
+package com.swirlds.platform.test.fixtures.event;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
@@ -34,10 +34,6 @@ public class TransactionUtils {
     private static final int DEFAULT_TRANSACTION_MAX_SIZE = 100;
 
     private static final AtomicLong nextLong = new AtomicLong(0);
-    private static final AtomicInteger nextInt = new AtomicInteger(0);
-    private static final double DEFAULT_SYS_RATIO = 0.1;
-    private static final double DEFAULT_TRANS_COUNT_STD_DEV = 10;
-    private static final double DEFAULT_TRANS_COUNT_AVG = 50;
     private static final Random random = new Random();
 
     public static SwirldTransaction[] randomSwirldTransactions(final long seed, final int number) {
@@ -49,55 +45,6 @@ public class TransactionUtils {
         for (int i = 0; i < transactions.length; i++) {
             transactions[i] = randomSwirldTransaction(random);
         }
-        return transactions;
-    }
-
-    public static SwirldTransaction[] incrementingSwirldTransactions(final int transactionCount) {
-        final SwirldTransaction[] transactions = new SwirldTransaction[transactionCount];
-        for (int index = 0; index < transactionCount; index++) {
-            transactions[index] = incrementingSwirldTransaction();
-        }
-
-        return transactions;
-    }
-
-    public static ConsensusTransactionImpl[] incrementingMixedTransactions(final RandomGenerator random) {
-        return incrementingMixedTransactions(
-                random, DEFAULT_TRANS_COUNT_AVG, DEFAULT_TRANS_COUNT_STD_DEV, DEFAULT_SYS_RATIO);
-    }
-
-    /**
-     * Creates transactions each with a unique, incrementing integer value as its content.
-     *
-     * @param random
-     * 		source of randomness
-     * @param transactionCountAverage
-     * 		the average number of transactions to create
-     * @param transactionCountStandardDeviation
-     * 		the standard deviations for the number of transactions to create
-     * @param systemTransactionRatio
-     * 		the ratio of system transactions to application transactions. 1.0 will create all system transactions, 0.0
-     * 		will create no system transactions.
-     * @return a transaction array
-     */
-    public static ConsensusTransactionImpl[] incrementingMixedTransactions(
-            final RandomGenerator random,
-            final double transactionCountAverage,
-            final double transactionCountStandardDeviation,
-            final double systemTransactionRatio) {
-
-        final int transactionCount =
-                (int) Math.max(0, transactionCountAverage + random.nextGaussian() * transactionCountStandardDeviation);
-
-        final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
-        for (int index = 0; index < transactionCount; index++) {
-            if (random.nextDouble() < systemTransactionRatio) {
-                transactions[index] = incrementingSystemTransaction();
-            } else {
-                transactions[index] = incrementingSwirldTransaction();
-            }
-        }
-
         return transactions;
     }
 

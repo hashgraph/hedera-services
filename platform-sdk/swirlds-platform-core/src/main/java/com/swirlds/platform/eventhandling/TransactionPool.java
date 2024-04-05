@@ -23,6 +23,7 @@ import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
@@ -210,8 +211,8 @@ public class TransactionPool implements TransactionSupplier, Clearable {
      * Same as {@link #submitTransaction(ConsensusTransactionImpl, boolean)} but with priority set to true.
      * This method has no return since system transactions are never rejected.
      */
-    public synchronized void submitSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
-        submitTransaction(transaction, true);
+    public synchronized void submitSystemTransaction(@NonNull final StateSignaturePayload transaction) {
+        submitTransaction(new StateSignatureTransaction(transaction), true);
     }
 
     /**
