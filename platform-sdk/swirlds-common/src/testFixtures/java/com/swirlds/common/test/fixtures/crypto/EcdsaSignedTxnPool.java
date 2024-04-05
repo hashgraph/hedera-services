@@ -106,8 +106,7 @@ public class EcdsaSignedTxnPool {
         final SignedTxn signedTxn = signedTxns.get(nextIdx);
         final SwirldTransaction tx = signedTxn.txn;
 
-        tx.setMetadata(null); // TODO maybe not
-        final TransactionSignature transactionSignature = new TransactionSignature(
+        return new TransactionSignature(
                 tx.getContents(),
                 ECDSA_KECCAK_256_SIZE + PUBLIC_KEY_LEN,
                 signedTxn.sigLen,
@@ -116,8 +115,6 @@ public class EcdsaSignedTxnPool {
                 0,
                 ECDSA_KECCAK_256_SIZE,
                 SignatureType.ECDSA_SECP256K1);
-
-        return transactionSignature;
     }
 
     /**

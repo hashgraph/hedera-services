@@ -240,6 +240,9 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
         return Objects.hash(stateSignature, stateHash, round, epochHash);
     }
 
+    /**
+     * This method just returns null. It is a temporary method that will be removed once we switch to StateSignaturePayload.
+     */
     @Override
     public byte[] getContents() {
         return null;
