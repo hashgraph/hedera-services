@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -198,6 +199,17 @@ public class CryptoDeleteSuite extends HapiSuite {
                 .then(cryptoDelete(ACCOUNT_TO_BE_DELETED)
                         .transfer(TRANSFER_ACCOUNT)
                         .hasKnownStatus(ACCOUNT_DELETED));
+    }
+
+    @HapiTest
+    final HapiSpec mustSpecifyTargetId() {
+        return defaultHapiSpec("mustSpecifyTargetId")
+                .given()
+                .when()
+                .then(cryptoDelete("0.0.0")
+                        .sansTargetId()
+                        .signedBy(DEFAULT_PAYER)
+                        .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST));
     }
 
     @HapiTest

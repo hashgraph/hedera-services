@@ -36,7 +36,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.granta
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
-import java.math.BigInteger;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -72,7 +71,7 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.FUNGIBLE_COMMON);
         given(systemContractOperations.dispatch(any(), any(), any(), any())).willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
@@ -95,7 +94,7 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.NON_FUNGIBLE_UNIQUE);
         given(systemContractOperations.dispatch(any(), any(), any(), any())).willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);

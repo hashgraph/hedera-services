@@ -18,7 +18,6 @@ package com.swirlds.common;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
@@ -43,6 +42,6 @@ public final class TestWiringModelBuilder {
     public static WiringModel create() {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        return WiringModel.create(platformContext, Time.getCurrent(), ForkJoinPool.commonPool());
+        return WiringModel.create(platformContext, ForkJoinPool.commonPool());
     }
 }
