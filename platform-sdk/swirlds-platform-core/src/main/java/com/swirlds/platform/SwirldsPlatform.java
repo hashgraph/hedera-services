@@ -617,9 +617,7 @@ public class SwirldsPlatform implements Platform {
                 new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
 
         platformWiring.bind(
-                builder.buildEventHasher(),
-                builder.buildInternalEventValidator(),
-                builder.buildEventDeduplicator(),
+                builder,
                 eventSignatureValidator,
                 orphanBuffer,
                 inOrderLinker,
@@ -647,7 +645,6 @@ public class SwirldsPlatform implements Platform {
                 savedStateController,
                 signedStateHasher,
                 appNotifier,
-                builder.buildStateGarbageCollector(),
                 publisher);
 
         platformWiring

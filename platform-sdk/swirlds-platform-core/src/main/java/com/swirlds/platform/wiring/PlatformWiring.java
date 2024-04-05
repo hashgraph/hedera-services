@@ -589,9 +589,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Bind components to the wiring.
      *
-     * @param eventHasher               the event hasher to bind
-     * @param internalEventValidator    the internal event validator to bind
-     * @param eventDeduplicator         the event deduplicator to bind
+     * @param builder                   builds platform components that need to be bound to wires
      * @param eventSignatureValidator   the event signature validator to bind
      * @param orphanBuffer              the orphan buffer to bind
      * @param inOrderLinker             the in order linker to bind
@@ -623,9 +621,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param platformPublisher         the platform publisher to bind
      */
     public void bind(
-            @NonNull final EventHasher eventHasher,
-            @NonNull final InternalEventValidator internalEventValidator,
-            @NonNull final EventDeduplicator eventDeduplicator,
+            @NonNull final PlatformComponentBuilder builder,
             @NonNull final EventSignatureValidator eventSignatureValidator,
             @NonNull final OrphanBuffer orphanBuffer,
             @NonNull final InOrderLinker inOrderLinker,
@@ -653,12 +649,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final SavedStateController savedStateController,
             @NonNull final SignedStateHasher signedStateHasher,
             @NonNull final AppNotifier notifier,
-            @NonNull final StateGarbageCollector stateGarbageCollector,
             @NonNull final PlatformPublisher platformPublisher) {
 
-        eventHasherWiring.bind(eventHasher);
-        internalEventValidatorWiring.bind(internalEventValidator);
-        eventDeduplicatorWiring.bind(eventDeduplicator);
+        eventHasherWiring.bind(builder.buildEventHasher());
+        internalEventValidatorWiring.bind(builder.buildInternalEventValidator());
+        eventDeduplicatorWiring.bind(builder.buildEventDeduplicator());
         eventSignatureValidatorWiring.bind(eventSignatureValidator);
         orphanBufferWiring.bind(orphanBuffer);
         inOrderLinkerWiring.bind(inOrderLinker);
@@ -689,7 +684,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateHasherWiring.bind(signedStateHasher);
         notifierWiring.bind(notifier);
         platformPublisherWiring.bind(platformPublisher);
-        stateGarbageCollectorWiring.bind(stateGarbageCollector);
+        stateGarbageCollectorWiring.bind(builder.buildStateGarbageCollector());
     }
 
     /**

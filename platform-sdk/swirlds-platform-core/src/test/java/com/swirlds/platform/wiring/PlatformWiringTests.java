@@ -22,6 +22,8 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.builder.PlatformBuildingBlocks;
+import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
@@ -68,10 +70,14 @@ class PlatformWiringTests {
 
         final PlatformWiring wiring = new PlatformWiring(platformContext, true, true);
 
+        final PlatformComponentBuilder componentBuilder = new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
+        componentBuilder.withEventHasher(mock(EventHasher.class));
+        componentBuilder.withInternalEventValidator(mock(InternalEventValidator.class));
+        componentBuilder.withEventDeduplicator(mock(EventDeduplicator.class));
+        componentBuilder.withStateGarbageCollector(mock(StateGarbageCollector.class));
+
         wiring.bind(
-                mock(EventHasher.class),
-                mock(InternalEventValidator.class),
-                mock(EventDeduplicator.class),
+                componentBuilder,
                 mock(EventSignatureValidator.class),
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
@@ -99,7 +105,6 @@ class PlatformWiringTests {
                 mock(SavedStateController.class),
                 mock(SignedStateHasher.class),
                 mock(AppNotifier.class),
-                mock(StateGarbageCollector.class),
                 mock(PlatformPublisher.class));
 
         assertFalse(wiring.getModel().checkForUnboundInputWires());
