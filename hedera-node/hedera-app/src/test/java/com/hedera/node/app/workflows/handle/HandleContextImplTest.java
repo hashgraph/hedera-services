@@ -102,6 +102,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.PlatformState;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
@@ -198,6 +199,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     @Mock
     private PlatformState platformState;
 
+    @Mock
+    private Metrics metrics;
+
     @BeforeEach
     void setup() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
@@ -251,7 +255,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 parentRecordFinalizer,
                 networkUtilizationManager,
                 synchronizedThrottleAccumulator,
-                platformState);
+                platformState,
+                metrics);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -284,7 +289,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             parentRecordFinalizer,
             networkUtilizationManager,
             synchronizedThrottleAccumulator,
-            platformState
+            platformState,
+            metrics
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -416,7 +422,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     parentRecordFinalizer,
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
-                    platformState);
+                    platformState,
+                    metrics);
         }
 
         @Test
@@ -518,7 +525,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     parentRecordFinalizer,
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
-                    platformState);
+                    platformState,
+                    metrics);
         }
 
         @Test
@@ -596,6 +604,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         void testCreateWritableStore(@Mock final WritableStates writableStates) {
             // given
             when(stack.getWritableStates(TokenService.NAME)).thenReturn(writableStates);
+            when(writableStates.get(any())).thenReturn(new MapWritableKVState<>("ACCOUNTS"));
             final var context = createContext(defaultTransactionBody());
 
             // when
@@ -1009,7 +1018,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     parentRecordFinalizer,
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
-                    platformState);
+                    platformState,
+                    metrics);
         }
 
         @SuppressWarnings("ConstantConditions")

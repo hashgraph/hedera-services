@@ -8,6 +8,7 @@ module com.hedera.node.app.service.token.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.merkle;
+    requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
     requires transitive javax.inject;
