@@ -114,7 +114,7 @@ public class CryptoTransferValidator {
             final var nftTransfers = tokenTransfer.nftTransfersOrElse(emptyList());
             nftIds.clear();
             for (final NftTransfer nftTransfer : nftTransfers) {
-                // Using INVALID_NFT_ID instead of INVALID_TOKEN_NFT_SERIAL_NUMBER, to match mono behavior #
+                // Using INVALID_NFT_ID instead of INVALID_TOKEN_NFT_SERIAL_NUMBER, to match mono behavior
                 validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_NFT_ID);
                 validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                 validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
