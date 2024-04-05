@@ -246,7 +246,7 @@ public final class StartupStateUtils {
                 stateCopy,
                 "StartupStateUtils: copy initial state",
                 false,
-                true);
+                false);
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 
         return signedStateCopy.reserve("Copied initial state");
@@ -506,7 +506,7 @@ public final class StartupStateUtils {
 
         final DeserializedSignedState deserializedSignedState;
         try {
-            deserializedSignedState = readStateFile(platformContext, savedStateFile.stateFile(), true);
+            deserializedSignedState = readStateFile(platformContext, savedStateFile.stateFile());
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "unable to load state file {}", savedStateFile.stateFile(), e);
 

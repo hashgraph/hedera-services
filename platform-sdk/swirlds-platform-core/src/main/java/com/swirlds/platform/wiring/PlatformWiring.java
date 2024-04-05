@@ -686,16 +686,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Get the input wire for the state garbage collector.
-     *
-     * @return the input wire for the state garbage collector
-     */
-    @NonNull
-    public InputWire<ReservedSignedState> getStateGarbageCollectorInput() {
-        return stateGarbageCollectorWiring.getInputWire(StateGarbageCollector::registerState);
-    }
-
-    /**
      * Get the input wire gossip. All events received from peers during should be passed to this wire.
      *
      * @return the wire where all events from gossip should be passed

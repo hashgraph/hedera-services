@@ -71,7 +71,7 @@ public class StateEditor {
                 configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         final DeserializedSignedState deserializedSignedState =
-                SignedStateFileReader.readStateFile(platformContext, statePath, false);
+                SignedStateFileReader.readStateFile(platformContext, statePath);
 
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             System.out.println("\nLoading state from " + statePath);

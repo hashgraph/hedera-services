@@ -192,7 +192,7 @@ public class ReconnectLearner {
 
         final State state = (State) synchronizer.getRoot();
         final SignedState newSignedState = new SignedState(
-                platformContext, CryptoStatic::verifySignature, state, "ReconnectLearner.reconnect()", false, true);
+                platformContext, CryptoStatic::verifySignature, state, "ReconnectLearner.reconnect()", false, false);
         newSignedState.setSigSet(sigSet);
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();

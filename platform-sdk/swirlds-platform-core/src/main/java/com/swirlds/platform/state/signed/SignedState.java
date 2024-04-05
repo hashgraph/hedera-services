@@ -169,7 +169,8 @@ public class SignedState implements SignedStateInfo {
      *                                 debugging reservation bugs easier.
      * @param freezeState              specifies whether this state is the last one saved before the freeze
      * @param deleteOnBackgroundThread if true, delete this state on the background thread, otherwise delete on the
-     *                                 thread that removes the last reference count
+     *                                 thread that removes the last reference count. Should only be set to true for
+     *                                 states that have been sent to the state garbage collector.
      */
     public SignedState(
             @NonNull final PlatformContext platformContext,

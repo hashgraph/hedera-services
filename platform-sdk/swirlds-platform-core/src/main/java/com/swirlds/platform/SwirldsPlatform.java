@@ -634,10 +634,6 @@ public class SwirldsPlatform implements Platform {
                 appNotifier,
                 publisher);
 
-        platformWiring
-                .getStateGarbageCollectorInput()
-                .put(initialState.reserve("initialize state to garbage collector"));
-
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
                 getSavedStateFiles(platformContext, actualMainClassName, selfId, swirldName);
@@ -933,10 +929,6 @@ public class SwirldsPlatform implements Platform {
                             signedState.getRound(),
                             signedState.getConsensusTimestamp(),
                             signedState.getState().getSwirldState()));
-
-            platformWiring
-                    .getStateGarbageCollectorInput()
-                    .put(signedState.reserve("reconnect state to garbage collector"));
 
         } catch (final RuntimeException e) {
             logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : FAILED, reason: {}", e.getMessage());

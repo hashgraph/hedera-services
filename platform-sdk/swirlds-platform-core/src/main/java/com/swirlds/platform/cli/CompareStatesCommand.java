@@ -139,8 +139,8 @@ public final class CompareStatesCommand extends AbstractCommand {
 
         logger.info(LogMarker.CLI.getMarker(), "Loading state from {}", statePath);
 
-        final ReservedSignedState signedState = SignedStateFileReader.readStateFile(platformContext, statePath, false)
-                .reservedSignedState();
+        final ReservedSignedState signedState =
+                SignedStateFileReader.readStateFile(platformContext, statePath).reservedSignedState();
         logger.info(LogMarker.CLI.getMarker(), "Hashing state");
         try {
             MerkleCryptoFactory.getInstance()
