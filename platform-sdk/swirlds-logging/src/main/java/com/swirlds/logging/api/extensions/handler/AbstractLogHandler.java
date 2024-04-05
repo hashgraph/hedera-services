@@ -72,14 +72,6 @@ public abstract class AbstractLogHandler implements LogHandler {
 
     @Override
     public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
-        if (name == null) {
-            EMERGENCY_LOGGER.logNPE("name");
-            return true;
-        }
-        if (level == null) {
-            EMERGENCY_LOGGER.logNPE("level");
-            return true;
-        }
         if (marker == null) { // Favor the method that has chances to be inlined
             return loggingLevelConfig.get().isEnabled(name, level);
         } else {
