@@ -66,7 +66,7 @@ include(":app-spi", "hedera-node/hedera-app-spi")
 
 include(":config", "hedera-node/hedera-config")
 
-include(":hapi", "hedera-node/hapi")
+include(":hapi", "hapi")
 
 include(":services-cli", "hedera-node/cli-clients")
 
