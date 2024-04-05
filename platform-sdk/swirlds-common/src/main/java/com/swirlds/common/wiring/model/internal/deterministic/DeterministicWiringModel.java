@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.deterministic;
+package com.swirlds.common.wiring.model.internal.deterministic;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.model.internal.TraceableWiringModel;
+import com.swirlds.common.threading.locks.AutoClosableLock;
+import com.swirlds.common.threading.locks.internal.AutoLock;
+import com.swirlds.common.threading.locks.locked.Locked;
+import com.swirlds.common.wiring.model.internal.standard.JvmAnchor;
+import com.swirlds.common.wiring.model.internal.standard.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,6 +47,16 @@ public class DeterministicWiringModel extends TraceableWiringModel {
      * Work that we will perform in the next cycle.
      */
     private List<Runnable> nextCycleWork = new ArrayList<>();
+
+    /**
+     * Used to protect access to the JVM anchor.
+     */
+    private final AutoClosableLock jvmExitLock = new AutoLock();
+
+    /**
+     * Used to prevent the JVM from prematurely exiting.
+     */
+    private JvmAnchor anchor;
 
     public DeterministicWiringModel(@NonNull final PlatformContext platformContext) {
 
@@ -102,14 +116,30 @@ public class DeterministicWiringModel extends TraceableWiringModel {
         throw new UnsupportedOperationException("TODO");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void preventJvmExit() {
-        throw new UnsupportedOperationException("TODO");
+        try (final Locked ignored = jvmExitLock.lock()) {
+            if (anchor == null) {
+                anchor = new JvmAnchor();
+                anchor.start();
+            }
+        }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void permitJvmExit() {
-        throw new UnsupportedOperationException("TODO");
+        try (final Locked ignored = jvmExitLock.lock()) {
+            if (anchor != null) {
+                anchor.stop();
+                anchor = null;
+            }
+        }
     }
 
     /**

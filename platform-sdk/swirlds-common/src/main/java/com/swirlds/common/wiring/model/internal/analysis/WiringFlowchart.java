@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal;
+package com.swirlds.common.wiring.model.internal.analysis;
 
-import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
-import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SUBSTITUTION;
+import static com.swirlds.common.wiring.model.internal.analysis.ModelVertexMetaType.SCHEDULER;
+import static com.swirlds.common.wiring.model.internal.analysis.ModelVertexMetaType.SUBSTITUTION;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.CONCURRENT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;

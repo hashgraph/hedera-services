@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.schedulers.internal;
+package com.swirlds.common.wiring.model.internal.standard;
 
 import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCommonHyperlink;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;

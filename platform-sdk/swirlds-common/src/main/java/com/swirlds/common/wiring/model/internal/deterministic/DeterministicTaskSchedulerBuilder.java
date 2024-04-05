@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.deterministic;
+package com.swirlds.common.wiring.model.internal.deterministic;
 
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
-import com.swirlds.common.wiring.model.internal.TraceableWiringModel;
+import com.swirlds.common.wiring.model.internal.standard.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.internal.AbstractTaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.internal.DirectTaskScheduler;

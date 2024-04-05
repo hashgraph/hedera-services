@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal;
+package com.swirlds.common.wiring.model.internal.standard;
 
-import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
+import static com.swirlds.common.wiring.model.internal.analysis.ModelVertexMetaType.SCHEDULER;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 
@@ -24,6 +24,14 @@ import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
 import com.swirlds.common.wiring.model.ModelGroup;
 import com.swirlds.common.wiring.model.ModelManualLink;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.internal.analysis.CycleFinder;
+import com.swirlds.common.wiring.model.internal.analysis.DirectSchedulerChecks;
+import com.swirlds.common.wiring.model.internal.analysis.InputWireChecks;
+import com.swirlds.common.wiring.model.internal.analysis.InputWireDescriptor;
+import com.swirlds.common.wiring.model.internal.analysis.ModelEdge;
+import com.swirlds.common.wiring.model.internal.analysis.ModelVertex;
+import com.swirlds.common.wiring.model.internal.analysis.StandardVertex;
+import com.swirlds.common.wiring.model.internal.analysis.WiringFlowchart;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.SolderType;

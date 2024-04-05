@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.schedulers.internal;
+package com.swirlds.common.wiring.model.internal.standard;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;

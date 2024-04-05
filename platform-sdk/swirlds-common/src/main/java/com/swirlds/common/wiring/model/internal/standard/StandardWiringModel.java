@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal;
+package com.swirlds.common.wiring.model.internal.standard;
 
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
@@ -25,7 +25,6 @@ import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.internal.StandardTaskSchedulerBuilder;
-import com.swirlds.common.wiring.schedulers.internal.HeartbeatScheduler;
 import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -67,6 +66,9 @@ public class StandardWiringModel extends TraceableWiringModel {
      */
     private final AutoClosableLock jvmExitLock = new AutoLock();
 
+    /**
+     * Used to prevent the JVM from prematurely exiting.
+     */
     private JvmAnchor anchor;
 
     /**
@@ -112,6 +114,10 @@ public class StandardWiringModel extends TraceableWiringModel {
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void preventJvmExit() {
         try (final Locked ignored = jvmExitLock.lock()) {
             if (anchor == null) {

@@ -27,7 +27,7 @@ import com.swirlds.common.wiring.counters.MultiObjectCounter;
 import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
-import com.swirlds.common.wiring.model.internal.TraceableWiringModel;
+import com.swirlds.common.wiring.model.internal.standard.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;

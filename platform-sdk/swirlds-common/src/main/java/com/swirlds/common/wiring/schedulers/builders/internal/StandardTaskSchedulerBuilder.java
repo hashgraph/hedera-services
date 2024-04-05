@@ -16,7 +16,6 @@
 
 package com.swirlds.common.wiring.schedulers.builders.internal;
 
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
 
@@ -26,7 +25,7 @@ import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.internal.standard.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.internal.ConcurrentTaskScheduler;
