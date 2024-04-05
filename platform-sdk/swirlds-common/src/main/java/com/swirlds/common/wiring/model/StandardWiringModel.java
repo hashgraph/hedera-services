@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal.standard;
+package com.swirlds.common.wiring.model;
 
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
@@ -22,6 +22,8 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.internal.AutoLock;
 import com.swirlds.common.threading.locks.locked.Locked;
+import com.swirlds.common.wiring.model.internal.standard.HeartbeatScheduler;
+import com.swirlds.common.wiring.model.internal.standard.JvmAnchor;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.internal.StandardTaskSchedulerBuilder;
@@ -77,8 +79,7 @@ public class StandardWiringModel extends TraceableWiringModel {
      * @param platformContext the platform context
      * @param defaultPool     the default fork join pool, schedulers not explicitly assigned a pool will use this one
      */
-    public StandardWiringModel(
-            @NonNull final PlatformContext platformContext, @NonNull final ForkJoinPool defaultPool) {
+    StandardWiringModel(@NonNull final PlatformContext platformContext, @NonNull final ForkJoinPool defaultPool) {
         super(true);
 
         this.platformContext = Objects.requireNonNull(platformContext);

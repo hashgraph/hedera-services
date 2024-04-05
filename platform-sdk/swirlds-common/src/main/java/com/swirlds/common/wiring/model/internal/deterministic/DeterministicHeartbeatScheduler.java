@@ -19,9 +19,9 @@ package com.swirlds.common.wiring.model.internal.deterministic;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.model.internal.standard.AbstractHeartbeatScheduler;
 import com.swirlds.common.wiring.model.internal.standard.HeartbeatTask;
-import com.swirlds.common.wiring.model.internal.standard.TraceableWiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;

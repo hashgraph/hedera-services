@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal.standard;
+package com.swirlds.common.wiring.model;
 
 import static com.swirlds.common.wiring.model.internal.analysis.ModelVertexMetaType.SCHEDULER;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 
-import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
-import com.swirlds.common.wiring.model.ModelGroup;
-import com.swirlds.common.wiring.model.ModelManualLink;
-import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.common.wiring.model.diagram.ModelGroup;
+import com.swirlds.common.wiring.model.diagram.ModelManualLink;
 import com.swirlds.common.wiring.model.internal.analysis.CycleFinder;
 import com.swirlds.common.wiring.model.internal.analysis.DirectSchedulerChecks;
 import com.swirlds.common.wiring.model.internal.analysis.InputWireChecks;
@@ -91,7 +90,7 @@ public abstract class TraceableWiringModel implements WiringModel {
      *
      * @param backpressureEnabled true if backpressure is enabled
      */
-    public TraceableWiringModel(final boolean backpressureEnabled) {
+    TraceableWiringModel(final boolean backpressureEnabled) {
         this.backpressureEnabled = backpressureEnabled;
     }
 

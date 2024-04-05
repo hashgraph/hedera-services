@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.wires.output;
 
-import com.swirlds.common.wiring.model.internal.standard.TraceableWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;

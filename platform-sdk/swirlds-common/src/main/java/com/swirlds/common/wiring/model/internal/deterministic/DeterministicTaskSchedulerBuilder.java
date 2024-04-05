@@ -21,7 +21,8 @@ import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DI
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
-import com.swirlds.common.wiring.model.internal.standard.TraceableWiringModel;
+import com.swirlds.common.wiring.model.DeterministicWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.internal.AbstractTaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.internal.DirectTaskScheduler;

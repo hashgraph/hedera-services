@@ -17,7 +17,7 @@
 package com.swirlds.common.wiring.schedulers;
 
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.model.internal.standard.TraceableWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.internal.DefaultSquelcher;

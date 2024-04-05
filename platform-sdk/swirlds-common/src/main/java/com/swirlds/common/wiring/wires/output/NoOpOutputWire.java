@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.wires.output;
 
-import com.swirlds.common.wiring.model.internal.standard.TraceableWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.InputWire;

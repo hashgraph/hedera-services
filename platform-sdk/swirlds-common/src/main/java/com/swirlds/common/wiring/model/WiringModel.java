@@ -18,6 +18,9 @@ package com.swirlds.common.wiring.model;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
+import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.common.wiring.model.diagram.ModelGroup;
+import com.swirlds.common.wiring.model.diagram.ModelManualLink;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;

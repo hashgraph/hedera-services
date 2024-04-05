@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal.deterministic;
+package com.swirlds.common.wiring.model;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.internal.AutoLock;
 import com.swirlds.common.threading.locks.locked.Locked;
+import com.swirlds.common.wiring.model.internal.deterministic.DeterministicHeartbeatScheduler;
+import com.swirlds.common.wiring.model.internal.deterministic.DeterministicTaskSchedulerBuilder;
 import com.swirlds.common.wiring.model.internal.standard.JvmAnchor;
-import com.swirlds.common.wiring.model.internal.standard.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,7 +66,7 @@ public class DeterministicWiringModel extends TraceableWiringModel {
      *
      * @param platformContext the context for this node
      */
-    public DeterministicWiringModel(@NonNull final PlatformContext platformContext) {
+    DeterministicWiringModel(@NonNull final PlatformContext platformContext) {
         super(false);
         this.platformContext = Objects.requireNonNull(platformContext);
         this.heartbeatScheduler = new DeterministicHeartbeatScheduler(this, platformContext.getTime(), "heartbeat");

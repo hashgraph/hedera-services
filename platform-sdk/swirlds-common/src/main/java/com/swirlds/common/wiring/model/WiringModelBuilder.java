@@ -17,8 +17,6 @@
 package com.swirlds.common.wiring.model;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.model.internal.deterministic.DeterministicWiringModel;
-import com.swirlds.common.wiring.model.internal.standard.StandardWiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;

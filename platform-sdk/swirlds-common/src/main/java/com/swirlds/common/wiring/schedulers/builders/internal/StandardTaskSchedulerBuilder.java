@@ -25,7 +25,7 @@ import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.model.internal.standard.StandardWiringModel;
+import com.swirlds.common.wiring.model.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.internal.ConcurrentTaskScheduler;

@@ -37,8 +37,6 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.NonCryptographicHashing;
-import com.swirlds.common.wiring.model.internal.deterministic.DeterministicWiringModel;
-import com.swirlds.common.wiring.model.internal.standard.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -47,7 +45,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -379,7 +376,7 @@ class DeterministicModelTests {
         final long value1 = evaluateMesh(
                 dataSeed,
                 generateWiringMesh(
-                        meshSeed, new StandardWiringModel(platformContext, ForkJoinPool.commonPool()), enableHeartbeat),
+                        meshSeed, WiringModelBuilder.create(platformContext).build(), enableHeartbeat),
                 () -> {
                     try {
                         MILLISECONDS.sleep(1);
@@ -392,7 +389,7 @@ class DeterministicModelTests {
         final long value2 = evaluateMesh(
                 dataSeed,
                 generateWiringMesh(
-                        meshSeed, new StandardWiringModel(platformContext, ForkJoinPool.commonPool()), enableHeartbeat),
+                        meshSeed, WiringModelBuilder.create(platformContext).build(), enableHeartbeat),
                 () -> {
                     try {
                         MILLISECONDS.sleep(1);
@@ -415,7 +412,9 @@ class DeterministicModelTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
 
-        final DeterministicWiringModel deterministicWiringModel1 = new DeterministicWiringModel(platformContext);
+        final DeterministicWiringModel deterministicWiringModel1 = WiringModelBuilder.create(platformContext)
+                .withDeterministicModeEnabled(true)
+                .build();
         final long value1 =
                 evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel1, true), () -> {
                     time.tick(Duration.ofMillis(1));
@@ -423,7 +422,9 @@ class DeterministicModelTests {
                 });
 
         time.reset();
-        final DeterministicWiringModel deterministicWiringModel2 = new DeterministicWiringModel(platformContext);
+        final DeterministicWiringModel deterministicWiringModel2 = WiringModelBuilder.create(platformContext)
+                .withDeterministicModeEnabled(true)
+                .build();
         final long value2 =
                 evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel2, true), () -> {
                     time.tick(Duration.ofMillis(1));
@@ -451,7 +452,9 @@ class DeterministicModelTests {
     void circularDataFlowTest() {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final DeterministicWiringModel model = new DeterministicWiringModel(platformContext);
+        final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
+                .withDeterministicModeEnabled(true)
+                .build();
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicInteger negativeCountA = new AtomicInteger();

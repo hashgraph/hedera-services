@@ -18,7 +18,7 @@ package com.swirlds.common.wiring.wires.output;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.wiring.model.internal.standard.TraceableWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.wires.output.internal.ForwardingOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;

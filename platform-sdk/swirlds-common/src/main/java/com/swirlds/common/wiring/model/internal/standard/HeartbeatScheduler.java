@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.model.internal.standard;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.wiring.model.StandardWiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Timer;
 

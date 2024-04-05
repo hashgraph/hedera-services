@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.model.internal.deterministic.DeterministicWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import java.time.Duration;
@@ -37,7 +36,10 @@ public class DeterministicHeartbeatSchedulerTests {
         final FakeTime time = new FakeTime();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
-        final DeterministicWiringModel model = new DeterministicWiringModel(platformContext);
+        final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
+                .withDeterministicModeEnabled(true)
+                .build();
+        ;
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -65,7 +67,10 @@ public class DeterministicHeartbeatSchedulerTests {
         final FakeTime time = new FakeTime();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
-        final DeterministicWiringModel model = new DeterministicWiringModel(platformContext);
+        final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
+                .withDeterministicModeEnabled(true)
+                .build();
+        ;
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -93,7 +98,10 @@ public class DeterministicHeartbeatSchedulerTests {
         final FakeTime time = new FakeTime();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
-        final DeterministicWiringModel model = new DeterministicWiringModel(platformContext);
+        final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
+                .withDeterministicModeEnabled(true)
+                .build();
+        ;
 
         final TaskScheduler<Void> scheduler = model.schedulerBuilder("test")
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)

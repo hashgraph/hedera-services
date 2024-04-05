@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
