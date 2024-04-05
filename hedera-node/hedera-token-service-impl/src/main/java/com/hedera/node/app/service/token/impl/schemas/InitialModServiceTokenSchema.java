@@ -592,7 +592,7 @@ public class InitialModServiceTokenSchema extends Schema {
         final var numberOfNodes = addressBook.size();
 
         final long maxStakePerNode = ledgerConfig.totalTinyBarFloat() / numberOfNodes;
-        final long minStakePerNode = maxStakePerNode / 2;
+        final long minStakePerNode = 0;
 
         final var numRewardHistoryStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
         final var stakingInfoState = ctx.newStates().get(STAKING_INFO_KEY);
