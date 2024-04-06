@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.state;
 
-import com.swirlds.metrics.api.Metrics;
+import com.hedera.node.app.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
@@ -117,25 +117,7 @@ public interface WritableKVState<K, V> extends ReadableKVState<K, V> {
      * <p>This is an intermediate solution until we are sure the data layer is reporting the right values.
      * The default implementation is empty which means that no metrics are set up.
      *
-     * @param metrics the metrics-API used to report utilization
-     * @param name the name of the entities
-     * @param label the label of the entities
-     * @param maxCapacity the maximum capacity of the store
+     * @param storeMetrics helper class to report utilization-metrics
      */
-    default void setupMetrics(
-            @NonNull Metrics metrics, @NonNull String name, @NonNull String label, long maxCapacity) {}
-
-    /**
-     * Sets up metrics for the {@code WritableKVState}.
-     *
-     * <p>This is an intermediate solution until we are sure the data layer is reporting the right values.
-     * The default implementation is empty which means that no metrics are set up.
-     *
-     * @param metrics the metrics-API used to report utilization
-     * @param name the name of the entities
-     * @param maxCapacity the maximum capacity of the store
-     */
-    default void setupMetrics(@NonNull Metrics metrics, @NonNull String name, long maxCapacity) {
-        setupMetrics(metrics, name, name, maxCapacity);
-    }
+    default void setMetrics(@NonNull StoreMetrics storeMetrics) {}
 }
