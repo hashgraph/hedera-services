@@ -20,7 +20,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
 import com.swirlds.logging.api.extensions.provider.AbstractLogProvider;
-import com.swirlds.logging.api.internal.LoggingSystem;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -50,7 +49,8 @@ public class Log4JProvider extends AbstractLogProvider {
      * @param logEventConsumer the log event consumer
      */
     @Override
-    public void install(@NonNull final LogEventFactory logEventFactory, @NonNull final LoggingSystem logEventConsumer) {
+    public void install(
+            @NonNull final LogEventFactory logEventFactory, @NonNull final LogEventConsumer logEventConsumer) {
         SwirldsLogAppender.setLogEventFactory(logEventFactory);
         SwirldsLogAppender.setLogEventConsumer(logEventConsumer);
     }

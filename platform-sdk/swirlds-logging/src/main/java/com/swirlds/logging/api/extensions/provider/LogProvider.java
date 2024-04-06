@@ -17,8 +17,8 @@
 package com.swirlds.logging.api.extensions.provider;
 
 import com.swirlds.logging.api.extensions.event.LogEvent;
+import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
-import com.swirlds.logging.api.internal.LoggingSystem;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -56,5 +56,5 @@ public interface LogProvider {
      *
      * @param logEventConsumer the log event consumer
      */
-    void install(@NonNull LogEventFactory logEventFactory, @NonNull LoggingSystem logEventConsumer);
+    void install(@NonNull LogEventFactory logEventFactory, @NonNull LogEventConsumer logEventConsumer);
 }

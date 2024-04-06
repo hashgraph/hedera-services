@@ -22,7 +22,6 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.event.LogEventFactory;
-import com.swirlds.logging.api.internal.LoggingSystem;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Serializable;
@@ -82,7 +81,7 @@ public class SwirldsLogAppender extends AbstractAppender {
      * The log event consumer to consume log events.
      * This is set by the swirlds-logging API.
      */
-    private static volatile LoggingSystem logEventConsumer;
+    private static volatile LogEventConsumer logEventConsumer;
 
     /**
      * The swirlds emergency logger.
@@ -132,7 +131,7 @@ public class SwirldsLogAppender extends AbstractAppender {
      *
      * @param logEventConsumer the log event consumer from the swirlds-logging API.
      */
-    public static void setLogEventConsumer(@NonNull final LoggingSystem logEventConsumer) {
+    public static void setLogEventConsumer(@NonNull final LogEventConsumer logEventConsumer) {
         if (logEventConsumer == null) {
             EMERGENCY_LOGGER.logNPE("logEventConsumer");
             return;
