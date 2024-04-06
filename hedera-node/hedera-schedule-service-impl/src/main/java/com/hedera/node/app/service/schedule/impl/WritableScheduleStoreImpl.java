@@ -25,11 +25,12 @@ import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -57,12 +58,12 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
      *
      * @param states The state to use.
      * @param configuration The configuration used to read the maximum capacity.
-     * @param metrics The metrics-API used to report utilization.
+     * @param storeMetricsService Service that provides utilization metrics.
      */
     public WritableScheduleStoreImpl(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final Metrics metrics) {
+            @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
         schedulesByIdMutable = states.get(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY);
         schedulesByEqualityMutable = states.get(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY);
@@ -70,7 +71,8 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
 
         final long maxCapacity =
                 configuration.getConfigData(SchedulingConfig.class).maxNumber();
-        schedulesByIdMutable.setupMetrics(metrics, "schedules", maxCapacity);
+        final var storeMetrics = storeMetricsService.get(StoreType.SCHEDULE, maxCapacity);
+        schedulesByIdMutable.setMetrics(storeMetrics);
     }
 
     /**

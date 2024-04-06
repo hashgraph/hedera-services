@@ -55,6 +55,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -67,7 +68,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -258,7 +258,7 @@ class FileUpdateTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableFileStore(writableStates, configuration, mock(Metrics.class));
+        writableStore = new WritableFileStore(writableStates, configuration, mock(StoreMetricsService.class));
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         given(handleContext.body()).willReturn(txBody);

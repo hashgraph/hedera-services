@@ -77,13 +77,13 @@ import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
@@ -572,7 +572,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     new MapWritableStates(
                             Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
                     configuration,
-                    mock(Metrics.class));
+                    mock(StoreMetricsService.class));
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
             final var context = mockContext(txn);

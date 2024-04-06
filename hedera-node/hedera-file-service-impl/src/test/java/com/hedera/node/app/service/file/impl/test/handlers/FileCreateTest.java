@@ -53,6 +53,7 @@ import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -65,7 +66,6 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -100,7 +100,7 @@ class FileCreateTest extends FileTestBase {
     private FileOpsUsage fileOpsUsage;
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     private FilesConfig config;
 
@@ -131,7 +131,7 @@ class FileCreateTest extends FileTestBase {
     @BeforeEach
     void setUp() {
         subject = new FileCreateHandler(fileOpsUsage);
-        fileStore = new WritableFileStore(writableStates, DEFAULT_CONFIG, metrics);
+        fileStore = new WritableFileStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
         config = HederaTestConfigBuilder.createConfig().getConfigData(FilesConfig.class);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
@@ -309,7 +309,7 @@ class FileCreateTest extends FileTestBase {
         final var writableState = writableFileStateWithOneKey();
 
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableState);
-        final var fileStore = new WritableFileStore(writableStates, DEFAULT_CONFIG, metrics);
+        final var fileStore = new WritableFileStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(fileStore);
 
         assertEquals(2, fileStore.sizeOfState());
