@@ -130,7 +130,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         // 4. Including above 3 conditions, if the target account is 0.0.2, new key must sign the transaction
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         if (targetAccountKeyMustSign) {
-            context.requireKeyOrThrow(updateAccountId, ACCOUNT_ID_DOES_NOT_EXIST);
+            context.requireKeyOrThrow(updateAccountId, INVALID_ACCOUNT_ID);
         }
         if (newAccountKeyMustSign && op.hasKey()) {
             context.requireKeyOrThrow(op.key(), INVALID_ADMIN_KEY);

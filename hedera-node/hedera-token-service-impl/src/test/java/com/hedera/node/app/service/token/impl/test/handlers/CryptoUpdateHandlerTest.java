@@ -158,6 +158,17 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
+    void cryptoUpdateMissingAccountID() throws PreCheckException {
+        final var txn = new CryptoUpdateBuilder().withTarget(null).build();
+
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
+
+        final var context = new FakePreHandleContext(readableStore, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_ID_DOES_NOT_EXIST);
+    }
+
+    @Test
     void cryptoUpdateNewSignatureKeyWaivedVanilla() throws PreCheckException {
         final var txn = new CryptoUpdateBuilder().withKey(key).build();
 
@@ -197,7 +208,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isTargetAccountSignatureWaived(any(), any())).willReturn(false);
 
         final var context = new FakePreHandleContext(readableStore, txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_ID_DOES_NOT_EXIST);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
