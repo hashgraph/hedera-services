@@ -62,7 +62,7 @@ public class TimestampPrinter {
             format = BROKEN_TIMESTAMP;
         }
         writer.append(format);
-        writer.append(PADDING_VALUES[DATE_FIELD_MAX_SIZE - writer.length()]);
+        writer.append(PADDING_VALUES[DATE_FIELD_MAX_SIZE - format.length()]);
     }
 
     /**
