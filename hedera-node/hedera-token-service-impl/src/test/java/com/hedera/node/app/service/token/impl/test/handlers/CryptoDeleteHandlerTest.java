@@ -54,6 +54,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTe
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -62,7 +63,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,7 +89,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private CryptoDeleteRecordBuilder recordBuilder;
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     private Configuration configuration;
 
@@ -403,14 +403,15 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         }
         writableAccounts = emptyStateBuilder.build();
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates, configuration, metrics);
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenTxnWith(AccountID deleteAccountId, AccountID transferAccountId) {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        final var impl = new TokenServiceApiImpl(configuration, metrics, stakingValidator, writableStates, op -> false);
+        final var impl = new TokenServiceApiImpl(
+                configuration, storeMetricsService, stakingValidator, writableStates, op -> false);
         given(handleContext.serviceApi(TokenServiceApi.class)).willReturn(impl);
     }
 }
