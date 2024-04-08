@@ -57,7 +57,7 @@ class StaticConnectionManagersTest {
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(r).setSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
-        final StaticTopology topology = new StaticTopology(new Random(), addressBook, selfId, numNeighbors);
+        final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
         final List<NodeId> neighbors = topology.getNeighbors();
         final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
@@ -90,7 +90,7 @@ class StaticConnectionManagersTest {
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(r).setSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
-        final StaticTopology topology = new StaticTopology(new Random(), addressBook, selfId, numNeighbors);
+        final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
         final List<NodeId> neighbors = topology.getNeighbors();
         final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
