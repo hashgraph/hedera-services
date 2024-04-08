@@ -38,6 +38,8 @@ public class PayerRecordsDumpUtils {
             @NonNull final QueueNode<TransactionRecordEntry> queue,
             @NonNull final DumpCheckpoint checkpoint) {
         var transactionRecords = gatherTxnRecordsFromMod(queue);
+        System.out.println("=== Dumping payer records ===");
+        System.out.println(transactionRecords.size() + " records found");
         int reportSize;
         try (@NonNull final var writer = new Writer(path)) {
             reportOnTxnRecords(writer, transactionRecords);

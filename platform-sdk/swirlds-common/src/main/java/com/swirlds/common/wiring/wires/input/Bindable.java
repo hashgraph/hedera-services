@@ -38,22 +38,6 @@ public interface Bindable<IN, OUT> {
     void bindConsumer(@NonNull Consumer<IN> handler);
 
     /**
-     * Do not use this method.
-     * <p>
-     * Calling bindConsumer() on a function that returns the output type is explicitly not supported. This method is a
-     * "trap" to catch situations where bindConsumer() is called when bind() should be called instead. Java is happy to
-     * turn a Function into a Consumer if it can't match the types, and this is behavior we don't want to support.
-     *
-     * @param handler the wrong type of handler
-     * @deprecated to show that this method should not be used. There are no plans to actually remove this method.
-     */
-    @Deprecated
-    default void bindConsumer(@NonNull final Function<IN, OUT> handler) {
-        throw new UnsupportedOperationException(
-                "Do not call bindConsumer() with a function that returns a value. Call bind() instead.");
-    }
-
-    /**
      * Bind this object to a handler.
      *
      * @param handler the handler to bind to this input task scheduler, values returned are passed to the primary output

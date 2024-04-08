@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.state;
 
+import com.hedera.node.app.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
@@ -109,4 +110,14 @@ public interface WritableKVState<K, V> extends ReadableKVState<K, V> {
     default boolean isModified() {
         return !modifiedKeys().isEmpty();
     }
+
+    /**
+     * Sets up metrics for the {@code WritableKVState}.
+     *
+     * <p>This is an intermediate solution until we are sure the data layer is reporting the right values.
+     * The default implementation is empty which means that no metrics are set up.
+     *
+     * @param storeMetrics helper class to report utilization-metrics
+     */
+    default void setMetrics(@NonNull StoreMetrics storeMetrics) {}
 }
