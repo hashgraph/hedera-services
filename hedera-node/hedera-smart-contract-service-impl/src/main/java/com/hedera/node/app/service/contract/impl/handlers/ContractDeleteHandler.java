@@ -66,6 +66,12 @@ public class ContractDeleteHandler implements TransactionHandler {
     }
 
     @Override
+    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
+        final var op = txn.contractDeleteInstanceOrThrow();
+        mustExist(op.contractID(), INVALID_CONTRACT_ID);
+    }
+
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().contractDeleteInstanceOrThrow();
