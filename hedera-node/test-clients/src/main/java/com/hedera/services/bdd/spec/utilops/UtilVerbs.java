@@ -1635,7 +1635,7 @@ public class UtilVerbs {
                 }
                 convertedOps.add(new HapiEthereumCall(callOp));
 
-            } else if (op instanceof HapiContractCreate callOp && callOp.isConvertableToEthCreate(spec)) {
+            } else if (op instanceof HapiContractCreate callOp && callOp.isConvertableToEthCreate()) {
                 // if we have constructor args, update the bytecode file with one containing the args
                 if (callOp.getArgs().isPresent() && callOp.getAbi().isPresent()) {
                     var convertedArgs =
