@@ -20,6 +20,7 @@ plugins {
 }
 
 testModuleInfo {
+    requires("com.hedera.pbj.runtime")
     requires("com.swirlds.merkle")
     requires("com.swirlds.base.test.fixtures")
     requires("awaitility")

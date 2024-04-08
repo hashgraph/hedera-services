@@ -21,22 +21,38 @@ import static com.swirlds.common.constructable.ClassIdFormatter.classIdString;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.synchronization.internal.ExpectedLesson;
+import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
+import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
+import com.swirlds.common.merkle.synchronization.task.LearnerPushTask;
+import com.swirlds.common.merkle.synchronization.task.Lesson;
+import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Implementation for a view of a standard in memory merkle tree.
  */
-public class StandardLearnerTreeView implements LearnerTreeView<MerkleNode> {
+public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
+
+    private final ReconnectConfig reconnectConfig;
 
     private final MerkleNode originalRoot;
+
+    private AsyncInputStream<Lesson<MerkleNode>> in;
+    private AsyncOutputStream<QueryResponse> out;
 
     private final Queue<ExpectedLesson<MerkleNode>> expectedLessons;
     private final LinkedList<MerkleInternal> nodesToInitialize;
@@ -47,10 +63,35 @@ public class StandardLearnerTreeView implements LearnerTreeView<MerkleNode> {
      * @param root
      * 		the root of the tree (or subtree)
      */
-    public StandardLearnerTreeView(final MerkleNode root) {
+    public LearnerPushMerkleTreeView(final ReconnectConfig reconnectConfig, final MerkleNode root) {
+        this.reconnectConfig = reconnectConfig;
         this.originalRoot = root;
         expectedLessons = new LinkedList<>();
         nodesToInitialize = new LinkedList<>();
+    }
+
+    @Override
+    public void startLearnerTasks(
+            final LearningSynchronizer learningSynchronizer,
+            final StandardWorkGroup workGroup,
+            final MerkleDataInputStream inputStream,
+            final MerkleDataOutputStream outputStream,
+            final Queue<MerkleNode> rootsToReceive,
+            final AtomicReference<MerkleNode> reconstructedRoot) {
+        in = new AsyncInputStream<>(inputStream, workGroup, () -> new Lesson<>(this), reconnectConfig);
+        out = learningSynchronizer.buildOutputStream(workGroup, outputStream);
+
+        in.start();
+        out.start();
+
+        final LearnerPushTask<MerkleNode> learnerThread = new LearnerPushTask<>(
+                workGroup, in, out, rootsToReceive, reconstructedRoot, this, learningSynchronizer);
+        learnerThread.start();
+    }
+
+    @Override
+    public void abort() {
+        in.abort();
     }
 
     /**

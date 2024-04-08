@@ -189,6 +189,7 @@ import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -213,6 +214,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     public static final String V_0_34 = "v0.34";
     private static final String ERC20_ABI = "ERC20ABI";
     private static final String SENDER_TXN = "senderTxn";
+    private static final long GAS_PRICE = 71L;
 
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
@@ -1102,7 +1104,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .nonce(1)
                                 .maxFeePerGas(0L)
                                 .maxGasAllowance(FIVE_HBARS)
-                                .gasLimit(2_000_000L)
+                                .gasLimit(650_000L)
                                 .via(lazyCreateTxn)
                                 .hasKnownStatus(SUCCESS))))
                 .then(withOpContext((spec, opLog) -> {
@@ -1135,6 +1137,13 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                     .contractCallResult(
                                             ContractFnResultAsserts.resultWith().contract(asContractString(id))))
                             .andAllChildRecords()
+                            .exposingAllTo(records -> {
+                                final long gasUsed =
+                                        records.get(0).getContractCallResult().getGasUsed();
+                                final long transactionFee = records.get(1).getTransactionFee();
+
+                                Assertions.assertEquals(GAS_PRICE, transactionFee / (gasUsed - 21_000L));
+                            })
                             .logged();
                     final var childRecordsCheck = childRecordsCheck(
                             lazyCreateTxn,

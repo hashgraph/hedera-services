@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.state;
 
+import com.hedera.node.app.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.Objects;
@@ -80,9 +81,14 @@ public class WrappedWritableKVState<K, V> extends WritableKVStateBase<K, V> {
     }
 
     /** {@inheritDoc} */
-    @NonNull
     @Override
     public long sizeOfDataSource() {
         return delegate.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setMetrics(@NonNull StoreMetrics storeMetrics) {
+        delegate.setMetrics(storeMetrics);
     }
 }

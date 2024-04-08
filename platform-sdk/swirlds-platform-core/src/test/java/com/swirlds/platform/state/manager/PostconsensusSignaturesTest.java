@@ -16,11 +16,12 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
+import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.config.StateConfig;
@@ -103,12 +104,13 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
                         addressBook.getNodeId(node),
                         new StateSignatureTransaction(
                                 round,
-                                buildFakeSignature(
+                                buildFakeSignatureBytes(
                                         addressBook
                                                 .getAddress(addressBook.getNodeId(node))
                                                 .getSigPublicKey(),
                                         states.get(round).getState().getHash()),
-                                states.get(round).getState().getHash()));
+                                states.get(round).getState().getHash().getBytes(),
+                                Bytes.EMPTY));
             }
 
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {

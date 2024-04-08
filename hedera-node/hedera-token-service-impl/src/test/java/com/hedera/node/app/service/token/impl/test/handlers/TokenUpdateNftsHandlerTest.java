@@ -58,13 +58,16 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -78,6 +81,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
+
+    private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
+
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
@@ -95,6 +101,9 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private HandleContext context;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
 
     private AttributeValidator attributeValidator;
     private TokenUpdateNftsHandler subject;
@@ -271,8 +280,11 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenId(TOKEN_123)
                 .balance(10)
                 .build());
-        writableNftStore = new WritableNftStore(new MapWritableStates(
-                Map.of("NFTS", MapWritableKVState.builder("NFTS").build())));
+        writableNftStore = new WritableNftStore(
+                new MapWritableStates(
+                        Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
+                CONFIGURATION,
+                storeMetricsService);
 
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(
@@ -301,8 +313,11 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenId(TOKEN_123)
                 .balance(10)
                 .build());
-        writableNftStore = new WritableNftStore(new MapWritableStates(
-                Map.of("NFTS", MapWritableKVState.builder("NFTS").build())));
+        writableNftStore = new WritableNftStore(
+                new MapWritableStates(
+                        Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
+                CONFIGURATION,
+                storeMetricsService);
 
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(
