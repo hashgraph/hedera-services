@@ -55,7 +55,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     private int serializedVersion = ClassVersion.BIRTH_ROUND;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
-    private EventDescriptor descriptor;
     private Instant timeReceived;
 
     /**
@@ -176,26 +175,17 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public EventDescriptor getDescriptor() {
-        if (descriptor == null) {
-            throw new IllegalStateException("Can not get descriptor until event has been hashed");
-        }
-        return descriptor;
+        return hashedData.getDescriptor();
     }
 
     /**
-     * Build the descriptor of this event. This cannot be done when the event is first instantiated, it needs to be
-     * hashed before the descriptor can be built.
+     * Ensure that the event descriptor has been built This cannot be done when the event is first instantiated, it
+     * needs to be hashed before the descriptor can be built.
      *
      * @throws IllegalStateException if the descriptor has already been built
      */
     public void buildDescriptor() {
-        if (descriptor != null) {
-            // Prior implementation was to throw an IllegalStateException if the descriptor was already built.
-            // There is no harm in allowing this method to be called multiple times and no-op if the descriptor exists.
-            return;
-        }
-
-        this.descriptor = hashedData.createEventDescriptor();
+        hashedData.getDescriptor();
     }
 
     /**

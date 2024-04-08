@@ -464,7 +464,6 @@ public class TestingEventBuilder {
 
         final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(otherParentCreatorId, signature);
         final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
-        gossipEvent.buildDescriptor();
 
         return gossipEvent;
     }
