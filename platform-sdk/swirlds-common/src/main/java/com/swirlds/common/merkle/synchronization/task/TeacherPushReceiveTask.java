@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.synchronization.internal;
+package com.swirlds.common.merkle.synchronization.task;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -28,16 +28,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class encapsulates all logic for the teacher's receiving thread.
+ * This class encapsulates all logic for the teacher's receiving task.
  *
  * @param <T>
  * 		the type of data used by the view to represent a node
  */
-public class TeacherReceivingThread<T> {
+public class TeacherPushReceiveTask<T> {
 
-    private static final Logger logger = LogManager.getLogger(TeacherReceivingThread.class);
+    private static final Logger logger = LogManager.getLogger(TeacherPushReceiveTask.class);
 
-    private static final String NAME = "receiver";
+    private static final String NAME = "teacher-receive-task";
 
     private final StandardWorkGroup workGroup;
     private final AsyncInputStream<QueryResponse> in;
@@ -56,7 +56,7 @@ public class TeacherReceivingThread<T> {
      * @param senderIsFinished
      * 		becomes true once the sending thread has finished
      */
-    public TeacherReceivingThread(
+    public TeacherPushReceiveTask(
             final StandardWorkGroup workGroup,
             final AsyncInputStream<QueryResponse> in,
             final TeacherTreeView<T> view,

@@ -42,8 +42,8 @@ import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.swirlds.metrics.api.Metrics;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +58,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     private final CustomFeesValidator subject = new CustomFeesValidator();
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     @BeforeEach
     public void commonSetUp() {
@@ -149,7 +149,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void royaltyFeeFailsWithMissingTokenOnFeeScheduleUpdate() {
         writableTokenState = emptyWritableTokenState();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, metrics);
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
 
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
         feeWithRoyalty.add(
@@ -553,7 +553,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void royaltyFeeFailsWithMissingTokenOnTokenCreate() {
         writableTokenState = emptyWritableTokenState();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, metrics);
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
 
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
         feeWithRoyalty.add(
