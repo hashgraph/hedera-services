@@ -16,6 +16,7 @@
 
 package com.swirlds.logging.file;
 
+import com.swirlds.base.internal.BaseExecutorFactory;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A {@link com.swirlds.logging.api.extensions.handler.LogHandler} that writes log events to a file with optional rolling based on size.
@@ -54,6 +56,7 @@ import java.nio.file.Path;
 public class FileHandler extends AbstractLogHandler {
 
     private static final int EVENT_LOG_PRINTER_SIZE = 4 * 1024;
+    public static final int FLUSH_FREQUENCY = 1000;
     private final OutputStream outputStream;
     private final FormattedLinePrinter format;
 
@@ -77,6 +80,19 @@ public class FileHandler extends AbstractLogHandler {
         } catch (IOException e) {
             throw new IOException("Could not create FileHandler", e);
         }
+        BaseExecutorFactory.getInstance()
+                .scheduleAtFixedRate(
+                        () -> {
+                            try {
+                                outputStream.flush();
+                            } catch (IOException e) {
+                                EMERGENCY_LOGGER.log(
+                                        Level.WARN, "Unable to flush " + handlerName + " nothing to do, will retry", e);
+                            }
+                        },
+                        FLUSH_FREQUENCY,
+                        FLUSH_FREQUENCY,
+                        TimeUnit.MILLISECONDS);
     }
 
     /**
