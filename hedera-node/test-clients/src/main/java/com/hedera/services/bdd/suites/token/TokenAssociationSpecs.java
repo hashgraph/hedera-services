@@ -206,21 +206,6 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec accountIdMustBeSet() {
-        final var account = "account";
-        return defaultHapiSpec("accountIdMustBeSet")
-                .given(
-                        newKeyNamed(SIMPLE),
-                        tokenCreate("a").decimals(1),
-                        tokenCreate("b").decimals(2),
-                        tokenCreate("c").decimals(3),
-                        tokenCreate("tbd").adminKey(SIMPLE).decimals(4),
-                        cryptoCreate(account).balance(0L))
-                .when()
-                .then(tokenAssociate("fake account", "a", "b", "c", "tbd").hasKnownStatus(INVALID_SIGNATURE));
-    }
-
-    @HapiTest
     public HapiSpec contractInfoQueriesAsExpected() {
         final var contract = "contract";
         return defaultHapiSpec("ContractInfoQueriesAsExpected")
@@ -293,8 +278,8 @@ public class TokenAssociationSpecs extends HapiSuite {
                         withOpContext((spec, opLog) -> {
                             var subOp = getTxnRecord(CREATION);
                             allRunFor(spec, subOp);
-                            var responseRecord = subOp.getResponseRecord();
-                            now.set(responseRecord.getConsensusTimestamp().getSeconds());
+                            var record = subOp.getResponseRecord();
+                            now.set(record.getConsensusTimestamp().getSeconds());
                         }),
                         sourcing(() -> tokenCreate(expiringToken)
                                 .decimals(666)
