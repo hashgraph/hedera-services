@@ -1182,7 +1182,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @ParameterizedTest
         @EnumSource(TransactionCategory.class)
         void testDispatchPrecedingWithNonUserTxnFails(final TransactionCategory category) {
-            if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
+            if (category != TransactionCategory.USER
+                    && category != TransactionCategory.CHILD
+                    && category != TransactionCategory.SCHEDULED) {
                 // given
                 final var context = createContext(defaultTransactionBody(), category);
 
