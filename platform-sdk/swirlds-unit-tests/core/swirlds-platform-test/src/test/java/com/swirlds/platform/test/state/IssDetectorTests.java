@@ -33,7 +33,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -47,8 +46,10 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.state.notifications.IssNotification;
+import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.test.BasePlatformUnitTests;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -62,7 +63,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("IssDetector Tests")
-class IssDetectorTests {
+class IssDetectorTests extends BasePlatformUnitTests {
     private static final Hash DEFAULT_EPOCH_HASH = null;
 
     /**
@@ -169,8 +170,7 @@ class IssDetectorTests {
                 .setWeightStandardDeviation(50)
                 .build();
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext = createDefaultPlatformContext();
 
         final IssDetector issDetector = new IssDetector(
                 platformContext,
@@ -214,6 +214,11 @@ class IssDetectorTests {
                 issDetectorTestHelper.getCatastrophicIssCount(),
                 "there should be no catastrophic ISS notifications");
         assertEquals(0, issDetectorTestHelper.getIssNotificationList().size(), "there should be no ISS notifications");
+
+        // verify marker files
+        assertMarkerFile(IssType.CATASTROPHIC_ISS.toString(), false);
+        assertMarkerFile(IssType.SELF_ISS.toString(), false);
+        assertMarkerFile(IssType.OTHER_ISS.toString(), false);
     }
 
     /**
@@ -231,8 +236,7 @@ class IssDetectorTests {
                 .setWeightStandardDeviation(50)
                 .build();
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext = createDefaultPlatformContext();
 
         final NodeId selfId = addressBook.getNodeId(0);
         final int roundsNonAncient = platformContext
@@ -359,18 +363,24 @@ class IssDetectorTests {
                                     expectedRoundStatus.get((int) notification.getRound()),
                                     notification.getIssType()));
         });
+        issDetectorTestHelper.getIssNotificationList().forEach(notification -> {
+            switch (notification.getIssType()) {
+                case IssType.CATASTROPHIC_ISS -> assertMarkerFile(IssType.CATASTROPHIC_ISS.toString(), true);
+                case IssType.SELF_ISS -> assertMarkerFile(IssType.SELF_ISS.toString(), true);
+                case IssType.OTHER_ISS -> assertMarkerFile(IssType.OTHER_ISS.toString(), true);
+            }
+        });
     }
 
     /**
-     * Handles additional rounds after an ISS occurred, but before all signatures have been submitted. Validates
-     * that the ISS is detected after enough signatures are submitted, and not before.
+     * Handles additional rounds after an ISS occurred, but before all signatures have been submitted. Validates that
+     * the ISS is detected after enough signatures are submitted, and not before.
      */
     @Test
     @DisplayName("Decide hash for catastrophic ISS")
     void decideForCatastrophicIss() {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext = createDefaultPlatformContext();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
@@ -448,6 +458,11 @@ class IssDetectorTests {
 
         assertEquals(
                 1, issDetectorTestHelper.getCatastrophicIssCount(), "the catastrophic round should have caused an ISS");
+
+        // verify marker files
+        assertMarkerFile(IssType.CATASTROPHIC_ISS.toString(), true);
+        assertMarkerFile(IssType.SELF_ISS.toString(), false);
+        assertMarkerFile(IssType.OTHER_ISS.toString(), false);
     }
 
     /**
@@ -481,15 +496,14 @@ class IssDetectorTests {
 
     /**
      * Causes a catastrophic ISS, but shifts the window before deciding on a consensus hash. Even though we don't get
-     * enough signatures to "decide", there will be enough signatures to declare a catastrophic ISS when shifting
-     * the window past the ISS round.
+     * enough signatures to "decide", there will be enough signatures to declare a catastrophic ISS when shifting the
+     * window past the ISS round.
      */
     @Test
     @DisplayName("Catastrophic Shift Before Complete Test")
     void catastrophicShiftBeforeCompleteTest() {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext = createDefaultPlatformContext();
 
         final int roundsNonAncient = platformContext
                 .getConfiguration()
@@ -563,6 +577,11 @@ class IssDetectorTests {
         assertEquals(1, issDetectorTestHelper.getIssNotificationList().size(), "shifting should have caused an ISS");
         assertEquals(
                 1, issDetectorTestHelper.getCatastrophicIssCount(), "shifting should have caused a catastrophic ISS");
+
+        // verify marker files
+        assertMarkerFile(IssType.CATASTROPHIC_ISS.toString(), true);
+        assertMarkerFile(IssType.SELF_ISS.toString(), false);
+        assertMarkerFile(IssType.OTHER_ISS.toString(), false);
     }
 
     /**
@@ -574,8 +593,7 @@ class IssDetectorTests {
     void bigShiftTest() {
         final Random random = getRandomPrintSeed();
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext = createDefaultPlatformContext();
 
         final int roundsNonAncient = platformContext
                 .getConfiguration()
@@ -643,6 +661,11 @@ class IssDetectorTests {
         issDetectorTestHelper.overridingState(mockState(roundsNonAncient + 100L, randomHash(random)));
 
         assertEquals(0, issDetectorTestHelper.getSelfIssCount(), "there should be no ISS notifications");
+
+        // verify marker files
+        assertMarkerFile(IssType.CATASTROPHIC_ISS.toString(), false);
+        assertMarkerFile(IssType.SELF_ISS.toString(), false);
+        assertMarkerFile(IssType.OTHER_ISS.toString(), false);
     }
 
     /**
@@ -659,8 +682,7 @@ class IssDetectorTests {
                 .setWeightStandardDeviation(50)
                 .build();
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext = createDefaultPlatformContext();
         final int roundsNonAncient = platformContext
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)
@@ -693,6 +715,11 @@ class IssDetectorTests {
         }
 
         assertEquals(0, issDetectorTestHelper.getIssNotificationList().size(), "ISS should have been ignored");
+
+        // verify marker files
+        assertMarkerFile(IssType.CATASTROPHIC_ISS.toString(), false);
+        assertMarkerFile(IssType.SELF_ISS.toString(), false);
+        assertMarkerFile(IssType.OTHER_ISS.toString(), false);
     }
 
     private static ReservedSignedState mockState(final long round, final Hash hash) {

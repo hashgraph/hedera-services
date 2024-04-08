@@ -42,6 +42,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.util.MarkerFileWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -141,6 +142,8 @@ import org.apache.logging.log4j.Logger;
  */
 public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus {
 
+    public static final String COIN_ROUND_MARKER_FILE = "consensus-coin-round";
+    public static final String NO_SUPER_MAJORITY_MARKER_FILE = "consensus-no-super-majority";
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
     /** the only address book currently, until address book changes are implemented */
     private final AddressBook addressBook;
@@ -188,6 +191,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      */
     private AncientMode ancientMode;
 
+    /** The marker file writer */
+    private MarkerFileWriter markerFileWriter;
+
     /**
      * Constructs an empty object (no events) to keep track of elections and calculate consensus.
      *
@@ -200,6 +206,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             @NonNull final ConsensusMetrics consensusMetrics,
             @NonNull final AddressBook addressBook) {
         super(platformContext);
+        this.markerFileWriter = new MarkerFileWriter(platformContext);
         this.consensusMetrics = consensusMetrics;
 
         // until we implement address book changes, we will just use the use this address book
@@ -461,6 +468,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                         candidateWitness,
                         "coin-" + (countingVote.isSupermajority() ? "counting" : "sig"),
                         diff);
+                markerFileWriter.writeMarkerFile(COIN_ROUND_MARKER_FILE);
                 continue;
             }
 
@@ -477,6 +485,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                     // no need to vote anymore until we create elections for the next round
                     return;
                 }
+            } else {
+                markerFileWriter.writeMarkerFile(NO_SUPER_MAJORITY_MARKER_FILE);
             }
         }
     }
