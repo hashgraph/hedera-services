@@ -36,6 +36,7 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.stream.RunningEventHashUpdate;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -288,7 +289,11 @@ public class ConsensusRoundHandler {
 
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
         final SignedState signedState = new SignedState(
-                platformContext, immutableStateCons, "ConsensusRoundHandler.createSignedState()", freezeRoundReceived);
+                platformContext,
+                CryptoStatic::verifySignature,
+                immutableStateCons,
+                "ConsensusRoundHandler.createSignedState()",
+                freezeRoundReceived);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("round handler output");
         // make sure to create the first reservation before setting the garbage collector

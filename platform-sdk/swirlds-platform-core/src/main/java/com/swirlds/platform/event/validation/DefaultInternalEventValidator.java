@@ -21,12 +21,13 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
 import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.config.TransactionConfig;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -61,6 +62,8 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
 
     private final TransactionConfig transactionConfig;
 
+    private final AncientMode ancientMode;
+
     private final RateLimitedLogger nullHashedDataLogger;
     private final RateLimitedLogger nullUnhashedDataLogger;
     private final RateLimitedLogger tooManyTransactionBytesLogger;
@@ -83,31 +86,34 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * Constructor
      *
      * @param platformContext    the platform context
-     * @param time               a time object, for rate limiting logging
      * @param singleNodeNetwork  true if this node is in a single-node network, otherwise false
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      */
     public DefaultInternalEventValidator(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
             final boolean singleNodeNetwork,
             @NonNull final IntakeEventCounter intakeEventCounter) {
-
-        Objects.requireNonNull(time);
 
         this.singleNodeNetwork = singleNodeNetwork;
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         this.transactionConfig = platformContext.getConfiguration().getConfigData(TransactionConfig.class);
+        this.ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
 
-        this.nullHashedDataLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.nullUnhashedDataLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.tooManyTransactionBytesLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.inconsistentSelfParentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.inconsistentOtherParentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.identicalParentsLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.invalidGenerationLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
-        this.invalidBirthRoundLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
+        this.nullHashedDataLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.nullUnhashedDataLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.tooManyTransactionBytesLogger =
+                new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.inconsistentSelfParentLogger =
+                new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.inconsistentOtherParentLogger =
+                new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.identicalParentsLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.invalidGenerationLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
+        this.invalidBirthRoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
 
         this.nullHashedDataAccumulator = platformContext
                 .getMetrics()
@@ -295,6 +301,11 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @return true if the birth round of the event is valid, otherwise false
      */
     private boolean isEventBirthRoundValid(@NonNull final GossipEvent event) {
+        if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
+            // Don't validate birth rounds in generation mode.
+            return true;
+        }
+
         final long eventBirthRound = event.getDescriptor().getBirthRound();
 
         long maxParentBirthRound = ROUND_NEGATIVE_INFINITY;

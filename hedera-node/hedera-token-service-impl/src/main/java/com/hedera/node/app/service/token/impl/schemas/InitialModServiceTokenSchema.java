@@ -49,7 +49,6 @@ import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
 import com.hedera.node.app.service.mono.state.migration.NftStateTranslator;
@@ -271,13 +270,8 @@ public class InitialModServiceTokenSchema extends Schema {
                                 entry -> {
                                     var fromTokenRel = entry.right();
                                     var key = fromTokenRel.getKey();
-                                    var translated = TokenRelationStateTranslator.tokenRelationFromMerkleTokenRelStatus(
-                                            new MerkleTokenRelStatus(
-                                                    fromTokenRel.getBalance(),
-                                                    fromTokenRel.isFrozen(),
-                                                    fromTokenRel.isKycGranted(),
-                                                    fromTokenRel.isAutomaticAssociation(),
-                                                    fromTokenRel.getNumbers()));
+                                    var translated = TokenRelationStateTranslator.tokenRelationFromOnDiskTokenRelStatus(
+                                            fromTokenRel);
                                     var newPair = EntityIDPair.newBuilder()
                                             .accountId(AccountID.newBuilder()
                                                     .accountNum(key.getHiOrderAsLong())
@@ -305,7 +299,7 @@ public class InitialModServiceTokenSchema extends Schema {
             // ---------- Staking Info
             log.info("BBM: starting staking info");
             var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
-            stakingFs.forEach((entityNum, merkleStakingInfo) -> {
+            MerkleMapLike.from(stakingFs).forEachNode((entityNum, merkleStakingInfo) -> {
                 var toStakingInfo = StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(merkleStakingInfo);
                 stakingToState.put(
                         EntityNumber.newBuilder()
@@ -387,7 +381,7 @@ public class InitialModServiceTokenSchema extends Schema {
             }
             if (acctsToState.get().isModified()) ((WritableKVStateBase) acctsToState.get()).commit();
             // Also persist the per-node pending reward information
-            stakingFs.forEach((entityNum, ignore) -> {
+            MerkleMapLike.from(stakingFs).forEachNode((entityNum, ignore) -> {
                 final var toKey = new EntityNumber(entityNum.longValue());
                 final var info = requireNonNull(stakingToState.get(toKey));
                 stakingToState.put(

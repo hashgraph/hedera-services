@@ -59,16 +59,19 @@ import com.swirlds.common.utility.StackTrace;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.builder.PlatformBuildingBlocks;
+import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.DefaultAppNotifier;
 import com.swirlds.platform.components.DefaultConsensusEngine;
+import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.DefaultSavedStateController;
+import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
@@ -76,15 +79,9 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.DefaultFutureEventBuffer;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.FutureEventBuffer;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
-import com.swirlds.platform.event.deduplication.EventDeduplicator;
-import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
-import com.swirlds.platform.event.hashing.DefaultEventHasher;
-import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
@@ -99,20 +96,15 @@ import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.stream.DefaultEventStreamManager;
 import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
-import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
+import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
-import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
-import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
-import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
@@ -193,11 +185,12 @@ public class SwirldsPlatform implements Platform {
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
 
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
+
     /**
-     * the ID of the member running this. Since a node can be a main node or a mirror node, the ID is not a primitive
-     * value
+     * The unique ID of this node.
      */
     private final NodeId selfId;
+
     /**
      * The shadow graph manager. This wraps a shadow graph, which is an Event graph that adds child pointers to the
      * Hashgraph Event graph. Used for gossiping.
@@ -209,13 +202,19 @@ public class SwirldsPlatform implements Platform {
      * from disk or getting it through reconnect
      */
     private final AtomicReference<Consensus> consensusRef = new AtomicReference<>();
-    /** the current nodes in the network and their information */
+
+    /**
+     * the current nodes in the network and their information
+     */
     private final AddressBook currentAddressBook;
 
     private final Metrics metrics;
 
-    /** the object that contains all key pairs and CSPRNG state for this member */
+    /**
+     * the object that contains all key pairs and CSPRNG state for this member
+     */
     private final KeysAndCerts keysAndCerts;
+
     /**
      * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from a
      * genesis state, this is 0.
@@ -237,11 +236,20 @@ public class SwirldsPlatform implements Platform {
     private final SignedStateNexus latestImmutableStateNexus = new LockFreeStateNexus();
 
     private final TransactionPool transactionPool;
-    /** Handles all interaction with {@link SwirldState} */
+
+    /**
+     * Handles all interaction with {@link SwirldState}
+     */
     private final SwirldStateManager swirldStateManager;
-    /** Checks the validity of transactions and submits valid ones to the transaction pool */
+
+    /**
+     * Checks the validity of transactions and submits valid ones to the transaction pool
+     */
     private final SwirldTransactionSubmitter transactionSubmitter;
-    /** clears all pipelines to prepare for a reconnect */
+
+    /**
+     * clears all pipelines to prepare for a reconnect
+     */
     private final Clearable clearAllPipelines;
 
     /**
@@ -280,9 +288,14 @@ public class SwirldsPlatform implements Platform {
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
-    /** Manages emergency recovery */
+    /**
+     * Manages emergency recovery
+     */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
-    /** Controls which states are saved to disk */
+
+    /**
+     * Controls which states are saved to disk
+     */
     private final SavedStateController savedStateController;
 
     private final SignedStateGarbageCollector signedStateGarbageCollector;
@@ -295,45 +308,28 @@ public class SwirldsPlatform implements Platform {
     private final AncientMode ancientMode;
 
     /**
-     * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
+     * Constructor.
      *
-     * @param platformContext           the context for this platform
-     * @param keysAndCerts              an object holding all the public/private key pairs and the CSPRNG state for this
-     *                                  member
-     * @param recycleBin                used to delete files that may be useful for later debugging
-     * @param id                        the ID for this node
-     * @param mainClassName             the name of the app class inheriting from SwirldMain
-     * @param swirldName                the name of the swirld being run
-     * @param appVersion                the current version of the running application
-     * @param initialState              the initial state of the platform
-     * @param emergencyRecoveryManager  used in emergency recovery.
-     * @param preconsensusEventConsumer the consumer for preconsensus events, null if publishing this data has not been
-     *                                  enabled
-     * @param snapshotOverrideConsumer  the consumer for snapshot overrides, null if publishing this data has not been
-     *                                  enabled
+     * @param builder this object is responsible for building platform components and other things needed by the
+     *                platform
      */
-    SwirldsPlatform(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final RecycleBin recycleBin,
-            @NonNull final NodeId id,
-            @NonNull final String mainClassName,
-            @NonNull final String swirldName,
-            @NonNull final SoftwareVersion appVersion,
-            @NonNull final SignedState initialState,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @Nullable final Consumer<GossipEvent> preconsensusEventConsumer,
-            @Nullable final Consumer<ConsensusSnapshot> snapshotOverrideConsumer) {
-
-        this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
+    public SwirldsPlatform(@NonNull final PlatformComponentBuilder builder) {
+        final PlatformBuildingBlocks blocks = builder.getBuildingBlocks();
+        platformContext = blocks.platformContext();
 
         ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
 
+        // The reservation on this state is held by the caller of this constructor.
+        final SignedState initialState = blocks.initialState().get();
+
         // This method is a no-op if we are not in birth round mode, or if we have already migrated.
+        final SoftwareVersion appVersion = blocks.appVersion();
         modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion);
+
+        final RecycleBin recycleBin = blocks.recycleBin();
 
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             try {
@@ -341,7 +337,7 @@ public class SwirldsPlatform implements Platform {
                 migratePcesToBirthRoundMode(
                         platformContext,
                         recycleBin,
-                        id,
+                        blocks.selfId(),
                         initialState.getRound(),
                         initialState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
             } catch (final IOException e) {
@@ -349,7 +345,7 @@ public class SwirldsPlatform implements Platform {
             }
         }
 
-        this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
+        emergencyRecoveryManager = blocks.emergencyRecoveryManager();
         final Time time = Time.getCurrent();
 
         thingsToStart = new ThingsToStart();
@@ -360,16 +356,19 @@ public class SwirldsPlatform implements Platform {
         notificationEngine = NotificationEngine.buildEngine(threadManager);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
+        final String actualMainClassName = stateConfig.getMainClassName(blocks.mainClassName());
 
-        this.selfId = id;
-        this.currentAddressBook = initialState.getAddressBook();
+        selfId = blocks.selfId();
+
+        currentAddressBook = initialState.getAddressBook();
 
         final EmergencyStateNexus emergencyState = new EmergencyStateNexus();
         if (emergencyRecoveryManager.isEmergencyState(initialState)) {
             emergencyState.setState(initialState.reserve("emergency state nexus"));
         }
 
+        final Consumer<GossipEvent> preconsensusEventConsumer = blocks.preconsensusEventConsumer();
+        final Consumer<ConsensusSnapshot> snapshotOverrideConsumer = blocks.snapshotOverrideConsumer();
         platformWiring = thingsToStart.add(new PlatformWiring(
                 platformContext, preconsensusEventConsumer != null, snapshotOverrideConsumer != null));
 
@@ -385,7 +384,7 @@ public class SwirldsPlatform implements Platform {
 
         thingsToStart.add(Objects.requireNonNull(recycleBin));
 
-        this.metrics = platformContext.getMetrics();
+        metrics = platformContext.getMetrics();
 
         metrics.getOrCreate(StatConstructor.createEnumStat(
                 "PlatformStatus",
@@ -395,16 +394,16 @@ public class SwirldsPlatform implements Platform {
 
         registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
-        final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
+        final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(selfId, metrics);
 
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        this.shadowGraph = new Shadowgraph(platformContext, currentAddressBook);
+        shadowGraph = new Shadowgraph(platformContext, currentAddressBook);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
-        this.keysAndCerts = keysAndCerts;
+        keysAndCerts = blocks.keysAndCerts();
 
         EventCounter.registerEventCounterMetrics(metrics);
 
@@ -415,6 +414,7 @@ public class SwirldsPlatform implements Platform {
             epochHash = initialState.getState().getPlatformState().getEpochHash();
         }
 
+        final String swirldName = blocks.swirldName();
         StartupStateUtils.doRecoveryCleanup(
                 platformContext,
                 recycleBin,
@@ -526,7 +526,6 @@ public class SwirldsPlatform implements Platform {
 
         final LatestCompleteStateNotifier latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
 
-        final EventHasher eventHasher = new DefaultEventHasher(platformContext);
         final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), platformStatusManager);
         final PcesReplayer pcesReplayer = new PcesReplayer(
                 time,
@@ -572,6 +571,8 @@ public class SwirldsPlatform implements Platform {
                 initialState.getState(),
                 appVersion);
 
+        final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
+
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
@@ -582,29 +583,18 @@ public class SwirldsPlatform implements Platform {
 
         final PcesSequencer sequencer = new DefaultPcesSequencer();
 
-        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
-        final IntakeEventCounter intakeEventCounter;
-        if (syncConfig.waitForEventsInIntake()) {
-            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
-        } else {
-            intakeEventCounter = new NoOpIntakeEventCounter();
-        }
-
-        final InternalEventValidator internalEventValidator = new DefaultInternalEventValidator(
-                platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
-        final EventDeduplicator eventDeduplicator = new StandardEventDeduplicator(platformContext, intakeEventCounter);
-        final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(
+        final EventSignatureValidator eventSignatureValidator = new DefaultEventSignatureValidator(
                 platformContext,
                 time,
                 CryptoStatic::verifySignature,
                 appVersion,
                 initialState.getState().getPlatformState().getPreviousAddressBook(),
                 currentAddressBook,
-                intakeEventCounter);
-        final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
-        final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, intakeEventCounter);
+                blocks.intakeEventCounter());
+        final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, blocks.intakeEventCounter());
+        final InOrderLinker inOrderLinker = new InOrderLinker(platformContext, time, blocks.intakeEventCounter());
         final ConsensusEngine consensusEngine = new DefaultConsensusEngine(
-                platformContext, selfId, consensusRef::get, shadowGraph, intakeEventCounter, e -> {});
+                platformContext, selfId, consensusRef::get, shadowGraph, blocks.intakeEventCounter(), e -> {});
 
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
@@ -622,8 +612,6 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.wireExternalComponents(platformStatusManager, transactionPool);
 
-        final FutureEventBuffer futureEventBuffer = new DefaultFutureEventBuffer(platformContext);
-
         final IssHandler issHandler =
                 new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
 
@@ -640,17 +628,13 @@ public class SwirldsPlatform implements Platform {
 
         final AppNotifier appNotifier = new DefaultAppNotifier(notificationEngine);
 
-        final PlatformPublisher publisher;
-        if (preconsensusEventConsumer != null || snapshotOverrideConsumer != null) {
-            publisher = new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
-        } else {
-            publisher = null;
-        }
+        final PlatformPublisher publisher =
+                new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
 
         platformWiring.bind(
-                eventHasher,
-                internalEventValidator,
-                eventDeduplicator,
+                builder.buildEventHasher(),
+                builder.buildInternalEventValidator(),
+                builder.buildEventDeduplicator(),
                 eventSignatureValidator,
                 orphanBuffer,
                 inOrderLinker,
@@ -665,9 +649,9 @@ public class SwirldsPlatform implements Platform {
                 eventCreationManager,
                 stateSignatureCollector,
                 transactionPrehandler,
+                eventWindowManager,
                 consensusRoundHandler,
                 eventStreamManager,
-                futureEventBuffer,
                 issDetector,
                 issHandler,
                 hashLogger,
@@ -730,7 +714,7 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager,
                 this::loadReconnectState,
                 this::clearAllPipelines,
-                intakeEventCounter,
+                blocks.intakeEventCounter(),
                 () -> emergencyState.getState("emergency reconnect")) {};
 
         consensusRef.set(new ConsensusImpl(platformContext, consensusMetrics, getAddressBook()));
@@ -783,10 +767,6 @@ public class SwirldsPlatform implements Platform {
                         Pair.of(platformWiring, "platformWiring"),
                         Pair.of(shadowGraph, "shadowGraph"),
                         Pair.of(transactionPool, "transactionPool")));
-
-        if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {
-            thingsToStart.add(new JvmAnchor(threadManager));
-        }
     }
 
     /**
@@ -1009,6 +989,7 @@ public class SwirldsPlatform implements Platform {
     @Override
     public void start() {
         logger.info(STARTUP.getMarker(), "Starting platform {}", selfId);
+        platformWiring.getModel().preventJvmExit();
 
         thingsToStart.start();
 

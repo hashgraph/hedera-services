@@ -456,6 +456,14 @@ public class HapiSpecSetup {
         return props.getLong("fees.fixedOffer");
     }
 
+    public String softwareUpdateAdminName() {
+        return props.get("softwareUpdate.admin.name");
+    }
+
+    public AccountID softwareUpdateAdminId() {
+        return props.getAccount("softwareUpdate.admin.id");
+    }
+
     public String freezeAdminName() {
         return props.get("freeze.admin.name");
     }

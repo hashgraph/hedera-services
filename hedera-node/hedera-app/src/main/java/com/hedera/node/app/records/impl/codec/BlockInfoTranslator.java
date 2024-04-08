@@ -67,8 +67,10 @@ public final class BlockInfoTranslator {
         ByteArrayOutputStream collector = new ByteArrayOutputStream();
         final var iterator = queue.iterator();
         while (iterator.hasNext()) {
+            final byte[] hashes = new byte[48];
             final var element = iterator.next();
-            collector.write(element.getData());
+            System.arraycopy(element.getData(), 0, hashes, 0, 32);
+            collector.write(hashes);
         }
         return Bytes.wrap(collector.toByteArray());
     }

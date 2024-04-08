@@ -17,8 +17,6 @@
 package com.swirlds.logging.api.internal.level;
 
 import com.swirlds.logging.api.Level;
-import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
-import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -28,41 +26,21 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Note: The UNDEFINED level is intended for internal use and should not be exposed in public APIs.
  */
 public enum ConfigLevel {
-    UNDEFINED,
-    OFF,
-    ERROR,
-    WARN,
-    INFO,
-    DEBUG,
-    TRACE;
+    UNDEFINED(null),
+    OFF(Level.OFF),
+    ERROR(Level.ERROR),
+    WARN(Level.WARN),
+    INFO(Level.INFO),
+    DEBUG(Level.DEBUG),
+    TRACE(Level.TRACE);
 
-    /**
-     * Determines whether logging at the specified {@code level} is enabled according to the current configuration level.
-     *
-     * @param level the desired logging level
-     * @return {@code true} if logging at the given level is enabled, {@code false} otherwise
-     * @throws NullPointerException if the provided {@code level} is null
-     */
-    public boolean enabledLoggingOfLevel(@NonNull final Level level) {
-        final EmergencyLogger emergencyLogger = EmergencyLoggerProvider.getEmergencyLogger();
-        if (level == null) {
-            emergencyLogger.logNPE("level");
-            return true;
-        }
-        if (this == UNDEFINED) {
-            emergencyLogger.log(Level.ERROR, "Undefined logging level!");
-            return false;
-        } else if (this == OFF) {
-            return false;
-        } else if (this == ERROR) {
-            return Level.ERROR.enabledLoggingOfLevel(level);
-        } else if (this == WARN) {
-            return Level.WARN.enabledLoggingOfLevel(level);
-        } else if (this == INFO) {
-            return Level.INFO.enabledLoggingOfLevel(level);
-        } else if (this == DEBUG) {
-            return Level.DEBUG.enabledLoggingOfLevel(level);
-        }
-        return true;
+    final Level level;
+
+    public @NonNull Level level() {
+        return level;
+    }
+
+    ConfigLevel(final Level level) {
+        this.level = level;
     }
 }

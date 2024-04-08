@@ -249,7 +249,9 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         if (printStream != null) {
             handleLock.lock();
             try {
-                getLinePrinter().print(printStream, logEvent);
+                final StringBuilder stringBuilder = new StringBuilder();
+                getLinePrinter().print(stringBuilder, logEvent);
+                printStream.print(stringBuilder);
             } finally {
                 handleLock.unlock();
             }
