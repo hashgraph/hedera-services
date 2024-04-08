@@ -143,7 +143,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
                 return FeeData.getDefaultInstance();
             } else {
                 final var contractFnResult = ContractFunctionResult.newBuilder()
-                        .setContractID(fromPbj(op.contractID()))
+                        .setContractID(fromPbj(op.contractIDOrElse(ContractID.DEFAULT)))
                         .setContractCallResult(fromPbj(Bytes.wrap(new byte[contractsConfig.localCallEstRetBytes()])))
                         .build();
                 final var builder = new SmartContractFeeBuilder();
