@@ -24,8 +24,8 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
-* Convenience class to run benchmark with profilers from the IDE
-*/
+ * Convenience class to run benchmark with profilers from the IDE
+ */
 public class Runner {
 
     public static void main(String[] args) throws RunnerException {
