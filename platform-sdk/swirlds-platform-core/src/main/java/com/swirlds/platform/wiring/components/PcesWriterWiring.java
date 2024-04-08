@@ -33,7 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *                                                 complete
  * @param eventInputWire                           the input wire for events to be written
  * @param discontinuityInputWire                   the input wire for PCES discontinuities
- * @param eventWindowInput               the input wire for non ancient event windows
+ * @param eventWindowInput                         the input wire for the event window
  * @param minimumAncientIdentifierToStoreInputWire the input wire for the minimum ancient identifier of events to store
  * @param flushRequestInputWire                    the input wire for flush requests
  * @param latestDurableSequenceNumberOutput        the output wire for the latest durable sequence number

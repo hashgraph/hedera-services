@@ -717,9 +717,9 @@ public class SwirldsPlatform implements Platform {
 
             loadStateIntoConsensus(initialState);
 
-            // We only load non-ancient events during start up, so the initial non-expired event window will be
-            // equal to the non-ancient event window when the system first starts. Over time as we get more events,
-            // the non-expired event window will continue to expand until it reaches its full size.
+            // We only load non-ancient events during start up, so the initial expired threshold will be
+            // equal to the ancient threshold when the system first starts. Over time as we get more events,
+            // the expired threshold will continue to expand until it reaches its full size.
             platformWiring.updateEventWindow(new EventWindow(
                     initialState.getRound(),
                     initialAncientThreshold,

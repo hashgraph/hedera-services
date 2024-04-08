@@ -29,11 +29,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Wiring for the {@link InOrderLinker}.
  *
- * @param eventInput                 the input wire for events to be linked
- * @param eventWindowInput the input wire for the minimum generation non-ancient
- * @param clearInput                 the input wire to clear the internal state of the linker
- * @param eventOutput                the output wire for linked events
- * @param flushRunnable              the runnable to flush the linker
+ * @param eventInput       the input wire for events to be linked
+ * @param eventWindowInput the input wire for the event window
+ * @param clearInput       the input wire to clear the internal state of the linker
+ * @param eventOutput      the output wire for linked events
+ * @param flushRunnable    the runnable to flush the linker
  */
 public record InOrderLinkerWiring(
         @NonNull InputWire<GossipEvent> eventInput,

@@ -482,9 +482,7 @@ public class TipsetEventCreator implements EventCreator {
     @NonNull
     public String toString() {
         final StringBuilder sb = new StringBuilder();
-        sb.append("Minimum generation non-ancient: ")
-                .append(tipsetTracker.getEventWindow())
-                .append("\n");
+        sb.append("Event window: ").append(tipsetTracker.getEventWindow()).append("\n");
         sb.append("Latest self event: ").append(lastSelfEvent).append("\n");
         sb.append(tipsetWeightCalculator);
 

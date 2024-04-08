@@ -207,7 +207,7 @@ class OrphanBufferTests {
      * Check if an event has been emitted or is ancient
      *
      * @param event       the event to check
-     * @param eventWindow the  event window defining ancient.
+     * @param eventWindow the event window defining ancient.
      * @return true if the event has been emitted or is ancient, false otherwise
      */
     private static boolean eventEmittedOrAncient(
@@ -223,7 +223,7 @@ class OrphanBufferTests {
      * ancient.
      *
      * @param event         the event to check
-     * @param eventWindow   the non-ancient event window defining ancient.
+     * @param eventWindow   the event window
      * @param emittedEvents the events that have been emitted so far
      */
     private static void assertValidParents(
