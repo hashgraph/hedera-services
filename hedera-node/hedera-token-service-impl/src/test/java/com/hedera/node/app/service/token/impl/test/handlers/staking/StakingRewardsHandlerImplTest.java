@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.ConfigProvider;
+import com.swirlds.metrics.api.Metrics;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -1039,7 +1040,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableAccountStore = new WritableAccountStore(writableStates);
+        writableAccountStore = new WritableAccountStore(writableStates, configuration, mock(Metrics.class));
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }
 
