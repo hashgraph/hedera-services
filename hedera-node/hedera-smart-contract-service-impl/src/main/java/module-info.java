@@ -22,11 +22,11 @@ module com.hedera.node.app.service.contract.impl {
     requires com.hedera.node.app.service.evm;
     requires com.github.benmanes.caffeine;
     requires com.google.common;
+    requires com.google.protobuf;
     requires com.swirlds.base;
     requires com.swirlds.common;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
-    requires com.google.protobuf;
     requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app.service.contract.impl;
