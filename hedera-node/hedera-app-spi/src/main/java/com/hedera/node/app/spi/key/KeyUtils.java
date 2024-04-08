@@ -81,7 +81,7 @@ public class KeyUtils {
         }
         if (pbjKey.hasKeyList()) {
             final var keyList = (KeyList) key.value();
-            if (!keyList.keys().isEmpty()) {
+            if (keyList.keys().isEmpty()) {
                 return true;
             }
             for (final var k : keyList.keys()) {
