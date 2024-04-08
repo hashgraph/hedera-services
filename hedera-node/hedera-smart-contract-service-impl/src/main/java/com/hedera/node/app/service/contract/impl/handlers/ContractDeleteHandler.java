@@ -75,7 +75,6 @@ public class ContractDeleteHandler implements TransactionHandler {
         mustExist(contractID, INVALID_CONTRACT_ID);
     }
 
-
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
