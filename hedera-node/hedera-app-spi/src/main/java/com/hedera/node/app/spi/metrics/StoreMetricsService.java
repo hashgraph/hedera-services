@@ -14,28 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.fixtures.merkle.dummy;
+package com.hedera.node.app.spi.metrics;
 
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.synchronization.views.StandardLearnerTreeView;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class DummyLearnerTreeView extends StandardLearnerTreeView {
+public interface StoreMetricsService {
 
-    /**
-     * Create a new standard tree view out of an in-memory merkle tree (or subtree).
-     *
-     * @param root
-     * 		the root of the tree (or subtree)
-     */
-    public DummyLearnerTreeView(final MerkleNode root) {
-        super(root);
+    enum StoreType {
+        TOPIC,
+        ACCOUNT,
+        NFT,
+        TOKEN,
+        TOKEN_RELATION,
+        FILE,
+        SLOT_STORAGE,
+        CONTRACT,
+        SCHEDULE
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isRootOfState() {
-        return false;
-    }
+    StoreMetrics get(@NonNull StoreType storeType, long capacity);
 }
