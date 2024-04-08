@@ -16,12 +16,12 @@ Testing of the Green Wire is broken up into the following phases:
       round (`pendingConsensusRound` - `roundsNonAncient`).
 * Introduce `NonAncientEventWindow` (aka `EventWindow`) that contains `AncientThreshold` for both `GENERATION_THRESHOLD`
   and `BIRTH_ROUND_THRESHOLD`.
-* Events implement `AncientIndicator(AncientMode)` which returns their generation in `GENERATION_THRESHOLD` mode and
-  birth round in `BIRTH_ROUND_THRESHOLD` mode.
+* Events implement a `getAncientIndicator(AncientMode)` method which returns their generation in `GENERATION_THRESHOLD`
+  mode and birth round in `BIRTH_ROUND_THRESHOLD` mode.
 * Events are ancient when `Event.getAncientIndicator(AncientMode) < EventWindow.getAncientThreshold(AncientMode)`.
 * Consensus:
-    * Rename `MinGenInfo` to `MinJudgeInfo` which contains the minimum generation or birth round of judges depending on
-      which mode the platform is in.
+    * Rename `MinGenInfo` to `MininumJudgeInfo` which contains the minimum generation or birth round of judges depending
+      on which mode the platform is in.
     * Each `Round` produced by consensus has an `EventWindow` that contains the `AncientThreshold` for that round.
 * Software Migration: (First version to use birth round as ancient threshold)
     * Let R be the last round to come to consensus pre-migration.
@@ -105,11 +105,11 @@ minutes.
 
 A new migration JRS test is started from a pre-existing state with a feature flag that turns on `BIRTH_ROUND_THRESHOLD`
 mode for all components. The only condition is that there are no errors generated during migration and the system starts
-as expected. 
+as expected.
 
 ## Reconnect Test
 
-Test loading of state that has birth round as ancient instead of generation. 
+Test loading of state that has birth round as ancient instead of generation.
 
 ## Perf Test
 
