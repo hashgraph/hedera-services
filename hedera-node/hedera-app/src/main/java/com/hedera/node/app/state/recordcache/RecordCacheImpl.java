@@ -303,11 +303,6 @@ public class RecordCacheImpl implements HederaRecordCache {
     @Nullable
     @Override
     public History getHistory(@NonNull TransactionID transactionID) {
-        logger.info(
-                "Getting history for transaction ID: {} (contained in dedup cache? {}) - history = {}",
-                transactionID,
-                deduplicationCache.contains(transactionID),
-                histories.get(transactionID));
         final var history = histories.get(transactionID);
         return history != null ? history : (deduplicationCache.contains(transactionID) ? EMPTY_HISTORY : null);
     }
