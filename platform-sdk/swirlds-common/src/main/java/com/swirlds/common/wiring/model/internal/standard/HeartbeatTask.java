@@ -38,6 +38,8 @@ public class HeartbeatTask extends TimerTask {
     /**
      * Constructor.
      *
+     * @param model  the wiring model that this heartbeat is for
+     * @param name   the name of the output wire
      * @param time   provides wall clock time
      * @param period the period of the heartbeat
      */

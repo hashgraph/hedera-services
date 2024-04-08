@@ -81,7 +81,7 @@ public class DeterministicWiringModel extends TraceableWiringModel {
             work.run();
         }
 
-        // Note: heartbeats be handled at their destinations during the next cycle.
+        // Note: heartbeats are handled at their destinations during the next cycle.
         heartbeatScheduler.tick();
 
         currentCycleWork = nextCycleWork;

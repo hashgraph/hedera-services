@@ -41,8 +41,8 @@ import java.util.concurrent.ForkJoinPool;
 /**
  * A builder for {@link TaskScheduler}s.
  *
- * @param <OUT> the output type of the primary output wire for this task scheduler (use {@link Void} for a scheduler with
- *            no output)
+ * @param <OUT> the output type of the primary output wire for this task scheduler (use {@link Void} for a scheduler
+ *              with no output)
  */
 public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuilder<OUT> {
 

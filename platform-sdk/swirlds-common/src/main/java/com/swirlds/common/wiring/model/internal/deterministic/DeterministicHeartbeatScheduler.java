@@ -42,9 +42,9 @@ public class DeterministicHeartbeatScheduler extends AbstractHeartbeatScheduler 
     private final Map<Duration, List<HeartbeatTask>> heartbeatsByPeriod = new HashMap<>();
 
     /**
-     * The timestamps of the last heartbeats sent for each group of heartbeats that subscribe to the same period.
+     * The timestamps of the previous heartbeats sent for each group of heartbeats that subscribe to the same period.
      */
-    private final Map<Duration, Instant> lastHeartbeats = new HashMap<>();
+    private final Map<Duration, Instant> previousHeartbeats = new HashMap<>();
 
     /**
      * Constructor.
@@ -71,13 +71,13 @@ public class DeterministicHeartbeatScheduler extends AbstractHeartbeatScheduler 
         for (final Entry<Duration, List<HeartbeatTask>> entry : heartbeatsByPeriod.entrySet()) {
             final Duration period = entry.getKey();
             final List<HeartbeatTask> tasksForPeriod = entry.getValue();
-            final Instant lastHeartbeat = lastHeartbeats.get(period);
+            final Instant lastHeartbeat = previousHeartbeats.get(period);
             final Duration timeSinceLastHeartbeat = Duration.between(lastHeartbeat, currentTime);
             if (isGreaterThanOrEqualTo(timeSinceLastHeartbeat, period)) {
                 for (final HeartbeatTask task : tasksForPeriod) {
                     task.run();
                 }
-                lastHeartbeats.put(period, currentTime);
+                previousHeartbeats.put(period, currentTime);
             }
         }
     }
@@ -97,7 +97,7 @@ public class DeterministicHeartbeatScheduler extends AbstractHeartbeatScheduler 
             final List<HeartbeatTask> tasksForPeriod =
                     heartbeatsByPeriod.computeIfAbsent(task.getPeriod(), k -> new ArrayList<>());
             tasksForPeriod.add(task);
-            lastHeartbeats.put(task.getPeriod(), currentTime);
+            previousHeartbeats.put(task.getPeriod(), currentTime);
         }
     }
 
