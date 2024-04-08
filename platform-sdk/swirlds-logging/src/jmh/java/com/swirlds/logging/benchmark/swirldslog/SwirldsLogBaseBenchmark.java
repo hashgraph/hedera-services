@@ -40,7 +40,7 @@ import org.openjdk.jmh.annotations.TearDown;
 @State(Scope.Benchmark)
 public class SwirldsLogBaseBenchmark {
 
-    @Param({FILE_TYPE})
+    @Param({CONSOLE_TYPE, FILE_TYPE, CONSOLE_AND_FILE_TYPE})
     public String loggingType;
 
     @Param({MODE_NOT_ROLLING, MODE_ROLLING})
@@ -53,7 +53,7 @@ public class SwirldsLogBaseBenchmark {
     private LoggingBenchmarkConfig<LoggingSystem> config;
 
     @Setup(Level.Trial)
-    public void init() throws InterruptedException {
+    public void init() {
         config = Objects.equals(mode, MODE_NOT_ROLLING) ? new SwirldsLogConfig() : new RollingSwirldsLogConfig();
 
         if (Objects.equals(loggingType, FILE_TYPE)) {
@@ -65,7 +65,6 @@ public class SwirldsLogBaseBenchmark {
                     LogFiles.provideLogFilePath(Constants.LOG4J2, CONSOLE_AND_FILE_TYPE, mode));
         }
         logger = loggingSystem.getLogger(LOGGER_NAME);
-        Thread.sleep(10000);
     }
 
     @TearDown(Level.Trial)
