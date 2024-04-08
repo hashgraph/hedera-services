@@ -90,7 +90,6 @@ public class DeterministicHeartbeatScheduler extends AbstractHeartbeatScheduler 
         if (started) {
             throw new IllegalStateException("Cannot start the heartbeat more than once");
         }
-        started = true;
 
         final Instant currentTime = time.now();
         for (final HeartbeatTask task : tasks) {
@@ -99,6 +98,8 @@ public class DeterministicHeartbeatScheduler extends AbstractHeartbeatScheduler 
             tasksForPeriod.add(task);
             previousHeartbeats.put(task.getPeriod(), currentTime);
         }
+
+        started = true;
     }
 
     @Override
