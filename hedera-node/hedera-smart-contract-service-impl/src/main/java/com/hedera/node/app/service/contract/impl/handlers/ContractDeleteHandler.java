@@ -66,10 +66,15 @@ public class ContractDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.contractDeleteInstanceOrThrow();
-        mustExist(op.contractID(), INVALID_CONTRACT_ID);
+        validateFalsePreCheck(op.permanentRemoval(), PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION);
+
+        // The contract ID must be present on the transaction
+        final var contractID = op.contractID();
+        mustExist(contractID, INVALID_CONTRACT_ID);
     }
+
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -91,16 +96,6 @@ public class ContractDeleteHandler implements TransactionHandler {
         } else if (op.hasTransferContractID()) {
             context.requireKeyIfReceiverSigRequired(op.transferContractID(), INVALID_CONTRACT_ID);
         }
-    }
-
-    @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final var op = txn.contractDeleteInstanceOrThrow();
-        validateFalsePreCheck(op.permanentRemoval(), PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION);
-
-        // The contract ID must be present on the transaction
-        final var contractID = op.contractID();
-        mustExist(contractID, INVALID_CONTRACT_ID);
     }
 
     @Override
