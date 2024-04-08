@@ -34,7 +34,6 @@ import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.contract.ContractCallLocalResponse;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
@@ -49,9 +48,7 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -138,30 +135,18 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         final var op = context.query().contractCallLocalOrThrow();
         final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
         return context.feeCalculator().legacyCalculate(sigValueObj -> {
-            final var contract = contractFrom(context);
-            if (contract == null) {
-                return FeeData.getDefaultInstance();
-            } else {
-                final var contractFnResult = ContractFunctionResult.newBuilder()
-                        .setContractID(fromPbj(op.contractIDOrElse(ContractID.DEFAULT)))
-                        .setContractCallResult(fromPbj(Bytes.wrap(new byte[contractsConfig.localCallEstRetBytes()])))
-                        .build();
-                final var builder = new SmartContractFeeBuilder();
-                final var feeData = builder.getContractCallLocalFeeMatrices(
-                        (int) op.functionParameters().length(),
-                        contractFnResult,
-                        fromPbjResponseType(op.header().responseType()));
-                return feeData.toBuilder()
-                        .setNodedata(feeData.getNodedata().toBuilder().setGas(op.gas()))
-                        .build();
-            }
+            final var contractFnResult = ContractFunctionResult.newBuilder()
+                    .setContractID(fromPbj(op.contractIDOrElse(ContractID.DEFAULT)))
+                    .setContractCallResult(fromPbj(Bytes.wrap(new byte[contractsConfig.localCallEstRetBytes()])))
+                    .build();
+            final var builder = new SmartContractFeeBuilder();
+            final var feeData = builder.getContractCallLocalFeeMatrices(
+                    (int) op.functionParameters().length(),
+                    contractFnResult,
+                    fromPbjResponseType(op.header().responseType()));
+            return feeData.toBuilder()
+                    .setNodedata(feeData.getNodedata().toBuilder().setGas(op.gas()))
+                    .build();
         });
-    }
-
-    private @Nullable Account contractFrom(@NonNull final QueryContext context) {
-        final var accountsStore = context.createStore(ReadableAccountStore.class);
-        final var contractId = context.query().contractCallLocalOrThrow().contractIDOrElse(ContractID.DEFAULT);
-        final var contract = accountsStore.getContractById(contractId);
-        return (contract == null || !contract.smartContract()) ? null : contract;
     }
 }
