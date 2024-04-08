@@ -65,6 +65,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -98,6 +99,9 @@ class FileCreateTest extends FileTestBase {
     @Mock
     private FileOpsUsage fileOpsUsage;
 
+    @Mock
+    private Metrics metrics;
+
     private FilesConfig config;
 
     private WritableFileStore fileStore;
@@ -127,7 +131,7 @@ class FileCreateTest extends FileTestBase {
     @BeforeEach
     void setUp() {
         subject = new FileCreateHandler(fileOpsUsage);
-        fileStore = new WritableFileStore(writableStates);
+        fileStore = new WritableFileStore(writableStates, DEFAULT_CONFIG, metrics);
         config = HederaTestConfigBuilder.createConfig().getConfigData(FilesConfig.class);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
@@ -305,7 +309,7 @@ class FileCreateTest extends FileTestBase {
         final var writableState = writableFileStateWithOneKey();
 
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableState);
-        final var fileStore = new WritableFileStore(writableStates);
+        final var fileStore = new WritableFileStore(writableStates, DEFAULT_CONFIG, metrics);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(fileStore);
 
         assertEquals(2, fileStore.sizeOfState());

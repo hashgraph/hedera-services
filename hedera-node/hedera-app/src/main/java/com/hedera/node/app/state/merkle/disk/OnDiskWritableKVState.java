@@ -21,6 +21,7 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
@@ -38,6 +39,8 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
 
     private final StateMetadata<K, V> md;
+
+    private OnDiskWritableKvStateMetrics kvStateMetrics;
 
     /**
      * Create a new instance
@@ -111,5 +114,19 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
         // Log to transaction state log, size of map
         logMapGetSize(getStateKey(), size);
         return size;
+    }
+
+    @Override
+    public void setupMetrics(@NonNull Metrics metrics, @NonNull String name, @NonNull String label, long maxCapacity) {
+        kvStateMetrics = new OnDiskWritableKvStateMetrics(metrics, name, label, sizeOfDataSource(), maxCapacity);
+    }
+
+    @Override
+    public void commit() {
+        super.commit();
+
+        if (kvStateMetrics != null) {
+            kvStateMetrics.updateMetrics(sizeOfDataSource());
+        }
     }
 }

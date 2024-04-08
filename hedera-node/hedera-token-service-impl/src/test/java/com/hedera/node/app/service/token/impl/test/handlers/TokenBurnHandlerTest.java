@@ -83,6 +83,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
@@ -567,8 +568,11 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .tokenId(TOKEN_123)
                     .balance(10)
                     .build());
-            writableNftStore = new WritableNftStore(new MapWritableStates(
-                    Map.of("NFTS", MapWritableKVState.builder("NFTS").build())));
+            writableNftStore = new WritableNftStore(
+                    new MapWritableStates(
+                            Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
+                    configuration,
+                    mock(Metrics.class));
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
             final var context = mockContext(txn);

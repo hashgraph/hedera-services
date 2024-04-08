@@ -404,12 +404,10 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var accountMemoSize = (account == null || account.memo() == null)
                 ? 0L
                 : account.memo().getBytes(StandardCharsets.UTF_8).length;
-        final long newVariableBytes = (newMemoSize != 0L
-                ? newMemoSize
-                : accountMemoSize
-                        + (keySize == 0L && account != null
-                                ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
-                                : keySize));
+        final long newVariableBytes = (newMemoSize != 0L ? newMemoSize : accountMemoSize)
+                + (keySize == 0L && account != null
+                        ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
+                        : keySize);
 
         final long tokenRelBytes =
                 (account == null ? 0 : account.numberAssociations()) * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
