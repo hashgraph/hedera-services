@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
@@ -154,6 +155,17 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
         assertTrue(context.requiredNonPayerKeys().contains(otherKey));
+    }
+
+    @Test
+    void cryptoUpdateMissingAccountID() throws PreCheckException {
+        final var txn = new CryptoUpdateBuilder().withTarget(null).build();
+
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
+
+        final var context = new FakePreHandleContext(readableStore, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_ID_DOES_NOT_EXIST);
     }
 
     @Test
