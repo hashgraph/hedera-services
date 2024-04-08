@@ -274,7 +274,7 @@ public final class IngestChecker {
             // at consensus, and adding them to normal throttle buckets, c.f.
             // https://github.com/hashgraph/hedera-services/issues/12559
             if (payerNum >= hederaConfig.firstUserEntity()) {
-                throw new PreCheckException(UNAUTHORIZED);
+                throw new PreCheckException(NOT_SUPPORTED);
             }
         }
     }
