@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.test.validators;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.getEffectiveOwner;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;

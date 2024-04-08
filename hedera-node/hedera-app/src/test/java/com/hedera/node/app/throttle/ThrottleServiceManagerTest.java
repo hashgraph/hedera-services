@@ -150,8 +150,8 @@ class ThrottleServiceManagerTest {
         inOrder.verify(backendThrottle).rebuildFor(MOCK_THROTTLE_DEFS);
         inOrder.verify(congestionMultipliers).resetExpectations();
         inOrder.verify(cryptoTransferThrottle)
-                .resetUsageTo(fromPbj(
-                        MOCK_THROTTLE_USAGE_SNAPSHOTS.tpsThrottles().getFirst()));
+                .resetUsageTo(
+                        fromPbj(MOCK_THROTTLE_USAGE_SNAPSHOTS.tpsThrottles().getFirst()));
         inOrder.verify(gasThrottle).resetUsageTo(fromPbj(MOCK_THROTTLE_USAGE_SNAPSHOTS.gasThrottleOrThrow()));
         inOrder.verify(congestionMultipliers)
                 .resetUtilizationScaledThrottleMultiplierStarts(asNullTerminatedInstants(
