@@ -15,10 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.services.java")
-    id("com.hedera.hashgraph.services.publish")
+    id("com.hedera.hashgraph.evm.java")
+    id("com.hedera.hashgraph.evm.publish")
 }
-
-group = "com.hedera.evm"
 
 description = "Hedera EVM - Implementation"

@@ -18,7 +18,7 @@ module com.hedera.node.app.service.mono.test.fixtures {
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.virtualmap;
     requires transitive org.bouncycastle.provider;
-    requires com.hedera.node.app.service.evm;
+    requires com.hedera.evm;
     requires net.i2p.crypto.eddsa;
     requires org.junit.jupiter.api;
     requires org.mockito;

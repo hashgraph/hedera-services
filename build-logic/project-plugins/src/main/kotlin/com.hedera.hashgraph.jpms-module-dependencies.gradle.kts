@@ -26,5 +26,6 @@ javaModuleDependencies {
     moduleNamePrefixToGroup.put("com.", "com.swirlds")
     moduleNamePrefixToGroup.put("com.hedera.node.", "com.hedera.hashgraph")
     moduleNamePrefixToGroup.put("com.hedera.storage.", "com.hedera.storage.blocknode")
-    moduleNamePrefixToGroup.put("com.hedera.node.app.service.evm", "com.hedera.evm")
+    moduleNameToGA.put("com.hedera.evm", "com.hedera.evm:hedera-evm")
+    moduleNameToGA.put("com.hedera.evm.impl", "com.hedera:hedera-evm-impl")
 }
