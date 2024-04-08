@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -215,6 +216,17 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                                     TOKEN_TREASURY,
                                                                     RECIPIENT,
                                                                     1))));
+                        }),
+                        withOpContext((spec, opLog) -> {
+                            final var baseTxnId = spec.registry().getTxnId(nestedTransferTxn);
+                            final var childTxnId =
+                                    baseTxnId.toBuilder().setNonce(1).build();
+                            allRunFor(spec, getReceipt(childTxnId).hasPriorityStatus(SUCCESS));
+                            allRunFor(
+                                    spec,
+                                    getTxnRecord(childTxnId)
+                                            .assertingNothingAboutHashes()
+                                            .hasPriority(recordWith().status(SUCCESS)));
                         }));
     }
 
