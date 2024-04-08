@@ -1627,7 +1627,7 @@ public class UtilVerbs {
             final HapiSpec spec) {
         final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
         for (final var op : ops) {
-            if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall()) {
+            if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall(spec)) {
                 // if we have function params, try to swap the long zero address with the EVM address
                 if (callOp.getParams().length > 0 && callOp.getAbi() != null) {
                     var convertedParams = tryToSwapLongZeroToEVMAddresses(callOp.getParams(), spec);
@@ -1635,7 +1635,7 @@ public class UtilVerbs {
                 }
                 convertedOps.add(new HapiEthereumCall(callOp));
 
-            } else if (op instanceof HapiContractCreate callOp && callOp.isConvertableToEthCreate()) {
+            } else if (op instanceof HapiContractCreate callOp && callOp.isConvertableToEthCreate(spec)) {
                 // if we have constructor args, update the bytecode file with one containing the args
                 if (callOp.getArgs().isPresent() && callOp.getAbi().isPresent()) {
                     var convertedArgs =

@@ -155,7 +155,12 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         return HederaFunctionality.ContractCall;
     }
 
-    public boolean isConvertableToEthCall() {
+    public boolean isConvertableToEthCall(HapiSpec spec) {
+        // check if the key is SECP256K1
+        var key = spec.registry().getKey(privateKeyRef);
+        if (key != null && !key.hasECDSASecp256K1()) {
+            return false;
+        }
         return convertableToEthCall;
     }
 
