@@ -38,6 +38,7 @@ import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
@@ -583,6 +584,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     /**
      * Bind components to the wiring.
      *
+     * @param builder                   builds platform components that need to be bound to wires
      * @param eventHasher               the event hasher to bind
      * @param internalEventValidator    the internal event validator to bind
      * @param eventDeduplicator         the event deduplicator to bind
@@ -617,6 +619,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param platformPublisher         the platform publisher to bind
      */
     public void bind(
+            @NonNull final PlatformComponentBuilder builder,
             @NonNull final EventHasher eventHasher,
             @NonNull final InternalEventValidator internalEventValidator,
             @NonNull final EventDeduplicator eventDeduplicator,
@@ -664,7 +667,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         shadowgraphWiring.bind(shadowgraph);
         pcesSequencerWiring.bind(pcesSequencer);
         eventCreationManagerWiring.bind(eventCreationManager);
-        selfEventSignerWiring.bind(null); // TODO
+        selfEventSignerWiring.bind(builder.buildSelfEventSigner());
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
         eventWindowManagerWiring.bind(eventWindowManager);
         applicationTransactionPrehandlerWiring.bind(transactionPrehandler);

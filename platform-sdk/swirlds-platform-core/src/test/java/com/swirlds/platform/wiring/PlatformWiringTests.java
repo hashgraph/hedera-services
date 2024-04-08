@@ -22,6 +22,8 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.builder.PlatformBuildingBlocks;
+import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
@@ -36,6 +38,7 @@ import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
@@ -67,7 +70,12 @@ class PlatformWiringTests {
 
         final PlatformWiring wiring = new PlatformWiring(platformContext, true, true);
 
+        final PlatformComponentBuilder componentBuilder =
+                new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
+        componentBuilder.withSelfEventSigner(mock(SelfEventSigner.class));
+
         wiring.bind(
+                componentBuilder,
                 mock(EventHasher.class),
                 mock(InternalEventValidator.class),
                 mock(EventDeduplicator.class),
