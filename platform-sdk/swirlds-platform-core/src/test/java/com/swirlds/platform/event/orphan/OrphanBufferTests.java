@@ -17,7 +17,6 @@
 package com.swirlds.platform.event.orphan;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,12 +35,10 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -117,7 +114,8 @@ class OrphanBufferTests {
     private GossipEvent createBootstrapEvent(
             @NonNull final NodeId nodeId, @NonNull final List<GossipEvent> parentCandidates) {
 
-        final GossipEvent bootstrapEvent = new TestingEventBuilder(random).setCreatorId(nodeId).build();
+        final GossipEvent bootstrapEvent =
+                new TestingEventBuilder(random).setCreatorId(nodeId).build();
         parentCandidates.add(bootstrapEvent);
         return bootstrapEvent;
     }
@@ -143,7 +141,11 @@ class OrphanBufferTests {
         final long eventGeneration = maxParentGeneration + 1;
         maxGeneration = Math.max(maxGeneration, eventGeneration);
 
-        return new TestingEventBuilder(random).setCreatorId(eventCreator).setSelfParent(selfParent).setOtherParent(otherParent).build();
+        return new TestingEventBuilder(random)
+                .setCreatorId(eventCreator)
+                .setSelfParent(selfParent)
+                .setOtherParent(otherParent)
+                .build();
     }
 
     /**
