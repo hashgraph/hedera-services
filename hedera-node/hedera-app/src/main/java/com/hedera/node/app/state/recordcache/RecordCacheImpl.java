@@ -102,7 +102,8 @@ public class RecordCacheImpl implements HederaRecordCache {
      */
     private final DeduplicationCache deduplicationCache;
     /**
-     * A map of transaction IDs to the histories of all transactions that came to consensus with that ID, or their child
+     * A map of transaction IDs to the histories of all transactions that came to
+     * consensus with that ID, or their child
      * transactions. This data structure is rebuilt during reconnect or restart. Using a non-deterministic, map is
      * perfectly acceptable, as the order of these histories is not important.
      */
@@ -184,7 +185,7 @@ public class RecordCacheImpl implements HederaRecordCache {
         // to also remove from the queue any transactions that have expired.
         final WritableStates states = getWritableState();
         final WritableQueueState<TransactionRecordEntry> queue = states.getQueue(TXN_RECORD_QUEUE);
-        final SingleTransactionRecord firstRecord = transactionRecords.get(0);
+        final SingleTransactionRecord firstRecord = transactionRecords.getFirst();
         removeExpiredTransactions(queue, firstRecord.transactionRecord().consensusTimestampOrElse(Timestamp.DEFAULT));
 
         // For each transaction, in order, add to the queue and to the in-memory data structures.
@@ -224,20 +225,10 @@ public class RecordCacheImpl implements HederaRecordCache {
             final long nodeId,
             @NonNull final AccountID payerAccountId,
             @NonNull final TransactionRecord transactionRecord) {
-        // The transaction may be a preceding transaction, user transaction, or child transaction. The user transaction,
-        // alone, has a nonce of 0 in the transaction ID. Preceding transactions have no parent consensus timestamp,
-        // while child transactions have a parent consensus timestamp (the consensus timestamp of the user transaction).
-        //
-        // If the transaction is a user transaction or a preceding transaction, then it gets its own History. If the
-        // transaction is a child transaction, then it does not get its own preceding transaction, but instead is added
-        // to the History of the user transaction.
-        //
-        // And all transactions, regardless of the type, are added to the payer-reverse-index, so that queries of
-        // the payer account ID will return all transactions they paid for.
         final var txId = transactionRecord.transactionIDOrThrow();
-        // For the preceding child records parentConsensusTimestamp is not set, but the nonce will be greater than 1
-        // For the following child records parentConsensusTimestamp is also set. So to differentiate child records
-        // from user records, we check if the nonce is greater than 0.
+        // We need the hasParentConsensusTimestamp() check to detect triggered transactions that
+        // children of a ScheduleSign or ScheduleCreate (nonces were introduced after scheduled
+        // transactions, so these children still have nonce=0)
         final var isChildTx = transactionRecord.hasParentConsensusTimestamp() || txId.nonce() > 0;
         final var userTxId = isChildTx ? txId.copyBuilder().nonce(0).build() : txId;
 
@@ -247,7 +238,8 @@ public class RecordCacheImpl implements HederaRecordCache {
         // doesn't actually matter.
         final var history = histories.computeIfAbsent(userTxId, ignored -> new History());
         final var status = transactionRecord.receiptOrThrow().status();
-        if (!UNCLASSIFIABLE_STATUSES.contains(status)) {
+        // If the status indicates a due diligence failure, we don't use the result in duplicate classification
+        if (!DUE_DILIGENCE_FAILURES.contains(status)) {
             history.nodeIds().add(nodeId);
         }
 
@@ -311,6 +303,11 @@ public class RecordCacheImpl implements HederaRecordCache {
     @Nullable
     @Override
     public History getHistory(@NonNull TransactionID transactionID) {
+        logger.info(
+                "Getting history for transaction ID: {} (contained in dedup cache? {}) - history = {}",
+                transactionID,
+                deduplicationCache.contains(transactionID),
+                histories.get(transactionID));
         final var history = histories.get(transactionID);
         return history != null ? history : (deduplicationCache.contains(transactionID) ? EMPTY_HISTORY : null);
     }
