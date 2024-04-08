@@ -51,7 +51,7 @@ public record IssDetectorWiring(
 
         return new IssDetectorWiring(
                 taskScheduler.buildInputWire("end of PCES replay"),
-                taskScheduler.buildInputWire("state and round"),
+                taskScheduler.buildInputWire("stateAndRound"),
                 taskScheduler.buildInputWire("overriding state"),
                 taskScheduler.getOutputWire().buildSplitter("issNotificationSplitter", "iss notifications"));
     }
@@ -62,7 +62,7 @@ public record IssDetectorWiring(
      * @param issDetector the ISS detector
      */
     public void bind(@NonNull final IssDetector issDetector) {
-        ((BindableInputWire<NoInput, Void>) endOfPcesReplay).bind(issDetector::signalEndOfPreconsensusReplay);
+        ((BindableInputWire<NoInput, Void>) endOfPcesReplay).bindConsumer(issDetector::signalEndOfPreconsensusReplay);
         ((BindableInputWire<StateAndRound, List<IssNotification>>) stateAndRoundInput)
                 .bind(issDetector::handleStateAndRound);
         ((BindableInputWire<ReservedSignedState, List<IssNotification>>) overridingState)

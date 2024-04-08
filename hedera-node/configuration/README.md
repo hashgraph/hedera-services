@@ -2,7 +2,7 @@
 
 The child folders in this directory hold configuration
 for various environments, for use with the **upcoming release of Services**. 
-Each configuration file is described a small sub-section below. 
+Each configuration file is described in a small sub-section below. 
 
 All deployment paths are given relative to the top-level directory 
 containing the deployed JAR (in DevOps-managed environments, this 
@@ -43,7 +43,7 @@ path is given, the file belongs in the top-level directory with the JAR.
   - For example, more permissive Netty HTTP/2 settings
 
 ## upgrade/throttles.json
-* If present, should be used, post-upgrade, as input to a yahcli `sysfiles upload throttles` command
+* If specified, this file serves as the sole input for the `yahcli sysfiles upload throttles` command post-upgrade, replacing any existing throttles with its contents. In its absence, the default is sourced from `:/hedera-node/hedera-file-service-impl/src/main/resources/genesis/throttles.json`.
 
 ## javaOptions
 * Script to start `HGCApp` with all needed options

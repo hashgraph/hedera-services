@@ -17,7 +17,6 @@
 package com.swirlds.logging.benchmark.util;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.UUID;
 
 /**
  * Convenience methods for creating exceptions with stacktrace as big as requested
@@ -26,10 +25,6 @@ public class Throwables {
     public static final Throwable THROWABLE = createThrowable();
 
     public static final Throwable DEEP_THROWABLE = createThrowableWithDeepCause(20, 20);
-
-    public static final String USER_1 = UUID.randomUUID().toString();
-    public static final String USER_2 = UUID.randomUUID().toString();
-    public static final String USER_3 = UUID.randomUUID().toString();
 
     private Throwables() {}
 

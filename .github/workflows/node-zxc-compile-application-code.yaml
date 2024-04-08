@@ -227,7 +227,7 @@ jobs:
         run: ${GRADLE_EXEC} test timingSensitive jacocoTestReport --continue --scan
 
       - name: Publish Unit Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: Unit Test Results'
@@ -251,7 +251,7 @@ jobs:
         run: ${GRADLE_EXEC} itest --scan
 
       - name: Publish Integration Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: Integration Test Results'
@@ -276,7 +276,7 @@ jobs:
         run: ${GRADLE_EXEC} hapiTestMisc -Dfile.encoding=UTF-8 --scan --no-daemon
 
       - name: Publish HAPI Test (Misc) Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         if: ${{ inputs.enable-hapi-tests-misc && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test (Misc) Results'
@@ -301,7 +301,7 @@ jobs:
         run: ${GRADLE_EXEC} hapiTestCrypto -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Crypto) Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         if: ${{ inputs.enable-hapi-tests-crypto && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test (Crypto) Results'
@@ -326,7 +326,7 @@ jobs:
         run: ${GRADLE_EXEC} hapiTestToken -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Token) Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         if: ${{ inputs.enable-hapi-tests-token && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test (Token) Results'
@@ -351,7 +351,7 @@ jobs:
         run: ${GRADLE_EXEC} hapiTestSmartContract -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Smart Contract) Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         if: ${{ inputs.enable-hapi-tests-smart-contract && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test (Smart Contract) Results'
@@ -376,7 +376,7 @@ jobs:
         run: ${GRADLE_EXEC} hapiTestTimeConsuming -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Time Consuming) Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test (Time Consuming) Results'
@@ -401,7 +401,7 @@ jobs:
         run: ${GRADLE_EXEC} hapiTestRestart -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Restart) Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         if: ${{ inputs.enable-hapi-tests-restart && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test (Restart) Results'
@@ -427,7 +427,7 @@ jobs:
         run: ${GRADLE_EXEC} hapiTestNDReconnect -Dfile.encoding=UTF-8 --scan
 
       - name: Publish HAPI Test (Node Death Reconnect) Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         if: ${{ inputs.enable-hapi-tests-nd-reconnect && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test (Node Death Reconnect) Results'
@@ -450,7 +450,7 @@ jobs:
         run: ${GRADLE_EXEC} eet --scan
 
       - name: Publish E2E Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: E2E Test Results'

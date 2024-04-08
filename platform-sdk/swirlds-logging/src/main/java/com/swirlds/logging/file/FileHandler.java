@@ -21,32 +21,39 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
 import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
-import com.swirlds.logging.buffer.BufferedOutputStream;
+import com.swirlds.logging.io.OutputStreamFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 
 /**
- * A file handler that writes log events to a file.
+ * A {@link com.swirlds.logging.api.extensions.handler.LogHandler} that writes log events to a file with optional rolling based on size.
  * <p>
- * This handler use a {@link BufferedOutputStream} to write {@link LogEvent}s to a file. You can configure the following
- * properties:
+ * The rolling behavior of the underlying file is determined by the provided configuration. When enabled, rolling occurs
+ * based on size. To enable it at least {@code file-rolling.maxFileSize} property
+ * needs to be informed.
+ * <p>
+ * Rolling is implemented with best effort strategy. Log events are initially written to the file, and rolling occurs
+ * if the file size exceeds the configured limit. This approach maintains data coherence and avoids the performance
+ * penalties associated with handling files in a highly specific manner. However, it may result in occasional file sizes
+ * exceeding the limit, depending on the volume of data being written.
+ * <p>
+ * The handler can be optionally buffered for improved performance.
+ * <p>
+ * The handler can be configured with the following properties:
  * <ul>
- *     <li>{@code file} - the {@link Path} of the file</li>
- *     <li>{@code append} - whether to append to the file or not</li>
+ *     <li>{@code file} - The {@link Path} of the log file.</li>
+ *     <li>{@code append} - Determines whether to append to an existing file or overwrite it.</li>
+ *     <li>{@code formatTimestamp} - If set to true, epoch values are formatted as human-readable strings.</li>
+ *     <li>{@code file-rolling.maxFileSize} - Maximum size of the file for size-based rolling.</li>
+ *     <li>{@code file-rolling.maxRollover} - Maximum number of files used for rolling.</li>
  * </ul>
  */
 public class FileHandler extends AbstractSyncedHandler {
 
-    private static final String FILE_NAME_PROPERTY = "%s.file";
-    private static final String APPEND_PROPERTY = "%s.append";
-    private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
-    private static final int BUFFER_CAPACITY = 8192 * 8;
+    private static final int EVENT_LOG_PRINTER_SIZE = 4 * 1024;
     private final OutputStream outputStream;
     private final FormattedLinePrinter format;
 
@@ -63,23 +70,12 @@ public class FileHandler extends AbstractSyncedHandler {
         super(handlerName, configuration);
 
         this.format = FormattedLinePrinter.createForHandler(handlerName, configuration);
-
-        final String propertyPrefix = PROPERTY_HANDLER.formatted(handlerName);
-        final Path filePath = Objects.requireNonNullElse(
-                configuration.getValue(FILE_NAME_PROPERTY.formatted(propertyPrefix), Path.class, null),
-                Path.of(DEFAULT_FILE_NAME));
-        final boolean append = Objects.requireNonNullElse(
-                configuration.getValue(APPEND_PROPERTY.formatted(propertyPrefix), Boolean.class, null), true);
         try {
-            if (Files.exists(filePath) && !(append && Files.isWritable(filePath))) {
-                throw new IOException("Log file exist and is not writable or is not append mode");
-            }
-            if (filePath.getParent() != null) Files.createDirectories(filePath.getParent());
-            final OutputStream fileOutputStream = new FileOutputStream(filePath.toFile(), append);
-            this.outputStream =
-                    buffered ? new BufferedOutputStream(fileOutputStream, BUFFER_CAPACITY) : fileOutputStream;
+            this.outputStream = buffered
+                    ? OutputStreamFactory.getInstance().bufferedOutputStream(configuration, handlerName)
+                    : OutputStreamFactory.getInstance().outputStream(configuration, handlerName);
         } catch (IOException e) {
-            throw new IOException("Could not create log file " + filePath.toAbsolutePath(), e);
+            throw new IOException("Could not create FileHandler", e);
         }
     }
 
@@ -90,12 +86,14 @@ public class FileHandler extends AbstractSyncedHandler {
      */
     @Override
     protected void handleEvent(@NonNull final LogEvent event) {
-        final StringBuilder writer = new StringBuilder(4 * 1024);
+        final StringBuilder writer = new StringBuilder(EVENT_LOG_PRINTER_SIZE);
         format.print(writer, event);
         try {
             this.outputStream.write(writer.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final Exception exception) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to write to file output stream", exception);
+            // FORWARDING the event to the emergency logger
+            EMERGENCY_LOGGER.log(event);
         }
     }
 

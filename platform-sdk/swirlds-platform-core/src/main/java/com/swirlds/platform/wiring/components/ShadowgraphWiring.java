@@ -45,7 +45,7 @@ public record ShadowgraphWiring(
     public static ShadowgraphWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
 
         return new ShadowgraphWiring(
-                taskScheduler.buildInputWire("events to gossip"),
+                taskScheduler.buildInputWire("EventImpl"),
                 taskScheduler.buildInputWire("non-ancient event window"),
                 taskScheduler::flush);
     }
@@ -56,7 +56,8 @@ public record ShadowgraphWiring(
      * @param shadowgraph the shadow graph to bind
      */
     public void bind(@NonNull final Shadowgraph shadowgraph) {
-        ((BindableInputWire<EventImpl, Void>) eventInput).bind(shadowgraph::addEvent);
-        ((BindableInputWire<NonAncientEventWindow, Void>) eventWindowInput).bind(shadowgraph::updateEventWindow);
+        ((BindableInputWire<EventImpl, Void>) eventInput).bindConsumer(shadowgraph::addEvent);
+        ((BindableInputWire<NonAncientEventWindow, Void>) eventWindowInput)
+                .bindConsumer(shadowgraph::updateEventWindow);
     }
 }

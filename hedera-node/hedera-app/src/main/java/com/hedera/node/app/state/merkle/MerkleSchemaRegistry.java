@@ -51,6 +51,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -161,11 +162,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
+            @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore) {
         requireNonNull(hederaState);
         requireNonNull(currentVersion);
         requireNonNull(config);
         requireNonNull(networkInfo);
+        requireNonNull(metrics);
 
         // Figure out which schemas need to be applied based on the previous and current versions, and then for each
         // of those schemas, create the new states and remove the old states and migrate the data.
@@ -230,7 +233,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         .maxNumberOfKeys(def.maxKeysHint());
                                 final var label = StateUtils.computeLabel(serviceName, stateKey);
                                 final var dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
-                                return new VirtualMap<>(label, dsBuilder);
+                                final var virtualMap = new VirtualMap<>(label, dsBuilder);
+                                virtualMap.registerMetrics(metrics);
+                                return virtualMap;
                             });
                         }
                     });
@@ -275,14 +280,20 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     }
 
     private SchemaApplicationType checkApplicationType(
-            @Nullable final SemanticVersion previousVersion,
-            @NonNull final SemanticVersion latestVersion,
+            @Nullable final SemanticVersion previousVersionFromState,
+            @NonNull final SemanticVersion latestRegisteredSchemaVersion,
             @NonNull final Schema schema) {
-        if (isSameVersion(previousVersion, latestVersion)) {
+        // If the previous version is the same as the latest version, then we only need to restart
+        // If this schema is the last registered schema, but is before the current version,
+        // then we only need to restart. Since we apply atleast one schema(last registered schema)
+        // if there are no schemas reported to migrate.
+        if (previousVersionFromState != null
+                && (isSameVersion(previousVersionFromState, latestRegisteredSchemaVersion)
+                        || isSoOrdered(latestRegisteredSchemaVersion, previousVersionFromState))) {
             return SchemaApplicationType.RESTART_ONLY;
-        } else if (isSameVersion(schema.getVersion(), latestVersion)) {
+        } else if (isSameVersion(schema.getVersion(), latestRegisteredSchemaVersion)) {
             return SchemaApplicationType.MIGRATE_THEN_RESTART;
-        } else if (!isSameVersion(schema.getVersion(), previousVersion)) {
+        } else if (!isSameVersion(schema.getVersion(), previousVersionFromState)) {
             return SchemaApplicationType.MIGRATE_ONLY;
         } else {
             return SchemaApplicationType.ONLY_STATE_MANAGEMENT;

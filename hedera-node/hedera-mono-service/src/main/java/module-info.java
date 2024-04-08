@@ -239,6 +239,17 @@ module com.hedera.node.app.service.mono {
 
     exports com.hedera.node.app.service.mono.fees.calculation.meta;
     exports com.hedera.node.app.service.mono.files.store;
+    exports com.hedera.node.app.service.mono.statedumpers;
+    exports com.hedera.node.app.service.mono.statedumpers.utils;
+    exports com.hedera.node.app.service.mono.statedumpers.contracts;
+    exports com.hedera.node.app.service.mono.statedumpers.files;
+    exports com.hedera.node.app.service.mono.statedumpers.associations;
+    exports com.hedera.node.app.service.mono.statedumpers.nfts;
+    exports com.hedera.node.app.service.mono.statedumpers.scheduledtransactions;
+    exports com.hedera.node.app.service.mono.statedumpers.tokentypes;
+    exports com.hedera.node.app.service.mono.statedumpers.topics;
+    exports com.hedera.node.app.service.mono.statedumpers.accounts;
+    exports com.hedera.node.app.service.mono.statedumpers.singleton;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;

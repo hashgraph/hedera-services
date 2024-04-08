@@ -45,6 +45,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.time.Instant;
+import java.util.function.IntConsumer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,6 +68,9 @@ class ServicesTxnManagerTest {
 
     @Mock
     private SignedTxnAccessor accessor;
+
+    @Mock
+    private IntConsumer cryptoCreateThrottleReclaimer;
 
     @Mock
     private HederaLedger ledger;
@@ -120,6 +124,7 @@ class ServicesTxnManagerTest {
                 migrationRecordsManager,
                 recordStreaming,
                 blockManager,
+                cryptoCreateThrottleReclaimer,
                 rewardCalculator,
                 bootstrapProperties,
                 blocklistAccountCreator);

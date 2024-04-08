@@ -274,6 +274,7 @@ public class LearnerThread<T> {
                 }
             }
 
+            logger.info(RECONNECT.getMarker(), "learner thread finished the learning loop for the current subtree");
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "learner thread interrupted");
             Thread.currentThread().interrupt();

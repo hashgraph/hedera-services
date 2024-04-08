@@ -39,8 +39,9 @@ public class LogFiles {
      * FS.
      */
     @NonNull
-    public static String provideLogFilePath(final @NonNull String implementationName, final @NonNull String type) {
-        final String path = getPath(implementationName, type);
+    public static String provideLogFilePath(
+            final @NonNull String implementationName, final @NonNull String type, final @NonNull String mode) {
+        final String path = getPath(implementationName, type, mode);
         deleteFile(path);
         return path;
     }
@@ -50,9 +51,10 @@ public class LogFiles {
      * {@code implementationName} and the type of benchmark {@code type}
      */
     @NonNull
-    public static String getPath(final @NonNull String implementation, final @NonNull String type) {
+    public static String getPath(final @NonNull String implementation, final @NonNull String type, final String mode) {
         final long pid = ProcessHandle.current().pid();
-        return LOGGING_FOLDER + File.separator + "benchmark-" + implementation + "-" + pid + "-" + type + ".log";
+        return LOGGING_FOLDER + File.separator + "benchmark-" + pid + "-" + implementation + "-" + type + "-" + mode
+                + ".log";
     }
 
     /**
@@ -66,7 +68,10 @@ public class LogFiles {
         }
     }
 
-    public static void tryForceDeleteDir() {
+    /**
+     * If exists and is possible, remove the {@code LOGGING_FOLDER} dir and all its content
+     */
+    public static void tryDeleteDirAndContent() {
         final Path path = Path.of(LOGGING_FOLDER);
         try (Stream<Path> walk = Files.walk(path)) {
             walk.sorted(Comparator.reverseOrder())

@@ -258,7 +258,9 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 false,
                 op.freezeDefault(),
                 false,
-                modifyCustomFeesWithSentinelValues(op.customFeesOrElse(emptyList()), newTokenNum));
+                modifyCustomFeesWithSentinelValues(op.customFeesOrElse(emptyList()), newTokenNum),
+                op.metadata(),
+                op.metadataKey());
     }
 
     /**
@@ -427,8 +429,10 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 * USAGE_PROPERTIES.legacyReceiptStorageSecs();
 
         return feeContext
-                .feeCalculator(
-                        tokenSubTypeFrom(type, !op.customFeesOrElse(emptyList()).isEmpty()))
+                .feeCalculator(tokenSubTypeFrom(
+                        type,
+                        op.hasFeeScheduleKey()
+                                || !op.customFeesOrElse(emptyList()).isEmpty()))
                 .addBytesPerTransaction(meta.getBaseSize())
                 .addRamByteSeconds(tokenSizes)
                 .addNetworkRamByteSeconds(meta.getNetworkRecordRb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())

@@ -24,6 +24,9 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -44,10 +47,19 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * Create a new {@link WritableNftStore} instance.
      *
      * @param states The state to use.
+     * @param configuration The configuration used to read the maximum capacity.
+     * @param metrics The metrics-API used to report utilization.
      */
-    public WritableNftStore(@NonNull final WritableStates states) {
+    public WritableNftStore(
+            @NonNull final WritableStates states,
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics) {
         super(states);
         this.nftState = states.get(TokenServiceImpl.NFTS_KEY);
+        requireNonNull(metrics);
+
+        final long maxCapacity = configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
+        nftState.setupMetrics(metrics, "nfts", maxCapacity);
     }
 
     /**
@@ -58,6 +70,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      */
     public void put(@NonNull final Nft nft) {
         Objects.requireNonNull(nft);
+        requireNotDefault(nft.nftId());
         nftState.put(nft.nftId(), nft);
     }
 
@@ -108,7 +121,10 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * @param serialNum - the serial number of the NFT to remove
      */
     public void remove(final @NonNull TokenID tokenId, final long serialNum) {
-        remove(NftID.newBuilder().tokenId(tokenId).serialNumber(serialNum).build());
+        final var nftId =
+                NftID.newBuilder().tokenId(tokenId).serialNumber(serialNum).build();
+        requireNotDefault(nftId);
+        remove(nftId);
     }
 
     /**
@@ -123,5 +139,11 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     public Nft getOriginalValue(@NonNull final NftID nftId) {
         requireNonNull(nftId);
         return nftState.getOriginalValue(nftId);
+    }
+
+    private void requireNotDefault(@NonNull final NftID nftId) {
+        if (nftId.equals(NftID.DEFAULT)) {
+            throw new IllegalArgumentException("Nft ID cannot be default");
+        }
     }
 }

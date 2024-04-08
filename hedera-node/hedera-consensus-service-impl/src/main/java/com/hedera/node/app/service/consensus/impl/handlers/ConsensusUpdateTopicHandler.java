@@ -25,6 +25,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.pbjToState;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
+import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
+import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -73,7 +75,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var topicStore = context.createStore(ReadableTopicStore.class);
 
         // The topic ID must be present on the transaction and the topic must exist.
-        final var topic = topicStore.getTopic(op.topicID());
+        final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
         mustExist(topic, INVALID_TOPIC_ID);
 
         // Extending the expiry is the *only* update operation permitted without an admin key. So if that is the
@@ -169,7 +171,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         if (op.hasAdminKey()) {
             var key = op.adminKey();
             // Empty key list is allowed and is used for immutable entities (e.g. system accounts)
-            if (handleContext.attributeValidator().isImmutableKey(key)) {
+            if (isImmutableKey(key)) {
                 builder.adminKey((Key) null);
             } else {
                 builder.adminKey(key);
@@ -178,7 +180,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             builder.adminKey(topic.adminKey());
         }
         if (op.hasSubmitKey()) {
-            builder.submitKey(op.submitKey());
+            final var newSubmitKey = op.submitKeyOrThrow();
+            if (isKeyRemoval(newSubmitKey)) {
+                builder.submitKey((Key) null);
+            } else {
+                builder.submitKey(newSubmitKey);
+            }
         } else {
             builder.submitKey(topic.submitKey());
         }
@@ -262,7 +269,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op) {
         // Empty key list is allowed and is used for immutable entities (e.g. system accounts)
-        if (op.hasAdminKey() && !attributeValidator.isImmutableKey(op.adminKey())) {
+        if (op.hasAdminKey() && !isImmutableKey(op.adminKey())) {
             attributeValidator.validateKey(op.adminKey());
         }
     }
@@ -271,7 +278,11 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op) {
         if (op.hasSubmitKey()) {
-            attributeValidator.validateKey(op.submitKey());
+            final var newSubmitKey = op.submitKeyOrThrow();
+            // Backward compatibility, mono-service allowed setting an empty submit key
+            if (!isEmpty(newSubmitKey) || Key.DEFAULT.equals(newSubmitKey)) {
+                attributeValidator.validateKey(op.submitKeyOrThrow());
+            }
         }
     }
 

@@ -334,6 +334,11 @@ class AddressBookTests {
                 .setSize(100)
                 .build();
 
+        // FQDN Support: addresses must support long text based host names.
+        original.add(original.getAddress(original.getNodeId(0))
+                .copySetHostnameInternal(
+                        "this.is.a.really.long.host.name.that.should.be.able.to.fit.in.the.address.book"));
+
         // make sure that certs are part of the round trip test.
         assertNotNull(original.getAddress(new NodeId(0)).getSigCert());
         assertNotNull(original.getAddress(new NodeId(0)).getAgreeCert());
@@ -463,6 +468,12 @@ class AddressBookTests {
     void roundTripSerializeAndDeserializeCompatibleWithConfigTxt() throws ParseException {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed());
         final AddressBook addressBook = generator.build();
+        // FQDN Support: modify address in address book to have a text based host name.
+        addressBook.add(addressBook
+                .getAddress(addressBook.getNodeId(0))
+                .copySetHostnameInternal("localhost")
+                .copySetHostnameExternal("localhost"));
+
         // make one of the memo fields an empty string
         final NodeId firstNode = addressBook.getNodeId(0);
         addressBook.add(addressBook.getAddress(firstNode).copySetMemo(""));

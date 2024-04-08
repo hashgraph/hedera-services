@@ -2,8 +2,6 @@ module com.swirlds.common {
 
     /* Exported packages. This list should remain alphabetized. */
     exports com.swirlds.common;
-    exports com.swirlds.common.bloom;
-    exports com.swirlds.common.bloom.hasher;
     exports com.swirlds.common.config;
     exports com.swirlds.common.config.singleton;
     exports com.swirlds.common.constructable;
@@ -150,6 +148,7 @@ module com.swirlds.common {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;

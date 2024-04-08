@@ -23,6 +23,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.google.protobuf.StringValue;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenUpdateUsage;
@@ -35,10 +37,12 @@ import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -63,6 +67,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private Optional<String> newFreezeKey = Optional.empty();
     private Optional<String> newFeeScheduleKey = Optional.empty();
     private Optional<String> newPauseKey = Optional.empty();
+    private Optional<String> newMetadataKey = Optional.empty();
+    private Optional<String> newMetadata = Optional.empty();
 
     private Optional<String> newLockKey = Optional.empty();
 
@@ -132,6 +138,16 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
     public HapiTokenUpdate pauseKey(String name) {
         newPauseKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiTokenUpdate metadataKey(String name) {
+        newMetadataKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiTokenUpdate newMetadata(String name) {
+        newMetadata = Optional.of(name);
         return this;
     }
 
@@ -348,6 +364,15 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                                 "Unexpected tokenKeyType: " + tokenKeyType);
                                     }
                                 }
+                            }
+                            newMetadataKey.ifPresent(
+                                    k -> b.setMetadataKey(spec.registry().getKey(k)));
+                            if (newMetadata.isPresent()) {
+                                var metadataValue = BytesValue.newBuilder()
+                                        .setValue(ByteString.copyFrom(
+                                                newMetadata.orElseThrow().getBytes()))
+                                        .build();
+                                b.setMetadata(metadataValue);
                             }
                         });
         return b -> b.setTokenUpdate(opBody);

@@ -108,6 +108,8 @@ public class HapiSpecRegistry {
         saveKey(setup.systemUndeleteAdminName(), asKeyList(genesisKey));
         saveAccountId(setup.freezeAdminName(), setup.freezeAdminId());
         saveKey(setup.freezeAdminName(), asKeyList(genesisKey));
+        saveAccountId(setup.softwareUpdateAdminName(), setup.softwareUpdateAdminId());
+        saveKey(setup.softwareUpdateAdminName(), asKeyList(genesisKey));
 
         /* (system file 1) :: Address Book */
         saveFileId(setup.addressBookName(), setup.addressBookId());
@@ -962,5 +964,25 @@ public class HapiSpecRegistry {
                 .map(entry -> String.format(
                         "%s -> %s", entry.getKey(), entry.getValue().toString()))
                 .collect(toList());
+    }
+
+    public void saveMetadataKey(String name, Key metadataKey) {
+        put(name + "Metadata", metadataKey, Key.class);
+    }
+
+    public Key getMetadataKey(String name) {
+        return get(name + "Metadata", Key.class);
+    }
+
+    public boolean hasMetadataKey(String name) {
+        return has(name + "Metadata", Key.class);
+    }
+
+    public void saveMetadata(String token, String metadata) {
+        put(token + "Metadata", metadata, String.class);
+    }
+
+    public String getMetadata(String entity) {
+        return get(entity + "Metadata", String.class);
     }
 }

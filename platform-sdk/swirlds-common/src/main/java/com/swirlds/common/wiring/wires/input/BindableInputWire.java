@@ -67,7 +67,7 @@ public class BindableInputWire<IN, OUT> extends InputWire<IN> implements Bindabl
      * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
-    public void bind(@NonNull final Consumer<IN> handler) {
+    public void bindConsumer(@NonNull final Consumer<IN> handler) {
         Objects.requireNonNull(handler);
         setHandler(i -> {
             if (currentlySquelching.get()) {

@@ -109,6 +109,7 @@ import java.util.function.Function;
  * @param systemUndelete             the permission for {@link HederaFunctionality#SYSTEM_UNDELETE} functionality
  * @param freeze                     the permission for {@link HederaFunctionality#FREEZE} functionality
  * @param getAccountDetails          the permission for {@link HederaFunctionality#GET_ACCOUNT_DETAILS} functionality
+ * @param tokenUpdateNfts            the permission for {@link HederaFunctionality#TOKEN_UPDATE_NFTS} functionality
  * @param partitionCreation          the permission for {@link HederaFunctionality#TOKEN_CREATE_PARTITION} functionality
  * @param partitionUpdate            the permission for {@link HederaFunctionality#TOKEN_UPDATE_PARTITION} functionality
  * @param partitionDeletion          the permission for {@link HederaFunctionality#TOKEN_DELETE_PARTITION} functionality
@@ -183,7 +184,8 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange partitionDeletion,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenLock,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUnlock,
-        @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails) {
+        @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -235,6 +237,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(TOKEN_LOCK, c -> c.tokenLock);
         permissionKeys.put(TOKEN_UNLOCK, c -> c.tokenUnlock);
 
+        permissionKeys.put(TOKEN_UPDATE_NFTS, c -> c.tokenUpdateNfts);
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);
         permissionKeys.put(CONTRACT_CALL_LOCAL, c -> c.contractCallLocalMethod);
