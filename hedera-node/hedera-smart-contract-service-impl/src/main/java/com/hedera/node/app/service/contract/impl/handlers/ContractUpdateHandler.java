@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -100,8 +101,9 @@ public class ContractUpdateHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        // nothing to do
+    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
+        final var op = txn.contractUpdateInstanceOrThrow();
+        mustExist(op.contractID(), INVALID_CONTRACT_ID);
     }
 
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
