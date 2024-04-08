@@ -194,6 +194,7 @@ import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -864,6 +865,11 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                             .payingWith(payer)
                             .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
                             .via(TRANSFER_TXN);
+                    final var op5FeeAssertion = getTxnRecord(TRANSFER_TXN)
+                            .logged()
+                            .exposingTo(record -> {
+                                Assertions.assertEquals(REDUCED_TOTAL_FEE, record.getTransactionFee());
+                            });
                     final var notExistingAccountInfo =
                             getAliasedAccountInfo(secondKey).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID);
                     // transfer the needed balance for the finalization fee to the
@@ -874,8 +880,13 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                     // now the sponsor can successfully create the hollow account
                     final var op7 = cryptoTransfer(tinyBarsFromTo(payer, secondEvmAddress, ONE_HUNDRED_HBARS))
                             .payingWith(payer)
-                            .hasKnownStatus(SUCCESS)
                             .via(TRANSFER_TXN);
+                    final var op7FeeAssertion = getTxnRecord(TRANSFER_TXN)
+                            .logged()
+                            .exposingTo(record -> {
+                                Assertions.assertEquals(
+                                        REDUCED_TOTAL_FEE + 2 * REDUCED_TOTAL_FEE, record.getTransactionFee());
+                            });
                     final var op8 = getAliasedAccountInfo(secondKey)
                             .has(accountWith()
                                     .hasEmptyKey()
@@ -883,20 +894,23 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
                                     .receiverSigReq(false)
                                     .memo(LAZY_MEMO));
-                    final var op9 = getAccountBalance(payer).hasTinyBars(0).logged();
+                    final var op9 = getAccountBalance(payer).hasTinyBars(0);
                     allRunFor(
                             spec,
                             transferToPayerAgain,
                             op5,
+                            op5FeeAssertion,
                             notExistingAccountInfo,
                             op6,
                             op7,
+                            op7FeeAssertion,
                             op8,
                             op9,
                             uploadDefaultFeeSchedules(GENESIS));
                 }))
                 .then(uploadDefaultFeeSchedules(GENESIS));
     }
+
     //    @HapiTest /// will be enabled after EthereumTransaction hollow account finalization is implemented
     @Order(10)
     final HapiSpec hollowAccountCompletionWithEthereumTransaction() {
