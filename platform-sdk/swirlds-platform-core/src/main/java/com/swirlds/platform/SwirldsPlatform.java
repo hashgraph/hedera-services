@@ -55,9 +55,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
-import com.swirlds.common.utility.StackTrace;
 import com.swirlds.logging.legacy.LogMarker;
-import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
@@ -143,7 +141,6 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.UptimeData;
 import com.swirlds.platform.system.address.Address;
@@ -592,7 +589,7 @@ public class SwirldsPlatform implements Platform {
         platformWiring.wireExternalComponents(platformStatusManager, transactionPool);
 
         final IssHandler issHandler =
-                new IssHandler(stateConfig, this::haltRequested, this::handleFatalError, issScratchpad);
+                new IssHandler(stateConfig, this::haltRequested, SystemExitUtils::handleFatalError, issScratchpad);
 
         final HashLogger hashLogger =
                 new HashLogger(platformContext.getConfiguration().getConfigData(StateConfig.class));
@@ -603,7 +600,7 @@ public class SwirldsPlatform implements Platform {
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState);
 
         final SignedStateHasher signedStateHasher =
-                new DefaultSignedStateHasher(signedStateMetrics, this::handleFatalError);
+                new DefaultSignedStateHasher(signedStateMetrics, SystemExitUtils::handleFatalError);
 
         final AppNotifier appNotifier = new DefaultAppNotifier(notificationEngine);
 
@@ -1121,20 +1118,5 @@ public class SwirldsPlatform implements Platform {
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
         return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
-    }
-
-    /**
-     * Inform all components that a fatal error has occurred, log the error, and shutdown the JVM.
-     */
-    private void handleFatalError(
-            @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode) {
-        logger.fatal(
-                EXCEPTION.getMarker(),
-                "{}\nCaller stack trace:\n{}\nThrowable provided:",
-                new FatalErrorPayload("Fatal error, node will shut down. Reason: " + msg),
-                StackTrace.getStackTrace().toString(),
-                throwable);
-
-        SystemExitUtils.exitSystem(exitCode, msg);
     }
 }
