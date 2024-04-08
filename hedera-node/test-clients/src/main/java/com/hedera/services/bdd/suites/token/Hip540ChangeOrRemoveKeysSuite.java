@@ -27,6 +27,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -74,14 +80,18 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                 tokenUpdateMetadataKey(),
                 updateAllKeysToInvalidAdminKeySigns(),
                 updateAllKeysToInvalidAllKeysSign(),
-                updateAllLowPriorityKeysToInvalidAllOfThemSign());
+                updateAllLowPriorityKeysToInvalidAllOfThemSign(),
+                validateThatTheAdminKeyCanRemoveOtherKeys(),
+                validateThatTheAdminKeyCanRemoveItself());
     }
 
     private List<HapiSpec> negativeTests() {
         return List.of(
                 failUpdateAllKeysOnlyLowPriorityKeysSign(),
                 failUpdateAllKeysOneLowPriorityKeyDoesNotSign(),
-                failUpdateIfKeyIsInvalidAndWeValidateForKeys());
+                failUpdateIfKeyIsInvalidAndWeValidateForKeys(),
+                updateFailsIfTokenIsImmutable(),
+                updateFailsIfKeyIsMissing());
     }
 
     @HapiTest
@@ -604,6 +614,111 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .payingWith(civilian)
                         .hasKnownStatus(INVALID_ADMIN_KEY))
                 .then(getTokenInfo(tokenName).logged());
+    }
+
+    @HapiTest
+    public HapiSpec validateThatTheAdminKeyCanRemoveOtherKeys() {
+        final var civilian = "civilian";
+        return defaultHapiSpec("validateThatTheAdminKeyCanRemoveOtherKeys")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("freezeKey"),
+                        newKeyNamed("kycKey"),
+                        newKeyNamed("supplyKey"),
+                        newKeyNamed("wipeKey"),
+                        newKeyNamed("pauseKey"),
+                        tokenCreate("primary")
+                                .adminKey("adminKey")
+                                .freezeKey("freezeKey")
+                                .kycKey("kycKey")
+                                .supplyKey("supplyKey")
+                                .wipeKey("wipeKey")
+                                .pauseKey("pauseKey")
+                                .payingWith(civilian))
+                .when(tokenUpdate("primary")
+                        .properlyEmptyingFreezeKey()
+                        .properlyEmptyingKycKey()
+                        .properlyEmptyingSupplyKey()
+                        .properlyEmptyingWipeKey()
+                        .properlyEmptyingPauseKey()
+                        .signedBy(civilian, "adminKey")
+                        .payingWith(civilian))
+                .then(getTokenInfo("primary")
+                        .logged()
+                        .hasEmptyFreezeKey()
+                        .hasEmptyKycKey()
+                        .hasEmptySupplyKey()
+                        .hasEmptyWipeKey()
+                        .hasEmptyPauseKey());
+    }
+
+    @HapiTest
+    public HapiSpec validateThatTheAdminKeyCanRemoveItself() {
+        final var civilian = "civilian";
+        return defaultHapiSpec("validateThatTheAdminKeyCanRemoveItself")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed("adminKey"),
+                        tokenCreate("primary").adminKey("adminKey").payingWith(civilian))
+                .when(tokenUpdate("primary")
+                        .properlyEmptyingAdminKey()
+                        .signedBy(civilian, "adminKey")
+                        .payingWith(civilian))
+                .then(getTokenInfo("primary").logged().hasEmptyAdminKey());
+    }
+
+    @HapiTest
+    public HapiSpec updateFailsIfTokenIsImmutable() {
+        final var civilian = "civilian";
+        return defaultHapiSpec("updateFailsIfTokenIsImmutable")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed("adminKey"),
+                        tokenCreate("primary").payingWith(civilian))
+                .when()
+                .then(tokenUpdate("primary")
+                        .properlyEmptyingAdminKey()
+                        .signedBy(civilian, "adminKey")
+                        .payingWith(civilian)
+                        .hasKnownStatus(TOKEN_IS_IMMUTABLE));
+    }
+
+    @HapiTest
+    public HapiSpec updateFailsIfKeyIsMissing() {
+        final var civilian = "civilian";
+        return defaultHapiSpec("updateFailsIfKeyIsMissing")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed("adminKey"),
+                        tokenCreate("primary").adminKey("adminKey").payingWith(civilian))
+                .when()
+                .then(
+                        tokenUpdate("primary")
+                                .properlyEmptyingFreezeKey()
+                                .signedBy(civilian, "adminKey")
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
+                        tokenUpdate("primary")
+                                .properlyEmptyingKycKey()
+                                .signedBy(civilian, "adminKey")
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_KYC_KEY),
+                        tokenUpdate("primary")
+                                .properlyEmptyingSupplyKey()
+                                .signedBy(civilian, "adminKey")
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
+                        tokenUpdate("primary")
+                                .properlyEmptyingWipeKey()
+                                .signedBy(civilian, "adminKey")
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
+                        tokenUpdate("primary")
+                                .properlyEmptyingPauseKey()
+                                .signedBy(civilian, "adminKey")
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
     }
 
     @Override

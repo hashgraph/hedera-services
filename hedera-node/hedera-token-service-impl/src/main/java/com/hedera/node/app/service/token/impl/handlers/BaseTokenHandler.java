@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
+import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -406,6 +407,21 @@ public class BaseTokenHandler {
                 .token(op.token())
                 .build();
         return op.equals(defaultWithExpiry);
+    }
+
+    /**
+     * Check if TokenUpdateOp wants to remove some of the low priority keys or the admin key
+     * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey, metadatKey
+     */
+    public static boolean containsKeyRemoval(@NonNull final TokenUpdateTransactionBody op) {
+        return op.hasAdminKey() && isKeyRemoval(op.adminKey())
+                || op.hasWipeKey() && isKeyRemoval(op.wipeKey())
+                || op.hasKycKey() && isKeyRemoval(op.kycKey())
+                || op.hasSupplyKey() && isKeyRemoval(op.supplyKey())
+                || op.hasFreezeKey() && isKeyRemoval(op.freezeKey())
+                || op.hasFeeScheduleKey() && isKeyRemoval(op.feeScheduleKey())
+                || op.hasPauseKey() && isKeyRemoval(op.pauseKey())
+                || op.hasMetadataKey() && isKeyRemoval(op.metadataKey());
     }
 
     /**
