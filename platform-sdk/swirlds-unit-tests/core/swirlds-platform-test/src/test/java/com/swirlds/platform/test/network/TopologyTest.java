@@ -107,7 +107,7 @@ class TopologyTest {
     @MethodSource({"failing", "topologicalVariations", "fullyConnected"})
     void testRandomGraphs(final int numNodes, final int numNeighbors, final long seed) throws Exception {
         System.out.println("numNodes = " + numNodes + ", numNeighbors = " + numNeighbors + ", seed = " + seed);
-        final RandomGraph randomGraph = new RandomGraph(numNodes, numNeighbors, seed);
+        final RandomGraph randomGraph = new RandomGraph(new Random(), numNodes, numNeighbors, seed);
 
         testRandomGraphWithSets(randomGraph, numNodes, numNeighbors);
         testRandomGraphTestIterative(randomGraph, numNodes, numNeighbors, seed);
@@ -121,7 +121,7 @@ class TopologyTest {
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
             final NodeId outOfBoundsId = addressBook.getNextNodeId();
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);
-            final NetworkTopology topology = new StaticTopology(addressBook, thisNodeId, numNeighbors);
+            final NetworkTopology topology = new StaticTopology(new Random(), addressBook, thisNodeId, numNeighbors);
             final List<NodeId> neighbors = topology.getNeighbors();
             final List<NodeId> expected = IntStream.range(0, numNodes)
                     .mapToObj(addressBook::getNodeId)

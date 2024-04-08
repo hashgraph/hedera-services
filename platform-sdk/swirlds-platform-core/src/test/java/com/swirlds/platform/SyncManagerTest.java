@@ -73,7 +73,7 @@ class SyncManagerTest {
             this.selfId = addressBook.getNodeId(0);
             final int size = addressBook.getSize();
 
-            connectionGraph = new RandomGraph(size, 40, 0);
+            connectionGraph = new RandomGraph(new Random(), size, 40, 0);
             configuration = new TestConfigBuilder()
                     .withValue(ReconnectConfig_.FALLEN_BEHIND_THRESHOLD, "0.25")
                     .withValue(EventConfig_.EVENT_INTAKE_QUEUE_THROTTLE_SIZE, "100")

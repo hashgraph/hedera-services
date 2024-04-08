@@ -29,6 +29,7 @@ import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +39,7 @@ class FallenBehindManagerTest {
             new RandomAddressBookGenerator().setSize(numNodes).build();
     final double fallenBehindThreshold = 0.5;
     final NodeId selfId = addressBook.getNodeId(0);
-    final RandomGraph graph = new RandomGraph(numNodes, numNodes + (numNodes % 2), numNodes);
+    final RandomGraph graph = new RandomGraph(new Random(), numNodes, numNodes + (numNodes % 2), numNodes);
     final AtomicInteger platformNotification = new AtomicInteger(0);
     final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
     final ReconnectConfig config = new TestConfigBuilder()
