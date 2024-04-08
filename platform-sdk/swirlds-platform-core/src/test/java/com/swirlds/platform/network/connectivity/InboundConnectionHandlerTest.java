@@ -54,13 +54,14 @@ import java.util.Random;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 class InboundConnectionHandlerTest {
+    /**
+     * asserts that an inbound connection successfully identifies a peer
+     */
     @Test
-    @DisplayName("inbound connection successfully identifies a peer")
     void handleInboundConnectionTestOnePeer() throws IOException {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(getConfig())
@@ -112,8 +113,10 @@ class InboundConnectionHandlerTest {
         inbound.handle(clientSocket, peerInfoList);
     }
 
+    /**
+     * asserts that when an inbound connection unsuccessfully identifies a peer, connection is dropped
+     */
     @Test
-    @DisplayName("inbound connection unsuccessfully identifies a peer, connection is dropped")
     void handleInboundConnectionTestNoPeer() {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(getConfig())

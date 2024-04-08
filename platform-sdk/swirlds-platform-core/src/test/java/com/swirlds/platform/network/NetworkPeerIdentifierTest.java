@@ -17,7 +17,11 @@
 package com.swirlds.platform.network;
 
 import static com.swirlds.platform.crypto.CryptoStatic.loadKeys;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
@@ -40,79 +44,79 @@ import java.security.cert.PKIXParameters;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class NetworkPeerIdentifierTest {
+    final PlatformContext platformContext = mock(PlatformContext.class);
+    List<PeerInfo> peerInfoList = null;
+    PublicStores publicStores = null;
+
+    @BeforeEach
+    void setUp() throws URISyntaxException, KeyLoadingException, KeyStoreException {
+        when(platformContext.getTime()).thenReturn(Time.getCurrent());
+        final KeyStore publicKeys = loadKeys(
+                ResourceLoader.getFile("preGeneratedKeysAndCerts/").resolve("publicMainnet.pfx"),
+                "password".toCharArray());
+        final Set<String> names = new HashSet<>();
+        publicKeys.aliases().asIterator().forEachRemaining(s -> {
+            // there's a weirdly named 'k-stream' alias inside the pfx, we exclude it
+            if (!s.equals("k-stream")) {
+                names.add(s.split("-")[1]);
+            }
+        });
+        publicStores = PublicStores.fromAllPublic(publicKeys, names.stream().toList());
+
+        peerInfoList = new ArrayList<>();
+        final Random random = new Random();
+        names.forEach(name -> {
+            final int id = random.nextInt(names.size());
+            final NodeId node = new NodeId(id);
+            final PeerInfo peer;
+            try {
+                peer = new PeerInfo(
+                        node,
+                        name,
+                        "127.0.0.1",
+                        Objects.requireNonNull(publicStores.getCertificate(KeyCertPurpose.SIGNING, name)));
+            } catch (final KeyLoadingException e) {
+                throw new RuntimeException(e);
+            }
+            peerInfoList.add(peer);
+        });
+    }
+
     /**
      * Tests that given a list of valid Swirlds production certificates (like the type used in mainnet),
      * {@link NetworkPeerIdentifier#identifyTlsPeer(Certificate[], List)} is able to successfully identify a matching
      * peer.
      */
     @Test
-    void testExtractPeerInfoWorksForMainnet()
-            throws URISyntaxException, KeyLoadingException, KeyStoreException, InvalidAlgorithmParameterException {
-
-        // sample node names from mainnet
-        final List<String> names =
-                List.of("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10");
-        // sample pfx file grabbed from mainnet
-        final KeyStore publicKeys = loadKeys(
-                ResourceLoader.getFile("preGeneratedKeysAndCerts/").resolve("publicMainnet.pfx"),
-                "password".toCharArray());
-        final PublicStores publicStores = PublicStores.fromAllPublic(publicKeys, names);
-
-        final List<PeerInfo> peerInfoList = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            final String name = names.get(i);
-            final NodeId node = new NodeId(i);
-            final PeerInfo peer = new PeerInfo(
-                    node,
-                    names.get(i),
-                    "127.0.0.1",
-                    Objects.requireNonNull(publicStores.getCertificate(KeyCertPurpose.SIGNING, name)));
-            peerInfoList.add(peer);
-        }
-
+    void testExtractPeerInfoWorksForMainnet() throws KeyStoreException, InvalidAlgorithmParameterException {
         final PKIXParameters params = new PKIXParameters(publicStores.agrTrustStore());
         final Set<TrustAnchor> trustAnchors = params.getTrustAnchors();
 
         final Certificate[] certificates =
                 trustAnchors.stream().map(TrustAnchor::getTrustedCert).toArray(Certificate[]::new);
-        final PeerInfo matchedPeer = new NetworkPeerIdentifier().identifyTlsPeer(certificates, peerInfoList);
-        Assertions.assertNotNull(matchedPeer);
+        for (final Certificate certificate : certificates) {
+            final PeerInfo matchedPeer = new NetworkPeerIdentifier(platformContext)
+                    .identifyTlsPeer(List.of(certificate).toArray(Certificate[]::new), peerInfoList);
+            Assertions.assertNotNull(matchedPeer);
+        }
     }
 
+    /**
+     * Asserts that when none of the peer's certificate match, identifyTlsPeer returns null
+     */
     @Test
-    @DisplayName(
-            "asserts that when none of the peer's certificate matches any of the certs in the trust store, identifyTlsPeer returns null")
     void testIdentifyTlsPeerReturnsNull()
-            throws URISyntaxException, KeyLoadingException, KeyStoreException, NoSuchAlgorithmException,
-                    NoSuchProviderException, KeyGeneratingException {
-        final List<String> names =
-                List.of("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10");
-        // sample pfx file grabbed from mainnet
-        final KeyStore publicKeys = loadKeys(
-                ResourceLoader.getFile("preGeneratedKeysAndCerts/").resolve("publicMainnet.pfx"),
-                "password".toCharArray());
-        final PublicStores publicStores = PublicStores.fromAllPublic(publicKeys, names);
-
-        // create list of peers with valid certs
-        final List<PeerInfo> peerInfoList = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            final String name = names.get(i);
-            final NodeId node = new NodeId(i);
-            final PeerInfo peer = new PeerInfo(
-                    node,
-                    names.get(i),
-                    "127.0.0.1",
-                    Objects.requireNonNull(publicStores.getCertificate(KeyCertPurpose.SIGNING, name)));
-            peerInfoList.add(peer);
-        }
+            throws NoSuchAlgorithmException, NoSuchProviderException, KeyGeneratingException {
 
         final SecureRandom secureRandom = CryptoUtils.getDetRandom();
 
@@ -128,7 +132,8 @@ class NetworkPeerIdentifierTest {
                 CryptoStatic.generateCertificate(name, rsaKeyPair2, name, rsaKeyPair2, secureRandom);
         final Certificate[] certificates = new Certificate[] {rsaCert, ecCert};
 
-        final PeerInfo matchedPeer = new NetworkPeerIdentifier().identifyTlsPeer(certificates, peerInfoList);
+        final PeerInfo matchedPeer =
+                new NetworkPeerIdentifier(platformContext).identifyTlsPeer(certificates, peerInfoList);
         Assertions.assertNull(matchedPeer);
     }
 }

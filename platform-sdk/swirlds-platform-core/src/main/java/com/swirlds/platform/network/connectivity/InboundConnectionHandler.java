@@ -58,6 +58,16 @@ public class InboundConnectionHandler {
     private final PlatformContext platformContext;
     private final NetworkPeerIdentifier networkPeerIdentifier;
 
+    /**
+     * constructor
+     *
+     * @param platformContext       the platform context
+     * @param connectionTracker     connection tracker for all platform connections
+     * @param networkPeerIdentifier network peer identifier for new connections
+     * @param selfId                self's node id
+     * @param newConnectionConsumer new connection consumer
+     * @param time                  platform time
+     */
     public InboundConnectionHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final ConnectionTracker connectionTracker,
@@ -79,20 +89,19 @@ public class InboundConnectionHandler {
      * Identifies the peer that has just established a new connection and create a {@link Connection}
      *
      * @param clientSocket the newly created socket
+     * @param peerInfoList the list of peers
      */
     public void handle(final Socket clientSocket, final List<PeerInfo> peerInfoList) {
         long acceptTime = 0;
-        NodeId otherId = null;
         try {
             acceptTime = System.currentTimeMillis();
             clientSocket.setTcpNoDelay(socketConfig.tcpNoDelay());
             clientSocket.setSoTimeout(socketConfig.timeoutSyncClientSocket());
 
-            if (clientSocket instanceof final SSLSocket sslSocket) {
-                final PeerInfo connectedPeer = networkPeerIdentifier.identifyTlsPeer(
-                        sslSocket.getSession().getPeerCertificates(), peerInfoList);
-                otherId = Objects.requireNonNull(connectedPeer).nodeId();
-            }
+            final SSLSocket sslSocket = (SSLSocket) clientSocket;
+            final PeerInfo connectedPeer =
+                    networkPeerIdentifier.identifyTlsPeer(sslSocket.getSession().getPeerCertificates(), peerInfoList);
+            final NodeId otherId = Objects.requireNonNull(connectedPeer).nodeId();
 
             final SyncInputStream sis = SyncInputStream.createSyncInputStream(
                     platformContext, clientSocket.getInputStream(), socketConfig.bufferSize());

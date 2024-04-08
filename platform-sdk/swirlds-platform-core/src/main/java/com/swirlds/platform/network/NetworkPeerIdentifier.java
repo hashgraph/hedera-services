@@ -19,7 +19,7 @@ package com.swirlds.platform.network;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
-import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -27,6 +27,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,11 +44,15 @@ public class NetworkPeerIdentifier {
     /**
      * limits the frequency of error log statements
      */
-    private static final RateLimitedLogger noPeerFoundLogger =
-            new RateLimitedLogger(logger, Time.getCurrent(), Duration.ofMinutes(5));
+    private final RateLimitedLogger noPeerFoundLogger;
 
-    private static final RateLimitedLogger multiplePeersFoundLogger =
-            new RateLimitedLogger(logger, Time.getCurrent(), Duration.ofMinutes(5));
+    private final RateLimitedLogger multiplePeersFoundLogger;
+
+    public NetworkPeerIdentifier(@NonNull final PlatformContext platformContext) {
+        Objects.requireNonNull(platformContext);
+        noPeerFoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(5));
+        multiplePeersFoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(5));
+    }
 
     /**
      * identifies a client on the other end of the socket using their signing certificate.
@@ -57,8 +62,17 @@ public class NetworkPeerIdentifier {
      * @return info of the identified peer
      */
     public @Nullable PeerInfo identifyTlsPeer(
-            final @NonNull Certificate[] certs, final @NonNull List<PeerInfo> peerInfoList) {
+            @NonNull final Certificate[] certs, @NonNull final List<PeerInfo> peerInfoList) {
+        Objects.requireNonNull(certs);
+        Objects.requireNonNull(peerInfoList);
+        if (certs.length == 0) {
+            return null;
+        }
+
         PeerInfo matchingPair = null;
+        // the peer certificates chain is an ordered array of peer certificates,
+        // with the peer's own certificate first followed by any certificate authorities.
+        // See https://www.rfc-editor.org/rfc/rfc5246
         final X509Certificate agreementCert = (X509Certificate) certs[0];
         final Set<PeerInfo> peers = peerInfoList.stream()
                 .filter(peerInfo -> ((X509Certificate) peerInfo.signingCertificate())
@@ -69,7 +83,7 @@ public class NetworkPeerIdentifier {
         if (peer.isEmpty()) {
             noPeerFoundLogger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
-                    "Unable to find a matching peer with the presented certificate {}.",
+                    "Unable to identify peer with the presented certificate {}.",
                     agreementCert);
         } else {
             if (peers.size() > 1) {
