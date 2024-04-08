@@ -152,8 +152,7 @@ public class SignedState implements SignedStateInfo {
 
     /**
      * If false, delete signed states on the thread that removes the last reference count. Otherwise, let the background
-     * deletion handler delete the state. This should be true in production environments and false in unit test
-     * environments that are not set up with a {@link StateGarbageCollector}.
+     * deletion handler delete the state.
      */
     private final boolean deleteOnBackgroundThread;
 

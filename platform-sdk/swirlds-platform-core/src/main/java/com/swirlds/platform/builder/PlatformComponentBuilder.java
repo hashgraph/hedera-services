@@ -247,9 +247,9 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Build the event signature validator if it has not yet been built.If one has been provided via
+     * Build the event signature validator if it has not yet been built. If one has been provided via
      * {@link #withEventSignatureValidator(EventSignatureValidator)}, that validator will be used. If this method is
-     * called more than once, only the first call will build the event signature validator.Otherwise, the default
+     * called more than once, only the first call will build the event signature validator. Otherwise, the default
      * validator will be created and returned.
      */
     @NonNull
