@@ -46,6 +46,7 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -56,7 +57,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,7 +100,7 @@ class FileSystemDeleteTest extends FileTestBase {
     private FileFeeBuilder usageEstimator;
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     protected Configuration testConfig;
 
@@ -112,7 +112,7 @@ class FileSystemDeleteTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         testConfig = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableFileStore(writableStates, testConfig, metrics);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
         when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
@@ -138,7 +138,7 @@ class FileSystemDeleteTest extends FileTestBase {
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates, testConfig, metrics);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -168,7 +168,7 @@ class FileSystemDeleteTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates, testConfig, metrics);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));

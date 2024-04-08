@@ -17,26 +17,29 @@
 package com.swirlds.virtualmap.internal.reconnect;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
-import static com.swirlds.virtualmap.internal.Path.getLeftChildPath;
-import static com.swirlds.virtualmap.internal.Path.getRightChildPath;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
+import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,31 +47,25 @@ import org.apache.logging.log4j.Logger;
 /**
  * An implementation of {@link TeacherTreeView} designed for virtual merkle trees.
  *
+ * <p>This learner tree view creates two tasks running in the provided work group. One task
+ * is responsible for sending requests to the teacher, the other one receives responses. Once
+ * both tasks are completed, the corresponding virtual map is fully synchronized with the
+ * teacher.
+ *
+ * <p>This implementation is supposed to work with {@link LearnerPullVirtualTreeView} on the
+ * learner side.
+ *
  * @param <K>
  * 		The key
  * @param <V>
  * 		The value
  */
-public final class VirtualTeacherTreeView<K extends VirtualKey, V extends VirtualValue>
+public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualValue>
         extends VirtualTreeViewBase<K, V> implements TeacherTreeView<Long> {
 
-    private static final Logger logger = LogManager.getLogger(VirtualTeacherTreeView.class);
+    private static final Logger logger = LogManager.getLogger(TeacherPullVirtualTreeView.class);
 
-    /**
-     * A queue of the nodes (by path) that we are about to handle. Note that ConcurrentBitSetQueue
-     * cleans up after itself in "chunks", such that we don't end up consuming a ton of memory.
-     */
-    private final ConcurrentBitSetQueue handleQueue = new ConcurrentBitSetQueue();
-
-    /**
-     * A queue of the nodes (by path) that we expect responses for.
-     */
-    private final ConcurrentBitSetQueue expectedResponseQueue = new ConcurrentBitSetQueue();
-
-    /**
-     * Keeps track of responses from learner about known, unknown, and not known nodes.
-     */
-    private final ConcurrentNodeStatusTracker nodeStatusTracker = new ConcurrentNodeStatusTracker(Long.MAX_VALUE);
+    private final ReconnectConfig reconnectConfig;
 
     /**
      * The {@link RecordAccessor} used for accessing the original map state.
@@ -81,7 +78,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
     private final CountDownLatch ready = new CountDownLatch(1);
 
     /**
-     * Create a new {@link VirtualTeacherTreeView}.
+     * Create a new {@link TeacherPullVirtualTreeView}.
      *
      * @param threadManager
      * 		responsible for creating and managing threads
@@ -92,15 +89,15 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      * @param pipeline
      * 		The pipeline managing the virtual map.
      */
-    public VirtualTeacherTreeView(
+    public TeacherPullVirtualTreeView(
             final ThreadManager threadManager,
+            final ReconnectConfig reconnectConfig,
             final VirtualRootNode<K, V> root,
             final VirtualStateAccessor state,
             final VirtualPipeline pipeline) {
-
         // There is no distinction between originalState and reconnectState in this implementation
         super(root, state, state);
-
+        this.reconnectConfig = reconnectConfig;
         new ThreadConfiguration(threadManager)
                 .setRunnable(() -> {
                     records = pipeline.detachCopy(root);
@@ -110,6 +107,63 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
                 .setThreadName("detacher")
                 .build()
                 .start();
+    }
+
+    @Override
+    public void startTeacherTasks(
+            final TeachingSynchronizer teachingSynchronizer,
+            final Time time,
+            final StandardWorkGroup workGroup,
+            final MerkleDataInputStream inputStream,
+            final MerkleDataOutputStream outputStream,
+            final Queue<TeacherSubtree> subtrees) {
+        final AsyncOutputStream<PullVirtualTreeResponse> out =
+                teachingSynchronizer.buildOutputStream(workGroup, outputStream);
+        out.start();
+
+        final TeacherPullVirtualTreeReceiveTask teacherReceiveTask =
+                new TeacherPullVirtualTreeReceiveTask(time, reconnectConfig, workGroup, inputStream, out, this);
+        teacherReceiveTask.exec();
+    }
+
+    private boolean isLeaf(final long path) {
+        return (path >= reconnectState.getFirstLeafPath()) && (path <= reconnectState.getLastLeafPath());
+    }
+
+    /**
+     * Writes the virtual node identified by a given path to the output stream.
+     *
+     * <p>For the root node (path 0), reconnect state information is written: the first leaf path (long)
+     * and the last leaf path (long). Other internal nodes are not written at all.
+     *
+     * <p>For dirty leaf nodes, the corresponding leaf records are written. Clean leaf nodes aren't
+     * written at all.
+     *
+     * @param out the output stream
+     * @param path the virtual path
+     * @param isClean indicates if the virtual node on the learner side matches what's on the teacher
+     * @throws IOException if an I/O error occurs
+     */
+    public void writeNode(final SerializableDataOutputStream out, final long path, final boolean isClean)
+            throws IOException {
+        checkValidNode(path, reconnectState);
+        if (path == 0) {
+            out.writeLong(reconnectState.getFirstLeafPath());
+            out.writeLong(reconnectState.getLastLeafPath());
+        }
+        if (!isClean && isLeaf(path) && (reconnectState.getFirstLeafPath() > 0)) {
+            out.writeSerializable(records.findLeafRecord(path, false), false);
+        }
+    }
+
+    /**
+     * Read the virtual node hash identified by a given path.
+     *
+     * @param path the virtual path
+     * @return the virtual node hash
+     */
+    public Hash loadHash(final long path) {
+        return records.findHash(path);
     }
 
     /**
@@ -133,8 +187,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public void addToHandleQueue(final Long node) {
-        checkValidNode(node, reconnectState);
-        handleQueue.add(node);
+        throw new UnsupportedOperationException("TeacherPullVirtualTreeView.addToHandleQueue()");
     }
 
     /**
@@ -142,7 +195,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public Long getNextNodeToHandle() {
-        return handleQueue.remove();
+        throw new UnsupportedOperationException("TeacherPullVirtualTreeView.getNextNodeToHandle()");
     }
 
     /**
@@ -150,7 +203,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public boolean areThereNodesToHandle() {
-        return !handleQueue.isEmpty();
+        throw new UnsupportedOperationException("TeacherPullVirtualTreeView.areThereNodesToHandle()");
     }
 
     /**
@@ -158,9 +211,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public Long getChildAndPrepareForQueryResponse(final Long parent, final int childIndex) {
-        final long child = getChild(parent, childIndex);
-        expectedResponseQueue.add(child);
-        return child;
+        throw new UnsupportedOperationException("TeacherPullVirtualTreeView.getChildAndPrepareForQueryResponse()");
     }
 
     /**
@@ -168,7 +219,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public Long getNodeForNextResponse() {
-        return expectedResponseQueue.remove();
+        throw new UnsupportedOperationException("TeacherPullVirtualTreeView.getNodeForNextResponse()");
     }
 
     /**
@@ -176,7 +227,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public boolean isResponseExpected() {
-        return !expectedResponseQueue.isEmpty();
+        throw new UnsupportedOperationException("TeacherPullVirtualTreeView.isResponseExpected()");
     }
 
     /**
@@ -184,10 +235,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public void registerResponseForNode(final Long node, final boolean learnerHasNode) {
-        final ConcurrentNodeStatusTracker.Status status = learnerHasNode
-                ? ConcurrentNodeStatusTracker.Status.KNOWN
-                : ConcurrentNodeStatusTracker.Status.NOT_KNOWN;
-        nodeStatusTracker.set(node, status);
+        throw new UnsupportedOperationException("TeacherPullVirtualTreeView.registerResponseForNode()");
     }
 
     /**
@@ -195,7 +243,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public boolean hasLearnerConfirmedFor(final Long node) {
-        return nodeStatusTracker.getStatus(node) == ConcurrentNodeStatusTracker.Status.KNOWN;
+        throw new UnsupportedOperationException("TeacherPullVirtualTreeView.hasLearnerConfirmedFor()");
     }
 
     /**
@@ -203,10 +251,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public void serializeLeaf(final SerializableDataOutputStream out, final Long leaf) throws IOException {
-        checkValidLeaf(leaf, reconnectState);
-        final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(leaf, false);
-        assert leafRecord != null : "Unexpected null leaf record at path=" + leaf;
-        out.writeSerializable(leafRecord, false);
+        throw new UnsupportedOperationException("TeacherPullVirtualTreeView.serializeLeaf()");
     }
 
     /**
@@ -214,55 +259,12 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      */
     @Override
     public void serializeInternal(final SerializableDataOutputStream out, final Long internal) throws IOException {
-        checkValidInternal(internal, reconnectState);
-        // We don't need to really serialize anything here, except the learner needs a long. So we'll send a long.
-        out.writeLong(internal); // <--- works for VIRTUAL_MAP or any virtual internal node
-        if (internal == ROOT_PATH) {
-            out.writeLong(reconnectState.getFirstLeafPath());
-            out.writeLong(reconnectState.getLastLeafPath());
-        }
+        throw new UnsupportedOperationException("TeacherPullVirtualTreeView.serializeInternal()");
     }
 
     @Override
     public void writeChildHashes(final Long parent, final SerializableDataOutputStream out) throws IOException {
-        checkValidInternal(parent, reconnectState);
-        if (parent == ROOT_PATH && reconnectState.getLastLeafPath() == INVALID_PATH) {
-            // out.writeSerializableList() writes just a single int if the list is empty
-            out.writeInt(0);
-            return;
-        }
-        final int size;
-        if (parent > ROOT_PATH || (parent == ROOT_PATH && reconnectState.getLastLeafPath() > 1)) {
-            size = 2;
-        } else if (parent == ROOT_PATH && reconnectState.getLastLeafPath() == 1) {
-            size = 1;
-        } else {
-            throw new MerkleSynchronizationException("Unexpected parent " + parent);
-        }
-        out.writeInt(size);
-        // All same class? true
-        out.writeBoolean(true);
-
-        final long leftPath = getLeftChildPath(parent);
-        // Is null? false
-        out.writeBoolean(false);
-        // Class version is written for the first entry only
-        out.writeInt(Hash.CLASS_VERSION);
-        // Write hash in SelfSerializable format
-        if (!records.findAndWriteHash(leftPath, out)) {
-            throw new MerkleSynchronizationException("Null hash for path = " + leftPath);
-        }
-
-        if (size == 2) {
-            final long rightPath = getRightChildPath(parent);
-            // Is null? false
-            out.writeBoolean(false);
-            // Class version is not written
-            // Write hash in SelfSerializable format
-            if (!records.findAndWriteHash(rightPath, out)) {
-                throw new MerkleSynchronizationException("Null hash for path = " + rightPath);
-            }
-        }
+        throw new UnsupportedOperationException("TeacherPullVirtualTreeView.writeChildHashes()");
     }
 
     /**

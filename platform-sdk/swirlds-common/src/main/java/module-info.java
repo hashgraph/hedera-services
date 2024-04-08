@@ -31,8 +31,8 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.route;
     exports com.swirlds.common.merkle.synchronization;
     exports com.swirlds.common.merkle.synchronization.config;
-    exports com.swirlds.common.merkle.synchronization.internal;
     exports com.swirlds.common.merkle.synchronization.streams;
+    exports com.swirlds.common.merkle.synchronization.task;
     exports com.swirlds.common.merkle.synchronization.utility;
     exports com.swirlds.common.merkle.synchronization.views;
     exports com.swirlds.common.merkle.utility;
@@ -148,6 +148,7 @@ module com.swirlds.common {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;
