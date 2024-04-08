@@ -18,10 +18,11 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -47,7 +48,7 @@ public class PlatformCoordinator {
 
     private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
-    private final EventSignatureValidatorWiring eventSignatureValidatorWiring;
+    private final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring;
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ShadowgraphWiring shadowgraphWiring;
@@ -79,7 +80,7 @@ public class PlatformCoordinator {
             @NonNull final ObjectCounter hashingObjectCounter,
             @NonNull final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring,
             @NonNull final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring,
-            @NonNull final EventSignatureValidatorWiring eventSignatureValidatorWiring,
+            @NonNull final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring,
             @NonNull final OrphanBufferWiring orphanBufferWiring,
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final ShadowgraphWiring shadowgraphWiring,
@@ -123,7 +124,7 @@ public class PlatformCoordinator {
 
         internalEventValidatorWiring.flush();
         eventDeduplicatorWiring.flush();
-        eventSignatureValidatorWiring.flushRunnable().run();
+        eventSignatureValidatorWiring.flush();
         orphanBufferWiring.flushRunnable().run();
         inOrderLinkerWiring.flushRunnable().run();
         shadowgraphWiring.flushRunnable().run();

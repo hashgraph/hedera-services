@@ -189,20 +189,18 @@ public class HandleHederaOperations implements HederaOperations {
     public long lazyCreationCostInGas(@NonNull final Address recipient) {
         final var payerId = context.payer();
         // Calculate gas for a CryptoCreateTransactionBody with an alias address
-        final var createFee = gasCalculator.topLevelGasRequirement(
-                TransactionBody.newBuilder()
-                        .cryptoCreateAccount(CREATE_TXN_BODY_BUILDER.alias(tuweniToPbjBytes(recipient)))
-                        .build(),
-                payerId);
+        final var synthCreation = TransactionBody.newBuilder()
+                .cryptoCreateAccount(CREATE_TXN_BODY_BUILDER.alias(tuweniToPbjBytes(recipient)))
+                .build();
+        final var createFee = gasCalculator.canonicalPriceInTinybars(synthCreation, payerId);
 
         // Calculate gas for an update TransactionBody
-        final var updateFee = gasCalculator.topLevelGasRequirement(
-                TransactionBody.newBuilder()
-                        .cryptoUpdateAccount(UPDATE_TXN_BODY_BUILDER)
-                        .build(),
-                payerId);
+        final var synthUpdate = TransactionBody.newBuilder()
+                .cryptoUpdateAccount(UPDATE_TXN_BODY_BUILDER)
+                .build();
+        final var updateFee = gasCalculator.canonicalPriceInTinybars(synthUpdate, payerId);
 
-        return createFee + updateFee;
+        return (createFee + updateFee) / gasCalculator.topLevelGasPrice();
     }
 
     /**

@@ -55,8 +55,11 @@ public class MerkleBenchmarkUtils {
     public static <T extends MerkleNode> T hashAndTestSynchronization(
             final MerkleNode startingTree,
             final MerkleNode desiredTree,
+            final long randomSeed,
             final long delayStorageMicroseconds,
+            final double delayStorageFuzzRangePercent,
             final long delayNetworkMicroseconds,
+            final double delayNetworkFuzzRangePercent,
             final Configuration configuration)
             throws Exception {
         System.out.println("------------");
@@ -74,8 +77,11 @@ public class MerkleBenchmarkUtils {
         return testSynchronization(
                 startingTree,
                 desiredTree,
+                randomSeed,
                 delayStorageMicroseconds,
+                delayStorageFuzzRangePercent,
                 delayNetworkMicroseconds,
+                delayNetworkFuzzRangePercent,
                 configuration,
                 reconnectConfig);
     }
@@ -87,8 +93,11 @@ public class MerkleBenchmarkUtils {
     private static <T extends MerkleNode> T testSynchronization(
             final MerkleNode startingTree,
             final MerkleNode desiredTree,
+            final long randomSeed,
             final long delayStorageMicroseconds,
+            final double delayStorageFuzzRangePercent,
             final long delayNetworkMicroseconds,
+            final double delayNetworkFuzzRangePercent,
             final Configuration configuration,
             final ReconnectConfig reconnectConfig)
             throws Exception {
@@ -132,8 +141,11 @@ public class MerkleBenchmarkUtils {
                         streams.getLearnerInput(),
                         streams.getLearnerOutput(),
                         startingTree,
+                        randomSeed,
                         delayStorageMicroseconds,
+                        delayStorageFuzzRangePercent,
                         delayNetworkMicroseconds,
+                        delayNetworkFuzzRangePercent,
                         () -> {
                             try {
                                 streams.disconnect();
@@ -148,8 +160,11 @@ public class MerkleBenchmarkUtils {
                         streams.getTeacherInput(),
                         streams.getTeacherOutput(),
                         desiredTree,
+                        randomSeed,
                         delayStorageMicroseconds,
+                        delayStorageFuzzRangePercent,
                         delayNetworkMicroseconds,
+                        delayNetworkFuzzRangePercent,
                         () -> {
                             try {
                                 streams.disconnect();

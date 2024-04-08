@@ -19,7 +19,6 @@ package com.swirlds.common.wiring.schedulers;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.internal.DefaultSquelcher;
 import com.swirlds.common.wiring.schedulers.internal.Squelcher;
@@ -93,7 +92,7 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
             this.squelcher = new ThrowingSquelcher();
         }
 
-        primaryOutputWire = new StandardOutputWire<>(model, name);
+        primaryOutputWire = buildPrimaryOutputWire(model, name);
         this.insertionIsBlocking = insertionIsBlocking;
     }
 
@@ -106,8 +105,21 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
      * @return the input wire
      */
     @NonNull
-    public final <I> BindableInputWire<I, OUT> buildInputWire(@NonNull final String name) {
+    public <I> BindableInputWire<I, OUT> buildInputWire(@NonNull final String name) {
         return new BindableInputWire<>(model, this, name);
+    }
+
+    /**
+     * Build the primary output wire for this scheduler.
+     *
+     * @param model the wiring model that contains this scheduler
+     * @param name  the name of this scheduler
+     * @return the primary output wire
+     */
+    @NonNull
+    protected StandardOutputWire<OUT> buildPrimaryOutputWire(
+            @NonNull final StandardWiringModel model, @NonNull final String name) {
+        return new StandardOutputWire<>(model, name);
     }
 
     /**
@@ -196,7 +208,7 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
      * tasks. Schedulers do not track the number of unprocessed tasks by default. This method will always return
      * {@link ObjectCounter#COUNT_UNDEFINED} unless one of the following is true:
      * <ul>
-     * <li>{@link TaskSchedulerMetricsBuilder#withUnhandledTaskMetricEnabled(boolean)} is called with the value
+     * <li>{@link TaskSchedulerBuilder#withUnhandledTaskMetricEnabled(boolean)} is called with the value
      * true</li>
      * <li>{@link TaskSchedulerBuilder#withUnhandledTaskCapacity(long)} is passed a positive value</li>
      * <li>{@link TaskSchedulerBuilder#withOnRamp(ObjectCounter)} is passed a counter that is not a no op counter</li>

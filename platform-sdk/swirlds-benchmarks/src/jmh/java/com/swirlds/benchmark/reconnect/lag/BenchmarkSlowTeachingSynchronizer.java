@@ -36,8 +36,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
 
+    private final long randomSeed;
     private final long delayStorageMicroseconds;
+    private final double delayStorageFuzzRangePercent;
     private final long delayNetworkMicroseconds;
+    private final double delayNetworkFuzzRangePercent;
 
     /**
      * Create a new teaching synchronizer with simulated latency.
@@ -47,8 +50,11 @@ public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
             final MerkleDataInputStream in,
             final MerkleDataOutputStream out,
             final MerkleNode root,
+            final long randomSeed,
             final long delayStorageMicroseconds,
+            final double delayStorageFuzzRangePercent,
             final long delayNetworkMicroseconds,
+            final double delayNetworkFuzzRangePercent,
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig) {
         super(
@@ -60,8 +66,12 @@ public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
                 root,
                 breakConnection,
                 reconnectConfig);
+
+        this.randomSeed = randomSeed;
         this.delayStorageMicroseconds = delayStorageMicroseconds;
+        this.delayStorageFuzzRangePercent = delayStorageFuzzRangePercent;
         this.delayNetworkMicroseconds = delayNetworkMicroseconds;
+        this.delayNetworkFuzzRangePercent = delayNetworkFuzzRangePercent;
     }
 
     /**
@@ -71,6 +81,13 @@ public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
     protected <T> AsyncOutputStream<Lesson<T>> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
         return new BenchmarkSlowAsyncOutputStream<>(
-                out, workGroup, delayStorageMicroseconds, delayNetworkMicroseconds, reconnectConfig);
+                out,
+                workGroup,
+                randomSeed,
+                delayStorageMicroseconds,
+                delayStorageFuzzRangePercent,
+                delayNetworkMicroseconds,
+                delayNetworkFuzzRangePercent,
+                reconnectConfig);
     }
 }

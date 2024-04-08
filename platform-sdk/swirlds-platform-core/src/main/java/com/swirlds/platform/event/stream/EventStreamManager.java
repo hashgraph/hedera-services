@@ -17,6 +17,7 @@
 package com.swirlds.platform.event.stream;
 
 import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -31,6 +32,7 @@ public interface EventStreamManager {
      *
      * @param events the list of events to add
      */
+    @InputWireLabel("consensus events")
     void addEvents(@NonNull final List<EventImpl> events);
 
     /**

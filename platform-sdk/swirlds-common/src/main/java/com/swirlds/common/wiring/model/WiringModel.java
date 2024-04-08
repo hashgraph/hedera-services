@@ -18,11 +18,9 @@ package com.swirlds.common.wiring.model;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.model.internal.StandardWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerMetricsBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,16 +39,12 @@ public interface WiringModel extends Startable, Stoppable {
      * Build a new wiring model instance.
      *
      * @param platformContext the platform context
-     * @param time            provides wall clock time
      * @param defaultPool     the default fork join pool, schedulers not explicitly assigned a pool will use this one
      * @return a new wiring model instance
      */
     @NonNull
-    static WiringModel create(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
-            @NonNull final ForkJoinPool defaultPool) {
-        return new StandardWiringModel(platformContext.getMetrics(), time, defaultPool);
+    static WiringModel create(@NonNull final PlatformContext platformContext, @NonNull final ForkJoinPool defaultPool) {
+        return new StandardWiringModel(platformContext, defaultPool);
     }
 
     /**
@@ -63,16 +57,6 @@ public interface WiringModel extends Startable, Stoppable {
      */
     @NonNull
     <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name);
-
-    /**
-     * Get a new task scheduler metrics builder. Can be passed to
-     * {@link TaskSchedulerBuilder#withMetricsBuilder(TaskSchedulerMetricsBuilder)} to add metrics to the task
-     * scheduler.
-     *
-     * @return a new task scheduler metrics builder
-     */
-    @NonNull
-    TaskSchedulerMetricsBuilder metricsBuilder();
 
     /**
      * Check to see if there is cyclic backpressure in the wiring model. Cyclical back pressure can lead to deadlocks,
@@ -151,6 +135,18 @@ public interface WiringModel extends Startable, Stoppable {
      */
     @NonNull
     OutputWire<Instant> buildHeartbeatWire(final double frequency);
+
+    /**
+     * Prevent the JVM from exiting even if there are no non-daemon threads outside the wiring model. Calling this
+     * method while the JVM exit is already prevented has no effect.
+     */
+    void preventJvmExit();
+
+    /**
+     * If the JVM is currently being prevented from exiting due to a call to {@link #preventJvmExit()}, then this method
+     * will allow the JVM to exit. Calling this method while the JVM exit is already permitted has no effect.
+     */
+    void permitJvmExit();
 
     /**
      * Start everything in the model that needs to be started. Performs static analysis of the wiring topology and

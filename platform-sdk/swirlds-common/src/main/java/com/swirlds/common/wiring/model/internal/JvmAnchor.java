@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.common.wiring.model.internal;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.threading.manager.ThreadManager;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Creates a non-daemon JVM thread that does nothing. Keeps the JVM alive if all other threads are daemon threads.
@@ -33,16 +30,10 @@ public class JvmAnchor implements Startable, Stoppable {
 
     /**
      * Constructor.
-     *
-     * @param threadManager the thread manager
      */
-    public JvmAnchor(@NonNull final ThreadManager threadManager) {
-        thread = new ThreadConfiguration(threadManager)
-                .setComponent("platform")
-                .setThreadName("jvm-anchor")
-                .setRunnable(this::run)
-                .setDaemon(false)
-                .build();
+    public JvmAnchor() {
+        thread = new Thread(this::run, "<jvm-anchor>");
+        thread.setDaemon(false); // important
     }
 
     /**

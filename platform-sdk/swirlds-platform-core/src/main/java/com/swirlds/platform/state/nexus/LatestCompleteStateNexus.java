@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.nexus;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -24,15 +25,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A nexus that holds the latest complete signed state.
  */
 public interface LatestCompleteStateNexus extends SignedStateNexus {
+
     /**
-     * Notify the nexus that a new signed state has been created. This is useful for the nexus to know when it should
-     * clear the latest complete state. This is used so that we don't hold the latest complete state forever in case we
-     * have trouble gathering signatures.
-     *
-     * @param newStateRound a new signed state round that is not yet complete
+     * Update the current event window. May cause the latest complete state to be thrown away if it has been a long
+     * time since a state has been completely signed.
      */
-    @InputWireLabel("incomplete state")
-    void newIncompleteState(@NonNull final Long newStateRound);
+    @InputWireLabel("non-ancient event window")
+    void updateEventWindow(@NonNull NonAncientEventWindow eventWindow);
 
     /**
      * Replace the current state with the given state if the given state is newer than the current state.
@@ -40,5 +39,5 @@ public interface LatestCompleteStateNexus extends SignedStateNexus {
      * @param reservedSignedState the new state
      */
     @InputWireLabel("complete state")
-    void setStateIfNewer(@NonNull final ReservedSignedState reservedSignedState);
+    void setStateIfNewer(@NonNull ReservedSignedState reservedSignedState);
 }

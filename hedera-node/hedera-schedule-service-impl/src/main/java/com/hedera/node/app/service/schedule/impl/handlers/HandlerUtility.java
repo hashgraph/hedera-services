@@ -210,9 +210,8 @@ public final class HandlerUtility {
         final TransactionID parentTransactionId = currentTransaction.transactionIDOrThrow();
         final ScheduleCreateTransactionBody createTransaction = currentTransaction.scheduleCreateOrThrow();
         final AccountID schedulerAccount = parentTransactionId.accountIDOrThrow();
-        final Timestamp providedExpirationTime = createTransaction.expirationTime();
         final long calculatedExpirationTime =
-                calculateExpiration(providedExpirationTime, currentConsensusTime, maxLifeSeconds);
+                calculateExpiration(createTransaction.expirationTime(), currentConsensusTime, maxLifeSeconds);
         final ScheduleID nullId = null;
 
         Schedule.Builder builder = Schedule.newBuilder();
@@ -223,6 +222,8 @@ public final class HandlerUtility {
         builder.schedulerAccountId(schedulerAccount);
         builder.scheduleValidStart(parentTransactionId.transactionValidStart());
         builder.calculatedExpirationSecond(calculatedExpirationTime);
+        builder.providedExpirationSecond(
+                createTransaction.expirationTimeOrElse(Timestamp.DEFAULT).seconds());
         builder.originalCreateTransaction(currentTransaction);
         builder.memo(createTransaction.memo());
         builder.scheduledTransaction(createTransaction.scheduledTransactionBody());
