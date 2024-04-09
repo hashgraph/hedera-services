@@ -210,8 +210,8 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final TokenDissociateTransactionBody op = txn.tokenDissociateOrThrow();
 
-        validateTruePreCheck(op.hasAccount(), INVALID_ACCOUNT_ID);
-
+        validateTruePreCheck(op.hasAccount() && op.accountOrThrow().accountNum() > 0L, INVALID_ACCOUNT_ID);
+        validateTruePreCheck(op.hasTokens(), INVALID_TOKEN_ID);
         validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokensOrThrow()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
     }
 
@@ -232,6 +232,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         // Construct the dissociation for each token ID
         final var dissociations = new ArrayList<Dissociation>();
         for (final var tokenId : tokenIds) {
+            validateTrue(tokenId.tokenNum() > 0, INVALID_TOKEN_ID);
             final var tokenRel = tokenRelStore.get(accountId, tokenId);
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 

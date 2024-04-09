@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
@@ -28,6 +29,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -42,6 +44,7 @@ import java.util.function.Function;
 public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
     private final String token;
     private final String account;
+    private ByteString alias = ByteString.EMPTY;
 
     @Override
     public HederaFunctionality type() {
@@ -51,6 +54,12 @@ public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
     public HapiTokenFreeze(final String token, final String account) {
         this.token = token;
         this.account = account;
+    }
+
+    public HapiTokenFreeze(final String token, final ByteString alias) {
+        this.token = token;
+        this.alias = alias;
+        this.account = null;
     }
 
     @Override
@@ -76,7 +85,12 @@ public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
-        final var aId = TxnUtils.asId(account, spec);
+        AccountID aId;
+        if (!alias.isEmpty()) {
+            aId = AccountID.newBuilder().setAlias(alias).build();
+        } else {
+            aId = TxnUtils.asId(account, spec);
+        }
         final var tId = TxnUtils.asTokenId(token, spec);
         final TokenFreezeAccountTransactionBody opBody = spec.txns()
                 .<TokenFreezeAccountTransactionBody, TokenFreezeAccountTransactionBody.Builder>body(
@@ -103,8 +117,10 @@ public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        final MoreObjects.ToStringHelper helper =
-                super.toStringHelper().add("token", token).add("account", account);
+        final MoreObjects.ToStringHelper helper = super.toStringHelper()
+                .add("token", token)
+                .add("account", account)
+                .add("alias", alias);
         return helper;
     }
 }

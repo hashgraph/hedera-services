@@ -20,6 +20,7 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -30,14 +31,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKycWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociateWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccountWithAlias;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -116,12 +121,52 @@ public class TokenManagementSpecs extends HapiSuite {
                 fungibleCommonMaxSupplyReachWork(),
                 mintingMaxLongValueWorks(),
                 nftMintProvidesMintedNftsAndNewTotalSupply(),
-                zeroUnitTokenOperationsWorkAsExpected());
+                zeroUnitTokenOperationsWorkAsExpected(),
+                aliasFormWorksForAllTokenOps());
     }
 
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    private HapiSpec aliasFormWorksForAllTokenOps() {
+        final var CIVILIAN = "civilian";
+        final var PAUSE_KEY = "pauseKey";
+        final var KYC_KEY = "kycKey";
+        final var PRIMARY = "primary";
+        final var partyAlias = "partyAlias";
+        final var counterAlias = "counterAlias";
+        return defaultHapiSpec("aliasFormWorksForAllTokenOps")
+                .given(
+                        newKeyNamed(partyAlias).shape(ED25519),
+                        newKeyNamed(counterAlias).shape(ED25519),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed(PAUSE_KEY),
+                        newKeyNamed(KYC_KEY),
+                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, partyAlias, ONE_HBAR)),
+                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, counterAlias, ONE_HBAR)))
+                .when(
+                        tokenCreate(PRIMARY)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .treasury(TOKEN_TREASURY)
+                                .pauseKey(PAUSE_KEY)
+                                .kycKey(KYC_KEY),
+                        withOpContext((spec, opLog) -> {
+                            final var key = spec.registry().getKey(partyAlias);
+                            final var alias = key.hasECDSASecp256K1() ? key.getECDSASecp256K1() : key.getEd25519();
+                            allRunFor(
+                                    spec,
+                                    tokenAssociateWithAlias(alias, PRIMARY),
+                                    grantTokenKycWithAlias(PRIMARY, alias));
+                        }),
+                        tokenPause(PRIMARY))
+                .then();
     }
 
     // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists

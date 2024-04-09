@@ -21,12 +21,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenDissociateUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -46,6 +48,7 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 
     private final String account;
     private final List<String> tokens = new ArrayList<>();
+    private ByteString alias = ByteString.EMPTY;
 
     @Override
     public HederaFunctionality type() {
@@ -54,6 +57,12 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 
     public HapiTokenDissociate(final String account, final String... tokens) {
         this.account = account;
+        this.tokens.addAll(List.of(tokens));
+    }
+
+    public HapiTokenDissociate(final ByteString alias, final String... tokens) {
+        this.account = null;
+        this.alias = alias;
         this.tokens.addAll(List.of(tokens));
     }
 
@@ -76,7 +85,12 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
-        final var aId = TxnUtils.asId(account, spec);
+        AccountID aId;
+        if (!alias.isEmpty()) {
+            aId = AccountID.newBuilder().setAlias(alias).build();
+        } else {
+            aId = TxnUtils.asId(account, spec);
+        }
         final TokenDissociateTransactionBody opBody = spec.txns()
                 .<TokenDissociateTransactionBody, TokenDissociateTransactionBody.Builder>body(
                         TokenDissociateTransactionBody.class, b -> {
@@ -104,8 +118,10 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        final MoreObjects.ToStringHelper helper =
-                super.toStringHelper().add("account", account).add("tokens", tokens);
+        final MoreObjects.ToStringHelper helper = super.toStringHelper()
+                .add("account", account)
+                .add("tokens", tokens)
+                .add("alias", alias);
         return helper;
     }
 }

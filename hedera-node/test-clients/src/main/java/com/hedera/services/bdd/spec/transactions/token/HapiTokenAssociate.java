@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenAssociateUsage;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -48,6 +49,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
     private String account;
     private List<String> tokens = new ArrayList<>();
     private Optional<ResponseCodeEnum[]> permissibleCostAnswerPrechecks = Optional.empty();
+    private ByteString alias = ByteString.EMPTY;
 
     @Override
     public HederaFunctionality type() {
@@ -56,6 +58,12 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
     public HapiTokenAssociate(String account, String... tokens) {
         this.account = account;
+        this.tokens.addAll(List.of(tokens));
+    }
+
+    public HapiTokenAssociate(ByteString alias, String... tokens) {
+        this.account = null;
+        this.alias = alias;
         this.tokens.addAll(List.of(tokens));
     }
 
@@ -138,7 +146,12 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
-        var aId = TxnUtils.asId(account, spec);
+        AccountID aId;
+        if (!alias.isEmpty()) {
+            aId = AccountID.newBuilder().setAlias(alias).build();
+        } else {
+            aId = TxnUtils.asId(account, spec);
+        }
         TokenAssociateTransactionBody opBody = spec.txns()
                 .<TokenAssociateTransactionBody, TokenAssociateTransactionBody.Builder>body(
                         TokenAssociateTransactionBody.class, b -> {
@@ -172,8 +185,10 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
-                super.toStringHelper().add("account", account).add("tokens", tokens);
+        MoreObjects.ToStringHelper helper = super.toStringHelper()
+                .add("account", account)
+                .add("tokens", tokens)
+                .add("alias", alias);
         return helper;
     }
 }

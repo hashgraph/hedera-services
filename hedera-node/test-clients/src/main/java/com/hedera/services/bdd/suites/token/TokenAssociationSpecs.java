@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -108,12 +109,29 @@ public class TokenAssociationSpecs extends HapiSuite {
                 contractInfoQueriesAsExpected(),
                 dissociateHasExpectedSemanticsForDeletedTokens(),
                 dissociateHasExpectedSemanticsForDissociatedContracts(),
-                canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury());
+                canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury(),
+                associateAndDissociateNeedsAccount());
     }
 
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    @HapiTest
+    private HapiSpec associateAndDissociateNeedsAccount() {
+        final var account = "account";
+        return defaultHapiSpec("dissociationNeedsAccount")
+                .given(
+                        newKeyNamed(SIMPLE),
+                        tokenCreate("a").decimals(1),
+                        cryptoCreate(account).key(SIMPLE).balance(0L))
+                .when(
+                        tokenAssociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasKnownStatus(INVALID_ACCOUNT_ID),
+                        tokenDissociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasKnownStatus(INVALID_ACCOUNT_ID))
+                .then(
+                        tokenAssociate(account, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID),
+                        tokenDissociate(account, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
     }
 
     @HapiTest
