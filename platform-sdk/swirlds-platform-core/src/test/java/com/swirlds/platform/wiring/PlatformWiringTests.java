@@ -72,16 +72,17 @@ class PlatformWiringTests {
 
         final PlatformComponentBuilder componentBuilder =
                 new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
+
         componentBuilder
                 .withEventHasher(mock(EventHasher.class))
                 .withInternalEventValidator(mock(InternalEventValidator.class))
                 .withEventDeduplicator(mock(EventDeduplicator.class))
                 .withEventSignatureValidator(mock(EventSignatureValidator.class))
-                .withStateGarbageCollector(mock(StateGarbageCollector.class));
+                .withStateGarbageCollector(mock(StateGarbageCollector.class))
+                .withOrphanBuffer(mock(OrphanBuffer.class));
 
         wiring.bind(
                 componentBuilder,
-                mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
                 mock(ConsensusEngine.class),
                 mock(SignedStateFileManager.class),

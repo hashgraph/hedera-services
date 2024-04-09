@@ -228,7 +228,7 @@ class OrphanBufferTests {
                 })
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
-        final OrphanBuffer orphanBuffer = new OrphanBuffer(
+        final DefaultOrphanBuffer orphanBuffer = new DefaultOrphanBuffer(
                 TestPlatformContextBuilder.create()
                         .withConfiguration(new TestConfigBuilder()
                                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, useBirthRoundForAncient)

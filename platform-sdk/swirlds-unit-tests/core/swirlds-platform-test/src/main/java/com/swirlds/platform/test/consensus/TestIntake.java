@@ -39,6 +39,7 @@ import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
@@ -46,7 +47,6 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
-import com.swirlds.platform.wiring.OrphanBufferWiring;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -61,7 +61,7 @@ public class TestIntake {
     private final ConsensusOutput output;
 
     private final ComponentWiring<EventHasher, GossipEvent> hasherWiring;
-    private final OrphanBufferWiring orphanBufferWiring;
+    private final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final WiringModel model;
     private final int roundsNonAncient;
@@ -90,8 +90,8 @@ public class TestIntake {
                 new PassThroughWiring(model, "GossipEvent", "postHashCollector", TaskSchedulerType.DIRECT);
 
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
-        final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
-        orphanBufferWiring = OrphanBufferWiring.create(directScheduler("orphanBuffer"));
+        final OrphanBuffer orphanBuffer = new DefaultOrphanBuffer(platformContext, intakeEventCounter);
+        orphanBufferWiring = new ComponentWiring<>(model, OrphanBuffer.class, directScheduler("orphanBuffer"));
         orphanBufferWiring.bind(orphanBuffer);
 
         final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, addressBook, selfId);
@@ -104,15 +104,18 @@ public class TestIntake {
         eventWindowManagerWiring.bind(new DefaultEventWindowManager());
 
         hasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
-        postHashCollectorWiring.getOutputWire().solderTo(orphanBufferWiring.eventInput());
-        orphanBufferWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+        postHashCollectorWiring.getOutputWire().solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::handleEvent));
+        final OutputWire<GossipEvent> splitOutput = orphanBufferWiring.getSplitOutput();
+        splitOutput.solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
         consensusRoundOutputWire.solderTo(
                 eventWindowManagerWiring.getInputWire(EventWindowManager::extractEventWindow));
         consensusRoundOutputWire.solderTo("consensusOutputTestTool", "round output", output::consensusRound);
 
-        eventWindowManagerWiring.getOutputWire().solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
+        eventWindowManagerWiring
+                .getOutputWire()
+                .solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::setNonAncientEventWindow), INJECT);
 
         // Ensure unsoldered wires are created.
         hasherWiring.getInputWire(EventHasher::hashEvent);
@@ -165,7 +168,7 @@ public class TestIntake {
                 snapshot.getMinimumGenerationNonAncient(roundsNonAncient),
                 GENERATION_THRESHOLD);
 
-        orphanBufferWiring.nonAncientEventWindowInput().put(eventWindow);
+        orphanBufferWiring.getInputWire(OrphanBuffer::setNonAncientEventWindow).put(eventWindow);
         consensusEngineWiring
                 .getInputWire(ConsensusEngine::outOfBandSnapshotUpdate)
                 .put(snapshot);

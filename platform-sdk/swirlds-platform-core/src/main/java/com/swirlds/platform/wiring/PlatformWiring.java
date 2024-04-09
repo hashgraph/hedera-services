@@ -127,7 +127,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
     private final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring;
-    private final OrphanBufferWiring orphanBufferWiring;
+    private final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<EventCreationManager, GossipEvent> eventCreationManagerWiring;
@@ -226,7 +226,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventDeduplicatorWiring = new ComponentWiring<>(model, EventDeduplicator.class, config.eventDeduplicator());
         eventSignatureValidatorWiring =
                 new ComponentWiring<>(model, EventSignatureValidator.class, config.eventSignatureValidator());
-        orphanBufferWiring = OrphanBufferWiring.create(schedulers.orphanBufferScheduler());
+        orphanBufferWiring = new ComponentWiring<>(model, OrphanBuffer.class, config.orphanBuffer());
         inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
         consensusEngineWiring =
                 new ComponentWiring<>(model, ConsensusEngine.class, schedulers.consensusEngineScheduler());
@@ -355,7 +355,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 eventDeduplicatorWiring.getInputWire(EventDeduplicator::setNonAncientEventWindow), INJECT);
         nonAncientEventWindowOutputWire.solderTo(
                 eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::setNonAncientEventWindow), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
+        nonAncientEventWindowOutputWire.solderTo(
+                orphanBufferWiring.getInputWire(OrphanBuffer::setNonAncientEventWindow), INJECT);
         nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(pcesWriterWiring.nonAncientEventWindowInput(), INJECT);
         nonAncientEventWindowOutputWire.solderTo(
@@ -405,21 +406,20 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventDeduplicatorWiring
                 .getOutputWire()
                 .solderTo(eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::validateSignature));
-        eventSignatureValidatorWiring.getOutputWire().solderTo(orphanBufferWiring.eventInput());
-        orphanBufferWiring
-                .eventOutput()
-                .solderTo(pcesSequencerWiring.getInputWire(PcesSequencer::assignStreamSequenceNumber));
+        eventSignatureValidatorWiring
+                .getOutputWire()
+                .solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::handleEvent));
+        final OutputWire<GossipEvent> splitOrphanBufferOutput = orphanBufferWiring.getSplitOutput();
+        splitOrphanBufferOutput.solderTo(pcesSequencerWiring.getInputWire(PcesSequencer::assignStreamSequenceNumber));
         pcesSequencerWiring.getOutputWire().solderTo(pcesWriterWiring.eventInputWire());
 
         pcesSequencerWiring.getOutputWire().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
 
         inOrderLinkerWiring.eventOutput().solderTo(shadowgraphWiring.eventInput());
 
-        orphanBufferWiring
-                .eventOutput()
-                .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
+        splitOrphanBufferOutput.solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
 
-        orphanBufferWiring.eventOutput().solderTo(inOrderLinkerWiring.eventInput());
+        splitOrphanBufferOutput.solderTo(inOrderLinkerWiring.eventInput());
 
         final double eventCreationHeartbeatFrequency = platformContext
                 .getConfiguration()
@@ -431,11 +431,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventCreationManagerWiring
                 .getOutputWire()
                 .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent), INJECT);
-        orphanBufferWiring
-                .eventOutput()
-                .solderTo(applicationTransactionPrehandlerWiring.getInputWire(
-                        TransactionPrehandler::prehandleApplicationTransactions));
-        orphanBufferWiring.eventOutput().solderTo(stateSignatureCollectorWiring.preConsensusEventInput());
+        splitOrphanBufferOutput.solderTo(applicationTransactionPrehandlerWiring.getInputWire(
+                TransactionPrehandler::prehandleApplicationTransactions));
+        splitOrphanBufferOutput.solderTo(stateSignatureCollectorWiring.preConsensusEventInput());
         stateSignatureCollectorWiring.getAllStatesOutput().solderTo(signedStateFileManagerWiring.saveToDiskFilter());
         stateSignatureCollectorWiring
                 .getCompleteStatesOutput()
@@ -526,9 +524,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         solderNotifier();
 
         if (publishPreconsensusEvents) {
-            orphanBufferWiring
-                    .eventOutput()
-                    .solderTo(platformPublisherWiring.getInputWire(PlatformPublisher::publishPreconsensusEvent));
+            splitOrphanBufferOutput.solderTo(
+                    platformPublisherWiring.getInputWire(PlatformPublisher::publishPreconsensusEvent));
         }
 
         buildUnsolderedWires();
@@ -590,7 +587,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * Bind components to the wiring.
      *
      * @param builder                   builds platform components that need to be bound to wires
-     * @param orphanBuffer              the orphan buffer to bind
      * @param inOrderLinker             the in order linker to bind
      * @param consensusEngine           the consensus engine to bind
      * @param signedStateFileManager    the signed state file manager to bind
@@ -621,7 +617,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      */
     public void bind(
             @NonNull final PlatformComponentBuilder builder,
-            @NonNull final OrphanBuffer orphanBuffer,
             @NonNull final InOrderLinker inOrderLinker,
             @NonNull final ConsensusEngine consensusEngine,
             @NonNull final SignedStateFileManager signedStateFileManager,
@@ -653,7 +648,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         internalEventValidatorWiring.bind(builder.buildInternalEventValidator());
         eventDeduplicatorWiring.bind(builder.buildEventDeduplicator());
         eventSignatureValidatorWiring.bind(builder.buildEventSignatureValidator());
-        orphanBufferWiring.bind(orphanBuffer);
         inOrderLinkerWiring.bind(inOrderLinker);
         consensusEngineWiring.bind(consensusEngine);
         signedStateFileManagerWiring.bind(signedStateFileManager);
