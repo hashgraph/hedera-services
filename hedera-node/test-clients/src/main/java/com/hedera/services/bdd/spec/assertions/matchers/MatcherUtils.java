@@ -25,6 +25,11 @@ import org.testcontainers.shaded.org.hamcrest.Matcher;
 import org.testcontainers.shaded.org.hamcrest.Matchers;
 import org.testcontainers.shaded.org.hamcrest.collection.IsIterableContainingInAnyOrder;
 
+/**
+ * Utility class with methods for creating custom matchers.
+ *
+ * @author vyanev
+ */
 @SuppressWarnings("java:S1452") // wildcard types
 public class MatcherUtils {
 
@@ -54,6 +59,15 @@ public class MatcherUtils {
         final var itemMatchers = items.stream().map(mapper).collect(Collectors.toCollection(ArrayList::new));
 
         return new IsIterableContainingInAnyOrder<>(itemMatchers);
+    }
+
+    /**
+     * @param expected the expected object
+     * @return {@link FieldByFieldMatcher} that checks if the actual object has equal fields to the expected object
+     * @param <T> the type of the object
+     */
+    public static <T> FieldByFieldMatcher<T> withEqualFields(T expected) {
+        return new FieldByFieldMatcher<>(expected);
     }
 
     /**

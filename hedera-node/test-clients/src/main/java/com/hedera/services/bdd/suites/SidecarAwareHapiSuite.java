@@ -16,8 +16,8 @@
 
 package com.hedera.services.bdd.suites;
 
-import static com.hedera.services.bdd.spec.assertions.matchers.FieldByFieldMatcher.withEqualFields;
 import static com.hedera.services.bdd.spec.assertions.matchers.MatcherUtils.containsInAnyOrder;
+import static com.hedera.services.bdd.spec.assertions.matchers.MatcherUtils.withEqualFields;
 import static com.hedera.services.bdd.spec.assertions.matchers.MatcherUtils.within32Units;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;

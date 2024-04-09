@@ -36,6 +36,14 @@ import org.testcontainers.shaded.org.hamcrest.Matcher;
 import org.testcontainers.shaded.org.hamcrest.Matchers;
 import org.testcontainers.shaded.org.hamcrest.TypeSafeMatcher;
 
+/**
+ * Used in assertions to check if all fields of an object match the expected fields.
+ * Adds utilities to ignore fields and use custom matchers for fields.
+ *
+ * @author vyanev
+ *
+ * @param <T> the type of the object
+ */
 public class FieldByFieldMatcher<T> extends TypeSafeMatcher<T> {
     private static final Logger log = LogManager.getLogger(FieldByFieldMatcher.class);
 
@@ -44,28 +52,44 @@ public class FieldByFieldMatcher<T> extends TypeSafeMatcher<T> {
     private final Map<String, Matcher<?>> customMatchers = new HashMap<>();
     private final Set<String> ignoredFields = new HashSet<>();
 
-    private FieldByFieldMatcher(T expected) {
+    public FieldByFieldMatcher(T expected) {
         this.expected = expected;
         this.defaultMatcher = Matchers::equalTo;
     }
 
-    public static <T> FieldByFieldMatcher<T> withEqualFields(T expected) {
-        return new FieldByFieldMatcher<>(expected);
-    }
-
+    /**
+     * @param customMatchers the custom matchers for the fields
+     * @return this {@link FieldByFieldMatcher}
+     */
     public FieldByFieldMatcher<T> withCustomMatchersForFields(Map<String, Matcher<?>> customMatchers) {
         this.customMatchers.putAll(customMatchers);
         return this;
     }
 
+    /**
+     * @param fields the fields to ignore
+     * @return this {@link FieldByFieldMatcher}
+     */
     public FieldByFieldMatcher<T> ignoringFields(final String... fields) {
         ignoredFields.addAll(Arrays.asList(fields));
         return this;
     }
 
+    /**
+     * @param actual the actual object
+     * @return {@code true} if the actual object matches the expected object
+     */
     @Override
     protected boolean matchesSafely(T actual) {
         return areEqual(expected, actual);
+    }
+
+    /**
+     * @param description {@link Description} of the expected object
+     */
+    @Override
+    public void describeTo(Description description) {
+        description.appendText(expected.toString());
     }
 
     private boolean areEqual(Object expected, Object actual) {
@@ -108,16 +132,11 @@ public class FieldByFieldMatcher<T> extends TypeSafeMatcher<T> {
         }
     }
 
-    public static List<PropertyDescriptor> beanGetterProperties(Object bean) throws IntrospectionException {
+    private static List<PropertyDescriptor> beanGetterProperties(Object bean) throws IntrospectionException {
         final var stopClass = GeneratedMessageV3.class;
         return Arrays.stream(
                         Introspector.getBeanInfo(bean.getClass(), stopClass).getPropertyDescriptors())
                 .filter(propertyDescriptor -> Objects.nonNull(propertyDescriptor.getReadMethod()))
                 .toList();
-    }
-
-    @Override
-    public void describeTo(Description description) {
-        description.appendText(expected.toString());
     }
 }

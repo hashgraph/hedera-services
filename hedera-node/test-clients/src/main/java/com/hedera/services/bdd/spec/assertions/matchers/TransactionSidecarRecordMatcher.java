@@ -89,30 +89,59 @@ public class TransactionSidecarRecordMatcher extends TypeSafeMatcher<Transaction
         description.appendText("}");
     }
 
+    /**
+     * @return {@code true} if the expected {@link TransactionSidecarRecord} has matchers for actions
+     */
     public boolean hasActions() {
         return this.actionsMatcher != null;
     }
 
+    /**
+     * @return {@code true} if the expected {@link TransactionSidecarRecord} has matchers for state changes
+     */
     public boolean hasStateChanges() {
         return this.stateChangesMatcher != null;
     }
 
+    /**
+     * @param sidecarRecord the actual {@link TransactionSidecarRecord}
+     * @return {@code true} if the consensus timestamp of the given
+     * {@link TransactionSidecarRecord} matches the expected value
+     */
     public boolean matchesConsensusTimestampOf(TransactionSidecarRecord sidecarRecord) {
         return this.consensusTimestampMatcher.matches(sidecarRecord.getConsensusTimestamp());
     }
 
+    /**
+     * @param sidecarRecord the actual {@link TransactionSidecarRecord}
+     * @return {@code true} if the actions of the given
+     * {@link TransactionSidecarRecord} match the expected value
+     */
     public boolean matchesActionsOf(TransactionSidecarRecord sidecarRecord) {
         return this.actionsMatcher.matches(sidecarRecord.getActions().getContractActionsList());
     }
 
+    /**
+     * @param sidecarRecord the actual {@link TransactionSidecarRecord}
+     * @return {@code true} if the state changes of the given
+     * {@link TransactionSidecarRecord} match the expected value
+     */
     public boolean matchesStateChangesOf(TransactionSidecarRecord sidecarRecord) {
         return this.stateChangesMatcher.matches(sidecarRecord.getStateChanges().getContractStateChangesList());
     }
 
+    /**
+     * @param sidecarRecord the actual {@link TransactionSidecarRecord}
+     * @return {@code true} if the bytecode of the given
+     * {@link TransactionSidecarRecord} matches the expected value
+     */
     public boolean matchesBytecodeOf(TransactionSidecarRecord sidecarRecord) {
         return this.bytecodeMatcher.matches(sidecarRecord.getBytecode());
     }
 
+    /**
+     * @return {@link Builder} for the {@link TransactionSidecarRecordMatcher}
+     */
     public static Builder newBuilder() {
         return new Builder();
     }
