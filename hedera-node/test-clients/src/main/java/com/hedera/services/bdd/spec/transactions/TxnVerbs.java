@@ -203,8 +203,16 @@ public class TxnVerbs {
         return new HapiTokenDissociate(account, tokens);
     }
 
+    public static HapiTokenDissociate tokenDissociateWithAlias(ByteString alias, String... tokens) {
+        return new HapiTokenDissociate(alias, tokens);
+    }
+
     public static HapiTokenAssociate tokenAssociate(String account, String... tokens) {
         return new HapiTokenAssociate(account, tokens);
+    }
+
+    public static HapiTokenAssociate tokenAssociateWithAlias(ByteString alias, String... tokens) {
+        return new HapiTokenAssociate(alias, tokens);
     }
 
     public static HapiTokenAssociate tokenAssociate(String account, List<String> tokens) {
@@ -283,16 +291,32 @@ public class TxnVerbs {
         return new HapiTokenFreeze(token, account);
     }
 
+    public static HapiTokenFreeze tokenFreezeWithAlias(String token, ByteString alias) {
+        return new HapiTokenFreeze(token, alias);
+    }
+
     public static HapiTokenUnfreeze tokenUnfreeze(String token, String account) {
         return new HapiTokenUnfreeze(token, account);
+    }
+
+    public static HapiTokenUnfreeze tokenUnfreezeWithAlias(String token, ByteString alias) {
+        return new HapiTokenUnfreeze(token, alias);
     }
 
     public static HapiTokenKycGrant grantTokenKyc(String token, String account) {
         return new HapiTokenKycGrant(token, account);
     }
 
+    public static HapiTokenKycGrant grantTokenKycWithAlias(String token, ByteString alias) {
+        return new HapiTokenKycGrant(token, alias);
+    }
+
     public static HapiTokenKycRevoke revokeTokenKyc(String token, String account) {
         return new HapiTokenKycRevoke(token, account);
+    }
+
+    public static HapiTokenKycRevoke revokeTokenKycWithAlias(String token, ByteString alias) {
+        return new HapiTokenKycRevoke(token, alias);
     }
 
     public static HapiTokenWipe wipeTokenAccount(String token, String account, long amount) {
