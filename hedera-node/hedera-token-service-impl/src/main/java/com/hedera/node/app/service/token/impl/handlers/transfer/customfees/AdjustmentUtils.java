@@ -217,7 +217,7 @@ public class AdjustmentUtils {
         try {
             return Math.addExact(a, b);
         } catch (final ArithmeticException ignore) {
-            throw new HandleException(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+            throw new HandleException(failureReason);
         }
     }
 }
