@@ -50,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -105,7 +106,19 @@ public class ContractUpdateSuite extends HapiSuite {
                 eip1014AddressAlwaysHasPriority(),
                 immutableContractKeyFormIsStandard(),
                 updateAutoRenewAccountWorks(),
-                updateStakingFieldsWorks());
+                updateStakingFieldsWorks(),
+                cannotUpdateMaxAutomaticAssociations());
+    }
+
+    @HapiTest
+    private HapiSpec cannotUpdateMaxAutomaticAssociations() {
+        return defaultHapiSpec("cannotUpdateMaxAutomaticAssociations")
+                .given(
+                        newKeyNamed(ADMIN_KEY),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
+                .when()
+                .then(contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).hasKnownStatus(NOT_SUPPORTED));
     }
 
     @HapiTest

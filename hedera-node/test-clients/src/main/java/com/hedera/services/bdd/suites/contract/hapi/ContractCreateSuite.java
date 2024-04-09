@@ -79,6 +79,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -153,12 +154,23 @@ public class ContractCreateSuite extends HapiSuite {
                 newAccountsCanUsePureContractIdKey(),
                 createContractWithStakingFields(),
                 disallowCreationsOfEmptyInitCode(),
-                createCallInConstructor());
+                createCallInConstructor(),
+                cannotSetMaxAutomaticAssociations());
     }
 
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    @HapiTest
+    private HapiSpec cannotSetMaxAutomaticAssociations() {
+        return defaultHapiSpec("cannotSetMaxAutomaticAssociations")
+                .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+                .when()
+                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                        .maxAutomaticTokenAssociations(10)
+                        .hasKnownStatus(NOT_SUPPORTED));
     }
 
     @HapiTest
