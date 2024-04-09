@@ -65,7 +65,7 @@ public class TokenTupleUtils {
         return Tuple.of(
                 token.expirationSecond(),
                 headlongAddressOf(token.autoRenewAccountIdOrElse(ZERO_ACCOUNT_ID)),
-                token.autoRenewSeconds());
+                Math.max(0, token.autoRenewSeconds()));
     }
 
     /**

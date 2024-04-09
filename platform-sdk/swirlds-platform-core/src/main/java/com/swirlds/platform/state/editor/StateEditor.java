@@ -34,6 +34,7 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -207,9 +208,11 @@ public class StateEditor {
                 signedState.getAndReserve("StateEditor.getSignedStateCopy() 1")) {
             final SignedState newSignedState = new SignedState(
                     platformContext,
+                    CryptoStatic::verifySignature,
                     reservedSignedState.get().getState().copy(),
                     "StateEditor.getSignedStateCopy()",
-                    reservedSignedState.get().isFreezeState());
+                    reservedSignedState.get().isFreezeState(),
+                    false);
 
             signedState.set(newSignedState, "StateEditor.getSignedStateCopy() 2");
 

@@ -19,13 +19,13 @@ package com.swirlds.benchmark.reconnect.lag;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.Lesson;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.config.api.Configuration;
@@ -36,8 +36,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
 
+    private final long randomSeed;
     private final long delayStorageMicroseconds;
+    private final double delayStorageFuzzRangePercent;
     private final long delayNetworkMicroseconds;
+    private final double delayNetworkFuzzRangePercent;
 
     /**
      * Create a new teaching synchronizer with simulated latency.
@@ -47,8 +50,11 @@ public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
             final MerkleDataInputStream in,
             final MerkleDataOutputStream out,
             final MerkleNode root,
+            final long randomSeed,
             final long delayStorageMicroseconds,
+            final double delayStorageFuzzRangePercent,
             final long delayNetworkMicroseconds,
+            final double delayNetworkFuzzRangePercent,
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig) {
         super(
@@ -60,17 +66,28 @@ public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
                 root,
                 breakConnection,
                 reconnectConfig);
+
+        this.randomSeed = randomSeed;
         this.delayStorageMicroseconds = delayStorageMicroseconds;
+        this.delayStorageFuzzRangePercent = delayStorageFuzzRangePercent;
         this.delayNetworkMicroseconds = delayNetworkMicroseconds;
+        this.delayNetworkFuzzRangePercent = delayNetworkFuzzRangePercent;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected <T> AsyncOutputStream<Lesson<T>> buildOutputStream(
+    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
         return new BenchmarkSlowAsyncOutputStream<>(
-                out, workGroup, delayStorageMicroseconds, delayNetworkMicroseconds, reconnectConfig);
+                out,
+                workGroup,
+                randomSeed,
+                delayStorageMicroseconds,
+                delayStorageFuzzRangePercent,
+                delayNetworkMicroseconds,
+                delayNetworkFuzzRangePercent,
+                reconnectConfig);
     }
 }

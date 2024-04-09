@@ -18,20 +18,17 @@ package com.swirlds.platform.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
-import java.util.Collections;
+import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -42,7 +39,9 @@ class EventStringsTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Test event strings")
     void testCopy() {
-        printAssert(EventStrings.toShortString((EventImpl) null), "null", "should indicate that the object is null");
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        printAssert(EventStrings.toShortString(null), "null", "should indicate that the object is null");
         printAssert(EventStrings.toShortString((GossipEvent) null), "null", "should indicate that the object is null");
         printAssert(EventStrings.toShortString(new EventImpl()), "null", "should indicate that the object is null");
 
@@ -53,31 +52,31 @@ class EventStringsTest {
 
         final NodeId selfId = new NodeId(id);
         final NodeId otherId = new NodeId(opId);
-        final EventDescriptor selfParent =
-                new EventDescriptor(new Hash(), selfId, spGen, EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherParent =
-                new EventDescriptor(new Hash(), otherId, opGen, EventConstants.BIRTH_ROUND_UNDEFINED);
 
-        BaseEventHashedData hashedData = new BaseEventHashedData(
-                new BasicSoftwareVersion(1),
-                selfId,
-                selfParent,
-                Collections.singletonList(otherParent),
-                EventConstants.BIRTH_ROUND_UNDEFINED,
-                Instant.now(),
-                new ConsensusTransactionImpl[0]);
-        hashedData.setHash(new Hash());
-        BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(new NodeId(opId), new byte[0]);
+        final EventImpl selfParent =
+                EventImplTestUtils.createEventImpl(new TestingEventBuilder(random).setCreatorId(selfId), null, null);
+        final EventImpl otherParent =
+                EventImplTestUtils.createEventImpl(new TestingEventBuilder(random).setCreatorId(otherId), null, null);
+
+        final TestingEventBuilder childBuilder = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .overrideSelfParentGeneration(spGen)
+                .overrideOtherParentGeneration(opGen)
+                .setTimeCreated(Instant.now());
+
+        final EventImpl eventImplChild = EventImplTestUtils.createEventImpl(childBuilder, selfParent, otherParent);
+        final GossipEvent gossipEventChild = childBuilder.build();
+
         printAssert(
-                EventStrings.toShortString(new EventImpl(hashedData, unhashedData)),
+                EventStrings.toShortString(eventImplChild),
                 String.format("%d,%d", id, BaseEventHashedData.calculateGeneration(spGen, opGen)),
                 "should have creator and generation");
         printAssert(
-                EventStrings.toShortString(new GossipEvent(hashedData, unhashedData)),
+                EventStrings.toShortString(gossipEventChild),
                 String.format("%d,%d", id, BaseEventHashedData.calculateGeneration(spGen, opGen)),
                 "should have creator and generation");
         printAssert(
-                EventStrings.toMediumString(new EventImpl(hashedData, unhashedData)),
+                EventStrings.toMediumString(eventImplChild),
                 String.format("%d,%d", opId, opGen),
                 "should have op creator and generation");
     }

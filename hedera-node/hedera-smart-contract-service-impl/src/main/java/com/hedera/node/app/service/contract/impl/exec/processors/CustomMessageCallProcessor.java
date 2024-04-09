@@ -47,6 +47,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -167,17 +168,21 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final MessageFrame frame,
             @NonNull final OperationTracer tracer) {
         final var gasRequirement = precompile.gasRequirement(frame.getInputData());
+        final PrecompileContractResult result;
         if (frame.getRemainingGas() < gasRequirement) {
-            doHalt(frame, INSUFFICIENT_GAS);
+            result = PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INSUFFICIENT_GAS));
         } else {
             frame.decrementRemainingGas(gasRequirement);
-            final var result = precompile.computePrecompile(frame.getInputData(), frame);
-            tracer.tracePrecompileCall(frame, gasRequirement, result.getOutput());
+            result = precompile.computePrecompile(frame.getInputData(), frame);
             if (result.isRefundGas()) {
                 frame.incrementRemainingGas(gasRequirement);
             }
-            finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) tracer);
         }
+        // We must always call tracePrecompileResult() to ensure the tracer is in a consistent
+        // state, because AbstractMessageProcessor.process() will not invoke the tracer's
+        // tracePostExecution() method unless start() returns with a state of CODE_EXECUTING;
+        // but for a precompile call this never happens.
+        finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) tracer);
     }
 
     /**
@@ -195,15 +200,16 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final OperationTracer tracer) {
         final var fullResult = systemContract.computeFully(frame.getInputData(), frame);
         final var gasRequirement = fullResult.gasRequirement();
-        tracer.tracePrecompileCall(frame, gasRequirement, fullResult.output());
+        final PrecompileContractResult result;
         if (frame.getRemainingGas() < gasRequirement) {
-            doHalt(frame, INSUFFICIENT_GAS);
+            result = PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INSUFFICIENT_GAS));
         } else {
             if (!fullResult.isRefundGas()) {
                 frame.decrementRemainingGas(gasRequirement);
             }
-            finishPrecompileExecution(frame, fullResult.result(), SYSTEM, (ActionSidecarContentTracer) tracer);
+            result = fullResult.result();
         }
+        finishPrecompileExecution(frame, result, SYSTEM, (ActionSidecarContentTracer) tracer);
     }
 
     private void finishPrecompileExecution(

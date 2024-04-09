@@ -148,6 +148,21 @@ class PrivilegesVerifierTest {
     }
 
     @Test
+    void softwareUpdateAdminCanUpdateExpected() {
+        // expect:
+        assertFalse(subject.canPerformNonCryptoUpdate(54, 101));
+        assertFalse(subject.canPerformNonCryptoUpdate(54, 102));
+        assertFalse(subject.canPerformNonCryptoUpdate(54, 121));
+        assertFalse(subject.canPerformNonCryptoUpdate(54, 122));
+        assertFalse(subject.canPerformNonCryptoUpdate(54, 123));
+        assertFalse(subject.canPerformNonCryptoUpdate(54, 111));
+        assertFalse(subject.canPerformNonCryptoUpdate(54, 112));
+        for (var num = 150; num <= 159; num++) {
+            assertTrue(subject.canPerformNonCryptoUpdate(54, num));
+        }
+    }
+
+    @Test
     void addressBookAdminCanUpdateExpected() {
         // expect:
         assertTrue(subject.canPerformNonCryptoUpdate(55, 101));
@@ -204,7 +219,7 @@ class PrivilegesVerifierTest {
         assertFalse(subject.canPerformNonCryptoUpdate(58, 101));
         assertFalse(subject.canPerformNonCryptoUpdate(58, 102));
         for (var num = 150; num <= 159; num++) {
-            assertTrue(subject.canPerformNonCryptoUpdate(58, num));
+            assertFalse(subject.canPerformNonCryptoUpdate(58, num));
         }
     }
 
@@ -495,9 +510,9 @@ class PrivilegesVerifierTest {
     }
 
     @Test
-    void freezeAdminCanUpdateZipFile() throws InvalidProtocolBufferException {
+    void softwareUpdateAdminCanUpdateZipFile() throws InvalidProtocolBufferException {
         // given:
-        var txn = freezeAdminTxn()
+        var txn = softwareUpdateAdminTxn()
                 .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(150)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
@@ -637,6 +652,10 @@ class PrivilegesVerifierTest {
 
     private TransactionBody.Builder treasuryTxn() {
         return txnWithPayer(2);
+    }
+
+    private TransactionBody.Builder softwareUpdateAdminTxn() {
+        return txnWithPayer(54);
     }
 
     private TransactionBody.Builder freezeAdminTxn() {

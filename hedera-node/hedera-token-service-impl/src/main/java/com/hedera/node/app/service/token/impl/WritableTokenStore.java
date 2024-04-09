@@ -21,8 +21,12 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -44,10 +48,19 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      * Create a new {@link WritableTokenStore} instance.
      *
      * @param states The state to use.
+     * @param configuration The configuration used to read the maximum capacity.
+     * @param storeMetricsService Service that provides utilization metrics.
      */
-    public WritableTokenStore(@NonNull final WritableStates states) {
+    public WritableTokenStore(
+            @NonNull final WritableStates states,
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
         this.tokenState = states.get(TokenServiceImpl.TOKENS_KEY);
+
+        final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxNumber();
+        final var storeMetrics = storeMetricsService.get(StoreType.TOKEN, maxCapacity);
+        tokenState.setMetrics(storeMetrics);
     }
 
     /**
@@ -58,6 +71,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      */
     public void put(@NonNull final Token token) {
         Objects.requireNonNull(token);
+        requireNotDefault(token.tokenId());
         tokenState.put(token.tokenId(), Objects.requireNonNull(token));
     }
 
@@ -101,5 +115,11 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
     public Token getOriginalValue(@NonNull final TokenID tokenId) {
         requireNonNull(tokenId);
         return tokenState.getOriginalValue(tokenId);
+    }
+
+    public static void requireNotDefault(@NonNull final TokenID tokenId) {
+        if (tokenId.equals(TokenID.DEFAULT)) {
+            throw new IllegalArgumentException("Token ID cannot be default");
+        }
     }
 }
