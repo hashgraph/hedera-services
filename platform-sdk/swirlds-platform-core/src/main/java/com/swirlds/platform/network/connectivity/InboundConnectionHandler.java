@@ -57,6 +57,7 @@ public class InboundConnectionHandler {
 
     private final PlatformContext platformContext;
     private final NetworkPeerIdentifier networkPeerIdentifier;
+    private final Time time;
 
     /**
      * constructor
@@ -79,7 +80,7 @@ public class InboundConnectionHandler {
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.selfId = Objects.requireNonNull(selfId);
         this.newConnectionConsumer = Objects.requireNonNull(newConnectionConsumer);
-        Objects.requireNonNull(time);
+        this.time = Objects.requireNonNull(time);
         this.socketExceptionLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         this.socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
         this.networkPeerIdentifier = networkPeerIdentifier;
@@ -92,16 +93,19 @@ public class InboundConnectionHandler {
      * @param peerInfoList the list of peers
      */
     public void handle(final Socket clientSocket, final List<PeerInfo> peerInfoList) {
-        long acceptTime = 0;
+        final long acceptTime = time.currentTimeMillis();
         try {
-            acceptTime = System.currentTimeMillis();
             clientSocket.setTcpNoDelay(socketConfig.tcpNoDelay());
             clientSocket.setSoTimeout(socketConfig.timeoutSyncClientSocket());
 
             final SSLSocket sslSocket = (SSLSocket) clientSocket;
             final PeerInfo connectedPeer =
                     networkPeerIdentifier.identifyTlsPeer(sslSocket.getSession().getPeerCertificates(), peerInfoList);
-            final NodeId otherId = Objects.requireNonNull(connectedPeer).nodeId();
+            if (connectedPeer == null) {
+                clientSocket.close();
+                return;
+            }
+            final NodeId otherId = connectedPeer.nodeId();
 
             final SyncInputStream sis = SyncInputStream.createSyncInputStream(
                     platformContext, clientSocket.getInputStream(), socketConfig.bufferSize());
