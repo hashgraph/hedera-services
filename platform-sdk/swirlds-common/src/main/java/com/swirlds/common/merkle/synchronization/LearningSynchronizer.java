@@ -20,22 +20,19 @@ import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.LearnerThread;
-import com.swirlds.common.merkle.synchronization.internal.Lesson;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
-import com.swirlds.common.merkle.synchronization.internal.ReconnectNodeCount;
-import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
+import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
+import com.swirlds.common.merkle.synchronization.views.LearnerPushMerkleTreeView;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
-import com.swirlds.common.merkle.synchronization.views.StandardLearnerTreeView;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -275,22 +272,15 @@ public class LearningSynchronizer implements ReconnectNodeCount {
 
         final LearnerTreeView<T> view;
         if (root == null || !root.hasCustomReconnectView()) {
-            view = (LearnerTreeView<T>) new StandardLearnerTreeView(root);
+            view = (LearnerTreeView<T>) new LearnerPushMerkleTreeView(reconnectConfig, root);
         } else {
             assert root instanceof CustomReconnectRoot;
-            view = ((CustomReconnectRoot<?, T>) root).buildLearnerView();
+            view = ((CustomReconnectRoot<?, T>) root).buildLearnerView(reconnectConfig);
         }
-
-        final AsyncInputStream<Lesson<T>> in =
-                new AsyncInputStream<>(inputStream, workGroup, () -> new Lesson<>(view), reconnectConfig);
-        final AsyncOutputStream<QueryResponse> out = buildOutputStream(workGroup, outputStream);
-
-        in.start();
-        out.start();
 
         final AtomicReference<T> reconstructedRoot = new AtomicReference<>();
 
-        new LearnerThread<>(workGroup, threadManager, in, out, rootsToReceive, reconstructedRoot, view, this).start();
+        view.startLearnerTasks(this, workGroup, inputStream, outputStream, rootsToReceive, reconstructedRoot);
         InterruptedException interruptException = null;
         try {
             workGroup.waitForTermination();
@@ -317,7 +307,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
 
             // Depending on where the failure occurred, there may be deserialized objects still sitting in
             // the async input stream's queue that haven't been attached to any tree.
-            in.abort();
+            view.abort();
 
             final MerkleNode merkleRoot = view.getMerkleRoot(reconstructedRoot.get());
             if (merkleRoot != null && merkleRoot.getReservationCount() == 0) {
@@ -342,7 +332,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
     /**
      * Build the output stream. Exposed to allow unit tests to override implementation to simulate latency.
      */
-    protected AsyncOutputStream<QueryResponse> buildOutputStream(
+    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
         return new AsyncOutputStream<>(out, workGroup, reconnectConfig);
     }

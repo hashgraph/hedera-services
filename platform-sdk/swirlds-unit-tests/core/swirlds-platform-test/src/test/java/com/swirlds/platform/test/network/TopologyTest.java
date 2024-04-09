@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.network;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -107,7 +108,8 @@ class TopologyTest {
     @MethodSource({"failing", "topologicalVariations", "fullyConnected"})
     void testRandomGraphs(final int numNodes, final int numNeighbors, final long seed) throws Exception {
         System.out.println("numNodes = " + numNodes + ", numNeighbors = " + numNeighbors + ", seed = " + seed);
-        final RandomGraph randomGraph = new RandomGraph(numNodes, numNeighbors, seed);
+        final Random random = getRandomPrintSeed();
+        final RandomGraph randomGraph = new RandomGraph(random, numNodes, numNeighbors, seed);
 
         testRandomGraphWithSets(randomGraph, numNodes, numNeighbors);
         testRandomGraphTestIterative(randomGraph, numNodes, numNeighbors, seed);
@@ -121,7 +123,8 @@ class TopologyTest {
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
             final NodeId outOfBoundsId = addressBook.getNextNodeId();
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);
-            final NetworkTopology topology = new StaticTopology(addressBook, thisNodeId, numNeighbors);
+            final Random random = getRandomPrintSeed();
+            final NetworkTopology topology = new StaticTopology(random, addressBook, thisNodeId, numNeighbors);
             final List<NodeId> neighbors = topology.getNeighbors();
             final List<NodeId> expected = IntStream.range(0, numNodes)
                     .mapToObj(addressBook::getNodeId)

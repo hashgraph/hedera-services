@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_I
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
@@ -73,6 +74,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -83,7 +85,6 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -129,7 +130,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private FeeAccumulator feeAccumulator;
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     private CryptoCreateHandler subject;
 
@@ -529,6 +530,20 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         setupExpiryValidator();
 
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertEquals(KEY_REQUIRED, msg.responseCode());
+    }
+
+    @Test
+    void validateKeyRequiredWithAlias() {
+        txn = new CryptoCreateBuilder()
+                .withStakedAccountId(3)
+                .withKey(null)
+                .withAlias(Bytes.wrap("alias"))
+                .build();
+        setupConfig();
+        setupExpiryValidator();
+
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertEquals(INVALID_ALIAS_KEY, msg.responseCode());
     }
 
@@ -634,7 +649,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .value(new ProtoBytes(Bytes.wrap(evmAddress)), asAccount(accountNum))
                 .build();
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        writableStore = new WritableAccountStore(writableStates, configuration, metrics);
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
         when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -670,7 +685,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         final var copy = account.copyBuilder().deleted(true).build();
         writableAccounts.put(id, copy);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates, configuration, metrics);
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
     private void setupConfig() {
