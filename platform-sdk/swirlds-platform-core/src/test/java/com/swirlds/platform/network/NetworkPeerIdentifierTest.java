@@ -149,7 +149,7 @@ class NetworkPeerIdentifierTest {
         final String name = "CN=Bob";
         final X509Certificate rsaCert =
                 CryptoStatic.generateCertificate(name, rsaKeyPair1, name, rsaKeyPair1, secureRandom);
-        final Certificate[] certificates = new Certificate[]{rsaCert};
+        final Certificate[] certificates = new Certificate[] {rsaCert};
 
         final PeerInfo matchedPeer =
                 new NetworkPeerIdentifier(platformContext).identifyTlsPeer(certificates, peerInfoList);
