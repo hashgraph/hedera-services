@@ -57,9 +57,9 @@ public abstract class VirtualMapReconnectBenchBase {
     protected VirtualDataSourceBuilder<TestKey, TestValue> learnerBuilder;
 
     protected final ReconnectConfig reconnectConfig = new TestConfigBuilder()
-            .withValue(ReconnectConfig_.ACTIVE, "true")
             // This is lower than the default, helps test that is supposed to fail to finish faster.
-            .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
+            .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5s")
+            .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
 

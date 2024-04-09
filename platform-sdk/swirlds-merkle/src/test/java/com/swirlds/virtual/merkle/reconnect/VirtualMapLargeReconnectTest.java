@@ -82,6 +82,7 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
     }
 
     @Test
+    @Tag(TIME_CONSUMING)
     void reconnectBench() {
         final long N = 1_000_000;
         final long U = 10_000;
