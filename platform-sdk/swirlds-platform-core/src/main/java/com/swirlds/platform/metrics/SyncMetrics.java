@@ -98,6 +98,12 @@ public class SyncMetrics {
             .withDescription("the average time spent filtering events during a sync")
             .withUnit("nanoseconds");
 
+    private static final CountPerSecond.Config DO_NOT_SYNC_PLATFORM_STATUS = new CountPerSecond.Config(
+                    PLATFORM_CATEGORY, "doNotSyncPlatformStatus")
+            .withUnit("hz")
+            .withDescription("Number of times per second we do not sync because the platform status doesn't permit it");
+    private final CountPerSecond doNoSyncPlatformStatus;
+
     private static final CountPerSecond.Config DO_NOT_SYNC_COOLDOWN_CONFIG = new CountPerSecond.Config(
                     PLATFORM_CATEGORY, "doNotSyncCooldown")
             .withUnit("hz")
@@ -169,6 +175,7 @@ public class SyncMetrics {
         syncsPerSec = new CountPerSecond(metrics, SYNCS_PER_SECOND_CONFIG);
         syncFilterTime = metrics.getOrCreate(SYNC_FILTER_TIME_CONFIG);
 
+        doNoSyncPlatformStatus = new CountPerSecond(metrics, DO_NOT_SYNC_PLATFORM_STATUS);
         doNotSyncCooldown = new CountPerSecond(metrics, DO_NOT_SYNC_COOLDOWN_CONFIG);
         doNotSyncHalted = new CountPerSecond(metrics, DO_NOT_SYNC_HALTED_CONFIG);
         doNotSyncIntakeQueue = new CountPerSecond(metrics, DO_NOT_SYNC_INTAKE_QUEUE_CONFIG);
@@ -396,6 +403,13 @@ public class SyncMetrics {
      */
     public void recordSyncFilterTime(final long nanoseconds) {
         syncFilterTime.update(nanoseconds);
+    }
+
+    /**
+     * Signal that we chose not to sync because of the current platform status
+     */
+    public void doNotSyncPlatformStatus() {
+        doNoSyncPlatformStatus.count();
     }
 
     /**
