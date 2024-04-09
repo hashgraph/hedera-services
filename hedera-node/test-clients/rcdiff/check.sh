@@ -3,7 +3,7 @@
 if [ $# -lt 2 ]; then
   # Change these locations to your case
   EXPECTED_LOC='/opt/hgcapp/recordStreams/record0.0.30'
-  ACTUAL_LOC='/Users/neeharikasompalli/Documents/Hedera/Repos/hedera-services/platform-sdk/swirlds-cli/hedera-node/data/recordStreams/record0.0.30'
+  ACTUAL_LOC='/Users/neeharikasompalli/Documents/Hedera/Repos/repo2/hedera-services/platform-sdk/swirlds-cli/hedera-node/data/recordStreams/record0.0.30'
 else
   EXPECTED_LOC=$1
   ACTUAL_LOC=$2
