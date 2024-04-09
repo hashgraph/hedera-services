@@ -137,6 +137,8 @@ public class ReconnectBench extends VirtualMapBaseBench {
         beforeTest("reconnect");
         updateMerkleDbPath();
 
+        final Random random = new Random(randomSeed);
+
         final List<VirtualMap<BenchmarkKey, BenchmarkValue>> maps = new ArrayList<>();
 
         for (int mapIndex = 0; mapIndex < mapCount; mapIndex++) {
@@ -145,7 +147,6 @@ public class ReconnectBench extends VirtualMapBaseBench {
             final AtomicReference<VirtualMap<BenchmarkKey, BenchmarkValue>> learnerRef =
                     new AtomicReference<>(createEmptyMap("learner" + mapIndex));
 
-            final Random random = new Random(randomSeed);
             new StateBuilder<>(BenchmarkKey::new, BenchmarkValue::new)
                     .buildState(
                             random,
