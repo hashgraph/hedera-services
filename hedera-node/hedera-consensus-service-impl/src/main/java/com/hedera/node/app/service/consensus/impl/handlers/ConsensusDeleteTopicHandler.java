@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.DeleteTopicResourceUsage;
@@ -62,6 +63,11 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         // To delete a topic, the transaction must be signed by the admin key. If there is no admin
         // key, then it is impossible to delete the topic.
         context.requireKeyOrThrow(topic.adminKey(), UNAUTHORIZED);
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        // nothing to do
     }
 
     /**
