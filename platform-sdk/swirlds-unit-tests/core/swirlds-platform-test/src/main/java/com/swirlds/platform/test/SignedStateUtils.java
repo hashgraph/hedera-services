@@ -44,7 +44,8 @@ public class SignedStateUtils {
                 CryptoStatic::verifySignature,
                 root,
                 "test",
-                shouldSaveToDisk);
+                shouldSaveToDisk,
+                false);
         signedState.getState().setHash(RandomUtils.randomHash(random));
         return signedState;
     }

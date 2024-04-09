@@ -211,7 +211,8 @@ public class StateEditor {
                     CryptoStatic::verifySignature,
                     reservedSignedState.get().getState().copy(),
                     "StateEditor.getSignedStateCopy()",
-                    reservedSignedState.get().isFreezeState());
+                    reservedSignedState.get().isFreezeState(),
+                    false);
 
             signedState.set(newSignedState, "StateEditor.getSignedStateCopy() 2");
 

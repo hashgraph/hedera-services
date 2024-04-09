@@ -30,7 +30,9 @@ import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -61,6 +63,7 @@ public class PlatformComponentBuilder {
     private InternalEventValidator internalEventValidator;
     private EventDeduplicator eventDeduplicator;
     private EventSignatureValidator eventSignatureValidator;
+    private StateGarbageCollector stateGarbageCollector;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -239,6 +242,7 @@ public class PlatformComponentBuilder {
             throw new IllegalStateException("Event signature validator has already been set");
         }
         this.eventSignatureValidator = Objects.requireNonNull(eventSignatureValidator);
+
         return this;
     }
 
@@ -247,8 +251,6 @@ public class PlatformComponentBuilder {
      * {@link #withEventSignatureValidator(EventSignatureValidator)}, that validator will be used. If this method is
      * called more than once, only the first call will build the event signature validator. Otherwise, the default
      * validator will be created and returned.
-     *
-     * @return the event signature validator
      */
     @NonNull
     public EventSignatureValidator buildEventSignatureValidator() {
@@ -262,5 +264,37 @@ public class PlatformComponentBuilder {
                     blocks.intakeEventCounter());
         }
         return eventSignatureValidator;
+    }
+
+    /**
+     * Provide a state garbage collector in place of the platform's default state garbage collector.
+     *
+     * @param stateGarbageCollector the state garbage collector to use
+     * @return this builder
+     */
+    public PlatformComponentBuilder withStateGarbageCollector(
+            @NonNull final StateGarbageCollector stateGarbageCollector) {
+        throwIfAlreadyUsed();
+        if (this.stateGarbageCollector != null) {
+            throw new IllegalStateException("State garbage collector has already been set");
+        }
+        this.stateGarbageCollector = Objects.requireNonNull(stateGarbageCollector);
+        return this;
+    }
+
+    /**
+     * Build the state garbage collector if it has not yet been built. If one has been provided via
+     * {@link #withStateGarbageCollector(StateGarbageCollector)}, that garbage collector will be used. If this method is
+     * called more than once, only the first call will build the state garbage collector. Otherwise, the default garbage
+     * collector will be created and returned.
+     *
+     * @return the state garbage collector
+     */
+    @NonNull
+    public StateGarbageCollector buildStateGarbageCollector() {
+        if (stateGarbageCollector == null) {
+            stateGarbageCollector = new DefaultStateGarbageCollector(blocks.platformContext());
+        }
+        return stateGarbageCollector;
     }
 }
