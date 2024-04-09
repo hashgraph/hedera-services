@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.wires.output.internal;
 
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -34,7 +34,7 @@ public abstract class ForwardingOutputWire<IN, OUT> extends OutputWire<OUT> {
      * @param model the wiring model containing this output wire
      * @param name  the name of the output wire
      */
-    protected ForwardingOutputWire(@NonNull final StandardWiringModel model, final @NonNull String name) {
+    protected ForwardingOutputWire(@NonNull final TraceableWiringModel model, final @NonNull String name) {
         super(model, name);
     }
 

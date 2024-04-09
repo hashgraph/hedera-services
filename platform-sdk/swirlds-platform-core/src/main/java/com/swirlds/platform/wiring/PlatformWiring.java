@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.common.wiring.wires.SolderType.OFFER;
@@ -32,6 +32,7 @@ import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.WireTransformer;
@@ -190,7 +191,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         final ForkJoinPool defaultPool = new ForkJoinPool(parallelism);
         logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
 
-        model = WiringModel.create(platformContext, defaultPool);
+        model = WiringModelBuilder.create(platformContext)
+                .withDefaultPool(defaultPool)
+                .build();
 
         // This counter spans both the event hasher and the post hash collector. This is a workaround for the current
         // inability of concurrent schedulers to handle backpressure from an immediately subsequent scheduler.
