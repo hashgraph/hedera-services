@@ -71,8 +71,8 @@ public class DeterministicHeartbeatScheduler extends AbstractHeartbeatScheduler 
         for (final Entry<Duration, List<HeartbeatTask>> entry : heartbeatsByPeriod.entrySet()) {
             final Duration period = entry.getKey();
             final List<HeartbeatTask> tasksForPeriod = entry.getValue();
-            final Instant lastHeartbeat = previousHeartbeats.get(period);
-            final Duration timeSinceLastHeartbeat = Duration.between(lastHeartbeat, currentTime);
+            final Instant previousHeartbeat = previousHeartbeats.get(period);
+            final Duration timeSinceLastHeartbeat = Duration.between(previousHeartbeat, currentTime);
             if (isGreaterThanOrEqualTo(timeSinceLastHeartbeat, period)) {
                 for (final HeartbeatTask task : tasksForPeriod) {
                     task.run();
