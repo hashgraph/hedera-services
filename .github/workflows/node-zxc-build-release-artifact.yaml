@@ -215,7 +215,7 @@ jobs:
           echo "prerelease=${PRERELEASE}" >>"${GITHUB_OUTPUT}"
 
       - name: Cache Build Version
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: version.txt
           key: node-build-version-${{ steps.effective-version.outputs.number }}-${{ github.sha }}
@@ -292,14 +292,14 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Restore Build Version
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           fail-on-cache-miss: true
           path: version.txt
           key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
 
       - name: Cache Build Artifacts
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: ~/artifact-build
           key: node-build-artifacts-${{ needs.validate.outputs.version }}-${{ github.sha }}
@@ -469,7 +469,7 @@ jobs:
           password: ${{ steps.google-auth.outputs.access_token }}
 
       - name: Restore Build Artifacts
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           fail-on-cache-miss: true
           path: ~/artifact-build
@@ -732,7 +732,7 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Restore Build Version
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           fail-on-cache-miss: true
           path: version.txt
@@ -834,7 +834,7 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Restore Build Version
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           fail-on-cache-miss: true
           path: version.txt
