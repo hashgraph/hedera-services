@@ -123,7 +123,7 @@ public class CustomFractionalFeeAssessor {
                 // make credit to the collector
                 final var map =
                         result.getMutableInputBalanceAdjustments().computeIfAbsent(denom, ADJUSTMENTS_MAP_FACTORY);
-                map.merge(collector, assessedAmount, Long::sum);
+                map.merge(collector, assessedAmount, AdjustmentUtils::addExactOrThrow);
                 result.getMutableInputBalanceAdjustments().put(denom, map);
 
                 final var finalEffPayerNums = filteredCredits.keySet();
@@ -161,7 +161,7 @@ public class CustomFractionalFeeAssessor {
             final var amount = entry.getValue();
             // Further reduce the credit to an effective payer account
             // by the amount that was redirected to fee collector accounts
-            map.merge(account, amount - creditsForToken.get(account), Long::sum);
+            map.merge(account, amount - creditsForToken.get(account), AdjustmentUtils::addExactOrThrow);
         }
         mutableInputTokenAdjustments.put(denom, map);
     }
@@ -197,8 +197,8 @@ public class CustomFractionalFeeAssessor {
      * @return the amount owned to be paid as fractional custom fee
      */
     private long amountOwed(final long givenUnits, @NonNull final FractionalFee fractionalFee) {
-        final var numerator = fractionalFee.fractionalAmount().numerator();
-        final var denominator = fractionalFee.fractionalAmount().denominator();
+        final var numerator = fractionalFee.fractionalAmountOrThrow().numerator();
+        final var denominator = fractionalFee.fractionalAmountOrThrow().denominator();
         var nominalFee = 0L;
         try {
             nominalFee = safeFractionMultiply(numerator, denominator, givenUnits);
