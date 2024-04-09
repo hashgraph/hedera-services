@@ -571,6 +571,7 @@ public class SwirldsPlatform implements Platform {
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,
+                blocks.randomBuilder().buildNonCryptographicRandom(),
                 this,
                 currentAddressBook,
                 selfId,
@@ -663,8 +664,8 @@ public class SwirldsPlatform implements Platform {
 
         gossip = new SyncGossip(
                 platformContext,
+                blocks.randomBuilder().buildNonCryptographicRandom(),
                 threadManager,
-                time,
                 keysAndCerts,
                 notificationEngine,
                 currentAddressBook,
