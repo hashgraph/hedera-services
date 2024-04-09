@@ -73,6 +73,8 @@ public class ContractDeleteHandler implements TransactionHandler {
         // The contract ID must be present on the transaction
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
+
+        validateTrue(op.hasTransferAccountID() || op.hasTransferContractID(), OBTAINER_REQUIRED);
     }
 
     @Override
@@ -100,7 +102,6 @@ public class ContractDeleteHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         final var op = context.body().contractDeleteInstanceOrThrow();
-        validateTrue(op.hasTransferAccountID() || op.hasTransferContractID(), OBTAINER_REQUIRED);
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var toBeDeleted = requireNonNull(accountStore.getContractById(op.contractIDOrThrow()));
         validateFalse(toBeDeleted.deleted(), CONTRACT_DELETED);
