@@ -16,9 +16,9 @@
 
 package com.swirlds.platform;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.stream.HashSigner;
+import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusGetter;
@@ -32,7 +32,7 @@ import java.util.Objects;
  */
 public class StateSigner {
     /** An object responsible for signing states with this node's key. */
-    private final HashSigner signer;
+    private final PlatformSigner signer;
     /** provides the current platform status */
     private final PlatformStatusGetter platformStatusGetter;
 
@@ -42,7 +42,7 @@ public class StateSigner {
      * @param signer               an object responsible for signing states with this node's key
      * @param platformStatusGetter provides the current platform status
      */
-    public StateSigner(@NonNull final HashSigner signer, @NonNull final PlatformStatusGetter platformStatusGetter) {
+    public StateSigner(@NonNull final PlatformSigner signer, @NonNull final PlatformStatusGetter platformStatusGetter) {
         this.signer = Objects.requireNonNull(signer);
         this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
     }
@@ -64,10 +64,11 @@ public class StateSigner {
 
             final Hash stateHash =
                     Objects.requireNonNull(reservedSignedState.get().getState().getHash());
-            final Signature signature = signer.sign(stateHash);
+            final Bytes signature = signer.signImmutable(stateHash);
             Objects.requireNonNull(signature);
 
-            return new StateSignatureTransaction(reservedSignedState.get().getRound(), signature, stateHash);
+            return new StateSignatureTransaction(
+                    reservedSignedState.get().getRound(), signature, stateHash.getBytes(), Bytes.EMPTY);
         }
     }
 }

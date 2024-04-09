@@ -43,7 +43,7 @@ public abstract class AbstractTokenXTest extends AbstractXTest {
 
     @BeforeEach
     void setUp() {
-        component = DaggerTokenScaffoldingComponent.factory().create(metrics, configuration());
+        component = DaggerTokenScaffoldingComponent.factory().create(metrics, configuration(), storeMetricsService);
     }
 
     protected Configuration configuration() {

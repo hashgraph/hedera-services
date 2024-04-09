@@ -44,7 +44,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * be called by the code that created the {@link WritableKVStateBase} instance or owns it. Don't
      * cast and commit unless you own the instance!
      */
-    public final void commit() {
+    public void commit() {
         for (final var entry : modifications.entrySet()) {
             final var key = entry.getKey();
             final var value = entry.getValue();

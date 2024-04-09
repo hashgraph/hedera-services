@@ -67,4 +67,9 @@ public class TriggeredFinalizeContext extends ChildFinalizeContextImpl implement
     public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
         // No-op, as contract operations cannot be scheduled at this time
     }
+
+    @Override
+    public boolean isScheduleDispatch() {
+        return true;
+    }
 }

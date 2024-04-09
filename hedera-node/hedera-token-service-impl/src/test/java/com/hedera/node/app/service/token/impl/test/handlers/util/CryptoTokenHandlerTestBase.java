@@ -80,6 +80,7 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -362,6 +363,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected Account delegatingSpenderAccount;
     protected Account treasuryAccount;
     protected Account stakingRewardAccount;
+    protected Account tokenReceiverAccount;
+    protected Account hbarReceiverAccount;
 
     /* ---------- Maps for updating both readable and writable stores ---------- */
     private Map<AccountID, Account> accountsMap;
@@ -375,6 +378,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     @Mock
     protected WritableStates writableStates;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
 
     protected Configuration configuration;
     protected VersionedConfigImpl versionedConfig;
@@ -400,18 +406,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         accountsMap = new HashMap<>();
         accountsMap.put(payerId, account);
         if (prepopulateReceiverIds) {
-            accountsMap.put(
-                    hbarReceiverId,
-                    Account.newBuilder()
-                            .accountId(hbarReceiverId)
-                            .tinybarBalance(Long.MAX_VALUE)
-                            .build());
-            accountsMap.put(
-                    tokenReceiverId,
-                    Account.newBuilder()
-                            .accountId(tokenReceiverId)
-                            .tinybarBalance(Long.MAX_VALUE)
-                            .build());
+            accountsMap.put(hbarReceiverId, hbarReceiverAccount);
+            accountsMap.put(tokenReceiverId, tokenReceiverAccount);
         }
         accountsMap.put(deleteAccountId, deleteAccount);
         accountsMap.put(transferAccountId, transferAccount);
@@ -479,8 +475,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         writableAliases = emptyWritableAliasStateBuilder().build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+        given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
+        given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
-        writableAccountStore = new WritableAccountStore(writableStates);
+        writableAccountStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenAccountsInWritableStore() {
@@ -493,7 +491,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
-        writableAccountStore = new WritableAccountStore(writableStates);
+        writableAccountStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenTokensInReadableStore() {
@@ -502,7 +500,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
-        writableTokenStore = new WritableTokenStore(writableStates);
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenTokensInWritableStore() {
@@ -511,7 +509,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
-        writableTokenStore = new WritableTokenStore(writableStates);
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenReadableStakingInfoStore() {
@@ -558,7 +556,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private void givenWritableTokenRelsStore() {
         writableTokenRelState = writableTokenRelState();
         given(writableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(writableTokenRelState);
-        writableTokenRelStore = new WritableTokenRelationStore(writableStates);
+        writableTokenRelStore = new WritableTokenRelationStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenReadableNftStore() {
@@ -576,7 +574,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .value(nftIdSl2, nftSl2)
                 .build();
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore = new WritableNftStore(writableStates);
+        writableNftStore = new WritableNftStore(writableStates, configuration, storeMetricsService);
     }
 
     @NonNull
@@ -740,14 +738,18 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                         .build()))
                 .build();
         nonFungibleToken = givenValidNonFungibleToken(true);
-        nftSl1 = givenNft(nftIdSl1);
-        nftSl2 = givenNft(nftIdSl2);
+        nftSl1 = givenNft(nftIdSl1).copyBuilder().ownerNextNftId(nftIdSl2).build();
+        nftSl2 = givenNft(nftIdSl2).copyBuilder().ownerPreviousNftId(nftIdSl1).build();
     }
 
     private void givenValidAccounts() {
         account = givenValidAccountBuilder().stakedNodeId(1L).build();
-        spenderAccount =
-                givenValidAccountBuilder().key(spenderKey).accountId(spenderId).build();
+        spenderAccount = givenValidAccountBuilder()
+                .key(spenderKey)
+                .accountId(spenderId)
+                .headNftSerialNumber(0L)
+                .headNftId((NftID) null)
+                .build();
         ownerAccount = givenValidAccountBuilder()
                 .accountId(ownerId)
                 .cryptoAllowances(AccountCryptoAllowance.newBuilder()
@@ -776,6 +778,18 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         stakingRewardAccount = givenValidAccountBuilder()
                 .accountId(stakingRewardId)
                 .key(EMPTY_KEYLIST)
+                .build();
+        tokenReceiverAccount = givenValidAccountBuilder()
+                .accountId(tokenReceiverId)
+                .tinybarBalance(Long.MAX_VALUE)
+                .headNftId((NftID) null)
+                .headNftSerialNumber(0L)
+                .build();
+        hbarReceiverAccount = givenValidAccountBuilder()
+                .accountId(hbarReceiverId)
+                .tinybarBalance(Long.MAX_VALUE)
+                .headNftId((NftID) null)
+                .headNftSerialNumber(0L)
                 .build();
     }
 
@@ -852,6 +866,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .headTokenId(TokenID.newBuilder().tokenNum(3L).build())
                 .headNftId(NftID.newBuilder()
                         .tokenId(TokenID.newBuilder().tokenNum(2L))
+                        .serialNumber(1L)
                         .build())
                 .headNftSerialNumber(1L)
                 .numberOwnedNfts(2L)

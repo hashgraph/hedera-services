@@ -33,7 +33,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBui
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
@@ -48,7 +47,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
             @NonNull final AccountID senderId,
             @NonNull final TokenID token,
             @NonNull final AccountID spender,
-            @NonNull final BigInteger amount,
+            final long amount,
             @NonNull final TokenType tokenType) {
         super(gasCalculator, enhancement, verificationStrategy, senderId, token, spender, amount, tokenType, false);
     }
