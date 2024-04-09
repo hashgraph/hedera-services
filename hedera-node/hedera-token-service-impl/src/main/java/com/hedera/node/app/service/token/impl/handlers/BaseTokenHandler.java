@@ -170,22 +170,26 @@ public class BaseTokenHandler {
             @NonNull final WritableTokenRelationStore tokenRelStore) {
         // create list of token relations to be added
         final var newTokenRels = createTokenRelsToAccount(account, tokens);
-        // Link the new token relations to the account
-        linkTokenRels(account, newTokenRels, tokenRelStore);
 
-        // Now replace the account's old head token number with the new head token number. This is
-        // how we link the new tokenRels to the account
-        final var firstOfNewTokenRels = newTokenRels.get(0);
-        final var updatedAcct = account.copyBuilder()
-                // replace the head token number with the first token number of the new tokenRels
-                .headTokenId(firstOfNewTokenRels.tokenId())
-                // and also update the account's total number of token associations
-                .numberAssociations(account.numberAssociations() + newTokenRels.size())
-                .build();
+        // FUTURE - We may need to return a proper error status when tokens are empty
+        if (!newTokenRels.isEmpty()) {
+            // Link the new token relations to the account
+            linkTokenRels(account, newTokenRels, tokenRelStore);
 
-        // Save the results
-        accountStore.put(updatedAcct);
-        newTokenRels.forEach(tokenRelStore::put);
+            // Now replace the account's old head token number with the new head token number. This is
+            // how we link the new tokenRels to the account
+            final var firstOfNewTokenRels = newTokenRels.get(0);
+            final var updatedAcct = account.copyBuilder()
+                    // replace the head token number with the first token number of the new tokenRels
+                    .headTokenId(firstOfNewTokenRels.tokenId())
+                    // and also update the account's total number of token associations
+                    .numberAssociations(account.numberAssociations() + newTokenRels.size())
+                    .build();
+
+            // Save the results
+            accountStore.put(updatedAcct);
+            newTokenRels.forEach(tokenRelStore::put);
+        }
     }
 
     /**
@@ -336,6 +340,16 @@ public class BaseTokenHandler {
                 .headTokenId(tokenId)
                 .build();
 
+        final var existingFirstTokenId = account.headTokenId();
+        if (existingFirstTokenId != null) {
+            final var existingFirstTokenRel = tokenRelStore.get(accountId, existingFirstTokenId);
+            if (existingFirstTokenRel != null) {
+                tokenRelStore.put(existingFirstTokenRel
+                        .copyBuilder()
+                        .previousToken(tokenId)
+                        .build());
+            }
+        }
         accountStore.put(copyAccount);
         tokenRelStore.put(newTokenRel);
         return newTokenRel;

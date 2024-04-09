@@ -523,13 +523,6 @@ public class EventImpl extends EventMetadata
 
     /** {@inheritDoc} */
     @Override
-    @Nullable
-    public NodeId getOtherId() {
-        return baseEvent.getUnhashedData().getOtherId();
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public long getGeneration() {
         return baseEvent.getHashedData().getGeneration();
     }

@@ -24,6 +24,7 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -44,6 +45,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     public TokenContextImpl(
             @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final SavepointStackImpl stack,
             @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final BlockRecordManager blockRecordManager,
@@ -55,7 +57,8 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
         this.isFirstTransaction = isFirstTransaction;
 
         this.readableStoreFactory = new ReadableStoreFactory(stack);
-        this.writableStoreFactory = new WritableStoreFactory(stack, TokenService.NAME);
+        this.writableStoreFactory =
+                new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
     }
 
     @NonNull
@@ -129,6 +132,11 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @Override
     public boolean isFirstTransaction() {
         return isFirstTransaction;
+    }
+
+    @Override
+    public boolean isScheduleDispatch() {
+        return false;
     }
 
     @Override

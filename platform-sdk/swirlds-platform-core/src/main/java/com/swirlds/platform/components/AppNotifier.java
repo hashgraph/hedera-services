@@ -34,7 +34,7 @@ public interface AppNotifier {
      *
      * @param notification the notification
      */
-    @InputWireLabel("StateWriteToDiskCompleteNotification")
+    @InputWireLabel("state written notification")
     void sendStateWrittenToDiskNotification(@NonNull final StateWriteToDiskCompleteNotification notification);
 
     /**
@@ -42,7 +42,7 @@ public interface AppNotifier {
      *
      * @param notification the notification
      */
-    @InputWireLabel("StateLoadedFromDiskNotification")
+    @InputWireLabel("state loaded notification")
     void sendStateLoadedFromDiskNotification(@NonNull final StateLoadedFromDiskNotification notification);
 
     /**
@@ -50,7 +50,7 @@ public interface AppNotifier {
      *
      * @param notification the notification
      */
-    @InputWireLabel("ReconnectCompleteNotification")
+    @InputWireLabel("reconnect notification")
     void sendReconnectCompleteNotification(@NonNull final ReconnectCompleteNotification notification);
 
     /**
@@ -58,7 +58,7 @@ public interface AppNotifier {
      *
      * @param notification the notification
      */
-    @InputWireLabel("PlatformStatusChangeNotification")
+    @InputWireLabel("platform status notification")
     void sendPlatformStatusChangeNotification(@NonNull final PlatformStatusChangeNotification notification);
 
     /**
@@ -66,7 +66,7 @@ public interface AppNotifier {
      *
      * @param notificationWithCleanup the notification, with required cleanup
      */
-    @InputWireLabel("CompleteStateNotificationWithCleanup")
+    @InputWireLabel("complete state notification")
     void sendLatestCompleteStateNotification(
             @NonNull final CompleteStateNotificationWithCleanup notificationWithCleanup);
 
@@ -75,6 +75,6 @@ public interface AppNotifier {
      *
      * @param notification the notification
      */
-    @InputWireLabel("IssNotification")
+    @InputWireLabel("Iss Notification")
     void sendIssNotification(@NonNull final IssNotification notification);
 }

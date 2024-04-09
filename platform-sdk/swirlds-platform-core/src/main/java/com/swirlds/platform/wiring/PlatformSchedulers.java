@@ -27,10 +27,9 @@ import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.StateSigner;
-import com.swirlds.platform.components.ConsensusEngine;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
-import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -39,8 +38,6 @@ import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.stream.EventStreamManager;
-import com.swirlds.platform.event.validation.EventSignatureValidator;
-import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
@@ -62,12 +59,11 @@ import java.util.List;
 
 /**
  * The {@link TaskScheduler}s used by the platform.
+ * <p>
+ * This class is being phased out. Do not add additional schedulers to this class!
  *
  * @param eventHasherScheduler                      the scheduler for the event hasher
  * @param postHashCollectorScheduler                the scheduler for the post hash collector
- * @param internalEventValidatorScheduler           the scheduler for the internal event validator
- * @param eventDeduplicatorScheduler                the scheduler for the event deduplicator
- * @param eventSignatureValidatorScheduler          the scheduler for the event signature validator
  * @param orphanBufferScheduler                     the scheduler for the orphan buffer
  * @param inOrderLinkerScheduler                    the scheduler for the in-order linker
  * @param consensusEngineScheduler                  the scheduler for the consensus engine
@@ -92,9 +88,6 @@ import java.util.List;
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
         @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
-        @NonNull TaskScheduler<GossipEvent> internalEventValidatorScheduler,
-        @NonNull TaskScheduler<GossipEvent> eventDeduplicatorScheduler,
-        @NonNull TaskScheduler<GossipEvent> eventSignatureValidatorScheduler,
         @NonNull TaskScheduler<List<GossipEvent>> orphanBufferScheduler,
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
         @NonNull TaskScheduler<List<ConsensusRound>> consensusEngineScheduler,
@@ -149,27 +142,6 @@ public record PlatformSchedulers(
                         .withExternalBackPressure(true)
                         .withUnhandledTaskMetricEnabled(true)
                         .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("internalEventValidator")
-                        .configure(config.internalEventValidator())
-                        .withHyperlink(platformCoreHyperlink(InternalEventValidator.class))
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("eventDeduplicator")
-                        .withType(config.eventDeduplicatorSchedulerType())
-                        .withUnhandledTaskCapacity(config.eventDeduplicatorUnhandledCapacity())
-                        .withFlushingEnabled(true)
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(EventDeduplicator.class))
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("eventSignatureValidator")
-                        .withType(config.eventSignatureValidatorSchedulerType())
-                        .withUnhandledTaskCapacity(config.eventSignatureValidatorUnhandledCapacity())
-                        .withFlushingEnabled(true)
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(EventSignatureValidator.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("orphanBuffer")

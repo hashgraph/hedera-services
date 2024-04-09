@@ -73,18 +73,19 @@ class InternalEventValidatorTests {
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
+        final Time time = new FakeTime();
+
         // Adding the configuration to use the birth round as the ancient threshold for testing.
         // The conditions where it is false is covered by the case where it is set to true.
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder()
                         .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
                         .getOrCreateConfig())
+                .withTime(time)
                 .build();
 
-        final Time time = new FakeTime();
-
-        multinodeValidator = new DefaultInternalEventValidator(platformContext, time, false, intakeEventCounter);
-        singleNodeValidator = new DefaultInternalEventValidator(platformContext, time, true, intakeEventCounter);
+        multinodeValidator = new DefaultInternalEventValidator(platformContext, false, intakeEventCounter);
+        singleNodeValidator = new DefaultInternalEventValidator(platformContext, true, intakeEventCounter);
     }
 
     private static GossipEvent generateEvent(

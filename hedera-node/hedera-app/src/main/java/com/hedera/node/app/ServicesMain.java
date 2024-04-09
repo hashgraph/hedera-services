@@ -18,8 +18,9 @@ package com.hedera.node.app;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
-import static com.swirlds.platform.PlatformBuilder.buildPlatformContext;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuilder.buildPlatformContext;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
@@ -37,7 +38,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.platform.CommandLineArgs;
-import com.swirlds.platform.PlatformBuilder;
+import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -128,7 +129,7 @@ public class ServicesMain implements SwirldMain {
 
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
-        final AddressBook addressBook = loadAddressBook(PlatformBuilder.DEFAULT_CONFIG_FILE_NAME);
+        final AddressBook addressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
         // parse command line arguments
         final CommandLineArgs commandLineArgs = CommandLineArgs.parse(args);
 
@@ -160,7 +161,7 @@ public class ServicesMain implements SwirldMain {
                 buildPlatformContext(config, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME), selfId);
 
         final PlatformBuilder builder =
-                new PlatformBuilder(Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId);
+                PlatformBuilder.create(Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId);
 
         builder.withPreviousSoftwareVersionClassId(0x6f2b1bc2df8cbd0bL /* SerializableSemVers.CLASS_ID */);
         builder.withPlatformContext(platformContext);

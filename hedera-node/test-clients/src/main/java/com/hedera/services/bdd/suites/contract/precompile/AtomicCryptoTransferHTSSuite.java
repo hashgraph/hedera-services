@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -53,6 +54,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
@@ -63,6 +65,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACC
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
@@ -88,6 +91,8 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Tag;
@@ -137,6 +142,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
             cryptoTransferForNFTWithFees(),
             cryptoTransferForNonFungibleTokenOnly(),
             cryptoTransferHBarFungibleNft(),
+            cryptoTransferSpecialAccounts(),
+            blockCryptoTransferForPermittedDelegates(),
             cryptoTransferAllowanceToContractHbar(),
             cryptoTransferAllowanceToContractFT(),
             cryptoTransferAllowanceToContractNFT(),
@@ -1504,6 +1511,83 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
                                                         .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
+    }
+
+    @HapiTest
+    final HapiSpec blockCryptoTransferForPermittedDelegates() {
+        final var blockCryptoTransferForPermittedDelegates = "blockCryptoTransferForPermittedDelegates";
+        final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
+        final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "blockCryptoTransferForPermittedDelegates",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
+                .preserving(
+                        "contracts.allowAutoAssociations",
+                        "contracts.precompile.atomicCryptoTransfer.enabled",
+                        CONTRACTS_PERMITTED_DELEGATE_CALLERS)
+                .given(
+                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(TOTAL_SUPPLY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
+                        cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).adminKey(DEFAULT_PAYER).exposingNumTo(num -> {
+                            whitelistedCalleeMirrorNum.set(num);
+                            whitelistedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
+                        }))
+                .when(
+                        overridingThree(
+                                "contracts.allowAutoAssociations",
+                                "true",
+                                "contracts.precompile.atomicCryptoTransfer.enabled",
+                                "true",
+                                CONTRACTS_PERMITTED_DELEGATE_CALLERS,
+                                String.valueOf(whitelistedCalleeMirrorNum.get())),
+                        withOpContext((spec, opLog) -> {
+                            final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
+                            final var sender = spec.registry().getAccountID(SENDER);
+                            final var receiver = spec.registry().getAccountID(RECEIVER);
+                            final var amountToBeSent = 50L;
+
+                            allRunFor(
+                                    spec,
+                                    contractCall(
+                                                    CONTRACT,
+                                                    TRANSFER_MULTIPLE_TOKENS,
+                                                    transferList()
+                                                            .withAccountAmounts(EMPTY_TUPLE_ARRAY)
+                                                            .build(),
+                                                    wrapIntoTupleArray(tokenTransferList()
+                                                            .forToken(token)
+                                                            .withAccountAmounts(
+                                                                    accountAmount(sender, -amountToBeSent, false),
+                                                                    accountAmount(receiver, amountToBeSent, false))
+                                                            .build()))
+                                            .payingWith(DEFAULT_PAYER)
+                                            .via(blockCryptoTransferForPermittedDelegates)
+                                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                            .gas(GAS_TO_OFFER));
+                        }),
+                        getTxnRecord(blockCryptoTransferForPermittedDelegates)
+                                .andAllChildRecords()
+                                .logged())
+                .then(childRecordsCheck(
+                        blockCryptoTransferForPermittedDelegates,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
     }
 
     @Override

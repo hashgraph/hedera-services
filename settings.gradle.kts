@@ -66,7 +66,7 @@ include(":app-spi", "hedera-node/hedera-app-spi")
 
 include(":config", "hedera-node/hedera-config")
 
-include(":hapi", "hedera-node/hapi")
+include(":hapi", "hapi")
 
 include(":services-cli", "hedera-node/cli-clients")
 
@@ -152,6 +152,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.3")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.4")
     }
 }

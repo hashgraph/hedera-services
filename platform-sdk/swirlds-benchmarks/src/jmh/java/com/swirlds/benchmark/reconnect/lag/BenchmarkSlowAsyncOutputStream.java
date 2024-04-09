@@ -24,6 +24,7 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Random;
 
 /**
  * This variant of the async output stream introduces an extra delay for every single
@@ -32,18 +33,28 @@ import java.time.Duration;
  */
 public class BenchmarkSlowAsyncOutputStream<T extends SelfSerializable> extends AsyncOutputStream<T> {
 
-    private final long delayStorageMicroseconds;
-    private final long delayNetworkMicroseconds;
+    private final LongFuzzer delayStorageMicrosecondsFuzzer;
+    private final LongFuzzer delayNetworkMicrosecondsFuzzer;
 
     public BenchmarkSlowAsyncOutputStream(
             final SerializableDataOutputStream out,
             final StandardWorkGroup workGroup,
+            final long randomSeed,
             final long delayStorageMicroseconds,
+            final double delayStorageFuzzRangePercent,
             final long delayNetworkMicroseconds,
+            final double delayNetworkFuzzRangePercent,
             final ReconnectConfig reconnectConfig) {
         super(out, workGroup, reconnectConfig);
-        this.delayStorageMicroseconds = delayStorageMicroseconds;
-        this.delayNetworkMicroseconds = delayNetworkMicroseconds;
+
+        // Note that we use randomSeed and -randomSeed for the two fuzzers
+        // to ensure that they don't end up returning the exact same
+        // (relatively, that is, in percentages) delay
+        // for both the storage and network.
+        delayStorageMicrosecondsFuzzer =
+                new LongFuzzer(delayStorageMicroseconds, new Random(randomSeed), delayStorageFuzzRangePercent);
+        delayNetworkMicrosecondsFuzzer =
+                new LongFuzzer(delayNetworkMicroseconds, new Random(-randomSeed), delayNetworkFuzzRangePercent);
     }
 
     /**
@@ -54,7 +65,7 @@ public class BenchmarkSlowAsyncOutputStream<T extends SelfSerializable> extends 
         if (!isAlive()) {
             throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
         }
-        sleepMicros(delayStorageMicroseconds);
+        sleepMicros(delayStorageMicrosecondsFuzzer.next());
         getOutgoingMessages().put(message);
     }
 
@@ -63,7 +74,7 @@ public class BenchmarkSlowAsyncOutputStream<T extends SelfSerializable> extends 
      */
     @Override
     protected void serializeMessage(final T message) throws IOException {
-        sleepMicros(delayNetworkMicroseconds);
+        sleepMicros(delayNetworkMicrosecondsFuzzer.next());
         message.serialize(getOutputStream());
     }
 

@@ -889,7 +889,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         subject.finalizeParentRecord(
                 ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
         verify(stakingRewardsHandler, never())
-                .applyStakingRewards(context, Collections.emptySet(), Collections.emptySet());
+                .applyStakingRewards(context, Collections.emptySet(), Collections.emptyMap());
     }
 
     @Test

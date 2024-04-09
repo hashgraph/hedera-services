@@ -44,9 +44,11 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -135,6 +137,9 @@ public class CryptoHandlerTestBase {
     @Mock
     protected CryptoSignatureWaiversImpl waivers;
 
+    @Mock
+    private StoreMetricsService storeMetricsService;
+
     @BeforeEach
     public void setUp() {
         account = givenValidAccount(accountNum);
@@ -167,7 +172,8 @@ public class CryptoHandlerTestBase {
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableStore = new ReadableAccountStoreImpl(readableStates);
-        writableStore = new WritableAccountStore(writableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
     protected void refreshStoresWithCurrentTokenOnlyInReadable() {
@@ -177,8 +183,11 @@ public class CryptoHandlerTestBase {
         writableAliases = emptyWritableAliasStateBuilder().build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+        given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
+        given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableStore = new ReadableAccountStoreImpl(readableStates);
-        writableStore = new WritableAccountStore(writableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
     protected void refreshStoresWithCurrentTokenInWritable() {
@@ -191,7 +200,8 @@ public class CryptoHandlerTestBase {
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableStore = new ReadableAccountStoreImpl(readableStates);
-        writableStore = new WritableAccountStore(writableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
     @NonNull
