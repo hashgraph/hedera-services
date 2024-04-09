@@ -107,8 +107,8 @@ class NetworkPeerIdentifierTest {
         final Certificate[] certificates =
                 trustAnchors.stream().map(TrustAnchor::getTrustedCert).toArray(Certificate[]::new);
         for (final Certificate certificate : certificates) {
-            final PeerInfo matchedPeer = peerIdentifier
-                    .identifyTlsPeer(List.of(certificate).toArray(Certificate[]::new), peerInfoList);
+            final PeerInfo matchedPeer =
+                    peerIdentifier.identifyTlsPeer(List.of(certificate).toArray(Certificate[]::new), peerInfoList);
             Assertions.assertNotNull(matchedPeer);
             matches.add(matchedPeer);
         }
@@ -125,11 +125,11 @@ class NetworkPeerIdentifierTest {
         // pick a node's agreement certificate, node20
         final Certificate certUnderTest = publicStores.agrTrustStore().getCertificate("a-node20");
 
-        final PeerInfo matchedPeer = peerIdentifier
-                .identifyTlsPeer(List.of(certUnderTest).toArray(Certificate[]::new), peerInfoList);
+        final PeerInfo matchedPeer =
+                peerIdentifier.identifyTlsPeer(List.of(certUnderTest).toArray(Certificate[]::new), peerInfoList);
 
         Assertions.assertNotNull(matchedPeer);
-        //assert the peer we got back is node20
+        // assert the peer we got back is node20
         Assertions.assertEquals("node20", matchedPeer.nodeName());
     }
 
