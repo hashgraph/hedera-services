@@ -429,12 +429,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             if (isValid(op.adminKey())) {
                 // if op admin key is valid we require the signature
                 context.requireKey(op.adminKeyOrThrow());
-            } else {
-                if (originalToken.hasAdminKey() && isValid(originalToken.adminKey())) {
-                    // if it's not, case is that the current admin key wants to
-                    // set itself to an invalid key, hence we require only the current admin key signature
-                    context.requireKey(originalToken.adminKey());
-                }
+            }
+            if (originalToken.hasAdminKey()) {
+                // if it's not, case is that the current admin key wants to
+                // set itself to an invalid key, hence we require only the current admin key signature
+                context.requireKey(originalToken.adminKey());
             }
         }
 

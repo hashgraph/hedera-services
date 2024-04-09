@@ -106,7 +106,8 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                 updateFailsIfKeyIsMissing(),
                 keyRemovalFailsWhenAdminKeyDoesNotSign(),
                 failUpdateTokenHasNoAdminKeyInitially(),
-                failUpdateTokenHasNoAdminKeyInitiallyAndTryToRemove());
+                failUpdateAllKeysToValidWhenKeysDoesNotExistInitially(),
+                failUpdateTokenHasNoAdminKeyInitiallyAndTryToRemoveLowPriorityKey());
     }
 
     @HapiTest
@@ -540,6 +541,14 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         newKeyNamed(supplyKey),
                         newKeyNamed(feeScheduleKey),
                         newKeyNamed(metadataKey),
+                        newKeyNamed(newAdminKey),
+                        newKeyNamed(newWipeKey),
+                        newKeyNamed(newKycKey),
+                        newKeyNamed(newFreezeKey),
+                        newKeyNamed(newPauseKey),
+                        newKeyNamed(newSupplyKey),
+                        newKeyNamed(newFeeScheduleKey),
+                        newKeyNamed(newMetadataKey),
                         tokenCreate(tokenName)
                                 .name(saltedName)
                                 .initialSupply(500)
@@ -553,7 +562,6 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .metadataKey(metadataKey)
                                 .payingWith(civilian))
                 .when(tokenUpdate(tokenName)
-                        .applyNoValidationToKeys()
                         .adminKey(newAdminKey)
                         .wipeKey(newWipeKey)
                         .kycKey(newKycKey)
@@ -562,9 +570,10 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .supplyKey(newSupplyKey)
                         .feeScheduleKey(newFeeScheduleKey)
                         .metadataKey(newMetadataKey)
-                        .signedBy(civilian, adminKey)
+                        .signedBy(civilian, adminKey, newAdminKey)
                         .payingWith(civilian))
                 .then(getTokenInfo(tokenName)
+                        .searchKeysGlobally()
                         .hasAdminKey(newAdminKey)
                         .hasWipeKey(newWipeKey)
                         .hasKycKey(newKycKey)
@@ -576,7 +585,67 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .logged());
     }
 
-    // TODO
+    @HapiTest
+    public HapiSpec failUpdateAllKeysToValidWhenKeysDoesNotExistInitially() {
+        return defaultHapiSpec("failUpdateAllKeysToValidWhenKeysDoesNotExistInitially")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed(adminKey),
+                        newKeyNamed(wipeKey),
+                        newKeyNamed(kycKey),
+                        newKeyNamed(freezeKey),
+                        newKeyNamed(pauseKey),
+                        newKeyNamed(supplyKey),
+                        newKeyNamed(feeScheduleKey),
+                        newKeyNamed(metadataKey),
+                        tokenCreate(tokenName)
+                                .name(saltedName)
+                                .initialSupply(500)
+                                .adminKey(adminKey)
+                                .payingWith(civilian))
+                .when(
+                        // try to remove non-existent low priority keys
+                        tokenUpdate(tokenName)
+                                .freezeKey(freezeKey)
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
+                        tokenUpdate(tokenName)
+                                .kycKey(kycKey)
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_KYC_KEY),
+                        tokenUpdate(tokenName)
+                                .supplyKey(supplyKey)
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
+                        tokenUpdate(tokenName)
+                                .wipeKey(wipeKey)
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
+                        tokenUpdate(tokenName)
+                                .pauseKey(pauseKey)
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY),
+                        tokenUpdate(tokenName)
+                                .feeScheduleKey(feeScheduleKey)
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_FEE_SCHEDULE_KEY),
+                        tokenUpdate(tokenName)
+                                .metadataKey(metadataKey)
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_METADATA_KEY))
+                .then(getTokenInfo(tokenName)
+                        .searchKeysGlobally()
+                        .hasAdminKey(adminKey)
+                        .logged());
+    }
+
     @HapiTest
     public HapiSpec updateAllKeysToValidAllKeysSign() {
         final var newAdminKey = "newAdminKey";
@@ -598,6 +667,14 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         newKeyNamed(supplyKey),
                         newKeyNamed(feeScheduleKey),
                         newKeyNamed(metadataKey),
+                        newKeyNamed(newAdminKey),
+                        newKeyNamed(newWipeKey),
+                        newKeyNamed(newKycKey),
+                        newKeyNamed(newFreezeKey),
+                        newKeyNamed(newPauseKey),
+                        newKeyNamed(newSupplyKey),
+                        newKeyNamed(newFeeScheduleKey),
+                        newKeyNamed(newMetadataKey),
                         tokenCreate(tokenName)
                                 .name(saltedName)
                                 .initialSupply(500)
@@ -622,6 +699,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .signedBy(
                                 civilian,
                                 adminKey,
+                                newAdminKey,
                                 wipeKey,
                                 kycKey,
                                 freezeKey,
@@ -631,6 +709,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 metadataKey)
                         .payingWith(civilian))
                 .then(getTokenInfo(tokenName)
+                        .searchKeysGlobally()
                         .hasAdminKey(newAdminKey)
                         .hasWipeKey(newWipeKey)
                         .hasKycKey(newKycKey)
@@ -642,9 +721,16 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .logged());
     }
 
-    // TODO
     @HapiTest
     public HapiSpec updateAllLowPriorityKeysToValidAllOfThemSign() {
+        final var newAdminKey = "newAdminKey";
+        final var newWipeKey = "newWipeKey";
+        final var newKycKey = "newKycKey";
+        final var newFreezeKey = "newFreezeKey";
+        final var newPauseKey = "newPauseKey";
+        final var newSupplyKey = "newSupplyKey";
+        final var newFeeScheduleKey = "newFeeScheduleKey";
+        final var newMetadataKey = "newMetadataKey";
         return defaultHapiSpec("updateAllLowPriorityKeysToValidAllOfThemSign")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
@@ -656,6 +742,14 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         newKeyNamed(supplyKey),
                         newKeyNamed(feeScheduleKey),
                         newKeyNamed(metadataKey),
+                        newKeyNamed(newAdminKey),
+                        newKeyNamed(newWipeKey),
+                        newKeyNamed(newKycKey),
+                        newKeyNamed(newFreezeKey),
+                        newKeyNamed(newPauseKey),
+                        newKeyNamed(newSupplyKey),
+                        newKeyNamed(newFeeScheduleKey),
+                        newKeyNamed(newMetadataKey),
                         tokenCreate(tokenName)
                                 .name(saltedName)
                                 .initialSupply(500)
@@ -669,25 +763,25 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .metadataKey(metadataKey)
                                 .payingWith(civilian))
                 .when(tokenUpdate(tokenName)
-                        .applyNoValidationToKeys()
-                        .usingInvalidWipeKey()
-                        .usingInvalidKycKey()
-                        .usingInvalidFreezeKey()
-                        .usingInvalidPauseKey()
-                        .usingInvalidSupplyKey()
-                        .usingInvalidFeeScheduleKey()
-                        .usingInvalidMetadataKey()
+                        .wipeKey(newWipeKey)
+                        .kycKey(newKycKey)
+                        .freezeKey(newFreezeKey)
+                        .pauseKey(newPauseKey)
+                        .supplyKey(newSupplyKey)
+                        .feeScheduleKey(newFeeScheduleKey)
+                        .metadataKey(newMetadataKey)
                         .signedBy(
                                 civilian, wipeKey, kycKey, freezeKey, pauseKey, supplyKey, feeScheduleKey, metadataKey)
                         .payingWith(civilian))
                 .then(getTokenInfo(tokenName)
-                        .hasInvalidWipeKey()
-                        .hasInvalidKycKey()
-                        .hasInvalidFreezeKey()
-                        .hasInvalidPauseKey()
-                        .hasInvalidSupplyKey()
-                        .hasInvalidFeeScheduleKey()
-                        .hasInvalidMetadataKey()
+                        .searchKeysGlobally()
+                        .hasWipeKey(newWipeKey)
+                        .hasKycKey(newKycKey)
+                        .hasFreezeKey(newFreezeKey)
+                        .hasPauseKey(newPauseKey)
+                        .hasSupplyKey(newSupplyKey)
+                        .hasFeeScheduleKey(newFeeScheduleKey)
+                        .hasMetadataKey(newMetadataKey)
                         .logged());
     }
 
@@ -773,8 +867,8 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec failUpdateTokenHasNoAdminKeyInitiallyAndTryToRemove() {
-        return defaultHapiSpec("failUpdateTokenHasNoAdminKeyInitiallyAndTryToRemove")
+    public HapiSpec failUpdateTokenHasNoAdminKeyInitiallyAndTryToRemoveLowPriorityKey() {
+        return defaultHapiSpec("failUpdateTokenHasNoAdminKeyInitiallyAndTryToRemoveLowPriorityKey")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(kycKey),
@@ -788,8 +882,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .kycKey(kycKey)
                         // for key removal here we require the signature of the admin key
                         .signedBy(civilian, kycKey)
-                //        .hasKnownStatus(INVALID_SIGNATURE)
-                )
+                        .hasPrecheck(INVALID_SIGNATURE))
                 .then(getTokenInfo(tokenName)
                         .searchKeysGlobally()
                         .hasKycKey(kycKey)
@@ -908,7 +1001,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .usingInvalidFeeScheduleKey()
                                 .signedBy(civilian, feeScheduleKey)
                                 .payingWith(civilian)
-                                .hasKnownStatus(INVALID_CUSTOM_FEE_SCHEDULE_KEY),
+                                .hasPrecheck(INVALID_CUSTOM_FEE_SCHEDULE_KEY),
                         tokenUpdate(tokenName)
                                 .usingInvalidMetadataKey()
                                 .signedBy(civilian, metadataKey)
@@ -977,11 +1070,21 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(adminKey),
-                        tokenCreate(tokenName).adminKey(adminKey).payingWith(civilian))
-                .when(tokenUpdate(tokenName)
-                        .properlyEmptyingAdminKey()
-                        .signedBy(civilian, adminKey)
-                        .payingWith(civilian))
+                        newKeyNamed(wipeKey),
+                        tokenCreate(tokenName)
+                                .adminKey(adminKey)
+                                .wipeKey(wipeKey)
+                                .payingWith(civilian))
+                .when(
+                        tokenUpdate(tokenName)
+                                .properlyEmptyingAdminKey()
+                                .signedBy(civilian, wipeKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        tokenUpdate(tokenName)
+                                .properlyEmptyingAdminKey()
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian))
                 .then(getTokenInfo(tokenName).logged().hasEmptyAdminKey());
     }
 
@@ -1005,6 +1108,13 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .properlyEmptyingKycKey()
                                 .wipeKey(newWipeKey)
                                 .signedBy(civilian, wipeKey)
+                                .payingWith(civilian)
+                                // wipe key fails to update itself because the TokenUpdateOp
+                                // contains key removal as well -> admin key needs to sign as well
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        tokenUpdate(tokenName)
+                                .properlyEmptyingKycKey()
+                                .signedBy(civilian, kycKey)
                                 .payingWith(civilian)
                                 // wipe key fails to update itself because the TokenUpdateOp
                                 // contains key removal as well -> admin key needs to sign as well
