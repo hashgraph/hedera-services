@@ -784,7 +784,11 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .wipeKey(newWipeKey)
                                 .signedBy(civilian, adminKey, wipeKey)
                                 .payingWith(civilian))
-                .then(getTokenInfo(tokenName).searchKeysGlobally().hasEmptyKycKey().hasWipeKey(newWipeKey).logged());
+                .then(getTokenInfo(tokenName)
+                        .searchKeysGlobally()
+                        .hasEmptyKycKey()
+                        .hasWipeKey(newWipeKey)
+                        .logged());
     }
 
     @HapiTest
@@ -819,7 +823,11 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .wipeKey(newWipeKey)
                                 .signedBy(civilian, adminKey, wipeKey)
                                 .payingWith(civilian))
-                .then(getTokenInfo(tokenName).searchKeysGlobally().hasSymbol(newTokenSymbol).hasWipeKey(newWipeKey).logged());
+                .then(getTokenInfo(tokenName)
+                        .searchKeysGlobally()
+                        .hasSymbol(newTokenSymbol)
+                        .hasWipeKey(newWipeKey)
+                        .logged());
     }
 
     @HapiTest

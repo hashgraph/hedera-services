@@ -597,10 +597,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     }
 
     private void assertForRemovedKey(Key actual) {
-        Assertions.assertEquals(
-                Key.getDefaultInstance(),
-                actual,
-                "Does not equal to a removed key");
+        Assertions.assertEquals(Key.getDefaultInstance(), actual, "Does not equal to a removed key");
     }
 
     @Override
