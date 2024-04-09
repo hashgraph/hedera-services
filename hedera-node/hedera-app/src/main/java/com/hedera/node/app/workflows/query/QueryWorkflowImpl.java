@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.query;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
@@ -45,9 +46,11 @@ import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -275,11 +278,16 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     response = handler.findResponse(context, header);
                 }
             } catch (InsufficientBalanceException e) {
-                final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
-                response = handler.createEmptyResponse(header);
+                response = createErrorResponse(handler, responseType, e.responseCode(), e.getEstimatedFee());
             } catch (PreCheckException e) {
-                final var header = createResponseHeader(responseType, e.responseCode(), 0L);
-                response = handler.createEmptyResponse(header);
+                response = createErrorResponse(handler, responseType, e.responseCode(), 0L);
+            } catch (HandleException e) {
+                // Conceptually, this should never happen, because we should use PreCheckException only for queries
+                // But we catch it here to play it safe
+                response = createErrorResponse(handler, responseType, e.getStatus(), 0L);
+            } catch (Exception e) {
+                logger.error("Unexpected exception while handling a query", e);
+                response = createErrorResponse(handler, responseType, FAIL_INVALID, 0L);
             }
         } else {
             response = DEFAULT_UNSUPPORTED_RESPONSE;
@@ -309,6 +317,15 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
+    }
+
+    private static Response createErrorResponse(
+            @NonNull final QueryHandler handler,
+            @NonNull final ResponseType responseType,
+            @NonNull final ResponseCodeEnum responseCode,
+            final long fee) {
+        final var header = createResponseHeader(responseType, responseCode, fee);
+        return handler.createEmptyResponse(header);
     }
 
     private static ResponseHeader createResponseHeader(

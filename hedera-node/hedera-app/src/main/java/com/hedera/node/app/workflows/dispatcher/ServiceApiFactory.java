@@ -21,9 +21,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
@@ -33,7 +33,7 @@ import java.util.Map;
 public class ServiceApiFactory {
     private final SavepointStackImpl stack;
     private final Configuration configuration;
-    private final Metrics metrics;
+    private final StoreMetricsService storeMetricsService;
 
     private static final Map<Class<?>, ServiceApiProvider<?>> API_PROVIDER =
             Map.of(TokenServiceApi.class, TOKEN_SERVICE_API_PROVIDER);
@@ -41,10 +41,10 @@ public class ServiceApiFactory {
     public ServiceApiFactory(
             @NonNull final SavepointStackImpl stack,
             @NonNull final Configuration configuration,
-            @NonNull final Metrics metrics) {
+            @NonNull final StoreMetricsService storeMetricsService) {
         this.stack = requireNonNull(stack);
         this.configuration = requireNonNull(configuration);
-        this.metrics = requireNonNull(metrics);
+        this.storeMetricsService = requireNonNull(storeMetricsService);
     }
 
     /**
@@ -55,7 +55,7 @@ public class ServiceApiFactory {
         final var provider = API_PROVIDER.get(apiInterface);
         if (provider != null) {
             final var writableStates = stack.getWritableStates(provider.serviceName());
-            final var api = provider.newInstance(configuration, metrics, writableStates);
+            final var api = provider.newInstance(configuration, storeMetricsService, writableStates);
             assert apiInterface.isInstance(api); // This needs to be ensured while apis are registered
             return apiInterface.cast(api);
         }

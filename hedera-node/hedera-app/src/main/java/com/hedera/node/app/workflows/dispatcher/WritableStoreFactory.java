@@ -39,10 +39,10 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashMap;
@@ -102,7 +102,7 @@ public class WritableStoreFactory {
     private final String serviceName;
     private final WritableStates states;
     private final Configuration configuration;
-    private final Metrics metrics;
+    private final StoreMetricsService storeMetricsService;
 
     /**
      * Constructor of {@code WritableStoreFactory}
@@ -110,7 +110,7 @@ public class WritableStoreFactory {
      * @param state the {@link HederaState} to use
      * @param serviceName the name of the service to create stores for
      * @param configuration the configuration to use for the created stores
-     * @param metrics the metrics to use for the created stores
+     * @param storeMetricsService Service that provides utilization metrics.
      * @throws NullPointerException     if one of the arguments is {@code null}
      * @throws IllegalArgumentException if the service name is unknown
      */
@@ -118,11 +118,12 @@ public class WritableStoreFactory {
             @NonNull final HederaState state,
             @NonNull final String serviceName,
             @NonNull final Configuration configuration,
-            @NonNull final Metrics metrics) {
+            @NonNull final StoreMetricsService storeMetricsService) {
         requireNonNull(state, "The argument 'stack' cannot be null!");
         this.serviceName = requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
         this.configuration = requireNonNull(configuration, "The argument 'configuration' cannot be null!");
-        this.metrics = requireNonNull(metrics, "The argument 'metrics' cannot be null!");
+        this.storeMetricsService =
+                requireNonNull(storeMetricsService, "The argument 'storeMetricsService' cannot be null!");
 
         this.states = state.getWritableStates(serviceName);
     }
@@ -141,7 +142,7 @@ public class WritableStoreFactory {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null && serviceName.equals(entry.name())) {
-            final var store = entry.factory().create(states, configuration, metrics);
+            final var store = entry.factory().create(states, configuration, storeMetricsService);
             if (!storeInterface.isInstance(store)) {
                 throw new IllegalArgumentException("No instance " + storeInterface
                         + " is available"); // This needs to be ensured while stores are registered
@@ -152,7 +153,10 @@ public class WritableStoreFactory {
     }
 
     private interface StoreFactory {
-        Object create(@NonNull WritableStates states, @NonNull Configuration configuration, @NonNull Metrics metrics);
+        Object create(
+                @NonNull WritableStates states,
+                @NonNull Configuration configuration,
+                @NonNull StoreMetricsService storeMetricsService);
     }
 
     private record StoreEntry(@NonNull String name, @NonNull StoreFactory factory) {}
