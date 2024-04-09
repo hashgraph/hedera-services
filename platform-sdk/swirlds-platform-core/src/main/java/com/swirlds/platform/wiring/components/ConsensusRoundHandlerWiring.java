@@ -58,8 +58,8 @@ public record ConsensusRoundHandlerWiring(
         final OutputWire<StateAndRound> stateAndRoundOutput = taskScheduler
                 .getOutputWire()
                 .buildAdvancedTransformer(new StateAndRoundReserver("postHandler_stateAndRoundReserver"));
-        final OutputWire<ReservedSignedState> stateOutput = stateAndRoundOutput.buildTransformer(
-                "getState", "state and round", (StateAndRound stateAndRound) -> stateAndRound.reservedSignedState());
+        final OutputWire<ReservedSignedState> stateOutput =
+                stateAndRoundOutput.buildTransformer("getState", "state and round", StateAndRound::reservedSignedState);
 
         return new ConsensusRoundHandlerWiring(
                 taskScheduler.buildInputWire("rounds"),
