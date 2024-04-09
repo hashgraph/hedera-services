@@ -21,8 +21,8 @@ import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMI
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.Tag;
 
 /**
@@ -42,6 +42,6 @@ public final class TestWiringModelBuilder {
     public static WiringModel create() {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        return WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        return WiringModelBuilder.create(platformContext).build();
     }
 }

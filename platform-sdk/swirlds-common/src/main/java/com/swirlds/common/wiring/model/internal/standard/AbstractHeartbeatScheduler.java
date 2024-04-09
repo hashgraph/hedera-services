@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.schedulers.internal;
+package com.swirlds.common.wiring.model.internal.standard;
 
-import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCommonHyperlink;
+import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCommonHyperlink;
 
-import com.swirlds.base.state.Startable;
-import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,19 +28,17 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Timer;
 
 /**
  * A scheduler that produces heartbeats at a specified rate.
  */
-public class HeartbeatScheduler implements Startable, Stoppable {
+public abstract class AbstractHeartbeatScheduler {
 
-    private final StandardWiringModel model;
-    private final Time time;
-    private final String name;
-    private final Timer timer = new Timer();
-    private final List<HeartbeatTask> tasks = new ArrayList<>();
-    private boolean started;
+    private final TraceableWiringModel model;
+    protected final Time time;
+    protected final String name;
+    protected final List<HeartbeatTask> tasks = new ArrayList<>();
+    protected boolean started;
 
     /**
      * Constructor.
@@ -51,13 +47,13 @@ public class HeartbeatScheduler implements Startable, Stoppable {
      * @param time  provides wall clock time
      * @param name  the name of the heartbeat scheduler
      */
-    public HeartbeatScheduler(
-            @NonNull final StandardWiringModel model, @NonNull final Time time, @NonNull final String name) {
+    public AbstractHeartbeatScheduler(
+            @NonNull final TraceableWiringModel model, @NonNull final Time time, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
         this.time = Objects.requireNonNull(time);
         this.name = Objects.requireNonNull(name);
         model.registerVertex(
-                name, TaskSchedulerType.SEQUENTIAL, platformCommonHyperlink(HeartbeatScheduler.class), false);
+                name, TaskSchedulerType.SEQUENTIAL, platformCommonHyperlink(AbstractHeartbeatScheduler.class), false);
     }
 
     /**
@@ -113,26 +109,10 @@ public class HeartbeatScheduler implements Startable, Stoppable {
     /**
      * Start the heartbeats.
      */
-    @Override
-    public void start() {
-        if (started) {
-            throw new IllegalStateException("Cannot start the heartbeat more than once");
-        }
-        started = true;
-
-        for (final HeartbeatTask task : tasks) {
-            timer.scheduleAtFixedRate(task, 0, task.getPeriod().toMillis());
-        }
-    }
+    public abstract void start();
 
     /**
      * Stop the heartbeats.
      */
-    @Override
-    public void stop() {
-        if (!started) {
-            throw new IllegalStateException("Cannot stop the heartbeat before it has started");
-        }
-        timer.cancel();
-    }
+    public abstract void stop();
 }

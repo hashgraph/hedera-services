@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model;
+package com.swirlds.common.wiring.model.diagram;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
