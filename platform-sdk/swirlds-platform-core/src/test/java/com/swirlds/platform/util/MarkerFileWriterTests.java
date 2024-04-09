@@ -46,7 +46,7 @@ public class MarkerFileWriterTests {
                 .build();
 
         // create a new MarkerFileWriter
-        MarkerFileWriter markerFileWriter = new MarkerFileWriter(platformContext);
+        final MarkerFileWriter markerFileWriter = new MarkerFileWriter(platformContext);
         assertNotNull(markerFileWriter);
 
         // check that the marker file directory was created

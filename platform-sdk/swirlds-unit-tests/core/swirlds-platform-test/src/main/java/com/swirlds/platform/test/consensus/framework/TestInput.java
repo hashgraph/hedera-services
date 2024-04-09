@@ -19,18 +19,17 @@ package com.swirlds.platform.test.consensus.framework;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.WeightGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Supplier;
 
 /**
  * Holds the input to a consensus test.
- * @param platformContextSupplier the {@link PlatformContext} to use for the test
+ * @param platformContext the {@link PlatformContext} to use for the test
  * @param numberOfNodes the number of nodes in the test
  * @param weightGenerator the {@link WeightGenerator} to use for the test
  * @param seed the seed for the random number generator
  * @param eventsToGenerate the number of events to generate
  */
 public record TestInput(
-        @NonNull Supplier<PlatformContext> platformContextSupplier,
+        @NonNull PlatformContext platformContext,
         int numberOfNodes,
         @NonNull WeightGenerator weightGenerator,
         long seed,
@@ -43,13 +42,6 @@ public record TestInput(
      * @return a new {@link TestInput} with the updated number of nodes
      */
     public @NonNull TestInput setNumberOfNodes(int numberOfNodes) {
-        return new TestInput(platformContextSupplier, numberOfNodes, weightGenerator, seed, eventsToGenerate);
-    }
-
-    /**
-     * @return the {@link PlatformContext} to use for the test
-     */
-    public PlatformContext platformContext() {
-        return platformContextSupplier.get();
+        return new TestInput(platformContext, numberOfNodes, weightGenerator, seed, eventsToGenerate);
     }
 }

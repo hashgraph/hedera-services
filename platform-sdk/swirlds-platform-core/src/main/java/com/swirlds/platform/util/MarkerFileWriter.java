@@ -17,13 +17,15 @@
 package com.swirlds.platform.util;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.PathsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,12 +38,22 @@ public class MarkerFileWriter {
     /**
      * The logger for this class.
      */
-    private static final Logger LOG = LogManager.getLogger(MarkerFileWriter.class);
+    private static final Logger logger = LogManager.getLogger(MarkerFileWriter.class);
+
+    /**
+     * Flag to indicate if we still need to log an info message about the marker file directory not being set.
+     */
+    private static final AtomicBoolean logMarkerFileDirectoryNotSet = new AtomicBoolean(true);
+
+    /**
+     * Rate limited logger for failure to write marker files.
+     */
+    private final RateLimitedLogger failedToWriteMarkerFileLogger;
 
     /**
      * The directory where the marker files are written.  If null, no marker files are written.
      */
-    private final File markerFileDirectory;
+    private final Path markerFileDirectory;
 
     /**
      * Creates a new {@link MarkerFileWriter} with the given {@link PlatformContext}.  If the marker file writer is
@@ -54,13 +66,14 @@ public class MarkerFileWriter {
                 .getConfiguration()
                 .getConfigData(PathsConfig.class)
                 .getMarkerFilesDir();
-        File directory = null;
+        failedToWriteMarkerFileLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
+        Path directory = null;
         if (markerFileDirectoryPath != null) {
             try {
                 Files.createDirectories(markerFileDirectoryPath);
-                directory = markerFileDirectoryPath.toFile();
+                directory = markerFileDirectoryPath;
             } catch (final IOException e) {
-                LOG.error(
+                logger.error(
                         LogMarker.EXCEPTION.getMarker(),
                         "Failed to create marker file directory: {}",
                         markerFileDirectoryPath,
@@ -68,10 +81,16 @@ public class MarkerFileWriter {
             }
             if (!Files.isDirectory(markerFileDirectoryPath)) {
                 directory = null;
-                LOG.error(
+                logger.error(
                         LogMarker.ERROR.getMarker(),
                         "failed to create marker file directory, path is already a file: {}",
                         markerFileDirectoryPath);
+            }
+        } else {
+            if (logMarkerFileDirectoryNotSet.getAndSet(false)) {
+                logger.info(
+                        LogMarker.STARTUP.getMarker(),
+                        "Marker file directory is not set.  No marker files will be written.");
             }
         }
         markerFileDirectory = directory;
@@ -87,15 +106,16 @@ public class MarkerFileWriter {
             // Configuration did not set a marker file directory.  No need to write marker file.
             return;
         }
-        final File markerFile = new File(markerFileDirectory, filename);
-        if (markerFile.exists()) {
+        Path markerFile = markerFileDirectory.resolve(filename);
+        if (Files.exists(markerFile)) {
             // No need to create file when it already exists.
             return;
         }
         try {
-            Files.createFile(markerFile.toPath());
+            Files.createFile(markerFile);
         } catch (final IOException e) {
-            throw new RuntimeException("Failed to create marker file: " + markerFile, e);
+            failedToWriteMarkerFileLogger.error(
+                    LogMarker.EXCEPTION.getMarker(), "Failed to create marker file: {}", markerFile, e);
         }
     }
 
@@ -108,6 +128,6 @@ public class MarkerFileWriter {
         if (markerFileDirectory == null) {
             return null;
         }
-        return markerFileDirectory.toPath();
+        return markerFileDirectory;
     }
 }

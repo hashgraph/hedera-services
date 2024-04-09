@@ -31,7 +31,8 @@ import java.nio.file.Path;
  * @param keysDirPath     path to data/keys/
  * @param appsDirPath     path to data/apps/
  * @param logPath         path to log4j2.xml (which might not exist)
- * @param markerFilesDir  path to the directory where marker files are written.
+ * @param markerFilesDir  path to the directory where marker files are written.  Set the value to `none` to turn off
+ *                        writing marker files.
  */
 @ConfigData("paths")
 public record PathsConfig(
@@ -78,15 +79,14 @@ public record PathsConfig(
     }
 
     /**
-     * path to the directory where marker files are written (which might not exist).  Null is returned when the string is empty or set to "/dev/null".
+     * path to the directory where marker files are written (which might not exist).  Null is returned when the string
+     * is empty or set to "/dev/null".
      *
-     * @return the absolute path to the directory where marker files are written or null if the path is empty or "/dev/null".
+     * @return the absolute path to the directory where marker files are written or null if the path is empty or
+     * "/dev/null".
      */
     public Path getMarkerFilesDir() {
-        if (markerFilesDir == null
-                || markerFilesDir.isEmpty()
-                || markerFilesDir.equals("/dev/null")
-                || markerFilesDir.equals("none")) {
+        if (markerFilesDir.isEmpty() || markerFilesDir.equals("/dev/null") || markerFilesDir.equals("none")) {
             return null;
         }
         return getAbsolutePath(markerFilesDir);

@@ -55,12 +55,11 @@ class ConsensusTests extends BasePlatformUnitTests {
      */
     private ConsensusTestParams modifyParams(ConsensusTestParams params) {
         return new ConsensusTestParams(
-                () -> createPlatformContext(
+                createPlatformContext(
                         null,
                         configBuilder -> configBuilder.withValue(
                                 EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
                                 params.platformContext()
-                                        .get()
                                         .getConfiguration()
                                         .getConfigData(EventConfig.class)
                                         .useBirthRoundAncientThreshold())),
@@ -284,7 +283,7 @@ class ConsensusTests extends BasePlatformUnitTests {
     void syntheticSnapshotTest() {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::syntheticSnapshot)
-                .setParams(new ConsensusTestParams(() -> createDefaultPlatformContext(), 4, RANDOM, RANDOM_WEIGHT_DESC))
+                .setParams(new ConsensusTestParams(createDefaultPlatformContext(), 4, RANDOM, RANDOM_WEIGHT_DESC))
                 .setIterations(NUM_ITER)
                 .run();
     }

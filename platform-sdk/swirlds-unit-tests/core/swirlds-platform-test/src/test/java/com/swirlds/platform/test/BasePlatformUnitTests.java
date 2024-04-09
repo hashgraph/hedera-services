@@ -25,6 +25,7 @@ import com.swirlds.platform.config.PathsConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.function.Function;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -56,7 +57,10 @@ public abstract class BasePlatformUnitTests {
      *     <li>The temp directory is added to the config for marker files</li>
      *     <li>The platform context builder modifications are applied</li>
      * </ol>
-     * Any configuration set by the platform context builder modifying method overrides the configuration created by by the config modifier. Best practice is to set configuration through the config modifier and all other platform context variables through the platform contect modifier.
+     * <p>
+     * Any configuration set by the platform context builder modifying method overrides the configuration created by
+     * the config modifier. Best practice is to set configuration through the config modifier and all other platform
+     * context variables through the platform context modifier.
      *
      * @param platformContextModifier the function to modify the platform context builder
      * @param configModifier          the function to modify the test config builder
@@ -88,8 +92,9 @@ public abstract class BasePlatformUnitTests {
      *
      * @return the temporary directory
      */
+    @NonNull
     Path getTempDir() {
-        return tempDir;
+        return Objects.requireNonNull(tempDir);
     }
 
     /**
