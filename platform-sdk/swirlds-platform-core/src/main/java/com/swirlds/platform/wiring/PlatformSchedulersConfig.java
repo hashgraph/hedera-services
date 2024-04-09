@@ -51,6 +51,7 @@ import java.time.Duration;
  * @param eventCreationManagerSchedulerType                 the event creation manager scheduler type
  * @param eventCreationManagerUnhandledCapacity             number of unhandled tasks allowed in the event creation
  *                                                          manager scheduler
+ * @param selfEventSigner                                   configuration for the self event signer scheduler
  * @param signedStateFileManagerSchedulerType               the signed state file manager scheduler type
  * @param signedStateFileManagerUnhandledCapacity           number of unhandled tasks allowed in the signed state file
  *                                                          manager scheduler

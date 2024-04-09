@@ -199,7 +199,7 @@ public class TipsetEventCreator implements EventCreator {
         }
 
         final EventDescriptor descriptor = event.getDescriptor();
-        final List<EventDescriptor> parentDescriptors = getParentDescriptors(event);
+        final List<EventDescriptor> parentDescriptors = getParentDescriptors(event.getHashedData());
 
         tipsetTracker.addEvent(descriptor, parentDescriptors);
 
@@ -441,7 +441,6 @@ public class TipsetEventCreator implements EventCreator {
                 transactionSupplier.getTransactions());
         cryptography.digestSync(event);
 
-        cryptography.digestSync(event);
         return event;
     }
 

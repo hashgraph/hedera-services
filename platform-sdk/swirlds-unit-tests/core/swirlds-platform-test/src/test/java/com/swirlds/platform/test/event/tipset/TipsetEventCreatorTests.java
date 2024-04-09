@@ -263,7 +263,7 @@ class TipsetEventCreatorTests {
             eventCreator.eventCreator.registerEvent(eventImpl.getBaseEvent());
             eventCreator.tipsetTracker.addEvent(
                     eventImpl.getBaseEvent().getDescriptor(),
-                    TipsetUtils.getParentDescriptors(eventImpl.getBaseEvent()));
+                    TipsetUtils.getParentDescriptors(eventImpl.getBaseEvent().getHashedData()));
         }
     }
 

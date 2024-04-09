@@ -91,8 +91,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
-        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
-        unhashedData.updateOtherParentEventDescriptor(hashedData);
         this.timeReceived = Instant.now();
         this.senderId = null;
     }
@@ -149,8 +147,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
             final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
             unhashedData = new BaseEventUnhashedData(null, signature);
         }
-        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
-        unhashedData.updateOtherParentEventDescriptor(hashedData);
         timeReceived = Instant.now();
     }
 
@@ -176,16 +172,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     @Override
     public EventDescriptor getDescriptor() {
         return hashedData.getDescriptor();
-    }
-
-    /**
-     * Ensure that the event descriptor has been built This cannot be done when the event is first instantiated, it
-     * needs to be hashed before the descriptor can be built.
-     *
-     * @throws IllegalStateException if the descriptor has already been built
-     */
-    public void buildDescriptor() {
-        hashedData.getDescriptor();
     }
 
     /**

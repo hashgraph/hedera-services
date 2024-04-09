@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.creation.tipset;
 
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,17 +28,6 @@ import java.util.List;
 public final class TipsetUtils {
 
     private TipsetUtils() {}
-
-    /**
-     * Get the descriptors of an event's parents.
-     *
-     * @param event the event to the parent descriptors for
-     * @return a list of parent descriptors
-     */
-    @NonNull
-    public static List<EventDescriptor> getParentDescriptors(@NonNull final GossipEvent event) {
-        return getParentDescriptors(event.getHashedData());
-    }
 
     /**
      * Get the descriptors of an event's parents.
