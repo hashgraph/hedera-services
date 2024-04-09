@@ -66,6 +66,11 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
 
     /** Flip the queues by exchanging the accumulating and processing queues. */
     private synchronized void flipQueues() {
+        // We should only flip the queues once the current processing queue becomes empty,
+        // so that after the flip we start processing entries accumulated in the prior
+        // accumulating queue.
+        assert processingHandleQueue.isEmpty();
+
         final ConcurrentBitSetQueue temp = accumulatingHandleQueue;
         accumulatingHandleQueue = processingHandleQueue;
         processingHandleQueue = temp;
@@ -93,13 +98,13 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
      * without waiting for this particular node to report its status since it's already known/inferred.
      * So we use a timeout to recheck the condition periodically.
      */
-    private static final long AWAIT_FOR_REPORT_TIMEOUT_MILLIS = 100;
+    private static final long AWAIT_FOR_REPORT_TIMEOUT_MILLIS = 1;
 
     /**
      * The maximum total time for the `while (!hasReported) { wait() }` loop.
      * This is used to protect the teacher from a dying learner.
      */
-    private static final long MAX_TOTAL_AWAIT_FOR_REPORT_TIMEOUT_MILLIS = 5000;
+    private static final long MAX_TOTAL_AWAIT_FOR_REPORT_TIMEOUT_MILLIS = 1000;
 
     /**
      * A queue of the nodes (by path) that we expect responses for.
