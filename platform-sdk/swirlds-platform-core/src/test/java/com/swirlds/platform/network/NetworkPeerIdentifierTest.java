@@ -101,14 +101,36 @@ class NetworkPeerIdentifierTest {
     void testExtractPeerInfoWorksForMainnet() throws KeyStoreException, InvalidAlgorithmParameterException {
         final PKIXParameters params = new PKIXParameters(publicStores.agrTrustStore());
         final Set<TrustAnchor> trustAnchors = params.getTrustAnchors();
+        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext);
+        final Set<PeerInfo> matches = new HashSet<>();
 
         final Certificate[] certificates =
                 trustAnchors.stream().map(TrustAnchor::getTrustedCert).toArray(Certificate[]::new);
         for (final Certificate certificate : certificates) {
-            final PeerInfo matchedPeer = new NetworkPeerIdentifier(platformContext)
+            final PeerInfo matchedPeer = peerIdentifier
                     .identifyTlsPeer(List.of(certificate).toArray(Certificate[]::new), peerInfoList);
             Assertions.assertNotNull(matchedPeer);
+            matches.add(matchedPeer);
         }
+        // ensure we matched exactly the set of nodes in the original peer list
+        Assertions.assertEquals(matches, new HashSet<>(peerInfoList));
+    }
+
+    /**
+     * Asserts that identifyTlsPeer returns the peer whose certificate matches the passed in certificate
+     */
+    @Test
+    void testReturnsIntendedPeerForMainnet() throws KeyStoreException {
+        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext);
+        // pick a node's agreement certificate, node20
+        final Certificate certUnderTest = publicStores.agrTrustStore().getCertificate("a-node20");
+
+        final PeerInfo matchedPeer = peerIdentifier
+                .identifyTlsPeer(List.of(certUnderTest).toArray(Certificate[]::new), peerInfoList);
+
+        Assertions.assertNotNull(matchedPeer);
+        //assert the peer we got back is node20
+        Assertions.assertEquals("node20", matchedPeer.nodeName());
     }
 
     /**
@@ -123,14 +145,11 @@ class NetworkPeerIdentifierTest {
         final KeyPairGenerator rsaKeyGen = KeyPairGenerator.getInstance("RSA");
         rsaKeyGen.initialize(3072, secureRandom);
         final KeyPair rsaKeyPair1 = rsaKeyGen.generateKeyPair();
-        final KeyPair rsaKeyPair2 = rsaKeyGen.generateKeyPair();
 
         final String name = "CN=Bob";
         final X509Certificate rsaCert =
                 CryptoStatic.generateCertificate(name, rsaKeyPair1, name, rsaKeyPair1, secureRandom);
-        final X509Certificate ecCert =
-                CryptoStatic.generateCertificate(name, rsaKeyPair2, name, rsaKeyPair2, secureRandom);
-        final Certificate[] certificates = new Certificate[] {rsaCert, ecCert};
+        final Certificate[] certificates = new Certificate[]{rsaCert};
 
         final PeerInfo matchedPeer =
                 new NetworkPeerIdentifier(platformContext).identifyTlsPeer(certificates, peerInfoList);

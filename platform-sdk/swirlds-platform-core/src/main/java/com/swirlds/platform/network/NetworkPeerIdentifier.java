@@ -57,7 +57,7 @@ public class NetworkPeerIdentifier {
     /**
      * identifies a client on the other end of the socket using their signing certificate.
      *
-     * @param certs        a list of TLS certificates (e.g. the certificates in a trust store)
+     * @param certs        a list of TLS certificates from the connected socket
      * @param peerInfoList List of known peers
      * @return info of the identified peer
      */
