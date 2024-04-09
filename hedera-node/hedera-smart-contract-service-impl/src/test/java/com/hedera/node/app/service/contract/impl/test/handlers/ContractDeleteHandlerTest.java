@@ -120,9 +120,11 @@ class ContractDeleteHandlerTest {
 
     @Test
     void failsWithoutObtainerSet() {
-        givenFailContextWith(missingObtainer(VALID_CONTRACT_ADDRESS));
-
-        assertFailsWith(OBTAINER_REQUIRED, () -> subject.handle(context));
+        final var txn = TransactionBody.newBuilder()
+                        .contractDeleteInstance(missingObtainer(VALID_CONTRACT_ADDRESS))
+                        .build();
+        final var ex = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertEquals(OBTAINER_REQUIRED, ex.responseCode());
     }
 
     @Test
