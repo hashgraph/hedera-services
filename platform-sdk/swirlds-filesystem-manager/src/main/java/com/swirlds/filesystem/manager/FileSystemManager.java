@@ -50,7 +50,6 @@ public interface FileSystemManager {
      * deletes the file associated to the path if relative to the root directory of the file system manager.
      *
      * @param relativePath the relative path to recycle
-     * @return the resolved path
      * @throws IllegalArgumentException if the path cannot be relative to or scape the root directory
      */
     void recycle(@NonNull Path relativePath) throws IOException;
