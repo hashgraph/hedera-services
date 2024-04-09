@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.manager;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
@@ -34,6 +35,14 @@ public class SignatureVerificationTestUtils {
      */
     public static Signature buildFakeSignature(@NonNull final PublicKey key, @NonNull final Hash hash) {
         return new Signature(SignatureType.RSA, concat(key.getEncoded(), hash.getValue()));
+    }
+
+    /**
+     * Build a fake signature. The signature acts like a correct signature for the given key/hash, and acts like an
+     * invalid signature for any other key/hash.
+     */
+    public static Bytes buildFakeSignatureBytes(@NonNull final PublicKey key, @NonNull final Hash hash) {
+        return Bytes.wrap(concat(key.getEncoded(), hash.getValue()));
     }
 
     /**

@@ -48,6 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -67,7 +68,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOW
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -156,7 +159,8 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 scheduledCryptoApproveAllowanceWorks(),
                 canDeleteAllowanceFromDeletedSpender(),
                 cannotPayForAnyTransactionWithContractAccount(),
-                transferringMissingNftViaApprovalFailsWithInvalidNftId());
+                transferringMissingNftViaApprovalFailsWithInvalidNftId(),
+                approveNegativeCases());
     }
 
     @HapiTest
@@ -1676,6 +1680,81 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         cryptoTransfer(allowanceTinyBarsFromTo(OWNER, RECEIVER, 5 * ONE_HBAR))
                                 .payingWith(SPENDER),
                         getAccountBalance(RECEIVER).hasTinyBars(15 * ONE_HBAR));
+    }
+
+    @HapiTest
+    final HapiSpec approveNegativeCases() {
+        final var tryApprovingTheSender = "tryApprovingTheSender";
+        final var tryApprovingAboveBalance = "tryApprovingAboveBalance";
+        final var tryApprovingNFTToOwner = "tryApprovingNFTToOwner";
+        final var tryApprovingNFTWithInvalidSerial = "tryApprovingNFTWithInvalidSerial";
+        return defaultHapiSpec("approveNegativeCases")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(10),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyKey(SUPPLY_KEY)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(10000)
+                                .initialSupply(5000),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(12L)
+                                .supplyKey(SUPPLY_KEY)
+                                .initialSupply(0L),
+                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("1"),
+                                        ByteString.copyFromUtf8("2"),
+                                        ByteString.copyFromUtf8("3"))),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN),
+                        cryptoTransfer(
+                                moving(500L, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER),
+                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)))
+                .when(
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, OWNER, 100L)
+                                .signedBy(DEFAULT_PAYER, OWNER)
+                                .hasKnownStatus(SUCCESS)
+                                .via(tryApprovingTheSender),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1000L)
+                                .signedBy(DEFAULT_PAYER, OWNER)
+                                .hasKnownStatus(SUCCESS)
+                                .via(tryApprovingAboveBalance),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, OWNER, false, List.of(1L))
+                                .signedBy(DEFAULT_PAYER, OWNER)
+                                .hasKnownStatus(SPENDER_ACCOUNT_SAME_AS_OWNER)
+                                .via(tryApprovingNFTToOwner),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 2L, 3L, 4L))
+                                .signedBy(DEFAULT_PAYER, OWNER)
+                                .hasKnownStatus(INVALID_TOKEN_NFT_SERIAL_NUMBER)
+                                .via(tryApprovingNFTWithInvalidSerial))
+                .then(
+                        emptyChildRecordsCheck(tryApprovingTheSender, SUCCESS),
+                        emptyChildRecordsCheck(tryApprovingAboveBalance, SUCCESS),
+                        emptyChildRecordsCheck(tryApprovingNFTToOwner, SPENDER_ACCOUNT_SAME_AS_OWNER),
+                        emptyChildRecordsCheck(tryApprovingNFTWithInvalidSerial, INVALID_TOKEN_NFT_SERIAL_NUMBER),
+                        getAccountBalance(OWNER).hasTokenBalance(FUNGIBLE_TOKEN, 500L),
+                        getAccountBalance(SPENDER).hasTokenBalance(FUNGIBLE_TOKEN, 0L),
+                        getAccountBalance(OWNER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 3L),
+                        getAccountBalance(SPENDER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
     }
 
     @Override
