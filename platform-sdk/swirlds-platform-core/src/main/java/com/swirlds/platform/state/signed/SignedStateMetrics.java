@@ -93,20 +93,6 @@ public class SignedStateMetrics {
             .withFormat(FORMAT_15_3);
     private final RunningAverageMetric stateArchivalTimeAvg;
 
-    private static final RunningAverageMetric.Config STATE_DELETION_QUEUE_AVG_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "stateDeletionQueueAvg")
-            .withDescription("avg length of the state deletion queue")
-            .withFormat(FORMAT_15_3)
-            .withUnit("count");
-    private final RunningAverageMetric stateDeletionQueueAvg;
-
-    private static final RunningAverageMetric.Config STATE_DELETION_TIME_AVG_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "stateDeletionTimeAvg")
-            .withDescription("avg time it takes to delete a signed state (in milliseconds)")
-            .withUnit(MILLISECONDS)
-            .withFormat(FORMAT_15_3);
-    private final RunningAverageMetric stateDeletionTimeAvg;
-
     private static final RunningAverageMetric.Config STATE_HASHING_TIME_CONFIG = new RunningAverageMetric.Config(
                     CATEGORY, "sigStateHash")
             .withDescription("average time it takes to hash a SignedState (in milliseconds)")
@@ -180,20 +166,6 @@ public class SignedStateMetrics {
     }
 
     /**
-     * Get a metric tracking the average size of the signed state deletion/archive queue.
-     */
-    public RunningAverageMetric getStateDeletionQueueAvgMetric() {
-        return stateDeletionQueueAvg;
-    }
-
-    /**
-     * Get a metric tracking the average time to delete a signed state.
-     */
-    public RunningAverageMetric getStateDeletionTimeAvgMetric() {
-        return stateDeletionTimeAvg;
-    }
-
-    /**
      * Get a metric tracking the average time required to hash a state.
      */
     public RunningAverageMetric getSignedStateHashingTimeMetric() {
@@ -237,8 +209,6 @@ public class SignedStateMetrics {
         statesSignedPerSecond = metrics.getOrCreate(STATES_SIGNED_PER_SECOND_CONFIG);
         stateSignaturesGatheredPerSecond = metrics.getOrCreate(STATE_SIGNATURES_GATHERED_PER_SECOND_CONFIG);
         stateArchivalTimeAvg = metrics.getOrCreate(STATE_ARCHIVAL_TIME_AVG_CONFIG);
-        stateDeletionQueueAvg = metrics.getOrCreate(STATE_DELETION_QUEUE_AVG_CONFIG);
-        stateDeletionTimeAvg = metrics.getOrCreate(STATE_DELETION_TIME_AVG_CONFIG);
         stateHashingTime = metrics.getOrCreate(STATE_HASHING_TIME_CONFIG);
         stateToDiskTime = metrics.getOrCreate(STATE_TO_DISK_TIME_CONFIG);
         writeStateToDiskTime = metrics.getOrCreate(WRITE_STATE_TO_DISK_TIME_CONFIG);

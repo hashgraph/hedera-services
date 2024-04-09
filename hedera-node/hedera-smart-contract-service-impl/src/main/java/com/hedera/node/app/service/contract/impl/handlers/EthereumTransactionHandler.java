@@ -149,6 +149,11 @@ public class EthereumTransactionHandler implements TransactionHandler {
         validateTruePreCheck(hydratedTx.status() == OK, hydratedTx.status());
         final var ethTxData = hydratedTx.ethTxData();
         validateTruePreCheck(ethTxData != null, INVALID_ETHEREUM_TRANSACTION);
-        return ethereumSignatures.computeIfAbsent(ethTxData);
+        try {
+            return ethereumSignatures.computeIfAbsent(ethTxData);
+        } catch (RuntimeException ignore) {
+            // Ignore and translate any signature computation exception
+            throw new PreCheckException(INVALID_ETHEREUM_TRANSACTION);
+        }
     }
 }
