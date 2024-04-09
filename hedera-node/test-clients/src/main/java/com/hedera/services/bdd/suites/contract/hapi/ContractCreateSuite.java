@@ -163,6 +163,16 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     @HapiTest
+    private HapiSpec cannotSetMaxAutomaticAssociations() {
+        return defaultHapiSpec("cannotSetMaxAutomaticAssociations")
+                .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+                .when()
+                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                        .maxAutomaticTokenAssociations(10)
+                        .hasKnownStatus(NOT_SUPPORTED));
+    }
+
+    @HapiTest
     HapiSpec createContractWithStakingFields() {
         final var contract = "CreateTrivial";
         return defaultHapiSpec("createContractWithStakingFields", HIGHLY_NON_DETERMINISTIC_FEES)
