@@ -32,11 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class AdjustmentUtils {
-    private static final Logger log = LogManager.getLogger(AdjustmentUtils.class);
     public static final Function<TokenID, Map<AccountID, Long>> ADJUSTMENTS_MAP_FACTORY =
             ignore -> new LinkedHashMap<>();
 
@@ -205,12 +202,9 @@ public class AdjustmentUtils {
         final var collector = hbarFee.feeCollectorAccountId();
         final var fixedSpec = hbarFee.fixedFee();
         if (fixedSpec != null) {
-            log.info("Adjusting hbar fees for {}", fixedSpec);
-            log.info(" - BEFORE : {}", hbarAdjustments);
             final var amount = fixedSpec.amount();
             hbarAdjustments.merge(sender, -amount, AdjustmentUtils::addExactOrThrow);
             hbarAdjustments.merge(collector, amount, AdjustmentUtils::addExactOrThrow);
-            log.info(" - AFTER : {}", hbarAdjustments);
         }
     }
 

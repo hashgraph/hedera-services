@@ -60,7 +60,7 @@ public class RecordFinalizerBase {
      */
     @NonNull
     protected Map<AccountID, Long> hbarChangesFrom(
-            @NonNull final WritableAccountStore writableAccountStore, long maxLegalBalance) {
+            @NonNull final WritableAccountStore writableAccountStore, final long maxLegalBalance) {
         final var hbarChanges = new HashMap<AccountID, Long>();
         var netHbarBalance = 0L;
         for (final AccountID modifiedAcctId : writableAccountStore.modifiedAccountsInState()) {
