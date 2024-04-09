@@ -3,10 +3,12 @@ package com.hedera.services.bdd.spec.assertions.matchers;
 import com.google.protobuf.GeneratedMessageV3;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -57,9 +59,9 @@ public class FieldByFieldMatcher<T> extends TypeSafeMatcher<T> {
             return false;
         } else if (expected.getClass().isAssignableFrom(actual.getClass())) {
             try {
-                final Map<String, Method> beanProperties = beanGetterProperties(expected);
-                for (var beanProperty : beanProperties.entrySet()) {
-                    if (!haveEqualFieldValue(expected, actual, beanProperty.getKey(), beanProperty.getValue())) {
+                final List<PropertyDescriptor> beanProperties = beanGetterProperties(expected);
+                for (var beanProperty : beanProperties) {
+                    if (!haveEqualFieldValue(expected, actual, beanProperty.getName(), beanProperty.getReadMethod())) {
                         return false;
                     }
                 }
@@ -90,11 +92,11 @@ public class FieldByFieldMatcher<T> extends TypeSafeMatcher<T> {
         }
     }
 
-    public static Map<String, Method> beanGetterProperties(Object bean) throws IntrospectionException {
+    public static List<PropertyDescriptor> beanGetterProperties(Object bean) throws IntrospectionException {
         final var stopClass = GeneratedMessageV3.class;
         return Arrays.stream(Introspector.getBeanInfo(bean.getClass(), stopClass).getPropertyDescriptors())
                 .filter(propertyDescriptor -> Objects.nonNull(propertyDescriptor.getReadMethod()))
-                .collect(HashMap::new, (map, pd) -> map.put(pd.getName(), pd.getReadMethod()), HashMap::putAll);
+                .toList();
     }
 
     @Override
