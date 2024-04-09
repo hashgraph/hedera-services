@@ -75,6 +75,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -547,7 +548,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         childRecordsCheck(
                                 TXN_WITH_NON_EXISTING_NFT,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_ID)));
+                                recordWith().status(INVALID_TOKEN_NFT_SERIAL_NUMBER)));
     }
 
     @HapiTest

@@ -249,6 +249,16 @@ public class ClassicTransfersDecoder {
                 return ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
             }
         }
+        if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFT_FROM.selector())) {
+            final var call = ClassicTransfersTranslator.TRANSFER_NFT_FROM.decodeCall(attempt.inputBytes());
+            final var tokenId = ConversionUtils.asTokenId(call.get(0));
+            final BigInteger serialNo = call.get(3);
+            final var nft =
+                    attempt.enhancement().nativeOperations().getNft(tokenId.tokenNum(), serialNo.longValueExact());
+            if (nft == null) {
+                return ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+            }
+        }
         if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
             final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(attempt.inputBytes());
             if ((long) call.get(3) < 0) {
