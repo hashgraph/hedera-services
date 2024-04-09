@@ -145,7 +145,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         } else {
             hashedData = in.readSerializable(false, BaseEventHashedData::new);
             final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
-            unhashedData = new BaseEventUnhashedData(null, signature);
+            unhashedData = new BaseEventUnhashedData(signature);
         }
         timeReceived = Instant.now();
     }

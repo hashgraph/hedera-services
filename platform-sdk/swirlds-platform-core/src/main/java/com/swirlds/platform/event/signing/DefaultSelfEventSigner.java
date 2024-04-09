@@ -48,7 +48,7 @@ public class DefaultSelfEventSigner implements SelfEventSigner {
     @Override
     public GossipEvent signEvent(@NonNull final BaseEventHashedData event) {
         final Signature signature = new PlatformSigner(keysAndCerts).sign(event.getHash());
-        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(null, signature.getSignatureBytes());
+        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(signature.getSignatureBytes());
         return new GossipEvent(event, unhashedData);
     }
 }

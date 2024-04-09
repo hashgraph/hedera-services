@@ -113,7 +113,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
             baseEventUnhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
         } else {
             final byte[] signature = in.readByteArray(BaseEventUnhashedData.MAX_SIG_LENGTH);
-            baseEventUnhashedData = new BaseEventUnhashedData(null, signature);
+            baseEventUnhashedData = new BaseEventUnhashedData(signature);
         }
         consensusData = in.readSerializable(false, ConsensusData::new);
     }

@@ -23,7 +23,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -80,8 +79,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     public BaseEventUnhashedData() {}
 
-    public BaseEventUnhashedData(@Nullable final NodeId otherId, @NonNull final byte[] signature) {
-        this.otherId = otherId;
+    public BaseEventUnhashedData(@NonNull final byte[] signature) {
         this.signature = Objects.requireNonNull(signature, "signature must not be null");
     }
 
