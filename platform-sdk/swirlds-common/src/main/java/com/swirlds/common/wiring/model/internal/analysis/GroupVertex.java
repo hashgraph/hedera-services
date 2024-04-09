@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal;
+package com.swirlds.common.wiring.model.internal.analysis;
 
-import static com.swirlds.common.wiring.model.internal.WiringFlowchart.GROUP_COLOR;
-import static com.swirlds.common.wiring.model.internal.WiringFlowchart.TEXT_COLOR;
+import static com.swirlds.common.wiring.model.internal.analysis.WiringFlowchart.GROUP_COLOR;
+import static com.swirlds.common.wiring.model.internal.analysis.WiringFlowchart.TEXT_COLOR;
 
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
