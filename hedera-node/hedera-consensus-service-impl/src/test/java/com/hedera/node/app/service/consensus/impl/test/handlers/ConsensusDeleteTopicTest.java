@@ -51,10 +51,13 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -64,6 +67,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusDeleteTopicTest extends ConsensusTestBase {
+
+    private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -80,6 +85,9 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
     @Mock
     private FeeAccumulator feeAccumulator;
 
+    @Mock
+    private StoreMetricsService storeMetricsService;
+
     private ConsensusDeleteTopicHandler subject;
 
     @BeforeEach
@@ -88,7 +96,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
 
         writableTopicState = writableTopicStateWithOneKey();
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
-        writableStore = new WritableTopicStore(writableStates);
+        writableStore = new WritableTopicStore(writableStates, CONFIGURATION, storeMetricsService);
 
         lenient().when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
         lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
@@ -165,7 +173,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
 
         writableTopicState = emptyWritableTopicState();
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
-        writableStore = new WritableTopicStore(writableStates);
+        writableStore = new WritableTopicStore(writableStates, CONFIGURATION, storeMetricsService);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -192,7 +200,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
 
         writableTopicState = writableTopicStateWithOneKey();
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
-        writableStore = new WritableTopicStore(writableStates);
+        writableStore = new WritableTopicStore(writableStates, CONFIGURATION, storeMetricsService);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));

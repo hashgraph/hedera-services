@@ -96,7 +96,7 @@ public class TestGuiSource {
         // Fame decided below
         final JLabel fameDecidedBelow = new JLabel("N/A");
         final Runnable updateFameDecidedBelow = () -> fameDecidedBelow.setText(
-                "fame decided below: " + intake.getConsensus().getFameDecidedBelow());
+                "fame decided below: " + eventStorage.getConsensus().getFameDecidedBelow());
         updateFameDecidedBelow.run();
         // Next events
         final JButton nextEvent = new JButton("Next events");

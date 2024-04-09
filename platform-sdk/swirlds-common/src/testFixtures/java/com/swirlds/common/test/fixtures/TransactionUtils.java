@@ -16,11 +16,10 @@
 
 package com.swirlds.common.test.fixtures;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Signature;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
@@ -153,14 +152,14 @@ public class TransactionUtils {
     }
 
     public static SystemTransaction incrementingSystemTransaction() {
-        return new StateSignatureTransaction(0, randomSignature(random), randomHash(random));
+        return new StateSignatureTransaction(0, randomSignatureBytes(random), randomHashBytes(random), Bytes.EMPTY);
     }
 
     public static StateSignatureTransaction randomStateSignatureTransaction(final RandomGenerator random) {
         final Random rand = new Random(random.nextLong());
-        final Signature signature = randomSignature(rand);
-        final Hash hash = randomHash(rand);
-        return new StateSignatureTransaction(random.nextLong(), signature, hash);
+        final Bytes signature = randomSignatureBytes(rand);
+        final Bytes hash = randomHashBytes(rand);
+        return new StateSignatureTransaction(random.nextLong(), signature, hash, Bytes.EMPTY);
     }
 
     public static ConsensusTransactionImpl[] randomMixedTransactions(final RandomGenerator random, final int number) {
