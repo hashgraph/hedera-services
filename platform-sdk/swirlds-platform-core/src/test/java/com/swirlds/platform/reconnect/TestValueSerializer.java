@@ -20,6 +20,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkledb.serialize.ValueSerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 
 public class TestValueSerializer implements ValueSerializer<TestValue> {
@@ -47,6 +48,12 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
     @Override
     public int getTypicalSerializedSize() {
         return 20; // guesstimation
+    }
+
+    @Override
+    public int getSerializedSize(@NonNull final TestValue data) {
+        final String s = data.getValue();
+        return Integer.BYTES + s.length();
     }
 
     @Override

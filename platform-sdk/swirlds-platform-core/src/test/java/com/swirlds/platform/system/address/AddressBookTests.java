@@ -334,6 +334,11 @@ class AddressBookTests {
                 .setSize(100)
                 .build();
 
+        // FQDN Support: addresses must support long text based host names.
+        original.add(original.getAddress(original.getNodeId(0))
+                .copySetHostnameInternal(
+                        "this.is.a.really.long.host.name.that.should.be.able.to.fit.in.the.address.book"));
+
         // make sure that certs are part of the round trip test.
         assertNotNull(original.getAddress(new NodeId(0)).getSigCert());
         assertNotNull(original.getAddress(new NodeId(0)).getAgreeCert());

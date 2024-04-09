@@ -209,7 +209,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                 .then(cryptoDelete("0.0.0")
                         .sansTargetId()
                         .signedBy(DEFAULT_PAYER)
-                        .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST));
+                        .hasPrecheck(ACCOUNT_ID_DOES_NOT_EXIST));
     }
 
     @HapiTest

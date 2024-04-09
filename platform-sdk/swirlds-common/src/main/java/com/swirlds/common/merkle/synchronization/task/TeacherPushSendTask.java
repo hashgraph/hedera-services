@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.synchronization.internal;
+package com.swirlds.common.merkle.synchronization.task;
 
-import static com.swirlds.common.merkle.synchronization.internal.LessonType.CUSTOM_VIEW_ROOT;
-import static com.swirlds.common.merkle.synchronization.internal.LessonType.INTERNAL_NODE_DATA;
-import static com.swirlds.common.merkle.synchronization.internal.LessonType.LEAF_NODE_DATA;
-import static com.swirlds.common.merkle.synchronization.internal.LessonType.NODE_IS_UP_TO_DATE;
+import static com.swirlds.common.merkle.synchronization.task.LessonType.CUSTOM_VIEW_ROOT;
+import static com.swirlds.common.merkle.synchronization.task.LessonType.INTERNAL_NODE_DATA;
+import static com.swirlds.common.merkle.synchronization.task.LessonType.LEAF_NODE_DATA;
+import static com.swirlds.common.merkle.synchronization.task.LessonType.NODE_IS_UP_TO_DATE;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -39,15 +39,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class encapsulates all logic for the teacher's sending thread.
+ * This class encapsulates all logic for the teacher's sending task.
  *
  * @param <T> the type of data used by the view to represent a node
  */
-public class TeacherSendingThread<T> {
+public class TeacherPushSendTask<T> {
 
-    private static final Logger logger = LogManager.getLogger(TeacherSendingThread.class);
+    private static final Logger logger = LogManager.getLogger(TeacherPushSendTask.class);
 
-    private static final String NAME = "sender";
+    private static final String NAME = "teacher-send-task";
 
     /**
      * The lesson used to describe an up to date node is always eactly the same. No need to create a new object each
@@ -55,6 +55,7 @@ public class TeacherSendingThread<T> {
      */
     private static final Lesson<?> UP_TO_DATE_LESSON = new Lesson<>(NODE_IS_UP_TO_DATE, null);
 
+    private final ReconnectConfig reconnectConfig;
     private final StandardWorkGroup workGroup;
     private final AsyncInputStream<QueryResponse> in;
     private final AsyncOutputStream<Lesson<T>> out;
@@ -79,7 +80,7 @@ public class TeacherSendingThread<T> {
      * @param view                  an object that interfaces with the subtree
      * @param senderIsFinished      set to true when this thread has finished
      */
-    public TeacherSendingThread(
+    public TeacherPushSendTask(
             @NonNull final Time time,
             @NonNull final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
@@ -88,6 +89,7 @@ public class TeacherSendingThread<T> {
             final Queue<TeacherSubtree> subtrees,
             final TeacherTreeView<T> view,
             final AtomicBoolean senderIsFinished) {
+        this.reconnectConfig = reconnectConfig;
         this.workGroup = workGroup;
         this.in = in;
         this.out = out;
@@ -129,7 +131,7 @@ public class TeacherSendingThread<T> {
         final Lesson<T> lesson = new Lesson<>(CUSTOM_VIEW_ROOT, new CustomViewRootLesson(view.getClassId(node)));
         final CustomReconnectRoot<?, ?> subtreeRoot = (CustomReconnectRoot<?, ?>) view.getMerkleRoot(node);
 
-        subtrees.add(new TeacherSubtree(subtreeRoot, subtreeRoot.buildTeacherView()));
+        subtrees.add(new TeacherSubtree(subtreeRoot, subtreeRoot.buildTeacherView(reconnectConfig)));
 
         return lesson;
     }
