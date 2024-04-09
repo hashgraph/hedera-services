@@ -84,6 +84,8 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
      * Register all configured metrics.
      *
      * @param unhandledTaskCounter the counter that is used to track the number of scheduled tasks
+     * @param busyFractionTimer    the timer that is used to track the fraction of the time that the underlying thread
+     *                             is busy
      */
     private void registerMetrics(
             @Nullable final ObjectCounter unhandledTaskCounter, @NonNull final FractionalTimer busyFractionTimer) {
