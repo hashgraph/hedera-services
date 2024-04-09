@@ -67,6 +67,7 @@ module com.hedera.node.test.clients {
     requires grpc.netty;
     requires grpc.stub;
     requires io.netty.handler;
+    requires java.desktop;
     requires java.net.http;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j.core;
@@ -78,5 +79,4 @@ module com.hedera.node.test.clients {
     requires org.opentest4j;
     requires tuweni.units;
     requires static com.github.spotbugs.annotations;
-    requires java.desktop;
 }

@@ -40,10 +40,11 @@ public class TransactionSidecarRecordMatcher extends TypeSafeMatcher<Transaction
     private final Matcher<Iterable<? extends ContractStateChange>> stateChangesMatcher;
     private final Matcher<ContractBytecode> bytecodeMatcher;
 
-    private TransactionSidecarRecordMatcher(Matcher<Timestamp> consensusTimestampMatcher,
-                                            Matcher<Iterable<? extends ContractAction>> actionsMatcher,
-                                            Matcher<Iterable<? extends ContractStateChange>> stateChangeMatchers,
-                                            Matcher<ContractBytecode> bytecodeMatcher) {
+    private TransactionSidecarRecordMatcher(
+            Matcher<Timestamp> consensusTimestampMatcher,
+            Matcher<Iterable<? extends ContractAction>> actionsMatcher,
+            Matcher<Iterable<? extends ContractStateChange>> stateChangeMatchers,
+            Matcher<ContractBytecode> bytecodeMatcher) {
         this.consensusTimestampMatcher = consensusTimestampMatcher;
         this.actionsMatcher = actionsMatcher;
         this.stateChangesMatcher = stateChangeMatchers;
@@ -56,10 +57,10 @@ public class TransactionSidecarRecordMatcher extends TypeSafeMatcher<Transaction
      */
     @Override
     public boolean matchesSafely(TransactionSidecarRecord transactionSidecarRecord) {
-        return (this.consensusTimestampMatcher == null || matchesConsensusTimestampOf(transactionSidecarRecord)) &&
-                (this.actionsMatcher == null || matchesActionsOf(transactionSidecarRecord)) &&
-                (this.stateChangesMatcher == null || matchesStateChangesOf(transactionSidecarRecord)) &&
-                (this.bytecodeMatcher == null || matchesBytecodeOf(transactionSidecarRecord));
+        return (this.consensusTimestampMatcher == null || matchesConsensusTimestampOf(transactionSidecarRecord))
+                && (this.actionsMatcher == null || matchesActionsOf(transactionSidecarRecord))
+                && (this.stateChangesMatcher == null || matchesStateChangesOf(transactionSidecarRecord))
+                && (this.bytecodeMatcher == null || matchesBytecodeOf(transactionSidecarRecord));
     }
 
     /**
@@ -72,7 +73,8 @@ public class TransactionSidecarRecordMatcher extends TypeSafeMatcher<Transaction
         description
                 .appendText("transaction_sidecar_record {\n")
                 .appendText("  consensus_timestamp {\n")
-                .appendText("    ").appendValue(this.consensusTimestampMatcher)
+                .appendText("    ")
+                .appendValue(this.consensusTimestampMatcher)
                 .appendText("  }\n");
         if (this.hasActions()) {
             description.appendText("  actions {\n");
@@ -144,10 +146,7 @@ public class TransactionSidecarRecordMatcher extends TypeSafeMatcher<Transaction
 
         public TransactionSidecarRecordMatcher build() {
             return new TransactionSidecarRecordMatcher(
-                    consensusTimestampMatcher,
-                    contractActionsMatcher,
-                    stateChangesMatcher,
-                    bytecodeMatcher);
+                    consensusTimestampMatcher, contractActionsMatcher, stateChangesMatcher, bytecodeMatcher);
         }
     }
 }
