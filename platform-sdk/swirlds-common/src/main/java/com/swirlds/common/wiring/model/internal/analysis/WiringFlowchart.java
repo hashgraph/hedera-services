@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal;
+package com.swirlds.common.wiring.model.internal.analysis;
 
-import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
-import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SUBSTITUTION;
+import static com.swirlds.common.wiring.model.internal.analysis.ModelVertexMetaType.SCHEDULER;
+import static com.swirlds.common.wiring.model.internal.analysis.ModelVertexMetaType.SUBSTITUTION;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.CONCURRENT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
-import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
-import com.swirlds.common.wiring.model.ModelGroup;
-import com.swirlds.common.wiring.model.ModelManualLink;
+import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.common.wiring.model.diagram.ModelGroup;
+import com.swirlds.common.wiring.model.diagram.ModelManualLink;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal;
+package com.swirlds.common.wiring.model.internal.analysis;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;

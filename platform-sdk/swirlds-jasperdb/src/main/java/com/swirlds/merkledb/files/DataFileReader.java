@@ -365,6 +365,9 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      * proceed, while the channel opened in the other thread will be closed immediately and
      * not used any further.
      *
+     * <p>If the data file reader is closed, the file channel for the specified index is null.
+     * This method does nothing in this case.
+     *
      * @param index File channel index in {@link #fileChannels}
      * @param closedChannel Closed file channel to replace
      * @throws IOException
@@ -372,9 +375,10 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      */
     private void reopenFileChannel(final int index, final FileChannel closedChannel) throws IOException {
         assert index < maxFileChannels;
-        // May be closedChannel or may be already reopened in a different thread
-        assert fileChannels.get(index) != null;
         assert !closedChannel.isOpen();
+        // It may happen that `fileChannels` collection is updated by another thread to null for this
+        // index, for example, when the file is deleted during compaction. This is a valid scenario,
+        // the call below does nothing in this case
         final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ);
         if (!fileChannels.compareAndSet(index, closedChannel, fileChannel)) {
             fileChannel.close();
