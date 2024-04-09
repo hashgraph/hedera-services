@@ -245,6 +245,7 @@ public final class StartupStateUtils {
                 CryptoStatic::verifySignature,
                 stateCopy,
                 "StartupStateUtils: copy initial state",
+                false,
                 false);
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 

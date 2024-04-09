@@ -125,7 +125,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private static final String CONTRACT = "CryptoTransfer";
     private static final String MULTI_KEY = "purpose";
     private static final String HTS_TRANSFER_FROM_CONTRACT = "HtsTransferFrom";
-    private static final String NEGATIVE_HTS_TRANSFER_FROM_CONTRACT = "NegativeHTSTransferFrom";
+    private static final String NEGATIVE_HTS_TRANSFER_FROM_CONTRACT = "NegativeHtsTransferFrom";
     private static final String OWNER = "Owner";
     private static final String HTS_TRANSFER_FROM = "htsTransferFrom";
     private static final String HTS_TRANSFER_FROM_NFT = "htsTransferFromNFT";

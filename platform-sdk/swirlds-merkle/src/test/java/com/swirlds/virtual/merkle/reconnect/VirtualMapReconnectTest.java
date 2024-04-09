@@ -333,7 +333,8 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
 
             imitationMap.setChild(0, map.getChild(0).copy());
 
-            final TeacherTreeView<Long> view = ((VirtualRootNode<?, ?>) map.getChild(1)).buildTeacherView();
+            final TeacherTreeView<Long> view =
+                    ((VirtualRootNode<?, ?>) map.getChild(1)).buildTeacherView(reconnectConfig);
             final TeacherTreeView<Long> badView =
                     new BrokenVirtualMapTeacherView(view, permittedInternals, permittedLeaves);
             final MerkleNode imitationRoot = new FakeVirtualRootNode(badView);

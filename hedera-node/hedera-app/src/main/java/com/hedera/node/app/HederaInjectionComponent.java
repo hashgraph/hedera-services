@@ -40,6 +40,7 @@ import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.LedgerValidator;
@@ -132,6 +133,8 @@ public interface HederaInjectionComponent {
     StateWriteToDiskCompleteListener stateWriteToDiskListener();
 
     PlatformStateAccessor platformStateAccessor();
+
+    StoreMetricsService storeMetricsService();
 
     @Component.Builder
     interface Builder {
