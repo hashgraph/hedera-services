@@ -58,6 +58,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -67,7 +68,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -103,7 +103,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     private HandleContext context;
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     private AttributeValidator attributeValidator;
     private TokenUpdateNftsHandler subject;
@@ -284,7 +284,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 new MapWritableStates(
                         Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
                 CONFIGURATION,
-                metrics);
+                storeMetricsService);
 
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(
@@ -317,7 +317,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 new MapWritableStates(
                         Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
                 CONFIGURATION,
-                metrics);
+                storeMetricsService);
 
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(
