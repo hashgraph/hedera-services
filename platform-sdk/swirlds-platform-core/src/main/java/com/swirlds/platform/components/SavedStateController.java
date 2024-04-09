@@ -19,6 +19,7 @@ package com.swirlds.platform.components;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -29,10 +30,11 @@ public interface SavedStateController {
      * Determine if a signed state should be written to disk. If the state should be written, the state will be marked
      * and then written to disk outside the scope of this class.
      *
-     * @param reservedSignedState the signed state in question
+     * @param stateAndRound the state in question
      */
     @InputWireLabel("state to mark")
-    void markSavedState(@NonNull ReservedSignedState reservedSignedState);
+    @NonNull
+    StateAndRound markSavedState(@NonNull StateAndRound stateAndRound);
 
     /**
      * Notifies the controller that a signed state was received from another node during reconnect. The controller saves

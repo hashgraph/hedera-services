@@ -53,6 +53,7 @@ import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.StateConfig_;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -67,6 +68,7 @@ import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -313,7 +315,8 @@ class SignedStateFileManagerTests {
                     .build();
             final ReservedSignedState reservedSignedState = signedState.reserve("initialTestReservation");
 
-            controller.markSavedState(signedState.reserve("markSavedState"));
+            controller.markSavedState(
+                    new StateAndRound(signedState.reserve("markSavedState"), mock(ConsensusRound.class)));
 
             if (signedState.isStateToSave()) {
                 assertTrue(

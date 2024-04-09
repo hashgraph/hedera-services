@@ -26,6 +26,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StateToDiskReason;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -55,20 +56,21 @@ public class DefaultSavedStateController implements SavedStateController {
         this.stateConfig = Objects.requireNonNull(stateConfig);
     }
 
+    // TODO revisit synchronized keywords
+
     /**
      * {@inheritDoc}
      */
     @Override
-    public synchronized void markSavedState(@NonNull final ReservedSignedState reservedSignedState) {
-        try (reservedSignedState) {
-            final SignedState signedState = reservedSignedState.get();
-            final StateToDiskReason reason = shouldSaveToDisk(signedState, previousSavedStateTimestamp);
-
-            if (reason != null) {
-                markSavingToDisk(reservedSignedState, reason);
-            }
-            // if a null reason is returned, then there isn't anything to do, since the state shouldn't be saved
+    @NonNull
+    public synchronized StateAndRound markSavedState(@NonNull final StateAndRound stateAndRound) {
+        final ReservedSignedState reservedSignedState = stateAndRound.reservedSignedState();
+        final SignedState signedState = reservedSignedState.get();
+        final StateToDiskReason reason = shouldSaveToDisk(signedState, previousSavedStateTimestamp);
+        if (reason != null) {
+            markSavingToDisk(reservedSignedState, reason);
         }
+        return stateAndRound;
     }
 
     /**
