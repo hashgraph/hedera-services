@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.api;
 
 import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -37,8 +38,10 @@ public interface ServiceApiProvider<T> {
      * Creates a new instance of the service API.
      *
      * @param configuration the node configuration
+     * @param metrics the metrics API
      * @param writableStates the writable state of the service
      * @return the new API instance
      */
-    T newInstance(@NonNull Configuration configuration, @NonNull WritableStates writableStates);
+    T newInstance(
+            @NonNull Configuration configuration, @NonNull Metrics metrics, @NonNull WritableStates writableStates);
 }

@@ -31,7 +31,9 @@ import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Metrics;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,9 @@ class WritableContractStateStoreTest {
             ContractID.newBuilder().contractNum(1L).build();
     private static final SlotKey SLOT_KEY = new SlotKey(CONTRACT_ID, Bytes.EMPTY);
     private static final SlotValue SLOT_VALUE = new SlotValue(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY);
+
+    @Mock
+    private Metrics metrics;
 
     @Mock
     private WritableKVState<SlotKey, SlotValue> storage;
@@ -62,7 +67,9 @@ class WritableContractStateStoreTest {
         given(states.<SlotKey, SlotValue>get(STORAGE_KEY)).willReturn(storage);
         given(states.<ContractID, Bytecode>get(BYTECODE_KEY)).willReturn(bytecode);
 
-        subject = new WritableContractStateStore(states);
+        final var config = HederaTestConfigBuilder.createConfig();
+
+        subject = new WritableContractStateStore(states, config, metrics);
     }
 
     @Test

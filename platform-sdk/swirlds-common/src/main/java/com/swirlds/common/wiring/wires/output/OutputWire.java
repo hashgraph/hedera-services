@@ -165,7 +165,7 @@ public abstract class OutputWire<OUT> {
                 .cast();
 
         final BindableInputWire<OUT, Void> directSchedulerInputWire = directScheduler.buildInputWire(inputWireLabel);
-        directSchedulerInputWire.bind(handler);
+        directSchedulerInputWire.bindConsumer(handler);
 
         this.solderTo(directSchedulerInputWire);
     }

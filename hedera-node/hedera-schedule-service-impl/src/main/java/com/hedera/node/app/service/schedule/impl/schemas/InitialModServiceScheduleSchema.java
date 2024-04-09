@@ -22,14 +22,11 @@ import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHE
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
-import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility;
 import com.hedera.node.app.service.schedule.impl.codec.ScheduleServiceStateTranslator;
 import com.hedera.node.app.spi.state.MigrationContext;
@@ -44,11 +41,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
-import org.eclipse.collections.api.list.primitive.ImmutableLongList;
 
 /**
  * General schema for the schedule service
@@ -99,63 +94,46 @@ public final class InitialModServiceScheduleSchema extends Schema {
                     throw new RuntimeException(e);
                 }
             });
-            if (schedulesById.isModified()) ((WritableKVStateBase) schedulesById).commit();
+            if (schedulesById.isModified()) ((WritableKVStateBase<?, ?>) schedulesById).commit();
             log.info("BBM: finished schedule by id migration");
 
             log.info("BBM: doing schedule by expiration migration");
             final WritableKVState<ProtoLong, ScheduleList> schedulesByExpiration =
                     ctx.newStates().get(SCHEDULES_BY_EXPIRY_SEC_KEY);
-            fs.byExpirationSecond()
-                    .forEachNode(new BiConsumer<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>() {
-                        @Override
-                        public void accept(
-                                SecondSinceEpocVirtualKey secondSinceEpocVirtualKey, ScheduleSecondVirtualValue sVv) {
-                            sVv.getIds().forEach(new BiConsumer<RichInstant, ImmutableLongList>() {
-                                @Override
-                                public void accept(RichInstant richInstant, ImmutableLongList scheduleIds) {
+            fs.byExpirationSecond().forEachNode((secondSinceEpocVirtualKey, sVv) -> sVv.getIds()
+                    .forEach((richInstant, scheduleIds) -> {
+                        List<Schedule> schedules = new ArrayList<>();
+                        scheduleIds.forEach((LongProcedure) scheduleId -> {
+                            var schedule = schedulesById.get(ScheduleID.newBuilder()
+                                    .scheduleNum(scheduleId)
+                                    .build());
+                            if (schedule != null) schedules.add(schedule);
+                            else {
+                                log.info("BBM: ERROR: no schedule for expiration->id "
+                                        + richInstant
+                                        + " -> "
+                                        + scheduleId);
+                            }
+                        });
 
-                                    List<Schedule> schedules = new ArrayList<>();
-                                    scheduleIds.forEach(new LongProcedure() {
-                                        @Override
-                                        public void value(long scheduleId) {
-                                            var schedule = schedulesById.get(ScheduleID.newBuilder()
-                                                    .scheduleNum(scheduleId)
-                                                    .build());
-                                            if (schedule != null) schedules.add(schedule);
-                                            else {
-                                                log.info("BBM: ERROR: no schedule for expiration->id "
-                                                        + richInstant
-                                                        + " -> "
-                                                        + scheduleId);
-                                            }
-                                        }
-                                    });
-
-                                    schedulesByExpiration.put(
-                                            ProtoLong.newBuilder()
-                                                    .value(secondSinceEpocVirtualKey.getKeyAsLong())
-                                                    .build(),
-                                            ScheduleList.newBuilder()
-                                                    .schedules(schedules)
-                                                    .build());
-                                }
-                            });
-                        }
-                    });
-            if (schedulesByExpiration.isModified()) ((WritableKVStateBase) schedulesByExpiration).commit();
+                        schedulesByExpiration.put(
+                                ProtoLong.newBuilder()
+                                        .value(secondSinceEpocVirtualKey.getKeyAsLong())
+                                        .build(),
+                                ScheduleList.newBuilder().schedules(schedules).build());
+                    }));
+            if (schedulesByExpiration.isModified()) ((WritableKVStateBase<?, ?>) schedulesByExpiration).commit();
             log.info("BBM: finished schedule by expiration migration");
 
             log.info("BBM: doing schedule by equality migration");
-            final WritableKVState<ProtoString, ScheduleList> schedulesByEquality =
+            final WritableKVState<ProtoBytes, ScheduleList> schedulesByEquality =
                     ctx.newStates().get(SCHEDULES_BY_EQUALITY_KEY);
-            fs.byEquality().forEachNode((scheduleEqualityVirtualKey, sevv) -> {
-                sevv.getIds().forEach(new BiConsumer<String, Long>() {
-                    @Override
-                    public void accept(String scheduleObjHash, Long scheduleId) {
+            fs.byEquality().forEachNode((scheduleEqualityVirtualKey, sevv) -> sevv.getIds()
+                    .forEach((scheduleObjHash, scheduleId) -> {
                         var schedule = schedulesById.get(
                                 ScheduleID.newBuilder().scheduleNum(scheduleId).build());
                         if (schedule != null) {
-                            final var equalityKey = new ProtoString(ScheduleStoreUtility.calculateStringHash(schedule));
+                            final var equalityKey = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
                             final var existingList = schedulesByEquality.get(equalityKey);
                             final List<Schedule> existingSchedules = existingList == null
                                     ? new ArrayList<>()
@@ -171,10 +149,8 @@ public final class InitialModServiceScheduleSchema extends Schema {
                                     + scheduleObjHash + " -> "
                                     + scheduleId);
                         }
-                    }
-                });
-            });
-            if (schedulesByEquality.isModified()) ((WritableKVStateBase) schedulesByEquality).commit();
+                    }));
+            if (schedulesByEquality.isModified()) ((WritableKVStateBase<?, ?>) schedulesByEquality).commit();
             log.info("BBM: finished schedule by equality migration");
 
             log.info("BBM: finished schedule service migration migration");
@@ -198,8 +174,8 @@ public final class InitialModServiceScheduleSchema extends Schema {
                 MAX_SCHEDULES_BY_EXPIRY_SEC_KEY);
     }
 
-    private static StateDefinition<ProtoString, ScheduleList> schedulesByEquality() {
+    private static StateDefinition<ProtoBytes, ScheduleList> schedulesByEquality() {
         return StateDefinition.onDisk(
-                SCHEDULES_BY_EQUALITY_KEY, ProtoString.PROTOBUF, ScheduleList.PROTOBUF, MAX_SCHEDULES_BY_EQUALITY);
+                SCHEDULES_BY_EQUALITY_KEY, ProtoBytes.PROTOBUF, ScheduleList.PROTOBUF, MAX_SCHEDULES_BY_EQUALITY);
     }
 }

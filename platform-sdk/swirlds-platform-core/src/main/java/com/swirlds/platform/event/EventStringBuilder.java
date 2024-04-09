@@ -102,7 +102,15 @@ public final class EventStringBuilder {
             return this;
         }
         sb.append(" op");
-        appendShortEvent(unhashedData.getOtherId(), hashedData.getOtherParentGen(), hashedData.getOtherParentHash());
+
+        final NodeId otherParentId;
+        if (hashedData.hasOtherParent()) {
+            otherParentId = hashedData.getOtherParents().getFirst().getCreator();
+        } else {
+            otherParentId = null;
+        }
+
+        appendShortEvent(otherParentId, hashedData.getOtherParentGen(), hashedData.getOtherParentHash());
         return this;
     }
 

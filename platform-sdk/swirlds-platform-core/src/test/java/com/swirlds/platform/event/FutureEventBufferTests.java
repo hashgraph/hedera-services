@@ -31,10 +31,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -42,30 +39,6 @@ import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class FutureEventBufferTests {
-
-    /**
-     * Generate an event with random data. Most fields don't need to be non-null, just enough to ensure events are
-     * unique.
-     *
-     * @param random     the random number generator
-     * @param birthRound the birth round of the event
-     * @return the event
-     */
-    @NonNull
-    final GossipEvent generateEvent(@NonNull final Random random, final long birthRound) {
-        final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
-                new BasicSoftwareVersion(1),
-                new NodeId(random.nextInt(100)),
-                null,
-                List.of(),
-                birthRound,
-                randomInstant(random),
-                null);
-        final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData();
-
-        return new GossipEvent(baseEventHashedData, baseEventUnhashedData);
-    }
-
     /**
      * This test verifies the following:
      * <ul>
@@ -87,7 +60,7 @@ class FutureEventBufferTests {
                 .withConfiguration(configuration)
                 .build();
 
-        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
+        final FutureEventBuffer futureEventBuffer = new DefaultFutureEventBuffer(platformContext);
 
         final long nonAncientBirthRound = 100;
         final long pendingConsensusRound = nonAncientBirthRound * 2;
@@ -101,7 +74,11 @@ class FutureEventBufferTests {
         final int count = 1000;
         final List<GossipEvent> events = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            final GossipEvent event = generateEvent(random, random.nextLong(1, maxFutureRound));
+            final GossipEvent event = new TestingEventBuilder(random)
+                    .setBirthRound(random.nextLong(1, maxFutureRound))
+                    .setCreatorId(new NodeId(random.nextInt(100)))
+                    .setTimeCreated(randomInstant(random))
+                    .build();
             events.add(event);
         }
         // Put the events in topological order
@@ -168,7 +145,7 @@ class FutureEventBufferTests {
                 .withConfiguration(configuration)
                 .build();
 
-        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
+        final FutureEventBuffer futureEventBuffer = new DefaultFutureEventBuffer(platformContext);
 
         final long nonAncientBirthRound = 100;
         final long pendingConsensusRound = nonAncientBirthRound * 2;
@@ -182,7 +159,11 @@ class FutureEventBufferTests {
         final int count = 1000;
         final List<GossipEvent> events = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            final GossipEvent event = generateEvent(random, random.nextLong(1, maxFutureRound));
+            final GossipEvent event = new TestingEventBuilder(random)
+                    .setBirthRound(random.nextLong(1, maxFutureRound))
+                    .setCreatorId(new NodeId(random.nextInt(100)))
+                    .setTimeCreated(randomInstant(random))
+                    .build();
             events.add(event);
         }
         // Put the events in topological order
@@ -226,7 +207,7 @@ class FutureEventBufferTests {
                 .withConfiguration(configuration)
                 .build();
 
-        final FutureEventBuffer futureEventBuffer = new FutureEventBuffer(platformContext);
+        final FutureEventBuffer futureEventBuffer = new DefaultFutureEventBuffer(platformContext);
 
         final long pendingConsensusRound = random.nextLong(100, 1_000);
         final long nonAncientBirthRound = pendingConsensusRound / 2;
@@ -237,7 +218,11 @@ class FutureEventBufferTests {
 
         final long roundsUntilRelease = random.nextLong(10, 20);
         final long eventBirthRound = pendingConsensusRound + roundsUntilRelease;
-        final GossipEvent event = generateEvent(random, eventBirthRound);
+        final GossipEvent event = new TestingEventBuilder(random)
+                .setBirthRound(eventBirthRound)
+                .setCreatorId(new NodeId(random.nextInt(100)))
+                .setTimeCreated(randomInstant(random))
+                .build();
 
         // Event is from the future, we can't release it yet
         assertNull(futureEventBuffer.addEvent(event));

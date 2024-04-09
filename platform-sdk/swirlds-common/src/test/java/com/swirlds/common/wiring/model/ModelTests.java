@@ -16,11 +16,11 @@
 
 package com.swirlds.common.wiring.model;
 
+import static com.swirlds.common.threading.framework.internal.AbstractQueueThreadConfiguration.UNLIMITED_CAPACITY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
@@ -59,7 +59,7 @@ class ModelTests {
         assertEquals(illegalDirectSchedulerUseExpected, illegalDirectSchedulerUseDetected);
 
         // Should not throw.
-        final String diagram = model.generateWiringDiagram(List.of(), List.of(), List.of());
+        final String diagram = model.generateWiringDiagram(List.of(), List.of(), List.of(), false);
         if (printMermaidDiagram) {
             System.out.println(diagram);
         }
@@ -67,15 +67,15 @@ class ModelTests {
 
     @Test
     void emptyModelTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
         validateModel(model, false, false);
     }
 
     @Test
     void singleVertexTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -83,16 +83,18 @@ class ModelTests {
 
         */
 
-        final TaskScheduler<Void> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+        final TaskScheduler<Void> taskSchedulerA = model.schedulerBuilder("A")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
 
         validateModel(model, false, false);
     }
 
     @Test
     void shortChainTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -119,8 +121,8 @@ class ModelTests {
 
     @Test
     void loopSizeOneTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -141,8 +143,8 @@ class ModelTests {
 
     @Test
     void loopSizeOneBrokenByInjectionTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -163,8 +165,8 @@ class ModelTests {
 
     @Test
     void loopSizeTwoTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -190,8 +192,8 @@ class ModelTests {
 
     @Test
     void loopSizeTwoBrokenByInjectionTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -217,8 +219,8 @@ class ModelTests {
 
     @Test
     void loopSizeTwoBrokenByMissingBoundTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -228,8 +230,10 @@ class ModelTests {
 
         */
 
-        final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputA = taskSchedulerA.buildInputWire("inputA");
 
         final TaskScheduler<Integer> taskSchedulerB =
@@ -244,8 +248,8 @@ class ModelTests {
 
     @Test
     void loopSizeThreeTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -276,8 +280,8 @@ class ModelTests {
 
     @Test
     void loopSizeThreeBrokenByInjectionTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -308,8 +312,8 @@ class ModelTests {
 
     @Test
     void loopSizeThreeBrokenByMissingBoundTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -327,8 +331,10 @@ class ModelTests {
                 model.schedulerBuilder("B").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
-        final TaskScheduler<Integer> taskSchedulerC =
-                model.schedulerBuilder("C").build().cast();
+        final TaskScheduler<Integer> taskSchedulerC = model.schedulerBuilder("C")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputC = taskSchedulerC.buildInputWire("inputC");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
@@ -340,8 +346,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -378,8 +384,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourBrokenByInjectionTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -402,8 +408,10 @@ class ModelTests {
                 model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer> inputC = taskSchedulerC.buildInputWire("inputC");
 
-        final TaskScheduler<Integer> taskSchedulerD =
-                model.schedulerBuilder("D").build().cast();
+        final TaskScheduler<Integer> taskSchedulerD = model.schedulerBuilder("D")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
@@ -416,8 +424,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourBrokenByMissingBoundTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -454,8 +462,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourWithChainTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -532,8 +540,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourWithChainBrokenByInjectionTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -610,8 +618,8 @@ class ModelTests {
 
     @Test
     void loopSizeFourWithChainBrokenByMissingBoundTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -643,8 +651,10 @@ class ModelTests {
                 model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer> inputC = taskSchedulerC.buildInputWire("inputC");
 
-        final TaskScheduler<Integer> taskSchedulerD =
-                model.schedulerBuilder("D").build().cast();
+        final TaskScheduler<Integer> taskSchedulerD = model.schedulerBuilder("D")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
         final TaskScheduler<Integer> taskSchedulerE =
@@ -688,8 +698,8 @@ class ModelTests {
 
     @Test
     void multiLoopTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -770,8 +780,8 @@ class ModelTests {
 
     @Test
     void multiLoopBrokenByInjectionTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -852,8 +862,8 @@ class ModelTests {
 
     @Test
     void multiLoopBrokenByMissingBoundTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -889,8 +899,10 @@ class ModelTests {
                 model.schedulerBuilder("D").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        final TaskScheduler<Integer> taskSchedulerE =
-                model.schedulerBuilder("E").build().cast();
+        final TaskScheduler<Integer> taskSchedulerE = model.schedulerBuilder("E")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputE = taskSchedulerE.buildInputWire("inputE");
 
         final TaskScheduler<Integer> taskSchedulerF =
@@ -909,8 +921,10 @@ class ModelTests {
                 model.schedulerBuilder("I").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer> inputI = taskSchedulerI.buildInputWire("inputI");
 
-        final TaskScheduler<Integer> taskSchedulerJ =
-                model.schedulerBuilder("J").build().cast();
+        final TaskScheduler<Integer> taskSchedulerJ = model.schedulerBuilder("J")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputJ = taskSchedulerJ.buildInputWire("inputJ");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
@@ -934,8 +948,8 @@ class ModelTests {
 
     @Test
     void filterInCycleTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1017,8 +1031,8 @@ class ModelTests {
 
     @Test
     void transformerInCycleTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1100,8 +1114,8 @@ class ModelTests {
 
     @Test
     void splitterInCycleTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1181,8 +1195,8 @@ class ModelTests {
 
     @Test
     void multipleOutputCycleTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1271,54 +1285,12 @@ class ModelTests {
     }
 
     /**
-     * Make sure that adding a heartbeat doesn't break the model.
-     */
-    @Test
-    void heartbeatTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
-
-        /*
-
-        A -----> B <----- heartbeat
-        ^        |
-        |        v
-        D <----- C
-
-        */
-
-        final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputA = taskSchedulerA.buildInputWire("inputA");
-
-        final TaskScheduler<Integer> taskSchedulerB =
-                model.schedulerBuilder("B").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
-        taskSchedulerB.buildHeartbeatInputWire("heartbeat", 100);
-
-        final TaskScheduler<Integer> taskSchedulerC =
-                model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputC = taskSchedulerC.buildInputWire("inputC");
-
-        final TaskScheduler<Integer> taskSchedulerD =
-                model.schedulerBuilder("D").withUnhandledTaskCapacity(1).build().cast();
-        final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
-
-        taskSchedulerA.getOutputWire().solderTo(inputB);
-        taskSchedulerB.getOutputWire().solderTo(inputC);
-        taskSchedulerC.getOutputWire().solderTo(inputD);
-        taskSchedulerD.getOutputWire().solderTo(inputA);
-
-        validateModel(model, true, false);
-    }
-
-    /**
      * We should detect when a concurrent scheduler access a direct scheduler.
      */
     @Test
     void concurrentAccessingDirectTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1341,48 +1313,66 @@ class ModelTests {
 
         */
 
-        final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputA = taskSchedulerA.buildInputWire("inputA");
 
-        final TaskScheduler<Integer> taskSchedulerB =
-                model.schedulerBuilder("B").build().cast();
+        final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
-        final TaskScheduler<Integer> taskSchedulerC =
-                model.schedulerBuilder("C").build().cast();
+        final TaskScheduler<Integer> taskSchedulerC = model.schedulerBuilder("C")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputC = taskSchedulerC.buildInputWire("inputC");
 
         final TaskScheduler<Integer> taskSchedulerD = model.schedulerBuilder("D")
                 .withType(TaskSchedulerType.CONCURRENT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
         final TaskScheduler<Integer> taskSchedulerE = model.schedulerBuilder("E")
                 .withType(TaskSchedulerType.DIRECT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputE = taskSchedulerE.buildInputWire("inputE");
 
-        final TaskScheduler<Integer> taskSchedulerF =
-                model.schedulerBuilder("F").build().cast();
+        final TaskScheduler<Integer> taskSchedulerF = model.schedulerBuilder("F")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputF = taskSchedulerF.buildInputWire("inputF");
 
-        final TaskScheduler<Integer> taskSchedulerG =
-                model.schedulerBuilder("G").build().cast();
+        final TaskScheduler<Integer> taskSchedulerG = model.schedulerBuilder("G")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputG = taskSchedulerG.buildInputWire("inputG");
 
-        final TaskScheduler<Integer> taskSchedulerH =
-                model.schedulerBuilder("H").build().cast();
+        final TaskScheduler<Integer> taskSchedulerH = model.schedulerBuilder("H")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputH = taskSchedulerH.buildInputWire("inputH");
 
-        final TaskScheduler<Integer> taskSchedulerI =
-                model.schedulerBuilder("I").build().cast();
+        final TaskScheduler<Integer> taskSchedulerI = model.schedulerBuilder("I")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputI = taskSchedulerI.buildInputWire("inputI");
 
-        final TaskScheduler<Integer> taskSchedulerJ =
-                model.schedulerBuilder("J").build().cast();
+        final TaskScheduler<Integer> taskSchedulerJ = model.schedulerBuilder("J")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputJ = taskSchedulerJ.buildInputWire("inputJ");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
@@ -1405,8 +1395,8 @@ class ModelTests {
      */
     @Test
     void concurrentAccessingMultipleDirectTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1430,50 +1420,67 @@ class ModelTests {
 
         */
 
-        final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputA = taskSchedulerA.buildInputWire("inputA");
 
-        final TaskScheduler<Integer> taskSchedulerB =
-                model.schedulerBuilder("B").build().cast();
+        final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
-        final TaskScheduler<Integer> taskSchedulerC =
-                model.schedulerBuilder("C").build().cast();
+        final TaskScheduler<Integer> taskSchedulerC = model.schedulerBuilder("C")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputC = taskSchedulerC.buildInputWire("inputC");
 
         final TaskScheduler<Integer> taskSchedulerD = model.schedulerBuilder("D")
                 .withType(TaskSchedulerType.CONCURRENT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
         final TaskScheduler<Integer> taskSchedulerE = model.schedulerBuilder("E")
                 .withType(TaskSchedulerType.DIRECT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputE = taskSchedulerE.buildInputWire("inputE");
 
         final TaskScheduler<Integer> taskSchedulerF = model.schedulerBuilder("F")
                 .withType(TaskSchedulerType.DIRECT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputF = taskSchedulerF.buildInputWire("inputF");
 
-        final TaskScheduler<Integer> taskSchedulerG =
-                model.schedulerBuilder("G").build().cast();
+        final TaskScheduler<Integer> taskSchedulerG = model.schedulerBuilder("G")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputG = taskSchedulerG.buildInputWire("inputG");
 
-        final TaskScheduler<Integer> taskSchedulerH =
-                model.schedulerBuilder("H").build().cast();
+        final TaskScheduler<Integer> taskSchedulerH = model.schedulerBuilder("H")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputH = taskSchedulerH.buildInputWire("inputH");
 
-        final TaskScheduler<Integer> taskSchedulerI =
-                model.schedulerBuilder("I").build().cast();
+        final TaskScheduler<Integer> taskSchedulerI = model.schedulerBuilder("I")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputI = taskSchedulerI.buildInputWire("inputI");
 
-        final TaskScheduler<Integer> taskSchedulerJ =
-                model.schedulerBuilder("J").build().cast();
+        final TaskScheduler<Integer> taskSchedulerJ = model.schedulerBuilder("J")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputJ = taskSchedulerJ.buildInputWire("inputJ");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
@@ -1497,8 +1504,8 @@ class ModelTests {
      */
     @Test
     void concurrentAccessingDirectThroughProxyTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1523,12 +1530,16 @@ class ModelTests {
 
         */
 
-        final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputA = taskSchedulerA.buildInputWire("inputA");
 
-        final TaskScheduler<Integer> taskSchedulerB =
-                model.schedulerBuilder("B").build().cast();
+        final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
         final TaskScheduler<Integer> taskSchedulerC =
@@ -1537,38 +1548,48 @@ class ModelTests {
 
         final TaskScheduler<Integer> taskSchedulerD = model.schedulerBuilder("D")
                 .withType(TaskSchedulerType.CONCURRENT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
         final TaskScheduler<Integer> taskSchedulerE = model.schedulerBuilder("E")
                 .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputE = taskSchedulerE.buildInputWire("inputE");
 
         final TaskScheduler<Integer> taskSchedulerF = model.schedulerBuilder("F")
                 .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputF = taskSchedulerF.buildInputWire("inputF");
 
         final TaskScheduler<Integer> taskSchedulerG = model.schedulerBuilder("G")
                 .withType(TaskSchedulerType.DIRECT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputG = taskSchedulerG.buildInputWire("inputG");
 
-        final TaskScheduler<Integer> taskSchedulerH =
-                model.schedulerBuilder("H").build().cast();
+        final TaskScheduler<Integer> taskSchedulerH = model.schedulerBuilder("H")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputH = taskSchedulerH.buildInputWire("inputH");
 
-        final TaskScheduler<Integer> taskSchedulerI =
-                model.schedulerBuilder("I").build().cast();
+        final TaskScheduler<Integer> taskSchedulerI = model.schedulerBuilder("I")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputI = taskSchedulerI.buildInputWire("inputI");
 
-        final TaskScheduler<Integer> taskSchedulerJ =
-                model.schedulerBuilder("J").build().cast();
+        final TaskScheduler<Integer> taskSchedulerJ = model.schedulerBuilder("J")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputJ = taskSchedulerJ.buildInputWire("inputJ");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
@@ -1591,8 +1612,8 @@ class ModelTests {
      */
     @Test
     void multipleSequentialSchedulerTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         /*
 
@@ -1622,44 +1643,59 @@ class ModelTests {
 
         final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
                 .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
         final TaskScheduler<Integer> taskSchedulerC = model.schedulerBuilder("C")
                 .withType(TaskSchedulerType.DIRECT_THREADSAFE)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputC = taskSchedulerC.buildInputWire("inputC");
 
         final TaskScheduler<Integer> taskSchedulerD = model.schedulerBuilder("D")
                 .withType(TaskSchedulerType.DIRECT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final InputWire<Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        final TaskScheduler<Integer> taskSchedulerE =
-                model.schedulerBuilder("E").build().cast();
+        final TaskScheduler<Integer> taskSchedulerE = model.schedulerBuilder("E")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputE = taskSchedulerE.buildInputWire("inputE");
 
-        final TaskScheduler<Integer> taskSchedulerF =
-                model.schedulerBuilder("F").build().cast();
+        final TaskScheduler<Integer> taskSchedulerF = model.schedulerBuilder("F")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputF = taskSchedulerF.buildInputWire("inputF");
 
-        final TaskScheduler<Integer> taskSchedulerG =
-                model.schedulerBuilder("G").build().cast();
+        final TaskScheduler<Integer> taskSchedulerG = model.schedulerBuilder("G")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputG = taskSchedulerG.buildInputWire("inputG");
 
-        final TaskScheduler<Integer> taskSchedulerH =
-                model.schedulerBuilder("H").build().cast();
+        final TaskScheduler<Integer> taskSchedulerH = model.schedulerBuilder("H")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputH = taskSchedulerH.buildInputWire("inputH");
 
-        final TaskScheduler<Integer> taskSchedulerI =
-                model.schedulerBuilder("I").build().cast();
+        final TaskScheduler<Integer> taskSchedulerI = model.schedulerBuilder("I")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputI = taskSchedulerI.buildInputWire("inputI");
 
-        final TaskScheduler<Integer> taskSchedulerJ =
-                model.schedulerBuilder("J").build().cast();
+        final TaskScheduler<Integer> taskSchedulerJ = model.schedulerBuilder("J")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final InputWire<Integer> inputJ = taskSchedulerJ.buildInputWire("inputJ");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
@@ -1679,16 +1715,18 @@ class ModelTests {
 
     @Test
     void unboundInputWireTest() {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
-        final TaskScheduler<Integer> taskSchedulerA =
-                model.schedulerBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
+                .build()
+                .cast();
         final BindableInputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
 
         assertTrue(model.checkForUnboundInputWires());
 
-        inputA.bind(x -> {});
+        inputA.bindConsumer(x -> {});
 
         assertFalse(model.checkForUnboundInputWires());
     }

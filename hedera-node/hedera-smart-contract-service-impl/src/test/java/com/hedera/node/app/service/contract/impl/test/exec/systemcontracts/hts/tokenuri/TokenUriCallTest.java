@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.tokenuri;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CIVILIAN_OWNED_NFT;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NFT_SERIAL_NO;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
@@ -27,7 +26,6 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenuri.TokenUriTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -42,7 +40,7 @@ class TokenUriCallTest extends HtsCallTestBase {
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO))
                 .willReturn(CIVILIAN_OWNED_NFT);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -60,7 +58,7 @@ class TokenUriCallTest extends HtsCallTestBase {
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN.tokenId().tokenNum(), NFT_SERIAL_NO))
                 .willReturn(null);
         // when
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
         // then
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -69,20 +67,5 @@ class TokenUriCallTest extends HtsCallTestBase {
                         .encodeElements(TokenUriCall.URI_QUERY_NON_EXISTING_TOKEN_ERROR)
                         .array()),
                 result.getOutput());
-    }
-
-    @Test
-    void haltWhenTokenIsNotERC721() {
-        // given
-        subject = new TokenUriCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN, NFT_SERIAL_NO);
-
-        // when
-        final var result = subject.execute().fullResult().result();
-
-        // then
-        assertEquals(MessageFrame.State.EXCEPTIONAL_HALT, result.getState());
-        assertEquals(
-                HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,
-                result.getHaltReason().get());
     }
 }

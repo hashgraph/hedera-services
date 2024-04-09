@@ -16,7 +16,6 @@
 
 package com.swirlds.common.wiring.component;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -52,15 +51,15 @@ class WiringComponentPerformanceTests {
 
     @NonNull
     private InputWire<Long> buildOldStyleComponent(@NonNull final SimpleComponent component) {
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         final TaskScheduler scheduler = model.schedulerBuilder("test")
                 .withType(TaskSchedulerType.DIRECT)
                 .build();
 
         final BindableInputWire<Long, Void> inputWire = scheduler.buildInputWire("input");
-        inputWire.bind(component::handleInput);
+        inputWire.bindConsumer(component::handleInput);
 
         return inputWire;
     }
@@ -68,8 +67,8 @@ class WiringComponentPerformanceTests {
     @NonNull
     private InputWire<Long> buildAutomaticComponent(@NonNull final SimpleComponent component) {
 
-        final WiringModel model = WiringModel.create(
-                TestPlatformContextBuilder.create().build(), Time.getCurrent(), ForkJoinPool.commonPool());
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
 
         final TaskScheduler<Void> scheduler = model.schedulerBuilder("test")
                 .withType(TaskSchedulerType.DIRECT)
@@ -77,7 +76,7 @@ class WiringComponentPerformanceTests {
                 .cast();
 
         final ComponentWiring<SimpleComponent, Void> componentWiring =
-                new ComponentWiring<>(SimpleComponent.class, scheduler);
+                new ComponentWiring<>(model, SimpleComponent.class, scheduler);
         final InputWire<Long> inputWire = componentWiring.getInputWire(SimpleComponent::handleInput);
         componentWiring.bind(component);
 

@@ -62,6 +62,7 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -80,6 +81,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -100,6 +102,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.PlatformState;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
@@ -182,6 +185,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private ChildRecordFinalizer childRecordFinalizer;
 
     @Mock
+    private ParentRecordFinalizer parentRecordFinalizer;
+
+    @Mock
     private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     @Mock
@@ -192,6 +198,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
     @Mock
     private PlatformState platformState;
+
+    @Mock
+    private Metrics metrics;
 
     @BeforeEach
     void setup() {
@@ -243,9 +252,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 authorizer,
                 solvencyPreCheck,
                 childRecordFinalizer,
+                parentRecordFinalizer,
                 networkUtilizationManager,
                 synchronizedThrottleAccumulator,
-                platformState);
+                platformState,
+                metrics);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -275,9 +286,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             authorizer,
             solvencyPreCheck,
             childRecordFinalizer,
+            parentRecordFinalizer,
             networkUtilizationManager,
             synchronizedThrottleAccumulator,
-            platformState
+            platformState,
+            metrics
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -406,9 +419,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
+                    parentRecordFinalizer,
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
-                    platformState);
+                    platformState,
+                    metrics);
         }
 
         @Test
@@ -507,9 +522,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
+                    parentRecordFinalizer,
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
-                    platformState);
+                    platformState,
+                    metrics);
         }
 
         @Test
@@ -587,6 +604,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         void testCreateWritableStore(@Mock final WritableStates writableStates) {
             // given
             when(stack.getWritableStates(TokenService.NAME)).thenReturn(writableStates);
+            when(writableStates.get(any())).thenReturn(new MapWritableKVState<>("ACCOUNTS"));
             final var context = createContext(defaultTransactionBody());
 
             // when
@@ -786,7 +804,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var fees = new Fees(1L, 2L, 3L);
             given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
             final var captor = ArgumentCaptor.forClass(FeeContext.class);
-            final var result = context.dispatchComputeFees(defaultTransactionBody(), account1002);
+            final var result = context.dispatchComputeFees(
+                    defaultTransactionBody(), account1002, ComputeDispatchFeesAsTopLevel.NO);
             verify(dispatcher).dispatchComputeFees(captor.capture());
             final var feeContext = captor.getValue();
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);
@@ -800,7 +819,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var fees = new Fees(1L, 2L, 3L);
             given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
             final var captor = ArgumentCaptor.forClass(FeeContext.class);
-            final var result = context.dispatchComputeFees(transactionBodyWithoutId(), account1002);
+            final var result = context.dispatchComputeFees(
+                    transactionBodyWithoutId(), account1002, ComputeDispatchFeesAsTopLevel.NO);
             verify(dispatcher).dispatchComputeFees(captor.capture());
             final var feeContext = captor.getValue();
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);
@@ -995,9 +1015,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
+                    parentRecordFinalizer,
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
-                    platformState);
+                    platformState,
+                    metrics);
         }
 
         @SuppressWarnings("ConstantConditions")

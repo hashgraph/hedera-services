@@ -18,7 +18,6 @@ package com.swirlds.benchmark;
 
 import com.swirlds.benchmark.config.BenchmarkConfig;
 import com.swirlds.benchmark.reconnect.BenchmarkMerkleInternal;
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -38,7 +37,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -82,8 +80,6 @@ public abstract class BaseBench {
     private static final int SKEW = 2;
     private static final int RECORD_SIZE_MIN = 8;
 
-    private static final String SWIRLDS_PACKAGE = "com.swirlds";
-
     /* Directory for the entire benchmark */
     private static Path benchDir;
     /* Directory for each iteration */
@@ -95,13 +91,13 @@ public abstract class BaseBench {
 
     private static void loadConfig() throws IOException {
         ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
+                .autoDiscoverExtensions()
                 .withSource(new LegacyFileConfigSource(Path.of(".", "settings.txt")))
                 .withConfigDataType(BenchmarkConfig.class)
                 .withConfigDataType(VirtualMapConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(CryptoConfig.class);
-        configurationBuilder = ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
         configuration = configurationBuilder.build();
         ConfigurationHolder.getInstance().setConfiguration(configuration);
 

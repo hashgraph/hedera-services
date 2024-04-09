@@ -16,13 +16,12 @@
 
 package com.swirlds.platform.test.consensus;
 
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.ConsensusMetrics;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.test.NoOpConsensusMetrics;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,21 +32,24 @@ import java.util.Random;
 /** A class containing utilities for consensus tests. */
 public abstract class ConsensusUtils {
 
-    public static final ConsensusMetrics NOOP_CONSENSUS_METRICS = new NoOpConsensusMetrics();
-
     public static void loadEventsIntoGenerator(
-            final EventImpl[] events, final GraphGenerator<?> generator, final Random random) {
+            @NonNull final List<GossipEvent> events,
+            @NonNull final GraphGenerator<?> generator,
+            @NonNull final Random random) {
         Instant lastTimestamp = Instant.MIN;
         for (final Address address : generator.getAddressBook()) {
             final EventSource<?> source = generator.getSource(address.getNodeId());
-            final List<IndexedEvent> eventsByCreator = Arrays.stream(events)
-                    .map(IndexedEvent.class::cast)
-                    .filter(e -> e.getCreatorId().id() == address.getNodeId().id())
+            final List<GossipEvent> eventsByCreator = events.stream()
+                    .filter(e -> e.getHashedData().getCreatorId().id()
+                            == address.getNodeId().id())
                     .toList();
-            eventsByCreator.forEach(e -> source.setLatestEvent(random, e));
+            eventsByCreator.forEach(e -> {
+                final IndexedEvent indexedEvent = new IndexedEvent(e.getHashedData(), e.getUnhashedData(), null, null);
+                source.setLatestEvent(random, indexedEvent);
+            });
             final Instant creatorMax = eventsByCreator.stream()
-                    .max(Comparator.naturalOrder())
-                    .map(IndexedEvent::getTimeCreated)
+                    .max(Comparator.comparingLong(GossipEvent::getGeneration))
+                    .map(e -> e.getHashedData().getTimeCreated())
                     .orElse(Instant.MIN);
             lastTimestamp = Collections.max(Arrays.asList(lastTimestamp, creatorMax));
         }

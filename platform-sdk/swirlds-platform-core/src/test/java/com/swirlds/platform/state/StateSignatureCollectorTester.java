@@ -22,6 +22,8 @@ import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesCons
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -71,7 +73,14 @@ public class StateSignatureCollectorTester extends StateSignatureCollector {
 
     @Override
     public List<ReservedSignedState> addReservedState(@NonNull final ReservedSignedState reservedSignedState) {
-        latestSignedState.newIncompleteState(reservedSignedState.get().getRound());
+        final NonAncientEventWindow window = new NonAncientEventWindow(
+                reservedSignedState.get().getRound(),
+                1 /* ignored by this test */,
+                1 /* ignored by this test */,
+                AncientMode.GENERATION_THRESHOLD /* ignored by this test*/);
+
+        latestSignedState.updateEventWindow(window);
+
         return processStates(super.addReservedState(reservedSignedState));
     }
 

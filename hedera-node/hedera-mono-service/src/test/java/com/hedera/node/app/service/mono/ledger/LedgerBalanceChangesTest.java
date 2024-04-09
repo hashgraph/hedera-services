@@ -35,7 +35,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -200,8 +199,7 @@ class LedgerBalanceChangesTest {
                 historian,
                 txnCtx,
                 aliasManager,
-                feeDistribution,
-                cryptoCreateThrottleReclaimer);
+                feeDistribution);
 
         subject = new HederaLedger(
                 tokenStore,
@@ -308,8 +306,7 @@ class LedgerBalanceChangesTest {
                 historian,
                 txnCtx,
                 aliasManager,
-                feeDistribution,
-                cryptoCreateThrottleReclaimer);
+                feeDistribution);
         subject = new HederaLedger(
                 tokenStore,
                 ids,
@@ -486,15 +483,12 @@ class LedgerBalanceChangesTest {
         backingAccounts.put(payer, payerAccount);
 
         given(txnCtx.activePayer()).willReturn(payer);
-        given(txnCtx.numImplicitCreations()).willReturn(2);
-        given(txnCtx.isSelfSubmitted()).willReturn(true);
         given(autoCreationLogic.create(any(), eq(accountsLedger), any())).willReturn(Pair.of(INVALID_ACCOUNT_ID, 100L));
         given(aliasManager.lookupIdBy(aliasA.toByteString())).willReturn(EntityNum.MISSING_NUM);
         given(historian.canTrackPrecedingChildRecords(anyInt())).willReturn(true);
 
         subject.begin();
         assertFailsWith(() -> subject.doZeroSum(changes), INVALID_ACCOUNT_ID);
-        verify(cryptoCreateThrottleReclaimer).accept(2);
     }
 
     @Test

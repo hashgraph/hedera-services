@@ -16,18 +16,15 @@
 
 package com.swirlds.logging.api.internal.format;
 
-import static java.time.ZoneOffset.UTC;
-
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 
 /**
  * Utility class to help formatting epoc milliseconds like those coming from ({@link System#currentTimeMillis()}) to a
- * String representation matching  {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME}
+ * String representation matching  {@code "yyyy-MM-dd HH:mm:ss.SSS"}
  */
 public class EpochFormatUtils {
 
@@ -39,15 +36,15 @@ public class EpochFormatUtils {
     /**
      * Space filler values, so we can return a fixed size string
      */
-    private static final String[] FILLERS = prepareFillers();
+    private static final String[] PADDING_VALUES = preparePaddingValues();
 
     /**
      * The formatter for the timestamp.
      */
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(UTC);
+    private static final EpochCachedFormatter FORMATTER = new EpochCachedFormatter();
 
     private static final String BROKEN_TIMESTAMP = "BROKEN-TIMESTAMP          ";
-    public static final int DATE_FIELD_MAX_SIZE = 26;
+    private static final int DATE_FIELD_MAX_SIZE = 26;
 
     private EpochFormatUtils() {}
 
@@ -58,8 +55,8 @@ public class EpochFormatUtils {
     public static @NonNull String timestampAsString(final long timestamp) {
         try {
             final StringBuilder sb = new StringBuilder(DATE_FIELD_MAX_SIZE);
-            sb.append(FORMATTER.format(Instant.ofEpochMilli(timestamp)));
-            sb.append(getFiller(DATE_FIELD_MAX_SIZE - sb.length()));
+            sb.append(FORMATTER.format(timestamp));
+            sb.append(PADDING_VALUES[DATE_FIELD_MAX_SIZE - sb.length()]);
             return sb.toString();
         } catch (final Throwable e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
@@ -67,14 +64,18 @@ public class EpochFormatUtils {
         }
     }
 
-    private static @NonNull String getFiller(final int length) {
-        if (length < 0 || length > DATE_FIELD_MAX_SIZE) {
-            throw new IllegalArgumentException("Unsupported length: " + length);
-        }
-        return FILLERS[length];
-    }
-
-    private static String[] prepareFillers() {
+    /**
+     * Prepares an array of whitespace padding values with varying lengths of whitespace strings.
+     * <p>
+     * This method initializes and populates an array of strings with whitespace fillers.
+     * The length of each whitespace filler string corresponds to its index in the array.
+     * The first element is an empty string, and subsequent elements contain increasing numbers of spaces.
+     * The length of the array is determined by the constant {@code DATE_FIELD_MAX_SIZE} plus one.
+     * The method returns the array of fillers.
+     *
+     * @return An array of whitespace fillers with varying lengths.
+     */
+    private static @NonNull String[] preparePaddingValues() {
         final String[] fillers = new String[DATE_FIELD_MAX_SIZE + 1];
         fillers[0] = "";
         for (int i = 1; i <= DATE_FIELD_MAX_SIZE; i++) {

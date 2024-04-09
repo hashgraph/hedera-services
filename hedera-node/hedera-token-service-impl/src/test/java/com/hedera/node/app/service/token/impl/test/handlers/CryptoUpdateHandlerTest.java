@@ -77,6 +77,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import java.util.List;
 import java.util.Map;
 import java.util.function.LongSupplier;
@@ -127,12 +128,12 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
+        configuration = HederaTestConfigBuilder.createConfig();
         updateAccount =
                 givenValidAccount(updateAccountNum).copyBuilder().key(otherKey).build();
         updateWritableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
         updateReadableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
 
-        configuration = HederaTestConfigBuilder.createConfig();
         given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(72000L);
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         expiryValidator = new StandardizedExpiryValidator(
@@ -456,6 +457,21 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void maxAutoAssociationsLessThanExistingFails() {
         final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(1).build();
+        givenTxnWith(txn);
+        // initially account has 10 auto association slots and 2 are used
+        assertEquals(2, writableStore.get(updateAccountId).usedAutoAssociations());
+        assertEquals(10, writableStore.get(updateAccountId).maxAutoAssociations());
+
+        // changing to less than 2 slots will fail
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT));
+        assertEquals(10, writableStore.get(updateAccountId).maxAutoAssociations());
+    }
+
+    @Test
+    void zeroAutoAssociationsLessThanExistingFails() {
+        final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(0).build();
         givenTxnWith(txn);
         // initially account has 10 auto association slots and 2 are used
         assertEquals(2, writableStore.get(updateAccountId).usedAutoAssociations());
@@ -862,7 +878,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         }
         writableAccounts = emptyStateBuilder.build();
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        writableStore = new WritableAccountStore(writableStates, configuration, mock(Metrics.class));
     }
 
     private void givenTxnWith(TransactionBody txn) {

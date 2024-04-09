@@ -22,7 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_IS_TREASURY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -511,7 +511,7 @@ class DispatchingEvmFrameStateTest {
     void throwsOnLazyCreateOfLongZeroAddress() {
         final var reasonLazyCreationFailed = subject.tryLazyCreation(LONG_ZERO_ADDRESS);
         assertTrue(reasonLazyCreationFailed.isPresent());
-        assertEquals(INVALID_CONTRACT_ID, reasonLazyCreationFailed.get());
+        assertEquals(INVALID_ALIAS_KEY, reasonLazyCreationFailed.get());
     }
 
     @Test

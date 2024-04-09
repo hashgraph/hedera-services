@@ -1,3 +1,6 @@
+import com.hedera.node.app.config.ServicesConfigExtension;
+import com.swirlds.config.api.ConfigurationExtension;
+
 module com.hedera.node.app {
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.consensus.impl;
@@ -45,6 +48,7 @@ module com.hedera.node.app {
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires static com.google.auto.service;
     requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app to
@@ -78,4 +82,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.validation;
     exports com.hedera.node.app.state.listeners to
             com.hedera.node.app.test.fixtures;
+
+    provides ConfigurationExtension with
+            ServicesConfigExtension;
 }
