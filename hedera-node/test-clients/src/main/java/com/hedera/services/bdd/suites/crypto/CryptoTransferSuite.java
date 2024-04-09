@@ -121,6 +121,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_N
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -255,6 +256,68 @@ public class CryptoTransferSuite extends HapiSuite {
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    @HapiTest
+    final HapiSpec netAdjustmentsMustBeZero() {
+        final AtomicReference<AccountID> partyId = new AtomicReference<>();
+        final AtomicReference<AccountID> counterId = new AtomicReference<>();
+        final AtomicReference<AccountID> otherAccountId = new AtomicReference<>();
+
+        return defaultHapiSpec("netAdjustmentsMustBeZero")
+                .given(
+                        cryptoCreate(PARTY).balance(0L),
+                        cryptoCreate(COUNTERPARTY).balance(0L),
+                        cryptoCreate(OTHER_ACCOUNT).balance(0L),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            partyId.set(registry.getAccountID(PARTY));
+                            counterId.set(registry.getAccountID(COUNTERPARTY));
+                            otherAccountId.set(registry.getAccountID(OTHER_ACCOUNT));
+                        }),
+                        tokenCreate("ft").initialSupply(Long.MAX_VALUE))
+                .when(
+                        // Pure checks detect overflow in hbar adjustments
+                        cryptoTransfer((spec, b) -> b.setTransfers(TransferList.newBuilder()
+                                        .addAccountAmounts(aaWith(partyId.get(), +Long.MAX_VALUE))
+                                        .addAccountAmounts(aaWith(otherAccountId.get(), +Long.MAX_VALUE))
+                                        .addAccountAmounts(aaWith(counterId.get(), +2))))
+                                .signedBy(DEFAULT_PAYER)
+                                .hasPrecheck(INVALID_ACCOUNT_AMOUNTS))
+                .then(
+                        // Pure checks detect overflow in fungible token adjustments
+                        cryptoTransfer((spec, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                        .setToken(spec.registry().getTokenID("ft"))
+                                        .addAllTransfers(List.of(
+                                                aaWith(partyId.get(), +Long.MAX_VALUE),
+                                                aaWith(otherAccountId.get(), +Long.MAX_VALUE),
+                                                aaWith(counterId.get(), +2)))))
+                                .signedBy(DEFAULT_PAYER)
+                                .hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN));
+    }
+
+    @HapiTest
+    final HapiSpec customFeesCannotCauseOverflow() {
+        final var secondFeeCollector = "secondFeeCollector";
+        return defaultHapiSpec("fixedFeesCannotCauseOverflow")
+                .given(
+                        cryptoCreate(PARTY).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(COUNTERPARTY)
+                                .maxAutomaticTokenAssociations(1)
+                                .balance(0L),
+                        cryptoCreate(FEE_COLLECTOR).balance(0L),
+                        cryptoCreate(secondFeeCollector).balance(0L),
+                        tokenCreate("ft")
+                                .treasury(TOKEN_TREASURY)
+                                .withCustom(fixedHbarFee(Long.MAX_VALUE, FEE_COLLECTOR))
+                                .withCustom(fixedHbarFee(Long.MAX_VALUE, secondFeeCollector))
+                                .initialSupply(Long.MAX_VALUE),
+                        tokenAssociate(PARTY, "ft"),
+                        cryptoTransfer(moving(2, "ft").between(TOKEN_TREASURY, PARTY)))
+                .when()
+                .then(cryptoTransfer(moving(1L, "ft").between(PARTY, COUNTERPARTY))
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
     @HapiTest

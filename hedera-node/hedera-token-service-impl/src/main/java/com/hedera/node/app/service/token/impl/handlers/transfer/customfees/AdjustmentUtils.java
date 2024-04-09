@@ -16,10 +16,15 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.node.app.spi.workflows.HandleException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -27,8 +32,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class AdjustmentUtils {
+    private static final Logger log = LogManager.getLogger(AdjustmentUtils.class);
     public static final Function<TokenID, Map<AccountID, Long>> ADJUSTMENTS_MAP_FACTORY =
             ignore -> new LinkedHashMap<>();
 
@@ -132,8 +140,8 @@ public class AdjustmentUtils {
             final long amount,
             final TokenID denominatingToken) {
         final var denominatingTokenMap = htsAdjustments.computeIfAbsent(denominatingToken, ADJUSTMENTS_MAP_FACTORY);
-        denominatingTokenMap.merge(sender, -amount, Long::sum);
-        denominatingTokenMap.merge(collector, amount, Long::sum);
+        denominatingTokenMap.merge(sender, -amount, AdjustmentUtils::addExactOrThrow);
+        denominatingTokenMap.merge(collector, amount, AdjustmentUtils::addExactOrThrow);
         htsAdjustments.put(denominatingToken, denominatingTokenMap);
     }
 
@@ -197,9 +205,25 @@ public class AdjustmentUtils {
         final var collector = hbarFee.feeCollectorAccountId();
         final var fixedSpec = hbarFee.fixedFee();
         if (fixedSpec != null) {
+            log.info("Adjusting hbar fees for {}", fixedSpec);
+            log.info(" - BEFORE : {}", hbarAdjustments);
             final var amount = fixedSpec.amount();
-            hbarAdjustments.merge(sender, -amount, Long::sum);
-            hbarAdjustments.merge(collector, amount, Long::sum);
+            hbarAdjustments.merge(sender, -amount, AdjustmentUtils::addExactOrThrow);
+            hbarAdjustments.merge(collector, amount, AdjustmentUtils::addExactOrThrow);
+            log.info(" - AFTER : {}", hbarAdjustments);
+        }
+    }
+
+    public static long addExactOrThrow(final long a, final long b) {
+        return addExactOrThrowReason(a, b, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+    }
+
+    public static long addExactOrThrowReason(
+            final long a, final long b, @NonNull final ResponseCodeEnum failureReason) {
+        try {
+            return Math.addExact(a, b);
+        } catch (final ArithmeticException ignore) {
+            throw new HandleException(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
         }
     }
 }
