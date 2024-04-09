@@ -33,8 +33,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAUSE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
@@ -99,7 +101,9 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                 failUpdateIfKeyIsInvalidAndWeValidateForKeys(),
                 updateFailsIfTokenIsImmutable(),
                 updateFailsIfKeyIsMissing(),
-                keyRemovalFailsWhenAdminKeyDoesNotSign());
+                keyRemovalFailsWhenAdminKeyDoesNotSign(),
+                failUpdateTokenHasNoAdminKeyInitially(),
+                failUpdateTokenHasNoAdminKeyInitiallyAndTryToRemove());
     }
 
     @HapiTest
@@ -566,6 +570,56 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
+    public HapiSpec failUpdateTokenHasNoAdminKeyInitially() {
+        final var newKycKey = "newKycKey";
+        return defaultHapiSpec("failUpdateTokenHasNoAdminKeyInitially")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed(adminKey),
+                        newKeyNamed(kycKey),
+                        newKeyNamed(newKycKey),
+                        tokenCreate(tokenName)
+                                .name(saltedName)
+                                .initialSupply(500)
+                                .kycKey(kycKey)
+                                .payingWith(civilian))
+                .when(tokenUpdate(tokenName)
+                        .adminKey(adminKey)
+                        .kycKey(newKycKey)
+                        .signedBy(civilian, adminKey, kycKey)
+                        .payingWith(civilian)
+                        // most probably changed to TOKEN_HAS_NO_ADMIN_KEY
+                        .hasKnownStatus(TOKEN_IS_IMMUTABLE))
+                .then(getTokenInfo(tokenName)
+                        .searchKeysGlobally()
+                        .hasKycKey(kycKey)
+                        .logged());
+    }
+
+    @HapiTest
+    public HapiSpec failUpdateTokenHasNoAdminKeyInitiallyAndTryToRemove() {
+        return defaultHapiSpec("failUpdateTokenHasNoAdminKeyInitiallyAndTryToRemove")
+                .given(
+                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed(kycKey),
+                        tokenCreate(tokenName)
+                                .name(saltedName)
+                                .initialSupply(500)
+                                .kycKey(kycKey)
+                                .payingWith(civilian))
+                .when(tokenUpdate(tokenName)
+                        .properlyEmptyingKycKey()
+                        .kycKey(kycKey)
+                        // for key removal here we require the signature of the admin key
+                        .signedBy(civilian, kycKey)
+                        .hasKnownStatus(INVALID_SIGNATURE))
+                .then(getTokenInfo(tokenName)
+                        .searchKeysGlobally()
+                        .hasKycKey(kycKey)
+                        .logged());
+    }
+
     // we try to update all low priority keys but the supply key signature is missing
     @HapiTest
     public HapiSpec failUpdateAllKeysOneLowPriorityKeyDoesNotSign() {
@@ -899,6 +953,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
 
     @HapiTest
     public HapiSpec updateFailsIfTokenIsImmutable() {
+        final var tokenSymbol = "TOKEN";
         return defaultHapiSpec("updateFailsIfTokenIsImmutable")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
@@ -910,7 +965,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         newKeyNamed(supplyKey),
                         newKeyNamed(feeScheduleKey),
                         newKeyNamed(metadataKey),
-                        tokenCreate(tokenName).payingWith(civilian))
+                        tokenCreate(tokenName).symbol(tokenSymbol).payingWith(civilian))
                 .when()
                 .then(
                         tokenUpdate(tokenName)
@@ -988,7 +1043,17 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                                 .properlyEmptyingPauseKey()
                                 .signedBy(civilian, adminKey)
                                 .payingWith(civilian)
-                                .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
+                                .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY),
+                        tokenUpdate(tokenName)
+                                .properlyEmptyingFeeScheduleKey()
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_FEE_SCHEDULE_KEY),
+                        tokenUpdate(tokenName)
+                                .properlyEmptyingMetadataKey()
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_HAS_NO_METADATA_KEY));
     }
 
     @Override
