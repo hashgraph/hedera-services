@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.synchronization.internal;
+package com.swirlds.common.merkle.synchronization.task;
 
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.synchronization.views.StandardTeacherTreeView;
+import com.swirlds.common.merkle.synchronization.views.TeacherPushMerkleTreeView;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,13 +31,13 @@ public final class TeacherSubtree implements AutoCloseable {
     private final TeacherTreeView<?> view;
 
     /**
-     * Create a subtree with {@link StandardTeacherTreeView}.
+     * Create a subtree with {@link TeacherPushMerkleTreeView}.
      *
      * @param configuration the configuration
      * @param root          the root of the subtree
      */
     public TeacherSubtree(@NonNull final Configuration configuration, final MerkleNode root) {
-        this(root, new StandardTeacherTreeView(configuration, root));
+        this(root, new TeacherPushMerkleTreeView(configuration, root));
     }
 
     /**

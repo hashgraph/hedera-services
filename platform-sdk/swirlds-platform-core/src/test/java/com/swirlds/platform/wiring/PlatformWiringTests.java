@@ -52,6 +52,7 @@ import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
+import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.util.HashLogger;
@@ -72,14 +73,17 @@ class PlatformWiringTests {
 
         final PlatformComponentBuilder componentBuilder =
                 new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
-        componentBuilder.withSelfEventSigner(mock(SelfEventSigner.class));
+
+        componentBuilder
+                .withEventHasher(mock(EventHasher.class))
+                .withInternalEventValidator(mock(InternalEventValidator.class))
+                .withEventDeduplicator(mock(EventDeduplicator.class))
+                .withEventSignatureValidator(mock(EventSignatureValidator.class))
+                .withStateGarbageCollector(mock(StateGarbageCollector.class))
+                .withSelfEventSigner(mock(SelfEventSigner.class));
 
         wiring.bind(
                 componentBuilder,
-                mock(EventHasher.class),
-                mock(InternalEventValidator.class),
-                mock(EventDeduplicator.class),
-                mock(EventSignatureValidator.class),
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
                 mock(ConsensusEngine.class),

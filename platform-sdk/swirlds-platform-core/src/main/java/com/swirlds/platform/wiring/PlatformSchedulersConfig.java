@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.time.Duration;
 
 /**
  * Contains configuration values for the platform schedulers.
@@ -85,6 +86,9 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          notifier
  * @param stateHasherSchedulerType                          the state hasher scheduler type
  * @param stateHasherUnhandledCapacity                      number of unhandled tasks allowed for the state hasher
+ * @param stateGarbageCollector                             configuration for the state garbage collector scheduler
+ * @param stateGarbageCollectorHeartbeatPeriod              the frequency that heartbeats should be sent to the state
+ *                                                          garbage collector
  * @param platformPublisher                                 configuration for the platform publisher scheduler
  */
 @ConfigData("platformSchedulers")
@@ -132,5 +136,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
         @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration stateGarbageCollector,
+        @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration platformPublisher) {}
