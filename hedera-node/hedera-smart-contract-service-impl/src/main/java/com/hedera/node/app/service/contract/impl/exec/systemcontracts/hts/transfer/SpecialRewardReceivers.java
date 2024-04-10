@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.recordBuilderFor;
-import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -45,13 +44,13 @@ public class SpecialRewardReceivers {
             @NonNull final List<AssessedCustomFee> assessedCustomFees) {
         final var recordBuilder = recordBuilderFor(frame);
         body.transfersOrElse(TransferList.DEFAULT)
-                .accountAmountsOrElse(emptyList())
+                .accountAmounts()
                 .forEach(adjustment -> recordBuilder.trackExplicitRewardSituation(adjustment.accountIDOrThrow()));
-        body.tokenTransfersOrElse(emptyList()).forEach(transfers -> {
+        body.tokenTransfers().forEach(transfers -> {
             transfers
-                    .transfersOrElse(emptyList())
+                    .transfers()
                     .forEach(adjustment -> recordBuilder.trackExplicitRewardSituation(adjustment.accountIDOrThrow()));
-            transfers.nftTransfersOrElse(emptyList()).forEach(transfer -> {
+            transfers.nftTransfers().forEach(transfer -> {
                 recordBuilder.trackExplicitRewardSituation(transfer.senderAccountIDOrThrow());
                 recordBuilder.trackExplicitRewardSituation(transfer.receiverAccountIDOrThrow());
             });

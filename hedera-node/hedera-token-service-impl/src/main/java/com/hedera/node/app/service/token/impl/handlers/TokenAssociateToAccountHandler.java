@@ -56,7 +56,6 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -85,9 +84,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         requireNonNull(context);
         final var tokenStore = requireNonNull(context.readableStore(ReadableTokenStore.class));
         final var op = context.body().tokenAssociateOrThrow();
-        final var tokenIds = op.tokensOrElse(Collections.emptyList()).stream()
-                .sorted(TOKEN_ID_COMPARATOR)
-                .toList();
+        final var tokenIds = op.tokens().stream().sorted(TOKEN_ID_COMPARATOR).toList();
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var accountStore = context.writableStore(WritableAccountStore.class);
@@ -108,10 +105,9 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         final var op = txn.tokenAssociateOrThrow();
 
         validateTruePreCheck(hasAccountNumOrAlias(op.account()), INVALID_ACCOUNT_ID);
-        validateTruePreCheck(op.hasTokens(), INVALID_TOKEN_ID);
-        validateFalsePreCheck(op.tokensOrThrow().contains(TokenID.DEFAULT), INVALID_TOKEN_ID);
+        validateFalsePreCheck(op.tokens().contains(TokenID.DEFAULT), INVALID_TOKEN_ID);
 
-        validateFalsePreCheck(TokenListChecks.repeatsItself(op.tokensOrThrow()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+        validateFalsePreCheck(TokenListChecks.repeatsItself(op.tokens()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
     }
 
     /**

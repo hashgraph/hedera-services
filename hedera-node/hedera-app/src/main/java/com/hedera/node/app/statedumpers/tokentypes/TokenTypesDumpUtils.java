@@ -41,7 +41,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,7 +126,7 @@ public class TokenTypesDumpUtils {
                 token.accountsKycGrantedByDefault(),
                 token.treasuryAccountId() != null ? idFromMod(token.treasuryAccountId()) : null,
                 token.autoRenewAccountId() != null ? idFromMod(token.autoRenewAccountId()) : null,
-                customFeesFromMod(token.customFeesOrElse(Collections.emptyList())),
+                customFeesFromMod(token.customFees()),
                 adminKey == null ? Optional.empty() : Optional.of(adminKey),
                 feeScheduleKey == null ? Optional.empty() : Optional.of(feeScheduleKey),
                 freezeKey == null ? Optional.empty() : Optional.of(freezeKey),
