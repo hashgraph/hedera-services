@@ -27,6 +27,7 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateHasherWiring;
@@ -54,7 +55,7 @@ public class PlatformCoordinator {
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ShadowgraphWiring shadowgraphWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
-    private final ComponentWiring<EventCreationManager, GossipEvent> eventCreationManagerWiring;
+    private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
@@ -86,7 +87,7 @@ public class PlatformCoordinator {
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final ShadowgraphWiring shadowgraphWiring,
             @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
-            @NonNull final ComponentWiring<EventCreationManager, GossipEvent> eventCreationManagerWiring,
+            @NonNull final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring,
             @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
             @NonNull final StateSignatureCollectorWiring stateSignatureCollectorWiring,
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,

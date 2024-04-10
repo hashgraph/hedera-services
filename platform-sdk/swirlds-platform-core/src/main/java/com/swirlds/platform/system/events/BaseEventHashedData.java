@@ -93,20 +93,45 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     // immutable, sent during normal syncs, affects the hash that is signed:
     ///////////////////////////////////////
 
-    /** the software version of the node that created this event. */
+    /**
+     * the software version of the node that created this event.
+     */
     private SoftwareVersion softwareVersion;
-    /** ID of this event's creator (translate before sending) */
+
+    /**
+     * ID of this event's creator (translate before sending)
+     */
     private NodeId creatorId;
-    /** the round number in which this event was created, used to look up the effective roster at that time. */
+
+    /**
+     * the round number in which this event was created, used to look up the effective roster at that time.
+     */
     private long birthRound;
-    /** the self parent event descriptor */
+
+    /**
+     * the self parent event descriptor
+     */
     private EventDescriptor selfParent;
-    /** the other parents' event descriptors */
+
+    /**
+     * the other parents' event descriptors
+     */
     private List<EventDescriptor> otherParents;
-    /** creation time, as claimed by its creator */
+
+    /**
+     * creation time, as claimed by its creator
+     */
     private Instant timeCreated;
-    /** the payload: an array of transactions */
+
+    /**
+     * the payload: an array of transactions
+     */
     private ConsensusTransactionImpl[] transactions;
+
+    /**
+     * The event descriptor for this event. Is not itself hashed.
+     */
+    private EventDescriptor descriptor;
 
     /**
      * The actual birth round to return. May not be the original birth round if this event was created in the software
@@ -424,26 +449,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         return otherParents != null && !otherParents.isEmpty();
     }
 
-    /**
-     * Get the hash value of the parent event.
-     *
-     * @return the hash value of the parent event
-     */
-    @Nullable
-    public byte[] getSelfParentHashValue() {
-        return selfParent == null ? null : getSelfParentHash().getValue();
-    }
-
-    /**
-     * Get the hash value of the other parent with the maximum generation.
-     *
-     * @return the hash value of the other parent with the maximum generation
-     */
-    @Nullable
-    public byte[] getOtherParentHashValue() {
-        return otherParents.isEmpty() ? null : getOtherParentHash().getValue();
-    }
-
     @NonNull
     public Instant getTimeCreated() {
         return timeCreated;
@@ -473,12 +478,22 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     /**
-     * Create an event descriptor for this event.
+     * Get the event descriptor for this event, creating one if it hasn't yet been created. If called more than once
+     * then return the same instance.
      *
      * @return an event descriptor for this event
+     * @throws IllegalStateException if called prior to this event being hashed
      */
     @NonNull
-    public EventDescriptor createEventDescriptor() {
-        return new EventDescriptor(getHash(), getCreatorId(), getGeneration(), getBirthRound());
+    public EventDescriptor getDescriptor() {
+        if (descriptor == null) {
+            if (getHash() == null) {
+                throw new IllegalStateException("The hash of the event must be set before creating the descriptor");
+            }
+
+            descriptor = new EventDescriptor(getHash(), getCreatorId(), getGeneration(), getBirthRound());
+        }
+
+        return descriptor;
     }
 }
