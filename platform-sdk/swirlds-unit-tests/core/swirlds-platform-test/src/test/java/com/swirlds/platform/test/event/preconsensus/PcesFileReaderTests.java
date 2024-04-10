@@ -314,9 +314,9 @@ class PcesFileReaderTests {
     }
 
     /**
-     * Similar to the other test that starts iteration in the middle, except that files will have the same
-     * bounds with high probability. Not a scenario we are likely to encounter in production, but it's a tricky edge
-     * case we need to handle elegantly.
+     * Similar to the other test that starts iteration in the middle, except that files will have the same bounds with
+     * high probability. Not a scenario we are likely to encounter in production, but it's a tricky edge case we need to
+     * handle elegantly.
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
@@ -765,7 +765,7 @@ class PcesFileReaderTests {
 
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
-        final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
+        final long startingRound3 = random.nextLong(startingOrigin, Math.max(origin - 1, startingOrigin + 1));
         final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
                 platformContext, recycleBin, fileDirectory, startingRound3, false, ancientMode);
         // There is no files with a compatible origin and events with ancient indicators in the span we want.

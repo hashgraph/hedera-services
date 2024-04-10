@@ -16,12 +16,15 @@
 
 package com.swirlds.common.wiring.component;
 
+import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
+
 import com.swirlds.common.wiring.component.internal.FilterToBind;
 import com.swirlds.common.wiring.component.internal.InputWireToBind;
 import com.swirlds.common.wiring.component.internal.TransformerToBind;
 import com.swirlds.common.wiring.component.internal.WiringComponentProxy;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
@@ -38,6 +41,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Builds and manages input/output wires for a component.
@@ -95,7 +100,10 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
      * @param model     the wiring model that will contain the component
      * @param clazz     the interface class of the component
      * @param scheduler the task scheduler that will run the component
+     * @deprecated use {@link #ComponentWiring(WiringModel, Class, TaskSchedulerConfiguration)} instead. Once all uses
+     * have been updated, this constructor will be removed.
      */
+    @Deprecated
     public ComponentWiring(
             @NonNull final WiringModel model,
             @NonNull final Class<COMPONENT_TYPE> clazz,
@@ -103,6 +111,43 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
 
         this.model = Objects.requireNonNull(model);
         this.scheduler = Objects.requireNonNull(scheduler);
+
+        if (!clazz.isInterface()) {
+            throw new IllegalArgumentException("Component class " + clazz.getName() + " is not an interface.");
+        }
+
+        proxyComponent = (COMPONENT_TYPE) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {clazz}, proxy);
+    }
+
+    /**
+     * Create a new component wiring.
+     *
+     * @param model                  the wiring model that will contain the component
+     * @param clazz                  the interface class of the component
+     * @param schedulerConfiguration for the task scheduler that will run the component
+     */
+    public ComponentWiring(
+            @NonNull final WiringModel model,
+            @NonNull final Class<COMPONENT_TYPE> clazz,
+            @NonNull final TaskSchedulerConfiguration schedulerConfiguration) {
+
+        this.model = Objects.requireNonNull(model);
+        Objects.requireNonNull(schedulerConfiguration);
+
+        final String schedulerName;
+        final SchedulerLabel schedulerLabelAnnotation = clazz.getAnnotation(SchedulerLabel.class);
+        if (schedulerLabelAnnotation == null) {
+            schedulerName = clazz.getSimpleName();
+        } else {
+            schedulerName = schedulerLabelAnnotation.value();
+        }
+
+        this.scheduler = model.schedulerBuilder(schedulerName)
+                .configure(schedulerConfiguration)
+                // FUTURE WORK: all components not currently in platform core should move there
+                .withHyperlink(platformCoreHyperlink(clazz))
+                .build()
+                .cast();
 
         if (!clazz.isInterface()) {
             throw new IllegalArgumentException("Component class " + clazz.getName() + " is not an interface.");
@@ -138,10 +183,12 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             handler.apply(proxyComponent, null);
         } catch (final NullPointerException e) {
             throw new IllegalStateException(
-                    "Component wiring does not support primitive input types or return types. Use a boxed primitive instead.");
+                    "Component wiring does not support primitive input types or return types. Use a boxed primitive "
+                            + "instead.",
+                    e);
         }
 
-        return getOrBuildInputWire(proxy.getMostRecentlyInvokedMethod(), handler, null);
+        return getOrBuildInputWire(proxy.getMostRecentlyInvokedMethod(), handler, null, null, null);
     }
 
     /**
@@ -161,10 +208,55 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             handler.accept(proxyComponent, null);
         } catch (final NullPointerException e) {
             throw new IllegalStateException(
-                    "Component wiring does not support primitive input types. Use a boxed primitive instead.");
+                    "Component wiring does not support primitive input types. Use a boxed primitive instead.", e);
         }
 
-        return getOrBuildInputWire(proxy.getMostRecentlyInvokedMethod(), null, handler);
+        return getOrBuildInputWire(proxy.getMostRecentlyInvokedMethod(), null, handler, null, null);
+    }
+
+    /**
+     * Get an input wire for this component.
+     *
+     * @param handler      the component method that will handle the input, e.g. "MyComponent::handleInput". Should be a
+     *                     method on the class, not a method on a specific instance.
+     * @param <INPUT_TYPE> the input type
+     * @return the input wire
+     */
+    @NonNull
+    public <INPUT_TYPE> InputWire<INPUT_TYPE> getInputWire(
+            @NonNull final Function<COMPONENT_TYPE, OUTPUT_TYPE> handler) {
+        Objects.requireNonNull(handler);
+
+        try {
+            handler.apply(proxyComponent);
+        } catch (final NullPointerException e) {
+            throw new IllegalStateException(
+                    "Component wiring does not support primitive input types. Use a boxed primitive instead.", e);
+        }
+
+        return getOrBuildInputWire(proxy.getMostRecentlyInvokedMethod(), null, null, handler, null);
+    }
+
+    /**
+     * Get an input wire for this component.
+     *
+     * @param handler      the component method that will handle the input, e.g. "MyComponent::handleInput". Should be a
+     *                     method on the class, not a method on a specific instance.
+     * @param <INPUT_TYPE> the input type
+     * @return the input wire
+     */
+    @NonNull
+    public <INPUT_TYPE> InputWire<INPUT_TYPE> getInputWire(@NonNull final Consumer<COMPONENT_TYPE> handler) {
+        Objects.requireNonNull(handler);
+
+        try {
+            handler.accept(proxyComponent);
+        } catch (final NullPointerException e) {
+            throw new IllegalStateException(
+                    "Component wiring does not support primitive input types. Use a boxed primitive instead.", e);
+        }
+
+        return getOrBuildInputWire(proxy.getMostRecentlyInvokedMethod(), null, null, null, handler);
     }
 
     /**
@@ -265,8 +357,10 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         try {
             transformation.apply(proxyComponent, null);
         } catch (final NullPointerException e) {
-            throw new IllegalStateException("Component wiring does not support primitive input types or return types. "
-                    + "Use a boxed primitive instead.");
+            throw new IllegalStateException(
+                    "Component wiring does not support primitive input types or return types. "
+                            + "Use a boxed primitive instead.",
+                    e);
         }
 
         final Method method = proxy.getMostRecentlyInvokedMethod();
@@ -329,8 +423,10 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         try {
             predicate.apply(proxyComponent, null);
         } catch (final NullPointerException e) {
-            throw new IllegalStateException("Component wiring does not support primitive input types or return types. "
-                    + "Use a boxed primitive instead.");
+            throw new IllegalStateException(
+                    "Component wiring does not support primitive input types or return types. "
+                            + "Use a boxed primitive instead.",
+                    e);
         }
 
         final Method method = proxy.getMostRecentlyInvokedMethod();
@@ -377,16 +473,21 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
     /**
      * Get the input wire for a specified method.
      *
-     * @param method               the method that will handle data on the input wire
-     * @param handlerWithReturn    the handler for the method if it has a return type
-     * @param handlerWithoutReturn the handler for the method if it does not have a return type
-     * @param <INPUT_TYPE>         the input type
+     * @param method                                  the method that will handle data on the input wire
+     * @param handlerWithReturn                       the handler for the method if it has a return type
+     * @param handlerWithoutReturn                    the handler for the method if it does not have a return type
+     * @param handlerWithoutParameter                 the handler for the method if it does not have a parameter
+     * @param handlerWithoutReturnAndWithoutParameter the handler for the method if it does not have a return type and
+     *                                                does not have a parameter
+     * @param <INPUT_TYPE>                            the input type
      * @return the input wire
      */
     private <INPUT_TYPE> InputWire<INPUT_TYPE> getOrBuildInputWire(
             @NonNull final Method method,
             @Nullable final BiFunction<COMPONENT_TYPE, INPUT_TYPE, OUTPUT_TYPE> handlerWithReturn,
-            @Nullable final BiConsumer<COMPONENT_TYPE, INPUT_TYPE> handlerWithoutReturn) {
+            @Nullable final BiConsumer<COMPONENT_TYPE, INPUT_TYPE> handlerWithoutReturn,
+            @Nullable final Function<COMPONENT_TYPE, OUTPUT_TYPE> handlerWithoutParameter,
+            @Nullable final Consumer<COMPONENT_TYPE> handlerWithoutReturnAndWithoutParameter) {
 
         if (inputWires.containsKey(method)) {
             // We've already created this wire
@@ -406,16 +507,26 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
 
         if (component == null) {
             // we will bind this later
-            inputsToBind.add((InputWireToBind<COMPONENT_TYPE, Object, OUTPUT_TYPE>)
-                    new InputWireToBind<>(inputWire, handlerWithReturn, handlerWithoutReturn));
+            inputsToBind.add((InputWireToBind<COMPONENT_TYPE, Object, OUTPUT_TYPE>) new InputWireToBind<>(
+                    inputWire,
+                    handlerWithReturn,
+                    handlerWithoutReturn,
+                    handlerWithoutParameter,
+                    handlerWithoutReturnAndWithoutParameter));
         } else {
             // bind this now
             if (handlerWithReturn != null) {
                 inputWire.bind(x -> handlerWithReturn.apply(component, x));
-            } else {
+            } else if (handlerWithoutReturn != null) {
                 inputWire.bindConsumer(x -> {
-                    assert handlerWithoutReturn != null;
                     handlerWithoutReturn.accept(component, x);
+                });
+            } else if (handlerWithoutParameter != null) {
+                inputWire.bind(x -> handlerWithoutParameter.apply(component));
+            } else {
+                assert handlerWithoutReturnAndWithoutParameter != null;
+                inputWire.bindConsumer(x -> {
+                    handlerWithoutReturnAndWithoutParameter.accept(component);
                 });
             }
         }
@@ -468,11 +579,20 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
                 final BiFunction<COMPONENT_TYPE, Object, OUTPUT_TYPE> handlerWithReturn =
                         (BiFunction<COMPONENT_TYPE, Object, OUTPUT_TYPE>) wireToBind.handlerWithReturn();
                 wireToBind.inputWire().bind(x -> handlerWithReturn.apply(component, x));
-            } else {
+            } else if (wireToBind.handlerWithoutReturn() != null) {
                 final BiConsumer<COMPONENT_TYPE, Object> handlerWithoutReturn =
-                        (BiConsumer<COMPONENT_TYPE, Object>) Objects.requireNonNull(wireToBind.handlerWithoutReturn());
+                        (BiConsumer<COMPONENT_TYPE, Object>) wireToBind.handlerWithoutReturn();
                 wireToBind.inputWire().bindConsumer(x -> {
                     handlerWithoutReturn.accept(component, x);
+                });
+            } else if (wireToBind.handlerWithoutParameter() != null) {
+                wireToBind
+                        .inputWire()
+                        .bind(x -> wireToBind.handlerWithoutParameter().apply(component));
+            } else {
+                assert wireToBind.handlerWithoutReturnAndWithoutParameter() != null;
+                wireToBind.inputWire().bindConsumer(x -> {
+                    wireToBind.handlerWithoutReturnAndWithoutParameter().accept(component);
                 });
             }
         }
@@ -488,5 +608,15 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         for (final FilterToBind<COMPONENT_TYPE, Object> filterToBind : filtersToBind) {
             filterToBind.filter().bind(x -> filterToBind.predicate().apply(component, x));
         }
+    }
+
+    /**
+     * Get the name of the scheduler that is running this component.
+     *
+     * @return the name of the scheduler
+     */
+    @NonNull
+    public String getSchedulerName() {
+        return scheduler.getName();
     }
 }

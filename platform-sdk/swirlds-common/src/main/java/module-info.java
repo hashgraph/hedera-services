@@ -2,8 +2,6 @@ module com.swirlds.common {
 
     /* Exported packages. This list should remain alphabetized. */
     exports com.swirlds.common;
-    exports com.swirlds.common.bloom;
-    exports com.swirlds.common.bloom.hasher;
     exports com.swirlds.common.config;
     exports com.swirlds.common.config.singleton;
     exports com.swirlds.common.constructable;
@@ -33,8 +31,8 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.route;
     exports com.swirlds.common.merkle.synchronization;
     exports com.swirlds.common.merkle.synchronization.config;
-    exports com.swirlds.common.merkle.synchronization.internal;
     exports com.swirlds.common.merkle.synchronization.streams;
+    exports com.swirlds.common.merkle.synchronization.task;
     exports com.swirlds.common.merkle.synchronization.utility;
     exports com.swirlds.common.merkle.synchronization.views;
     exports com.swirlds.common.merkle.utility;
@@ -143,6 +141,7 @@ module com.swirlds.common {
             com.swirlds.platform.gui;
     exports com.swirlds.common.startup;
     exports com.swirlds.common.threading.atomic;
+    exports com.swirlds.common.wiring.model.diagram;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;
@@ -150,6 +149,7 @@ module com.swirlds.common {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;

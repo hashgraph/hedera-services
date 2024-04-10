@@ -51,6 +51,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -161,11 +162,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
+            @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore) {
         requireNonNull(hederaState);
         requireNonNull(currentVersion);
         requireNonNull(config);
         requireNonNull(networkInfo);
+        requireNonNull(metrics);
 
         // Figure out which schemas need to be applied based on the previous and current versions, and then for each
         // of those schemas, create the new states and remove the old states and migrate the data.
@@ -230,7 +233,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         .maxNumberOfKeys(def.maxKeysHint());
                                 final var label = StateUtils.computeLabel(serviceName, stateKey);
                                 final var dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
-                                return new VirtualMap<>(label, dsBuilder);
+                                final var virtualMap = new VirtualMap<>(label, dsBuilder);
+                                virtualMap.registerMetrics(metrics);
+                                return virtualMap;
                             });
                         }
                     });

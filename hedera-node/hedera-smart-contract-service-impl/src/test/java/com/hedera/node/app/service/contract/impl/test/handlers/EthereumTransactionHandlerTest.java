@@ -234,7 +234,24 @@ class EthereumTransactionHandlerTest {
     }
 
     @Test
-    void preHandleDoesNotIgnoreFailureToHydrate() throws PreCheckException {
+    void preHandleTranslatesIseAsInvalidEthereumTransaction() throws PreCheckException {
+        final var ethTxn = EthereumTransactionBody.newBuilder()
+                .ethereumData(TestHelpers.ETH_WITH_TO_ADDRESS)
+                .build();
+        final var body =
+                TransactionBody.newBuilder().ethereumTransaction(ethTxn).build();
+        given(preHandleContext.body()).willReturn(body);
+        given(preHandleContext.createStore(ReadableFileStore.class)).willReturn(fileStore);
+        given(preHandleContext.configuration()).willReturn(DEFAULT_CONFIG);
+        given(callDataHydration.tryToHydrate(ethTxn, fileStore, 1001L))
+                .willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
+        given(ethereumSignatures.computeIfAbsent(ETH_DATA_WITH_TO_ADDRESS))
+                .willThrow(new IllegalStateException("Oops"));
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_ETHEREUM_TRANSACTION);
+    }
+
+    @Test
+    void preHandleDoesNotIgnoreFailureToHydrate() {
         final var ethTxn =
                 EthereumTransactionBody.newBuilder().ethereumData(Bytes.EMPTY).build();
         final var body =

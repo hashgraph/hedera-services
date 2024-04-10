@@ -37,6 +37,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.eventhandling.EventConfig_;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ReservedEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
@@ -97,8 +98,6 @@ class ShadowgraphByBirthRoundTests {
 
     private void initShadowGraph(final Random random, final int numEvents, final int numNodes) {
         addressBook = new RandomAddressBookGenerator(random).setSize(numNodes).build();
-        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
-        emitter = factory.newStandardEmitter();
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -108,7 +107,10 @@ class ShadowgraphByBirthRoundTests {
                 .withConfiguration(configuration)
                 .build();
 
-        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
+        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
+        emitter = factory.newStandardEmitter();
+
+        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
 
         for (int i = 0; i < numEvents; i++) {
             final IndexedEvent event = emitter.emitEvent();
@@ -533,7 +535,7 @@ class ShadowgraphByBirthRoundTests {
     void testAddNullEvent() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 0, 4);
         assertThrows(
-                ShadowgraphInsertionException.class,
+                NullPointerException.class,
                 () -> shadowGraph.addEvent(null),
                 "A null event should not be added to the shadow graph.");
     }

@@ -28,6 +28,7 @@ import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.config.VersionedConfiguration;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Comparator;
@@ -62,11 +63,13 @@ public class OrderedServiceMigrator {
             @NonNull final SemanticVersion currentVersion,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final VersionedConfiguration versionedConfiguration,
-            @NonNull final NetworkInfo networkInfo) {
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(versionedConfiguration);
         requireNonNull(networkInfo);
+        requireNonNull(metrics);
 
         logger.info("Migrating Entity ID Service as pre-requisite for other services");
         final var entityIdRegistration = servicesRegistry.registrations().stream()
@@ -80,6 +83,7 @@ public class OrderedServiceMigrator {
                 currentVersion,
                 versionedConfiguration,
                 networkInfo,
+                metrics,
                 // We call with null here because we're migrating the entity ID service itself
                 null);
 
@@ -116,6 +120,7 @@ public class OrderedServiceMigrator {
                             currentVersion,
                             versionedConfiguration,
                             networkInfo,
+                            metrics,
                             // If we have reached this point in the code, entityIdStore should not be null because the
                             // EntityIdService should have been migrated already. We enforce with requireNonNull in case
                             // there are scenarios we haven't considered.

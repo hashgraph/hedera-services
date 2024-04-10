@@ -125,7 +125,9 @@ public class MerkleDbStatistics {
      */
     public MerkleDbStatistics(final MerkleDbConfig dbConfig, final String label) {
         this.dbConfig = dbConfig;
-        this.label = Objects.requireNonNull(label, "label must not be null");
+        Objects.requireNonNull(label, "label must not be null");
+        // If the label contains ".", they are replaced with "_", since metric names may not contain "."
+        this.label = label.replace('.', '_');
         hashesStoreCompactionTimeMsList = new ArrayList<>();
         hashesStoreCompactionSavedSpaceMbList = new ArrayList<>();
         hashesStoreFileSizeByLevelMbList = new ArrayList<>();

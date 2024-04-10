@@ -23,16 +23,8 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
-import com.swirlds.common.config.BasicCommonConfig;
-import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.io.config.RecycleBinConfig;
-import com.swirlds.common.io.config.TemporaryFileConfig;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.StackTrace;
@@ -42,25 +34,14 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
 import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.JVMPauseDetectorThread;
 import com.swirlds.platform.ThreadDumpGenerator;
-import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
-import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
-import com.swirlds.platform.consensus.ConsensusConfig;
-import com.swirlds.platform.event.creation.EventCreationConfig;
-import com.swirlds.platform.event.preconsensus.PcesConfig;
-import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.gossip.ProtocolConfig;
-import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.WindowConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.health.OSHealthChecker;
@@ -68,7 +49,6 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
-import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.swirldapp.AppLoaderException;
@@ -77,13 +57,9 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.PlatformStatusConfig;
-import com.swirlds.platform.uptime.UptimeConfig;
-import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.Dimension;
-import java.awt.GraphicsEnvironment;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -131,42 +107,13 @@ public final class BootstrapUtils {
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
-        // Load Configuration Definitions
-        configurationBuilder
-                .withSource(mappedSettingsConfigSource)
-                .withConfigDataType(BasicConfig.class)
-                .withConfigDataType(BasicCommonConfig.class)
-                .withConfigDataType(StateConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
-                .withConfigDataType(CryptoConfig.class)
-                .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(ReconnectConfig.class)
-                .withConfigDataType(MerkleDbConfig.class)
-                .withConfigDataType(ChatterConfig.class)
-                .withConfigDataType(AddressBookConfig.class)
-                .withConfigDataType(VirtualMapConfig.class)
-                .withConfigDataType(ConsensusConfig.class)
-                .withConfigDataType(ThreadConfig.class)
-                .withConfigDataType(MetricsConfig.class)
-                .withConfigDataType(PrometheusConfig.class)
-                .withConfigDataType(OSHealthCheckConfig.class)
-                .withConfigDataType(PcesConfig.class)
-                .withConfigDataType(SyncConfig.class)
-                .withConfigDataType(UptimeConfig.class)
-                .withConfigDataType(RecycleBinConfig.class)
-                .withConfigDataType(EventConfig.class)
-                .withConfigDataType(EventCreationConfig.class)
-                .withConfigDataType(PathsConfig.class)
-                .withConfigDataType(SocketConfig.class)
-                .withConfigDataType(PlatformStatusConfig.class)
-                .withConfigDataType(TransactionConfig.class)
-                .withConfigDataType(ProtocolConfig.class);
+        configurationBuilder.autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
     }
 
     /**
      * Perform health all health checks
      *
-     * @param configPath     the path to the config.txt file
+     * @param configPath    the path to the config.txt file
      * @param configuration the configuration
      */
     public static void performHealthChecks(@NonNull final Path configPath, @NonNull final Configuration configuration) {
@@ -188,14 +135,12 @@ public final class BootstrapUtils {
             throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException,
                     IllegalAccessException {
         // discover the inset size and set the look and feel
-        if (!GraphicsEnvironment.isHeadless()) {
-            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            final JFrame jframe = new JFrame();
-            jframe.setPreferredSize(new Dimension(200, 200));
-            jframe.pack();
-            WindowConfig.setInsets(jframe.getInsets());
-            jframe.dispose();
-        }
+        UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+        final JFrame jframe = new JFrame();
+        jframe.setPreferredSize(new Dimension(200, 200));
+        jframe.pack();
+        WindowConfig.setInsets(jframe.getInsets());
+        jframe.dispose();
     }
 
     /**

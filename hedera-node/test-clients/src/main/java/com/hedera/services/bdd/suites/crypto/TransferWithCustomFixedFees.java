@@ -38,12 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -92,6 +87,8 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     private static final String carol = "carol";
     private static final long carolFee = 300L;
 
+    private static final String ivan = "ivan";
+
     public static void main(String... args) {
         new TransferWithCustomFixedFees().runSuiteAsync();
     }
@@ -115,12 +112,14 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 transferApprovedNonFungibleWithFixedHtsCustomFeeAsSpender(),
                 transferFungibleWithThreeFixedHtsCustomFeesWithoutAllCollectorsExempt(),
                 transferFungibleWithThreeFixedHtsCustomFeesWithAllCollectorsExempt(),
-                transferFungibleWithFixedHtsCustomFees3Layers(),
+                transferFungibleWithFixedHtsCustomFees2Layers(),
                 transferNonFungibleWithFixedHtsCustomFees2Layers(),
                 transferMaxFungibleWith10FixedHtsCustomFees2Layers(),
                 multipleTransfersWithMultipleCustomFees(),
                 transferWithFractionalCustomFee(),
-                transferWithInsufficientCustomFee());
+                transferWithInsufficientCustomFee(),
+                transferMultipleTimesWithFixedFeeInHBarShouldVerifyEachTransferIsPaid(),
+                transferMultipleTimesWithFixedFeeInCustomFungibleTokenShouldVerifyEachTransferIsPaid());
     }
 
     private List<HapiSpec> negativeTests() {
@@ -200,7 +199,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 .when(cryptoTransfer(moving(1, fungibleToken).between(tokenOwner, tokenReceiver))
                         .payingWith(tokenOwner)
                         .fee(ONE_HUNDRED_HBARS)
-                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE))
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
                 .then(
                         getAccountBalance(tokenOwner).hasTokenBalance(fungibleToken, tokenTotal),
                         getAccountBalance(tokenReceiver).hasTokenBalance(fungibleToken, 0),
@@ -360,7 +359,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 .when(cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
                         .payingWith(tokenOwner)
                         .fee(ONE_HUNDRED_HBARS)
-                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE))
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
                 .then(
                         getAccountBalance(tokenOwner).hasTokenBalance(nonFungibleToken, 1),
                         getAccountBalance(tokenReceiver).hasTokenBalance(nonFungibleToken, 0),
@@ -954,8 +953,8 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferFungibleWithFixedHtsCustomFees3Layers() {
-        return defaultHapiSpec("transferFungibleWithFixedHtsCustomFees3Layers")
+    public HapiSpec transferFungibleWithFixedHtsCustomFees2Layers() {
+        return defaultHapiSpec("transferFungibleWithFixedHtsCustomFees2Layers")
                 .given(
                         cryptoCreate(htsCollector),
                         cryptoCreate(htsCollector2),
@@ -1474,7 +1473,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 .then(cryptoTransfer(moving(1, fungibleToken).between(tokenOwner, tokenReceiver))
                         .fee(ONE_HUNDRED_HBARS)
                         .payingWith(tokenOwner)
-                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE));
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
     @HapiTest
@@ -1533,7 +1532,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 .then(cryptoTransfer(moving(1, fungibleToken).between(tokenOwner, tokenReceiver))
                         .fee(ONE_HUNDRED_HBARS)
                         .payingWith(tokenOwner)
-                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE));
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
     @HapiTest
@@ -1590,6 +1589,104 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                         .fee(ONE_HUNDRED_HBARS)
                         .payingWith(tokenOwner)
                         .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
+    }
+
+    @HapiTest
+    public HapiSpec transferMultipleTimesWithFixedFeeInHBarShouldVerifyEachTransferIsPaid() {
+        return defaultHapiSpec("transferMultipleTimesWithFixedFeeShouldVerifyEachTransferIsPaid")
+                .given(
+                        cryptoCreate(hbarCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(tokenTreasury).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(alice).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(bob).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(carol).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(ivan),
+                        tokenCreate(fungibleToken)
+                                .treasury(tokenTreasury)
+                                .initialSupply(tokenTotal)
+                                .payingWith(tokenTreasury)
+                                .withCustom(fixedHbarFee(1L, hbarCollector)),
+                        tokenAssociate(alice, fungibleToken),
+                        tokenAssociate(bob, fungibleToken),
+                        tokenAssociate(carol, fungibleToken),
+                        tokenAssociate(ivan, fungibleToken),
+                        tokenAssociate(tokenOwner, fungibleToken),
+                        cryptoTransfer(moving(tokenTotal, fungibleToken).between(tokenTreasury, tokenOwner)))
+                .when(
+                        cryptoTransfer(moving(10L, fungibleToken).between(tokenOwner, alice))
+                                .fee(1L),
+                        cryptoTransfer(moving(5L, fungibleToken).between(alice, bob))
+                                .fee(1L),
+                        cryptoTransfer(moving(2L, fungibleToken).between(bob, carol))
+                                .fee(1L),
+                        cryptoTransfer(moving(1L, fungibleToken).between(carol, ivan))
+                                .fee(1L))
+                .then(
+                        getAccountBalance(hbarCollector).hasTinyBars(ONE_HUNDRED_HBARS + 4L),
+                        getAccountBalance(alice)
+                                .hasTokenBalance(fungibleToken, 5L)
+                                .hasTinyBars(ONE_MILLION_HBARS - 1L),
+                        getAccountBalance(bob)
+                                .hasTokenBalance(fungibleToken, 3L)
+                                .hasTinyBars(ONE_MILLION_HBARS - 1L),
+                        getAccountBalance(carol)
+                                .hasTokenBalance(fungibleToken, 1L)
+                                .hasTinyBars(ONE_MILLION_HBARS - 1L));
+    }
+
+    @HapiTest
+    public HapiSpec transferMultipleTimesWithFixedFeeInCustomFungibleTokenShouldVerifyEachTransferIsPaid() {
+        return defaultHapiSpec("transferMultipleTimesWithFixedFeeInCustomFungibleTokenShouldVerifyEachTransferIsPaid")
+                .given(
+                        cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(tokenTreasury).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenOwner),
+                        cryptoCreate(alice),
+                        cryptoCreate(bob),
+                        cryptoCreate(carol),
+                        cryptoCreate(ivan),
+                        tokenCreate(fungibleToken)
+                                .treasury(tokenTreasury)
+                                .initialSupply(tokenTotal)
+                                .payingWith(tokenTreasury),
+                        tokenAssociate(htsCollector, fungibleToken),
+                        tokenCreate(fungibleToken2)
+                                .treasury(tokenTreasury)
+                                .initialSupply(tokenTotal)
+                                .payingWith(tokenTreasury)
+                                .withCustom(fixedHtsFee(1L, fungibleToken, htsCollector)),
+                        tokenAssociate(alice, fungibleToken, fungibleToken2),
+                        tokenAssociate(bob, fungibleToken, fungibleToken2),
+                        tokenAssociate(carol, fungibleToken, fungibleToken2),
+                        tokenAssociate(ivan, fungibleToken, fungibleToken2),
+                        tokenAssociate(tokenOwner, fungibleToken, fungibleToken2),
+                        cryptoTransfer(moving(50L, fungibleToken).between(tokenTreasury, tokenOwner)),
+                        cryptoTransfer(moving(50L, fungibleToken2).between(tokenTreasury, tokenOwner)),
+                        cryptoTransfer(moving(1L, fungibleToken).between(tokenTreasury, alice)),
+                        cryptoTransfer(moving(1L, fungibleToken).between(tokenTreasury, bob)),
+                        cryptoTransfer(moving(1L, fungibleToken).between(tokenTreasury, carol)))
+                .when(
+                        cryptoTransfer(moving(10L, fungibleToken2).between(tokenOwner, alice))
+                                .fee(1L),
+                        cryptoTransfer(moving(5L, fungibleToken2).between(alice, bob))
+                                .fee(1L),
+                        cryptoTransfer(moving(2L, fungibleToken2).between(bob, carol))
+                                .fee(1L),
+                        cryptoTransfer(moving(1L, fungibleToken2).between(carol, ivan))
+                                .fee(1L))
+                .then(
+                        getAccountBalance(htsCollector).hasTokenBalance(fungibleToken, 4L),
+                        getAccountBalance(alice)
+                                .hasTokenBalance(fungibleToken2, 5L)
+                                .hasTokenBalance(fungibleToken, 0L),
+                        getAccountBalance(bob)
+                                .hasTokenBalance(fungibleToken2, 3L)
+                                .hasTokenBalance(fungibleToken, 0L),
+                        getAccountBalance(carol)
+                                .hasTokenBalance(fungibleToken2, 1L)
+                                .hasTokenBalance(fungibleToken, 0L),
+                        getAccountBalance(ivan).hasTokenBalance(fungibleToken, 0L));
     }
 
     @Override

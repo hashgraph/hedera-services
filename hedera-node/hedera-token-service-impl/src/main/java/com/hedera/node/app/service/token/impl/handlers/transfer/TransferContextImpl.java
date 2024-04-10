@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -109,19 +108,7 @@ public class TransferContextImpl implements TransferContext {
             validateTrue(tokensConfig.autoCreationsIsEnabled(), NOT_SUPPORTED);
         }
         // Keep the created account in the resolutions map
-        AccountID createdAccount;
-        try {
-            createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
-        } catch (HandleException e) {
-            if (getHandleContext().isSelfSubmitted()) {
-                final int autoCreationsNumber = numOfAutoCreations() + numOfLazyCreations();
-                getHandleContext().reclaimPreviouslyReservedThrottle(autoCreationsNumber, CRYPTO_CREATE);
-            }
-            // we only want to reclaim the previously reserved throttle for `CRYPTO_CREATE` transaction
-            // if there is a failed auto-creation triggered from CryptoTransfer
-            // this is why we re-throw the HandleException, so that it will be still tackled the same in HandleWorkflow
-            throw e;
-        }
+        final var createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
         resolutions.put(alias, createdAccount);
     }
 

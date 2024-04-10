@@ -31,7 +31,6 @@ import java.time.Duration;
  * @param threadPriorityNonSync      priority for threads that don't sync (all but SyncCaller, SyncListener,SyncServer)
  * @param threadDumpPeriodMs         period of generating thread dump file in the unit of milliseconds
  * @param threadDumpLogDir           thread dump files will be generated in this directory
- * @param jvmAnchor                  if true then create a non-daemon thread that will keep the JVM alive
  */
 @ConfigData("thread")
 public record ThreadConfig(
@@ -39,5 +38,4 @@ public record ThreadConfig(
         @ConfigProperty(defaultValue = "5") int threadPrioritySync,
         @ConfigProperty(defaultValue = "5") int threadPriorityNonSync,
         @ConfigProperty(defaultValue = "0") long threadDumpPeriodMs,
-        @ConfigProperty(defaultValue = "data/threadDump") String threadDumpLogDir,
-        @ConfigProperty(defaultValue = "true") boolean jvmAnchor) {}
+        @ConfigProperty(defaultValue = "data/threadDump") String threadDumpLogDir) {}

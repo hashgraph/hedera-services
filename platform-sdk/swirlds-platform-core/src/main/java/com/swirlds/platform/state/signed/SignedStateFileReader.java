@@ -27,6 +27,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -65,12 +66,10 @@ public final class SignedStateFileReader {
     /**
      * Reads a SignedState from disk
      *
-     * @param platformContext the platform context
-     * @param stateFile
-     * 		the file to read from
+     * @param platformContext               the platform context
+     * @param stateFile                     the file to read from
      * @return a signed state with it's associated hash (as computed when the state was serialized)
-     * @throws IOException
-     * 		if there is any problems with reading from a file
+     * @throws IOException if there is any problems with reading from a file
      */
     public static @NonNull DeserializedSignedState readStateFile(
             @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
@@ -98,8 +97,13 @@ public final class SignedStateFileReader {
                     return new StateFileData(state, hash, sigSet);
                 });
 
-        final SignedState newSignedState =
-                new SignedState(platformContext, data.state(), "SignedStateFileReader.readStateFile()", false);
+        final SignedState newSignedState = new SignedState(
+                platformContext,
+                CryptoStatic::verifySignature,
+                data.state(),
+                "SignedStateFileReader.readStateFile()",
+                false,
+                false);
 
         newSignedState.setSigSet(data.sigSet());
 
@@ -107,30 +111,6 @@ public final class SignedStateFileReader {
                 newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.hash());
 
         return returnState;
-    }
-
-    /**
-     * Read only the signed state from a file, do not read the hash and signatures
-     *
-     * @param platformContext the platform context
-     * @param stateFile the file to read from
-     * @return the signed state read
-     * @throws IOException if any problem occurs while reading
-     */
-    public static @NonNull SignedState readSignedStateOnly(
-            @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
-        checkSignedStatePath(stateFile);
-
-        return deserializeAndDebugOnFailure(
-                () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
-                (final MerkleDataInputStream in) -> {
-                    readAndCheckVersion(in);
-                    return new SignedState(
-                            platformContext,
-                            in.readMerkleTree(stateFile.getParent(), MAX_MERKLE_NODES_IN_STATE),
-                            "SignedStateFileReader.readSignedStateOnly()",
-                            false);
-                });
     }
 
     /**

@@ -140,7 +140,7 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             callsHandledSpeedometer.cycle();
         } catch (final Exception e) {
             // Track the number of times we failed to handle a call
-            logger.error("Possibly CATASTROPHIC failure while handling a call and running the ingest workflow", e);
+            logger.error("Possibly CATASTROPHIC failure while handling a GRPC message", e);
             callsFailedCounter.increment();
             responseObserver.onError(e);
         }
