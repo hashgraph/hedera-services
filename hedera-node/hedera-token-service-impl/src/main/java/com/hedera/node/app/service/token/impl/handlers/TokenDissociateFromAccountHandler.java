@@ -208,8 +208,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         final TokenDissociateTransactionBody op = txn.tokenDissociateOrThrow();
 
         validateTruePreCheck(hasAccountNumOrAlias(op.account()), INVALID_ACCOUNT_ID);
-        validateTruePreCheck(op.hasTokens(), INVALID_TOKEN_ID);
-        validateFalsePreCheck(op.tokensOrThrow().contains(TokenID.DEFAULT), INVALID_TOKEN_ID);
+        validateFalsePreCheck(op.tokens().contains(TokenID.DEFAULT), INVALID_TOKEN_ID);
 
         validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokens()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
     }
