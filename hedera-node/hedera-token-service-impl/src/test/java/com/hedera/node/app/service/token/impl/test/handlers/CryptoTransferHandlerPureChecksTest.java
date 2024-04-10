@@ -215,7 +215,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
                 .build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER));
+                .has(responseCode(ResponseCodeEnum.INVALID_TOKEN_ID));
     }
 
     @Test
