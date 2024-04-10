@@ -19,8 +19,8 @@ package com.swirlds.common.metrics.extensions;
 import static com.swirlds.base.units.UnitConstants.MICROSECOND_UNIT;
 
 import com.swirlds.base.internal.BaseExecutorFactory;
-import com.swirlds.base.internal.BaseExecutorObserver;
-import com.swirlds.base.internal.BaseTaskDefinition;
+import com.swirlds.base.internal.observe.BaseExecutorObserver;
+import com.swirlds.base.internal.observe.BaseTaskDefinition;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.DoubleAccumulator;
 import com.swirlds.metrics.api.LongAccumulator;
@@ -105,6 +105,9 @@ public class BaseExecutorFactoryMetrics {
         BaseExecutorFactory.addObserver(observer);
     }
 
+    /**
+     * A metric that tracks the execution time of tasks.
+     */
     private static class TaskExecutionTimeMetric {
 
         private final Counter countMetric;

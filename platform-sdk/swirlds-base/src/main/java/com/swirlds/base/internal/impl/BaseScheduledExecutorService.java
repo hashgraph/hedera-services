@@ -16,8 +16,8 @@
 
 package com.swirlds.base.internal.impl;
 
-import com.swirlds.base.internal.BaseExecutorObserver;
-import com.swirlds.base.internal.BaseTaskDefinition;
+import com.swirlds.base.internal.observe.BaseExecutorObserver;
+import com.swirlds.base.internal.observe.BaseTaskDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Collection;
@@ -45,16 +45,34 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class BaseScheduledExecutorService implements ScheduledExecutorService {
 
+    /**
+     * The number of threads in the pool.
+     */
     public static final int CORE_POOL_SIZE = 1;
 
+    /**
+     * The singleton instance of this executor.
+     */
     private static volatile BaseScheduledExecutorService instance;
 
+    /**
+     * The lock for creating the singleton instance.
+     */
     private static final Lock instanceLock = new ReentrantLock();
 
+    /**
+     * The inner executor service.
+     */
     private final ScheduledExecutorService innerService;
 
+    /*
+     * The observers of this executor.
+     */
     private final List<BaseExecutorObserver> observers;
 
+    /**
+     * Constructs a new executor.
+     */
     private BaseScheduledExecutorService() {
         final ThreadFactory threadFactory = BaseExecutorThreadFactory.getInstance();
         this.innerService = Executors.newScheduledThreadPool(CORE_POOL_SIZE, threadFactory);
@@ -83,16 +101,30 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
         return instance;
     }
 
+    /**
+     * Adds an observer to this executor.
+     *
+     * @param observer the observer to add
+     */
     public void addObserver(@NonNull final BaseExecutorObserver observer) {
         Objects.requireNonNull(observer, "observer must not be null");
         observers.add(observer);
     }
 
+    /**
+     * Removes an observer from this executor.
+     * @param observer the observer to remove
+     */
     public void removeObserver(@NonNull final BaseExecutorObserver observer) {
         Objects.requireNonNull(observer, "observer must not be null");
         observers.add(observer);
     }
 
+    /**
+     * Wraps the given command with the observer calls.
+     * @param command the command to wrap
+     * @return the wrapped command
+     */
     @NonNull
     private Runnable wrapOnSubmit(@NonNull final Runnable command) {
         Objects.requireNonNull(command, "command must not be null");
@@ -113,6 +145,12 @@ public class BaseScheduledExecutorService implements ScheduledExecutorService {
         };
     }
 
+    /**
+     * Wraps the given callable with the observer calls.
+     * @param callable the callable to wrap
+     * @return the wrapped callable
+     * @param <V> the type of the callable's result
+     */
     @NonNull
     private <V> Callable<V> wrapOnSubmit(@NonNull final Callable<V> callable) {
         Objects.requireNonNull(callable, "callable must not be null");
