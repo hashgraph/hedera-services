@@ -24,7 +24,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -133,7 +132,6 @@ public abstract class BaseBench {
             registry.registerConstructables("com.swirlds.benchmark");
             registry.registerConstructables("com.swirlds.common.crypto");
             registry.registerConstructables("com.swirlds.common");
-            registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
             registry.registerConstructable(
                     new ClassConstructorPair(BenchmarkMerkleInternal.class, BenchmarkMerkleInternal::new));
             registry.registerConstructable(new ClassConstructorPair(BenchmarkKey.class, BenchmarkKey::new));

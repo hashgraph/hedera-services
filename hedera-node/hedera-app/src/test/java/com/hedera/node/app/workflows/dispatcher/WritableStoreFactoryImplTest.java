@@ -34,11 +34,11 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.metrics.api.Metrics;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,7 +83,7 @@ class WritableStoreFactoryImplTest {
         given(stack.getWritableStates(serviceName)).willReturn(writableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
         final WritableStoreFactory subject =
-                new WritableStoreFactory(stack, serviceName, configuration, mock(Metrics.class));
+                new WritableStoreFactory(stack, serviceName, configuration, mock(StoreMetricsService.class));
 
         // given
         final var store = subject.getStore(storeClass);

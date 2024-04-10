@@ -49,11 +49,11 @@ import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
@@ -152,7 +152,7 @@ public class TokenHandlerTestBase {
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(Metrics.class));
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(StoreMetricsService.class));
     }
 
     protected void refreshStoresWithCurrentTokenInWritable() {
@@ -162,7 +162,7 @@ public class TokenHandlerTestBase {
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(Metrics.class));
+        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(StoreMetricsService.class));
     }
 
     @NonNull

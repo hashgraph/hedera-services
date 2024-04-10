@@ -120,7 +120,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
 
     @BeforeEach
     void setUp() {
-        component = DaggerContractScaffoldingComponent.factory().create(metrics, configuration());
+        component = DaggerContractScaffoldingComponent.factory().create(metrics, configuration(), storeMetricsService);
         callAttemptFactory = new HtsCallFactory(
                 LIVE_SYNTHETIC_IDS, addressChecks, LIVE_VERIFICATION_STRATEGIES, component.callTranslators());
     }

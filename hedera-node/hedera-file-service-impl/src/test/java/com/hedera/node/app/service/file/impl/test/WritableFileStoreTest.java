@@ -24,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,21 +39,22 @@ class WritableFileStoreTest extends FileTestBase {
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     private File file;
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableFileStore(null, CONFIGURATION, metrics));
-        assertThrows(NullPointerException.class, () -> new WritableFileStore(writableStates, null, metrics));
+        assertThrows(NullPointerException.class, () -> new WritableFileStore(null, CONFIGURATION, storeMetricsService));
+        assertThrows(
+                NullPointerException.class, () -> new WritableFileStore(writableStates, null, storeMetricsService));
         assertThrows(NullPointerException.class, () -> new WritableFileStore(writableStates, CONFIGURATION, null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
 
     @Test
     void constructorCreatesFileState() {
-        final var store = new WritableFileStore(writableStates, CONFIGURATION, metrics);
+        final var store = new WritableFileStore(writableStates, CONFIGURATION, storeMetricsService);
         assertNotNull(store);
     }
 

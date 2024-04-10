@@ -114,9 +114,8 @@ class TokenAssociateToAccountHandlerTest {
         @Test
         void txnWithRepeatedTokenIdsThrows() throws PreCheckException {
             final var txn = newAssociateTxn(ACCOUNT_888, List.of(TOKEN_300, TOKEN_400, TOKEN_300));
-            final var context = new FakePreHandleContext(readableAccountStore, txn);
 
-            assertThatThrownBy(() -> subject.preHandle(context))
+            assertThatThrownBy(() -> subject.pureChecks(txn))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(TOKEN_ID_REPEATED_IN_TOKEN_LIST));
         }
