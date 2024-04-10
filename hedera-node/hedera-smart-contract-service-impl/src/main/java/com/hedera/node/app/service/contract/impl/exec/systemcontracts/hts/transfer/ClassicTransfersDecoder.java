@@ -156,12 +156,8 @@ public class ClassicTransfersDecoder {
         final Address[] from = call.get(1);
         final Address[] to = call.get(2);
         final long[] serialNo = call.get(3);
-        // Match mono behaviour
-        if (from.length == 0) {
-            return bodyOf(tokenTransfers(TokenTransferList.newBuilder().build()));
-        }
 
-        if (from.length != to.length || from.length != serialNo.length) {
+        if ((from.length != to.length || from.length != serialNo.length) && from.length != 0) {
             throw new IllegalArgumentException("Mismatched argument arrays (# from=" + from.length + ", # to="
                     + to.length + ", # serialNo=" + serialNo.length + ")");
         }
@@ -229,36 +225,6 @@ public class ClassicTransfersDecoder {
     }
 
     public ResponseCodeEnum checkForFailureStatus(@NonNull final HtsCallAttempt attempt) {
-        // match mono behaviour
-        if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKENS.selector())) {
-            final var call = ClassicTransfersTranslator.TRANSFER_TOKENS.decodeCall(attempt.inputBytes());
-            final Address[] accountIds = call.get(1);
-            if (accountIds.length == 0) {
-                return ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
-            }
-            final var tokenStore = attempt.enhancement().nativeOperations().readableTokenStore();
-            final var token = tokenStore.get(ConversionUtils.asTokenId(call.get(0)));
-            if (token == null) {
-                return ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-            }
-        }
-        if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFTS.selector())) {
-            final var call = ClassicTransfersTranslator.TRANSFER_NFTS.decodeCall(attempt.inputBytes());
-            final Address[] accountIds = call.get(1);
-            if (accountIds.length == 0) {
-                return ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
-            }
-        }
-        if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFT_FROM.selector())) {
-            final var call = ClassicTransfersTranslator.TRANSFER_NFT_FROM.decodeCall(attempt.inputBytes());
-            final var tokenId = ConversionUtils.asTokenId(call.get(0));
-            final BigInteger serialNo = call.get(3);
-            final var nft =
-                    attempt.enhancement().nativeOperations().getNft(tokenId.tokenNum(), serialNo.longValueExact());
-            if (nft == null) {
-                return ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-            }
-        }
         if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
             final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(attempt.inputBytes());
             if ((long) call.get(3) < 0) {
@@ -552,10 +518,7 @@ public class ClassicTransfersDecoder {
             @NonNull final long[] amount,
             @NonNull final AddressIdConverter addressIdConverter) {
         final var tokenId = ConversionUtils.asTokenId(token);
-        // Match mono behaviour
-        if (party.length == 0) return TokenTransferList.newBuilder().build();
-
-        if (party.length != amount.length) {
+        if (party.length != amount.length && party.length != 0) {
             throw new IllegalArgumentException(
                     "Mismatched argument arrays (# party=" + party.length + ", # amount=" + amount.length + ")");
         }

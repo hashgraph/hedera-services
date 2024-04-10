@@ -127,10 +127,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         final var gasRequirement =
                 transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId, selector);
         if (preemptingFailureStatus != null) {
-            return reversionWith(
-                    gasRequirement,
-                    systemContractOperations()
-                            .externalizePreemptedDispatch(syntheticTransfer, preemptingFailureStatus));
+            return reversionWith(preemptingFailureStatus, gasRequirement);
         }
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {
             return reversionWith(

@@ -49,8 +49,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -318,7 +318,7 @@ public class ContractHTSSuite extends HapiSuite {
                         childRecordsCheck(
                                 TXN_WITH_INVALID_TOKEN_ADDRESS,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+                                recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE,
                                 CONTRACT_REVERT_EXECUTED,
@@ -593,11 +593,11 @@ public class ContractHTSSuite extends HapiSuite {
                         childRecordsCheck(
                                 TXN_WITH_INVALID_TOKEN_ADDRESS,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_NFT_ID)),
+                                recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 TXN_WITH_INVALID_SERIALS,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_NFT_ID)),
+                                recordWith().status(INVALID_TOKEN_NFT_SERIAL_NUMBER)),
                         childRecordsCheck(
                                 TXN_WITH_NOT_OWNED_NFT,
                                 CONTRACT_REVERT_EXECUTED,
@@ -722,11 +722,11 @@ public class ContractHTSSuite extends HapiSuite {
                         childRecordsCheck(
                                 TXN_WITH_INVALID_TOKEN_ADDRESS,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_NFT_ID)),
+                                recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 TXN_WITH_NEGATIVE_SERIAL,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_NFT_ID)),
+                                recordWith().status(INVALID_TOKEN_NFT_SERIAL_NUMBER)),
                         childRecordsCheck(
                                 TXN_ACCOUNT_DOES_NOT_OWN_NFT,
                                 CONTRACT_REVERT_EXECUTED,
