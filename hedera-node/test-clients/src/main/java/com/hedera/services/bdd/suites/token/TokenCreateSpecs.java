@@ -191,14 +191,18 @@ public class TokenCreateSpecs extends HapiSuite {
     public HapiSpec canHandleInvalidTokenCreateTransactions() {
         final String alice = "ALICE";
         return defaultHapiSpec("canHandleInvalidTokenCreateTransactions")
-                .given(
-                        cryptoCreate(alice)
-                )
+                .given(cryptoCreate(alice))
                 .when()
                 .then(
                         tokenCreate(null).hasKnownStatus(MISSING_TOKEN_NAME),
-                        tokenCreate(A_TOKEN).treasury(alice).signedBy(DEFAULT_PAYER).hasKnownStatus(INVALID_SIGNATURE),
-                        tokenCreate(A_TOKEN).treasury(alice).signedBy(DEFAULT_PAYER, alice).hasKnownStatus(SUCCESS));
+                        tokenCreate(A_TOKEN)
+                                .treasury(alice)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        tokenCreate(A_TOKEN)
+                                .treasury(alice)
+                                .signedBy(DEFAULT_PAYER, alice)
+                                .hasKnownStatus(SUCCESS));
     }
 
     /**

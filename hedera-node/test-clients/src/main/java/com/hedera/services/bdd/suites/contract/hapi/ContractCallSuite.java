@@ -268,8 +268,7 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec("canHandleInvalidContractCallTransactions")
                 .given()
                 .when()
-                .then(
-                        contractCall(null).hasPrecheck(INVALID_CONTRACT_ID));
+                .then(contractCall(null).hasPrecheck(INVALID_CONTRACT_ID));
     }
 
     @HapiTest

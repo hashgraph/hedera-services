@@ -363,10 +363,15 @@ public class FileUpdateSuite extends HapiSuite {
                         fileCreate(file2).contents("Hello World").waclShape(SigControl.emptyList()))
                 .when()
                 .then(
-                        fileUpdate(file1).contents("Goodbye World").signedBy(DEFAULT_PAYER).hasKnownStatus(UNAUTHORIZED),
-                        fileUpdate(file2).contents("Goodbye World").signedBy(DEFAULT_PAYER).hasKnownStatus(UNAUTHORIZED));
+                        fileUpdate(file1)
+                                .contents("Goodbye World")
+                                .signedBy(DEFAULT_PAYER)
+                                .hasKnownStatus(UNAUTHORIZED),
+                        fileUpdate(file2)
+                                .contents("Goodbye World")
+                                .signedBy(DEFAULT_PAYER)
+                                .hasKnownStatus(UNAUTHORIZED));
     }
-
 
     @HapiTest
     final HapiSpec cannotUpdateExpirationPastMaxLifetime() {
