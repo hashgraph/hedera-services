@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.system.transaction;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
@@ -34,7 +36,7 @@ public abstract non-sealed class ConsensusTransactionImpl implements ConsensusTr
      * {@inheritDoc}
      */
     @Override
-    public Instant getConsensusTimestamp() {
+    public @Nullable Instant getConsensusTimestamp() {
         return consensusTimestamp;
     }
 
@@ -44,7 +46,7 @@ public abstract non-sealed class ConsensusTransactionImpl implements ConsensusTr
      * @param consensusTimestamp
      * 		the consensus timestamp
      */
-    public void setConsensusTimestamp(final Instant consensusTimestamp) {
+    public void setConsensusTimestamp(@NonNull final Instant consensusTimestamp) {
         this.consensusTimestamp = consensusTimestamp;
     }
 
@@ -52,7 +54,7 @@ public abstract non-sealed class ConsensusTransactionImpl implements ConsensusTr
      * {@inheritDoc}
      */
     @Override
-    public <T> T getMetadata() {
+    public <T> @Nullable T getMetadata() {
         return (T) metadata;
     }
 
@@ -60,7 +62,7 @@ public abstract non-sealed class ConsensusTransactionImpl implements ConsensusTr
      * {@inheritDoc}
      */
     @Override
-    public <T> void setMetadata(final T metadata) {
+    public <T> void setMetadata(@Nullable final T metadata) {
         this.metadata = metadata;
     }
 }
