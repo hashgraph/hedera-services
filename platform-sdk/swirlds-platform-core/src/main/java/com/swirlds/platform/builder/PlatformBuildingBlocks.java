@@ -26,6 +26,7 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
@@ -50,6 +51,7 @@ import java.util.function.Consumer;
  *                                  enabled
  * @param intakeEventCounter        counts events that have been received by gossip but not yet inserted into gossip
  *                                  event storage, per peer
+ * @param randomBuilder             a builder for creating random number generators
  * @param firstPlatform             if this is the first platform being built (there is static setup that needs to be
  *                                  done, long term plan is to stop using static variables)
  */
@@ -66,4 +68,5 @@ public record PlatformBuildingBlocks(
         @Nullable Consumer<GossipEvent> preconsensusEventConsumer,
         @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
         @NonNull IntakeEventCounter intakeEventCounter,
+        @NonNull RandomBuilder randomBuilder,
         boolean firstPlatform) {}
