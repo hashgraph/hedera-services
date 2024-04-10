@@ -38,6 +38,5 @@ public class PrepareChatterEvent implements MessageHandler<GossipEvent> {
     public void handleMessage(final GossipEvent event) {
         final BaseEventHashedData hashedData = event.getHashedData();
         cryptography.digestSync(hashedData);
-        event.buildDescriptor();
     }
 }

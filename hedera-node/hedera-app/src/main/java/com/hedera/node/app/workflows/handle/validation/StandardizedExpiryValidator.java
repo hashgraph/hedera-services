@@ -229,7 +229,7 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
         validateTrue(
                 accountID.shardNum() == numbers.shard() && accountID.realmNum() == numbers.realm(),
                 INVALID_AUTORENEW_ACCOUNT);
-        if (accountID.accountNum() == 0L) {
+        if ((accountID.hasAccountNum() && accountID.accountNumOrThrow() == 0L) && !accountID.hasAlias()) {
             // 0L is a sentinel number that says to remove the current auto-renew account
             return;
         }
