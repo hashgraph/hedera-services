@@ -199,7 +199,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 .when(cryptoTransfer(moving(1, fungibleToken).between(tokenOwner, tokenReceiver))
                         .payingWith(tokenOwner)
                         .fee(ONE_HUNDRED_HBARS)
-                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE))
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
                 .then(
                         getAccountBalance(tokenOwner).hasTokenBalance(fungibleToken, tokenTotal),
                         getAccountBalance(tokenReceiver).hasTokenBalance(fungibleToken, 0),
@@ -359,7 +359,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 .when(cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
                         .payingWith(tokenOwner)
                         .fee(ONE_HUNDRED_HBARS)
-                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE))
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
                 .then(
                         getAccountBalance(tokenOwner).hasTokenBalance(nonFungibleToken, 1),
                         getAccountBalance(tokenReceiver).hasTokenBalance(nonFungibleToken, 0),
@@ -1473,7 +1473,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 .then(cryptoTransfer(moving(1, fungibleToken).between(tokenOwner, tokenReceiver))
                         .fee(ONE_HUNDRED_HBARS)
                         .payingWith(tokenOwner)
-                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE));
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
     @HapiTest
@@ -1532,7 +1532,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 .then(cryptoTransfer(moving(1, fungibleToken).between(tokenOwner, tokenReceiver))
                         .fee(ONE_HUNDRED_HBARS)
                         .payingWith(tokenOwner)
-                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE));
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
     @HapiTest

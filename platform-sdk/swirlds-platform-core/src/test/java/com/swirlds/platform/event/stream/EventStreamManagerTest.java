@@ -28,11 +28,11 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.internal.EventImpl;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -56,8 +56,9 @@ class EventStreamManagerTest {
             verify(multiStreamMock, never()).close();
         }
 
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
+        final WiringModel model = WiringModelBuilder.create(
+                        TestPlatformContextBuilder.create().build())
+                .build();
         final ComponentWiring<EventStreamManager, Void> wiring = new ComponentWiring<>(
                 model,
                 EventStreamManager.class,
@@ -84,8 +85,9 @@ class EventStreamManagerTest {
         final Random random = RandomUtils.getRandomPrintSeed();
         final Hash runningHash = RandomUtils.randomHash(random);
 
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
+        final WiringModel model = WiringModelBuilder.create(
+                        TestPlatformContextBuilder.create().build())
+                .build();
         final ComponentWiring<EventStreamManager, Void> wiring = new ComponentWiring<>(
                 model,
                 EventStreamManager.class,

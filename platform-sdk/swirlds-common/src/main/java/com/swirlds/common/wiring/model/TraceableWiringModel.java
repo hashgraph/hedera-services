@@ -14,52 +14,41 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal;
+package com.swirlds.common.wiring.model;
 
-import static com.swirlds.common.wiring.model.internal.ModelVertexMetaType.SCHEDULER;
+import static com.swirlds.common.wiring.model.internal.analysis.ModelVertexMetaType.SCHEDULER;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.threading.locks.AutoClosableLock;
-import com.swirlds.common.threading.locks.internal.AutoLock;
-import com.swirlds.common.threading.locks.locked.Locked;
-import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
-import com.swirlds.common.wiring.model.ModelGroup;
-import com.swirlds.common.wiring.model.ModelManualLink;
-import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.common.wiring.model.diagram.ModelGroup;
+import com.swirlds.common.wiring.model.diagram.ModelManualLink;
+import com.swirlds.common.wiring.model.internal.analysis.CycleFinder;
+import com.swirlds.common.wiring.model.internal.analysis.DirectSchedulerChecks;
+import com.swirlds.common.wiring.model.internal.analysis.InputWireChecks;
+import com.swirlds.common.wiring.model.internal.analysis.InputWireDescriptor;
+import com.swirlds.common.wiring.model.internal.analysis.ModelEdge;
+import com.swirlds.common.wiring.model.internal.analysis.ModelVertex;
+import com.swirlds.common.wiring.model.internal.analysis.StandardVertex;
+import com.swirlds.common.wiring.model.internal.analysis.WiringFlowchart;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.schedulers.internal.HeartbeatScheduler;
-import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
 import com.swirlds.common.wiring.wires.SolderType;
-import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ForkJoinPool;
 
 /**
- * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
- * of a system and to generate diagrams.
+ * Common functionality for wiring model implementations. Has methods for registering information about the topology of
+ * wiring that is appropriate for internal use by the framework, but should not be exposed to the end users of the
+ * wiring framework.
  */
-public class StandardWiringModel implements WiringModel {
-
-    /**
-     * The platform context.
-     */
-    private final PlatformContext platformContext;
+public abstract class TraceableWiringModel implements WiringModel {
 
     /**
      * A map of vertex names to vertices.
@@ -70,16 +59,6 @@ public class StandardWiringModel implements WiringModel {
      * A set of all edges in the model.
      */
     private final Set<ModelEdge> edges = new HashSet<>();
-
-    /**
-     * Schedules heartbeats. Not created unless needed.
-     */
-    private HeartbeatScheduler heartbeatScheduler = null;
-
-    /**
-     * Thread schedulers need to have their threads started/stopped.
-     */
-    private final List<SequentialThreadTaskScheduler<?>> threadSchedulers = new ArrayList<>();
 
     /**
      * Input wires that have been created.
@@ -97,89 +76,31 @@ public class StandardWiringModel implements WiringModel {
     private final Set<InputWireDescriptor> solderedInputWires = new HashSet<>();
 
     /**
-     * The default fork join pool, schedulers not explicitly assigned a pool will use this one.
-     */
-    private final ForkJoinPool defaultPool;
-
-    /**
      * True if start() has been called.
      */
     private boolean started = false;
 
     /**
-     * Used to protect access to the JVM anchor.
+     * True if backpressure is enabled.
      */
-    private final AutoClosableLock jvmExitLock = new AutoLock();
-
-    private JvmAnchor anchor;
+    private final boolean backpressureEnabled;
 
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
-     * @param defaultPool     the default fork join pool, schedulers not explicitly assigned a pool will use this one
+     * @param backpressureEnabled true if backpressure is enabled
      */
-    public StandardWiringModel(
-            @NonNull final PlatformContext platformContext, @NonNull final ForkJoinPool defaultPool) {
-
-        this.platformContext = Objects.requireNonNull(platformContext);
-        this.defaultPool = Objects.requireNonNull(defaultPool);
+    TraceableWiringModel(final boolean backpressureEnabled) {
+        this.backpressureEnabled = backpressureEnabled;
     }
 
     /**
-     * {@inheritDoc}
+     * If true then backpressure is enabled. If false then this model will never apply backpressure internally.
+     *
+     * @return true if backpressure is enabled for this model
      */
-    @NonNull
-    @Override
-    public final <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name) {
-        throwIfStarted();
-        return new TaskSchedulerBuilder<>(platformContext, this, name, defaultPool);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period) {
-        throwIfStarted();
-        return getHeartbeatScheduler().buildHeartbeatWire(period);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
-        throwIfStarted();
-        return getHeartbeatScheduler().buildHeartbeatWire(frequency);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void preventJvmExit() {
-        try (final Locked ignored = jvmExitLock.lock()) {
-            if (anchor == null) {
-                anchor = new JvmAnchor();
-                anchor.start();
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void permitJvmExit() {
-        try (final Locked ignored = jvmExitLock.lock()) {
-            if (anchor != null) {
-                anchor.stop();
-                anchor = null;
-            }
-        }
+    public boolean isBackpressureEnabled() {
+        return backpressureEnabled;
     }
 
     /**
@@ -253,16 +174,7 @@ public class StandardWiringModel implements WiringModel {
      */
     public void registerScheduler(@NonNull final TaskScheduler<?> scheduler, @Nullable final String hyperlink) {
         throwIfStarted();
-
-        if (scheduler.getType() == NO_OP) {
-            // Ignore no-op schedulers.
-            return;
-        }
-
         registerVertex(scheduler.getName(), scheduler.getType(), hyperlink, scheduler.isInsertionBlocking());
-        if (scheduler.getType() == SEQUENTIAL_THREAD) {
-            threadSchedulers.add((SequentialThreadTaskScheduler<?>) scheduler);
-        }
     }
 
     /**
@@ -370,65 +282,26 @@ public class StandardWiringModel implements WiringModel {
     /**
      * Throw an exception if start() has already been called.
      */
-    private void throwIfStarted() {
+    protected void throwIfStarted() {
         if (started) {
             throw new IllegalStateException("start() has already been called, operation not permitted.");
         }
     }
 
     /**
-     * {@inheritDoc}
+     * Throw an exception if the wiring model has not been started.
      */
-    @Override
-    public void start() {
-        throwIfStarted();
-        started = true;
-
-        // We don't have to do anything with the output of these sanity checks.
-        // The methods below will log errors if they find problems.
-        checkForCyclicalBackpressure();
-        checkForIllegalDirectSchedulerUsage();
-        checkForUnboundInputWires();
-
-        if (heartbeatScheduler != null) {
-            heartbeatScheduler.start();
-        }
-
-        for (final SequentialThreadTaskScheduler<?> threadScheduler : threadSchedulers) {
-            threadScheduler.start();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void stop() {
+    protected void throwIfNotStarted() {
         if (!started) {
             throw new IllegalStateException("start() has not been called, operation not permitted.");
         }
-        if (heartbeatScheduler != null) {
-            heartbeatScheduler.stop();
-        }
-
-        for (final SequentialThreadTaskScheduler<?> threadScheduler : threadSchedulers) {
-            threadScheduler.stop();
-        }
-
-        permitJvmExit();
     }
 
     /**
-     * Get the heartbeat scheduler, creating it if necessary.
-     *
-     * @return the heartbeat scheduler
+     * Mark the wiring model as started.
      */
-    @NonNull
-    private HeartbeatScheduler getHeartbeatScheduler() {
-        if (heartbeatScheduler == null) {
-            heartbeatScheduler = new HeartbeatScheduler(this, platformContext.getTime(), "heartbeat");
-        }
-        return heartbeatScheduler;
+    protected void markAsStarted() {
+        started = true;
     }
 
     /**
