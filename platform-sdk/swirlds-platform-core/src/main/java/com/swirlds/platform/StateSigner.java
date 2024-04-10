@@ -67,8 +67,11 @@ public class StateSigner {
             final Bytes signature = signer.signImmutable(stateHash);
             Objects.requireNonNull(signature);
 
-            return new StateSignaturePayload(
-                    reservedSignedState.get().getRound(), signature, stateHash.getBytes(), Bytes.EMPTY);
+            return StateSignaturePayload.newBuilder()
+                    .round(reservedSignedState.get().getRound())
+                    .signature(signature)
+                    .hash(stateHash.getBytes())
+                    .build();
         }
     }
 }

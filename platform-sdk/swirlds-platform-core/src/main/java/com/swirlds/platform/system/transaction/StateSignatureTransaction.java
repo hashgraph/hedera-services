@@ -66,13 +66,14 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
             final long round,
             @NonNull final Bytes stateSignature,
             @NonNull final Bytes stateHash,
-            @NonNull final Bytes epochHash) {
-        this(new StateSignaturePayload(
-                round,
-                stateSignature,
-                stateHash,
-                epochHash
-        ));
+            @NonNull final Bytes epochHash) {//TODO remove this
+        this(
+                StateSignaturePayload.newBuilder()
+                        .round(round)
+                        .signature(stateSignature)
+                        .hash(stateHash)
+                        .build()
+        );
     }
 
     public StateSignatureTransaction(@NonNull final StateSignaturePayload payload){
@@ -101,14 +102,6 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
     @NonNull
     public Bytes hash() {
         return ((StateSignaturePayload)payload.value()).hash();
-    }
-
-    /**
-     * @return the hash of the epoch to which this signature corresponds to
-     */
-    @NonNull
-    public Bytes epochHash() {
-        return ((StateSignaturePayload)payload.value()).epochHash();
     }
     // End of PBJ generated methods
 
@@ -147,13 +140,13 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
         final long round = in.readLong();
         in.readInt();// epochHash is always null
 
-        this.payload = new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD,
-                new StateSignaturePayload(
-                round,
-                Bytes.wrap(sigBytes),
-                Bytes.wrap(hashBytes),
-                Bytes.EMPTY
-        ));
+        this.payload = new OneOf<>(
+                PayloadOneOfType.STATE_SIGNATURE_PAYLOAD,
+                StateSignaturePayload.newBuilder()
+                        .round(round)
+                        .signature(Bytes.wrap(sigBytes))
+                        .hash(Bytes.wrap(hashBytes))
+                        .build());
     }
 
     /**

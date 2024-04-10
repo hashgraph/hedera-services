@@ -100,14 +100,11 @@ public class AbstractStateSignatureCollectorTest {
         final AddressBook addressBook = signedState.getAddressBook();
         final Hash hash = signedState.getState().getHash();
 
-        // Although we normally want to avoid rebuilding the dispatcher over and over, the slight
-        // performance overhead is worth the convenience during unit tests
-
-        final StateSignaturePayload transaction = new StateSignaturePayload(
-                round,
-                buildFakeSignatureBytes(addressBook.getAddress(nodeId).getSigPublicKey(), hash),
-                hash.getBytes(),
-                Bytes.EMPTY);
+        final StateSignaturePayload transaction = StateSignaturePayload.newBuilder()
+                .round(round)
+                .signature(buildFakeSignatureBytes(addressBook.getAddress(nodeId).getSigPublicKey(), hash))
+                .hash(hash.getBytes())
+                .build();
 
         manager.handlePreconsensusSignatureTransaction(nodeId, transaction);
     }
