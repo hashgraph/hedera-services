@@ -63,6 +63,8 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Class for retrieving objects in a certain context, e.g. during a {@code handler.handle(...)} call.
@@ -71,6 +73,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * multiple handlers.
  */
 public class TokenHandlerHelper {
+    private static final Logger logger = LogManager.getLogger(TokenHandlerHelper.class);
 
     private TokenHandlerHelper() {
         throw new UnsupportedOperationException("Utility class only");
@@ -200,22 +203,27 @@ public class TokenHandlerHelper {
     /**
      * Returns the token relation if it exists and is usable
      *
-     * @param accountId the ID of the account
-     * @param tokenId the ID of the token
+     * @param accountId     the ID of the account
+     * @param tokenId       the ID of the token
      * @param tokenRelStore the {@link ReadableTokenRelationStore} to use for token relation retrieval
+     * @param accountStore
      * @throws HandleException if any of the token relation conditions are not met
      */
     @NonNull
     public static TokenRelation getIfUsable(
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
-            @NonNull final ReadableTokenRelationStore tokenRelStore) {
+            @NonNull final ReadableTokenRelationStore tokenRelStore,
+            @NonNull final ReadableAccountStore accountStore) {
         requireNonNull(accountId);
         requireNonNull(tokenId);
         requireNonNull(tokenRelStore);
-
-        final var tokenRel = tokenRelStore.get(accountId, tokenId);
-
+        var aliasedId = accountId;
+        if(accountId.hasAlias() && !accountId.hasAccountNum()) {
+            aliasedId = accountStore.getAccountIDByAlias(accountId.aliasOrThrow());
+        }
+        final var tokenRel = tokenRelStore.get(aliasedId, tokenId);
+        logger.info("tokenRel : " + tokenRel + " for account : " + accountId + " and token : " + tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
         validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 

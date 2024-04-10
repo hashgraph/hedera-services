@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -55,8 +56,7 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
         requireNonNull(accountId);
         requireNonNull(tokenId);
 
-        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
-
+        if (!hasAccountNumOrAlias(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
         return readableTokenRelState.get(
                 EntityIDPair.newBuilder().accountId(accountId).tokenId(tokenId).build());
     }

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -80,7 +81,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }
 
-        if (!op.hasAccount()) {
+        if (!(op.hasAccount() && hasAccountNumOrAlias(op.account()))) {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
     }
@@ -129,7 +130,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         final var account =
                 TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
-        final var tokenRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
+        final var tokenRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore, );
 
         return tokenRel;
     }

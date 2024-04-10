@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
@@ -129,7 +130,7 @@ public class TokenManagementSpecs extends HapiSuite {
     public boolean canRunConcurrent() {
         return true;
     }
-
+    @HapiTest
     private HapiSpec aliasFormWorksForAllTokenOps() {
         final var CIVILIAN = "civilian";
         final var PAUSE_KEY = "pauseKey";
@@ -157,14 +158,15 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .pauseKey(PAUSE_KEY)
                                 .kycKey(KYC_KEY),
-                        withOpContext((spec, opLog) -> {
-                            final var key = spec.registry().getKey(partyAlias);
-                            final var alias = key.hasECDSASecp256K1() ? key.getECDSASecp256K1() : key.getEd25519();
-                            allRunFor(
-                                    spec,
-                                    tokenAssociateWithAlias(alias, PRIMARY),
-                                    grantTokenKycWithAlias(PRIMARY, alias));
-                        }),
+                        tokenAssociateWithAlias(partyAlias, PRIMARY)
+                                .signedBy(partyAlias, DEFAULT_PAYER),
+                        getAliasedAccountInfo(partyAlias)
+                                .hasToken(relationshipWith(PRIMARY).balance(0))
+                                .logged(),
+                        grantTokenKycWithAlias(PRIMARY, partyAlias),
+                        getAliasedAccountInfo(partyAlias)
+                                .hasToken(relationshipWith(PRIMARY).balance(0))
+                                .logged(),
                         tokenPause(PRIMARY))
                 .then();
     }

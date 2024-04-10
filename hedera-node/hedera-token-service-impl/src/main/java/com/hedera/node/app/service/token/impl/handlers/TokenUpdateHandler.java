@@ -220,8 +220,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             final WritableAccountStore accountStore) {
         final var tokenId = token.tokenId();
         // Validate both accounts are not frozen and have the right keys
-        final var oldTreasuryRel = getIfUsable(oldTreasury, tokenId, tokenRelStore);
-        final var newTreasuryRel = getIfUsable(newTreasury, tokenId, tokenRelStore);
+        final var oldTreasuryRel = getIfUsable(oldTreasury, tokenId, tokenRelStore, );
+        final var newTreasuryRel = getIfUsable(newTreasury, tokenId, tokenRelStore, );
         if (oldTreasuryRel.balance() > 0) {
             validateFrozenAndKey(oldTreasuryRel);
             validateFrozenAndKey(newTreasuryRel);
