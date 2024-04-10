@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAUSE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
@@ -858,8 +859,7 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         .kycKey(newKycKey)
                         .signedBy(civilian, adminKey, kycKey)
                         .payingWith(civilian)
-                        // most probably changed to TOKEN_HAS_NO_ADMIN_KEY
-                        .hasKnownStatus(TOKEN_IS_IMMUTABLE))
+                        .hasKnownStatus(TOKEN_HAS_NO_ADMIN_KEY))
                 .then(getTokenInfo(tokenName)
                         .searchKeysGlobally()
                         .hasKycKey(kycKey)

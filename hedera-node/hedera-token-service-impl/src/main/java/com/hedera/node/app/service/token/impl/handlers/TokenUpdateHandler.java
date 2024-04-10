@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
@@ -30,7 +31,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_K
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -403,8 +403,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             builder.metadataKey(getNewKeyValue(op.metadataKey()));
         }
         if (op.hasAdminKey()) {
-            // needs to be `TOKEN_HAS_NO_ADMIN_KEY`
-            validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
+            validateTrue(originalToken.hasAdminKey(), TOKEN_HAS_NO_ADMIN_KEY);
             builder.adminKey(getNewKeyValue(op.adminKey()));
         }
     }
