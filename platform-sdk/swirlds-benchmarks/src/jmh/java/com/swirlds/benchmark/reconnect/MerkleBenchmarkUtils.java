@@ -36,6 +36,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -44,10 +45,12 @@ import java.util.function.Function;
  */
 public class MerkleBenchmarkUtils {
 
-    public static MerkleInternal createTreeForMap(final VirtualMap<BenchmarkKey, BenchmarkValue> map) {
+    public static MerkleInternal createTreeForMaps(final List<VirtualMap<BenchmarkKey, BenchmarkValue>> maps) {
         final BenchmarkMerkleInternal tree = new BenchmarkMerkleInternal("root");
         initializeTreeAfterCopy(tree);
-        tree.setChild(0, map);
+        for (int i = 0; i < maps.size(); i++) {
+            tree.setChild(i, maps.get(i));
+        }
         tree.reserve();
         return tree;
     }
@@ -55,8 +58,11 @@ public class MerkleBenchmarkUtils {
     public static <T extends MerkleNode> T hashAndTestSynchronization(
             final MerkleNode startingTree,
             final MerkleNode desiredTree,
+            final long randomSeed,
             final long delayStorageMicroseconds,
+            final double delayStorageFuzzRangePercent,
             final long delayNetworkMicroseconds,
+            final double delayNetworkFuzzRangePercent,
             final Configuration configuration)
             throws Exception {
         System.out.println("------------");
@@ -74,8 +80,11 @@ public class MerkleBenchmarkUtils {
         return testSynchronization(
                 startingTree,
                 desiredTree,
+                randomSeed,
                 delayStorageMicroseconds,
+                delayStorageFuzzRangePercent,
                 delayNetworkMicroseconds,
+                delayNetworkFuzzRangePercent,
                 configuration,
                 reconnectConfig);
     }
@@ -87,8 +96,11 @@ public class MerkleBenchmarkUtils {
     private static <T extends MerkleNode> T testSynchronization(
             final MerkleNode startingTree,
             final MerkleNode desiredTree,
+            final long randomSeed,
             final long delayStorageMicroseconds,
+            final double delayStorageFuzzRangePercent,
             final long delayNetworkMicroseconds,
+            final double delayNetworkFuzzRangePercent,
             final Configuration configuration,
             final ReconnectConfig reconnectConfig)
             throws Exception {
@@ -132,8 +144,11 @@ public class MerkleBenchmarkUtils {
                         streams.getLearnerInput(),
                         streams.getLearnerOutput(),
                         startingTree,
+                        randomSeed,
                         delayStorageMicroseconds,
+                        delayStorageFuzzRangePercent,
                         delayNetworkMicroseconds,
+                        delayNetworkFuzzRangePercent,
                         () -> {
                             try {
                                 streams.disconnect();
@@ -148,8 +163,11 @@ public class MerkleBenchmarkUtils {
                         streams.getTeacherInput(),
                         streams.getTeacherOutput(),
                         desiredTree,
+                        randomSeed,
                         delayStorageMicroseconds,
+                        delayStorageFuzzRangePercent,
                         delayNetworkMicroseconds,
+                        delayNetworkFuzzRangePercent,
                         () -> {
                             try {
                                 streams.disconnect();

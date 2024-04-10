@@ -18,7 +18,7 @@ package com.swirlds.common.wiring.wires.output;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.wires.output.internal.ForwardingOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ public class StandardOutputWire<OUT> extends ForwardingOutputWire<OUT, OUT> {
      * @param model the wiring model containing this output wire
      * @param name  the name of the output wire
      */
-    public StandardOutputWire(@NonNull final StandardWiringModel model, @NonNull final String name) {
+    public StandardOutputWire(@NonNull final TraceableWiringModel model, @NonNull final String name) {
         super(model, name);
     }
 

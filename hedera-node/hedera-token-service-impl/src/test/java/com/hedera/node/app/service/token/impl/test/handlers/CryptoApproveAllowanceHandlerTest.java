@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
@@ -51,6 +52,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHan
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -356,7 +358,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .value(nftIdSl2, nftSl2.copyBuilder().ownerId(payerId).build())
                 .build();
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore = new WritableNftStore(writableStates);
+        writableNftStore = new WritableNftStore(writableStates, configuration, mock(StoreMetricsService.class));
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId,

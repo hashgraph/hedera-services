@@ -22,11 +22,13 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.StateSigner;
+import com.swirlds.platform.builder.PlatformBuildingBlocks;
+import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
-import com.swirlds.platform.components.ConsensusEngine;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
@@ -49,6 +51,7 @@ import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
+import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.util.HashLogger;
@@ -67,11 +70,17 @@ class PlatformWiringTests {
 
         final PlatformWiring wiring = new PlatformWiring(platformContext, true, true);
 
+        final PlatformComponentBuilder componentBuilder =
+                new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
+        componentBuilder
+                .withEventHasher(mock(EventHasher.class))
+                .withInternalEventValidator(mock(InternalEventValidator.class))
+                .withEventDeduplicator(mock(EventDeduplicator.class))
+                .withEventSignatureValidator(mock(EventSignatureValidator.class))
+                .withStateGarbageCollector(mock(StateGarbageCollector.class));
+
         wiring.bind(
-                mock(EventHasher.class),
-                mock(InternalEventValidator.class),
-                mock(EventDeduplicator.class),
-                mock(EventSignatureValidator.class),
+                componentBuilder,
                 mock(OrphanBuffer.class),
                 mock(InOrderLinker.class),
                 mock(ConsensusEngine.class),

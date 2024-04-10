@@ -40,6 +40,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHel
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.ConfigProvider;
 import java.time.Instant;
@@ -1039,7 +1040,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableAccountStore = new WritableAccountStore(writableStates);
+        writableAccountStore = new WritableAccountStore(writableStates, configuration, mock(StoreMetricsService.class));
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }
 

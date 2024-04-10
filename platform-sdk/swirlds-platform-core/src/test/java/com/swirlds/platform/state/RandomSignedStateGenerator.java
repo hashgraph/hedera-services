@@ -20,11 +20,14 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -70,6 +73,7 @@ public class RandomSignedStateGenerator {
     private Hash epoch = null;
     private ConsensusSnapshot consensusSnapshot;
     private SignatureVerifier signatureVerifier;
+    private boolean deleteOnBackgroundThread;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -190,16 +194,21 @@ public class RandomSignedStateGenerator {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;
         }
 
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("state.stateHistoryEnabled", true)
+                .withConfigDataType(StateConfig.class)
+                .getOrCreateConfig();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         final SignedState signedState = new SignedState(
-                new TestConfigBuilder()
-                        .withValue("state.stateHistoryEnabled", true)
-                        .withConfigDataType(StateConfig.class)
-                        .getOrCreateConfig()
-                        .getConfigData(StateConfig.class),
+                platformContext,
                 signatureVerifier,
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
-                freezeStateInstance);
+                freezeStateInstance,
+                deleteOnBackgroundThread);
 
         MerkleCryptoFactory.getInstance().digestTreeSync(stateInstance);
         if (stateHash != null) {
@@ -253,6 +262,19 @@ public class RandomSignedStateGenerator {
         }
 
         return states;
+    }
+
+    /**
+     * Set if this state should be deleted on a background thread.
+     * ({@link com.swirlds.platform.state.signed.StateGarbageCollector} must be wired up in order for this to happen)
+     *
+     * @param deleteOnBackgroundThread if true, delete on a background thread
+     * @return this object
+     */
+    @NonNull
+    public RandomSignedStateGenerator setDeleteOnBackgroundThread(final boolean deleteOnBackgroundThread) {
+        this.deleteOnBackgroundThread = deleteOnBackgroundThread;
+        return this;
     }
 
     /**

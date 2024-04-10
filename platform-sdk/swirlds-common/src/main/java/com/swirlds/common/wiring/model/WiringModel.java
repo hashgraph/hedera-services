@@ -18,8 +18,9 @@ package com.swirlds.common.wiring.model;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.common.wiring.model.diagram.ModelGroup;
+import com.swirlds.common.wiring.model.diagram.ModelManualLink;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -27,25 +28,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 
 /**
  * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
  * of a system and to generate diagrams.
  */
 public interface WiringModel extends Startable, Stoppable {
-
-    /**
-     * Build a new wiring model instance.
-     *
-     * @param platformContext the platform context
-     * @param defaultPool     the default fork join pool, schedulers not explicitly assigned a pool will use this one
-     * @return a new wiring model instance
-     */
-    @NonNull
-    static WiringModel create(@NonNull final PlatformContext platformContext, @NonNull final ForkJoinPool defaultPool) {
-        return new StandardWiringModel(platformContext, defaultPool);
-    }
 
     /**
      * Get a new task scheduler builder.

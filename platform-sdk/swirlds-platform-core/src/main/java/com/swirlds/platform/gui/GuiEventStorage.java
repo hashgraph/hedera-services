@@ -92,7 +92,7 @@ public class GuiEventStorage {
 
         final List<ConsensusRound> rounds = consensus.addEvent(eventImpl);
 
-        if (rounds == null) {
+        if (rounds.isEmpty()) {
             return;
         }
 
