@@ -54,6 +54,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenUpdateResourceUsage;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -198,7 +199,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 transferTokensToNewTreasury(existingTreasury, newTreasury, token, tokenRelStore, accountStore);
             }
         }
-        final var tokenBuilder = customizeToken(token, resolvedExpiry, op);
+        final var tokenBuilder = customizeToken(token, resolvedExpiry, op, accountStore);
         tokenStore.put(tokenBuilder.build());
         recordBuilder.tokenType(token.tokenType());
     }
@@ -316,33 +317,41 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
 
     /**
      * Build a Token based on the given token update transaction body.
-     * @param token token to be updated
+     *
+     * @param token          token to be updated
      * @param resolvedExpiry resolved expiry
-     * @param op token update transaction body
+     * @param op             token update transaction body
+     * @param accountStore
      * @return updated token builder
      */
     private Token.Builder customizeToken(
             @NonNull final Token token,
             @NonNull final ExpiryMeta resolvedExpiry,
-            @NonNull final TokenUpdateTransactionBody op) {
+            @NonNull final TokenUpdateTransactionBody op,
+            @NonNull final ReadableAccountStore accountStore) {
         final var copyToken = token.copyBuilder();
         // All these keys are validated in validateSemantics
         // If these keys did not exist on the token already, they can't be changed on update
         updateKeys(op, token, copyToken);
-        updateExpiryFields(op, resolvedExpiry, copyToken);
-        updateTokenAttributes(op, copyToken, token);
+        updateExpiryFields(op, resolvedExpiry, copyToken, accountStore);
+        updateTokenAttributes(op, copyToken, token, accountStore);
         return copyToken;
     }
 
     /**
      * Updates token name, token symbol, token metadata, token memo
      * and token treasury if they are present in the token update transaction body.
-     * @param op token update transaction body
-     * @param builder token builder
+     *
+     * @param op            token update transaction body
+     * @param builder       token builder
      * @param originalToken original token
+     * @param accountStore
      */
     private void updateTokenAttributes(
-            final TokenUpdateTransactionBody op, final Token.Builder builder, final Token originalToken) {
+            final TokenUpdateTransactionBody op,
+            final Token.Builder builder,
+            final Token originalToken,
+            final ReadableAccountStore accountStore) {
         if (op.symbol() != null && op.symbol().length() > 0) {
             builder.symbol(op.symbol());
         }
@@ -356,18 +365,23 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             builder.metadata(op.metadata());
         }
         if (op.hasTreasury() && !op.treasuryOrThrow().equals(originalToken.treasuryAccountId())) {
-            builder.treasuryAccountId(op.treasuryOrThrow());
+            builder.treasuryAccountId(getUnaliasedId(op.treasuryOrThrow(), accountStore));
         }
     }
 
     /**
      * Updates expiry fields of the token if they are present in the token update transaction body.
-     * @param op token update transaction body
+     *
+     * @param op             token update transaction body
      * @param resolvedExpiry resolved expiry
-     * @param builder token builder
+     * @param builder        token builder
+     * @param accountStore
      */
     private void updateExpiryFields(
-            final TokenUpdateTransactionBody op, final ExpiryMeta resolvedExpiry, final Token.Builder builder) {
+            final TokenUpdateTransactionBody op,
+            final ExpiryMeta resolvedExpiry,
+            final Token.Builder builder,
+            final ReadableAccountStore accountStore) {
         if (op.hasExpiry()) {
             builder.expirationSecond(resolvedExpiry.expiry());
         }
@@ -375,7 +389,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             builder.autoRenewSeconds(resolvedExpiry.autoRenewPeriod());
         }
         if (op.hasAutoRenewAccount()) {
-            builder.autoRenewAccountId(resolvedExpiry.autoRenewAccountId());
+            builder.autoRenewAccountId(getUnaliasedId(resolvedExpiry.autoRenewAccountId(), accountStore));
         }
     }
 

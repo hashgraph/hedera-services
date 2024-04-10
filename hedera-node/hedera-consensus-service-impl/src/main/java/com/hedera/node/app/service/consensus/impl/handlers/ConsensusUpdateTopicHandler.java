@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.pbjToState;
+import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler.getUnaliasedId;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
@@ -43,6 +44,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.UpdateTopicResourceUsage;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -136,7 +138,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                     !topic.hasAdminKey() || (topicUpdate.hasAdminKey() && isEmpty(topicUpdate.adminKey())),
                     AUTORENEW_ACCOUNT_NOT_ALLOWED);
         }
-        validateMaybeNewAttributes(handleContext, topicUpdate, topic);
+
+        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        validateMaybeNewAttributes(handleContext, topicUpdate, topic, accountStore);
 
         // Now we apply the mutations to a builder
         final var builder = new Topic.Builder();
@@ -146,7 +150,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
         // And then resolve mutable attributes, and put the new topic back
-        resolveMutableBuilderAttributes(handleContext, topicUpdate, builder, topic);
+        resolveMutableBuilderAttributes(handleContext, topicUpdate, builder, topic, accountStore);
         topicStore.put(builder.build());
     }
 
@@ -167,7 +171,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final HandleContext handleContext,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic.Builder builder,
-            @NonNull final Topic topic) {
+            @NonNull final Topic topic,
+            @NonNull final ReadableAccountStore accountStore) {
         if (op.hasAdminKey()) {
             var key = op.adminKey();
             // Empty key list is allowed and is used for immutable entities (e.g. system accounts)
@@ -194,7 +199,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         } else {
             builder.memo(topic.memo());
         }
-        final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
+        final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic, accountStore);
         builder.expirationSecond(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
         if (op.hasAutoRenewAccount() && designatesAccountRemoval(op.autoRenewAccount())) {
@@ -207,28 +212,32 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     private void validateMaybeNewAttributes(
             @NonNull final HandleContext handleContext,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
-            @NonNull final Topic topic) {
+            @NonNull final Topic topic,
+            @NonNull final ReadableAccountStore accountStore) {
         validateMaybeNewAdminKey(handleContext.attributeValidator(), op);
         validateMaybeNewSubmitKey(handleContext.attributeValidator(), op);
         validateMaybeNewMemo(handleContext.attributeValidator(), op);
-        validateMaybeNewExpiry(handleContext.expiryValidator(), op, topic);
+        validateMaybeNewExpiry(handleContext.expiryValidator(), op, topic, accountStore);
     }
 
     private void validateMaybeNewExpiry(
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
-            @NonNull final Topic topic) {
-        resolvedUpdateMetaFrom(expiryValidator, op, topic);
+            @NonNull final Topic topic,
+            @NonNull final ReadableAccountStore accountStore) {
+        resolvedUpdateMetaFrom(expiryValidator, op, topic, accountStore);
     }
 
     private ExpiryMeta resolvedUpdateMetaFrom(
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
-            @NonNull final Topic topic) {
+            @NonNull final Topic topic,
+            @NonNull final ReadableAccountStore accountStore) {
         final var currentMeta =
                 new ExpiryMeta(topic.expirationSecond(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
-            final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), op.autoRenewAccount());
+            final var updateMeta = new ExpiryMeta(
+                    effExpiryOf(op), effAutoRenewPeriodOf(op), getUnaliasedId(op.autoRenewAccount(), accountStore));
             try {
                 return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta, false);
             } catch (final HandleException e) {

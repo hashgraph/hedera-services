@@ -24,10 +24,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
@@ -36,6 +38,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.CreateTopicResourceUsage;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -47,6 +50,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -121,8 +125,11 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
                 + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
 
+        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
         final var entityExpiryMeta = new ExpiryMeta(
-                impliedExpiry, op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(), op.autoRenewAccount());
+                impliedExpiry,
+                op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
+                getUnaliasedId(op.autoRenewAccount(), accountStore));
 
         try {
             final var effectiveExpiryMeta = handleContext
@@ -172,5 +179,13 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new CreateTopicResourceUsage()
                 .usageGiven(fromPbj(op), sigValueObj, null));
+    }
+
+    public static AccountID getUnaliasedId(
+            @Nullable final AccountID account, @NonNull final ReadableAccountStore accountStore) {
+        if (account != null && isAlias(account)) {
+            return accountStore.getAccountIDByAlias(account.aliasOrThrow());
+        }
+        return account;
     }
 }

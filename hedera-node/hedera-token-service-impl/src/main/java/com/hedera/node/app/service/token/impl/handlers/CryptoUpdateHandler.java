@@ -35,6 +35,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorage
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.getUnaliasedId;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -156,7 +157,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         context.attributeValidator().validateMemo(op.memo());
 
         // Customize the account based on fields set in transaction body
-        final var builder = updateBuilder(op, targetAccount);
+        final var builder = updateBuilder(op, targetAccount, accountStore);
 
         // validate all checks that involve config and state
         validateSemantics(context, targetAccount, op, builder, accountStore);
@@ -174,11 +175,15 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
     /**
      * Add a builder from {@link CryptoUpdateTransactionBody} to create {@link Account.Builder} object
-     * @param op Crypto update transaction body
+     *
+     * @param op           Crypto update transaction body
+     * @param accountStore
      * @return builder
      */
     private Account.Builder updateBuilder(
-            @NonNull final CryptoUpdateTransactionBody op, @NonNull final Account currentAccount) {
+            @NonNull final CryptoUpdateTransactionBody op,
+            @NonNull final Account currentAccount,
+            @NonNull final WritableAccountStore accountStore) {
         final var builder = currentAccount.copyBuilder();
         if (op.hasKey()) {
             /* Note that {@code this.validateSemantics} will have rejected any txn with an invalid key. */
@@ -210,7 +215,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             if (SENTINEL_ACCOUNT_ID.equals(op.stakedAccountId())) {
                 builder.stakedAccountId((AccountID) null);
             } else {
-                builder.stakedAccountId(op.stakedAccountId());
+                builder.stakedAccountId(getUnaliasedId(op.stakedAccountId(), accountStore));
             }
         } else if (op.hasStakedNodeId()) {
             // -1 is used a sentinel value for removing staked node id

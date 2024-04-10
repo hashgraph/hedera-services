@@ -136,7 +136,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         // build a new token
         final var newTokenNum = context.newEntityNum();
         final var newTokenId = TokenID.newBuilder().tokenNum(newTokenNum).build();
-        final var newToken = buildToken(newTokenNum, op, resolvedExpiryMeta);
+        final var newToken = buildToken(newTokenNum, op, resolvedExpiryMeta, accountStore);
 
         // validate custom fees and get back list of fees with created token denomination
         final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
@@ -224,20 +224,24 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     /**
      * Create a new token with the given parameters.
      *
-     * @param newTokenNum new token number
-     * @param op token creation transaction body
+     * @param newTokenNum        new token number
+     * @param op                 token creation transaction body
      * @param resolvedExpiryMeta resolved expiry meta
+     * @param accountStore
      * @return newly created token
      */
     private Token buildToken(
-            final long newTokenNum, final TokenCreateTransactionBody op, final ExpiryMeta resolvedExpiryMeta) {
+            final long newTokenNum,
+            final TokenCreateTransactionBody op,
+            final ExpiryMeta resolvedExpiryMeta,
+            final WritableAccountStore accountStore) {
         return new Token(
                 asToken(newTokenNum),
                 op.name(),
                 op.symbol(),
                 op.decimals(),
                 0, // mintFungible will set this to initial supply
-                op.treasury(),
+                getUnaliasedId(op.treasury(), accountStore),
                 op.adminKey(),
                 op.kycKey(),
                 op.freezeKey(),
@@ -249,7 +253,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 false,
                 op.tokenType(),
                 op.supplyType(),
-                resolvedExpiryMeta.autoRenewAccountId(),
+                getUnaliasedId(resolvedExpiryMeta.autoRenewAccountId(), accountStore),
                 // We want to return 0 instead of ExpiryMeta.NA when querying this token's info
                 resolvedExpiryMeta.hasAutoRenewPeriod() ? resolvedExpiryMeta.autoRenewPeriod() : 0L,
                 resolvedExpiryMeta.expiry(),
@@ -262,7 +266,6 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 op.metadata(),
                 op.metadataKey());
     }
-
     /**
      * Modify the custom fees with the newly created token number as the token denomination.
      * For any custom fixed fees that has 0.0.0 as denominating tokenId, it should be changed
@@ -298,17 +301,19 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     /**
      * Get the expiry metadata for the token to be created from the transaction body.
      *
-     * @param op token creation transaction body
+     * @param op           token creation transaction body
+     * @param accountStore
      * @return given expiry metadata
      */
-    private ExpiryMeta getExpiryMeta(@NonNull final TokenCreateTransactionBody op) {
+    private ExpiryMeta getExpiryMeta(
+            @NonNull final TokenCreateTransactionBody op, @NonNull final ReadableAccountStore accountStore) {
         final var impliedExpiry = op.hasExpiry() ? op.expiry().seconds() : NA;
 
         return new ExpiryMeta(
                 impliedExpiry,
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
                 // Shard and realm will be ignored if num is NA
-                op.autoRenewAccount());
+                getUnaliasedId(op.autoRenewAccount(), accountStore));
     }
 
     /**
@@ -335,7 +340,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         tokenCreateValidator.validate(context, accountStore, op, config);
 
         // validate expiration and auto-renew account if present
-        final var givenExpiryMeta = getExpiryMeta(op);
+        final var givenExpiryMeta = getExpiryMeta(op, accountStore);
         final var resolvedExpiryMeta = context.expiryValidator()
                 .resolveCreationAttempt(false, givenExpiryMeta, HederaFunctionality.TOKEN_CREATE);
 

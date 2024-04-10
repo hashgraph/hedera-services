@@ -354,4 +354,9 @@ public class HapiUtils {
             }
         }
     }
+
+    public static boolean isAlias(@NonNull final AccountID idOrAlias) {
+        requireNonNull(idOrAlias);
+        return !idOrAlias.hasAccountNum() && idOrAlias.hasAlias();
+    }
 }

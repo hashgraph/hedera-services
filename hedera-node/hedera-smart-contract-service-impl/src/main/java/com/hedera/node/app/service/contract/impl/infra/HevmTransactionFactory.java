@@ -37,6 +37,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPriorityId;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthEthTxCreation;
+import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -334,7 +335,11 @@ public class HevmTransactionFactory {
         expiryValidator.resolveCreationAttempt(
                 true,
                 new ExpiryMeta(
-                        NA, autoRenewPeriod, body.hasAutoRenewAccountId() ? body.autoRenewAccountIdOrThrow() : null),
+                        NA,
+                        autoRenewPeriod,
+                        body.hasAutoRenewAccountId()
+                                ? getUnaliasedId(body.autoRenewAccountIdOrThrow(), accountStore)
+                                : null),
                 HederaFunctionality.CONTRACT_CREATE);
     }
 
@@ -362,5 +367,13 @@ public class HevmTransactionFactory {
                 throw new HandleException(ERROR_DECODING_BYTESTRING);
             }
         }
+    }
+
+    public static AccountID getUnaliasedId(
+            @Nullable final AccountID account, @NonNull final ReadableAccountStore accountStore) {
+        if (account != null && isAlias(account)) {
+            return accountStore.getAccountIDByAlias(account.aliasOrThrow());
+        }
+        return account;
     }
 }

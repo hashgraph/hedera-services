@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory.getUnaliasedId;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
@@ -119,8 +120,8 @@ public class ContractUpdateHandler implements TransactionHandler {
 
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var toBeUpdated = accountStore.getContractById(target);
-        validateSemantics(toBeUpdated, context, op, accountStore);
-        final var changed = update(requireNonNull(toBeUpdated), context, op);
+        final var expiryMeta = validateSemantics(toBeUpdated, context, op, accountStore);
+        final var changed = update(requireNonNull(toBeUpdated), context, op, expiryMeta);
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
         context.recordBuilder(ContractUpdateRecordBuilder.class)
                 .contractID(ContractID.newBuilder()
@@ -128,7 +129,7 @@ public class ContractUpdateHandler implements TransactionHandler {
                         .build());
     }
 
-    private void validateSemantics(
+    private ExpiryMeta validateSemantics(
             @Nullable final Account contract,
             @NonNull final HandleContext context,
             @NonNull final ContractUpdateTransactionBody op,
@@ -177,8 +178,8 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var updateMeta = new ExpiryMeta(
                 op.hasExpirationTime() ? op.expirationTime().seconds() : NA,
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
-                null);
-        context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta, false);
+                op.hasAutoRenewAccountId() ? getUnaliasedId(op.autoRenewAccountId(), accountStore) : null);
+        final var updateExpMeta = context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta, false);
 
         context.serviceApi(TokenServiceApi.class)
                 .assertValidStakingElectionForUpdate(
@@ -191,6 +192,7 @@ public class ContractUpdateHandler implements TransactionHandler {
                         op.stakedNodeId(),
                         accountStore,
                         context.networkInfo());
+        return updateExpMeta;
     }
 
     private boolean processAdminKey(ContractUpdateTransactionBody op) {
@@ -231,7 +233,8 @@ public class ContractUpdateHandler implements TransactionHandler {
     public Account update(
             @NonNull final Account contract,
             @NonNull final HandleContext context,
-            @NonNull final ContractUpdateTransactionBody op) {
+            @NonNull final ContractUpdateTransactionBody op,
+            @NonNull final ExpiryMeta expiryMeta) {
         final var builder = contract.copyBuilder();
         if (op.hasAdminKey()) {
             if (EMPTY_KEY_LIST.equals(op.adminKey())) {
@@ -277,7 +280,7 @@ public class ContractUpdateHandler implements TransactionHandler {
             builder.declineReward(op.declineReward());
         }
         if (op.hasAutoRenewAccountId()) {
-            builder.autoRenewAccountId(op.autoRenewAccountId());
+            builder.autoRenewAccountId(expiryMeta.autoRenewAccountId());
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
             builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
