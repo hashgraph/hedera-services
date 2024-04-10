@@ -25,7 +25,6 @@ import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.internal.LoggingSystem;
-import com.swirlds.logging.file.FileHandler;
 import com.swirlds.logging.test.fixtures.internal.LoggingMirrorImpl;
 import com.swirlds.logging.util.LoggingTestUtils;
 import java.io.IOException;
@@ -50,9 +49,8 @@ public class LoggingSystemTest {
         final String fileHandlerName = "file";
         final Configuration configuration = LoggingTestUtils.prepareConfiguration(logFile, fileHandlerName);
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        final FileHandler handler = new FileHandler(fileHandlerName, configuration, true);
         final LoggingMirrorImpl mirror = new LoggingMirrorImpl();
-        loggingSystem.addHandler(handler);
+        loggingSystem.installHandlers();
         loggingSystem.addHandler(mirror);
         // A random log name, so it's easier to combine lines after
         final String loggerName = UUID.randomUUID().toString();

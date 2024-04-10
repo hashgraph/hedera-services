@@ -220,7 +220,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         validateTrue(
                 accountID.shardNum() == hederaConfig.shard() && accountID.realmNum() == hederaConfig.realm(),
                 INVALID_AUTORENEW_ACCOUNT);
-        if (accountID.accountNum() == 0L) {
+        if (accountID.hasAccountNum() && accountID.accountNumOrThrow() == 0L) {
             // 0L is a sentinel number that says to remove the current auto-renew account
             return;
         }
@@ -230,7 +230,6 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
             if (account == null || account.deleted()) {
                 throw new HandleException(INVALID_AUTORENEW_ACCOUNT);
             }
-            validateFalse(account.smartContract(), INVALID_AUTORENEW_ACCOUNT);
         } catch (final InvalidTransactionException e) {
             throw new HandleException(PbjConverter.toPbj(e.getResponseCode()));
         }

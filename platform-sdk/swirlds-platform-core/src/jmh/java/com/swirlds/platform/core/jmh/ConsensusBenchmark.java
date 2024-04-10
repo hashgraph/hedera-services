@@ -22,7 +22,7 @@ import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
-import com.swirlds.platform.test.NoOpConsensusMetrics;
+import com.swirlds.platform.metrics.NoOpConsensusMetrics;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
@@ -71,12 +71,12 @@ public class ConsensusBenchmark {
     public void setup() throws Exception {
         final List<EventSource<?>> eventSources =
                 EventSourceFactory.newStandardEventSources(WeightGenerators.balancedNodeWeights(numNodes));
-        final StandardGraphGenerator generator = new StandardGraphGenerator(seed, eventSources);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final StandardGraphGenerator generator = new StandardGraphGenerator(platformContext, seed, eventSources);
         final StandardEventEmitter emitter = new StandardEventEmitter(generator);
         events = emitter.emitEvents(numEvents);
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         consensus = new ConsensusImpl(
                 platformContext,
                 new NoOpConsensusMetrics(),

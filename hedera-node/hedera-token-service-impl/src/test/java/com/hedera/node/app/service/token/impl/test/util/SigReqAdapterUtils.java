@@ -73,6 +73,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -96,21 +97,30 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
+import com.swirlds.config.api.Configuration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.apache.commons.lang3.NotImplementedException;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
+    private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
+
+    protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
 
     public static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
             new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
@@ -161,7 +171,10 @@ public class SigReqAdapterUtils {
      * @return the well-known token store
      */
     public static WritableTokenStore wellKnownWritableTokenStoreAt() {
-        return new WritableTokenStore(mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())));
+        return new WritableTokenStore(
+                mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())),
+                CONFIGURATION,
+                mock(StoreMetricsService.class));
     }
 
     private static WritableKVState<TokenID, Token> wellKnownTokenState() {
@@ -216,7 +229,10 @@ public class SigReqAdapterUtils {
                         .build());
 
         final var wrappedState = new MapWritableKVState<>(TOKEN_RELS_KEY, destination);
-        return new WritableTokenRelationStore(mockWritableStates(Map.of(TOKEN_RELS_KEY, wrappedState)));
+        return new WritableTokenRelationStore(
+                mockWritableStates(Map.of(TOKEN_RELS_KEY, wrappedState)),
+                CONFIGURATION,
+                mock(StoreMetricsService.class));
     }
 
     public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {
@@ -226,7 +242,9 @@ public class SigReqAdapterUtils {
 
     public static WritableAccountStore wellKnownWritableAccountStoreAt() {
         return new WritableAccountStore(
-                mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())));
+                mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())),
+                CONFIGURATION,
+                mock(StoreMetricsService.class));
     }
 
     private static WritableKVState<AccountID, Account> wrappedAccountState() {
@@ -429,6 +447,8 @@ public class SigReqAdapterUtils {
                 token.isPaused(),
                 token.accountsAreFrozenByDefault(),
                 token.accountsAreFrozenByDefault(),
-                pbjFees);
+                pbjFees,
+                Bytes.wrap(new byte[] {0}),
+                Key.DEFAULT);
     }
 }

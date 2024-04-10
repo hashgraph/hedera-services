@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep.removeFromList;
 import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator.verifyTokenInstanceAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -33,6 +34,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
@@ -141,7 +143,6 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
 
         final long newTotalSupply;
         final long newAccountBalance;
-        final Account.Builder updatedAcctBuilder = acct.copyBuilder();
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             // Validate that there is at least one fungible token to wipe
             validateTrue(fungibleWipeCount >= 0, INVALID_WIPING_AMOUNT);
@@ -173,13 +174,26 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
             newAccountBalance = validated.accountTokenRel().balance() - nftSerialNums.size();
             validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT);
 
-            // Update the NFT count for the account
-            updatedAcctBuilder.numberOwnedNfts(acct.numberOwnedNfts() - nftSerialNums.size());
-
             // Remove the NFTs
-            nftSerialNums.forEach(serialNum -> nftStore.remove(tokenId, serialNum));
+            nftSerialNums.forEach(serialNum -> {
+                if (!accountId.equals(token.treasuryAccountId())) {
+                    removeFromList(
+                            NftID.newBuilder()
+                                    .serialNumber(serialNum)
+                                    .tokenId(tokenId)
+                                    .build(),
+                            nftStore,
+                            acct,
+                            accountStore);
+                }
+                nftStore.remove(tokenId, serialNum);
+            });
         }
 
+        final Account.Builder updatedAcctBuilder =
+                requireNonNull(accountStore.get(accountId)).copyBuilder();
+        // Update the NFT count for the account
+        updatedAcctBuilder.numberOwnedNfts(acct.numberOwnedNfts() - nftSerialNums.size());
         // Finally, record all the changes
         if (newAccountBalance == 0) {
             updatedAcctBuilder.numberPositiveBalances(Math.max(acct.numberPositiveBalances() - 1, 0));

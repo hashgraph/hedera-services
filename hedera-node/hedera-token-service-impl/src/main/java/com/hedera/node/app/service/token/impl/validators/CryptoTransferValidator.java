@@ -73,7 +73,7 @@ public class CryptoTransferValidator {
         // Validate hbar transfers
         for (final AccountAmount acctAmount : acctAmounts) {
             validateTruePreCheck(acctAmount.hasAccountID(), INVALID_ACCOUNT_ID);
-            final var acctId = validateAccountID(acctAmount.accountIDOrThrow());
+            final var acctId = validateAccountID(acctAmount.accountIDOrThrow(), null);
             uniqueAcctIds.add(Pair.of(acctId, acctAmount.isApproval()));
             netBalance += acctAmount.amount();
         }
@@ -143,7 +143,7 @@ public class CryptoTransferValidator {
 
         // Validate that there aren't too many hbar transfers
         final var hbarTransfers = transfers.accountAmountsOrElse(emptyList());
-        validateTrue(hbarTransfers.size() < ledgerConfig.transfersMaxLen(), TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+        validateTrue(hbarTransfers.size() <= ledgerConfig.transfersMaxLen(), TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
         // Validate that allowances are enabled, or that no hbar transfers are an allowance transfer
         final var allowancesEnabled = hederaConfig.allowancesIsEnabled();

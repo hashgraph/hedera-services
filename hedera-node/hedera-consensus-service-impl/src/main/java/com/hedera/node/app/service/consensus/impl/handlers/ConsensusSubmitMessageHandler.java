@@ -31,6 +31,7 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -82,13 +83,15 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var op = context.body().consensusSubmitMessageOrThrow();
         final var topicStore = context.createStore(ReadableTopicStore.class);
         // The topic ID must be present on the transaction and the topic must exist.
+        validateTruePreCheck(op.hasTopicID(), INVALID_TOPIC_ID);
         final var topic = topicStore.getTopic(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);
         validateFalsePreCheck(topic.deleted(), INVALID_TOPIC_ID);
         // If a submit key is specified on the topic, then only those transactions signed by that key can be
         // submitted to the topic. If there is no submit key, then it is not required on the transaction.
-        final var submitKey = topic.submitKey();
-        if (submitKey != null) context.requireKeyOrThrow(submitKey, INVALID_SUBMIT_KEY);
+        if (topic.hasSubmitKey()) {
+            context.requireKeyOrThrow(topic.submitKeyOrThrow(), INVALID_SUBMIT_KEY);
+        }
     }
 
     /**
@@ -106,6 +109,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));
+
         /* Validate all needed fields in the transaction */
         final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);

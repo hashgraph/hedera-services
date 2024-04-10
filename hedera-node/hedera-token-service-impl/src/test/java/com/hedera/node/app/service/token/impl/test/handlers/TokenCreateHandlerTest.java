@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
@@ -83,6 +84,7 @@ import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidat
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -172,7 +174,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
 
         assertThat(tokenRel.balance()).isEqualTo(1000L);
-        assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
         assertThat(tokenRel.kycGranted()).isTrue();
@@ -229,7 +230,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
 
         assertThat(tokenRel.balance()).isEqualTo(1000L);
-        assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
         assertThat(tokenRel.kycGranted()).isTrue();
@@ -242,7 +242,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         final var feeCollectorRel = writableTokenRelStore.get(feeCollectorId, newTokenId);
 
         assertThat(feeCollectorRel.balance()).isZero();
-        assertThat(feeCollectorRel.deleted()).isFalse();
         assertThat(feeCollectorRel.tokenId()).isEqualTo(newTokenId);
         assertThat(feeCollectorRel.accountId()).isEqualTo(feeCollectorId);
         assertThat(feeCollectorRel.kycGranted()).isFalse();
@@ -422,7 +421,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
 
         assertThat(tokenRel.balance()).isZero();
-        assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
         assertThat(tokenRel.kycGranted()).isTrue();
@@ -776,6 +774,29 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenCreateBuilder().withUniqueToken().build();
         assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
     }
+
+    @Test
+    void succeedsWithSupplyMetaDataAndKey() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder()
+                .withMetadataKey(metadataKey)
+                .withMetadata(String.valueOf(metadata))
+                .build();
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+        assertThat(txn.data().value()).toString().contains("test metadata");
+        assertThat(txn.data().value()).hasNoNullFieldsOrProperties();
+    }
+
+    @Test
+    void failsForInvalidMetaDataKey() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withMetadataKey(Key.DEFAULT).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_METADATA_KEY));
+    }
+
     /* --------------------------------- Helpers */
     /**
      * A builder for {@link com.hedera.hapi.node.transaction.TransactionBody} instances.
@@ -793,6 +814,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         private Key supplyKey = A_COMPLEX_KEY;
         private Key feeScheduleKey = A_COMPLEX_KEY;
         private Key pauseKey = A_COMPLEX_KEY;
+        private Key metadataKey = A_COMPLEX_KEY;
+        private String metadata = "test metadata";
         private Timestamp expiry = Timestamp.newBuilder().seconds(1234600L).build();
         private AccountID autoRenewAccount = autoRenewAccountId;
         private long autoRenewPeriod = autoRenewSecs;
@@ -828,7 +851,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                     .memo(memo)
                     .maxSupply(maxSupply)
                     .supplyType(supplyType)
-                    .customFees(customFees);
+                    .customFees(customFees)
+                    .metadataKey(metadataKey)
+                    .metadata(Bytes.wrap(metadata));
             if (autoRenewPeriod > 0) {
                 createTxnBody.autoRenewPeriod(
                         Duration.newBuilder().seconds(autoRenewPeriod).build());
@@ -949,6 +974,16 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
         public TokenCreateBuilder withFreezeDefault() {
             this.freezeDefault = true;
+            return this;
+        }
+
+        public TokenCreateBuilder withMetadata(final String s) {
+            this.metadata = s;
+            return this;
+        }
+
+        public TokenCreateBuilder withMetadataKey(final Key k) {
+            this.metadataKey = k;
             return this;
         }
     }

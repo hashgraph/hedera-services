@@ -99,6 +99,7 @@ import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestSuite(fuzzyMatch = true)
@@ -107,6 +108,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(LazyCreateThroughPrecompileSuite.class);
     private static final long GAS_TO_OFFER = 4_000_000L;
+    private static final long GAS_PRICE = 71L;
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     private static final String MULTI_KEY = "purpose";
@@ -200,17 +202,23 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 IntStream.range(0, n)
                                         .mapToObj(i -> ByteString.copyFromUtf8(ONE_TIME + i))
                                         .toList()))
-                .when(sourcing(() -> contractCall(
-                                AUTO_CREATION_MODES,
-                                "createSeveralDirectly",
-                                headlongFromHexed(nftMirrorAddr.get()),
-                                nCopiesOfSender(n, mirrorAddrWith(civilianId.get())),
-                                nNonMirrorAddressFrom(n, civilianId.get() + 3_050_000),
-                                LongStream.iterate(1L, l -> l + 1).limit(n).toArray())
-                        .via(creationAttempt)
-                        .gas(GAS_TO_OFFER)
-                        .alsoSigningWithFullPrefix(CIVILIAN)
-                        .hasKnownStatusFrom(MAX_CHILD_RECORDS_EXCEEDED, CONTRACT_REVERT_EXECUTED)))
+                .when(
+                        cryptoApproveAllowance()
+                                .payingWith(CIVILIAN)
+                                .addNftAllowance(CIVILIAN, nft, AUTO_CREATION_MODES, true, List.of()),
+                        sourcing(() -> contractCall(
+                                        AUTO_CREATION_MODES,
+                                        "createSeveralDirectly",
+                                        headlongFromHexed(nftMirrorAddr.get()),
+                                        nCopiesOfSender(n, mirrorAddrWith(civilianId.get())),
+                                        nNonMirrorAddressFrom(n, civilianId.get() + 3_050_000),
+                                        LongStream.iterate(1L, l -> l + 1)
+                                                .limit(n)
+                                                .toArray())
+                                .via(creationAttempt)
+                                .gas(GAS_TO_OFFER)
+                                .alsoSigningWithFullPrefix(CIVILIAN)
+                                .hasKnownStatusFrom(MAX_CHILD_RECORDS_EXCEEDED, CONTRACT_REVERT_EXECUTED)))
                 .then(
                         // mono-service did not do an "orderly shutdown" of the EVM transaction when it hit
                         // a resource limit exception like MAX_CHILD_RECORDS_EXCEEDED, instead throwing an
@@ -257,17 +265,21 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(
                                         idLit -> nftMirrorAddr.set(asHexedSolidityAddress(asToken(idLit)))),
                         mintToken(nft, List.of(ByteString.copyFromUtf8(ONE_TIME))))
-                .when(sourcing(() -> contractCall(
-                                AUTO_CREATION_MODES,
-                                CREATE_DIRECTLY,
-                                headlongFromHexed(nftMirrorAddr.get()),
-                                mirrorAddrWith(civilianId.get()),
-                                mirrorAddrWith(civilianId.get() + 1_000_001),
-                                1L,
-                                false)
-                        .via(creationAttempt)
-                        .gas(GAS_TO_OFFER)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .when(
+                        cryptoApproveAllowance()
+                                .payingWith(CIVILIAN)
+                                .addNftAllowance(CIVILIAN, nft, AUTO_CREATION_MODES, true, List.of()),
+                        sourcing(() -> contractCall(
+                                        AUTO_CREATION_MODES,
+                                        CREATE_DIRECTLY,
+                                        headlongFromHexed(nftMirrorAddr.get()),
+                                        mirrorAddrWith(civilianId.get()),
+                                        mirrorAddrWith(civilianId.get() + 1_000_001),
+                                        1L,
+                                        false)
+                                .via(creationAttempt)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .then(childRecordsCheck(
                         creationAttempt, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ALIAS_KEY)));
     }
@@ -324,7 +336,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             HapiParserUtil.asHeadlongAddress(addressBytes),
                                             BigInteger.valueOf(2))
                                     .via(TRANSFER_TXN)
-                                    .gas(GAS_TO_OFFER)
+                                    .gas(780_000L)
                                     .hasKnownStatus(SUCCESS),
                             getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
@@ -343,7 +355,13 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     TRANSFER_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
-                                    recordWith().status(SUCCESS)));
+                                    recordWith().status(SUCCESS)),
+                            getTxnRecord(TRANSFER_TXN).exposingTo(record -> {
+                                Assertions.assertEquals(
+                                        GAS_PRICE,
+                                        record.getTransactionFee()
+                                                / record.getContractCallResult().getGasUsed());
+                            }));
                 }))
                 .then();
     }
@@ -429,7 +447,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     asAddress(spec.registry().getAccountID(OWNER))),
                                             HapiParserUtil.asHeadlongAddress(addressBytes),
                                             BigInteger.TWO)
-                                    .gas(4_000_000)
+                                    .gas(780_000L)
                                     .via(TRANSFER_FROM_ACCOUNT_TXN)
                                     .hasKnownStatus(SUCCESS),
                             getAliasedAccountInfo(ECDSA_KEY)
@@ -453,7 +471,13 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     TRANSFER_FROM_ACCOUNT_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
-                                    recordWith().status(SUCCESS)));
+                                    recordWith().status(SUCCESS)),
+                            getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).exposingTo(record -> {
+                                Assertions.assertEquals(
+                                        GAS_PRICE,
+                                        record.getTransactionFee()
+                                                / record.getContractCallResult().getGasUsed());
+                            }));
                 }))
                 .then();
     }
@@ -523,7 +547,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             HapiParserUtil.asHeadlongAddress(addressBytes),
                                             BigInteger.valueOf(1))
                                     .via(TRANSFER_FROM_ACCOUNT_TXN)
-                                    .gas(GAS_TO_OFFER)
+                                    .gas(780_000L)
                                     .hasKnownStatus(SUCCESS),
                             getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
@@ -542,7 +566,13 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     TRANSFER_FROM_ACCOUNT_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
-                                    recordWith().status(SUCCESS)));
+                                    recordWith().status(SUCCESS)),
+                            getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).exposingTo(record -> {
+                                Assertions.assertEquals(
+                                        GAS_PRICE,
+                                        record.getTransactionFee()
+                                                / record.getContractCallResult().getGasUsed());
+                            }));
                 }))
                 .then();
     }

@@ -24,7 +24,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
@@ -147,12 +146,5 @@ public class StandardizedAttributeValidator implements AttributeValidator {
             }
         }
         return false;
-    }
-
-    @Override
-    public boolean isImmutableKey(@NonNull Key key) {
-        requireNonNull(key);
-        return key.hasKeyList()
-                && requireNonNull(key.keyList()).keysOrElse(emptyList()).isEmpty();
     }
 }

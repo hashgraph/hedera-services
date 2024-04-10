@@ -19,7 +19,7 @@ package com.swirlds.platform.recovery;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
@@ -41,6 +41,7 @@ import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
@@ -407,7 +408,12 @@ public final class EventRecoveryWorkflow {
         }
 
         final ReservedSignedState signedState = new SignedState(
-                        platformContext, newState, "EventRecoveryWorkflow.handleNextRound()", isFreezeState)
+                        platformContext,
+                        CryptoStatic::verifySignature,
+                        newState,
+                        "EventRecoveryWorkflow.handleNextRound()",
+                        isFreezeState,
+                        false)
                 .reserve("recovery");
         previousState.close();
 

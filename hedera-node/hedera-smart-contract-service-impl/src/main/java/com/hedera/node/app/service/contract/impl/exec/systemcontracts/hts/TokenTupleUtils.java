@@ -65,7 +65,7 @@ public class TokenTupleUtils {
         return Tuple.of(
                 token.expirationSecond(),
                 headlongAddressOf(token.autoRenewAccountIdOrElse(ZERO_ACCOUNT_ID)),
-                token.autoRenewSeconds());
+                Math.max(0, token.autoRenewSeconds()));
     }
 
     /**
@@ -259,7 +259,7 @@ public class TokenTupleUtils {
         requireNonNull(accountId);
         return (ZERO_ACCOUNT_ID == accountId)
                 ? ZERO_ADDRESS
-                : headlongAddressOf(requireNonNull(nativeOperations.getAccount(accountId.accountNumOrThrow())));
+                : headlongAddressOf(requireNonNull(nativeOperations.getAccount(accountId)));
     }
 
     /**

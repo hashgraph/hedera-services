@@ -27,6 +27,7 @@ import com.hedera.node.app.throttle.annotations.GasThrottleMultiplier;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FeesConfig;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.Platform;
 import dagger.Binds;
 import dagger.Module;
@@ -47,15 +48,19 @@ public interface ThrottleServiceModule {
     @Provides
     @Singleton
     @BackendThrottle
-    static ThrottleAccumulator provideBackendThrottleAccumulator(ConfigProvider configProvider) {
-        return new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
+    static ThrottleAccumulator provideBackendThrottleAccumulator(ConfigProvider configProvider, Metrics metrics) {
+        final var throttleMetrics = new ThrottleMetrics(metrics, BACKEND_THROTTLE);
+        return new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE, throttleMetrics);
     }
 
     @Provides
     @Singleton
     @IngestThrottle
-    static ThrottleAccumulator provideIngestThrottleAccumulator(Platform platform, ConfigProvider configProvider) {
-        return new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
+    static ThrottleAccumulator provideIngestThrottleAccumulator(
+            Platform platform, ConfigProvider configProvider, Metrics metrics) {
+        final var throttleMetrics = new ThrottleMetrics(metrics, FRONTEND_THROTTLE);
+        return new ThrottleAccumulator(
+                () -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE, throttleMetrics);
     }
 
     @Provides

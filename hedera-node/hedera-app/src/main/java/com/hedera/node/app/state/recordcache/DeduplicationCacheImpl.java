@@ -48,7 +48,8 @@ public final class DeduplicationCacheImpl implements DeduplicationCache {
     private final Set<TransactionID> submittedTxns = new ConcurrentSkipListSet<>(
             Comparator.comparing(TransactionID::transactionValidStartOrThrow, TIMESTAMP_COMPARATOR)
                     .thenComparing(TransactionID::accountID, ACCOUNT_ID_COMPARATOR)
-                    .thenComparing(TransactionID::scheduled));
+                    .thenComparing(TransactionID::scheduled)
+                    .thenComparing(TransactionID::nonce));
 
     /** Used for looking up the max transaction duration window. */
     private final ConfigProvider configProvider;

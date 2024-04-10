@@ -248,12 +248,47 @@ public class CryptoTransferSuite extends HapiSuite {
                 canUseAliasAndAccountCombinations(),
                 testTransferToSystemAccounts(),
                 testTransferToSystemAccountsAndCheckSenderBalance(),
-                transferInvalidTokenIdWithDecimals());
+                transferInvalidTokenIdWithDecimals(),
+                insufficientBalanceForCustomFeeFails());
     }
 
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    @HapiTest
+    public HapiSpec insufficientBalanceForCustomFeeFails() {
+        final var operatorKey = "operatorKey";
+        final var accountId1Key = "accountId1Key";
+        final var accountId2Key = "accountId2Key";
+        final var operator = "operator";
+        final var accountId1 = "accountId1";
+        final var accountId2 = "accountId2";
+        final var tokenId = "tokenId";
+        return defaultHapiSpec("insufficientBalanceForFee", FULLY_NONDETERMINISTIC)
+                .given(
+                        newKeyNamed(operatorKey),
+                        newKeyNamed(accountId1Key),
+                        newKeyNamed(accountId2Key),
+                        cryptoCreate(accountId1).balance(2 * ONE_HBAR).key(accountId1Key),
+                        cryptoCreate(accountId2).balance(2 * ONE_HBAR).key(accountId2Key),
+                        cryptoCreate(operator).balance(0L).key(operatorKey),
+                        tokenCreate(tokenId)
+                                .name("ffff")
+                                .treasury(operator)
+                                .adminKey(operatorKey)
+                                .feeScheduleKey(operatorKey)
+                                .symbol("F")
+                                .initialSupply(1)
+                                .withCustom(fixedHbarFee(5000_000_000L, "operator"))
+                                .initialSupply(1)
+                                .decimals(0),
+                        tokenAssociate(accountId1, tokenId),
+                        tokenAssociate(accountId2, tokenId))
+                .when(cryptoTransfer(moving(1L, tokenId).between(operator, accountId1)))
+                .then(cryptoTransfer(moving(1L, tokenId).between(accountId1, accountId2))
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
     @HapiTest

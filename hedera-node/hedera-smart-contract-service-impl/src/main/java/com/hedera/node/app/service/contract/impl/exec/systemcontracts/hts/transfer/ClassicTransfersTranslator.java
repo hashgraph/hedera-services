@@ -81,7 +81,13 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 selector,
-                attempt.senderId(),
+                // This is the only place we don't use the EVM sender id, because
+                // we need to switch debits to approvals based on whether the
+                // mono-service would have activated a key; and its key activation
+                // test would use the qualified delegate id if applicable
+                // test would use the qualified delegate id if applicable.
+                // Only certain functions support qualified delegates, so restrict to those.
+                isClassicCallSupportingQualifiedDelegate(selector) ? attempt.authorizingId() : attempt.senderId(),
                 decoder.checkForFailureStatus(attempt),
                 nominalBodyFor(attempt),
                 attempt.configuration(),
@@ -116,6 +122,13 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
         return Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKENS.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFTS.selector())
+                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFT.selector());
+    }
+
+    private boolean isClassicCallSupportingQualifiedDelegate(@NonNull final byte[] selector) {
+        return Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKENS.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFTS.selector())
                 || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFT.selector());

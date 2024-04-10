@@ -109,14 +109,12 @@ public class EthereumTransactionHandler implements TransactionHandler {
         // Create the transaction-scoped component
         final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
 
-        // Assemble the appropriate top-level record for the result
-        final var ethTxData =
-                requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
-
         // Run its in-scope transaction and get the outcome
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
+        final var ethTxData =
+                requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
         context.recordBuilder(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
@@ -151,6 +149,11 @@ public class EthereumTransactionHandler implements TransactionHandler {
         validateTruePreCheck(hydratedTx.status() == OK, hydratedTx.status());
         final var ethTxData = hydratedTx.ethTxData();
         validateTruePreCheck(ethTxData != null, INVALID_ETHEREUM_TRANSACTION);
-        return ethereumSignatures.computeIfAbsent(ethTxData);
+        try {
+            return ethereumSignatures.computeIfAbsent(ethTxData);
+        } catch (RuntimeException ignore) {
+            // Ignore and translate any signature computation exception
+            throw new PreCheckException(INVALID_ETHEREUM_TRANSACTION);
+        }
     }
 }

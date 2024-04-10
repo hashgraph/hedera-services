@@ -16,8 +16,6 @@
 
 package com.swirlds.common.test.fixtures.platform;
 
-import static com.swirlds.common.config.ConfigUtils.scanAndRegisterAllConfigTypes;
-
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -37,7 +35,7 @@ public final class TestPlatformContextBuilder {
 
     private static final Metrics defaultMetrics = new NoOpMetrics();
     private static final Configuration defaultConfig =
-            scanAndRegisterAllConfigTypes(ConfigurationBuilder.create()).build();
+            ConfigurationBuilder.create().autoDiscoverExtensions().build();
     private static final Cryptography defaultCryptography = CryptographyHolder.get();
 
     private Configuration configuration;
