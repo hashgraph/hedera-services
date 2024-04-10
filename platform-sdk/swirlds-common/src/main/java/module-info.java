@@ -141,6 +141,7 @@ module com.swirlds.common {
             com.swirlds.platform.gui;
     exports com.swirlds.common.startup;
     exports com.swirlds.common.threading.atomic;
+    exports com.swirlds.common.wiring.model.diagram;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;

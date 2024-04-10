@@ -36,6 +36,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -44,10 +45,12 @@ import java.util.function.Function;
  */
 public class MerkleBenchmarkUtils {
 
-    public static MerkleInternal createTreeForMap(final VirtualMap<BenchmarkKey, BenchmarkValue> map) {
+    public static MerkleInternal createTreeForMaps(final List<VirtualMap<BenchmarkKey, BenchmarkValue>> maps) {
         final BenchmarkMerkleInternal tree = new BenchmarkMerkleInternal("root");
         initializeTreeAfterCopy(tree);
-        tree.setChild(0, map);
+        for (int i = 0; i < maps.size(); i++) {
+            tree.setChild(i, maps.get(i));
+        }
         tree.reserve();
         return tree;
     }
