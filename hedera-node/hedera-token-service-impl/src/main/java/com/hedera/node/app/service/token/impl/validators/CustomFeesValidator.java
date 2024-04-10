@@ -152,11 +152,7 @@ public class CustomFeesValidator {
                     validateTrue(fixedFeeAmount > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
                     if (fixedFee.hasDenominatingTokenId()) {
                         validateExplicitTokenDenomination(
-                                collectorId,
-                                fixedFee.denominatingTokenIdOrThrow(),
-                                tokenRelationStore,
-                                tokenStore,
-                                accountStore);
+                                collectorId, fixedFee.denominatingTokenIdOrThrow(), tokenRelationStore, tokenStore);
                     }
                 }
                 case FRACTIONAL_FEE -> // fractional fee can be only applied to fungible common tokens
@@ -174,8 +170,7 @@ public class CustomFeesValidator {
                                 .tokenNum();
                         final var tokenId =
                                 TokenID.newBuilder().tokenNum(tokenNum).build();
-                        validateExplicitTokenDenomination(
-                                collectorId, tokenId, tokenRelationStore, tokenStore, accountStore);
+                        validateExplicitTokenDenomination(collectorId, tokenId, tokenRelationStore, tokenStore);
                     }
                 }
                 default -> throw new HandleException(CUSTOM_FEE_NOT_FULLY_SPECIFIED);
@@ -194,13 +189,12 @@ public class CustomFeesValidator {
             @NonNull final AccountID feeCollectorNum,
             @NonNull final TokenID tokenNum,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
-            @NonNull final WritableTokenStore tokenStore,
-            @NonNull final ReadableAccountStore accountStore) {
+            @NonNull final WritableTokenStore tokenStore) {
         final var denomToken = tokenStore.get(tokenNum);
         validateTrue(denomToken != null, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
         validateFalse(denomToken.paused(), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
         validateTrue(isFungibleCommon(denomToken.tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-        getIfUsable(feeCollectorNum, tokenNum, tokenRelationStore, accountStore);
+        getIfUsable(feeCollectorNum, tokenNum, tokenRelationStore);
     }
 
     /**
@@ -248,8 +242,7 @@ public class CustomFeesValidator {
                         fee.feeCollectorAccountIdOrThrow(),
                         fixedFee.denominatingTokenIdOrThrow(),
                         tokenRelationStore,
-                        tokenStore,
-                        accountStore);
+                        tokenStore);
             }
         }
     }
@@ -282,11 +275,7 @@ public class CustomFeesValidator {
                 final var denominatingTokenId = fallbackFee.denominatingTokenIdOrThrow();
                 validateTrue(denominatingTokenId.tokenNum() != 0, CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
                 validateExplicitTokenDenomination(
-                        fee.feeCollectorAccountIdOrThrow(),
-                        denominatingTokenId,
-                        tokenRelationStore,
-                        tokenStore,
-                        accountStore);
+                        fee.feeCollectorAccountIdOrThrow(), denominatingTokenId, tokenRelationStore, tokenStore);
             }
         }
     }
@@ -301,7 +290,7 @@ public class CustomFeesValidator {
         // fractional fee can be only applied to fungible common tokens
         validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
         final var tokenId = token.tokenIdOrThrow();
-        getIfUsable(collectorId, tokenId, tokenRelationStore, accountStore);
+        getIfUsable(collectorId, tokenId, tokenRelationStore);
         validateFractionalFee(fee);
     }
 

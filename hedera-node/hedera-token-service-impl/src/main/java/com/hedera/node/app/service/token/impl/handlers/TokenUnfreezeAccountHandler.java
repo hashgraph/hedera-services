@@ -138,7 +138,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
         // Check that the token is associated to the account
-        return TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore, accountStore, PERMIT_FROZEN);
+        return TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore, PERMIT_FROZEN);
     }
 
     @NonNull

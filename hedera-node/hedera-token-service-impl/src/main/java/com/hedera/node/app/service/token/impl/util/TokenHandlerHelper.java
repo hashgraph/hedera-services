@@ -209,32 +209,25 @@ public class TokenHandlerHelper {
      * @param accountId     the ID of the account
      * @param tokenId       the ID of the token
      * @param tokenRelStore the {@link ReadableTokenRelationStore} to use for token relation retrieval
-     * @param accountStore
      * @throws HandleException if any of the token relation conditions are not met
      */
     @NonNull
     public static TokenRelation getIfUsable(
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
-            @NonNull final ReadableTokenRelationStore tokenRelStore,
-            @NonNull final ReadableAccountStore accountStore) {
-        return getIfUsable(accountId, tokenId, tokenRelStore, accountStore, REQUIRE_NOT_FROZEN);
+            @NonNull final ReadableTokenRelationStore tokenRelStore) {
+        return getIfUsable(accountId, tokenId, tokenRelStore, REQUIRE_NOT_FROZEN);
     }
 
     public static TokenRelation getIfUsable(
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
-            @NonNull final ReadableAccountStore accountStore,
             @Nullable final TokenValidations validations) {
         requireNonNull(accountId);
         requireNonNull(tokenId);
         requireNonNull(tokenRelStore);
-        var aliasedId = accountId;
-        if (accountId.hasAlias() && !accountId.hasAccountNum()) {
-            aliasedId = accountStore.getAccountIDByAlias(accountId.aliasOrThrow());
-        }
-        final var tokenRel = tokenRelStore.get(aliasedId, tokenId);
+        final var tokenRel = tokenRelStore.get(accountId, tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
         if (validations == TokenValidations.REQUIRE_NOT_FROZEN) {
             validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);

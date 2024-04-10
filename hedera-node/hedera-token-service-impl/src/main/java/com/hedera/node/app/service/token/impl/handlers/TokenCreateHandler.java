@@ -196,8 +196,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var treasury = accountStore.get(newToken.treasuryAccountId());
         // Validate if token relation can be created between treasury and new token
         // If this succeeds, create and link token relation.
-        tokenCreateValidator.validateAssociation(
-                entitiesConfig, tokensConfig, treasury, newToken, tokenRelStore, accountStore);
+        tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, treasury, newToken, tokenRelStore);
         createAndLinkTokenRels(treasury, List.of(newToken), accountStore, tokenRelStore);
         recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newToken.tokenId(), treasury.accountId()));
 
@@ -216,8 +215,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
             // Validate if token relation can be created between collector and new token
             // If this succeeds, create and link token relation.
-            tokenCreateValidator.validateAssociation(
-                    entitiesConfig, tokensConfig, collector, newToken, tokenRelStore, accountStore);
+            tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
             createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
             recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newToken.tokenId(), collector.accountId()));
         }
@@ -238,7 +236,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 op.name(),
                 op.symbol(),
                 op.decimals(),
-                0, // is this correct ?
+                0, // mintFungible will set this to initial supply
                 op.treasury(),
                 op.adminKey(),
                 op.kycKey(),

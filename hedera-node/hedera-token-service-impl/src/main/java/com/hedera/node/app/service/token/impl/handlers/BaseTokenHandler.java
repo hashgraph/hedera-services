@@ -308,7 +308,7 @@ public class BaseTokenHandler {
         final var accountId = account.accountIdOrThrow();
         final var tokenId = token.tokenIdOrThrow();
         // If token is already associated, no need to associate again
-        TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore, accountStore);
+        TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
         validateTrue(
                 tokenRelStore.sizeOfState() + 1 < tokensConfig.maxAggregateRels(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);

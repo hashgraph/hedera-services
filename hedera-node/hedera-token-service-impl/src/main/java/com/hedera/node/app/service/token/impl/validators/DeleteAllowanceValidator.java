@@ -117,7 +117,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
 
             final var effectiveOwner = getEffectiveOwner(ownerId, payerAccount, accountStore, expiryValidator);
 
-            getIfUsable(effectiveOwner.accountIdOrThrow(), token.tokenIdOrThrow(), tokenRelStore, accountStore);
+            getIfUsable(effectiveOwner.accountIdOrThrow(), token.tokenIdOrThrow(), tokenRelStore);
             validateDeleteSerialNums(serialNums, tokenId, nftStore);
         }
     }

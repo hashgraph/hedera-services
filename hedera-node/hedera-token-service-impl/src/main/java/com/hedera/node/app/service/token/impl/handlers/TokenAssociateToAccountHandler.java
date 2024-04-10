@@ -152,7 +152,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
 
         // Check that a token rel doesn't already exist for each new token ID
         for (final TokenID tokenId : tokenIds) {
-            getIfUsable(accountId, tokenId, tokenRelStore, accountStore);
+            getIfUsable(accountId, tokenId, tokenRelStore);
         }
 
         return new Validated(account, tokens);

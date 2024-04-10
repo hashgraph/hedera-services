@@ -136,7 +136,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         final var account =
                 TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
-        final var tokenRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore, accountStore);
+        final var tokenRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
 
         // Validate token is not paused or deleted
         TokenHandlerHelper.getIfUsable(tokenId, tokenStore);

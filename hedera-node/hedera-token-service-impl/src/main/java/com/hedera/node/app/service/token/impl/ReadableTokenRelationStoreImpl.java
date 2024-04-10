@@ -16,12 +16,15 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.token.AliasUtils.isAlias;
+import static com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.getIdFromAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -37,6 +40,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStore {
     /** The underlying data storage class that holds the token data. */
     private final ReadableKVState<EntityIDPair, TokenRelation> readableTokenRelState;
+    /**
+     * The underlying data storage class that holds the aliases data.
+     */
+    private final ReadableKVState<ProtoBytes, AccountID> readableAliasesState;
 
     /**
      * Create a new {@link ReadableTokenRelationStoreImpl} instance.
@@ -45,6 +52,7 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
      */
     public ReadableTokenRelationStoreImpl(@NonNull final ReadableStates states) {
         this.readableTokenRelState = requireNonNull(states).get(TokenServiceImpl.TOKEN_RELS_KEY);
+        this.readableAliasesState = requireNonNull(states).get(TokenServiceImpl.ALIASES_KEY);
     }
 
     /**
@@ -57,8 +65,15 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
         requireNonNull(tokenId);
 
         if (!hasAccountNumOrAlias(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
-        return readableTokenRelState.get(
-                EntityIDPair.newBuilder().accountId(accountId).tokenId(tokenId).build());
+        // If the accountId specified is aliased, we need to convert it to a number-based account ID first.
+        AccountID unaliasedId = accountId;
+        if (isAlias(accountId)) {
+            unaliasedId = getIdFromAlias(accountId, accountId.alias(), readableAliasesState);
+        }
+        return readableTokenRelState.get(EntityIDPair.newBuilder()
+                .accountId(unaliasedId)
+                .tokenId(tokenId)
+                .build());
     }
 
     /**

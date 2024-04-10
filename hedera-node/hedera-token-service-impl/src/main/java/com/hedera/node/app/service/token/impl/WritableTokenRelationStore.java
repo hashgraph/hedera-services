@@ -16,16 +16,21 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.token.AliasUtils.isAlias;
+import static com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.getIdFromAlias;
 import static com.hedera.node.app.service.token.impl.WritableAccountStore.requireNotDefault;
 import static com.hedera.node.app.service.token.impl.WritableTokenStore.requireNotDefault;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.data.TokensConfig;
@@ -45,6 +50,10 @@ import java.util.Set;
 public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     /** The underlying data storage class that holds the token data. */
     private final WritableKVState<EntityIDPair, TokenRelation> tokenRelState;
+    /**
+     * The underlying data storage class that holds the account data.
+     */
+    private final ReadableKVState<ProtoBytes, AccountID> aliasesState;
 
     /**
      * Create a new {@link WritableTokenRelationStore} instance.
@@ -59,6 +68,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
             @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
         this.tokenRelState = requireNonNull(states).get(TokenServiceImpl.TOKEN_RELS_KEY);
+        this.aliasesState = requireNonNull(states).get(TokenServiceImpl.ALIASES_KEY);
 
         final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxAggregateRels();
         final var storeMetrics = storeMetricsService.get(StoreType.TOKEN_RELATION, maxCapacity);
@@ -105,10 +115,16 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
         requireNonNull(accountId);
         requireNonNull(tokenId);
 
-        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
-
-        return tokenRelState.getForModify(
-                EntityIDPair.newBuilder().accountId(accountId).tokenId(tokenId).build());
+        if (!hasAccountNumOrAlias(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
+        // If the accountId specified is aliased, we need to convert it to a number-based account ID first.
+        AccountID unaliasedId = accountId;
+        if (isAlias(accountId)) {
+            unaliasedId = getIdFromAlias(accountId, accountId.alias(), aliasesState);
+        }
+        return tokenRelState.getForModify(EntityIDPair.newBuilder()
+                .accountId(unaliasedId)
+                .tokenId(tokenId)
+                .build());
     }
 
     /**

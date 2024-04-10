@@ -109,7 +109,7 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                     // priority relative to other failure responses that would be assigned in a later step
                     // if we didn't fail here
                     final var accountId = entryTx.getKey();
-                    final var tokenRel = getIfUsable(accountId, entry.getKey(), tokenRelStore, accountStore);
+                    final var tokenRel = getIfUsable(accountId, entry.getKey(), tokenRelStore);
                     final var precedingChanges =
                             result.getImmutableInputTokenAdjustments().get(entry.getKey());
                     final var precedingAdjustment =

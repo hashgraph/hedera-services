@@ -142,7 +142,9 @@ public class TokenAssociationSpecs extends HapiSuite {
         return defaultHapiSpec("HandlesUseOfDefaultTokenId", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given()
                 .when()
-                .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
+                .then(tokenAssociate(DEFAULT_PAYER, "0.0.0")
+                        .hasPrecheck(INVALID_TOKEN_ID)
+                        .hasKnownStatus(INVALID_TOKEN_ID));
     }
 
     @HapiTest

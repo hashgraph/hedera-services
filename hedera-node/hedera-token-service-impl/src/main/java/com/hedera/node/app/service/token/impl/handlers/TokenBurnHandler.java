@@ -196,7 +196,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
 
         final var treasuryAcctId = token.treasuryAccountId();
-        final var treasuryRel = TokenHandlerHelper.getIfUsable(treasuryAcctId, tokenId, tokenRelStore, accountStore);
+        final var treasuryRel = TokenHandlerHelper.getIfUsable(treasuryAcctId, tokenId, tokenRelStore);
         return new ValidationResult(token, treasuryRel);
     }
 

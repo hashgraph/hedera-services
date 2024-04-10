@@ -235,7 +235,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
                 token.tokenType() != TokenType.FUNGIBLE_COMMON
                         && owner.accountIdOrThrow().equals(spender),
                 SPENDER_ACCOUNT_SAME_AS_OWNER);
-        getIfUsable(ownerId, tokenId, tokenRelStore, accountStore);
+        getIfUsable(ownerId, tokenId, tokenRelStore);
     }
 
     /**

@@ -232,7 +232,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         final var dissociations = new ArrayList<Dissociation>();
         for (final var tokenId : tokenIds) {
             validateTrue(tokenId.tokenNum() > 0, INVALID_TOKEN_ID);
-            final var tokenRel = getIfUsable(accountId, tokenId, tokenRelStore, accountStore);
+            final var tokenRel = getIfUsable(accountId, tokenId, tokenRelStore);
 
             // Here we check/retrieve a token that may not be "usable," but since we are dissociating token relations,
             // we don't require a usable token (or even an existing token). We only need to update the token relation
@@ -245,7 +245,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 // the dissociated balance to the treasury
                 if (!possiblyUnusableToken.deleted() && possiblyUnusableToken.treasuryAccountId() != null) {
                     final var tokenTreasuryAcct = possiblyUnusableToken.treasuryAccountId();
-                    dissociatedTokenTreasuryRel = getIfUsable(tokenTreasuryAcct, tokenId, tokenRelStore, accountStore);
+                    dissociatedTokenTreasuryRel = getIfUsable(tokenTreasuryAcct, tokenId, tokenRelStore);
                 } else {
                     dissociatedTokenTreasuryRel = null;
                 }
