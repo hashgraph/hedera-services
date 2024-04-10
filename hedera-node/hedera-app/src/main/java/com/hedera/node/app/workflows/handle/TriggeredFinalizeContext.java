@@ -41,7 +41,7 @@ public class TriggeredFinalizeContext extends ChildFinalizeContextImpl implement
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final Instant consensusNow,
             @NonNull final Configuration configuration) {
-        super(readableStoreFactory, writableStoreFactory, recordBuilder);
+        super(configuration, readableStoreFactory, writableStoreFactory, recordBuilder);
         this.consensusNow = Objects.requireNonNull(consensusNow);
         this.configuration = Objects.requireNonNull(configuration);
     }

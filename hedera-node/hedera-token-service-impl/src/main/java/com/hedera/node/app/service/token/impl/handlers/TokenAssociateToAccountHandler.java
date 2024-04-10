@@ -35,7 +35,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -71,7 +71,6 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenAssociateOrThrow();
-        pureChecks(op);
 
         final var target = op.accountOrElse(AccountID.DEFAULT);
         context.requireKeyOrThrow(target, INVALID_ACCOUNT_ID);
@@ -98,7 +97,10 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     /**
      * Performs checks independent of state or context
      */
-    private void pureChecks(@NonNull final TokenAssociateTransactionBody op) throws PreCheckException {
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var op = txn.tokenAssociateOrThrow();
+
         if (!op.hasAccount()) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
         }

@@ -412,7 +412,8 @@ public final class EventRecoveryWorkflow {
                         CryptoStatic::verifySignature,
                         newState,
                         "EventRecoveryWorkflow.handleNextRound()",
-                        isFreezeState)
+                        isFreezeState,
+                        false)
                 .reserve("recovery");
         previousState.close();
 
