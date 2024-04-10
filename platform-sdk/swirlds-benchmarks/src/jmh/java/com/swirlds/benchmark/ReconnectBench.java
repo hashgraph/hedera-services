@@ -24,6 +24,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,6 +49,10 @@ public class ReconnectBench extends VirtualMapBaseBench {
     /** A random seed for the StateBuilder. */
     @Param({"9823452658"})
     public long randomSeed;
+
+    /** Number of virtual maps in the merkle tree to reconnect. */
+    @Param({"1"})
+    public int mapCount = 1;
 
     /** The probability of the teacher map having an extra node. */
     @Param({"0.05"})
@@ -92,12 +97,15 @@ public class ReconnectBench extends VirtualMapBaseBench {
     @Param({"0.15"})
     public double delayNetworkFuzzRangePercent;
 
-    private VirtualMap<BenchmarkKey, BenchmarkValue> teacherMap;
-    private VirtualMap<BenchmarkKey, BenchmarkValue> learnerMap;
+    private List<VirtualMap<BenchmarkKey, BenchmarkValue>> teacherMaps;
+    private List<VirtualMap<BenchmarkKey, BenchmarkValue>> learnerMaps;
+
     private MerkleInternal teacherTree;
-    private VirtualMap<BenchmarkKey, BenchmarkValue> copy;
+    private List<VirtualMap<BenchmarkKey, BenchmarkValue>> teacherMapCopies;
+
     private MerkleInternal learnerTree;
-    private MerkleNode node;
+
+    private MerkleNode reconnectedTree;
 
     String benchmarkName() {
         return "ReconnectBench";
@@ -129,34 +137,41 @@ public class ReconnectBench extends VirtualMapBaseBench {
         beforeTest("reconnect");
         updateMerkleDbPath();
 
-        final AtomicReference<VirtualMap<BenchmarkKey, BenchmarkValue>> teacherRef =
-                new AtomicReference<>(createEmptyMap("teacher"));
-        final AtomicReference<VirtualMap<BenchmarkKey, BenchmarkValue>> learnerRef =
-                new AtomicReference<>(createEmptyMap("learner"));
-
         final Random random = new Random(randomSeed);
-        new StateBuilder<>(BenchmarkKey::new, BenchmarkValue::new)
-                .buildState(
-                        random,
-                        (long) numRecords * numFiles,
-                        teacherAddProbability,
-                        teacherRemoveProbability,
-                        teacherModifyProbability,
-                        buildVMPopulator(teacherRef),
-                        buildVMPopulator(learnerRef),
-                        i -> {
-                            if (i % numRecords == 0) {
-                                System.err.printf("Copying files for i = %,d\n", i);
-                                teacherRef.set(copyMap(teacherRef.get()));
-                                learnerRef.set(copyMap(learnerRef.get()));
-                            }
-                        });
 
-        teacherRef.set(flushMap(teacherRef.get()));
-        learnerRef.set(flushMap(learnerRef.get()));
+        final List<VirtualMap<BenchmarkKey, BenchmarkValue>> maps = new ArrayList<>();
 
-        final List<VirtualMap<BenchmarkKey, BenchmarkValue>> mapCopies =
-                saveMaps(List.of(teacherRef.get(), learnerRef.get()));
+        for (int mapIndex = 0; mapIndex < mapCount; mapIndex++) {
+            final AtomicReference<VirtualMap<BenchmarkKey, BenchmarkValue>> teacherRef =
+                    new AtomicReference<>(createEmptyMap("teacher" + mapIndex));
+            final AtomicReference<VirtualMap<BenchmarkKey, BenchmarkValue>> learnerRef =
+                    new AtomicReference<>(createEmptyMap("learner" + mapIndex));
+
+            new StateBuilder<>(BenchmarkKey::new, BenchmarkValue::new)
+                    .buildState(
+                            random,
+                            (long) numRecords * numFiles,
+                            teacherAddProbability,
+                            teacherRemoveProbability,
+                            teacherModifyProbability,
+                            buildVMPopulator(teacherRef),
+                            buildVMPopulator(learnerRef),
+                            i -> {
+                                if (i % numRecords == 0) {
+                                    System.err.printf("Copying files for i=%,d\n", i);
+                                    teacherRef.set(copyMap(teacherRef.get()));
+                                    learnerRef.set(copyMap(learnerRef.get()));
+                                }
+                            });
+
+            teacherRef.set(flushMap(teacherRef.get()));
+            learnerRef.set(flushMap(learnerRef.get()));
+
+            maps.add(teacherRef.get());
+            maps.add(learnerRef.get());
+        }
+
+        final List<VirtualMap<BenchmarkKey, BenchmarkValue>> mapCopies = saveMaps(maps);
         mapCopies.forEach(this::releaseAndCloseMap);
     }
 
@@ -165,52 +180,62 @@ public class ReconnectBench extends VirtualMapBaseBench {
     public void setupInvocation() {
         updateMerkleDbPath();
 
-        teacherMap = restoreMap("teacher");
-        if (teacherMap == null) {
-            throw new RuntimeException("Failed to restore the 'teacher' map.");
-        }
-        teacherMap = flushMap(teacherMap);
-        BenchmarkMetrics.register(teacherMap::registerMetrics);
+        teacherMaps = new ArrayList<>(mapCount);
+        learnerMaps = new ArrayList<>(mapCount);
+        teacherMapCopies = new ArrayList<>(mapCount);
+        for (int mapIndex = 0; mapIndex < mapCount; mapIndex++) {
+            VirtualMap<BenchmarkKey, BenchmarkValue> teacherMap = restoreMap("teacher" + mapIndex);
+            if (teacherMap == null) {
+                throw new RuntimeException("Failed to restore the 'teacher' map #" + mapIndex);
+            }
+            teacherMap = flushMap(teacherMap);
+            BenchmarkMetrics.register(teacherMap::registerMetrics);
+            teacherMaps.add(teacherMap);
 
-        learnerMap = restoreMap("learner");
-        if (teacherMap == null) {
-            throw new RuntimeException("Failed to restore the 'learner' map.");
+            VirtualMap<BenchmarkKey, BenchmarkValue> learnerMap = restoreMap("learner" + mapIndex);
+            if (learnerMap == null) {
+                throw new RuntimeException("Failed to restore the 'learner' map #" + mapIndex);
+            }
+            learnerMap = flushMap(learnerMap);
+            BenchmarkMetrics.register(learnerMap::registerMetrics);
+            learnerMaps.add(learnerMap);
         }
-        learnerMap = flushMap(learnerMap);
-        BenchmarkMetrics.register(learnerMap::registerMetrics);
 
-        teacherTree = MerkleBenchmarkUtils.createTreeForMap(teacherMap);
-        copy = teacherMap.copy();
-        learnerTree = MerkleBenchmarkUtils.createTreeForMap(learnerMap);
+        teacherTree = MerkleBenchmarkUtils.createTreeForMaps(teacherMaps);
+        learnerTree = MerkleBenchmarkUtils.createTreeForMaps(learnerMaps);
+
+        for (final VirtualMap<BenchmarkKey, BenchmarkValue> teacherMap : teacherMaps) {
+            teacherMapCopies.add(teacherMap.copy());
+        }
     }
 
     @TearDown(Level.Invocation)
     public void tearDownInvocation() throws Exception {
         try {
-            final VirtualRoot root = learnerMap.getRight();
-            if (!root.isHashed()) {
-                throw new IllegalStateException("Learner root node must be hashed");
+            for (final VirtualMap<BenchmarkKey, BenchmarkValue> learnerMap : learnerMaps) {
+                final VirtualRoot root = learnerMap.getRight();
+                if (!root.isHashed()) {
+                    throw new IllegalStateException("Learner root node must be hashed");
+                }
             }
         } finally {
-            node.release();
-            node = null;
+            reconnectedTree.release();
+            reconnectedTree = null;
             teacherTree.release();
             teacherTree = null;
             learnerTree.release();
             learnerTree = null;
-            copy.release();
-            copy = null;
+            for (final VirtualMap<BenchmarkKey, BenchmarkValue> teacherMapCopy : teacherMapCopies) {
+                teacherMapCopy.release();
+            }
         }
 
-        final var finalTeacherMap = teacherMap;
-        final var finalLearnerMap = learnerMap;
-
-        teacherMap = null;
-        learnerMap = null;
-
         afterTest(() -> {
-            finalTeacherMap.getDataSource().close();
-            finalLearnerMap.getDataSource().close();
+            // Close all data sources
+            for (int mapIndex = 0; mapIndex < mapCount; mapIndex++) {
+                teacherMaps.get(mapIndex).getDataSource().close();
+                learnerMaps.get(mapIndex).getDataSource().close();
+            }
 
             // release()/close() would delete the DB files eventually but not right away.
             // The files/directories can even be re-created in background (see a comment at
@@ -223,11 +248,14 @@ public class ReconnectBench extends VirtualMapBaseBench {
             } catch (InterruptedException ignore) {
             }
         });
+
+        teacherMaps = null;
+        learnerMaps = null;
     }
 
     @Benchmark
     public void reconnect() throws Exception {
-        node = MerkleBenchmarkUtils.hashAndTestSynchronization(
+        reconnectedTree = MerkleBenchmarkUtils.hashAndTestSynchronization(
                 learnerTree,
                 teacherTree,
                 randomSeed,

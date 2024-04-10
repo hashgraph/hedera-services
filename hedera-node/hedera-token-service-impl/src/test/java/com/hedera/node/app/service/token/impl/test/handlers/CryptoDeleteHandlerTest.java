@@ -54,6 +54,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTe
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -86,6 +87,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private CryptoDeleteRecordBuilder recordBuilder;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
 
     private Configuration configuration;
 
@@ -399,14 +403,15 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         }
         writableAccounts = emptyStateBuilder.build();
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenTxnWith(AccountID deleteAccountId, AccountID transferAccountId) {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        final var impl = new TokenServiceApiImpl(configuration, stakingValidator, writableStates, op -> false);
+        final var impl = new TokenServiceApiImpl(
+                configuration, storeMetricsService, stakingValidator, writableStates, op -> false);
         given(handleContext.serviceApi(TokenServiceApi.class)).willReturn(impl);
     }
 }

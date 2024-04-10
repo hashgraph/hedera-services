@@ -66,6 +66,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -151,6 +152,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final ParentRecordFinalizer parentRecordFinalizer;
     private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final StoreMetricsService storeMetricsService;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
@@ -215,7 +217,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final ParentRecordFinalizer parentRecordFinalizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final PlatformState platformState) {
+            @NonNull final PlatformState platformState,
+            @NonNull final StoreMetricsService storeMetricsService) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -244,9 +247,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
 
+        this.storeMetricsService = requireNonNull(storeMetricsService, "storeMetricsService must not be null");
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
-        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
-        this.serviceApiFactory = new ServiceApiFactory(stack, configuration);
+        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope, configuration, storeMetricsService);
+        this.serviceApiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
 
         if (payerKey == null) {
             this.feeCalculatorCreator = ignore -> NoOpFeeCalculator.INSTANCE;
@@ -360,7 +364,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     @Override
     public long newEntityNum() {
-        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        final var entityIdsFactory =
+                new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return entityIdsFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
     }
 
@@ -369,7 +374,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     @Override
     public long peekAtNewEntityNum() {
-        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        final var entityIdsFactory =
+                new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return entityIdsFactory.getStore(WritableEntityIdStore.class).peekAtNextNumber();
     }
 
@@ -583,8 +589,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
 
-        if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
-            throw new IllegalArgumentException("Only user- or child-transactions can dispatch preceding transactions");
+        if (category == PRECEDING) {
+            throw new IllegalArgumentException("A preceding transaction cannot dispatch preceding transactions");
         }
 
         final var precedingRecordBuilder = recordBuilderFactory.get();
@@ -746,7 +752,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 parentRecordFinalizer,
                 networkUtilizationManager,
                 synchronizedThrottleAccumulator,
-                platformState);
+                platformState,
+                storeMetricsService);
 
         // in order to work correctly isSuperUser(), we need to keep track of top level payer in child context
         childContext.setTopLevelPayer(topLevelPayer);
@@ -775,7 +782,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (childCategory == SCHEDULED) {
             final var finalizeContext = new TriggeredFinalizeContext(
                     new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    new WritableStoreFactory(childStack, TokenService.NAME, configuration, storeMetricsService),
                     childRecordBuilder,
                     consensusNow(),
                     configuration);
@@ -791,7 +798,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         } else {
             final var finalizeContext = new ChildFinalizeContextImpl(
                     new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    new WritableStoreFactory(childStack, TokenService.NAME, configuration, storeMetricsService),
                     childRecordBuilder);
             childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
         }

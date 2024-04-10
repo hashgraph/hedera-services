@@ -22,8 +22,12 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -44,10 +48,18 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * Create a new {@link WritableNftStore} instance.
      *
      * @param states The state to use.
+     * @param storeMetricsService Service that provides utilization metrics.
      */
-    public WritableNftStore(@NonNull final WritableStates states) {
+    public WritableNftStore(
+            @NonNull final WritableStates states,
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
         this.nftState = states.get(TokenServiceImpl.NFTS_KEY);
+
+        final long maxCapacity = configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
+        final var storeMetrics = storeMetricsService.get(StoreType.NFT, maxCapacity);
+        nftState.setMetrics(storeMetrics);
     }
 
     /**

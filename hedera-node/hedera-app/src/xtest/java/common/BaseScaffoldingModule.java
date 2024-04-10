@@ -64,6 +64,7 @@ import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
@@ -268,7 +269,8 @@ public interface BaseScaffoldingModule {
             @NonNull final ParentRecordFinalizer parentRecordFinalizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final PlatformStateAccessor platformState) {
+            @NonNull final PlatformStateAccessor platformState,
+            @NonNull final StoreMetricsService storeMetricsService) {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var parentRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
@@ -311,7 +313,8 @@ public interface BaseScaffoldingModule {
                     parentRecordFinalizer,
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
-                    platformState.getPlatformState());
+                    platformState.getPlatformState(),
+                    storeMetricsService);
         };
     }
 
