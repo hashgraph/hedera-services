@@ -21,7 +21,7 @@ import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
-import com.swirlds.platform.system.PlatformConstructionException;
+import com.swirlds.platform.system.PlatformInitializationException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -35,6 +35,7 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import javax.net.ssl.KeyManagerFactory;
@@ -53,10 +54,12 @@ public class TlsFactory implements SocketFactory {
     private final SSLServerSocketFactory sslServerSocketFactory;
     private final SSLSocketFactory sslSocketFactory;
 
-    private final Certificate agrCert;
-    private final PrivateKey agrKey;
-    private final CryptoConfig cryptoConfig;
     private final SSLContext sslContext;
+    private final SecureRandom nonDetRandom;
+    private final KeyManagerFactory keyManagerFactory;
+    private final TrustManagerFactory trustManagerFactory;
+    private final List<PeerInfo> currentPeers = new ArrayList<>();
+
     /**
      * Construct this object to create and receive TLS connections.
      * @param agrCert the TLS certificate to use
@@ -71,16 +74,27 @@ public class TlsFactory implements SocketFactory {
             @NonNull final List<PeerInfo> peers,
             @NonNull final SocketConfig socketConfig,
             @NonNull final CryptoConfig cryptoConfig)
-            throws NoSuchAlgorithmException {
-        this.agrCert = Objects.requireNonNull(agrCert);
-        this.agrKey = Objects.requireNonNull(agrKey);
+            throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException,
+            UnrecoverableKeyException {
         this.socketConfig = Objects.requireNonNull(socketConfig);
-        this.cryptoConfig = Objects.requireNonNull(cryptoConfig);
         this.sslContext = SSLContext.getInstance(CryptoConstants.SSL_VERSION);
+        this.nonDetRandom = CryptoStatic.getNonDetRandom();
 
-        Objects.requireNonNull(peers);
+        /* nondeterministic CSPRNG */
+        // "PKIX" may be more interoperable than KeyManagerFactory.getDefaultAlgorithm or
+        // TrustManagerFactory.getDefaultAlgorithm(), which was "SunX509" on one system tested
+        this.keyManagerFactory = KeyManagerFactory.getInstance(CryptoConstants.KEY_MANAGER_FACTORY_TYPE);
+        // the agrKeyStore should contain an entry with both agrKeyPair.getPrivate() and agrCert
+        // PKCS12 uses file extension .p12 or .pfx
+        final KeyStore agrKeyStore = KeyStore.getInstance(CryptoConstants.KEYSTORE_TYPE);
+        agrKeyStore.load(null, null); // initialize
+        final char[] password = cryptoConfig.keystorePassword().toCharArray();
+        agrKeyStore.setKeyEntry("key", agrKey, password, new Certificate[]{agrCert});
+        keyManagerFactory.init(agrKeyStore, password);
+        this.trustManagerFactory = TrustManagerFactory.getInstance(CryptoConstants.TRUST_MANAGER_FACTORY_TYPE);
+        SSLContext.setDefault(sslContext);
 
-        handlePeerListUpdate(peers);
+        reload(peers);
         sslServerSocketFactory = sslContext.getServerSocketFactory();
         sslSocketFactory = sslContext.getSocketFactory();
     }
@@ -109,38 +123,16 @@ public class TlsFactory implements SocketFactory {
     }
 
     @Override
-    public void handlePeerListUpdate(final @NonNull List<PeerInfo> peers) {
-        Objects.requireNonNull(peers);
+    public void reload(final @NonNull List<PeerInfo> peers) {
+        // we just extend the list for now, until the work to calculate diffs is done
+        // then, we will have two lists of peers to add and to remove
+        currentPeers.addAll(Objects.requireNonNull(peers));
         try {
-            final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(peers);
-
-            final char[] password = cryptoConfig.keystorePassword().toCharArray();
-            /* nondeterministic CSPRNG */
-            final SecureRandom nonDetRandom = CryptoStatic.getNonDetRandom();
-
-            // the agrKeyStore should contain an entry with both agrKeyPair.getPrivate() and agrCert
-            // PKCS12 uses file extension .p12 or .pfx
-            final KeyStore agrKeyStore = KeyStore.getInstance(CryptoConstants.KEYSTORE_TYPE);
-            agrKeyStore.load(null, null); // initialize
-            agrKeyStore.setKeyEntry("key", agrKey, password, new Certificate[] {agrCert});
-
-            // "PKIX" may be more interoperable than KeyManagerFactory.getDefaultAlgorithm or
-            // TrustManagerFactory.getDefaultAlgorithm(), which was "SunX509" on one system tested
-            final KeyManagerFactory keyManagerFactory =
-                    KeyManagerFactory.getInstance(CryptoConstants.KEY_MANAGER_FACTORY_TYPE);
-            keyManagerFactory.init(agrKeyStore, password);
-            final TrustManagerFactory trustManagerFactory =
-                    TrustManagerFactory.getInstance(CryptoConstants.TRUST_MANAGER_FACTORY_TYPE);
+            final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(currentPeers);
             trustManagerFactory.init(signingTrustStore);
-            SSLContext.setDefault(sslContext);
             sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), nonDetRandom);
-        } catch (final NoSuchAlgorithmException
-                | UnrecoverableKeyException
-                | KeyStoreException
-                | KeyManagementException
-                | CertificateException
-                | IOException e) {
-            throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
+        } catch (final KeyStoreException | KeyManagementException e) {
+            throw new PlatformInitializationException("A problem occurred while initializing the SocketFactory", e);
         }
     }
 }

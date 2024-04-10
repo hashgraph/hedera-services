@@ -43,6 +43,7 @@ import org.mockito.Mockito;
 
 class InboundConnectionHandlerTest extends ConnectivityTestBase {
 
+    private static final byte[] SOME_DATA = new byte[]{4, 5, 6};
     private static final int PORT = 31_000;
     private static final PlatformContext platformContext = TestPlatformContextBuilder.create()
             .withConfiguration(TLS_NO_IP_TOS_CONFIG)
@@ -77,10 +78,10 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
                 NetworkUtils.createSocketFactory(otherNode, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
 
         final ServerSocket serverSocket = socketFactory1.createServerSocket(PORT);
-        createSocketThread(serverSocket).start();
+        createSocketThread(serverSocket, SOME_DATA).start();
 
         final Socket socket = socketFactory2.createClientSocket(STRING_IP, PORT);
-        socket.getOutputStream().write(DATA);
+        socket.getOutputStream().write(SOME_DATA);
 
         final InterruptableConsumer<Connection> connConsumer = conn -> {
             Assertions.assertNotNull(conn);
@@ -121,10 +122,10 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
                 NetworkUtils.createSocketFactory(otherNode, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
 
         final ServerSocket serverSocket = s1.createServerSocket(PORT);
-        createSocketThread(serverSocket).start();
+        createSocketThread(serverSocket, SOME_DATA).start();
 
         final Socket socket = s2.createClientSocket(STRING_IP, PORT);
-        socket.getOutputStream().write(DATA);
+        socket.getOutputStream().write(SOME_DATA);
 
         final InterruptableConsumer<Connection> connConsumer =
                 conn -> Assertions.fail("connection should never have been created");

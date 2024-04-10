@@ -16,11 +16,16 @@
 
 package com.swirlds.platform.crypto;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
+import java.net.URISyntaxException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -53,7 +58,7 @@ public class CryptoArgsProvider {
         return Stream.of(Arguments.of(loadedAB, loadedC), Arguments.of(genAB, genC));
     }
 
-    public static AddressBook createAddressBook(int size) {
+    public static AddressBook createAddressBook(final int size) {
         final AddressBook addresses = new RandomAddressBookGenerator()
                 .setSize(size)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
@@ -66,6 +71,20 @@ public class CryptoArgsProvider {
         }
 
         return addresses;
+    }
+
+    /**
+     * returns the addressBook with keys loaded from file.
+     *
+     * @param size the size of the required address book
+     */
+    public static Pair<AddressBook, Map<NodeId, KeysAndCerts>> getAddressBookWithKeys(final int size)
+            throws URISyntaxException, UnrecoverableKeyException, KeyLoadingException, KeyStoreException,
+            NoSuchAlgorithmException {
+        final AddressBook loadedAB = createAddressBook(size);
+        final Map<NodeId, KeysAndCerts> loadedC =
+                CryptoStatic.loadKeysAndCerts(loadedAB, ResourceLoader.getFile("preGeneratedKeysAndCerts/"), PASSWORD);
+        return Pair.of(loadedAB, loadedC);
     }
 
     private static String memberName(int num) {

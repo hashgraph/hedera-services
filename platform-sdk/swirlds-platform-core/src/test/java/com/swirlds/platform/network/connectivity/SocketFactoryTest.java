@@ -18,10 +18,9 @@ package com.swirlds.platform.network.connectivity;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.crypto.CryptoArgsProvider;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -39,6 +38,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class SocketFactoryTest extends ConnectivityTestBase {
     private static final int PORT = 30_000;
+    private static final byte[] TEST_DATA = new byte[]{1, 2, 3};
 
     /**
      * Calls {@link #testSockets(SocketFactory, SocketFactory)} twice, to test both factories as server and as client
@@ -70,13 +70,13 @@ class SocketFactoryTest extends ConnectivityTestBase {
 
         final ServerSocket serverSocket = serverFactory.createServerSocket(PORT);
 
-        final Thread server = createSocketThread(serverSocket);
+        final Thread server = createSocketThread(serverSocket, TEST_DATA);
         final AtomicReference<Throwable> threadException = new AtomicReference<>();
         server.setUncaughtExceptionHandler((t, e) -> threadException.set(e));
         server.start();
 
         final Socket clientSocket = clientFactory.createClientSocket(STRING_IP, PORT);
-        clientSocket.getOutputStream().write(DATA);
+        clientSocket.getOutputStream().write(TEST_DATA);
 
         server.join();
         clientSocket.close();
@@ -120,14 +120,21 @@ class SocketFactoryTest extends ConnectivityTestBase {
                 NetworkUtils.createSocketFactory(node2, addressBook, keysAndCerts2, TLS_IP_TOS_CONFIG));
     }
 
-    @ParameterizedTest
-    @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
-    void tlsFactoryTestDynamicPeers(final AddressBook addressBook, final Map<NodeId, KeysAndCerts> keysAndCerts)
-            throws Throwable {
+    /**
+     * Asserts that for sockets A and B connected to each other, if A's peer list changes and in effect its trust store
+     * is reloaded, B, as well as peer C in the updated peer list can still connect to A, and A to them.
+     */
+    @Test
+    void tlsFactoryTestDynamicPeers() throws Throwable {
+        // create addressBook, keysAndCerts
+        final Pair<AddressBook, Map<NodeId, KeysAndCerts>> akPair1 = CryptoArgsProvider.getAddressBookWithKeys(2);
+        final AddressBook addressBook = akPair1.left();
+        final Map<NodeId, KeysAndCerts> keysAndCerts = akPair1.right();
         assertTrue(addressBook.getSize() > 1, "Address book must contain at least 2 nodes");
-        // choose 2 random nodes to test
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final List<Integer> nodeIndexes = random.ints(0, addressBook.getSize())
+
+        // choose 2 random nodes to test connections
+        Random random = RandomUtils.getRandomPrintSeed();
+        List<Integer> nodeIndexes = random.ints(0, addressBook.getSize())
                 .distinct()
                 .limit(2)
                 .boxed()
@@ -137,25 +144,35 @@ class SocketFactoryTest extends ConnectivityTestBase {
 
         final KeysAndCerts keysAndCerts1 = keysAndCerts.get(node1);
         final KeysAndCerts keysAndCerts2 = keysAndCerts.get(node2);
+        // create their socket factories
         final SocketFactory socketFactory1 =
                 NetworkUtils.createSocketFactory(node1, addressBook, keysAndCerts1, TLS_NO_IP_TOS_CONFIG);
         final SocketFactory socketFactory2 =
                 NetworkUtils.createSocketFactory(node2, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
-        // create server and client sockets from factory
-        // make them talk to each other
-        testSockets(socketFactory1, socketFactory2);
+        // test that A and B can talk to each other
+        testSocketsBoth(socketFactory1, socketFactory2);
 
-        // re-initialize SSLContext for socketfactory1 using a new peerList
-        final AddressBook dynamicAddressBook = CryptoArgsProvider.createAddressBook(3);
-        socketFactory1.handlePeerListUpdate(Utilities.createPeerInfoList(dynamicAddressBook, node1));
+        // create a new address book with keys and new set of nodes
+        final Pair<AddressBook, Map<NodeId, KeysAndCerts>> akPair2 = CryptoArgsProvider.getAddressBookWithKeys(5);
+        final AddressBook updatedAB = akPair2.left();
+        final Map<NodeId, KeysAndCerts> updatedKeysAndCerts = akPair2.right();
+        assertTrue(updatedAB.getSize() > 1, "Address book must contain at least 2 nodes");
+        random = RandomUtils.getRandomPrintSeed();
+        nodeIndexes =
+                random.ints(0, updatedAB.getSize()).distinct().limit(5).boxed().toList();
+        // pick a node for the 3rd connection C. Picking the last one increases the distinctiveness, so we do it
+        final NodeId node3 = updatedAB.getNodeId(nodeIndexes.getLast());
+        final KeysAndCerts keysAndCerts3 = updatedKeysAndCerts.get(node3);
+        // create socket factory for the 3rd node
+        final SocketFactory socketFactory3 =
+                NetworkUtils.createSocketFactory(node3, updatedAB, keysAndCerts3, TLS_NO_IP_TOS_CONFIG);
 
-        // assert they can still connect to each other
-        testSockets(socketFactory1, socketFactory2);
-
-        // this test is limited, but sufficient for this proof of concept.
-        // In production, clients from socketFactory2
-        // wouldn't successfully handshake with server from socketFactory1 as
-        // socketFactory1's peerList now excludes all addresses in socketFactory2
+        // re-initialize SSLContext for A (socketfactory1) using a new peerList
+        socketFactory1.reload(Utilities.createPeerInfoList(updatedAB, node1));
+        // doing so, we expect that C(socketfactory3) -> A(socketfactory1) -> B(socketfactory3)
+        testSocketsBoth(socketFactory1, socketFactory3);
+        // also, B(socketfactory2) -> A(socketfactory1) -> B(socketfactory2)
+        testSocketsBoth(socketFactory1, socketFactory2);
     }
 
     @Test

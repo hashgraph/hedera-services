@@ -28,7 +28,6 @@ import java.net.Socket;
 
 class ConnectivityTestBase {
 
-    protected static final byte[] DATA = {1, 2, 3};
     protected static final String STRING_IP = "127.0.0.1";
     protected static final SocketConfig NO_IP_TOS;
     protected static final SocketConfig IP_TOS;
@@ -59,12 +58,12 @@ class ConnectivityTestBase {
      *
      * @param serverSocket the server socket to listen on
      */
-    static Thread createSocketThread(final ServerSocket serverSocket) {
+    static Thread createSocketThread(final ServerSocket serverSocket, final byte[] data) {
         return new Thread(() -> {
             try {
                 final Socket s = serverSocket.accept();
-                final byte[] bytes = s.getInputStream().readNBytes(DATA.length);
-                assertArrayEquals(DATA, bytes, "Data read from socket must be the same as the data written");
+                final byte[] bytes = s.getInputStream().readNBytes(data.length);
+                assertArrayEquals(data, bytes, "Data read from socket must be the same as the data written");
                 s.close();
             } catch (final IOException e) {
                 throw new RuntimeException(e);
