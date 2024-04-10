@@ -131,18 +131,18 @@ public class TokenAssociationSpecs extends HapiSuite {
 
     @HapiTest
     public HapiSpec canHandleInvalidAssociateTransactions() {
-        final String ALICE = "ALICE";
-        final String BOB = "BOB";
+        final String alice = "ALICE";
+        final String bob = "BOB";
         final String unknownID = "0.0." + Long.MAX_VALUE;
         return defaultHapiSpec("CanHandleInvalidAssociateTransactions")
                 .given(
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ALICE),
-                        cryptoCreate(BOB),
-                        cryptoDelete(BOB),
+                        cryptoCreate(alice),
+                        cryptoCreate(bob),
+                        cryptoDelete(bob),
                         tokenCreate(VANILLA_TOKEN),
                         tokenCreate(KNOWABLE_TOKEN),
-                        tokenAssociate(ALICE, KNOWABLE_TOKEN),
+                        tokenAssociate(alice, KNOWABLE_TOKEN),
                         tokenCreate(TBD_TOKEN).adminKey(MULTI_KEY),
                         tokenDelete(TBD_TOKEN))
                 .when()
@@ -155,29 +155,31 @@ public class TokenAssociationSpecs extends HapiSuite {
                                 .fee(DEFAULT_FEE)
                                 .signedBy(DEFAULT_PAYER)
                                 .hasPrecheck(INVALID_ACCOUNT_ID),
-                        tokenAssociate(BOB, VANILLA_TOKEN).fee(DEFAULT_FEE).hasKnownStatus(ACCOUNT_DELETED),
-                        tokenAssociate(ALICE, List.of()).hasKnownStatus(SUCCESS),
-                        tokenAssociate(ALICE, VANILLA_TOKEN, VANILLA_TOKEN)
+                        tokenAssociate(bob, VANILLA_TOKEN).fee(DEFAULT_FEE).hasKnownStatus(ACCOUNT_DELETED),
+                        tokenAssociate(alice, List.of()).hasKnownStatus(SUCCESS),
+                        tokenAssociate(alice, VANILLA_TOKEN, VANILLA_TOKEN)
                                 .hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
-                        tokenAssociate(ALICE, unknownID).hasKnownStatus(INVALID_TOKEN_ID),
-                        tokenAssociate(ALICE, TBD_TOKEN).hasKnownStatus(TOKEN_WAS_DELETED),
-                        tokenAssociate(ALICE, KNOWABLE_TOKEN).hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
+                        tokenAssociate(alice, unknownID).hasKnownStatus(INVALID_TOKEN_ID),
+                        tokenAssociate(alice, TBD_TOKEN).hasKnownStatus(TOKEN_WAS_DELETED),
+                        tokenAssociate(alice, KNOWABLE_TOKEN).hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
     }
 
     @HapiTest
     public HapiSpec canLimitMaxTokensPerAccountTransactions() {
-        final String ALICE = "ALICE";
+        final String alice = "ALICE";
+        final String treasury2 = "TREASURY_2";
         return propertyPreservingHapiSpec("CanHandleInvalidAssociateTransactions")
                 .preserving("tokens.maxPerAccount", "entities.limitTokenAssociations")
                 .given(
                         overridingTwo("tokens.maxPerAccount", "1", "entities.limitTokenAssociations", "true"),
-                        cryptoCreate(ALICE),
+                        cryptoCreate(alice),
                         cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(VANILLA_TOKEN),
-                        tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY),
-                        tokenAssociate(ALICE, KNOWABLE_TOKEN))
+                        cryptoCreate(treasury2),
+                        tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY),
+                        tokenCreate(KNOWABLE_TOKEN).treasury(treasury2),
+                        tokenAssociate(alice, KNOWABLE_TOKEN))
                 .when()
-                .then(tokenAssociate(ALICE, VANILLA_TOKEN).hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
+                .then(tokenAssociate(alice, VANILLA_TOKEN).hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
     }
 
     @HapiTest
