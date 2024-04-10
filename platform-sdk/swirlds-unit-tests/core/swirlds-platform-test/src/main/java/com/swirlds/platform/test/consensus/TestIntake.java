@@ -19,13 +19,13 @@ package com.swirlds.platform.test.consensus;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
-import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -52,7 +52,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 
 /**
  * Event intake with consensus and shadowgraph, used for testing
@@ -80,7 +79,7 @@ public class TestIntake {
         final Time time = Time.getCurrent();
         output = new ConsensusOutput(time);
 
-        model = WiringModel.create(platformContext, mock(ForkJoinPool.class));
+        model = WiringModelBuilder.create(platformContext).build();
 
         hasherWiring = new ComponentWiring<>(model, EventHasher.class, directScheduler("eventHasher"));
         final EventHasher eventHasher = new DefaultEventHasher(platformContext);

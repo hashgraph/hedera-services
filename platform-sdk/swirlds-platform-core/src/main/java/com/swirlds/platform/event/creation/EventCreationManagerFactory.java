@@ -46,6 +46,7 @@ public final class EventCreationManagerFactory {
      * Create a new event creation manager.
      *
      * @param platformContext        the platform's context
+     * @param random                 a source of randomness, does not need to be cryptographically secure
      * @param signer                 can sign with this node's key
      * @param addressBook            the current address book
      * @param selfId                 the ID of this node
@@ -59,6 +60,7 @@ public final class EventCreationManagerFactory {
     @NonNull
     public static EventCreationManager buildEventCreationManager(
             @NonNull final PlatformContext platformContext,
+            @NonNull final Random random,
             @NonNull final Signer signer,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -78,13 +80,7 @@ public final class EventCreationManagerFactory {
         Objects.requireNonNull(latestReconnectRound);
 
         final EventCreator eventCreator = new TipsetEventCreator(
-                platformContext,
-                new Random() /* does not need to be cryptographically secure */,
-                signer,
-                addressBook,
-                selfId,
-                appVersion,
-                transactionPool);
+                platformContext, random, signer, addressBook, selfId, appVersion, transactionPool);
 
         final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
                 new MaximumRateRule(platformContext),

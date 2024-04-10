@@ -315,11 +315,11 @@ class SequentialTaskSchedulerTests {
     }
 
     /**
-     * Ensure that the work happening on the task scheduler is not happening on the callers thread.
+     * Ensure that the work happening on the task scheduler is not happening on the caller's thread.
      */
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
-    void wireWordDoesNotBlockCallingThreadTest(final String typeString) throws InterruptedException {
+    void wireDoesNotBlockCallingThreadTest(final String typeString) throws InterruptedException {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 

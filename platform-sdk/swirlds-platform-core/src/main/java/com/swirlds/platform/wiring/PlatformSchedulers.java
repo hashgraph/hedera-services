@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCommonHyperlink;
-import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCommonHyperlink;
+import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 
 import com.swirlds.common.context.PlatformContext;
