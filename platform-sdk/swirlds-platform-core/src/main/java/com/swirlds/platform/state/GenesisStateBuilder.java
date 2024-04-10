@@ -80,7 +80,7 @@ public final class GenesisStateBuilder {
         }
 
         final SignedState signedState =
-                new SignedState(platformContext, CryptoStatic::verifySignature, state, "genesis state", false);
+                new SignedState(platformContext, CryptoStatic::verifySignature, state, "genesis state", false, false);
         return signedState.reserve("initial reservation on genesis state");
     }
 }

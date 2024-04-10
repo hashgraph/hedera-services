@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal;
+package com.swirlds.common.wiring.model.internal.analysis;
 
 /**
  * The type of a vertex in a wiring flowchart. Although the original graph will be constructed of SCHEDULER vertices

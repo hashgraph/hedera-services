@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.schedulers.internal;
+package com.swirlds.common.wiring.model.internal.standard;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,7 +29,7 @@ import java.util.TimerTask;
 /**
  * A task that produces a heartbeat at a specified rate.
  */
-class HeartbeatTask extends TimerTask {
+public class HeartbeatTask extends TimerTask {
 
     private final Time time;
     private final Duration period;
@@ -38,11 +38,13 @@ class HeartbeatTask extends TimerTask {
     /**
      * Constructor.
      *
+     * @param model  the wiring model that this heartbeat is for
+     * @param name   the name of the output wire
      * @param time   provides wall clock time
      * @param period the period of the heartbeat
      */
     public HeartbeatTask(
-            @NonNull final StandardWiringModel model,
+            @NonNull final TraceableWiringModel model,
             @NonNull final String name,
             @NonNull final Time time,
             @NonNull final Duration period) {
