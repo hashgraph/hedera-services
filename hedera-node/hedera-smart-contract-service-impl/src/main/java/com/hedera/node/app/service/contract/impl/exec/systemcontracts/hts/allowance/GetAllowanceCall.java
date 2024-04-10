@@ -102,7 +102,7 @@ public class GetAllowanceCall extends AbstractHtsCall {
     @NonNull
     private BigInteger getAllowance(
             @NonNull final Token token, @NonNull final Account ownerAccount, @NonNull final AccountID spenderID) {
-        final var tokenAllowance = requireNonNull(ownerAccount).tokenAllowancesOrThrow().stream()
+        final var tokenAllowance = requireNonNull(ownerAccount).tokenAllowances().stream()
                 .filter(allowance -> allowance.tokenIdOrThrow().equals(token.tokenIdOrThrow())
                         && allowance.spenderIdOrThrow().equals(spenderID))
                 .findFirst();
