@@ -258,19 +258,19 @@ class TokenHandlerHelperTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void tokenRel_getIfUsable_nullArg() {
-        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(null, TOKEN_ID_45, tokenRelStore))
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(null, TOKEN_ID_45, tokenRelStore, ))
                 .isInstanceOf(NullPointerException.class);
 
-        Assertions.assertThatThrownBy(() -> getIfUsable(ACCT_2300, null, tokenRelStore))
+        Assertions.assertThatThrownBy(() -> getIfUsable(ACCT_2300, null, tokenRelStore, ))
                 .isInstanceOf(NullPointerException.class);
 
-        Assertions.assertThatThrownBy(() -> getIfUsable(ACCT_2300, TOKEN_ID_45, null))
+        Assertions.assertThatThrownBy(() -> getIfUsable(ACCT_2300, TOKEN_ID_45, null, ))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void tokenRel_getIfUsable_notFound() {
-        Assertions.assertThatThrownBy(() -> getIfUsable(ACCT_2300, TOKEN_ID_45, tokenRelStore))
+        Assertions.assertThatThrownBy(() -> getIfUsable(ACCT_2300, TOKEN_ID_45, tokenRelStore, ))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
@@ -285,7 +285,7 @@ class TokenHandlerHelperTest {
                         .balance(0)
                         .build());
 
-        final var result = getIfUsable(ACCT_2300, TOKEN_ID_45, tokenRelStore);
+        final var result = getIfUsable(ACCT_2300, TOKEN_ID_45, tokenRelStore, );
         Assertions.assertThat(result).isNotNull();
     }
 }

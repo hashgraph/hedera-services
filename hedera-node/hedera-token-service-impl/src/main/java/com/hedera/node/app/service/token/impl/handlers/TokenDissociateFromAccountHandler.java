@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -210,7 +211,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final TokenDissociateTransactionBody op = txn.tokenDissociateOrThrow();
 
-        validateTruePreCheck(op.hasAccount() && op.accountOrThrow().accountNum() > 0L, INVALID_ACCOUNT_ID);
+        validateTruePreCheck(hasAccountNumOrAlias(op.account()), INVALID_ACCOUNT_ID);
         validateTruePreCheck(op.hasTokens(), INVALID_TOKEN_ID);
         validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokensOrThrow()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
     }

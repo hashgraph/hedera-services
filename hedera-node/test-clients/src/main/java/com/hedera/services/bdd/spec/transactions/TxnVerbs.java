@@ -210,8 +210,8 @@ public class TxnVerbs {
         return new HapiTokenAssociate(account, tokens);
     }
 
-    public static HapiTokenAssociate tokenAssociateWithAlias(ByteString alias, String... tokens) {
-        return new HapiTokenAssociate(alias, tokens);
+    public static HapiTokenAssociate tokenAssociateWithAlias(String alias, String... tokens) {
+        return new HapiTokenAssociate(alias, ReferenceType.ALIAS_KEY_NAME, tokens);
     }
 
     public static HapiTokenAssociate tokenAssociate(String account, List<String> tokens) {
@@ -302,8 +302,8 @@ public class TxnVerbs {
         return new HapiTokenKycGrant(token, account);
     }
 
-    public static HapiTokenKycGrant grantTokenKycWithAlias(String token, ByteString alias) {
-        return new HapiTokenKycGrant(token, alias);
+    public static HapiTokenKycGrant grantTokenKycWithAlias(String token, String alias) {
+        return new HapiTokenKycGrant(token, alias, ReferenceType.ALIAS_KEY_NAME);
     }
 
     public static HapiTokenKycRevoke revokeTokenKyc(String token, String account) {

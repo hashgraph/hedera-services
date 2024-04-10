@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -101,7 +102,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
      * Performs checks independent of state or context
      */
     private void pureChecks(@NonNull final TokenAssociateTransactionBody op) throws PreCheckException {
-        validateTruePreCheck(op.hasAccount() && op.accountOrThrow().accountNum() > 0, INVALID_ACCOUNT_ID);
+        validateTruePreCheck(hasAccountNumOrAlias(op.account()), INVALID_ACCOUNT_ID);
         validateTruePreCheck(op.hasTokens(), INVALID_TOKEN_ID);
         validateFalsePreCheck(TokenListChecks.repeatsItself(op.tokensOrThrow()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
     }

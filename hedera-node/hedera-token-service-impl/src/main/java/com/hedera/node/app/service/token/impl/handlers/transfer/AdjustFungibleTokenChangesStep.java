@@ -92,7 +92,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
                 // Validate freeze status and kyc granted
                 final var accountID = aa.accountIDOrThrow();
-                final var tokenRel = getIfUsable(accountID, tokenId, tokenRelStore);
+                final var tokenRel = getIfUsable(accountID, tokenId, tokenRelStore, );
                 validateNotFrozenAndKycOnRelation(tokenRel);
 
                 // Add the amount to the aggregatedFungibleTokenChanges map.
@@ -176,7 +176,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         for (final var entry : aggregatedFungibleTokenChanges.entrySet()) {
             final var atPair = entry.getKey();
             final var amount = entry.getValue();
-            final var rel = getIfUsable(atPair.accountIdOrThrow(), atPair.tokenIdOrThrow(), tokenRelStore);
+            final var rel = getIfUsable(atPair.accountIdOrThrow(), atPair.tokenIdOrThrow(), tokenRelStore, );
             final var account = requireNonNull(accountStore.get(atPair.accountIdOrThrow()));
             adjustBalance(rel, account, amount, tokenRelStore, accountStore);
         }

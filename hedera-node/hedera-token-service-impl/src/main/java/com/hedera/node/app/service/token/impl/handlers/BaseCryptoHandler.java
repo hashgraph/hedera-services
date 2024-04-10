@@ -72,4 +72,10 @@ public class BaseCryptoHandler {
         }
         return false;
     }
+
+    public static boolean hasAccountNumOrAlias(@Nullable final AccountID accountID) {
+        return accountID != null &&
+                ((accountID.hasAccountNum() && accountID.accountNumOrThrow() != 0L)
+                        || (accountID.hasAlias() && accountID.aliasOrThrow().length() > 0));
+    }
 }
