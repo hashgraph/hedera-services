@@ -56,14 +56,12 @@ public class DefaultSavedStateController implements SavedStateController {
         this.stateConfig = Objects.requireNonNull(stateConfig);
     }
 
-    // TODO revisit synchronized keywords
-
     /**
      * {@inheritDoc}
      */
     @Override
     @NonNull
-    public synchronized StateAndRound markSavedState(@NonNull final StateAndRound stateAndRound) {
+    public StateAndRound markSavedState(@NonNull final StateAndRound stateAndRound) {
         final ReservedSignedState reservedSignedState = stateAndRound.reservedSignedState();
         final SignedState signedState = reservedSignedState.get();
         final StateToDiskReason reason = shouldSaveToDisk(signedState, previousSavedStateTimestamp);
@@ -77,7 +75,7 @@ public class DefaultSavedStateController implements SavedStateController {
      * {@inheritDoc}
      */
     @Override
-    public synchronized void reconnectStateReceived(@NonNull final ReservedSignedState reservedSignedState) {
+    public void reconnectStateReceived(@NonNull final ReservedSignedState reservedSignedState) {
         try (reservedSignedState) {
             markSavingToDisk(reservedSignedState, RECONNECT);
         }
@@ -87,7 +85,7 @@ public class DefaultSavedStateController implements SavedStateController {
      * {@inheritDoc}
      */
     @Override
-    public synchronized void registerSignedStateFromDisk(@NonNull final SignedState signedState) {
+    public void registerSignedStateFromDisk(@NonNull final SignedState signedState) {
         previousSavedStateTimestamp = signedState.getConsensusTimestamp();
     }
 
