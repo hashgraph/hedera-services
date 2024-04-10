@@ -45,6 +45,7 @@ import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -53,10 +54,12 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.MalformedProtobufException;
 import com.hedera.pbj.runtime.ParseException;
@@ -191,29 +194,19 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 final var storeFactory = new ReadableStoreFactory(state);
                 final var paymentRequired = handler.requiresNodePayment(responseType);
                 final var feeCalculator = feeManager.createFeeCalculator(function, consensusTime, storeFactory);
-                final QueryContext context;
-                Transaction allegedPayment;
+                Transaction allegedPayment = queryHeader.paymentOrThrow();
+                final var configuration = configProvider.getConfiguration();
+                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
+                final QueryContext context = buildContext(
+                        paymentRequired, transactionInfo, state, storeFactory, query, configuration, feeCalculator);
+                // 4. Check validity of query
+                handler.validate(context);
+
                 TransactionBody txBody;
                 AccountID payerID = null;
                 if (paymentRequired) {
-                    allegedPayment = queryHeader.paymentOrThrow();
-                    final var configuration = configProvider.getConfiguration();
-
-                    // 3.i Ingest checks
-                    final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
                     txBody = transactionInfo.txBody();
-
-                    // get payer
                     payerID = requireNonNull(transactionInfo.payerID());
-                    context = new QueryContextImpl(
-                            state,
-                            storeFactory,
-                            query,
-                            configuration,
-                            recordCache,
-                            exchangeRateManager,
-                            feeCalculator,
-                            payerID);
 
                     // A super-user does not have to pay for a query and has all permissions
                     if (!authorizer.isSuperUser(payerID)) {
@@ -247,19 +240,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
                         throw new PreCheckException(NOT_SUPPORTED);
                     }
-                    context = new QueryContextImpl(
-                            state,
-                            storeFactory,
-                            query,
-                            configProvider.getConfiguration(),
-                            recordCache,
-                            exchangeRateManager,
-                            feeCalculator,
-                            null);
                 }
-
-                // 4. Check validity of query
-                handler.validate(context);
 
                 // 5. Check query throttles
                 if (synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)) {
@@ -301,6 +282,31 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             logger.warn("Unexpected IO exception while writing protobuf", e);
             throw new StatusRuntimeException(Status.INTERNAL);
         }
+    }
+
+    private QueryContext buildContext(
+            Boolean paymentRequired,
+            TransactionInfo transactionInfo,
+            HederaState state,
+            ReadableStoreFactory storeFactory,
+            Query query,
+            VersionedConfiguration configuration,
+            FeeCalculator feeCalculator) {
+        if (paymentRequired) {
+            final var payerID = requireNonNull(transactionInfo.payerID());
+            return new QueryContextImpl(
+                    state,
+                    storeFactory,
+                    query,
+                    configuration,
+                    recordCache,
+                    exchangeRateManager,
+                    feeCalculator,
+                    payerID);
+        }
+
+        return new QueryContextImpl(
+                state, storeFactory, query, configuration, recordCache, exchangeRateManager, feeCalculator, null);
     }
 
     private Query parseQuery(Bytes requestBuffer) {
