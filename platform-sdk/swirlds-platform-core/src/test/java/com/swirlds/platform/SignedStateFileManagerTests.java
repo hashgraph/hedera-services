@@ -315,8 +315,7 @@ class SignedStateFileManagerTests {
                     .build();
             final ReservedSignedState reservedSignedState = signedState.reserve("initialTestReservation");
 
-            controller.markSavedState(
-                    new StateAndRound(signedState.reserve("markSavedState"), mock(ConsensusRound.class)));
+            controller.markSavedState(new StateAndRound(reservedSignedState, mock(ConsensusRound.class)));
 
             if (signedState.isStateToSave()) {
                 assertTrue(
