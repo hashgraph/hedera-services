@@ -24,16 +24,39 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
+/**
+ * A default implementation of {@link ThreadFactory}.
+ */
 public class DefaultThreadFactory implements ThreadFactory {
 
+    /**
+     * The thread group.
+     */
     private final ThreadGroup group;
 
+    /**
+     * The thread name factory.
+     */
     private final Supplier<String> threadNameFactory;
 
+    /**
+     * The runnable to run on startup.
+     */
     private final Runnable onStartup;
 
+    /**
+     * The uncaught exception handler for threads.
+     */
     private final UncaughtExceptionHandler exceptionHandler;
 
+    /**
+     * Create a new instance of {@link DefaultThreadFactory}.
+     *
+     * @param group             the thread group
+     * @param threadNameFactory the thread name factory
+     * @param exceptionHandler  the uncaught exception handler
+     * @param onStartup         the runnable to run on startup
+     */
     public DefaultThreadFactory(
             @NonNull final ThreadGroup group,
             @NonNull final Supplier<String> threadNameFactory,
@@ -59,6 +82,11 @@ public class DefaultThreadFactory implements ThreadFactory {
         return thread;
     }
 
+    /**
+     * Create a new instance of {@link DefaultThreadFactory}.
+     * @param threadNamePrefix the thread name prefix
+     * @return the new instance
+     */
     @NonNull
     public static Supplier<String> createThreadNameFactory(@NonNull final String threadNamePrefix) {
         Objects.requireNonNull(threadNamePrefix, "threadNamePrefix must not be null");

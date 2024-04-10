@@ -37,6 +37,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 public class ThreadLocalHandlingTest {
 
+    public static final String TEST_VALUE = "test";
+
     List<Runnable> shutdownCalls = new ArrayList<>();
 
     @AfterEach
@@ -53,7 +55,7 @@ public class ThreadLocalHandlingTest {
         final CountDownLatch latch = new CountDownLatch(taskCount);
         final ThreadLocal<String> threadLocal = new ThreadLocal<>();
         final UncaughtExceptionHandler exceptionHandler = (t, e) -> e.printStackTrace();
-        final Runnable onStartup = () -> threadLocal.set("test");
+        final Runnable onStartup = () -> threadLocal.set(TEST_VALUE);
         final ExecutorFactory executorFactory =
                 DefaultExecutorFactory.create("test-group", onStartup, exceptionHandler);
         final ExecutorService executorService = executorFactory.createExecutorService(threadCount);
@@ -76,7 +78,7 @@ public class ThreadLocalHandlingTest {
         final CountDownLatch latch = new CountDownLatch(taskCount * 2);
         final ThreadLocal<String> threadLocal = new ThreadLocal<>();
         final UncaughtExceptionHandler exceptionHandler = (t, e) -> e.printStackTrace();
-        final Runnable onStartup = () -> threadLocal.set("test");
+        final Runnable onStartup = () -> threadLocal.set(TEST_VALUE);
         final ExecutorFactory executorFactory =
                 DefaultExecutorFactory.create("test-group", onStartup, exceptionHandler);
         final ScheduledExecutorService executorService = executorFactory.createScheduledExecutorService(threadCount);
@@ -106,7 +108,7 @@ public class ThreadLocalHandlingTest {
         final CountDownLatch latch = new CountDownLatch(taskCount);
         final ThreadLocal<String> threadLocal = new ThreadLocal<>();
         final UncaughtExceptionHandler exceptionHandler = (t, e) -> e.printStackTrace();
-        final Runnable onStartup = () -> threadLocal.set("test");
+        final Runnable onStartup = () -> threadLocal.set(TEST_VALUE);
         final ExecutorFactory executorFactory =
                 DefaultExecutorFactory.create("test-group", onStartup, exceptionHandler);
         final ForkJoinPool forkJoinPool = executorFactory.createForkJoinPool(threadCount);
@@ -128,7 +130,7 @@ public class ThreadLocalHandlingTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final ThreadLocal<String> threadLocal = new ThreadLocal<>();
         final UncaughtExceptionHandler exceptionHandler = (t, e) -> e.printStackTrace();
-        final Runnable onStartup = () -> threadLocal.set("test");
+        final Runnable onStartup = () -> threadLocal.set(TEST_VALUE);
         final ExecutorFactory executorFactory =
                 DefaultExecutorFactory.create("test-group", onStartup, exceptionHandler);
         final Runnable task = createCheckThreadLocalTask(latch, threadLocal, errors);
@@ -174,8 +176,8 @@ public class ThreadLocalHandlingTest {
             final String value = threadLocal.get();
             if (value == null) {
                 errors.add("ThreadLocal value is null");
-            } else if (!value.equals("test")) {
-                errors.add("ThreadLocal value is not 'test'");
+            } else if (!value.equals(TEST_VALUE)) {
+                errors.add("ThreadLocal value is not " + TEST_VALUE + " but " + value);
             }
             latch.countDown();
         };

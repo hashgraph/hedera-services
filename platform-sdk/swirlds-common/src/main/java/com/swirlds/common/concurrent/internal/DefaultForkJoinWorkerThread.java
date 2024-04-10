@@ -22,10 +22,25 @@ import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 
+/**
+ * A default implementation of {@link ForkJoinWorkerThread}.
+ */
 public class DefaultForkJoinWorkerThread extends ForkJoinWorkerThread {
 
+    /**
+     * The runnable to run on startup.
+     */
     private final Runnable onStartup;
 
+    /**
+     * Create a new instance of {@link DefaultForkJoinWorkerThread}.
+     *
+     * @param name                 the name of the thread
+     * @param group                the thread group
+     * @param pool                 the fork join pool
+     * @param preserveThreadLocals whether to preserve thread locals
+     * @param onStartup            the runnable to run on startup
+     */
     public DefaultForkJoinWorkerThread(
             @NonNull final String name,
             @NonNull final ThreadGroup group,

@@ -29,18 +29,45 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
+/**
+ * A default implementation of {@link ExecutorFactory}.
+ */
 public class DefaultExecutorFactory implements ExecutorFactory {
 
+    /**
+     * The thread factory for creating threads for executors.
+     */
     private final ThreadFactory executorThreadFactory;
 
+    /**
+     * The thread factory for creating threads for scheduled executors.
+     */
     private final ThreadFactory scheduledExecutorThreadFactory;
 
+    /**
+     * The thread factory for creating single threads.
+     */
     private final ThreadFactory singleThreadFactory;
 
+    /**
+     * The thread factory for creating fork join worker threads.
+     */
     private final ForkJoinWorkerThreadFactory forkJoinWorkerThreadFactory;
 
+    /**
+     * The uncaught exception handler for threads.
+     */
     private final UncaughtExceptionHandler handler;
 
+    /**
+     * Create a new instance of {@link DefaultExecutorFactory}.
+     *
+     * @param singleThreadFactory            the thread factory for creating single threads
+     * @param executorThreadFactory          the thread factory for creating threads for executors
+     * @param scheduledExecutorThreadFactory the thread factory for creating threads for scheduled executors
+     * @param forkJoinWorkerThreadFactory    the thread factory for creating fork join worker threads
+     * @param handler                        the uncaught exception handler for threads
+     */
     public DefaultExecutorFactory(
             @NonNull final ThreadFactory singleThreadFactory,
             @NonNull final ThreadFactory executorThreadFactory,
@@ -85,6 +112,14 @@ public class DefaultExecutorFactory implements ExecutorFactory {
         return singleThreadFactory.newThread(runnable);
     }
 
+    /**
+     * Create a new instance of {@link DefaultExecutorFactory}.
+     *
+     * @param groupName        the name for all thread groups
+     * @param onStartup        the runnable to run on thread startup
+     * @param exceptionHandler the uncaught exception handler for threads
+     * @return the new instance
+     */
     @NonNull
     public static DefaultExecutorFactory create(
             @NonNull final String groupName,
