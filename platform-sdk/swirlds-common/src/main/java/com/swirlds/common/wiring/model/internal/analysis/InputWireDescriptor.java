@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model;
+package com.swirlds.common.wiring.model.internal.analysis;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Describes a manual link between two components. Useful for adding information to the diagram that is not captured by
- * the wiring framework
+ * Uniquely describes an input wire within a wiring model.
  *
- * @param source the source scheduler
- * @param label  the label on the edge
- * @param target the target scheduler
+ * <p>
+ * This object exists so that standard input wires don't have to implement equals and hash code.
+ *
+ * @param taskSchedulerName the name of the task scheduler the input wire is bound to
+ * @param name              the name of the input wire
  */
-public record ModelManualLink(@NonNull String source, @NonNull String label, @NonNull String target) {}
+public record InputWireDescriptor(@NonNull String taskSchedulerName, @NonNull String name) {}

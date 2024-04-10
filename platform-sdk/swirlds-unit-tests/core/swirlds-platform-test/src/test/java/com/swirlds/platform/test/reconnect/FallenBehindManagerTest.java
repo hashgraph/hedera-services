@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.reconnect;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -29,23 +30,24 @@ import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class FallenBehindManagerTest {
-    final int numNodes = 11;
-    final AddressBook addressBook =
+    private final int numNodes = 11;
+    private final AddressBook addressBook =
             new RandomAddressBookGenerator().setSize(numNodes).build();
-    final double fallenBehindThreshold = 0.5;
-    final NodeId selfId = addressBook.getNodeId(0);
-    final RandomGraph graph = new RandomGraph(numNodes, numNodes + (numNodes % 2), numNodes);
-    final AtomicInteger platformNotification = new AtomicInteger(0);
-    final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
-    final ReconnectConfig config = new TestConfigBuilder()
+    private final double fallenBehindThreshold = 0.5;
+    private final NodeId selfId = addressBook.getNodeId(0);
+    private final Random random = getRandomPrintSeed();
+    private final RandomGraph graph = new RandomGraph(random, numNodes, numNodes + (numNodes % 2), numNodes);
+    private final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
+    private final ReconnectConfig config = new TestConfigBuilder()
             .withValue(ReconnectConfig_.FALLEN_BEHIND_THRESHOLD, fallenBehindThreshold)
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
-    final FallenBehindManager manager = new FallenBehindManagerImpl(
+    private final FallenBehindManager manager = new FallenBehindManagerImpl(
             addressBook,
             selfId,
             graph,

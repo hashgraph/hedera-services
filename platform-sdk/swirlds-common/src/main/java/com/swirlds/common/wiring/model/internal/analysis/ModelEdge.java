@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.model.internal;
+package com.swirlds.common.wiring.model.internal.analysis;
 
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 

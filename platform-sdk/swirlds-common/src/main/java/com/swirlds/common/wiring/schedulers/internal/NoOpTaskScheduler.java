@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.schedulers.internal;
 
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
@@ -35,19 +35,19 @@ import java.util.function.Consumer;
  */
 public class NoOpTaskScheduler<OUT> extends TaskScheduler<OUT> {
 
-    private final StandardWiringModel model;
+    private final TraceableWiringModel model;
 
     /**
      * Constructor.
      *
-     * @param model               the wiring model containing this task scheduler
-     * @param name                the name of the task scheduler
-     * @param type                the type of task scheduler
-     * @param flushEnabled        if true, then {@link #flush()} will be enabled, otherwise it will throw.
-     * @param squelchingEnabled   if true, then squelching will be enabled, otherwise trying to squelch will throw.
+     * @param model             the wiring model containing this task scheduler
+     * @param name              the name of the task scheduler
+     * @param type              the type of task scheduler
+     * @param flushEnabled      if true, then {@link #flush()} will be enabled, otherwise it will throw.
+     * @param squelchingEnabled if true, then squelching will be enabled, otherwise trying to squelch will throw.
      */
     public NoOpTaskScheduler(
-            @NonNull final StandardWiringModel model,
+            @NonNull final TraceableWiringModel model,
             @NonNull final String name,
             @NonNull final TaskSchedulerType type,
             final boolean flushEnabled,
@@ -106,7 +106,7 @@ public class NoOpTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @NonNull
     @Override
     protected StandardOutputWire<OUT> buildPrimaryOutputWire(
-            @NonNull final StandardWiringModel model, @NonNull final String name) {
+            @NonNull final TraceableWiringModel model, @NonNull final String name) {
         return new NoOpOutputWire<>(model, getName());
     }
 
