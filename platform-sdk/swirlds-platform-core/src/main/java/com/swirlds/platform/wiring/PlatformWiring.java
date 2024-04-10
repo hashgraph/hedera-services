@@ -651,6 +651,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         internalEventValidatorWiring.bind(builder.buildInternalEventValidator());
         eventDeduplicatorWiring.bind(builder.buildEventDeduplicator());
         eventSignatureValidatorWiring.bind(builder.buildEventSignatureValidator());
+        orphanBufferWiring.bind(builder.buildOrphanBuffer());
         inOrderLinkerWiring.bind(inOrderLinker);
         consensusEngineWiring.bind(consensusEngine);
         signedStateFileManagerWiring.bind(signedStateFileManager);
