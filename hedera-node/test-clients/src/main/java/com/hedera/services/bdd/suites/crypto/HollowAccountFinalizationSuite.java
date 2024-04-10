@@ -981,5 +981,4 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
         return getAliasedAccountInfo(evmAddress)
                 .has(accountWith().hasEmptyKey().evmAddress(evmAddress).noAlias());
     }
-
 }

@@ -83,33 +83,32 @@ public class AutoCreateUtils {
 
     public static HapiSpecOperation[] createHollowAccountFrom(@NonNull final String key) {
         return new HapiSpecOperation[] {
-                cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR),
-                withOpContext((spec, opLog) -> {
-                    final var ecdsaKey =
-                            spec.registry().getKey(key).getECDSASecp256K1().toByteArray();
-                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                    final var op = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HUNDRED_HBARS))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN);
-                    final var op2 = getAliasedAccountInfo(evmAddress)
-                            .has(accountWith()
-                                    .hasEmptyKey()
-                                    .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
-                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
-                    final HapiGetTxnRecord hapiGetTxnRecord =
-                            getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
-                    allRunFor(spec, op, op2, hapiGetTxnRecord);
+            cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+            cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR),
+            withOpContext((spec, opLog) -> {
+                final var ecdsaKey =
+                        spec.registry().getKey(key).getECDSASecp256K1().toByteArray();
+                final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                final var op = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HUNDRED_HBARS))
+                        .hasKnownStatus(SUCCESS)
+                        .via(TRANSFER_TXN);
+                final var op2 = getAliasedAccountInfo(evmAddress)
+                        .has(accountWith()
+                                .hasEmptyKey()
+                                .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
+                                .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                .receiverSigReq(false)
+                                .memo(LAZY_MEMO));
+                final HapiGetTxnRecord hapiGetTxnRecord =
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
+                allRunFor(spec, op, op2, hapiGetTxnRecord);
 
-                    final AccountID newAccountID = hapiGetTxnRecord
-                            .getFirstNonStakingChildRecord()
-                            .getReceipt()
-                            .getAccountID();
-                    spec.registry().saveAccountId(key, newAccountID);
-                })
+                final AccountID newAccountID = hapiGetTxnRecord
+                        .getFirstNonStakingChildRecord()
+                        .getReceipt()
+                        .getAccountID();
+                spec.registry().saveAccountId(key, newAccountID);
+            })
         };
     }
-
 }
