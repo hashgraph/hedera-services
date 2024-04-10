@@ -33,6 +33,7 @@ import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static java.math.BigInteger.ZERO;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -47,6 +48,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.List;
 import javax.inject.Inject;
@@ -68,16 +70,15 @@ public class CryptoTransferValidator {
      */
     public void pureChecks(@NonNull final CryptoTransferTransactionBody op) throws PreCheckException {
         final var acctAmounts = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
+        validateTruePreCheck(isNetZeroAdjustment(acctAmounts), INVALID_ACCOUNT_AMOUNTS);
+
         final var uniqueAcctIds = new HashSet<Pair<AccountID, Boolean>>();
-        long netBalance = 0;
         // Validate hbar transfers
         for (final AccountAmount acctAmount : acctAmounts) {
             validateTruePreCheck(acctAmount.hasAccountID(), INVALID_ACCOUNT_ID);
             final var acctId = validateAccountID(acctAmount.accountIDOrThrow(), null);
             uniqueAcctIds.add(Pair.of(acctId, acctAmount.isApproval()));
-            netBalance += acctAmount.amount();
         }
-        validateTruePreCheck(netBalance == 0, INVALID_ACCOUNT_AMOUNTS);
         validateFalsePreCheck(uniqueAcctIds.size() < acctAmounts.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
         // Validate token transfers
@@ -96,19 +97,17 @@ public class CryptoTransferValidator {
             // Validate the fungible transfers
             final var uniqueTokenAcctIds = new HashSet<Pair<AccountID, Boolean>>();
             final var fungibleTransfers = tokenTransfer.transfersOrElse(emptyList());
-            long netTokenBalance = 0;
+            validateTruePreCheck(isNetZeroAdjustment(fungibleTransfers), TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
             boolean nonZeroFungibleValueFound = false;
             for (final AccountAmount acctAmount : fungibleTransfers) {
                 validateTruePreCheck(acctAmount.hasAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                 uniqueTokenAcctIds.add(Pair.of(acctAmount.accountIDOrThrow(), acctAmount.isApproval()));
-                netTokenBalance += acctAmount.amount();
                 if (!nonZeroFungibleValueFound && acctAmount.amount() != 0) {
                     nonZeroFungibleValueFound = true;
                 }
             }
             validateFalsePreCheck(
                     uniqueTokenAcctIds.size() < fungibleTransfers.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
-            validateTruePreCheck(netTokenBalance == 0, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
             // Validate the nft transfers
             final var nftTransfers = tokenTransfer.nftTransfersOrElse(emptyList());
@@ -121,7 +120,7 @@ public class CryptoTransferValidator {
                 validateFalsePreCheck(
                         !nftIds.isEmpty() && nftIds.contains(nftTransfer.serialNumber()), INVALID_ACCOUNT_AMOUNTS);
                 validateFalsePreCheck(
-                        nftTransfer.senderAccountID().equals(nftTransfer.receiverAccountID()),
+                        nftTransfer.senderAccountIDOrThrow().equals(nftTransfer.receiverAccountID()),
                         ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
                 nftIds.add(nftTransfer.serialNumber());
             }
@@ -207,5 +206,13 @@ public class CryptoTransferValidator {
         }
 
         return false;
+    }
+
+    private static boolean isNetZeroAdjustment(@NonNull final List<AccountAmount> adjusts) {
+        var net = ZERO;
+        for (var adjust : adjusts) {
+            net = net.add(BigInteger.valueOf(adjust.amount()));
+        }
+        return net.equals(ZERO);
     }
 }

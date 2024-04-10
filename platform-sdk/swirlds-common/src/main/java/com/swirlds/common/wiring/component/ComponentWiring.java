@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.component;
 
-import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 
 import com.swirlds.common.wiring.component.internal.FilterToBind;
 import com.swirlds.common.wiring.component.internal.InputWireToBind;

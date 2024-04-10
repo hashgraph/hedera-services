@@ -24,10 +24,10 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
@@ -36,8 +36,9 @@ public class EventWindowManagerTests {
     @Test
     void WiringInputTest() {
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
+        final WiringModel model = WiringModelBuilder.create(
+                        TestPlatformContextBuilder.create().build())
+                .build();
         final ComponentWiring<EventWindowManager, NonAncientEventWindow> wiring = new ComponentWiring<>(
                 model,
                 EventWindowManager.class,

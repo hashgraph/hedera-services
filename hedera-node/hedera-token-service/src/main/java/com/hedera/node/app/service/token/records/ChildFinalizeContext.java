@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -59,4 +60,12 @@ public interface ChildFinalizeContext {
      */
     @NonNull
     <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+    /**
+     * Returns the current {@link Configuration} for the context.
+     *
+     * @return the configuration
+     */
+    @NonNull
+    Configuration configuration();
 }
