@@ -93,6 +93,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -351,6 +352,21 @@ public class FileUpdateSuite extends HapiSuite {
                         getFileContents("test").hasContents(ignore -> new4k),
                         getFileInfo("test").hasMemo(secondMemo));
     }
+
+    @HapiTest
+    public HapiSpec cannotUpdateImmutableFile() {
+        final String file1 = "FILE_1";
+        final String file2 = "FILE_2";
+        return defaultHapiSpec("CannotUpdateImmutableFile")
+                .given(
+                        fileCreate(file1).contents("Hello World").unmodifiable(),
+                        fileCreate(file2).contents("Hello World").waclShape(SigControl.emptyList()))
+                .when()
+                .then(
+                        fileUpdate(file1).contents("Goodbye World").signedBy(DEFAULT_PAYER).hasKnownStatus(UNAUTHORIZED),
+                        fileUpdate(file2).contents("Goodbye World").signedBy(DEFAULT_PAYER).hasKnownStatus(UNAUTHORIZED));
+    }
+
 
     @HapiTest
     final HapiSpec cannotUpdateExpirationPastMaxLifetime() {

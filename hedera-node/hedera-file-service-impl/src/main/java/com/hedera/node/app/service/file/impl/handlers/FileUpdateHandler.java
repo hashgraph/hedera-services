@@ -147,7 +147,7 @@ public class FileUpdateHandler implements TransactionHandler {
 
         // First validate this file is mutable; and the pending mutations are allowed
         if (wantsToMutateNonExpiryField(fileUpdate)) {
-            validateFalse(file.keys() == null, UNAUTHORIZED);
+            validateTrue(file.hasKeys() && file.keys().hasKeys() && !file.keys().keys().isEmpty(), UNAUTHORIZED);
             validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
         }
 
