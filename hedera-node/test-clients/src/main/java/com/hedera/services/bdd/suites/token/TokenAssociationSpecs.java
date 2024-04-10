@@ -147,11 +147,18 @@ public class TokenAssociationSpecs extends HapiSuite {
                         tokenDelete(TBD_TOKEN))
                 .when()
                 .then(
-                        tokenAssociate(null, VANILLA_TOKEN).fee(DEFAULT_FEE).signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID),
-                        tokenAssociate(unknownID, VANILLA_TOKEN).fee(DEFAULT_FEE).signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID),
+                        tokenAssociate(null, VANILLA_TOKEN)
+                                .fee(DEFAULT_FEE)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasPrecheck(INVALID_ACCOUNT_ID),
+                        tokenAssociate(unknownID, VANILLA_TOKEN)
+                                .fee(DEFAULT_FEE)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasPrecheck(INVALID_ACCOUNT_ID),
                         tokenAssociate(BOB, VANILLA_TOKEN).fee(DEFAULT_FEE).hasKnownStatus(ACCOUNT_DELETED),
                         tokenAssociate(ALICE, List.of()).hasKnownStatus(SUCCESS),
-                        tokenAssociate(ALICE, VANILLA_TOKEN, VANILLA_TOKEN).hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
+                        tokenAssociate(ALICE, VANILLA_TOKEN, VANILLA_TOKEN)
+                                .hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
                         tokenAssociate(ALICE, unknownID).hasKnownStatus(INVALID_TOKEN_ID),
                         tokenAssociate(ALICE, TBD_TOKEN).hasKnownStatus(TOKEN_WAS_DELETED),
                         tokenAssociate(ALICE, KNOWABLE_TOKEN).hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
@@ -170,8 +177,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY),
                         tokenAssociate(ALICE, KNOWABLE_TOKEN))
                 .when()
-                .then(
-                        tokenAssociate(ALICE, VANILLA_TOKEN).hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
+                .then(tokenAssociate(ALICE, VANILLA_TOKEN).hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
     }
 
     @HapiTest
