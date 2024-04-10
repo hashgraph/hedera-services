@@ -61,6 +61,7 @@ import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
@@ -82,6 +83,7 @@ import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateDumpRequest;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.PlatformStatusManager;
@@ -132,7 +134,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final OrphanBufferWiring orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
-    private final ComponentWiring<EventCreationManager, GossipEvent> eventCreationManagerWiring;
+    private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
+    private final ComponentWiring<SelfEventSigner, GossipEvent> selfEventSignerWiring;
     private final SignedStateFileManagerWiring signedStateFileManagerWiring;
     private final StateSignerWiring stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
@@ -236,6 +239,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 new ComponentWiring<>(model, ConsensusEngine.class, schedulers.consensusEngineScheduler());
         eventCreationManagerWiring =
                 new ComponentWiring<>(model, EventCreationManager.class, schedulers.eventCreationManagerScheduler());
+        selfEventSignerWiring = new ComponentWiring<>(model, SelfEventSigner.class, config.selfEventSigner());
         pcesSequencerWiring = new ComponentWiring<>(model, PcesSequencer.class, schedulers.pcesSequencerScheduler());
 
         applicationTransactionPrehandlerWiring = new ComponentWiring<>(
@@ -433,6 +437,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::maybeCreateEvent));
 
         eventCreationManagerWiring
+                .getOutputWire()
+                .solderTo(selfEventSignerWiring.getInputWire(SelfEventSigner::signEvent));
+        selfEventSignerWiring
                 .getOutputWire()
                 .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent), INJECT);
         orphanBufferWiring
@@ -659,6 +666,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         shadowgraphWiring.bind(shadowgraph);
         pcesSequencerWiring.bind(pcesSequencer);
         eventCreationManagerWiring.bind(eventCreationManager);
+        selfEventSignerWiring.bind(builder.buildSelfEventSigner());
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
         eventWindowManagerWiring.bind(eventWindowManager);
         applicationTransactionPrehandlerWiring.bind(transactionPrehandler);
