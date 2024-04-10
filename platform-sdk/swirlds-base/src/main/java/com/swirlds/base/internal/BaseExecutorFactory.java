@@ -162,4 +162,13 @@ public interface BaseExecutorFactory {
     static void addObserver(@NonNull BaseExecutorObserver observer) {
         BaseScheduledExecutorService.getInstance().addObserver(observer);
     }
+
+    /**
+     * Removes an observer from the executor.
+     *
+     * @param observer the observer to remove
+     */
+    static void removeObserver(@NonNull BaseExecutorObserver observer) {
+        BaseScheduledExecutorService.getInstance().removeObserver(observer);
+    }
 }
