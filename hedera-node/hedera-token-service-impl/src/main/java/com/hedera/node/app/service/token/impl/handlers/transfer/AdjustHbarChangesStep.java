@@ -162,7 +162,7 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
             @NonNull final AccountID payer, @NonNull final List<AssessedCustomFee> assessedCustomFees) {
         for (final var fee : assessedCustomFees) {
             if (fee.tokenId() == null
-                    && fee.effectivePayerAccountIdOrElse(emptyList()).contains(payer)) {
+                    && fee.effectivePayerAccountId().contains(payer)) {
                 return true;
             }
         }
