@@ -478,15 +478,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         consensusRoundHandlerWiring
                 .stateOutput()
                 .solderTo(latestImmutableStateNexusWiring.getInputWire(SignedStateNexus::setState));
-        // FUTURE WORK: it is guaranteed that markSavedState will be called before the state arrives at the
-        // signedStateFileManager, since SavedStateController::markSavedState is directly scheduled following a
-        // transformer (wired during construction), whereas the data flowing to the signedStateFileManager is soldered
-        // here in this method (via the signedStateHasher). This is guaranteed because data is distributed at runtime
-        // in the order that it was originally soldered.
-        //
-        // Though robust, this guarantee is not immediately obvious, and thus is difficult to maintain. The solution is
-        // to move the logic of SavedStateController::markSavedState into the signedStateFileManager. There is no reason
-        // that saved state marking needs to happen in a separate place from where states are actually being saved.
         consensusRoundHandlerWiring
                 .stateAndRoundOutput()
                 .solderTo(savedStateControllerWiring.getInputWire(SavedStateController::markSavedState));

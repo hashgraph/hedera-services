@@ -23,7 +23,12 @@ import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Controls which signed states should be written to disk based on input from other components
+ * Controls which signed states should be written to disk based on input from other components.
+ * <p>
+ * This is intentionally split out of the component that actually saves the state. Saving the state can take a long
+ * time, and we don't want the queue of states waiting to be handled by that component to grow large while we are
+ * waiting to write a state. It is much better simply not to put states into that component's queue if we don't want to
+ * write them to disk.
  */
 public interface SavedStateController {
     /**
