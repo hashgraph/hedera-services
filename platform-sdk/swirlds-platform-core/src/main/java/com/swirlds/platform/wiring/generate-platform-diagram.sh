@@ -18,7 +18,7 @@ pcli diagram \
     -s 'applicationTransactionPrehandler:futures:🔮' \
     -s 'eventDurabilityNexus:wait for durability:🕑' \
     -s 'pcesReplayer:done streaming pces:✅' \
-    -s 'orphanBufferSplitter:events to gossip:📬' \
+    -s 'OrphanBufferSplitter:events to gossip:📬' \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'eventCreationManager:non-validated events:🍎' \
@@ -27,10 +27,10 @@ pcli diagram \
     -s 'issNotificationSplitter:Iss Notification:💥' \
     -s 'toNotification:state written notification:📦' \
     -s 'latestCompleteStateNotifier:complete state notification:💢' \
-    -s 'orphanBufferSplitter:preconsensus signatures:🔰' \
+    -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
-    -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
+    -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
     -g 'Consensus Engine:consensusEngine,consensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
     -g 'State File Manager:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,statusManager_submitStateWritten,toNotification' \
     -g 'State File Management:State File Manager,📦,📀' \

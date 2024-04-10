@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.orphan;
 
+import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,6 +37,7 @@ public interface OrphanBuffer {
      * @param event the event to handle
      * @return the list of events that are no longer orphans as a result of this event being handled
      */
+    @InputWireLabel("unordered events")
     @NonNull
     List<GossipEvent> handleEvent(@NonNull GossipEvent event);
 
@@ -45,6 +47,7 @@ public interface OrphanBuffer {
      * @param nonAncientEventWindow the non-ancient event window
      * @return the list of events that are no longer orphans as a result of this change
      */
+    @InputWireLabel("non-ancient event window")
     @NonNull
     List<GossipEvent> setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow);
 
