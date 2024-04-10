@@ -502,16 +502,8 @@ public class TestingEventBuilder {
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
-        final NodeId otherParentCreatorId;
-        if (otherParent == null) {
-            otherParentCreatorId = null;
-        } else {
-            otherParentCreatorId = otherParent.getHashedData().getCreatorId();
-        }
-
-        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(otherParentCreatorId, signature);
+        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(signature);
         final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
-        gossipEvent.buildDescriptor();
 
         return gossipEvent;
     }

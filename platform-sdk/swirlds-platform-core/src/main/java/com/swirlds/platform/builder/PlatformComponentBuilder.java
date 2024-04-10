@@ -26,6 +26,8 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
+import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
@@ -63,6 +65,7 @@ public class PlatformComponentBuilder {
     private InternalEventValidator internalEventValidator;
     private EventDeduplicator eventDeduplicator;
     private EventSignatureValidator eventSignatureValidator;
+    private SelfEventSigner selfEventSigner;
     private StateGarbageCollector stateGarbageCollector;
 
     /**
@@ -296,5 +299,37 @@ public class PlatformComponentBuilder {
             stateGarbageCollector = new DefaultStateGarbageCollector(blocks.platformContext());
         }
         return stateGarbageCollector;
+    }
+
+    /**
+     * Provide a self event signer in place of the platform's default self event signer.
+     *
+     * @param selfEventSigner the self event signer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withSelfEventSigner(@NonNull final SelfEventSigner selfEventSigner) {
+        throwIfAlreadyUsed();
+        if (this.selfEventSigner != null) {
+            throw new IllegalStateException("Self event signer has already been set");
+        }
+        this.selfEventSigner = Objects.requireNonNull(selfEventSigner);
+        return this;
+    }
+
+    /**
+     * Build the self event signer if it has not yet been built. If one has been provided via
+     * {@link #withSelfEventSigner(SelfEventSigner)}, that signer will be used. If this method is called more than once,
+     * only the first call will build the self event signer. Otherwise, the default signer will be created and
+     * returned.
+     *
+     * @return the self event signer
+     */
+    @NonNull
+    public SelfEventSigner buildSelfEventSigner() {
+        if (selfEventSigner == null) {
+            selfEventSigner = new DefaultSelfEventSigner(blocks.keysAndCerts());
+        }
+        return selfEventSigner;
     }
 }
