@@ -424,8 +424,8 @@ public class BaseTokenHandler {
     }
 
     /**
-     * Check if TokenUpdateOp wants to remove some of the low priority keys or the admin key
-     * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey, metadatKey
+     * Check if TokenUpdateOp wants to remove some of the token keys
+     * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey, metadataKey
      */
     public static boolean containsKeyRemoval(@NonNull final TokenUpdateTransactionBody op) {
         return op.hasAdminKey() && isKeyRemoval(op.adminKey())

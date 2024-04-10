@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CURRENT_TREASURY_STILL_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_ADMIN_KEY;
@@ -443,14 +444,16 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
 
+        // if we remove the admin key or any of the low priority keys, we should allow
+        // only the admin key to sign.
+        if (containsKeyRemoval(op)) {
+            validateTruePreCheck(originalToken.hasAdminKey(), INVALID_SIGNATURE);
+            context.requireKey(originalToken.adminKey());
+            return;
+        }
+
         List<Key> lowPriorityKeys;
         if (originalToken.hasAdminKey()) {
-            // if we remove the admin key or any of the low priority keys, we should allow
-            // only the admin key to sign.
-            if (containsKeyRemoval(op)) {
-                context.requireKey(originalToken.adminKey());
-                return;
-            }
             // if we update any of the low priority keys, we should allow either admin key
             // or the respective low priority key to sign.
             if (noOtherFieldThanLowPriorityKeyOrMetadataWillBeUpdated(op)) {
