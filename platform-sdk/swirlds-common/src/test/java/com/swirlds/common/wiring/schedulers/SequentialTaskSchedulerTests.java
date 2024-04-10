@@ -41,6 +41,7 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Random;
@@ -52,6 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -2378,7 +2380,6 @@ class SequentialTaskSchedulerTests {
 
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
-    @Tag(TIMING_SENSITIVE)
     void squelching(final String typeString) {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
@@ -2450,4 +2451,32 @@ class SequentialTaskSchedulerTests {
 
         model.stop();
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
+    void inputWireWithNoArgumentTest(@NonNull final String typeString) {
+        final WiringModel model = TestWiringModelBuilder.create();
+        final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
+
+        final AtomicInteger handleCount = new AtomicInteger();
+        final Supplier<Integer> handler = () -> {
+            handleCount.incrementAndGet();
+            return handleCount.get();
+        };
+
+        final TaskScheduler<Integer> taskScheduler = model.schedulerBuilder("test")
+                .withType(type)
+                .withUnhandledTaskCapacity(100)
+                .withFlushingEnabled(true)
+                .withSquelchingEnabled(true)
+                .build()
+                .cast();
+        final BindableInputWire<Void, Integer> inputWire = taskScheduler.buildInputWire("testInput");
+        //        inputWire.bindConsumer(ignored -> );
+
+        model.start();
+    }
+
+    @Test
+    void inputWireWithNoArgumentOrReturnTest() {}
 }

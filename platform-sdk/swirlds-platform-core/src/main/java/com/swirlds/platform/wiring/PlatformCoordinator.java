@@ -173,10 +173,10 @@ public class PlatformCoordinator {
 
         // Phase 4: clear
         // Data is no longer moving through the system. Clear all the internal data structures in the wiring objects.
-        eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear).inject(new ClearTrigger());
-        orphanBufferWiring.getInputWire(OrphanBuffer::clear).inject(null); // TODO
-        inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
-        stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
-        eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(new ClearTrigger());
+        eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear).inject(ClearTrigger.INSTANCE);
+        orphanBufferWiring.getInputWire(OrphanBuffer::clear).inject(ClearTrigger.INSTANCE);
+        inOrderLinkerWiring.clearInput().inject(ClearTrigger.INSTANCE);
+        stateSignatureCollectorWiring.getClearInput().inject(ClearTrigger.INSTANCE);
+        eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(ClearTrigger.INSTANCE);
     }
 }

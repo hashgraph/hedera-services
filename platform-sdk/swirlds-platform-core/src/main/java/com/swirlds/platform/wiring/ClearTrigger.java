@@ -19,4 +19,9 @@ package com.swirlds.platform.wiring;
 /**
  * A placeholder object, to provide a type to the input `clear` wire for wiring components.
  */
-public record ClearTrigger() {}
+public final class ClearTrigger {
+
+    public static final ClearTrigger INSTANCE = new ClearTrigger();
+
+    private ClearTrigger() {}
+}

@@ -122,7 +122,7 @@ public class DefaultConsensusEngine implements ConsensusEngine {
         final NonAncientEventWindow nonAncientEventWindow =
                 new NonAncientEventWindow(snapshot.round(), ancientThreshold, ancientThreshold, ancientMode);
 
-        linker.clear(new ClearTrigger());
+        linker.clear(ClearTrigger.INSTANCE);
         linker.setNonAncientEventWindow(nonAncientEventWindow);
         consensus.loadSnapshot(snapshot);
     }
