@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -112,8 +113,8 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         final var fungibleBurnCount = op.amount();
         // Wrapping the serial nums this way de-duplicates the serial nums:
         final var nftSerialNums = new ArrayList<>(new LinkedHashSet<>(op.serialNumbers()));
-        final var validated =
-                validateSemantics(tokenId, fungibleBurnCount, nftSerialNums, tokenStore, tokenRelStore, tokensConfig);
+        final var validated = validateSemantics(
+                tokenId, fungibleBurnCount, nftSerialNums, tokenStore, tokenRelStore, accountStore, tokensConfig);
         final var treasuryRel = validated.tokenTreasuryRel();
         final var token = validated.token();
 
@@ -185,6 +186,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
             @NonNull final List<Long> nftSerialNums,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
+            @NonNull final ReadableAccountStore accountStore,
             @NonNull final TokensConfig tokensConfig) {
         validateTrue(fungibleBurnCount >= 0, INVALID_TOKEN_BURN_AMOUNT);
 
@@ -194,7 +196,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
 
         final var treasuryAcctId = token.treasuryAccountId();
-        final var treasuryRel = TokenHandlerHelper.getIfUsable(treasuryAcctId, tokenId, tokenRelStore, );
+        final var treasuryRel = TokenHandlerHelper.getIfUsable(treasuryAcctId, tokenId, tokenRelStore, accountStore);
         return new ValidationResult(token, treasuryRel);
     }
 

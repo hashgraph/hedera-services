@@ -130,6 +130,7 @@ public class TokenManagementSpecs extends HapiSuite {
     public boolean canRunConcurrent() {
         return true;
     }
+
     @HapiTest
     private HapiSpec aliasFormWorksForAllTokenOps() {
         final var CIVILIAN = "civilian";
@@ -158,8 +159,7 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .pauseKey(PAUSE_KEY)
                                 .kycKey(KYC_KEY),
-                        tokenAssociateWithAlias(partyAlias, PRIMARY)
-                                .signedBy(partyAlias, DEFAULT_PAYER),
+                        tokenAssociateWithAlias(partyAlias, PRIMARY).signedBy(partyAlias, DEFAULT_PAYER),
                         getAliasedAccountInfo(partyAlias)
                                 .hasToken(relationshipWith(PRIMARY).balance(0))
                                 .logged(),

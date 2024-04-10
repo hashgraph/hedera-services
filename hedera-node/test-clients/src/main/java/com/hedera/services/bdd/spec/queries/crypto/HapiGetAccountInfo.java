@@ -367,9 +367,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        return super.toStringHelper()
-                .add("account", account)
-                .add("aliasKeySource", aliasKeySource);
+        return super.toStringHelper().add("account", account).add("aliasKeySource", aliasKeySource);
     }
 
     private String repr() {

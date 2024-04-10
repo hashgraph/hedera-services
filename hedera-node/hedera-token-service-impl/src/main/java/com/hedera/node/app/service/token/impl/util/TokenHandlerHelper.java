@@ -219,7 +219,7 @@ public class TokenHandlerHelper {
         requireNonNull(tokenId);
         requireNonNull(tokenRelStore);
         var aliasedId = accountId;
-        if(accountId.hasAlias() && !accountId.hasAccountNum()) {
+        if (accountId.hasAlias() && !accountId.hasAccountNum()) {
             aliasedId = accountStore.getAccountIDByAlias(accountId.aliasOrThrow());
         }
         final var tokenRel = tokenRelStore.get(aliasedId, tokenId);

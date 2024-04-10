@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookU
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenGrantKycUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -52,7 +51,6 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     private String alias = null;
     private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
-
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.TokenGrantKycToAccount;
@@ -65,7 +63,7 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     public HapiTokenKycGrant(final String token, final String reference, final ReferenceType referenceType) {
         this.token = token;
         this.referenceType = referenceType;
-        if(referenceType == ReferenceType.ALIAS_KEY_NAME) {
+        if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
             this.alias = reference;
         } else {
             this.account = reference;

@@ -122,7 +122,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
 
         // validate treasury relation exists
-        final var treasuryRel = TokenHandlerHelper.getIfUsable(token.treasuryAccountId(), tokenId, tokenRelStore, );
+        final var treasuryRel =
+                TokenHandlerHelper.getIfUsable(token.treasuryAccountId(), tokenId, tokenRelStore, accountStore);
 
         validateTrue(treasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         if (token.hasKycKey()) {

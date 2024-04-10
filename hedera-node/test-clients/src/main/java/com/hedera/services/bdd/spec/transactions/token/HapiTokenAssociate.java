@@ -26,7 +26,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenAssociateUsage;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -66,7 +65,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
     public HapiTokenAssociate(String reference, ReferenceType referenceType, String... tokens) {
         this.referenceType = referenceType;
-        if(referenceType == ReferenceType.ALIAS_KEY_NAME) {
+        if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
             this.alias = reference;
         } else {
             this.account = reference;
