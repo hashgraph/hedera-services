@@ -67,6 +67,7 @@ import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
@@ -485,6 +486,7 @@ public final class PlatformBuilder {
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
                 intakeEventCounter,
+                new RandomBuilder(),
                 firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);
