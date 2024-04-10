@@ -196,7 +196,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var treasury = accountStore.get(newToken.treasuryAccountId());
         // Validate if token relation can be created between treasury and new token
         // If this succeeds, create and link token relation.
-        tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, treasury, newToken, tokenRelStore);
+        tokenCreateValidator.validateAssociation(
+                entitiesConfig, tokensConfig, treasury, newToken, tokenRelStore, accountStore);
         createAndLinkTokenRels(treasury, List.of(newToken), accountStore, tokenRelStore);
         recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newToken.tokenId(), treasury.accountId()));
 
@@ -215,7 +216,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
             // Validate if token relation can be created between collector and new token
             // If this succeeds, create and link token relation.
-            tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
+            tokenCreateValidator.validateAssociation(
+                    entitiesConfig, tokensConfig, collector, newToken, tokenRelStore, accountStore);
             createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
             recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newToken.tokenId(), collector.accountId()));
         }

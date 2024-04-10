@@ -20,8 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -117,9 +117,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
 
             final var effectiveOwner = getEffectiveOwner(ownerId, payerAccount, accountStore, expiryValidator);
 
-            final var relation = tokenRelStore.get(effectiveOwner.accountId(), token.tokenId());
-            validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-
+            getIfUsable(effectiveOwner.accountIdOrThrow(), token.tokenIdOrThrow(), tokenRelStore, accountStore);
             validateDeleteSerialNums(serialNums, tokenId, nftStore);
         }
     }

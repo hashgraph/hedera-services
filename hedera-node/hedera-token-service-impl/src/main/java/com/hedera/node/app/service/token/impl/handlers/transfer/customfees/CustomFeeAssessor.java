@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Collections.emptyList;
 
@@ -108,7 +109,7 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                     // priority relative to other failure responses that would be assigned in a later step
                     // if we didn't fail here
                     final var accountId = entryTx.getKey();
-                    final var tokenRel = tokenRelStore.get(accountId, entry.getKey());
+                    final var tokenRel = getIfUsable(accountId, entry.getKey(), tokenRelStore, accountStore);
                     final var precedingChanges =
                             result.getImmutableInputTokenAdjustments().get(entry.getKey());
                     final var precedingAdjustment =

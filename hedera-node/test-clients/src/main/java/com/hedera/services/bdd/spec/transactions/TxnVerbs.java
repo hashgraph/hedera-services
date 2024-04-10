@@ -203,8 +203,8 @@ public class TxnVerbs {
         return new HapiTokenDissociate(account, tokens);
     }
 
-    public static HapiTokenDissociate tokenDissociateWithAlias(ByteString alias, String... tokens) {
-        return new HapiTokenDissociate(alias, tokens);
+    public static HapiTokenDissociate tokenDissociateWithAlias(String alias, String... tokens) {
+        return new HapiTokenDissociate(alias, ReferenceType.ALIAS_KEY_NAME, tokens);
     }
 
     public static HapiTokenAssociate tokenAssociate(String account, String... tokens) {
@@ -291,16 +291,16 @@ public class TxnVerbs {
         return new HapiTokenFreeze(token, account);
     }
 
-    public static HapiTokenFreeze tokenFreezeWithAlias(String token, ByteString alias) {
-        return new HapiTokenFreeze(token, alias);
+    public static HapiTokenFreeze tokenFreezeWithAlias(String token, String alias) {
+        return new HapiTokenFreeze(token, alias, ReferenceType.ALIAS_KEY_NAME);
     }
 
     public static HapiTokenUnfreeze tokenUnfreeze(String token, String account) {
         return new HapiTokenUnfreeze(token, account);
     }
 
-    public static HapiTokenUnfreeze tokenUnfreezeWithAlias(String token, ByteString alias) {
-        return new HapiTokenUnfreeze(token, alias);
+    public static HapiTokenUnfreeze tokenUnfreezeWithAlias(String token, String alias) {
+        return new HapiTokenUnfreeze(token, alias, ReferenceType.ALIAS_KEY_NAME);
     }
 
     public static HapiTokenKycGrant grantTokenKyc(String token, String account) {
@@ -315,16 +315,16 @@ public class TxnVerbs {
         return new HapiTokenKycRevoke(token, account);
     }
 
-    public static HapiTokenKycRevoke revokeTokenKycWithAlias(String token, ByteString alias) {
-        return new HapiTokenKycRevoke(token, alias);
+    public static HapiTokenKycRevoke revokeTokenKycWithAlias(String token, String alias) {
+        return new HapiTokenKycRevoke(token, alias, ReferenceType.ALIAS_KEY_NAME);
     }
 
     public static HapiTokenWipe wipeTokenAccount(String token, String account, long amount) {
         return new HapiTokenWipe(token, account, amount);
     }
 
-    public static HapiTokenWipe wipeTokenAccountWithAlias(String token, ByteString alias, long amount) {
-        return new HapiTokenWipe(token, alias, amount);
+    public static HapiTokenWipe wipeTokenAccountWithAlias(String token, String alias, long amount) {
+        return new HapiTokenWipe(token, alias, amount, ReferenceType.ALIAS_KEY_NAME);
     }
 
     public static HapiTokenWipe wipeTokenAccount(String token, String account, List<Long> serialNumbers) {

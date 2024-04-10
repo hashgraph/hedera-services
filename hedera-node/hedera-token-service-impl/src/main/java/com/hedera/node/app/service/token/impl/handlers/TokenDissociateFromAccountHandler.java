@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -43,7 +44,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.util.TokenRelListCalculator;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -226,14 +226,13 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final ExpiryValidator expiryValidator) {
         // Check that the account is usable
-        final var acct = TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
+        final var acct = getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
         // Construct the dissociation for each token ID
         final var dissociations = new ArrayList<Dissociation>();
         for (final var tokenId : tokenIds) {
             validateTrue(tokenId.tokenNum() > 0, INVALID_TOKEN_ID);
-            final var tokenRel = tokenRelStore.get(accountId, tokenId);
-            validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+            final var tokenRel = getIfUsable(accountId, tokenId, tokenRelStore, accountStore);
 
             // Here we check/retrieve a token that may not be "usable," but since we are dissociating token relations,
             // we don't require a usable token (or even an existing token). We only need to update the token relation
@@ -246,7 +245,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 // the dissociated balance to the treasury
                 if (!possiblyUnusableToken.deleted() && possiblyUnusableToken.treasuryAccountId() != null) {
                     final var tokenTreasuryAcct = possiblyUnusableToken.treasuryAccountId();
-                    dissociatedTokenTreasuryRel = tokenRelStore.get(tokenTreasuryAcct, tokenId);
+                    dissociatedTokenTreasuryRel = getIfUsable(tokenTreasuryAcct, tokenId, tokenRelStore, accountStore);
                 } else {
                     dissociatedTokenTreasuryRel = null;
                 }

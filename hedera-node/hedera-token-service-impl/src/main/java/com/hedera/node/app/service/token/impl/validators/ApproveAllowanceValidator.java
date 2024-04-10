@@ -25,7 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -147,7 +147,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
                     TokenSupplyType.FINITE.equals(token.supplyType()) && amount > token.maxSupply(),
                     AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
             // validate
-            validateTokenBasics(effectiveOwner, spender, token, tokenRelStore);
+            validateTokenBasics(effectiveOwner, spender, token, tokenRelStore, accountStore);
         }
     }
 
@@ -185,7 +185,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             }
 
             final var effectiveOwner = getEffectiveOwner(owner, payer, accountStore, expiryValidator);
-            validateTokenBasics(effectiveOwner, spender, token, tokenRelStore);
+            validateTokenBasics(effectiveOwner, spender, token, tokenRelStore, accountStore);
 
             // If a spender has been given approveForAll privileges, then it has the same privileges as owner of NFT.
             // But, the spender is not allowed to grant approveForAll privileges to anyone else.
@@ -226,16 +226,16 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final Account owner,
             final AccountID spender,
             final Token token,
-            final ReadableTokenRelationStore tokenRelStore) {
-        final var ownerId = owner.accountId();
-        final var tokenId = token.tokenId();
+            final ReadableTokenRelationStore tokenRelStore,
+            final ReadableAccountStore accountStore) {
+        final var ownerId = owner.accountIdOrThrow();
+        final var tokenId = token.tokenIdOrThrow();
         // ONLY reject self-approval for NFT's; else allow to match OZ ERC-20
         validateFalse(
                 token.tokenType() != TokenType.FUNGIBLE_COMMON
                         && owner.accountIdOrThrow().equals(spender),
                 SPENDER_ACCOUNT_SAME_AS_OWNER);
-        final var relation = tokenRelStore.get(ownerId, tokenId);
-        validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        getIfUsable(ownerId, tokenId, tokenRelStore, accountStore);
     }
 
     /**

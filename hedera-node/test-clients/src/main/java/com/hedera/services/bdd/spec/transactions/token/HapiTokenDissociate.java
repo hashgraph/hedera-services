@@ -17,15 +17,17 @@
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenDissociateUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -46,9 +48,10 @@ import org.apache.logging.log4j.Logger;
 public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
     static final Logger log = LogManager.getLogger(HapiTokenDissociate.class);
 
-    private final String account;
+    private String account;
     private final List<String> tokens = new ArrayList<>();
-    private ByteString alias = ByteString.EMPTY;
+    private String alias = null;
+    private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
     @Override
     public HederaFunctionality type() {
@@ -56,13 +59,16 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
     }
 
     public HapiTokenDissociate(final String account, final String... tokens) {
-        this.account = account;
-        this.tokens.addAll(List.of(tokens));
+        this(account, ReferenceType.REGISTRY_NAME, tokens);
     }
 
-    public HapiTokenDissociate(final ByteString alias, final String... tokens) {
-        this.account = null;
-        this.alias = alias;
+    public HapiTokenDissociate(final String reference, ReferenceType referenceType, final String... tokens) {
+        this.referenceType = referenceType;
+        if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
+            this.alias = reference;
+        } else {
+            this.account = reference;
+        }
         this.tokens.addAll(List.of(tokens));
     }
 
@@ -86,10 +92,11 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         AccountID aId;
-        if (!alias.isEmpty()) {
-            aId = AccountID.newBuilder().setAlias(alias).build();
-        } else {
+        if (referenceType == ReferenceType.REGISTRY_NAME) {
             aId = TxnUtils.asId(account, spec);
+        } else {
+            aId = asIdForKeyLookUp(alias, spec);
+            account = asAccountString(aId);
         }
         final TokenDissociateTransactionBody opBody = spec.txns()
                 .<TokenDissociateTransactionBody, TokenDissociateTransactionBody.Builder>body(

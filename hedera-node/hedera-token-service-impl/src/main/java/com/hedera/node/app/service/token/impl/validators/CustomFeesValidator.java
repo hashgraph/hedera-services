@@ -26,7 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZER
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -90,7 +90,7 @@ public class CustomFeesValidator {
         // For these custom fees we need to associate the collector with the token.
         final List<CustomFee> fees = new ArrayList<>();
         final var tokenType = createdToken.tokenType();
-        final var createdTokenId = createdToken.tokenId();
+        final var createdTokenId = createdToken.tokenIdOrThrow();
         for (final var fee : customFees) {
             final var collector = accountStore.getAccountById(fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT));
             validateTrue(collector != null, INVALID_CUSTOM_FEE_COLLECTOR);
@@ -100,9 +100,10 @@ public class CustomFeesValidator {
 
             switch (fee.fee().kind()) {
                 case FIXED_FEE -> validateFixedFeeForCreation(
-                        tokenType, fee, createdTokenId, tokenRelationStore, tokenStore, fees);
+                        tokenType, fee, createdTokenId, tokenRelationStore, tokenStore, accountStore, fees);
                 case FRACTIONAL_FEE -> validateFractionalFeeForCreation(tokenType, fee, fees);
-                case ROYALTY_FEE -> validateRoyaltyFeeForCreation(tokenType, fee, tokenRelationStore, tokenStore, fees);
+                case ROYALTY_FEE -> validateRoyaltyFeeForCreation(
+                        tokenType, fee, tokenRelationStore, tokenStore, accountStore);
                 default -> throw new IllegalArgumentException(
                         "Unexpected value for custom fee type: " + fee.fee().kind());
             }
@@ -147,17 +148,19 @@ public class CustomFeesValidator {
                 case FIXED_FEE -> {
                     final var fixedFee = fee.fixedFeeOrThrow();
                     // validate any explicit token denomination set
-                    final var fixedFeeAmount = fee.fixedFee().amount();
+                    final var fixedFeeAmount = fixedFee.amount();
                     validateTrue(fixedFeeAmount > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
                     if (fixedFee.hasDenominatingTokenId()) {
                         validateExplicitTokenDenomination(
-                                collectorId, fixedFee.denominatingTokenId(), tokenRelationStore, tokenStore);
+                                collectorId,
+                                fixedFee.denominatingTokenIdOrThrow(),
+                                tokenRelationStore,
+                                tokenStore,
+                                accountStore);
                     }
                 }
-                case FRACTIONAL_FEE -> {
-                    // fractional fee can be only applied to fungible common tokens
-                    validateFractionalFeeForFeeScheduleUpdate(token, tokenRelationStore, collectorId, fee);
-                }
+                case FRACTIONAL_FEE -> // fractional fee can be only applied to fungible common tokens
+                validateFractionalFeeForFeeScheduleUpdate(token, tokenRelationStore, accountStore, collectorId, fee);
                 case ROYALTY_FEE -> {
                     // royalty fee can be only applied to non-fungible unique tokens
                     validateTrue(
@@ -167,16 +170,15 @@ public class CustomFeesValidator {
                             && royaltyFee.fallbackFeeOrThrow().hasDenominatingTokenId()) {
                         final var tokenNum = royaltyFee
                                 .fallbackFeeOrThrow()
-                                .denominatingTokenId()
+                                .denominatingTokenIdOrThrow()
                                 .tokenNum();
                         final var tokenId =
                                 TokenID.newBuilder().tokenNum(tokenNum).build();
-                        validateExplicitTokenDenomination(collectorId, tokenId, tokenRelationStore, tokenStore);
+                        validateExplicitTokenDenomination(
+                                collectorId, tokenId, tokenRelationStore, tokenStore, accountStore);
                     }
                 }
-                default -> {
-                    throw new HandleException(CUSTOM_FEE_NOT_FULLY_SPECIFIED);
-                }
+                default -> throw new HandleException(CUSTOM_FEE_NOT_FULLY_SPECIFIED);
             }
         }
     }
@@ -192,12 +194,13 @@ public class CustomFeesValidator {
             @NonNull final AccountID feeCollectorNum,
             @NonNull final TokenID tokenNum,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
-            @NonNull final WritableTokenStore tokenStore) {
+            @NonNull final WritableTokenStore tokenStore,
+            @NonNull final ReadableAccountStore accountStore) {
         final var denomToken = tokenStore.get(tokenNum);
         validateTrue(denomToken != null, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
         validateFalse(denomToken.paused(), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
         validateTrue(isFungibleCommon(denomToken.tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-        validateTrue(tokenRelationStore.get(feeCollectorNum, tokenNum) != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+        getIfUsable(feeCollectorNum, tokenNum, tokenRelationStore, accountStore);
     }
 
     /**
@@ -224,6 +227,7 @@ public class CustomFeesValidator {
             @NonNull final TokenID createdTokenId,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final WritableTokenStore tokenStore,
+            @NonNull final ReadableAccountStore accountStore,
             @NonNull final List<CustomFee> feesWithCollectorsToAutoAssociate) {
         final var fixedFee = fee.fixedFeeOrThrow();
 
@@ -241,7 +245,11 @@ public class CustomFeesValidator {
                 feesWithCollectorsToAutoAssociate.add(copy.build());
             } else {
                 validateExplicitTokenDenomination(
-                        fee.feeCollectorAccountId(), fixedFee.denominatingTokenId(), tokenRelationStore, tokenStore);
+                        fee.feeCollectorAccountIdOrThrow(),
+                        fixedFee.denominatingTokenIdOrThrow(),
+                        tokenRelationStore,
+                        tokenStore,
+                        accountStore);
             }
         }
     }
@@ -257,24 +265,28 @@ public class CustomFeesValidator {
             @NonNull final CustomFee fee,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final WritableTokenStore tokenStore,
-            @NonNull final List<CustomFee> fees) {
+            @NonNull final ReadableAccountStore accountStore) {
         validateTrue(isNonFungibleUnique(tokenType), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
         final var royaltyFee = fee.royaltyFeeOrThrow();
 
-        final var numerator = royaltyFee.exchangeValueFraction().numerator();
-        final var denominator = royaltyFee.exchangeValueFraction().denominator();
+        final var numerator = royaltyFee.exchangeValueFractionOrThrow().numerator();
+        final var denominator = royaltyFee.exchangeValueFractionOrThrow().denominator();
         validateTrue(denominator != 0, FRACTION_DIVIDES_BY_ZERO);
         validateTrue(numerator > 0 && denominator > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
         validateTrue(numerator <= denominator, ROYALTY_FRACTION_CANNOT_EXCEED_ONE);
 
         if (royaltyFee.hasFallbackFee()) {
-            validateTrue(royaltyFee.fallbackFee().amount() > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
+            validateTrue(royaltyFee.fallbackFeeOrThrow().amount() > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
             final var fallbackFee = royaltyFee.fallbackFeeOrThrow();
             if (fallbackFee.hasDenominatingTokenId()) {
                 final var denominatingTokenId = fallbackFee.denominatingTokenIdOrThrow();
                 validateTrue(denominatingTokenId.tokenNum() != 0, CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
                 validateExplicitTokenDenomination(
-                        fee.feeCollectorAccountId(), denominatingTokenId, tokenRelationStore, tokenStore);
+                        fee.feeCollectorAccountIdOrThrow(),
+                        denominatingTokenId,
+                        tokenRelationStore,
+                        tokenStore,
+                        accountStore);
             }
         }
     }
@@ -282,21 +294,21 @@ public class CustomFeesValidator {
     private void validateFractionalFeeForFeeScheduleUpdate(
             @NonNull final Token token,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
+            @NonNull final ReadableAccountStore accountStore,
             @NonNull final AccountID collectorId,
             @NonNull final CustomFee fee) {
         final var tokenType = token.tokenType();
         // fractional fee can be only applied to fungible common tokens
         validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
-        final var tokenId = token.tokenId();
-        final var relation = tokenRelationStore.get(collectorId, tokenId);
-        validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+        final var tokenId = token.tokenIdOrThrow();
+        getIfUsable(collectorId, tokenId, tokenRelationStore, accountStore);
         validateFractionalFee(fee);
     }
 
     private void validateFractionalFee(@NonNull CustomFee fee) {
-        final var fractionalFee = fee.fractionalFee();
-        final var numerator = fractionalFee.fractionalAmount().numerator();
-        final var denominator = fractionalFee.fractionalAmount().denominator();
+        final var fractionalFee = fee.fractionalFeeOrThrow();
+        final var numerator = fractionalFee.fractionalAmountOrThrow().numerator();
+        final var denominator = fractionalFee.fractionalAmountOrThrow().denominator();
         final var minimumUnitsToCollect = fractionalFee.minimumAmount();
         final var nominalMax = fractionalFee.maximumAmount();
         final var maximumUnitsToCollect = nominalMax == 0 ? Long.MAX_VALUE : nominalMax;

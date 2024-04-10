@@ -19,8 +19,8 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_FROZEN;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -133,18 +133,13 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
 
         // Check that the account exists
         final var accountId = op.accountOrElse(AccountID.DEFAULT);
-        final var account =
-                TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
+        TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
         // Check that token exists
         TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
         // Check that the token is associated to the account
-        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
-        validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-
-        // Return the token relation
-        return tokenRel;
+        return TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore, accountStore, PERMIT_FROZEN);
     }
 
     @NonNull

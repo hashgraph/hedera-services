@@ -41,6 +41,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.REQUIRE_NOT_FROZEN;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.REQUIRE_NOT_PAUSED;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -167,7 +168,9 @@ public class TokenHandlerHelper {
 
     public enum TokenValidations {
         REQUIRE_NOT_PAUSED,
-        PERMIT_PAUSED
+        PERMIT_PAUSED,
+        REQUIRE_NOT_FROZEN,
+        PERMIT_FROZEN
     }
 
     public static Token getIfUsable(@NonNull final TokenID tokenId, @NonNull final ReadableTokenStore tokenStore) {
@@ -215,6 +218,15 @@ public class TokenHandlerHelper {
             @NonNull final TokenID tokenId,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
             @NonNull final ReadableAccountStore accountStore) {
+        return getIfUsable(accountId, tokenId, tokenRelStore, accountStore, REQUIRE_NOT_FROZEN);
+    }
+
+    public static TokenRelation getIfUsable(
+            @NonNull final AccountID accountId,
+            @NonNull final TokenID tokenId,
+            @NonNull final ReadableTokenRelationStore tokenRelStore,
+            @NonNull final ReadableAccountStore accountStore,
+            @Nullable final TokenValidations validations) {
         requireNonNull(accountId);
         requireNonNull(tokenId);
         requireNonNull(tokenRelStore);
@@ -223,10 +235,10 @@ public class TokenHandlerHelper {
             aliasedId = accountStore.getAccountIDByAlias(accountId.aliasOrThrow());
         }
         final var tokenRel = tokenRelStore.get(aliasedId, tokenId);
-        logger.info("tokenRel : " + tokenRel + " for account : " + accountId + " and token : " + tokenId);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-        validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
-
+        if (validations == TokenValidations.REQUIRE_NOT_FROZEN) {
+            validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
+        }
         return tokenRel;
     }
 
