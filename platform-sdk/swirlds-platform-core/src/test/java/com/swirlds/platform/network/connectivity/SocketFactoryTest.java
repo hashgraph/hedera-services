@@ -121,7 +121,7 @@ class SocketFactoryTest extends ConnectivityTestBase {
     }
 
     /**
-     * Asserts that for sockets A and B connected to each other, if A's peer list changes and in effect its trust store
+     * Asserts that for sockets A and B that can connect to each other, if A's peer list changes and in effect its trust store
      * is reloaded, B, as well as peer C in the updated peer list can still connect to A, and A to them.
      */
     @Test
@@ -149,7 +149,7 @@ class SocketFactoryTest extends ConnectivityTestBase {
                 NetworkUtils.createSocketFactory(node1, addressBook, keysAndCerts1, TLS_NO_IP_TOS_CONFIG);
         final SocketFactory socketFactory2 =
                 NetworkUtils.createSocketFactory(node2, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
-        // test that A and B can talk to each other
+        // test that A and B can talk to each other - A(socketfactory1) -> B(socketfactory2) -> A(socketfactory1)
         testSocketsBoth(socketFactory1, socketFactory2);
 
         // create a new address book with keys and new set of nodes
@@ -169,7 +169,7 @@ class SocketFactoryTest extends ConnectivityTestBase {
 
         // re-initialize SSLContext for A (socketfactory1) using a new peerList
         socketFactory1.reload(Utilities.createPeerInfoList(updatedAB, node1));
-        // doing so, we expect that C(socketfactory3) -> A(socketfactory1) -> B(socketfactory3)
+        // doing so, we expect that C(socketfactory3) -> A(socketfactory1) -> C(socketfactory3)
         testSocketsBoth(socketFactory1, socketFactory3);
         // also, B(socketfactory2) -> A(socketfactory1) -> B(socketfactory2)
         testSocketsBoth(socketFactory1, socketFactory2);
