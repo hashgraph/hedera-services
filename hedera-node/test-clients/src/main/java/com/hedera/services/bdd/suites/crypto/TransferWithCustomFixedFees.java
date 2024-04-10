@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
@@ -669,7 +670,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                                 .via("allowanceTx")
                                 .payingWith(tokenOwner),
                         cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 1L)
-                                        .between(tokenOwner, tokenReceiver))
+                                .between(tokenOwner, tokenReceiver))
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(spender)
                                 .signedBy(spender))
@@ -713,7 +714,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                         tokenAssociate(spender, nonFungibleToken),
                         cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)))
                 .when(cryptoTransfer(
-                                movingUniqueWithAllowance(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
+                        movingUniqueWithAllowance(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
                         .fee(ONE_HUNDRED_HBARS)
                         .payingWith(spender)
                         .signedBy(spender)
@@ -757,7 +758,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(tokenOwner),
                         cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 1L)
-                                        .between(tokenOwner, tokenReceiver))
+                                .between(tokenOwner, tokenReceiver))
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(spender)
                                 .signedBy(spender))
@@ -803,7 +804,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(tokenOwner),
                         cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 1L)
-                                        .between(tokenOwner, tokenReceiver))
+                                .between(tokenOwner, tokenReceiver))
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(spender)
                                 .signedBy(spender))
@@ -844,7 +845,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                         tokenAssociate(spender, nonFungibleToken),
                         cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)))
                 .when(cryptoTransfer(
-                                movingUniqueWithAllowance(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
+                        movingUniqueWithAllowance(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
                         .fee(ONE_HUNDRED_HBARS)
                         .payingWith(spender)
                         .signedBy(spender)
@@ -1343,8 +1344,8 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                                 moving(200L, feeDenom2).between(alice, bob)),
                         // make 2 transfers in a single tx with different senders and receivers
                         cryptoTransfer(
-                                        moving(10L, fungibleToken).between(alice, bob),
-                                        movingUnique(nonFungibleToken, 1L).between(bob, carol))
+                                moving(10L, fungibleToken).between(alice, bob),
+                                movingUnique(nonFungibleToken, 1L).between(bob, carol))
                                 .fee(ONE_HUNDRED_HBARS)
                                 .signedBy(alice, bob)
                                 .payingWith(alice))
@@ -1688,6 +1689,64 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                                 .hasTokenBalance(fungibleToken, 0L),
                         getAccountBalance(ivan).hasTokenBalance(fungibleToken, 0L));
     }
+
+    @HapiTest
+    public HapiSpec transferFungibleToHollowAccountWithFixedHBarFee() {
+        return defaultHapiSpec("transferFungibleToHollowAccountWithFixedHBarFee")
+                .given(
+                        createHollowAccountFrom(SECP_256K1_SOURCE_KEY)[0],
+                        cryptoCreate(tokenTreasury).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(tokenOwner),
+                        cryptoCreate(alice),
+                        tokenCreate(fungibleToken)
+                                .treasury(tokenTreasury)
+                                .initialSupply(tokenTotal)
+                                .payingWith(tokenTreasury)
+                                .withCustom(fixedHbarFee(1L, SECP_256K1_SOURCE_KEY)),
+                        tokenAssociate(tokenOwner, fungibleToken),
+                        tokenAssociate(alice, fungibleToken),
+                        cryptoTransfer(moving(tokenTotal, fungibleToken).between(tokenTreasury, tokenOwner)))
+                .when(
+                        cryptoTransfer(moving(10L, fungibleToken).between(tokenOwner, alice))
+                                .fee(1L))
+                .then(
+                        getAccountBalance(SECP_256K1_SOURCE_KEY).hasTinyBars(ONE_HUNDRED_HBARS + 1L),
+                        getAccountBalance(tokenOwner)
+                                .hasTokenBalance(fungibleToken, 990L)
+                                .hasTinyBars(ONE_MILLION_HBARS - 1L),
+                        getAccountBalance(alice)
+                                .hasTokenBalance(fungibleToken, 10L)
+                                .hasTinyBars(ONE_MILLION_HBARS));
+    }
+
+//    @HapiTest
+//    public HapiSpec transferFungibleToHollowAccountWithFixedHtsFee() {
+//        return defaultHapiSpec("transferFungibleToHollowAccountWithFixedHtsFee")
+//                .given(
+//                        createHollowAccountFrom(SECP_256K1_SOURCE_KEY)[0],
+//                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
+//                        cryptoCreate(tokenTreasury),
+//                        tokenCreate(feeDenom).treasury(tokenOwner).initialSupply(1),
+//                        tokenAssociate(SECP_256K1_SOURCE_KEY, feeDenom),
+//                        tokenCreate(fungibleToken)
+//                                .treasury(tokenTreasury)
+//                                .tokenType(TokenType.FUNGIBLE_COMMON)
+//                                .initialSupply(tokenTotal)
+//                                .withCustom(fixedHtsFee(htsFee, feeDenom, SECP_256K1_SOURCE_KEY)),
+//                        tokenAssociate(SECP_256K1_SOURCE_KEY, fungibleToken),
+//                        tokenAssociate(tokenOwner, fungibleToken),
+//                        cryptoTransfer(moving(tokenTotal, fungibleToken).between(tokenTreasury, tokenOwner)))
+//                .when(cryptoTransfer(moving(1, fungibleToken).between(tokenOwner, SECP_256K1_SOURCE_KEY))
+//                        .payingWith(tokenOwner)
+//                        .fee(ONE_HUNDRED_HBARS)
+//                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
+//                .then(
+//                        getAccountBalance(tokenOwner)
+//                                .hasTokenBalance(fungibleToken, tokenTotal)
+//                                .hasTokenBalance(feeDenom, 1),
+//                        getAccountBalance(tokenReceiver).hasTokenBalance(fungibleToken, 0),
+//                        getAccountBalance(htsCollector).hasTokenBalance(feeDenom, 0));
+//    }
 
     @Override
     protected Logger getResultsLogger() {

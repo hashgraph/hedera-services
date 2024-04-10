@@ -16,14 +16,33 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.INITIAL_BALANCE;
+import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.RandomStringUtils;
 
@@ -61,4 +80,36 @@ public class AutoCreateUtils {
         spec.registry().saveAccountAlias(aliasKey, accountIDAtomicReference.get());
         spec.registry().saveAccountId(alias, accountIDAtomicReference.get());
     }
+
+    public static HapiSpecOperation[] createHollowAccountFrom(@NonNull final String key) {
+        return new HapiSpecOperation[] {
+                cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR),
+                withOpContext((spec, opLog) -> {
+                    final var ecdsaKey =
+                            spec.registry().getKey(key).getECDSASecp256K1().toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    final var op = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HUNDRED_HBARS))
+                            .hasKnownStatus(SUCCESS)
+                            .via(TRANSFER_TXN);
+                    final var op2 = getAliasedAccountInfo(evmAddress)
+                            .has(accountWith()
+                                    .hasEmptyKey()
+                                    .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
+                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                    .receiverSigReq(false)
+                                    .memo(LAZY_MEMO));
+                    final HapiGetTxnRecord hapiGetTxnRecord =
+                            getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
+                    allRunFor(spec, op, op2, hapiGetTxnRecord);
+
+                    final AccountID newAccountID = hapiGetTxnRecord
+                            .getFirstNonStakingChildRecord()
+                            .getReceipt()
+                            .getAccountID();
+                    spec.registry().saveAccountId(key, newAccountID);
+                })
+        };
+    }
+
 }
