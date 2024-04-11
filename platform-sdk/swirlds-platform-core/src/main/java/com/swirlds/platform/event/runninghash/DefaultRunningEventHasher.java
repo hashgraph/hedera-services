@@ -16,15 +16,87 @@
 
 package com.swirlds.platform.event.runninghash;
 
+import static com.swirlds.common.utility.ByteUtils.intToByteArray;
+import static com.swirlds.common.utility.ByteUtils.longToByteArray;
+
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 
-// TODO
+// TODO unit test this
+// TODO consider metrics
+
+/**
+ * A standard implementation of the {@link RunningEventHasher}.
+ */
 public class DefaultRunningEventHasher implements RunningEventHasher {
-    @Override
-    public void computeRunningEventHash(@NonNull final ConsensusRound round) {}
 
+    private static final DigestType DIGEST_TYPE = DigestType.SHA_384;
+    private final HashingOutputStream hashingOutputStream;
+
+    private Hash runningEventHash;
+
+    /**
+     * Constructor.
+     */
+    public DefaultRunningEventHasher() {
+        final MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance(DIGEST_TYPE.algorithmName());
+        } catch (final NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        this.hashingOutputStream = new HashingOutputStream(digest);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void overrideRunningEventHash(@NonNull final RunningEventHashOverride runningEventHashOverride) {}
+    public void computeRunningEventHash(@NonNull final ConsensusRound round) {
+        final long roundNumber = round.getRoundNum();
+        if (runningEventHash == null) {
+            throw new IllegalStateException(
+                    "Prior running event hash must be set before computing the running event hash for round "
+                            + roundNumber);
+        }
+
+        try {
+            hashingOutputStream.resetDigest();
+            hashingOutputStream.write(runningEventHash.getBytes().toByteArray());
+            hashingOutputStream.write(longToByteArray(roundNumber));
+
+            for (final EventImpl event : round.getConsensusEvents()) {
+                final Hash eventHash = event.getBaseEvent().getHashedData().getHash();
+                final Instant consensusTimestamp = event.getConsensusData().getConsensusTimestamp();
+
+                hashingOutputStream.write(eventHash.getBytes().toByteArray());
+                hashingOutputStream.write(longToByteArray(event.getConsensusOrder()));
+                hashingOutputStream.write(longToByteArray(consensusTimestamp.getEpochSecond()));
+                hashingOutputStream.write(intToByteArray(consensusTimestamp.getNano()));
+            }
+
+            runningEventHash = new Hash(hashingOutputStream.getDigest(), DIGEST_TYPE);
+
+            round.setRunningEventHash(runningEventHash);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void overrideRunningEventHash(@NonNull final RunningEventHashOverride runningEventHashOverride) {
+        runningEventHash = runningEventHashOverride.runningEventHash();
+    }
 }

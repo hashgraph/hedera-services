@@ -632,6 +632,17 @@ public class SwirldsPlatform implements Platform {
                 appNotifier,
                 publisher);
 
+        final Hash runningEventHash = initialState.getState().getPlatformState().getRunningEventHash() == null
+                ? platformContext.getCryptography().getNullHash()
+                : initialState.getState().getPlatformState().getRunningEventHash();
+        final Hash legacyRunningEventHash =
+                initialState.getState().getPlatformState().getLegacyRunningEventHash() == null
+                        ? platformContext.getCryptography().getNullHash()
+                        : initialState.getState().getPlatformState().getLegacyRunningEventHash();
+        final RunningEventHashOverride runningEventHashOverride =
+                new RunningEventHashOverride(legacyRunningEventHash, runningEventHash, false);
+        platformWiring.updateRunningHash(runningEventHashOverride);
+
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
                 getSavedStateFiles(platformContext, actualMainClassName, selfId, swirldName);
@@ -700,14 +711,6 @@ public class SwirldsPlatform implements Platform {
                     .put(initialState.reserve("loading initial state into sig collector"));
 
             savedStateController.registerSignedStateFromDisk(initialState);
-
-            final Hash runningEventHash =
-                    initialState.getState().getPlatformState().getRunningEventHash() == null
-                            ? platformContext.getCryptography().getNullHash()
-                            : initialState.getState().getPlatformState().getRunningEventHash();
-            final RunningEventHashOverride runningEventHashOverride = new RunningEventHashOverride(
-                    initialState.getState().getPlatformState().getLegacyRunningEventHash(), runningEventHash, false);
-            platformWiring.updateRunningHash(runningEventHashOverride);
 
             loadStateIntoConsensus(initialState);
 

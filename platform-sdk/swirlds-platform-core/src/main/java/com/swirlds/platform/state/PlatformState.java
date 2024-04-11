@@ -258,7 +258,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.BIRTH_ROUND_MIGRATION_PATHWAY;
+        return ClassVersion.RUNNING_EVENT_HASH;
     }
 
     /**

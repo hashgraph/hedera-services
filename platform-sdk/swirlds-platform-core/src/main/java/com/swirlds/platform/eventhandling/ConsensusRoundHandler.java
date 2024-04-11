@@ -246,8 +246,11 @@ public class ConsensusRoundHandler {
         // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is here
         // anyway, for when that changes in the future.
         if (!round.isEmpty()) {
-            previousRoundLegacyRunningEventHash =
-                    round.getConsensusEvents().getLast().getRunningHash().getHash();
+            previousRoundLegacyRunningEventHash = round.getConsensusEvents()
+                    .getLast()
+                    .getRunningHash()
+                    .getFutureHash()
+                    .getAndRethrow();
         }
 
         platformState.setLegacyRunningEventHash(previousRoundLegacyRunningEventHash);
