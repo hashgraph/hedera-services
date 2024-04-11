@@ -114,10 +114,26 @@ class TokenComparatorsTest {
 
     @Nested
     class NftTransferComparatorTest {
-        private static final NftTransfer NFT_TRANSFER_LIST_1 =
-                NftTransfer.newBuilder().serialNumber(1).build();
-        private static final NftTransfer NFT_TRANSFER_LIST_2 =
-                NftTransfer.newBuilder().serialNumber(2).build();
+        private static final NftTransfer NFT_TRANSFER_LIST_1 = NftTransfer.newBuilder()
+                .senderAccountID(asAccount(1111))
+                .receiverAccountID(asAccount(2222))
+                .serialNumber(1)
+                .build();
+        private static final NftTransfer NFT_TRANSFER_LIST_2 = NftTransfer.newBuilder()
+                .senderAccountID(asAccount(1111))
+                .receiverAccountID(asAccount(2222))
+                .serialNumber(2)
+                .build();
+        private static final NftTransfer NFT_TRANSFER_LIST_3 = NftTransfer.newBuilder()
+                .senderAccountID(asAccount(3333))
+                .receiverAccountID(asAccount(2222))
+                .serialNumber(2)
+                .build();
+        private static final NftTransfer NFT_TRANSFER_LIST_4 = NftTransfer.newBuilder()
+                .senderAccountID(asAccount(1111))
+                .receiverAccountID(asAccount(3333))
+                .serialNumber(2)
+                .build();
 
         @Test
         void checkComparisons() {
@@ -133,6 +149,14 @@ class TokenComparatorsTest {
             Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_1, NFT_TRANSFER_LIST_2))
                     .isNegative();
             Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_2, NFT_TRANSFER_LIST_1))
+                    .isPositive();
+            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_2, NFT_TRANSFER_LIST_3))
+                    .isNegative();
+            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_3, NFT_TRANSFER_LIST_2))
+                    .isPositive();
+            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_2, NFT_TRANSFER_LIST_4))
+                    .isNegative();
+            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_4, NFT_TRANSFER_LIST_2))
                     .isPositive();
         }
     }
