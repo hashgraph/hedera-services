@@ -38,6 +38,7 @@ import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.testcontainers.shaded.org.hamcrest.Description;
 import org.testcontainers.shaded.org.hamcrest.Matcher;
 import org.testcontainers.shaded.org.hamcrest.StringDescription;
 
@@ -117,7 +118,7 @@ public class SidecarWatcher {
         for (final var actualSidecar : sidecarFile.getSidecarRecordsList()) {
             boolean matchesConsensusTimestamp = Optional.ofNullable(expectedSidecars.peek())
                     .map(ExpectedSidecar::expectedSidecarRecord)
-                    .map(expectedSidecar -> expectedSidecar.matchesConsensusTimestampOf(actualSidecar))
+                    .map(expected -> expected.matchesConsensusTimestampOf(actualSidecar, Description.NONE))
                     .orElse(false);
 
             if (hasSeenFirstExpectedSidecar && matchesConsensusTimestamp) {
@@ -240,10 +241,6 @@ public class SidecarWatcher {
             for (final var pair : faultySidecars) {
                 StringDescription expectedDescription = new StringDescription();
                 pair.expectedSidecarRecord().describeTo(expectedDescription);
-
-                StringDescription actualDescription = new StringDescription();
-                pair.expectedSidecarRecord().describeMismatch(pair.actualSidecarRecord(), actualDescription);
-
                 messageBuilder
                         .append("\n******FAILURE #")
                         .append(i++)
@@ -251,7 +248,7 @@ public class SidecarWatcher {
                         .append("***Expected sidecar***\n")
                         .append(expectedDescription)
                         .append("***Actual sidecar***\n")
-                        .append(actualDescription);
+                        .append(pair.actualSidecarRecord());
             }
         }
         return messageBuilder.toString();

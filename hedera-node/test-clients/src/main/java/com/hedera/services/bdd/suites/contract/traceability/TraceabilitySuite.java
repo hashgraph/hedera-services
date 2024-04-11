@@ -4210,9 +4210,14 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                     .build();
                             mirrorLiteralId.set("0.0." + childId.getContractNum());
                             final var topLevelCallTxnRecord =
-                                    getTxnRecord(CREATE_2_TXN).andAllChildRecords();
+                                    getTxnRecord(CREATE_2_TXN).andAllChildRecords().logged();
+                            allRunFor(spec, topLevelCallTxnRecord);
                             final var hapiGetContractBytecode = getContractBytecode(mirrorLiteralId.get())
                                     .exposingBytecodeTo(bytecodeFromMirror::set);
+                            final var targetedAddress = ByteStringUtils.wrapUnsafely(
+                                    Bytes.fromHexString(expectedCreate2Address.get())
+                                            .trimLeadingZeros()
+                                            .toArrayUnsafe());
                             allRunFor(
                                     spec,
                                     topLevelCallTxnRecord,
@@ -4260,7 +4265,8 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                     spec.registry()
                                                                             .getContractId(contract))
                                                             .setGas(3870609)
-                                                            .setRecipientContract(childId)
+                                                            .setTargetedAddress(targetedAddress)
+                                                            // .setRecipientContract(childId)
                                                             .setGasUsed(44936)
                                                             .setValue(tcValue)
                                                             .setOutput(EMPTY)
@@ -5043,7 +5049,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                 .via(creation),
                         getTxnRecord(creation)
                                 .andAllChildRecords()
-                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
+                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.getFirst())),
                         // save the id of the hollow account
                         sourcing(() -> getAccountInfo(hollowCreationAddress.get())
                                 .logged()

@@ -63,11 +63,11 @@ public class MatcherUtils {
 
     /**
      * @param expected the expected object
+     * @param stopClass the class to stop at when comparing fields
      * @return {@link FieldByFieldMatcher} that checks if the actual object has equal fields to the expected object
-     * @param <T> the type of the object
      */
-    public static <T> FieldByFieldMatcher<T> withEqualFields(T expected) {
-        return new FieldByFieldMatcher<>(expected);
+    public static <T> FieldByFieldMatcher<T> withEqualFields(T expected, Class<?> stopClass) {
+        return new FieldByFieldMatcher<>(expected, stopClass);
     }
 
     /**

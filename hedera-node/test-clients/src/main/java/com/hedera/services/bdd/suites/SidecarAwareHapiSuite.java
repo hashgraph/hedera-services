@@ -16,9 +16,6 @@
 
 package com.hedera.services.bdd.suites;
 
-import static com.hedera.services.bdd.spec.assertions.matchers.MatcherUtils.containsInAnyOrder;
-import static com.hedera.services.bdd.spec.assertions.matchers.MatcherUtils.withEqualFields;
-import static com.hedera.services.bdd.spec.assertions.matchers.MatcherUtils.within32Units;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -44,7 +41,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
