@@ -3,6 +3,7 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 module com.hedera.node.app.service.consensus.impl {
     requires transitive com.hedera.node.app.service.consensus;
     requires transitive com.hedera.node.app.service.mono;
+    requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
