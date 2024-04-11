@@ -25,7 +25,7 @@ description = "Hedera API"
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
 tasks.cloneHederaProtobufs {
-    branchOrTag = "v0.48.3-release"
+    branchOrTag = "v0.49.0-release"
     // As long as the 'branchOrTag' above is not stable, run always:
     outputs.upToDateWhen { false }
 }
