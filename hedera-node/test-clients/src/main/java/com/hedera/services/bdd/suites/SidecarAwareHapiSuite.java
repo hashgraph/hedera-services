@@ -114,13 +114,9 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
                     spec.getName(),
                     TransactionSidecarRecordMatcher.newBuilder()
                             .setConsensusTimestamp(txnRecord.getResponseRecord().getConsensusTimestamp())
-                            .setActions(containsInAnyOrder(
-                                    actions,
-                                    action -> withEqualFields(action)
-                                            .ignoringFields("memoizedIsInitialized")
-                                            .withCustomMatchersForFields(
-                                                    Map.of("gas", within32Units(action.getGas()),
-                                                            "gasUsed", within32Units(action.getGasUsed())))))
+                            .setActions(ContractActions.newBuilder()
+                                    .addAllContractActions(actions)
+                                    .build())
                             .build()));
         });
     }
@@ -140,10 +136,9 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
                     spec.getName(),
                     TransactionSidecarRecordMatcher.newBuilder()
                             .setConsensusTimestamp(txnRecord.getResponseRecord().getConsensusTimestamp())
-                            .setStateChanges(containsInAnyOrder(
-                                    stateChangesToGrpc(stateChanges, spec),
-                                    stateChange ->
-                                            withEqualFields(stateChange).ignoringFields("memoizedIsInitialized")))
+                            .setStateChanges(ContractStateChanges.newBuilder()
+                                    .addAllContractStateChanges(stateChangesToGrpc(stateChanges, spec))
+                                    .build())
                             .build()));
         });
     }
@@ -252,8 +247,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @param contractName The name of the contract.
      * @return {@link CustomSpecAssert} that expects the sidecar file to be generated.
      */
-    protected static CustomSpecAssert expectContractBytecode(final String txnName,
-                                                             final String contractName) {
+    protected static CustomSpecAssert expectContractBytecode(final String txnName, final String contractName) {
         return withOpContext((spec, opLog) -> {
             final var txnRecord = getTxnRecord(txnName);
             final var contractBytecode = getContractBytecode(contractName).saveResultTo(RUNTIME_CODE);
@@ -332,8 +326,8 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
                     sidecarWatcher.getMismatchErrors(MismatchedSidecar::hasStateChanges));
             assertTrue(
                     sidecarWatcher.thereAreNoPendingSidecars(),
-                    "There are some contract state changes that have not been yet externalized" +
-                            " in the sidecar files after all specs: " + sidecarWatcher.getPendingErrors());
+                    "There are some contract state changes that have not been yet externalized"
+                            + " in the sidecar files after all specs: " + sidecarWatcher.getPendingErrors());
         });
     }
 
