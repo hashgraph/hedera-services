@@ -107,6 +107,10 @@ public class PrivilegedOpsSuite extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_MILLION_HBARS)))
                 .when(
                         fileUpdate(UPDATE_ZIP_FILE)
+                                .payingWith(FREEZE_ADMIN)
+                                .contents("Nope")
+                                .hasPrecheck(AUTHORIZATION_FAILED),
+                        fileUpdate(UPDATE_ZIP_FILE)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .contents("Nope")
                                 .hasPrecheck(AUTHORIZATION_FAILED),
@@ -126,13 +130,13 @@ public class PrivilegedOpsSuite extends HapiSuite {
                         fileUpdate(UPDATE_ZIP_FILE)
                                 .fee(0L)
                                 .via("updateTxn")
-                                .payingWith(FREEZE_ADMIN)
+                                .payingWith(SOFTWARE_UPDATE_ADMIN)
                                 .contents("Yuu"),
                         getTxnRecord("updateTxn").showsNoTransfers(),
                         fileAppend(UPDATE_ZIP_FILE)
                                 .fee(0L)
                                 .via("appendTxn")
-                                .payingWith(FREEZE_ADMIN)
+                                .payingWith(SOFTWARE_UPDATE_ADMIN)
                                 .content("upp"),
                         getTxnRecord("appendTxn").showsNoTransfers(),
                         fileUpdate(UPDATE_ZIP_FILE)

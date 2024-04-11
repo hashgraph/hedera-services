@@ -29,6 +29,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.state.PlatformState;
@@ -68,7 +69,7 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
 
     @Override
     public Integer call() throws IOException, ExecutionException, InterruptedException {
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         BootstrapUtils.setupConstructableRegistry();
 
         final PlatformContext platformContext = new DefaultPlatformContext(

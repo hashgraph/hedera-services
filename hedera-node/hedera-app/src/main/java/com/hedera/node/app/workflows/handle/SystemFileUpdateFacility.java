@@ -37,7 +37,6 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collections;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -147,7 +146,7 @@ public class SystemFileUpdateFacility {
     private void logContentsOf(@NonNull final String configFileName, @NonNull final Bytes contents) {
         try {
             final var configList = ServicesConfigurationList.PROTOBUF.parseStrict(contents.toReadableSequentialData());
-            final var printableConfigList = configList.nameValueOrElse(Collections.emptyList()).stream()
+            final var printableConfigList = configList.nameValue().stream()
                     .map(pair -> pair.name() + "=" + pair.value())
                     .collect(joining("\n\t"));
             logger.info(

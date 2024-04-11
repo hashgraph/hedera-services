@@ -34,7 +34,6 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -133,8 +132,7 @@ public class TokenCreateValidator {
         tokenAttributesValidator.validateTokenMetadata(op.metadata(), config);
 
         // validate custom fees length
-        validateTrue(
-                op.customFeesOrElse(emptyList()).size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
+        validateTrue(op.customFees().size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
     }
 
     /**

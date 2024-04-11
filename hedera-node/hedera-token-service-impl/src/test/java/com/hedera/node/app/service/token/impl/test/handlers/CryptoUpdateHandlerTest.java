@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
@@ -66,6 +67,7 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -127,12 +129,12 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
+        configuration = HederaTestConfigBuilder.createConfig();
         updateAccount =
                 givenValidAccount(updateAccountNum).copyBuilder().key(otherKey).build();
         updateWritableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
         updateReadableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
 
-        configuration = HederaTestConfigBuilder.createConfig();
         given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(72000L);
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         expiryValidator = new StandardizedExpiryValidator(
@@ -153,6 +155,17 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
         assertTrue(context.requiredNonPayerKeys().contains(otherKey));
+    }
+
+    @Test
+    void cryptoUpdateMissingAccountID() throws PreCheckException {
+        final var txn = new CryptoUpdateBuilder().withTarget(null).build();
+
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
+
+        final var context = new FakePreHandleContext(readableStore, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_ID_DOES_NOT_EXIST);
     }
 
     @Test
@@ -456,6 +469,21 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void maxAutoAssociationsLessThanExistingFails() {
         final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(1).build();
+        givenTxnWith(txn);
+        // initially account has 10 auto association slots and 2 are used
+        assertEquals(2, writableStore.get(updateAccountId).usedAutoAssociations());
+        assertEquals(10, writableStore.get(updateAccountId).maxAutoAssociations());
+
+        // changing to less than 2 slots will fail
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT));
+        assertEquals(10, writableStore.get(updateAccountId).maxAutoAssociations());
+    }
+
+    @Test
+    void zeroAutoAssociationsLessThanExistingFails() {
+        final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(0).build();
         givenTxnWith(txn);
         // initially account has 10 auto association slots and 2 are used
         assertEquals(2, writableStore.get(updateAccountId).usedAutoAssociations());
@@ -862,7 +890,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         }
         writableAccounts = emptyStateBuilder.build();
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        writableStore = new WritableAccountStore(writableStates, configuration, mock(StoreMetricsService.class));
     }
 
     private void givenTxnWith(TransactionBody txn) {

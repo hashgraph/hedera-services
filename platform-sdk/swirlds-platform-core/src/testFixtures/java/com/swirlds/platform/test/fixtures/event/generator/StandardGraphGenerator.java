@@ -20,13 +20,11 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicV
 import static com.swirlds.platform.test.fixtures.event.EventUtils.weightedChoice;
 import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.event.linking.InOrderLinker;
-import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
@@ -203,7 +201,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
 
     private void initializeInternalConsensus() {
         consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
-        inOrderLinker = new InOrderLinker(platformContext, Time.getCurrent(), new NoOpIntakeEventCounter());
+        inOrderLinker = new InOrderLinker(platformContext);
     }
 
     /**
@@ -512,7 +510,6 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         // This may leak memory, but is fine in the current testing framework.
         // When the test ends any memory used will be released.
         CryptographyHolder.get().digestSync(next.getBaseEvent().getHashedData());
-        next.getBaseEvent().buildDescriptor();
         consensus.addEvent(inOrderLinker.linkEvent(next.getBaseEvent()));
 
         return next;

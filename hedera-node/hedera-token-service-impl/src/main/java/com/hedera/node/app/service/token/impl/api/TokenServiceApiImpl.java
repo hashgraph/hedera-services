@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -76,12 +77,13 @@ public class TokenServiceApiImpl implements TokenServiceApi {
 
     public TokenServiceApiImpl(
             @NonNull final Configuration config,
+            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final StakingValidator stakingValidator,
             @NonNull final WritableStates writableStates,
             @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest) {
         this.customFeeTest = customFeeTest;
         requireNonNull(config);
-        this.accountStore = new WritableAccountStore(writableStates);
+        this.accountStore = new WritableAccountStore(writableStates, config, storeMetricsService);
         this.stakingValidator = requireNonNull(stakingValidator);
 
         // Determine whether staking is enabled

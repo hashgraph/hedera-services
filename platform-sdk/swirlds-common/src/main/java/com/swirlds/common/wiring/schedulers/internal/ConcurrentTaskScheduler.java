@@ -17,7 +17,7 @@
 package com.swirlds.common.wiring.schedulers.internal;
 
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,7 +53,7 @@ public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
      *                                 available?
      */
     public ConcurrentTaskScheduler(
-            @NonNull final StandardWiringModel model,
+            @NonNull final TraceableWiringModel model,
             @NonNull final String name,
             @NonNull final ForkJoinPool pool,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
