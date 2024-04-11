@@ -121,7 +121,8 @@ public class TokenAssociationSpecs extends HapiSuite {
                 contractInfoQueriesAsExpected(),
                 dissociateHasExpectedSemanticsForDeletedTokens(),
                 dissociateHasExpectedSemanticsForDissociatedContracts(),
-                canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury());
+                canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury(),
+                associateAndDissociateNeedsValidAccountAndToken());
     }
 
     @Override
@@ -187,7 +188,7 @@ public class TokenAssociationSpecs extends HapiSuite {
         return defaultHapiSpec("HandlesUseOfDefaultTokenId", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given()
                 .when()
-                .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
+                .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasPrecheck(INVALID_TOKEN_ID));
     }
 
     @HapiTest
@@ -565,6 +566,22 @@ public class TokenAssociationSpecs extends HapiSuite {
                         getAccountInfo("test").logged(),
                         tokenDissociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
                         getAccountInfo("test").logged());
+    }
+
+    @HapiTest
+    private HapiSpec associateAndDissociateNeedsValidAccountAndToken() {
+        final var account = "account";
+        return defaultHapiSpec("dissociationNeedsAccount")
+                .given(
+                        newKeyNamed(SIMPLE),
+                        tokenCreate("a").decimals(1),
+                        cryptoCreate(account).key(SIMPLE).balance(0L))
+                .when(
+                        tokenAssociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID),
+                        tokenDissociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID))
+                .then(
+                        tokenAssociate(account, "0.0.0").hasPrecheck(INVALID_TOKEN_ID),
+                        tokenDissociate(account, "0.0.0").hasPrecheck(INVALID_TOKEN_ID));
     }
 
     public static HapiSpecOperation[] basicKeysAndTokens() {
