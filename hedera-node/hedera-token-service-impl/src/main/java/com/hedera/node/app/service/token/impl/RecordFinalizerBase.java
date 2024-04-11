@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
+import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.NFT_TRANSFER_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.addExactOrThrowReason;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -308,9 +309,9 @@ public class RecordFinalizerBase {
         for (final var nftsForTokenId : nftChanges.entrySet()) {
             if (!nftsForTokenId.getValue().isEmpty()) {
                 // This var is the collection of all NFT transfers _for a single token ID_
-                // NFT serial numbers will not be sorted, instead will be displayed in the order they were added in
-                // transaction
+                // NFT serial numbers will be sorted to match mono behavior
                 final var nftTransfersForTokenId = nftsForTokenId.getValue();
+                nftTransfersForTokenId.sort(NFT_TRANSFER_COMPARATOR);
                 nftTokenTransferLists.add(TokenTransferList.newBuilder()
                         .token(nftsForTokenId.getKey())
                         .nftTransfers(nftTransfersForTokenId)

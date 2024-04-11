@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -25,6 +26,7 @@ import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstim
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -138,6 +140,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         // Check that the account exists
         final var account = accountStore.get(accountId);
         validateTrue(account != null, INVALID_ACCOUNT_ID);
+        validateFalse(account.deleted(), ACCOUNT_DELETED);
 
         // Check that the given tokens exist and are usable
         final var tokens = new ArrayList<Token>();
