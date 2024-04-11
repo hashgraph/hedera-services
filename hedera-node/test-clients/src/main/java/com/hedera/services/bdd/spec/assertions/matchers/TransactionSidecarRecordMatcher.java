@@ -33,7 +33,6 @@ import org.apache.logging.log4j.Logger;
 import org.testcontainers.shaded.org.hamcrest.Description;
 import org.testcontainers.shaded.org.hamcrest.Matcher;
 import org.testcontainers.shaded.org.hamcrest.Matchers;
-import org.testcontainers.shaded.org.hamcrest.StringDescription;
 import org.testcontainers.shaded.org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.testcontainers.shaded.org.hamcrest.core.IsEqual;
 
@@ -70,9 +69,11 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
         setBytecode(bytecode);
     }
 
-    /**
-     * @param actions the expected {@link ContractActions}
-     */
+    private void setConsensusTimestamp(Timestamp consensusTimestamp) {
+        this.consensusTimestamp = consensusTimestamp;
+        this.consensusTimestampMatcher = Matchers::equalTo;
+    }
+
     private void setActions(ContractActions actions) {
         this.actions = actions;
         this.actionMatcher = action -> withEqualFields(action, action.getClass().getSuperclass())
@@ -81,49 +82,14 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
                         "gasUsed", within32Units(action.getGasUsed())));
     }
 
-    /**
-     * @param stateChanges the expected {@link ContractStateChanges}
-     */
     private void setStateChanges(ContractStateChanges stateChanges) {
         this.stateChanges = stateChanges;
         this.stateChangeMatcher = IsEqual::equalTo;
     }
 
-    /**
-     * @param bytecode the expected {@link ContractBytecode}
-     */
     private void setBytecode(ContractBytecode bytecode) {
         this.bytecode = bytecode;
         this.bytecodeMatcher = IsEqual::equalTo;
-    }
-
-    /**
-     * @param consensusTimestamp the expected {@link Timestamp}
-     */
-    private void setConsensusTimestamp(Timestamp consensusTimestamp) {
-        this.consensusTimestamp = consensusTimestamp;
-        this.consensusTimestampMatcher = Matchers::equalTo;
-    }
-
-    /**
-     * @return {@code true} if the expected {@link TransactionSidecarRecord} has state changes
-     */
-    public boolean hasStateChanges() {
-        return this.stateChanges != null;
-    }
-
-    /**
-     * @return {@code true} if the expected {@link TransactionSidecarRecord} has actions
-     */
-    public boolean hasActions() {
-        return this.actions != null;
-    }
-
-    /**
-     * @return the expected {@link ContractActions}
-     */
-    public ContractActions getActions() {
-        return this.actions;
     }
 
     /**
@@ -151,7 +117,6 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
 
     /**
      * @param sidecarRecord the actual {@link TransactionSidecarRecord}
-     * @param mismatch {@link Description} of the mismatch
      * @return {@code true} if the consensus timestamp of the given
      * {@link TransactionSidecarRecord} matches the expected value
      */
@@ -162,30 +127,20 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
 
     private boolean matchesConsensusTimestampOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
         if (!matchesConsensusTimestampOf(sidecarRecord)) {
-            String message =
+            describeMismatch(
                     """
                     ***Mismatch in Consensus Timestamp:***
                     Expected: %s
                     Actual: %s
                     """
-                            .formatted(consensusTimestamp, sidecarRecord.getConsensusTimestamp());
-            log.error(message);
-            mismatch.appendText(message);
+                            .formatted(consensusTimestamp, sidecarRecord.getConsensusTimestamp()),
+                    mismatch);
             return false;
         }
         return true;
     }
 
-    /**
-     * Check if the actions of the given {@link TransactionSidecarRecord}
-     * contain all the expected actions.
-     *
-     * @param sidecarRecord the actual {@link TransactionSidecarRecord}
-     * @param mismatch {@link Description} of the mismatch
-     * @return {@code true} if the actions of the given
-     * {@link TransactionSidecarRecord} match the expected value
-     */
-    public boolean matchesActionsOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
+    private boolean matchesActionsOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
         if (this.actions == null) {
             return true;
         }
@@ -198,9 +153,7 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
                 })
                 .toList();
         if (!mismatchedActions.isEmpty()) {
-            StringDescription description = new StringDescription();
-            mismatchedActions.forEach(action -> description.appendValue(action).appendText("\n"));
-            String message =
+            describeMismatch(
                     """
                     ***Mismatch in Actions:***
                     The following actions were expected but not found in the actual actions:
@@ -208,24 +161,16 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
                     Actual actions:
                     %s
                     """
-                            .formatted(description, sidecarRecord.getActions().getContractActionsList());
-            log.error(message);
-            mismatch.appendText(message);
+                            .formatted(
+                                    mismatchedActions,
+                                    sidecarRecord.getActions().getContractActionsList()),
+                    mismatch);
             return false;
         }
         return true;
     }
 
-    /**
-     * Check if the state changes of the given {@link TransactionSidecarRecord}
-     * contain all the expected state changes.
-     *
-     * @param sidecarRecord the actual {@link TransactionSidecarRecord}
-     * @param mismatch {@link Description} of the mismatch
-     * @return {@code true} if the state changes of the given
-     * {@link TransactionSidecarRecord} match the expected value
-     */
-    public boolean matchesStateChangesOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
+    private boolean matchesStateChangesOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
         if (this.stateChanges == null) {
             return true;
         }
@@ -239,10 +184,7 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
                 })
                 .toList();
         if (!mismatchedStateChanges.isEmpty()) {
-            StringDescription description = new StringDescription();
-            mismatchedStateChanges.forEach(
-                    stateChange -> description.appendValue(stateChange).appendText("\n"));
-            String message =
+            describeMismatch(
                     """
                     ***Mismatch in State Changes:***
                     The following state changes were expected but not found in the actual state changes:
@@ -251,21 +193,15 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
                     %s
                     """
                             .formatted(
-                                    description, sidecarRecord.getStateChanges().getContractStateChangesList());
-            log.error(message);
-            mismatch.appendText(message);
+                                    mismatchedStateChanges,
+                                    sidecarRecord.getStateChanges().getContractStateChangesList()),
+                    mismatch);
             return false;
         }
         return true;
     }
 
-    /**
-     * @param sidecarRecord the actual {@link TransactionSidecarRecord}
-     * @param mismatch {@link Description} of the mismatch
-     * @return {@code true} if the bytecode of the given
-     * {@link TransactionSidecarRecord} matches the expected value
-     */
-    public boolean matchesBytecodeOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
+    private boolean matchesBytecodeOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
         Matcher<ContractBytecode> matcher = bytecodeMatcher.apply(bytecode);
         if (bytecode != null && !matcher.matches(sidecarRecord.getBytecode())) {
             String message =
@@ -275,11 +211,16 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
                     Actual: %s
                     """
                             .formatted(bytecode, sidecarRecord.getBytecode());
-            log.error(message);
+            log.warn(message);
             mismatch.appendText(message);
             return false;
         }
         return true;
+    }
+
+    private static void describeMismatch(String message, Description mismatch) {
+        log.warn(message);
+        mismatch.appendText(message);
     }
 
     /**
@@ -300,17 +241,6 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
             builder.setBytecode(bytecode);
         }
         return builder.build();
-    }
-
-    /**
-     * @return {@link Builder} for the {@link TransactionSidecarRecordMatcher}
-     */
-    public Builder toBuilder() {
-        return newBuilder()
-                .setConsensusTimestamp(consensusTimestamp)
-                .setActions(actions)
-                .setStateChanges(stateChanges)
-                .setBytecode(bytecode);
     }
 
     /**
