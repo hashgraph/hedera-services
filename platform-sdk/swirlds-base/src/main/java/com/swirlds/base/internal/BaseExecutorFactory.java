@@ -102,7 +102,8 @@ public interface BaseExecutorFactory {
         return wrap(scheduledFuture);
     }
 
-    private static ScheduledFuture<Void> wrap(ScheduledFuture<?> scheduledFuture) {
+    @NonNull
+    private static ScheduledFuture<Void> wrap(@NonNull final ScheduledFuture<?> scheduledFuture) {
         return new ScheduledFuture<Void>() {
             @Override
             public long getDelay(TimeUnit unit) {
