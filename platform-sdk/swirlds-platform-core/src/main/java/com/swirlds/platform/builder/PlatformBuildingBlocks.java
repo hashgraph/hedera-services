@@ -59,7 +59,7 @@ import java.util.function.LongSupplier;
  * @param transactionPool                 provides transactions to be added to new events
  * @param currentPlatformStatus           holds the current status of the platform, should be removed once the platform
  *                                        status manager is operated within the wiring framework
- * @param intakeQueueSizeSupplierSupplier suppliers a method which supplies the size of the intake queue. This hack is
+ * @param intakeQueueSizeSupplierSupplier supplies a method which supplies the size of the intake queue. This hack is
  *                                        required due to the lack of a platform health monitor.
  * @param firstPlatform                   if this is the first platform being built (there is static setup that needs to
  *                                        be done, long term plan is to stop using static variables)
