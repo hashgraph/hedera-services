@@ -48,7 +48,7 @@ public record BaseTaskDefinition(@NonNull UUID id, @NonNull String type) {
      * @return the task definition
      */
     @NonNull
-    public static BaseTaskDefinition of(@NonNull Runnable runnable) {
+    public static BaseTaskDefinition of(@NonNull final Runnable runnable) {
         Objects.requireNonNull(runnable, "runnable must not be null");
         final UUID id = UUID.randomUUID();
         if (runnable instanceof BaseTask baseTask) {
