@@ -674,7 +674,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         cryptoTransfer(moving(100_000_000_000_000L, SENTINEL_ACCOUNT)
                                         .between(DEFAULT_PAYER, FUNDING))
                                 .signedBy(DEFAULT_PAYER)
-                                .hasKnownStatus(INVALID_TOKEN_ID));
+                                .hasPrecheck(INVALID_TOKEN_ID));
     }
 
     @HapiTest

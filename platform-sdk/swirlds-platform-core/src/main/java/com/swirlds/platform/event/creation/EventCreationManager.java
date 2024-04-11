@@ -19,6 +19,7 @@ package com.swirlds.platform.event.creation;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.system.events.BaseEventHashedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -29,13 +30,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public interface EventCreationManager {
     /**
-     * Attempt to create an event. If successful, attempt to pass that event to the event consumer.
+     * Attempt to create an event.
      *
      * @return the created event, or null if no event was created
      */
     @InputWireLabel("heartbeat")
     @Nullable
-    GossipEvent maybeCreateEvent();
+    BaseEventHashedData maybeCreateEvent();
 
     /**
      * Register a new event from event intake.

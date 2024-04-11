@@ -21,7 +21,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 import com.swirlds.base.state.Lifecycle;
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.state.Startable;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -32,6 +31,7 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
@@ -47,7 +47,9 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
+import com.swirlds.platform.network.NetworkPeerIdentifier;
 import com.swirlds.platform.network.NetworkUtils;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.ProtocolNegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
@@ -86,6 +88,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
@@ -133,8 +136,8 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
      * @param platformContext               the platform context
+     * @param random                        a source of randomness, does not need to be cryptographically secure
      * @param threadManager                 the thread manager
-     * @param time                          the time object used to get the current time
      * @param keysAndCerts                  private keys and public certificates
      * @param notificationEngine            used to send notifications to the app
      * @param addressBook                   the current address book
@@ -156,8 +159,8 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
      */
     protected SyncGossip(
             @NonNull final PlatformContext platformContext,
+            @NonNull final Random random,
             @NonNull final ThreadManager threadManager,
-            @NonNull final Time time,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final NotificationEngine notificationEngine,
             @NonNull final AddressBook addressBook,
@@ -182,33 +185,30 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         this.selfId = Objects.requireNonNull(selfId);
         this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
 
-        Objects.requireNonNull(time);
-
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
-        topology = new StaticTopology(addressBook, selfId, basicConfig.numConnections());
+        topology = new StaticTopology(random, addressBook, selfId, basicConfig.numConnections());
+        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
 
         final SocketFactory socketFactory =
                 NetworkUtils.createSocketFactory(selfId, addressBook, keysAndCerts, platformContext.getConfiguration());
         // create an instance that can create new outbound connections
-        final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
-                platformContext, selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
+        final OutboundConnectionCreator connectionCreator =
+                new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 platformContext,
                 this,
+                new NetworkPeerIdentifier(platformContext),
                 selfId,
-                addressBook,
                 connectionManagers::newConnection,
-                shouldDoVersionCheck(),
-                appVersion,
-                time);
+                platformContext.getTime());
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
-                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle);
+                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle, peers);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(threadConfig.threadPrioritySync())
                 .setNodeId(selfId)
@@ -228,7 +228,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
 
-        reconnectThrottle = new ReconnectThrottle(reconnectConfig, time);
+        reconnectThrottle = new ReconnectThrottle(reconnectConfig, platformContext.getTime());
 
         networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook);
         platformContext.getMetrics().addUpdater(networkMetrics::update);
@@ -241,7 +241,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                 clearAllPipelinesForReconnect::run,
                 swirldStateManager::getConsensusState,
                 latestCompleteState::getRound,
-                new ReconnectLearnerThrottle(time, selfId, reconnectConfig),
+                new ReconnectLearnerThrottle(platformContext.getTime(), selfId, reconnectConfig),
                 loadReconnectState,
                 new ReconnectLearnerFactory(
                         platformContext,
@@ -293,7 +293,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         buildSyncProtocolThreads(
                 platformContext,
                 threadManager,
-                time,
                 notificationEngine,
                 selfId,
                 appVersion,
@@ -315,7 +314,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     private void buildSyncProtocolThreads(
             final PlatformContext platformContext,
             final ThreadManager threadManager,
-            final Time time,
             final NotificationEngine notificationEngine,
             final NodeId selfId,
             final SoftwareVersion appVersion,
@@ -365,7 +363,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                 platformStatusManager,
                 platformContext.getConfiguration());
         final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(
-                Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()), networkMetrics, time);
+                Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()), networkMetrics, platformContext.getTime());
         final HashCompareHandshake hashCompareHandshake =
                 new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash());
         final VersionCompareHandshake versionCompareHandshake =
@@ -482,15 +480,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     public void connectionClosed(final boolean outbound, @NonNull final Connection conn) {
         Objects.requireNonNull(conn);
         networkMetrics.recordDisconnect(conn);
-    }
-
-    /**
-     * Should the network layer do a version check prior to initiating a connection?
-     *
-     * @return true if a version check should be done
-     */
-    protected boolean shouldDoVersionCheck() {
-        return false;
     }
 
     /**

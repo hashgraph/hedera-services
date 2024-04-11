@@ -45,7 +45,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NOD
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
-import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
@@ -83,6 +83,7 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
@@ -126,6 +127,7 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
@@ -166,6 +168,7 @@ public class HandleWorkflow {
     private final CacheWarmer cacheWarmer;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
+    private final StoreMetricsService storeMetricsService;
 
     @Inject
     public HandleWorkflow(
@@ -192,7 +195,8 @@ public class HandleWorkflow {
             @NonNull final ScheduleExpirationHook scheduleExpirationHook,
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
-            @NonNull final ThrottleServiceManager throttleServiceManager) {
+            @NonNull final ThrottleServiceManager throttleServiceManager,
+            @NonNull final StoreMetricsService storeMetricsService) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -221,6 +225,7 @@ public class HandleWorkflow {
         this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
         this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
+        this.storeMetricsService = requireNonNull(storeMetricsService, "storeMetricsService must not be null");
     }
 
     /**
@@ -324,8 +329,8 @@ public class HandleWorkflow {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
-        final var tokenServiceContext =
-                new TokenContextImpl(configuration, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
+        final var tokenServiceContext = new TokenContextImpl(
+                configuration, storeMetricsService, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
         genesisRecordsTimeHook.process(tokenServiceContext);
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
@@ -344,8 +349,9 @@ public class HandleWorkflow {
             final var firstSecondToExpire =
                     blockRecordManager.firstConsTimeOfLastBlock().getEpochSecond();
             final var lastSecondToExpire = consensusNow.getEpochSecond();
-            final var scheduleStore =
-                    new WritableStoreFactory(stack, ScheduleService.NAME).getStore(WritableScheduleStore.class);
+            final var scheduleStore = new WritableStoreFactory(
+                            stack, ScheduleService.NAME, configuration, storeMetricsService)
+                    .getStore(WritableScheduleStore.class);
             // purge all expired schedules between the first consensus time of last block and the current consensus time
             scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire, lastSecondToExpire);
         }
@@ -355,7 +361,7 @@ public class HandleWorkflow {
         AccountID payer = null;
         Fees fees = null;
         TransactionInfo transactionInfo = null;
-        Set<AccountID> prePaidRewardReceivers = emptySet();
+        Map<AccountID, Long> prePaidRewards = emptyMap();
         try {
             final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator, platformTxn);
 
@@ -396,7 +402,7 @@ public class HandleWorkflow {
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
             final var legacyFeeCalcNetworkVpt =
-                    transactionInfo.signatureMap().sigPairOrElse(emptyList()).size();
+                    transactionInfo.signatureMap().sigPair().size();
             final var verifier = new DefaultKeyVerifier(
                     legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.getVerificationResults());
             final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
@@ -429,7 +435,8 @@ public class HandleWorkflow {
                     transactionFinalizer,
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
-                    platformState);
+                    platformState,
+                    storeMetricsService);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
@@ -549,7 +556,7 @@ public class HandleWorkflow {
                     recordBuilder.status(SUCCESS);
                     // Only ScheduleCreate and ScheduleSign can trigger paid staking rewards via
                     // dispatch; and only if this top-level transaction was successful
-                    prePaidRewardReceivers = context.dispatchPaidStakerIds();
+                    prePaidRewards = context.dispatchPaidRewards();
 
                     // Notify responsible facility if system-file was uploaded.
                     // Returns SUCCESS if no system-file was uploaded
@@ -625,7 +632,7 @@ public class HandleWorkflow {
                 tokenServiceContext,
                 function,
                 extraRewardReceivers(transactionInfo, recordBuilder),
-                prePaidRewardReceivers);
+                prePaidRewards);
 
         // Commit all state changes
         stack.commitFullStack();
@@ -678,7 +685,7 @@ public class HandleWorkflow {
         return switch (function) {
             case CRYPTO_TRANSFER -> zeroAdjustIdsFrom(body.cryptoTransferOrThrow()
                     .transfersOrElse(TransferList.DEFAULT)
-                    .accountAmountsOrElse(emptyList()));
+                    .accountAmounts());
             case ETHEREUM_TRANSACTION, CONTRACT_CALL, CONTRACT_CREATE -> recordBuilder.explicitRewardSituationIds();
             default -> emptySet();
         };
@@ -773,7 +780,7 @@ public class HandleWorkflow {
             @NonNull final SavepointStackImpl stack,
             @NonNull final Configuration configuration,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
-        final var serviceApiFactory = new ServiceApiFactory(stack, configuration);
+        final var serviceApiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
     }
@@ -826,25 +833,6 @@ public class HandleWorkflow {
                 utilizationManager.trackFeePayments(consensusNow, state);
                 final var fees = dispatcher.dispatchComputeFees(context);
                 return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE, fees);
-            }
-        }
-
-        // verify all the keys
-        for (final var key : preHandleResult.getRequiredKeys()) {
-            final var verification = verifier.verificationFor(key);
-            if (verification.failed()) {
-                utilizationManager.trackFeePayments(consensusNow, state);
-                final var fees = dispatcher.dispatchComputeFees(context);
-                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
-            }
-        }
-        // If there are any hollow accounts whose signatures need to be verified, verify them
-        for (final var hollowAccount : preHandleResult.getHollowAccounts()) {
-            final var verification = verifier.verificationFor(hollowAccount.alias());
-            if (verification.failed()) {
-                utilizationManager.trackFeePayments(consensusNow, state);
-                final var fees = dispatcher.dispatchComputeFees(context);
-                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
             }
         }
 
@@ -907,6 +895,23 @@ public class HandleWorkflow {
         }
         if (privileges == SystemPrivilege.IMPERMISSIBLE) {
             return new ValidationResult(PRE_HANDLE_FAILURE, ENTITY_NOT_ALLOWED_TO_DELETE, fees);
+        }
+
+        // verify all the keys
+        for (final var key : preHandleResult.getRequiredKeys()) {
+            final var verification = verifier.verificationFor(key);
+            if (verification.failed()) {
+                utilizationManager.trackFeePayments(consensusNow, state);
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
+            }
+        }
+        // If there are any hollow accounts whose signatures need to be verified, verify them
+        for (final var hollowAccount : preHandleResult.getHollowAccounts()) {
+            final var verification = verifier.verificationFor(hollowAccount.alias());
+            if (verification.failed()) {
+                utilizationManager.trackFeePayments(consensusNow, state);
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
+            }
         }
 
         return new ValidationResult(SO_FAR_SO_GOOD, OK, fees);

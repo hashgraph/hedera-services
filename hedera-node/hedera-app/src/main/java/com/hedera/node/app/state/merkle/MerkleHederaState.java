@@ -51,6 +51,7 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -64,7 +65,11 @@ import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -128,6 +133,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     private final HederaLifecycles lifecycles;
 
+    public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
+        return services;
+    }
+
+    private Metrics metrics;
+
     /**
      * Maintains information about each service, and each state of each service, known by this
      * instance. The key is the "service-name.state-key".
@@ -181,6 +192,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             final PlatformState platformState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
+        metrics = platform.getContext().getMetrics();
+
         // If we are initialized for event stream recovery, we have to register an
         // extra listener to make sure we call all the required Hedera lifecycles
         if (trigger == EVENT_STREAM_RECOVERY) {
@@ -673,6 +686,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             final var md = stateMetadata.get(stateKey);
             final VirtualMap<?, ?> virtualMap = (VirtualMap<?, ?>) findNode(md);
             final var mutableCopy = virtualMap.copy();
+            if (metrics != null) {
+                mutableCopy.registerMetrics(metrics);
+            }
             setChild(findNodeIndex(serviceName, stateKey), mutableCopy);
             kvInstances.put(stateKey, createReadableKVState(md, mutableCopy));
         }

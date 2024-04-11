@@ -19,6 +19,8 @@ package com.hedera.node.app.statedumpers;
 import static com.hedera.node.app.ids.EntityIdService.ENTITY_ID_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
+import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY;
+import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY;
 import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
@@ -58,8 +60,11 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
@@ -79,6 +84,7 @@ import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
@@ -142,18 +148,33 @@ public class StateDumper {
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
         dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
 
-        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> contracts = requireNonNull(state.getChild(
+        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> byteCodes = requireNonNull(state.getChild(
                 state.findNodeIndex(ContractService.NAME, InitialModServiceContractSchema.BYTECODE_KEY)));
-        dumpModContractBytecodes(Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES), contracts, checkpoint);
+        dumpModContractBytecodes(
+                Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
+                byteCodes,
+                accounts,
+                (StateMetadata<AccountID, Account>)
+                        state.getServices().get(TokenService.NAME).get(ACCOUNTS_KEY),
+                checkpoint);
 
         final VirtualMap<OnDiskKey<TopicID>, OnDiskValue<Topic>> topics = requireNonNull(
                 state.getChild(state.findNodeIndex(ConsensusService.NAME, ConsensusServiceImpl.TOPICS_KEY)));
         dumpModTopics(Paths.get(dumpLoc, SEMANTIC_TOPICS), topics, checkpoint);
 
-        final VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> scheduledTransactions =
+        final VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> scheduledTransactionsByKey =
                 requireNonNull(state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_ID_KEY)));
+        final VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<com.hedera.hapi.node.state.schedule.ScheduleList>>
+                scheduledTransactionsByEquality = requireNonNull(
+                        state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_EQUALITY_KEY)));
+        final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> scheduledTransactionsByExpiry =
+                requireNonNull(state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_EXPIRY_SEC_KEY)));
         dumpModScheduledTransactions(
-                Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS), scheduledTransactions, checkpoint);
+                Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS),
+                scheduledTransactionsByKey,
+                scheduledTransactionsByEquality,
+                scheduledTransactionsByExpiry,
+                checkpoint);
 
         final VirtualMap<OnDiskKey<TokenID>, OnDiskValue<Token>> tokenTypes =
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, TOKENS_KEY)));

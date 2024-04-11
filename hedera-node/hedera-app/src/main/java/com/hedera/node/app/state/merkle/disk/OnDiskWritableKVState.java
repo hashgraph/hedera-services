@@ -16,15 +16,20 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGet;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGetForModify;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGetSize;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapPut;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapRemove;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.metrics.StoreMetrics;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
-import java.util.Objects;
 
 /**
  * An implementation of {@link WritableKVState} backed by a {@link VirtualMap}, resulting in a state
@@ -39,6 +44,8 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
 
     private final StateMetadata<K, V> md;
 
+    private StoreMetrics storeMetrics;
+
     /**
      * Create a new instance
      *
@@ -49,7 +56,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
             @NonNull final StateMetadata<K, V> md, @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
         super(md.stateDefinition().stateKey());
         this.md = md;
-        this.virtualMap = Objects.requireNonNull(virtualMap);
+        this.virtualMap = requireNonNull(virtualMap);
     }
 
     /** {@inheritDoc} */
@@ -111,5 +118,19 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
         // Log to transaction state log, size of map
         logMapGetSize(getStateKey(), size);
         return size;
+    }
+
+    @Override
+    public void setMetrics(@NonNull StoreMetrics storeMetrics) {
+        this.storeMetrics = requireNonNull(storeMetrics);
+    }
+
+    @Override
+    public void commit() {
+        super.commit();
+
+        if (storeMetrics != null) {
+            storeMetrics.updateCount(sizeOfDataSource());
+        }
     }
 }

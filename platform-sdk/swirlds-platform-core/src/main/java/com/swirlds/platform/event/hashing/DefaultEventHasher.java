@@ -44,7 +44,6 @@ public class DefaultEventHasher implements EventHasher {
     @NonNull
     public GossipEvent hashEvent(@NonNull final GossipEvent event) {
         cryptography.digestSync(event.getHashedData());
-        event.buildDescriptor();
         return event;
     }
 }

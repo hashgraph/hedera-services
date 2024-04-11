@@ -30,8 +30,11 @@ import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,11 +52,16 @@ class WritableTokenRelationStoreTest {
     private static final AccountID ACCOUNT_20_ID =
             AccountID.newBuilder().accountNum(ACCOUNT_20).build();
 
+    private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
+
     @Mock
     private WritableStates states;
 
     @Mock
     private WritableKVStateBase<EntityIDPair, TokenRelation> tokenRelState;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
 
     private WritableTokenRelationStore subject;
 
@@ -62,13 +70,18 @@ class WritableTokenRelationStoreTest {
         given(states.<EntityIDPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
                 .willReturn(tokenRelState);
 
-        subject = new WritableTokenRelationStore(states);
+        subject = new WritableTokenRelationStore(states, CONFIGURATION, storeMetricsService);
     }
 
+    @SuppressWarnings("DataFlowIssue")
     @Test
     void testNullConstructorArgs() {
-        //noinspection DataFlowIssue
-        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(null));
+        assertThrows(
+                NullPointerException.class,
+                () -> new WritableTokenRelationStore(null, CONFIGURATION, storeMetricsService));
+        assertThrows(
+                NullPointerException.class, () -> new WritableTokenRelationStore(states, null, storeMetricsService));
+        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states, CONFIGURATION, null));
     }
 
     @Test

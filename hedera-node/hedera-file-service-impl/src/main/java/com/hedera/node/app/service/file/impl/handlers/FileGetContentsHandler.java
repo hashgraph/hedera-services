@@ -85,10 +85,9 @@ public class FileGetContentsHandler extends FileQueryBase {
         final var fileId = op.fileIDOrThrow();
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         final FileContents fileContents = contentFile(fileId, fileStore);
-        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> {
-            return new GetFileContentsResourceUsage(usageEstimator)
-                    .usageGivenType(fileContents, fromPbjResponseType(responseType));
-        });
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetFileContentsResourceUsage(
+                        usageEstimator)
+                .usageGivenType(fileContents, fromPbjResponseType(responseType)));
     }
 
     @Override
