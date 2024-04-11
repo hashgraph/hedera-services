@@ -164,7 +164,7 @@ public class SimpleLinker {
     }
 
     /**
-     * Set the non-ancient event window, defining the minimum non-ancient threshold.
+     * Set the event window, defining the minimum non-ancient threshold.
      *
      * @param nonAncientThreshold the new non-ancient threshold
      */

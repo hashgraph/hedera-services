@@ -144,7 +144,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
      * @param epochHash                     the epoch hash of the initial state
-     * @param shadowGraph                   contains non-ancient events
+     * @param shadowGraph                   contains non-expired events
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param receivedEventHandler          handles events received from other nodes
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue

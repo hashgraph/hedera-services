@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -87,7 +87,7 @@ class ConsistencyTestingToolRoundTests {
                 mockEvents,
                 mock(EventImpl.class),
                 mock(GraphGenerations.class),
-                mock(NonAncientEventWindow.class),
+                mock(EventWindow.class),
                 mockSnapshot);
     }
 
