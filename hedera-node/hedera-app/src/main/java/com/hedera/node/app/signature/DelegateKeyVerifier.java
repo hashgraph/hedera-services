@@ -18,7 +18,6 @@ package com.hedera.node.app.signature;
 
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
@@ -94,7 +93,7 @@ public class DelegateKeyVerifier implements KeyVerifier {
         final var result =
                 switch (key.key().kind()) {
                     case KEY_LIST -> {
-                        final var keys = key.keyListOrThrow().keysOrElse(emptyList());
+                        final var keys = key.keyListOrThrow().keys();
                         boolean failed = keys.isEmpty(); // an empty keyList fails by definition
                         for (final var childKey : keys) {
                             failed |=
@@ -105,7 +104,7 @@ public class DelegateKeyVerifier implements KeyVerifier {
                     case THRESHOLD_KEY -> {
                         final var thresholdKey = key.thresholdKeyOrThrow();
                         final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
-                        final var keys = keyList.keysOrElse(emptyList());
+                        final var keys = keyList.keys();
                         final var threshold = thresholdKey.threshold();
                         final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
                         var passed = 0;

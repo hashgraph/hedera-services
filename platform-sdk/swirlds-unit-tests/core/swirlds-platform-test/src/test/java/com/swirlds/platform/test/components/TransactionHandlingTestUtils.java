@@ -68,7 +68,7 @@ public final class TransactionHandlingTestUtils {
                         EventConstants.BIRTH_ROUND_UNDEFINED,
                         Instant.now(),
                         transactions),
-                new BaseEventUnhashedData(new NodeId(0L), new byte[0]));
+                new BaseEventUnhashedData(new byte[0]));
     }
 
     /**

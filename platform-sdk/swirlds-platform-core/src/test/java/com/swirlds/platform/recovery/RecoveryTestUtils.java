@@ -108,7 +108,7 @@ public final class RecoveryTestUtils {
                 transactions);
 
         final BaseEventUnhashedData baseEventUnhashedData =
-                new BaseEventUnhashedData(otherId, randomSignature(random).getSignatureBytes());
+                new BaseEventUnhashedData(randomSignature(random).getSignatureBytes());
 
         final ConsensusData consensusData = new ConsensusData();
         consensusData.setConsensusTimestamp(now);

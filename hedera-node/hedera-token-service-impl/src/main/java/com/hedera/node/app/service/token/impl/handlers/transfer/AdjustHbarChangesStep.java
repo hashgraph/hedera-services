@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -35,7 +34,6 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +59,7 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
         final Map<AccountID, Long> netHbarTransfers = new LinkedHashMap<>();
         // Allowance transfers is only for negative amounts, it is used to reduce allowance for the spender
         final Map<AccountID, Long> allowanceTransfers = new LinkedHashMap<>();
-        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(Collections.emptyList())) {
+        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
             netHbarTransfers.merge(aa.accountID(), aa.amount(), Long::sum);
             if (aa.isApproval() && aa.amount() < 0) {
                 allowanceTransfers.merge(aa.accountID(), aa.amount(), Long::sum);
@@ -92,7 +90,7 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
                     accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
             final var accountCopy = ownerAccount.copyBuilder();
 
-            final var cryptoAllowances = new ArrayList<>(ownerAccount.cryptoAllowancesOrElse(Collections.emptyList()));
+            final var cryptoAllowances = new ArrayList<>(ownerAccount.cryptoAllowances());
             var haveSpenderAllowance = false;
 
             for (int i = 0; i < cryptoAllowances.size(); i++) {
@@ -162,8 +160,7 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
     private boolean effectivePaymentWasMade(
             @NonNull final AccountID payer, @NonNull final List<AssessedCustomFee> assessedCustomFees) {
         for (final var fee : assessedCustomFees) {
-            if (fee.tokenId() == null
-                    && fee.effectivePayerAccountIdOrElse(emptyList()).contains(payer)) {
+            if (fee.tokenId() == null && fee.effectivePayerAccountId().contains(payer)) {
                 return true;
             }
         }

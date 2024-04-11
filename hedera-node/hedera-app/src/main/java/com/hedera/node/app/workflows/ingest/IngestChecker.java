@@ -40,7 +40,6 @@ import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
@@ -249,7 +248,7 @@ public final class IngestChecker {
         verifyPayerSignature(txInfo, payer, configuration);
 
         // 7. Check payer solvency
-        final var numSigs = txInfo.signatureMap().sigPairOrElse(emptyList()).size();
+        final var numSigs = txInfo.signatureMap().sigPair().size();
         final FeeContext feeContext = new FeeContextImpl(
                 consensusTime,
                 txInfo,
@@ -278,11 +277,11 @@ public final class IngestChecker {
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
             // This adds a mild restriction that privileged transactions can only
             // be issued by system accounts; (FUTURE) consider giving non-trivial
-            // minimum fees to privileged transactions that fail with UNAUTHORIZED
+            // minimum fees to privileged transactions that fail with NOT_SUPPORTED
             // at consensus, and adding them to normal throttle buckets, c.f.
             // https://github.com/hashgraph/hedera-services/issues/12559
             if (payerNum >= hederaConfig.firstUserEntity()) {
-                throw new PreCheckException(UNAUTHORIZED);
+                throw new PreCheckException(NOT_SUPPORTED);
             }
         }
     }
@@ -294,7 +293,7 @@ public final class IngestChecker {
             throws PreCheckException {
         final var payerKey = payer.key();
         final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-        final var sigPairs = txInfo.signatureMap().sigPairOrElse(List.of());
+        final var sigPairs = txInfo.signatureMap().sigPair();
 
         // Expand the signatures
         final var expandedSigs = new HashSet<ExpandedSignaturePair>();
@@ -303,7 +302,7 @@ public final class IngestChecker {
             signatureExpander.expand(payerKey, sigPairs, expandedSigs);
         } else {
             // If the payer is hollow, then we need to expand the signature for the payer
-            final var originals = txInfo.signatureMap().sigPairOrElse(emptyList()).stream()
+            final var originals = txInfo.signatureMap().sigPair().stream()
                     .filter(SignaturePair::hasEcdsaSecp256k1)
                     .filter(pair -> Bytes.wrap(EthSigsUtils.recoverAddressFromPubKey(
                                     pair.pubKeyPrefix().toByteArray()))

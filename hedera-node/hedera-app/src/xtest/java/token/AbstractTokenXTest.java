@@ -64,7 +64,7 @@ public abstract class AbstractTokenXTest extends AbstractXTest {
             @NonNull final TokenID tokenID, @NonNull final AccountID from, @NonNull final AccountID to, long amount) {
         return b -> {
             final List<TokenTransferList> newTransfers =
-                    new ArrayList<>(b.build().tokenTransfersOrThrow());
+                    new ArrayList<>(b.build().tokenTransfers());
             newTransfers.add(TokenTransferList.newBuilder()
                     .token(tokenID)
                     .transfers(new AccountAmount(from, -amount, false), new AccountAmount(to, amount, false))
@@ -82,7 +82,7 @@ public abstract class AbstractTokenXTest extends AbstractXTest {
             @NonNull final TokenID tokenID, @NonNull final AccountID from, @NonNull final AccountID to, long serialNo) {
         return b -> {
             final List<TokenTransferList> newTransfers =
-                    new ArrayList<>(b.build().tokenTransfersOrThrow());
+                    new ArrayList<>(b.build().tokenTransfers());
             newTransfers.add(TokenTransferList.newBuilder()
                     .token(tokenID)
                     .nftTransfers(new NftTransfer(from, to, serialNo, false))
