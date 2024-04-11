@@ -26,7 +26,7 @@ import java.time.format.DateTimeFormatter;
  * Utility class to help formatting epoc milliseconds like those coming from ({@link System#currentTimeMillis()}) to a
  * String representation matching  {@code "yyyy-MM-dd HH:mm:ss.SSS"}
  */
-public class EpochFormatUtils {
+public class TimestampPrinter {
 
     /**
      * The emergency logger.
@@ -43,25 +43,26 @@ public class EpochFormatUtils {
      */
     private static final EpochCachedFormatter FORMATTER = new EpochCachedFormatter();
 
-    private static final String BROKEN_TIMESTAMP = "BROKEN-TIMESTAMP          ";
+    private static final String BROKEN_TIMESTAMP = "BROKEN-TIMESTAMP";
     private static final int DATE_FIELD_MAX_SIZE = 26;
 
-    private EpochFormatUtils() {}
+    private TimestampPrinter() {}
 
     /**
      * Returns the String representation matching {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME} for the epoc value
      * {@code timestamp}
      */
-    public static @NonNull String timestampAsString(final long timestamp) {
+    public static void print(final @NonNull StringBuilder writer, final long timestamp) {
+        String format;
         try {
-            final StringBuilder sb = new StringBuilder(DATE_FIELD_MAX_SIZE);
-            sb.append(FORMATTER.format(timestamp));
-            sb.append(PADDING_VALUES[DATE_FIELD_MAX_SIZE - sb.length()]);
-            return sb.toString();
+            format = FORMATTER.format(timestamp);
+
         } catch (final Throwable e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Failed to format instant", e);
-            return BROKEN_TIMESTAMP;
+            format = BROKEN_TIMESTAMP;
         }
+        writer.append(format);
+        writer.append(PADDING_VALUES[DATE_FIELD_MAX_SIZE - format.length()]);
     }
 
     /**

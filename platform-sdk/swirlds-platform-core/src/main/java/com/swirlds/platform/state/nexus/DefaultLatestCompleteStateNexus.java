@@ -22,7 +22,7 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -82,7 +82,7 @@ public class DefaultLatestCompleteStateNexus implements LatestCompleteStateNexus
      * {@inheritDoc}
      */
     @Override
-    public synchronized void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public synchronized void updateEventWindow(@NonNull final EventWindow eventWindow) {
         // Any state older than this is unconditionally removed, even if it is the latest
         final long earliestPermittedRound =
                 eventWindow.getLatestConsensusRound() - stateConfig.roundsToKeepForSigning() + 1;

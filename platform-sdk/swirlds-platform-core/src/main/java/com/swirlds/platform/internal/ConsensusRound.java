@@ -18,8 +18,8 @@ package com.swirlds.platform.internal;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
@@ -38,8 +38,8 @@ public class ConsensusRound implements Round {
     private final List<EventImpl> consensusEvents;
     /** the consensus generations when this round reached consensus */
     private final GraphGenerations generations;
-    /** the non-ancient event window for this round */
-    private final NonAncientEventWindow nonAncientEventWindow;
+    /** the event window for this round */
+    private final EventWindow eventWindow;
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
     /** A snapshot of consensus at this consensus round */
@@ -55,26 +55,26 @@ public class ConsensusRound implements Round {
     /**
      * Create a new instance with the provided consensus events.
      *
-     * @param consensusRoster       the consensus roster for this round
-     * @param consensusEvents       the events in the round, in consensus order
-     * @param keystoneEvent         the event that, when added to the hashgraph, caused this round to reach consensus
-     * @param generations           the consensus generations for this round
-     * @param nonAncientEventWindow the non-ancient event window for this round
-     * @param snapshot              snapshot of consensus at this round
+     * @param consensusRoster the consensus roster for this round
+     * @param consensusEvents the events in the round, in consensus order
+     * @param keystoneEvent   the event that, when added to the hashgraph, caused this round to reach consensus
+     * @param generations     the consensus generations for this round
+     * @param eventWindow     the event window for this round
+     * @param snapshot        snapshot of consensus at this round
      */
     public ConsensusRound(
             @NonNull final AddressBook consensusRoster,
             @NonNull final List<EventImpl> consensusEvents,
             @NonNull final EventImpl keystoneEvent,
             @NonNull final GraphGenerations generations,
-            @NonNull final NonAncientEventWindow nonAncientEventWindow,
+            @NonNull final EventWindow eventWindow,
             @NonNull final ConsensusSnapshot snapshot) {
 
         this.consensusRoster = Objects.requireNonNull(consensusRoster);
         this.consensusEvents = Collections.unmodifiableList(Objects.requireNonNull(consensusEvents));
         this.keystoneEvent = Objects.requireNonNull(keystoneEvent);
         this.generations = Objects.requireNonNull(generations);
-        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
+        this.eventWindow = Objects.requireNonNull(eventWindow);
         this.snapshot = Objects.requireNonNull(snapshot);
 
         for (final EventImpl e : consensusEvents) {
@@ -108,10 +108,10 @@ public class ConsensusRound implements Round {
     }
 
     /**
-     * @return the non-ancient event window for this round
+     * @return the event window for this round
      */
-    public @NonNull NonAncientEventWindow getNonAncientEventWindow() {
-        return nonAncientEventWindow;
+    public @NonNull EventWindow getEventWindow() {
+        return eventWindow;
     }
 
     /**
