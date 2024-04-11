@@ -111,11 +111,13 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
                     final var actualValue = beanProperty.getReadMethod().invoke(actual);
 
                     if (!haveEqualFieldValue(expectedValue, actualValue, fieldName)) {
-                        String message =                                 """
+                        String message =
+                                """
                                     ****** Mismatch in field '%s' ******
                                     ****** Expected ***: %s
                                     ****** Actual *****: %s
-                                    """.formatted(fieldName, expectedValue, actualValue);
+                                    """
+                                        .formatted(fieldName, expectedValue, actualValue);
                         log.warn(message);
                         mismatch.appendText(message).appendText("\n");
                         return false;
@@ -152,8 +154,8 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
         }
     }
 
-    private static List<PropertyDescriptor> beanGetterProperties(
-            Object bean, Class<?> stopClass) throws IntrospectionException {
+    private static List<PropertyDescriptor> beanGetterProperties(Object bean, Class<?> stopClass)
+            throws IntrospectionException {
         return Arrays.stream(
                         Introspector.getBeanInfo(bean.getClass(), stopClass).getPropertyDescriptors())
                 .filter(propertyDescriptor -> Objects.nonNull(propertyDescriptor.getReadMethod()))

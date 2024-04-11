@@ -20,14 +20,14 @@ import com.hedera.services.bdd.spec.assertions.matchers.TransactionSidecarRecord
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 public record MismatchedSidecar(
-        TransactionSidecarRecordMatcher expectedSidecarRecord, TransactionSidecarRecord actualSidecarRecord) {
+        TransactionSidecarRecordMatcher expectedSidecarRecordMatcher, TransactionSidecarRecord actualSidecarRecord) {
 
     /**
      * Check if the expected or actual sidecar record has actions.
      * @return {@code true} if either of the records has actions.
      */
     public boolean hasActions() {
-        return expectedSidecarRecord.hasActions() || actualSidecarRecord.hasActions();
+        return expectedSidecarRecordMatcher.hasActions() || actualSidecarRecord.hasActions();
     }
 
     /**
@@ -35,6 +35,6 @@ public record MismatchedSidecar(
      * @return {@code true} if either of the records has state changes.
      */
     public boolean hasStateChanges() {
-        return expectedSidecarRecord.hasStateChanges() || actualSidecarRecord.hasStateChanges();
+        return expectedSidecarRecordMatcher.hasStateChanges() || actualSidecarRecord.hasStateChanges();
     }
 }

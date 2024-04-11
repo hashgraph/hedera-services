@@ -4209,13 +4209,14 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                     .setContractNum(parentId.getContractNum() + 1L)
                                     .build();
                             mirrorLiteralId.set("0.0." + childId.getContractNum());
-                            final var topLevelCallTxnRecord =
-                                    getTxnRecord(CREATE_2_TXN).andAllChildRecords().logged();
+                            final var topLevelCallTxnRecord = getTxnRecord(CREATE_2_TXN)
+                                    .andAllChildRecords()
+                                    .logged();
                             allRunFor(spec, topLevelCallTxnRecord);
                             final var hapiGetContractBytecode = getContractBytecode(mirrorLiteralId.get())
                                     .exposingBytecodeTo(bytecodeFromMirror::set);
-                            final var targetedAddress = ByteStringUtils.wrapUnsafely(
-                                    Bytes.fromHexString(expectedCreate2Address.get())
+                            final var targetedAddress =
+                                    ByteStringUtils.wrapUnsafely(Bytes.fromHexString(expectedCreate2Address.get())
                                             .trimLeadingZeros()
                                             .toArrayUnsafe());
                             allRunFor(
@@ -4266,6 +4267,8 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                             .getContractId(contract))
                                                             .setGas(3870609)
                                                             .setTargetedAddress(targetedAddress)
+                                                            // TODO: Update this after the issue related to
+                                                            //  targeted_address being wrongly set to be resolved
                                                             // .setRecipientContract(childId)
                                                             .setGasUsed(44936)
                                                             .setValue(tcValue)
