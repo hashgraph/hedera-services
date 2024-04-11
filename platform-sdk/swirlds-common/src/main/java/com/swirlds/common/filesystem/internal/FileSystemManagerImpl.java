@@ -16,16 +16,24 @@
 
 package com.swirlds.common.filesystem.internal;
 
+import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static java.nio.file.Files.exists;
 
 import com.swirlds.common.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Default implementation of {@link FileSystemManager} Creates the rootPath and it's parent structure. Fails if the
@@ -38,35 +46,42 @@ import java.nio.file.attribute.FileAttribute;
  */
 public class FileSystemManagerImpl implements FileSystemManager {
 
+    private static final Logger logger = LogManager.getLogger(FileSystemManagerImpl.class);
     private static final String TMP = "tmp";
+    private static final String USER = "usr";
+    private static final String BIN = "bin";
     private final Path rootPath;
     private final Path tempPath;
+    private final Path userPath;
+    private final Path recycleBinPath;
     private final RecycleBin bin;
+    private static final AtomicLong TMP_FIELD_INDEX = new AtomicLong(0);
 
     /**
      * Creates an instance of {@link FileSystemManager}
      *
      * @param rootLocation the location to be used as root path. It should not exist.
-     * @param bin          the recycle bin.
-     * @throws IllegalArgumentException if rootLocation already exist or if the dir structure to rootLocation cannot be
+     * @param binSupplier          the recycle bin.
+     * @throws UncheckedIOException if rootLocation already exist or if the dir structure to rootLocation cannot be
      *                                  created
      */
-    FileSystemManagerImpl(@NonNull final String rootLocation, @NonNull final RecycleBin bin) {
-        this.rootPath = Path.of(rootLocation);
-        this.bin = bin;
+    FileSystemManagerImpl(@NonNull final String rootLocation, @NonNull final Function<Path, RecycleBin> binSupplier) {
+        this.rootPath = Path.of(rootLocation).normalize();
         if (exists(rootPath)) {
-            throw new IllegalArgumentException("rootLocation already exists: " + rootLocation);
+            logger.info(STARTUP.getMarker(), "Deleting rootPath {}", rootPath);
+            rethrowIO(() -> FileUtils.deleteDirectory(rootPath));
         }
-        try {
-            Files.createDirectories(rootPath);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Could not create rootPath:" + rootPath, e);
-        }
-        try {
-            this.tempPath = Files.createTempDirectory(rootPath, TMP);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Could not create a tmp directory under rootPath:" + rootPath, e);
-        }
+
+        this.tempPath = rootPath.resolve(TMP);
+        this.userPath = rootPath.resolve(USER);
+        this.recycleBinPath = rootPath.resolve(BIN);
+
+        rethrowIO(() -> Files.createDirectories(rootPath));
+        rethrowIO(() -> Files.createDirectory(userPath));
+        rethrowIO(() -> Files.createDirectory(tempPath));
+        rethrowIO(() -> Files.createDirectory(recycleBinPath));
+
+        this.bin = binSupplier.apply(recycleBinPath);
     }
 
     /**
@@ -75,7 +90,7 @@ public class FileSystemManagerImpl implements FileSystemManager {
     @NonNull
     @Override
     public Path resolve(@NonNull final Path relativePath) {
-        return requireValidSubPathOf(rootPath, rootPath.resolve(relativePath));
+        return requireValidSubPathOf(userPath, userPath.resolve(relativePath));
     }
 
     /**
@@ -83,17 +98,22 @@ public class FileSystemManagerImpl implements FileSystemManager {
      */
     @NonNull
     @Override
-    public Path createTemporaryPath(@Nullable final String tag) {
-        try {
-            return Files.createTempFile(tempPath, null, tag);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Could not create a tmp file with tag:" + tag + " under " + tempPath, e);
+    public Path resolveNewTemp(@Nullable final String tag) {
+        final StringBuilder nameBuilder = new StringBuilder();
+        nameBuilder.append(System.currentTimeMillis());
+        nameBuilder.append(TMP_FIELD_INDEX.getAndIncrement());
+        if (tag != null) {
+            nameBuilder.append("-");
+            nameBuilder.append(tag);
         }
+
+        return requireValidSubPathOf(tempPath, tempPath.resolve(nameBuilder.toString()));
     }
 
     /**
      * Remove the file or directory tree at the specified path. A best effort attempt is made to relocate the file or
-     * directory tree to a temporary location where it may persist for an amount of time. No guarantee on the amount of
+     * directory
+     * tree to a temporary location where it may persist for an amount of time. No guarantee on the amount of
      * time the file or directory tree will persist is provided.
      *
      * @param relativePath the relative path to recycle
@@ -123,4 +143,24 @@ public class FileSystemManagerImpl implements FileSystemManager {
         }
         return path;
     }
+
+    /**
+     * <p>Calls {@link #stop(StopBehavior)} with the default {@link StopBehavior StopBehavior} defined on the
+     * object</p>
+     *
+     * @return true if operation was successful, or false if the thread is in the incorrect state to be stopped
+     */
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void stop() {
+        bin.stop();
+    }
+
+    /**
+     * Start this object.
+     */
+    @Override
+    public void start() {}
 }

@@ -62,7 +62,7 @@ public class GuiEventStorage {
 
         this.configuration = Objects.requireNonNull(configuration);
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), null);
 
         this.consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
         // Future work: birth round compatibility for GUI

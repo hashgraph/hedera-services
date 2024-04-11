@@ -41,10 +41,14 @@ import static org.mockito.Mockito.verify;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,7 +68,7 @@ public class FileSystemManagerImplTest {
     private Path rootPathParent;
 
     public FileSystemManagerImpl getFileSystemManager() {
-        return new FileSystemManagerImpl(getTestRootPath(), mockRecycleBin);
+        return new FileSystemManagerImpl(getTestRootPath(), p -> mockRecycleBin);
     }
 
     private String getTestRootPath() {
@@ -87,20 +91,31 @@ public class FileSystemManagerImplTest {
         // given
         final String largeRootLocation =
                 new StringBuffer(getTestRootPath()).repeat("/child", 100).toString();
-        new FileSystemManagerImpl(largeRootLocation, mockRecycleBin);
+        new FileSystemManagerImpl(largeRootLocation, p -> mockRecycleBin);
         // then
         assertThat(Path.of(largeRootLocation)).isDirectory().isNotEmptyDirectory();
     }
 
     @Test
-    public void testNew_throwsIfRootPathExist() {
+    public void testNew_deletesAllIfPathExist() throws IOException {
         // given
+        final Path dir = Path.of(getTestRootPath());
+        Files.createDirectories(dir);
+        final List<String> tmpFileNames = IntStream.range(0, 10)
+                .boxed()
+                .map(x -> FileUtils.rethrowIO(() -> Files.createTempFile(dir, x + "", null)))
+                .map(p -> p.toFile().getName())
+                .toList();
+        // when
         getFileSystemManager();
+
         // then
-        assertThrows(
-                IllegalArgumentException.class,
-                this::getFileSystemManager,
-                () -> "rootLocation already exists: " + getTestRootPath());
+        assertThat(dir)
+                .isNotEmptyDirectory()
+                .isDirectoryContaining("glob:**tmp")
+                .isDirectoryContaining("glob:**usr")
+                .isDirectoryContaining("glob:**bin")
+                .isDirectoryNotContaining("glob:{" + String.join(",", tmpFileNames) + "}");
     }
 
     @Test
@@ -112,7 +127,7 @@ public class FileSystemManagerImplTest {
 
         // then
         // Assert that the resolved path is correctly formed from root and relative path
-        assertThat(resolvedPath).isEqualTo(Paths.get(getTestRootPath(), "/data/file.txt"));
+        assertThat(resolvedPath).isEqualTo(Paths.get(getTestRootPath(), "usr/data/file.txt"));
     }
 
     @Test
@@ -158,17 +173,16 @@ public class FileSystemManagerImplTest {
     }
 
     @Test
-    public void testCreateTemporaryPath_validName() throws IOException {
+    public void testResolveNewTemp_validName() {
         // given
         final FileSystemManagerImpl fileSystemManager = getFileSystemManager();
         final String name = "myTempFile";
-        final Path tempPath = fileSystemManager.createTemporaryPath(name);
+        final Path tempPath = fileSystemManager.resolveNewTemp(name);
 
         // then
         // Assert that the temporary path has the expected format
         assertThat(tempPath)
-                .exists()
-                .isEmptyFile()
+                .doesNotExist()
                 .satisfies(p -> assertThat(p.toAbsolutePath().toString()).contains(getTestRootPath() + "/tmp"))
                 .satisfies(p -> assertThat(p.getFileName().toString()).endsWith("myTempFile"));
     }
@@ -195,7 +209,6 @@ public class FileSystemManagerImplTest {
         // given
         final FileSystemManagerImpl fileSystemManager = getFileSystemManager();
         final Path absolutePath = Paths.get(getTestRootPath(), "data/file.txt");
-        fileSystemManager.resolve(absolutePath); // Simulate file creation
 
         doNothing().when(mockRecycleBin).recycle(any(Path.class));
 
@@ -232,10 +245,10 @@ public class FileSystemManagerImplTest {
     }
 
     @Test
-    public void testCreateTemporaryPath_concurrentCallDoesNotThrow(TestExecutor testExecutor) {
+    public void testResolveNewTemp_concurrentCallDoesNotThrow(TestExecutor testExecutor) {
         // given
         final FileSystemManagerImpl fileSystemManager = getFileSystemManager();
-        Runnable r = () -> fileSystemManager.createTemporaryPath("aTag");
+        Runnable r = () -> fileSystemManager.resolveNewTemp("aTag");
         Runnable[] params = Stream.generate(() -> r).limit(100).toArray(Runnable[]::new);
         // when
         final Executable executable = () -> testExecutor.executeAndWait(params);

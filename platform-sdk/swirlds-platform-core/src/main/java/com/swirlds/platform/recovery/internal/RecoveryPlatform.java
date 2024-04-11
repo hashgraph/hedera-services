@@ -88,7 +88,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
 
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
 
-        context = new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent());
+        context = new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent(), null);
 
         setLatestState(initialState);
     }

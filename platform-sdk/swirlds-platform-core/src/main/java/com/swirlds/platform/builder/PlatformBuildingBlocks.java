@@ -17,7 +17,6 @@
 package com.swirlds.platform.builder;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -38,7 +37,6 @@ import java.util.function.Consumer;
  * @param platformContext           the context for this platform
  * @param keysAndCerts              an object holding all the public/private key pairs and the CSPRNG state for this
  *                                  member
- * @param recycleBin                used to delete files that may be useful for later debugging
  * @param selfId                    the ID for this node
  * @param mainClassName             the name of the app class inheriting from SwirldMain
  * @param swirldName                the name of the swirld being run
@@ -58,7 +56,6 @@ import java.util.function.Consumer;
 public record PlatformBuildingBlocks(
         @NonNull PlatformContext platformContext,
         @NonNull KeysAndCerts keysAndCerts,
-        @NonNull RecycleBin recycleBin,
         @NonNull NodeId selfId,
         @NonNull String mainClassName,
         @NonNull String swirldName,

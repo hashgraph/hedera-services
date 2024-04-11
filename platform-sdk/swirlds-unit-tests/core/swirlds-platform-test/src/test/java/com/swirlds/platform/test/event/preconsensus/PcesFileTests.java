@@ -373,11 +373,11 @@ class PcesFileTests {
                 }
             }
 
-            file.deleteFile(streamDirectory, recycleBin);
+            file.deleteFile(streamDirectory, null);
 
             if (random.nextBoolean()) {
                 // Deleting twice shouldn't have any ill effects
-                file.deleteFile(streamDirectory, recycleBin);
+                file.deleteFile(streamDirectory, null);
             }
 
             deletedFiles.add(file);

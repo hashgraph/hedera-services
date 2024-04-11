@@ -16,6 +16,8 @@
 
 package com.swirlds.common.filesystem;
 
+import com.swirlds.base.state.Startable;
+import com.swirlds.base.state.Stoppable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -24,7 +26,7 @@ import java.nio.file.Path;
 /**
  * Responsible for organizing and managing access to the file system.
  */
-public interface FileSystemManager {
+public interface FileSystemManager extends Startable, Stoppable {
 
     /**
      * Resolve a path relative to the root directory of the file system manager.
@@ -45,7 +47,7 @@ public interface FileSystemManager {
      * @throws IllegalArgumentException if the path is "below" the root directory (e.g. resolve("../foo")
      */
     @NonNull
-    Path createTemporaryPath(@Nullable String tag);
+    Path resolveNewTemp(@Nullable String tag);
 
     /**
      * Remove the file or directory tree at the specified path. A best effort attempt is made to relocate the file or

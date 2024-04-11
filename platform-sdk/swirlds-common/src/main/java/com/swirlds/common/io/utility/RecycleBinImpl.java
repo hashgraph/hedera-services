@@ -113,6 +113,33 @@ public class RecycleBinImpl implements RecycleBin, Stoppable {
                 .build();
     }
 
+    public RecycleBinImpl(
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final Time time,
+            @NonNull final Path recycleBinPath) {
+
+        Objects.requireNonNull(threadManager);
+        this.time = Objects.requireNonNull(time);
+
+        final RecycleBinConfig recycleBinConfig = configuration.getConfigData(RecycleBinConfig.class);
+
+        maximumFileAge = recycleBinConfig.maximumFileAge();
+        this.recycleBinPath = recycleBinPath;
+        topLevelRecycledFileCount = countRecycledFiles(recycleBinPath);
+
+        recycledFileCountMetric = metrics.getOrCreate(RECYLED_FILE_COUNT_CONFIG);
+        recycledFileCountMetric.set(topLevelRecycledFileCount);
+
+        cleanupThread = new StoppableThreadConfiguration<>(threadManager)
+                .setComponent("platform")
+                .setThreadName("recycle-bin-cleanup")
+                .setMinimumPeriod(recycleBinConfig.collectionPeriod())
+                .setWork(this::cleanup)
+                .build();
+    }
+
     /**
      * Manually clear the recycle bin.
      */

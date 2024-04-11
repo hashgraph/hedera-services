@@ -260,7 +260,7 @@ class PcesBirthRoundMigrationTests {
         final long migrationRound = random.nextLong(100, 1000);
 
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+                platformContext, new NodeId(0), migrationRound, middleGeneration);
 
         // We should not find any generation based PCES files in the database directory.
         assertTrue(findPcesFiles(pcesPath, GENERATION_THRESHOLD).isEmpty());
@@ -312,7 +312,7 @@ class PcesBirthRoundMigrationTests {
         }
 
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+                platformContext, new NodeId(0), migrationRound, middleGeneration);
 
         final Set<Path> allFilesAfterSecondMigration = new HashSet<>();
         try (final Stream<Path> stream = Files.walk(testDirectory)) {
@@ -344,8 +344,7 @@ class PcesBirthRoundMigrationTests {
                 new NodeId(0));
 
         // should not throw
-        PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), ROUND_FIRST, -1);
+        PcesBirthRoundMigration.migratePcesToBirthRoundMode(platformContext, new NodeId(0), ROUND_FIRST, -1);
     }
 
     @Test
@@ -381,7 +380,7 @@ class PcesBirthRoundMigrationTests {
         final long migrationRound = random.nextLong(1, 1000);
 
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+                platformContext, new NodeId(0), migrationRound, middleGeneration);
 
         // Some funny business: copy the original files back into the PCES database directory.
         // This simulates a crash in the middle of the migration process after we have created
@@ -401,7 +400,7 @@ class PcesBirthRoundMigrationTests {
 
         // Run migration again.
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+                platformContext, new NodeId(0), migrationRound, middleGeneration);
 
         // We should not find any generation based PCES files in the database directory.
         assertTrue(findPcesFiles(pcesPath, GENERATION_THRESHOLD).isEmpty());
@@ -454,7 +453,7 @@ class PcesBirthRoundMigrationTests {
         }
 
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(
-                platformContext, recycleBin, new NodeId(0), migrationRound, middleGeneration);
+                platformContext, new NodeId(0), migrationRound, middleGeneration);
 
         final Set<Path> allFilesAfterSecondMigration = new HashSet<>();
         try (final Stream<Path> stream = Files.walk(testDirectory)) {

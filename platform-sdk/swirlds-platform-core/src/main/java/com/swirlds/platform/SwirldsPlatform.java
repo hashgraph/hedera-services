@@ -40,7 +40,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.notification.NotificationEngine;
@@ -312,14 +311,11 @@ public class SwirldsPlatform implements Platform {
         final SoftwareVersion appVersion = blocks.appVersion();
         modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion);
 
-        final RecycleBin recycleBin = blocks.recycleBin();
-
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             try {
                 // This method is a no-op if we have already completed birth round migration or if we are at genesis.
                 migratePcesToBirthRoundMode(
                         platformContext,
-                        recycleBin,
                         blocks.selfId(),
                         initialState.getRound(),
                         initialState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
@@ -365,7 +361,7 @@ public class SwirldsPlatform implements Platform {
         platformStatusManager = thingsToStart.add(
                 new PlatformStatusManager(platformContext, time, threadManager, statusChangeConsumer));
 
-        thingsToStart.add(Objects.requireNonNull(recycleBin));
+        thingsToStart.add(platformContext.getFileSystemManager());
 
         metrics = platformContext.getMetrics();
 
@@ -397,13 +393,7 @@ public class SwirldsPlatform implements Platform {
 
         final String swirldName = blocks.swirldName();
         StartupStateUtils.doRecoveryCleanup(
-                platformContext,
-                recycleBin,
-                selfId,
-                swirldName,
-                actualMainClassName,
-                epochHash,
-                initialState.getRound());
+                platformContext, selfId, swirldName, actualMainClassName, epochHash, initialState.getRound());
 
         final PcesConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PcesConfig.class);
@@ -416,7 +406,6 @@ public class SwirldsPlatform implements Platform {
             // the old type and start writing the new type.
             initialPcesFiles = PcesFileReader.readFilesFromDisk(
                     platformContext,
-                    recycleBin,
                     databaseDirectory,
                     initialState.getRound(),
                     preconsensusEventStreamConfig.permitGaps(),

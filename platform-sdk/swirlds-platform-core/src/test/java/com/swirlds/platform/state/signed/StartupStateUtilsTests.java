@@ -164,7 +164,6 @@ class StartupStateUtilsTests {
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
-                        TestRecycleBin.getInstance(),
                         selfId,
                         mainClassName,
                         swirldName,
@@ -192,7 +191,6 @@ class StartupStateUtilsTests {
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
-                        TestRecycleBin.getInstance(),
                         selfId,
                         mainClassName,
                         swirldName,
@@ -224,7 +222,6 @@ class StartupStateUtilsTests {
 
         assertThrows(SignedStateLoadingException.class, () -> StartupStateUtils.loadStateFile(
                         platformContext,
-                        TestRecycleBin.getInstance(),
                         selfId,
                         mainClassName,
                         swirldName,
@@ -267,7 +264,6 @@ class StartupStateUtilsTests {
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
-                        recycleBin,
                         selfId,
                         mainClassName,
                         swirldName,
@@ -331,7 +327,6 @@ class StartupStateUtilsTests {
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
-                        TestRecycleBin.getInstance(),
                         selfId,
                         mainClassName,
                         swirldName,
@@ -387,7 +382,6 @@ class StartupStateUtilsTests {
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
-                        TestRecycleBin.getInstance(),
                         selfId,
                         mainClassName,
                         swirldName,
@@ -446,7 +440,6 @@ class StartupStateUtilsTests {
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
-                        TestRecycleBin.getInstance(),
                         selfId,
                         mainClassName,
                         swirldName,
@@ -508,7 +501,6 @@ class StartupStateUtilsTests {
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
-                        TestRecycleBin.getInstance(),
                         selfId,
                         mainClassName,
                         swirldName,
@@ -564,7 +556,6 @@ class StartupStateUtilsTests {
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
-                        TestRecycleBin.getInstance(),
                         selfId,
                         mainClassName,
                         swirldName,
@@ -619,7 +610,6 @@ class StartupStateUtilsTests {
                 SignedStateLoadingException.class,
                 () -> StartupStateUtils.loadStateFile(
                         platformContext,
-                        TestRecycleBin.getInstance(),
                         selfId,
                         mainClassName,
                         swirldName,
@@ -680,7 +670,6 @@ class StartupStateUtilsTests {
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
-                        recycleBin,
                         selfId,
                         mainClassName,
                         swirldName,
@@ -756,7 +745,7 @@ class StartupStateUtilsTests {
         writer.write("this is a marker file");
         writer.close();
 
-        doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, null, latestRound);
+        doRecoveryCleanup(platformContext, selfId, swirldName, mainClassName, null, latestRound);
 
         final Path signedStateDirectory = signedStateFilePath
                 .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
@@ -814,7 +803,7 @@ class StartupStateUtilsTests {
         writer.write("this is a marker file");
         writer.close();
 
-        doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, epoch, latestRound);
+        doRecoveryCleanup(platformContext, selfId, swirldName, mainClassName, epoch, latestRound);
 
         final Path signedStateDirectory = signedStateFilePath
                 .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
@@ -880,7 +869,7 @@ class StartupStateUtilsTests {
         writer.write("this is a marker file");
         writer.close();
 
-        doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, epoch, epochRound);
+        doRecoveryCleanup(platformContext, selfId, swirldName, mainClassName, epoch, epochRound);
 
         final Scratchpad<RecoveryScratchpad> scratchpad =
                 Scratchpad.create(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);

@@ -46,7 +46,10 @@ public final class TemporaryFileBuilder {
         if (temporaryFileLocation == null) {
             final TemporaryFileConfig config = ConfigurationHolder.getConfigData(TemporaryFileConfig.class);
             final StateCommonConfig stateConfig = ConfigurationHolder.getConfigData(StateCommonConfig.class);
-            overrideTemporaryFileLocation(getAbsolutePath(config.getTemporaryFilePath(stateConfig)));
+            overrideTemporaryFileLocation(getAbsolutePath(stateConfig
+                    .savedStateDirectory()
+                    .resolve(config.temporaryFilePath())
+                    .toString()));
         }
 
         return temporaryFileLocation;

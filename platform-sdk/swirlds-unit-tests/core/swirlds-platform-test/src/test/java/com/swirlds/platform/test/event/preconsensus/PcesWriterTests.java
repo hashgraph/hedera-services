@@ -40,7 +40,6 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.config.api.Configuration;
@@ -133,12 +132,7 @@ class PcesWriterTests {
         }
 
         final PcesFileTracker pcesFiles = PcesFileReader.readFilesFromDisk(
-                platformContext,
-                TestRecycleBin.getInstance(),
-                PcesUtilities.getDatabaseDirectory(platformContext, selfId),
-                0,
-                false,
-                ancientMode);
+                platformContext, PcesUtilities.getDatabaseDirectory(platformContext, selfId), 0, false, ancientMode);
 
         // Verify that the events were written correctly
         final PcesMultiFileIterator eventsIterator = pcesFiles.getEventIterator(0, 0);
@@ -280,7 +274,7 @@ class PcesWriterTests {
         final Metrics metrics = new NoOpMetrics();
 
         return new DefaultPlatformContext(
-                configuration, metrics, CryptographyHolder.get(), new FakeTime(Duration.ofMillis(1)));
+                configuration, metrics, CryptographyHolder.get(), new FakeTime(Duration.ofMillis(1)), null);
     }
 
     /**
@@ -729,12 +723,7 @@ class PcesWriterTests {
 
         // We shouldn't see any files that are incapable of storing events above the minimum
         final PcesFileTracker pcesFiles2 = PcesFileReader.readFilesFromDisk(
-                platformContext,
-                TestRecycleBin.getInstance(),
-                PcesUtilities.getDatabaseDirectory(platformContext, selfId),
-                0,
-                false,
-                ancientMode);
+                platformContext, PcesUtilities.getDatabaseDirectory(platformContext, selfId), 0, false, ancientMode);
 
         pcesFiles2
                 .getFileIterator(NO_LOWER_BOUND, 0)

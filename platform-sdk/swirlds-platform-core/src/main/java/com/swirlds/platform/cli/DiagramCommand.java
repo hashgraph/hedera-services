@@ -121,7 +121,7 @@ public final class DiagramCommand extends AbstractCommand {
     public Integer call() throws IOException {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), null);
 
         final PlatformWiring platformWiring = new PlatformWiring(platformContext, true, true);
 

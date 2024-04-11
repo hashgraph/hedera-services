@@ -53,4 +53,10 @@ public class TestRecycleBin implements RecycleBin {
      */
     @Override
     public void start() {}
+
+    /**
+     * Stop this object.
+     */
+    @Override
+    public void stop() {}
 }

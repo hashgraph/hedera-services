@@ -44,7 +44,8 @@ class DefaultPlatformContextTest {
                 configuration,
                 metricsProvider.createPlatformMetrics(nodeId),
                 CryptographyHolder.get(),
-                Time.getCurrent());
+                Time.getCurrent(),
+                null);
 
         // then
         assertNotNull(context.getConfiguration(), "Configuration must not be null");

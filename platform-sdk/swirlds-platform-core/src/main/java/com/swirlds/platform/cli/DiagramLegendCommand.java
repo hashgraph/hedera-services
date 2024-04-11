@@ -59,7 +59,7 @@ public final class DiagramLegendCommand extends AbstractCommand {
         BootstrapUtils.setupConstructableRegistry();
 
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), null);
 
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
