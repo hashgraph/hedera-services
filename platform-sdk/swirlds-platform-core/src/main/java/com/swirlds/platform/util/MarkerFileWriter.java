@@ -21,6 +21,7 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.PathsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,35 +63,31 @@ public class MarkerFileWriter {
      * @param platformContext the platform context containing configuration.
      */
     public MarkerFileWriter(@NonNull final PlatformContext platformContext) {
+        final boolean enabled = platformContext
+                .getConfiguration()
+                .getConfigData(PathsConfig.class)
+                .writePlatformMarkerFiles();
         final Path markerFileDirectoryPath = platformContext
                 .getConfiguration()
                 .getConfigData(PathsConfig.class)
                 .getMarkerFilesDir();
         failedToWriteMarkerFileLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
         Path directory = null;
-        if (markerFileDirectoryPath != null) {
-            try {
-                Files.createDirectories(markerFileDirectoryPath);
-                directory = markerFileDirectoryPath;
-            } catch (final IOException e) {
-                logger.error(
-                        LogMarker.EXCEPTION.getMarker(),
-                        "Failed to create marker file directory: {}",
-                        markerFileDirectoryPath,
-                        e);
-            }
-            if (!Files.isDirectory(markerFileDirectoryPath)) {
-                directory = null;
-                logger.error(
-                        LogMarker.ERROR.getMarker(),
-                        "failed to create marker file directory, path is already a file: {}",
-                        markerFileDirectoryPath);
-            }
-        } else {
-            if (logMarkerFileDirectoryNotSet.getAndSet(false)) {
-                logger.info(
-                        LogMarker.STARTUP.getMarker(),
-                        "Marker file directory is not set.  No marker files will be written.");
+        if (enabled) {
+            if (markerFileDirectoryPath != null) {
+                try {
+                    Files.createDirectories(markerFileDirectoryPath);
+                    directory = markerFileDirectoryPath;
+                } catch (final IOException e) {
+                    directory = null;
+                    logger.error(
+                            LogMarker.EXCEPTION.getMarker(),
+                            "Failed to create marker file directory: {}",
+                            markerFileDirectoryPath,
+                            e);
+                }
+            } else {
+                logger.error(LogMarker.STARTUP.getMarker(), "Marker file writing is turned on but directory is null.");
             }
         }
         markerFileDirectory = directory;
@@ -106,7 +103,7 @@ public class MarkerFileWriter {
             // Configuration did not set a marker file directory.  No need to write marker file.
             return;
         }
-        Path markerFile = markerFileDirectory.resolve(filename);
+        final Path markerFile = markerFileDirectory.resolve(filename);
         if (Files.exists(markerFile)) {
             // No need to create file when it already exists.
             return;
@@ -124,10 +121,8 @@ public class MarkerFileWriter {
      *
      * @return the directory where the marker files are written.  This may be null.
      */
+    @Nullable
     public Path getMarkerFileDirectory() {
-        if (markerFileDirectory == null) {
-            return null;
-        }
         return markerFileDirectory;
     }
 }

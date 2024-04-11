@@ -49,7 +49,7 @@ import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.test.BasePlatformUnitTests;
+import com.swirlds.platform.test.PlatformTest;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,7 +63,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("IssDetector Tests")
-class IssDetectorTests extends BasePlatformUnitTests {
+class IssDetectorTests extends PlatformTest {
     private static final Hash DEFAULT_EPOCH_HASH = null;
 
     /**

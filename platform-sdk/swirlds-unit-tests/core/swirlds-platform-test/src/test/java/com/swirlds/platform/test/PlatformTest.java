@@ -32,7 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Platform level unit test base class for common setup and teardown.
  */
-public abstract class BasePlatformUnitTests {
+public abstract class PlatformTest {
 
     public static final String TEST_MARKER_FILE_DIRECTORY = "marker_files";
 
@@ -45,6 +45,7 @@ public abstract class BasePlatformUnitTests {
     /**
      * Creates a default platform context for the tests
      */
+    @NonNull
     protected PlatformContext createDefaultPlatformContext() {
         return createPlatformContext(null, null);
     }
@@ -66,6 +67,7 @@ public abstract class BasePlatformUnitTests {
      * @param configModifier          the function to modify the test config builder
      * @return the platform context
      */
+    @NonNull
     protected PlatformContext createPlatformContext(
             @Nullable final Function<TestPlatformContextBuilder, TestPlatformContextBuilder> platformContextModifier,
             @Nullable final Function<TestConfigBuilder, TestConfigBuilder> configModifier) {
@@ -75,9 +77,11 @@ public abstract class BasePlatformUnitTests {
             configModifier.apply(configBuilder);
         }
         // add temp directory to config for marker files.
-        configBuilder.withValue(
-                PathsConfig_.MARKER_FILES_DIR,
-                tempDir.resolve(TEST_MARKER_FILE_DIRECTORY).toString());
+        configBuilder
+                .withValue(
+                        PathsConfig_.MARKER_FILES_DIR,
+                        tempDir.resolve(TEST_MARKER_FILE_DIRECTORY).toString())
+                .withValue(PathsConfig_.WRITE_PLATFORM_MARKER_FILES, true);
         // add configuration to platform builder.
         platformContextBuilder.withConfiguration(configBuilder.getOrCreateConfig());
         if (platformContextModifier != null) {
@@ -102,8 +106,9 @@ public abstract class BasePlatformUnitTests {
      *
      * @return the marker file directory
      */
+    @NonNull
     protected Path getMarkerFileDirectory() {
-        return tempDir.resolve(TEST_MARKER_FILE_DIRECTORY);
+        return Objects.requireNonNull(tempDir.resolve(TEST_MARKER_FILE_DIRECTORY));
     }
 
     /**

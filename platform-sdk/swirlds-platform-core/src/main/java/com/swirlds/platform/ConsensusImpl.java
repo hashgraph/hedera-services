@@ -23,6 +23,7 @@ import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.AncestorSearch;
 import com.swirlds.platform.consensus.CandidateWitness;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -45,6 +46,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.MarkerFileWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -144,6 +146,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
     public static final String COIN_ROUND_MARKER_FILE = "consensus-coin-round";
     public static final String NO_SUPER_MAJORITY_MARKER_FILE = "consensus-no-super-majority";
+    public static final String NO_JUDGES_MARKER_FILE = "consensus-no-judges";
+
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
     /** the only address book currently, until address book changes are implemented */
     private final AddressBook addressBook;
@@ -193,6 +197,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
     /** The marker file writer */
     private MarkerFileWriter markerFileWriter;
+    /** The rate limited logger for rounds without a super majority of weight on judges */
+    private RateLimitedLogger noSupertMajorityLogger;
 
     /**
      * Constructs an empty object (no events) to keep track of elections and calculate consensus.
@@ -217,6 +223,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
+        this.noSupertMajorityLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
     }
 
     /**
@@ -485,8 +492,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                     // no need to vote anymore until we create elections for the next round
                     return;
                 }
-            } else {
-                markerFileWriter.writeMarkerFile(NO_SUPER_MAJORITY_MARKER_FILE);
             }
         }
     }
@@ -673,6 +678,27 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final long nonExpiredThreshold = ancientMode.selectIndicator(
                 getMinRoundGeneration(),
                 Math.max(previousRoundNonExpired, decidedRoundNumber - config.roundsExpired() + 1));
+
+        // Check for no judges or super majority conditions.
+        final long judgeWeights = judges.stream()
+                .mapToLong(event -> getWeight(event.getCreatorId()))
+                .sum();
+        consensusMetrics.judgeWeights(judgeWeights);
+        if (judges.isEmpty()) {
+            markerFileWriter.writeMarkerFile(NO_JUDGES_MARKER_FILE);
+        } else {
+            final boolean superMajority =
+                    Threshold.SUPER_MAJORITY.isSatisfiedBy(judgeWeights, addressBook.getTotalWeight());
+            if (!superMajority) {
+                markerFileWriter.writeMarkerFile(NO_SUPER_MAJORITY_MARKER_FILE);
+                noSupertMajorityLogger.warn(
+                        CONSENSUS_VOTING.getMarker(),
+                        "less than a super majority of weight on judges.  round = {}, judgesWeight = {}, percentage = {}",
+                        decidedRoundNumber,
+                        judgeWeights,
+                        (double) judgeWeights / addressBook.getTotalWeight());
+            }
+        }
 
         return new ConsensusRound(
                 addressBook,

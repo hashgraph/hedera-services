@@ -21,6 +21,7 @@ import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 
 /**
@@ -40,7 +41,8 @@ public record PathsConfig(
         @ConfigProperty(defaultValue = "data/keys") String keysDirPath,
         @ConfigProperty(defaultValue = "data/apps") String appsDirPath,
         @ConfigProperty(defaultValue = "log4j2.xml") String logPath,
-        @ConfigProperty(defaultValue = "none") String markerFilesDir) {
+        @ConfigProperty(defaultValue = "data/saved/marker_files") String markerFilesDir,
+        @ConfigProperty(defaultValue = "false") boolean writePlatformMarkerFiles) {
 
     /**
      * the directory where the settings used file will be created on startup if and only if settings.txt exists
@@ -80,13 +82,14 @@ public record PathsConfig(
 
     /**
      * path to the directory where marker files are written (which might not exist).  Null is returned when the string
-     * is empty or set to "/dev/null".
+     * is empty or set to "/dev/null" or when the feature for writing marker files is disabled.
      *
      * @return the absolute path to the directory where marker files are written or null if the path is empty or
-     * "/dev/null".
+     * "/dev/null" or disabled.
      */
+    @Nullable
     public Path getMarkerFilesDir() {
-        if (markerFilesDir.isEmpty() || markerFilesDir.equals("/dev/null") || markerFilesDir.equals("none")) {
+        if (!writePlatformMarkerFiles || markerFilesDir.isEmpty() || markerFilesDir.equals("/dev/null")) {
             return null;
         }
         return getAbsolutePath(markerFilesDir);

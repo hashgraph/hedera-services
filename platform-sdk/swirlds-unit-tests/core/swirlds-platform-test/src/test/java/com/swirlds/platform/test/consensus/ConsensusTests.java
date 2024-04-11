@@ -24,7 +24,8 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.test.BasePlatformUnitTests;
+import com.swirlds.platform.test.PlatformTest;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -33,7 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("Consensus Tests")
-class ConsensusTests extends BasePlatformUnitTests {
+class ConsensusTests extends PlatformTest {
 
     /**
      * Number of iterations in each test. An iteration is to create one graph, and feed it in twice in different
@@ -53,7 +54,8 @@ class ConsensusTests extends BasePlatformUnitTests {
      * @param params the test parameters
      * @return the modified test parameters
      */
-    private ConsensusTestParams modifyParams(ConsensusTestParams params) {
+    @NonNull
+    private ConsensusTestParams modifyParams(@NonNull final ConsensusTestParams params) {
         return new ConsensusTestParams(
                 createPlatformContext(
                         null,
@@ -80,6 +82,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#reconnectSimulation")
@@ -93,8 +98,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
-        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, true);
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
         assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#staleEvent")
@@ -108,6 +114,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -121,6 +130,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -134,6 +146,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -147,6 +162,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -173,6 +191,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -186,6 +207,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -199,6 +223,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -212,6 +239,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -225,6 +255,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -238,6 +271,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -251,6 +287,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -264,6 +303,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -277,6 +319,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @Test
@@ -286,6 +331,9 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(new ConsensusTestParams(createDefaultPlatformContext(), 4, RANDOM, RANDOM_WEIGHT_DESC))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 
     @ParameterizedTest
@@ -299,5 +347,8 @@ class ConsensusTests extends BasePlatformUnitTests {
                 .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
     }
 }
