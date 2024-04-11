@@ -26,12 +26,12 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.DefaultEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationStatus;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.platform.system.events.BaseEventHashedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,8 +46,8 @@ class EventCreationManagerTests {
     @DisplayName("Basic Behavior Test")
     void basicBehaviorTest() {
         final EventCreator creator = mock(EventCreator.class);
-        final List<GossipEvent> eventsToCreate =
-                List.of(mock(GossipEvent.class), mock(GossipEvent.class), mock(GossipEvent.class));
+        final List<BaseEventHashedData> eventsToCreate = List.of(
+                mock(BaseEventHashedData.class), mock(BaseEventHashedData.class), mock(BaseEventHashedData.class));
         when(creator.maybeCreateEvent())
                 .thenReturn(eventsToCreate.get(0), eventsToCreate.get(1), eventsToCreate.get(2));
 
@@ -76,17 +76,17 @@ class EventCreationManagerTests {
         final EventCreationManager manager = new DefaultEventCreationManager(platformContext, creator, rule);
         assertEquals(0, eventWasCreatedCount.get());
 
-        final GossipEvent e0 = manager.maybeCreateEvent();
+        final BaseEventHashedData e0 = manager.maybeCreateEvent();
         assertNotNull(e0);
         assertEquals(1, eventWasCreatedCount.get());
         assertSame(eventsToCreate.get(0), e0);
 
-        final GossipEvent e1 = manager.maybeCreateEvent();
+        final BaseEventHashedData e1 = manager.maybeCreateEvent();
         assertEquals(2, eventWasCreatedCount.get());
         assertNotNull(e1);
         assertSame(eventsToCreate.get(1), e1);
 
-        final GossipEvent e2 = manager.maybeCreateEvent();
+        final BaseEventHashedData e2 = manager.maybeCreateEvent();
         assertNotNull(e2);
         assertEquals(3, eventWasCreatedCount.get());
         assertSame(eventsToCreate.get(2), e2);
@@ -96,8 +96,8 @@ class EventCreationManagerTests {
     @DisplayName("Rules Prevent Creation Test")
     void rulesPreventCreationTest() {
         final EventCreator creator = mock(EventCreator.class);
-        final List<GossipEvent> eventsToCreate =
-                List.of(mock(GossipEvent.class), mock(GossipEvent.class), mock(GossipEvent.class));
+        final List<BaseEventHashedData> eventsToCreate = List.of(
+                mock(BaseEventHashedData.class), mock(BaseEventHashedData.class), mock(BaseEventHashedData.class));
         when(creator.maybeCreateEvent())
                 .thenReturn(eventsToCreate.get(0), eventsToCreate.get(1), eventsToCreate.get(2));
 
@@ -136,7 +136,7 @@ class EventCreationManagerTests {
 
         // Event creation is permitted
         allowCreation.set(true);
-        final GossipEvent e0 = manager.maybeCreateEvent();
+        final BaseEventHashedData e0 = manager.maybeCreateEvent();
         assertEquals(1, eventWasCreatedCount.get());
         assertSame(eventsToCreate.get(0), e0);
 
@@ -149,7 +149,7 @@ class EventCreationManagerTests {
 
         // Event creation is permitted
         allowCreation.set(true);
-        final GossipEvent e1 = manager.maybeCreateEvent();
+        final BaseEventHashedData e1 = manager.maybeCreateEvent();
         assertEquals(2, eventWasCreatedCount.get());
         assertSame(eventsToCreate.get(1), e1);
 
@@ -162,7 +162,7 @@ class EventCreationManagerTests {
 
         // Event creation is permitted
         allowCreation.set(true);
-        final GossipEvent e2 = manager.maybeCreateEvent();
+        final BaseEventHashedData e2 = manager.maybeCreateEvent();
         assertEquals(3, eventWasCreatedCount.get());
         assertSame(eventsToCreate.get(2), e2);
 

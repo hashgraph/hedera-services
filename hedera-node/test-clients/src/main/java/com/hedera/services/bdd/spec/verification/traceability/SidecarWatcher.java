@@ -16,6 +16,9 @@
 
 package com.hedera.services.bdd.spec.verification.traceability;
 
+import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.ContractActions;
+import com.hedera.services.stream.proto.ContractStateChange;
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
@@ -23,10 +26,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;

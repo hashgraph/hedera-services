@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCommonHyperlink;
-import static com.swirlds.common.wiring.model.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCommonHyperlink;
+import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 
 import com.swirlds.common.context.PlatformContext;
@@ -50,6 +50,7 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.util.HashLogger;
@@ -91,7 +92,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<List<GossipEvent>> orphanBufferScheduler,
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
         @NonNull TaskScheduler<List<ConsensusRound>> consensusEngineScheduler,
-        @NonNull TaskScheduler<GossipEvent> eventCreationManagerScheduler,
+        @NonNull TaskScheduler<BaseEventHashedData> eventCreationManagerScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler,
         @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler,

@@ -244,8 +244,8 @@ public class ThrottleServiceManager {
                 @NonNull final ReadableSingletonState<CongestionLevelStarts> congestionLevelStarts) {
             final var sourceStarts = requireNonNull(congestionLevelStarts.get());
             return new CongestionStarts(
-                    asMultiplierStarts(sourceStarts.genericLevelStartsOrElse(emptyList())),
-                    asMultiplierStarts(sourceStarts.gasLevelStartsOrElse(emptyList())));
+                    asMultiplierStarts(sourceStarts.genericLevelStarts()),
+                    asMultiplierStarts(sourceStarts.gasLevelStarts()));
         }
     }
 
@@ -256,7 +256,7 @@ public class ThrottleServiceManager {
                 @NonNull final ReadableSingletonState<ThrottleUsageSnapshots> throttleUsageSnapshots) {
             final var sourceSnapshots = requireNonNull(throttleUsageSnapshots.get());
             return new UsageSnapshots(
-                    sourceSnapshots.tpsThrottlesOrElse(emptyList()).stream()
+                    sourceSnapshots.tpsThrottles().stream()
                             .map(PbjConverter::fromPbj)
                             .toList(),
                     Optional.ofNullable(sourceSnapshots.gasThrottle())

@@ -94,7 +94,7 @@ final class FileSchemaTest {
             assertThat(file.expirationSecond()).isEqualTo(expiry);
             assertThat(file.memo()).isEmpty();
             assertThat(file.hasKeys()).isTrue();
-            assertThat(file.keysOrThrow().keysOrThrow()).containsExactly(key);
+            assertThat(file.keysOrThrow().keys()).containsExactly(key);
         }
 
         // And files outside of that range (but within the normal, default range!) do not exist

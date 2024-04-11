@@ -55,7 +55,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     private int serializedVersion = ClassVersion.BIRTH_ROUND;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
-    private EventDescriptor descriptor;
     private Instant timeReceived;
 
     /**
@@ -92,8 +91,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
-        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
-        unhashedData.updateOtherParentEventDescriptor(hashedData);
         this.timeReceived = Instant.now();
         this.senderId = null;
     }
@@ -148,10 +145,8 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         } else {
             hashedData = in.readSerializable(false, BaseEventHashedData::new);
             final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
-            unhashedData = new BaseEventUnhashedData(null, signature);
+            unhashedData = new BaseEventUnhashedData(signature);
         }
-        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
-        unhashedData.updateOtherParentEventDescriptor(hashedData);
         timeReceived = Instant.now();
     }
 
@@ -176,26 +171,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public EventDescriptor getDescriptor() {
-        if (descriptor == null) {
-            throw new IllegalStateException("Can not get descriptor until event has been hashed");
-        }
-        return descriptor;
-    }
-
-    /**
-     * Build the descriptor of this event. This cannot be done when the event is first instantiated, it needs to be
-     * hashed before the descriptor can be built.
-     *
-     * @throws IllegalStateException if the descriptor has already been built
-     */
-    public void buildDescriptor() {
-        if (descriptor != null) {
-            // Prior implementation was to throw an IllegalStateException if the descriptor was already built.
-            // There is no harm in allowing this method to be called multiple times and no-op if the descriptor exists.
-            return;
-        }
-
-        this.descriptor = hashedData.createEventDescriptor();
+        return hashedData.getDescriptor();
     }
 
     /**

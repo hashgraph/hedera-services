@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.time.Duration;
 
 /**
  * Contains configuration values for the platform schedulers.
@@ -50,6 +51,7 @@ import com.swirlds.config.api.ConfigProperty;
  * @param eventCreationManagerSchedulerType                 the event creation manager scheduler type
  * @param eventCreationManagerUnhandledCapacity             number of unhandled tasks allowed in the event creation
  *                                                          manager scheduler
+ * @param selfEventSigner                                   configuration for the self event signer scheduler
  * @param signedStateFileManagerSchedulerType               the signed state file manager scheduler type
  * @param signedStateFileManagerUnhandledCapacity           number of unhandled tasks allowed in the signed state file
  *                                                          manager scheduler
@@ -85,6 +87,9 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          notifier
  * @param stateHasherSchedulerType                          the state hasher scheduler type
  * @param stateHasherUnhandledCapacity                      number of unhandled tasks allowed for the state hasher
+ * @param stateGarbageCollector                             configuration for the state garbage collector scheduler
+ * @param stateGarbageCollectorHeartbeatPeriod              the frequency that heartbeats should be sent to the state
+ *                                                          garbage collector
  * @param platformPublisher                                 configuration for the platform publisher scheduler
  */
 @ConfigData("platformSchedulers")
@@ -106,6 +111,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int consensusEngineUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventCreationManagerSchedulerType,
         @ConfigProperty(defaultValue = "500") int eventCreationManagerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration selfEventSigner,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType signedStateFileManagerSchedulerType,
         @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
@@ -131,5 +137,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
         @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration stateGarbageCollector,
+        @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration platformPublisher) {}

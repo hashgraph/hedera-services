@@ -113,12 +113,10 @@ public class AttributeValidatorImpl implements AttributeValidator {
         }
         if (!key.hasThresholdKey() && !key.hasKeyList()) {
             validateSimple(key);
-        } else if (key.hasThresholdKey()
-                && key.thresholdKeyOrThrow().hasKeys()
-                && key.thresholdKeyOrThrow().keysOrThrow().hasKeys()) {
-            key.thresholdKeyOrThrow().keysOrThrow().keysOrThrow().forEach(k -> validateKeyAtLevel(k, level + 1));
-        } else if (key.keyListOrThrow().hasKeys()) {
-            key.keyListOrThrow().keysOrThrow().forEach(k -> validateKeyAtLevel(k, level + 1));
+        } else if (key.hasThresholdKey() && key.thresholdKeyOrThrow().hasKeys()) {
+            key.thresholdKeyOrThrow().keysOrThrow().keys().forEach(k -> validateKeyAtLevel(k, level + 1));
+        } else {
+            key.keyListOrThrow().keys().forEach(k -> validateKeyAtLevel(k, level + 1));
         }
     }
 

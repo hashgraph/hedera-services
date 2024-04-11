@@ -25,10 +25,10 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ class HeartbeatSchedulerTests {
         final FakeTime fakeTime = new FakeTime();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(fakeTime).build();
-        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -70,7 +70,7 @@ class HeartbeatSchedulerTests {
         final FakeTime fakeTime = new FakeTime();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(fakeTime).build();
-        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -99,7 +99,7 @@ class HeartbeatSchedulerTests {
         final FakeTime fakeTime = new FakeTime();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(fakeTime).build();
-        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
