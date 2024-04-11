@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static java.nio.file.Files.exists;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,6 +61,7 @@ public class TemporaryPathBuilder {
      *
      * @return a new temporary file
      */
+    @NonNull
     public synchronized Path getTemporaryPath() throws IOException {
         return getTemporaryPath(null);
     }
@@ -72,7 +74,8 @@ public class TemporaryPathBuilder {
      *                looks at it directly. Ignored if null.
      * @return a new temporary file
      */
-    public synchronized Path getTemporaryPath(final String postfix) throws IOException {
+    @NonNull
+    public synchronized Path getTemporaryPath(@Nullable final String postfix) throws IOException {
         final String fileName = nextFileId + (postfix == null ? "" : ("-" + postfix));
         nextFileId++;
 
