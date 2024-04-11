@@ -52,7 +52,7 @@ public final class PlatformStateUtils {
                 .build();
 
         platformState.setAddressBook(addressBook);
-        platformState.setRunningEventHash(randomHash(random));
+        platformState.setLegacyRunningEventHash(randomHash(random));
         platformState.setRound(random.nextLong());
         platformState.setConsensusTimestamp(randomInstant(random));
 

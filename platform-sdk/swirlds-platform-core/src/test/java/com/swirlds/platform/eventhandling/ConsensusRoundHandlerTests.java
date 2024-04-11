@@ -129,7 +129,7 @@ class ConsensusRoundHandlerTests {
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager, never()).savedStateInFreezePeriod();
         verify(platformState)
-                .setRunningEventHash(
+                .setLegacyRunningEventHash(
                         events.getLast().getRunningHash().getFutureHash().getAndRethrow());
     }
 
@@ -173,7 +173,7 @@ class ConsensusRoundHandlerTests {
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
         verify(platformState)
-                .setRunningEventHash(
+                .setLegacyRunningEventHash(
                         events.getLast().getRunningHash().getFutureHash().getAndRethrow());
 
         final ConsensusRound postFreezeConsensusRound = mockConsensusRound(keystoneEvent, events, consensusRoundNumber);
@@ -189,7 +189,7 @@ class ConsensusRoundHandlerTests {
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
         verify(platformState)
-                .setRunningEventHash(
+                .setLegacyRunningEventHash(
                         events.getLast().getRunningHash().getFutureHash().getAndRethrow());
     }
 }

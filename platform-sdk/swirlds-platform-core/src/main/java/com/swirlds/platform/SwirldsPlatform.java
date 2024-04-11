@@ -46,7 +46,7 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
@@ -701,7 +701,13 @@ public class SwirldsPlatform implements Platform {
 
             savedStateController.registerSignedStateFromDisk(initialState);
 
-            platformWiring.updateRunningHash(new RunningEventHashUpdate(initialState.getHashEventsCons(), false));
+            final Hash runningEventHash =
+                    initialState.getState().getPlatformState().getRunningEventHash() == null
+                            ? platformContext.getCryptography().getNullHash()
+                            : initialState.getState().getPlatformState().getRunningEventHash();
+            final RunningEventHashOverride runningEventHashOverride = new RunningEventHashOverride(
+                    initialState.getState().getPlatformState().getLegacyRunningEventHash(), runningEventHash, false);
+            platformWiring.updateRunningHash(runningEventHashOverride);
 
             loadStateIntoConsensus(initialState);
 
@@ -916,7 +922,11 @@ public class SwirldsPlatform implements Platform {
                     signedState.getState().getPlatformState().getAncientThreshold(),
                     ancientMode));
 
-            platformWiring.updateRunningHash(new RunningEventHashUpdate(signedState.getHashEventsCons(), true));
+            final RunningEventHashOverride runningEventHashOverride = new RunningEventHashOverride(
+                    signedState.getState().getPlatformState().getLegacyRunningEventHash(),
+                    signedState.getState().getPlatformState().getRunningEventHash(),
+                    true);
+            platformWiring.updateRunningHash(runningEventHashOverride);
             platformWiring.getPcesWriterRegisterDiscontinuityInput().inject(signedState.getRound());
 
             // Notify any listeners that the reconnect has been completed

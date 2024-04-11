@@ -51,6 +51,10 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
          * Added state to allow for birth round migration.
          */
         public static final int BIRTH_ROUND_MIGRATION_PATHWAY = 2;
+        /**
+         * Added the new running event hash algorithm.
+         */
+        public static final int RUNNING_EVENT_HASH = 3;
     }
 
     /**
@@ -72,10 +76,17 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     private long round = GENESIS_ROUND;
 
     /**
-     * The running hash of the hashes of all events have reached consensus up through the round that this SignedState
-     * represents.
+     * The running event hash computed by the consensus event stream. This should be deleted once the consensus event
+     * stream is retired.
      */
-    private Hash runningEventHash;
+    private Hash legacyRunningEventHash;
+
+    /**
+     * The running event hash of all events that have been applied to this state since the beginning of time (or, for
+     * networks that were around prior to the introduction of this running hash, since the introduction of the running
+     * event hash).
+     */
+    private Hash runningEventHash; // TODO make sure this is logged where appropriate
 
     /**
      * the consensus timestamp for this signed state
@@ -152,6 +163,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         this.addressBook = that.addressBook == null ? null : that.addressBook.copy();
         this.previousAddressBook = that.previousAddressBook == null ? null : that.previousAddressBook.copy();
         this.round = that.round;
+        this.legacyRunningEventHash = that.legacyRunningEventHash;
         this.runningEventHash = that.runningEventHash;
         this.consensusTimestamp = that.consensusTimestamp;
         this.creationSoftwareVersion = that.creationSoftwareVersion;
@@ -199,7 +211,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeSerializable(addressBook, false);
         out.writeSerializable(previousAddressBook, true);
         out.writeLong(round);
-        out.writeSerializable(runningEventHash, false);
+        out.writeSerializable(legacyRunningEventHash, false);
         out.writeInstant(consensusTimestamp);
         out.writeSerializable(creationSoftwareVersion, true);
         out.writeSerializable(epochHash, false);
@@ -211,6 +223,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeSerializable(firstVersionInBirthRoundMode, true);
         out.writeLong(lastRoundBeforeBirthRoundMode);
         out.writeLong(lowestJudgeGenerationBeforeBirthRoundMode);
+        out.writeSerializable(runningEventHash, false);
     }
 
     /**
@@ -221,7 +234,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         addressBook = in.readSerializable(false, AddressBook::new);
         previousAddressBook = in.readSerializable(true, AddressBook::new);
         round = in.readLong();
-        runningEventHash = in.readSerializable(false, Hash::new);
+        legacyRunningEventHash = in.readSerializable(false, Hash::new);
         consensusTimestamp = in.readInstant();
         creationSoftwareVersion = in.readSerializable();
         epochHash = in.readSerializable(false, Hash::new);
@@ -234,6 +247,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
             firstVersionInBirthRoundMode = in.readSerializable();
             lastRoundBeforeBirthRoundMode = in.readLong();
             lowestJudgeGenerationBeforeBirthRoundMode = in.readLong();
+        }
+        if (version >= ClassVersion.RUNNING_EVENT_HASH) {
+            runningEventHash = in.readSerializable(false, Hash::new);
         }
     }
 
@@ -325,7 +341,27 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the running hash of all events that have been applied to this state since the beginning of time.
+     * Get the legacy running event hash. Used by the consensus event stream.
+     *
+     * @return a running hash of events
+     */
+    @Nullable
+    public Hash getLegacyRunningEventHash() {
+        return legacyRunningEventHash;
+    }
+
+    /**
+     * Set the legacy running event hash. Used by the consensus event stream.
+     *
+     * @param legacyRunningEventHash a running hash of events
+     */
+    public void setLegacyRunningEventHash(@Nullable final Hash legacyRunningEventHash) {
+        this.legacyRunningEventHash = legacyRunningEventHash;
+    }
+
+    /**
+     * Get the running hash of all events that have been applied to this state since the beginning of time (or if
+     * this network has been around since before this feature was added, the running event hash since that time).
      *
      * @return a running hash of events
      */
@@ -339,8 +375,8 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param runningEventHash a running hash of events
      */
-    public void setRunningEventHash(@Nullable final Hash runningEventHash) {
-        this.runningEventHash = runningEventHash;
+    public void setRunningEventHash(@NonNull final Hash runningEventHash) {
+        this.runningEventHash = Objects.requireNonNull(runningEventHash);
     }
 
     /**

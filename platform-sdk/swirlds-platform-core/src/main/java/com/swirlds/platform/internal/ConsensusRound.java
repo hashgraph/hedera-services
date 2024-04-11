@@ -17,6 +17,8 @@
 package com.swirlds.platform.internal;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
@@ -34,23 +36,43 @@ import java.util.Objects;
 
 /** A consensus round with events and all other relevant data. */
 public class ConsensusRound implements Round {
-    /** an unmodifiable list of consensus events in this round, in consensus order */
+
+    /**
+     * an unmodifiable list of consensus events in this round, in consensus order
+     */
     private final List<EventImpl> consensusEvents;
-    /** the consensus generations when this round reached consensus */
+
+    /**
+     * the consensus generations when this round reached consensus
+     */
     private final GraphGenerations generations;
-    /** the non-ancient event window for this round */
+
+    /**
+     * the non-ancient event window for this round
+     */
     private final NonAncientEventWindow nonAncientEventWindow;
-    /** The number of application transactions in this round */
+
+    /**
+     * The number of application transactions in this round
+     */
     private int numAppTransactions = 0;
-    /** A snapshot of consensus at this consensus round */
+
+    /**
+     * A snapshot of consensus at this consensus round
+     */
     private final ConsensusSnapshot snapshot;
-    /** The event that, when added to the hashgraph, caused this round to reach consensus. */
+
+    /**
+     * The event that, when added to the hashgraph, caused this round to reach consensus.
+     */
     private final EventImpl keystoneEvent;
 
     /**
      * The consensus roster for this round.
      */
     private final AddressBook consensusRoster;
+
+    private final StandardFuture<Hash> runningEventHashFuture = new StandardFuture<>();
 
     /**
      * Create a new instance with the provided consensus events.
@@ -128,39 +150,73 @@ public class ConsensusRound implements Round {
         return consensusEvents.size();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull Iterator<ConsensusEvent> iterator() {
         return new TypedIterator<>(consensusEvents.iterator());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getRoundNum() {
         return snapshot.round();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEmpty() {
         return consensusEvents.isEmpty();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getEventCount() {
         return consensusEvents.size();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public AddressBook getConsensusRoster() {
         return consensusRoster;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public @NonNull Instant getConsensusTimestamp() {
         return snapshot.consensusTimestamp();
+    }
+
+    /**
+     * Set the running event hash for this round.
+     *
+     * @param runningEventHash the running event hash
+     */
+    public void setRunningEventHash(@NonNull final Hash runningEventHash) {
+        runningEventHashFuture.complete(runningEventHash);
+    }
+
+    /**
+     * Get the running event hash for this round. If it has not yet been computed, block until it is.
+     *
+     * @return the running event hash
+     * @throws InterruptedException if the current thread is interrupted while waiting
+     */
+    @NonNull
+    public Hash getRunningEventHash() throws InterruptedException {
+        return runningEventHashFuture.getAndRethrow();
     }
 
     @Override
