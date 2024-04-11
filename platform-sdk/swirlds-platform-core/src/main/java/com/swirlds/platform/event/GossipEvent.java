@@ -31,7 +31,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -259,31 +258,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     @Override
     public String toString() {
         return EventStrings.toMediumString(this);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        final GossipEvent that = (GossipEvent) o;
-        return Objects.equals(getHashedData(), that.getHashedData());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        return hashedData.getHash().hashCode();
     }
 
     /**
