@@ -475,6 +475,7 @@ public class HandleWorkflow {
                         }
                     }
                 } catch (final HandleException ex) {
+                    ex.printStackTrace();
                     final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
                             ? "node " + creator.nodeId()
                             : "account " + payer;
@@ -570,6 +571,7 @@ public class HandleWorkflow {
                     platformStateUpdateFacility.handleTxBody(stack, platformState, txBody);
 
                 } catch (final HandleException e) {
+                    e.printStackTrace();
                     // In case of a ContractCall when it reverts, the gas charged should not be rolled back
                     rollback(e.shouldRollbackStack(), e.getStatus(), stack, recordListBuilder);
                     if (!hasWaivedFees && e.shouldRollbackStack()) {

@@ -179,7 +179,7 @@ public class CryptoTransferHandler implements TransactionHandler {
             @NonNull final NftTransfer nftTransfer) {
         // warm sender
         nftTransfer.ifSenderAccountID(senderAccountID -> {
-            final Account sender = accountStore.getAccountById(senderAccountID);
+            final Account sender = accountStore.getAliasedAccountById(senderAccountID);
             if (sender != null) {
                 sender.ifHeadNftId(nftStore::warm);
             }
@@ -188,7 +188,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         // warm receiver
         nftTransfer.ifReceiverAccountID(receiverAccountID -> {
-            final Account receiver = accountStore.getAccountById(receiverAccountID);
+            final Account receiver = accountStore.getAliasedAccountById(receiverAccountID);
             if (receiver != null) {
                 receiver.ifHeadTokenId(headTokenID -> tokenRelationStore.warm(receiverAccountID, headTokenID));
                 receiver.ifHeadNftId(nftStore::warm);
@@ -254,7 +254,9 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @throws HandleException if any error occurs during the process
      */
     private CryptoTransferTransactionBody ensureAndReplaceAliasesInOp(
-            final TransactionBody txn, final TransferContextImpl transferContext, final HandleContext context)
+            @NonNull final TransactionBody txn,
+            @NonNull final TransferContextImpl transferContext,
+            @NonNull final HandleContext context)
             throws HandleException {
         final var op = txn.cryptoTransferOrThrow();
 
@@ -359,7 +361,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         for (final var accountAmount : transfers) {
             // Given an accountId, we need to look up the associated account.
             final var accountId = validateAccountID(accountAmount.accountIDOrElse(AccountID.DEFAULT), null);
-            final var account = accountStore.getAccountById(accountId);
+            final var account = accountStore.getAliasedAccountById(accountId);
             final var isCredit = accountAmount.amount() > 0;
             final var isDebit = accountAmount.amount() < 0;
             if (account != null) {
@@ -439,7 +441,7 @@ public class CryptoTransferHandler implements TransactionHandler {
             throws PreCheckException {
 
         // Lookup the receiver account and verify it.
-        final var receiverAccount = accountStore.getAccountById(receiverId);
+        final var receiverAccount = accountStore.getAliasedAccountById(receiverId);
         if (receiverAccount == null) {
             // It may be that the receiver account does not yet exist. If it is being addressed by alias,
             // then this is OK, as we will automatically create the account. Otherwise, fail.
@@ -480,7 +482,7 @@ public class CryptoTransferHandler implements TransactionHandler {
             throws PreCheckException {
 
         // Lookup the sender account and verify it.
-        final var senderAccount = accountStore.getAccountById(senderId);
+        final var senderAccount = accountStore.getAliasedAccountById(senderId);
         if (senderAccount == null) {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
@@ -499,8 +501,8 @@ public class CryptoTransferHandler implements TransactionHandler {
     private boolean receivesFungibleValue(
             final AccountID target, final CryptoTransferTransactionBody op, final ReadableAccountStore accountStore) {
         for (final var adjust : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
-            final var unaliasedAccount = accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
-            final var unaliasedTarget = accountStore.getAccountById(target);
+            final var unaliasedAccount = accountStore.getAliasedAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
+            final var unaliasedTarget = accountStore.getAliasedAccountById(target);
             if (unaliasedAccount != null
                     && unaliasedTarget != null
                     && adjust.amount() > 0
@@ -510,8 +512,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
         for (final var transfers : op.tokenTransfers()) {
             for (final var adjust : transfers.transfers()) {
-                final var unaliasedAccount = accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
-                final var unaliasedTarget = accountStore.getAccountById(target);
+                final var unaliasedAccount = accountStore.getAliasedAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
+                final var unaliasedTarget = accountStore.getAliasedAccountById(target);
                 if (unaliasedAccount != null
                         && unaliasedTarget != null
                         && adjust.amount() > 0

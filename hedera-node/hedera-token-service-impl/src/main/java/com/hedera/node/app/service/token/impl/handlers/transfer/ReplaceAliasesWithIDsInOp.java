@@ -53,7 +53,7 @@ public class ReplaceAliasesWithIDsInOp {
         // replace all aliases in hbar transfers
         for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
             if (isAlias(aa.accountIDOrThrow())) {
-                final var resolvedId = resolutions.get(aa.accountID().alias());
+                final var resolvedId = resolutions.get(aa.accountIDOrThrow().alias());
                 accountAmounts.add(aa.copyBuilder().accountID(resolvedId).build());
             } else {
                 accountAmounts.add(aa);
