@@ -100,6 +100,7 @@ import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
 import com.swirlds.platform.wiring.components.RunningHashUpdaterWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import com.swirlds.platform.wiring.components.StateHasherWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -156,7 +157,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             latestCompleteStateNotifierWiring;
     private final ComponentWiring<SignedStateNexus, Void> latestImmutableStateNexusWiring;
     private final ComponentWiring<LatestCompleteStateNexus, Void> latestCompleteStateNexusWiring;
-    private final ComponentWiring<SavedStateController, Void> savedStateControllerWiring;
+    private final ComponentWiring<SavedStateController, StateAndRound> savedStateControllerWiring;
     private final StateHasherWiring signedStateHasherWiring;
     private final PlatformCoordinator platformCoordinator;
     private final ComponentWiring<BirthRoundMigrationShim, GossipEvent> birthRoundMigrationShimWiring;
@@ -482,22 +483,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         consensusRoundHandlerWiring
                 .stateOutput()
                 .solderTo(latestImmutableStateNexusWiring.getInputWire(SignedStateNexus::setState));
-        // FUTURE WORK: it is guaranteed that markSavedState will be called before the state arrives at the
-        // signedStateFileManager, since SavedStateController::markSavedState is directly scheduled following a
-        // transformer (wired during construction), whereas the data flowing to the signedStateFileManager is soldered
-        // here in this method (via the signedStateHasher). This is guaranteed because data is distributed at runtime
-        // in the order that it was originally soldered.
-        //
-        // Though robust, this guarantee is not immediately obvious, and thus is difficult to maintain. The solution is
-        // to move the logic of SavedStateController::markSavedState into the signedStateFileManager. There is no reason
-        // that saved state marking needs to happen in a separate place from where states are actually being saved.
         consensusRoundHandlerWiring
-                .stateOutput()
+                .stateAndRoundOutput()
                 .solderTo(savedStateControllerWiring.getInputWire(SavedStateController::markSavedState));
-        consensusRoundHandlerWiring.stateAndRoundOutput().solderTo(signedStateHasherWiring.stateAndRoundInput());
+        savedStateControllerWiring.getOutputWire().solderTo(signedStateHasherWiring.stateAndRoundInput());
 
         consensusRoundHandlerWiring
-                .stateOutput()
+                .stateAndRoundOutput()
                 .solderTo(stateGarbageCollectorWiring.getInputWire(StateGarbageCollector::registerState));
         model.buildHeartbeatWire(config.stateGarbageCollectorHeartbeatPeriod())
                 .solderTo(stateGarbageCollectorWiring.getInputWire(StateGarbageCollector::heartbeat), OFFER);
