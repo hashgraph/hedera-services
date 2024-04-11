@@ -112,7 +112,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.hasAutoRenewAccount()) {
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
-        if (op.hasTreasury()) {
+        if (op.hasTreasury() && !isZeroAccount(op.treasury())) {
             context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_ACCOUNT_ID);
         }
         if (op.hasAdminKey()) {
@@ -166,7 +166,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // enabled and has open slots. If so, auto-associate.
         // We allow existing treasuries to have any nft balances left over, but the new treasury should
         // not have any balances left over. Transfer all balances for the current token to new treasury
-        if (op.hasTreasury()) {
+        if (op.hasTreasury() && !isZeroAccount(op.treasury())) {
             final var existingTreasury = token.treasuryAccountId();
             final var newTreasury = op.treasuryOrThrow();
             final var newTreasuryAccount = getIfUsable(
@@ -349,13 +349,15 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.name() != null && op.name().length() > 0) {
             builder.name(op.name());
         }
-        if (op.hasMemo()) {
+        if (op.hasMemo() && op.memo().length() > 0) {
             builder.memo(op.memo());
         }
         if (op.hasMetadata()) {
             builder.metadata(op.metadata());
         }
-        if (op.hasTreasury() && !op.treasuryOrThrow().equals(originalToken.treasuryAccountId())) {
+        if (op.hasTreasury()
+                && !isZeroAccount(op.treasuryOrThrow())
+                && !op.treasuryOrThrow().equals(originalToken.treasuryAccountId())) {
             builder.treasuryAccountId(op.treasuryOrThrow());
         }
     }
@@ -484,5 +486,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new TokenUpdateResourceUsage(
                         txnEstimateFactory)
                 .usageGiven(fromPbj(body), sigValueObj, token));
+    }
+
+    private boolean isZeroAccount(@NonNull AccountID accountID) {
+        return accountID.equals(AccountID.newBuilder().accountNum(0L).build());
     }
 }
