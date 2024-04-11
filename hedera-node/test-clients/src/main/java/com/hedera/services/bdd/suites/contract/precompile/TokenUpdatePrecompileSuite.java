@@ -332,6 +332,12 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     final HapiSpec tokenUpdateSingleFieldCases() {
         final var tokenInfoUpdateContract = "TokenInfoSingularUpdate";
         final var newTokenTreasury = "new treasury";
+        final var oldName = "Old Name";
+        final var sym = "SYM";
+        final var memo = "Memo";
+        final var newName = "New Name";
+        final var sym1 = "SYM1";
+        final var newMemo = "New Memo";
         final AtomicReference<TokenID> token = new AtomicReference<>();
         final AtomicReference<AccountID> newTreasury = new AtomicReference<>();
         final AtomicReference<AccountID> autoRenewAccount = new AtomicReference<>();
@@ -350,9 +356,9 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(autoRenewAccount::set),
                         tokenCreate(TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
-                                .name("Old Name")
-                                .symbol("SYM")
-                                .entityMemo("Memo")
+                                .name(oldName)
+                                .symbol(sym)
+                                .entityMemo(memo)
                                 .autoRenewAccount(ACCOUNT)
                                 .autoRenewPeriod(AUTO_RENEW_PERIOD)
                                 .supplyType(TokenSupplyType.INFINITE)
@@ -377,7 +383,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                         tokenInfoUpdateContract,
                                         "updateTokenName",
                                         HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
-                                        "New Name")
+                                        newName)
                                 .via("updateOnlyName")
                                 .logged()
                                 .signingWith(MULTI_KEY)
@@ -387,9 +393,9 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         getTokenInfo(TOKEN)
                                 .logged()
                                 .hasTokenType(TokenType.FUNGIBLE_COMMON)
-                                .hasSymbol("SYM")
-                                .hasName("New Name")
-                                .hasEntityMemo("Memo")
+                                .hasSymbol(sym)
+                                .hasName(newName)
+                                .hasEntityMemo(memo)
                                 .hasTreasury(TOKEN_TREASURY)
                                 .hasAutoRenewAccount(ACCOUNT)
                                 .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
@@ -407,7 +413,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                         tokenInfoUpdateContract,
                                         "updateTokenSymbol",
                                         HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
-                                        "SYM1")
+                                        sym1)
                                 .via("updateOnlySym")
                                 .logged()
                                 .signingWith(MULTI_KEY)
@@ -417,9 +423,9 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         getTokenInfo(TOKEN)
                                 .logged()
                                 .hasTokenType(TokenType.FUNGIBLE_COMMON)
-                                .hasSymbol("SYM1")
-                                .hasName("New Name")
-                                .hasEntityMemo("Memo")
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(memo)
                                 .hasTreasury(TOKEN_TREASURY)
                                 .hasAutoRenewAccount(ACCOUNT)
                                 .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
@@ -437,7 +443,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                         tokenInfoUpdateContract,
                                         "updateTokenMemo",
                                         HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
-                                        "New Memo")
+                                        newMemo)
                                 .via("updateOnlyMemo")
                                 .logged()
                                 .signingWith(MULTI_KEY)
@@ -447,9 +453,9 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         getTokenInfo(TOKEN)
                                 .logged()
                                 .hasTokenType(TokenType.FUNGIBLE_COMMON)
-                                .hasSymbol("SYM1")
-                                .hasName("New Name")
-                                .hasEntityMemo("New Memo")
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
                                 .hasTreasury(TOKEN_TREASURY)
                                 .hasAutoRenewAccount(ACCOUNT)
                                 .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
@@ -477,9 +483,9 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         getTokenInfo(TOKEN)
                                 .logged()
                                 .hasTokenType(TokenType.FUNGIBLE_COMMON)
-                                .hasSymbol("SYM1")
-                                .hasName("New Name")
-                                .hasEntityMemo("New Memo")
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
                                 .hasTreasury(newTokenTreasury)
                                 .hasAutoRenewAccount(ACCOUNT)
                                 .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
@@ -507,9 +513,9 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         getTokenInfo(TOKEN)
                                 .logged()
                                 .hasTokenType(TokenType.FUNGIBLE_COMMON)
-                                .hasSymbol("SYM1")
-                                .hasName("New Name")
-                                .hasEntityMemo("New Memo")
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
                                 .hasTreasury(newTokenTreasury)
                                 .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
@@ -537,9 +543,9 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         getTokenInfo(TOKEN)
                                 .logged()
                                 .hasTokenType(TokenType.FUNGIBLE_COMMON)
-                                .hasSymbol("SYM1")
-                                .hasName("New Name")
-                                .hasEntityMemo("New Memo")
+                                .hasSymbol(sym1)
+                                .hasName(newName)
+                                .hasEntityMemo(newMemo)
                                 .hasTreasury(newTokenTreasury)
                                 .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
