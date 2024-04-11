@@ -55,8 +55,7 @@ public class RandomEventUtils {
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(sig);
 
-        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
-                otherParent != null ? otherParent.getCreatorId() : NodeId.UNDEFINED_NODE_ID, sig);
+        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(sig);
 
         return new IndexedEvent(hashedData, unhashedData, selfParent, otherParent);
     }

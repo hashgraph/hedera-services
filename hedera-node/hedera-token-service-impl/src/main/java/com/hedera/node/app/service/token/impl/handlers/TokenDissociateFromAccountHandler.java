@@ -22,8 +22,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZE
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -104,7 +106,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         final var expiryValidator = context.expiryValidator();
         final var txn = context.body();
         final var op = txn.tokenDissociateOrThrow();
-        final var tokenIds = op.tokensOrThrow();
+        final var tokenIds = op.tokens();
         final var validated = validateSemantics(
                 op.accountOrThrow(), tokenIds, accountStore, tokenStore, tokenRelStore, expiryValidator);
 
@@ -205,9 +207,10 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final TokenDissociateTransactionBody op = txn.tokenDissociateOrThrow();
 
-        validateTruePreCheck(op.hasAccount(), INVALID_ACCOUNT_ID);
+        validateTruePreCheck(hasAccountNumOrAlias(op.account()), INVALID_ACCOUNT_ID);
+        validateFalsePreCheck(op.tokens().contains(TokenID.DEFAULT), INVALID_TOKEN_ID);
 
-        validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokensOrThrow()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+        validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokens()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
     }
 
     /**
@@ -232,6 +235,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
 
             // Here we check/retrieve a token that may not be "usable," but since we are dissociating token relations,
             // we don't require a usable token (or even an existing token). We only need to update the token relation
+            validateTrue(tokenId.tokenNum() > 0, INVALID_TOKEN_ID);
             final var possiblyUnusableToken = tokenStore.get(tokenId);
             final TokenRelation dissociatedTokenTreasuryRel;
             if (possiblyUnusableToken != null) {

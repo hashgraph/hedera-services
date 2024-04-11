@@ -33,6 +33,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.records.ChildFinalizeContext;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import javax.inject.Inject;
@@ -62,7 +63,9 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final var writableTokenStore = context.writableStore(WritableTokenStore.class);
 
         /* ------------------------- Hbar changes from child transaction  ------------------------- */
-        final var hbarChanges = hbarChangesFrom(writableAccountStore);
+        final var maxLegalBalance =
+                context.configuration().getConfigData(LedgerConfig.class).totalTinyBarFloat();
+        final var hbarChanges = hbarChangesFrom(writableAccountStore, maxLegalBalance);
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
             recordBuilder.transferList(TransferList.newBuilder()
