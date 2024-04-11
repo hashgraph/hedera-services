@@ -555,6 +555,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         notifierWiring.getInputWire(AppNotifier::sendPlatformStatusChangeNotification);
         eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateAddressBooks);
         eventWindowManagerWiring.getInputWire(EventWindowManager::updateEventWindow);
+        orphanBufferWiring.getInputWire(OrphanBuffer::clear);
     }
 
     /**
