@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,7 +36,7 @@ public class TemporaryPathBuilder {
 
     private static final Logger logger = LogManager.getLogger(TemporaryPathBuilder.class);
 
-    private long nextFileId = 0;
+    private final AtomicLong nextFileId = new AtomicLong(0);
     private final Path temporaryDataDirectory;
 
     /**
@@ -62,7 +63,7 @@ public class TemporaryPathBuilder {
      * @return a new temporary file
      */
     @NonNull
-    public synchronized Path getTemporaryPath() throws IOException {
+    public Path getTemporaryPath() throws IOException {
         return getTemporaryPath(null);
     }
 
@@ -75,9 +76,8 @@ public class TemporaryPathBuilder {
      * @return a new temporary file
      */
     @NonNull
-    public synchronized Path getTemporaryPath(@Nullable final String postfix) throws IOException {
-        final String fileName = nextFileId + (postfix == null ? "" : ("-" + postfix));
-        nextFileId++;
+    public Path getTemporaryPath(@Nullable final String postfix) throws IOException {
+        final String fileName = nextFileId.getAndIncrement() + (postfix == null ? "" : ("-" + postfix));
 
         final Path temporaryFile = temporaryDataDirectory.resolve(fileName);
         if (exists(temporaryFile)) {
