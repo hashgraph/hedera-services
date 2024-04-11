@@ -52,8 +52,8 @@ public interface FileSystemManager {
      * directory tree to a temporary location where it may persist for an amount of time. No guarantee on the amount of
      * time the file or directory tree will persist is provided.
      *
-     * @param relativePath the relative path to recycle
+     * @param path the relative path to recycle. Can be relative to the root dir or absolute
      * @throws IllegalArgumentException if the path cannot be relative to or scape the root directory
      */
-    void recycle(@NonNull Path relativePath) throws IOException;
+    void recycle(@NonNull Path path) throws IOException;
 }

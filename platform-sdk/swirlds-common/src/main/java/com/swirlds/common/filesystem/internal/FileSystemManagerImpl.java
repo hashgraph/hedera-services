@@ -25,9 +25,20 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 
+/**
+ * Default implementation of {@link FileSystemManager} Creates the rootPath and it's parent structure. Fails if the
+ * indicated location already exist on the filesystem.
+ * All {@link Path}s provided by this class are handled in the same filesystem as indicated in rootLocation parameter.
+ *
+ * @implNote Creates and manages a temp dir when creating an instance of this class using
+ * {@link Files#createTempDirectory(Path, String, FileAttribute[])} located under {@code rootPath} where all temporary
+ * files are located. Java's API is responsible for deleting those files at shutdown.
+ */
 public class FileSystemManagerImpl implements FileSystemManager {
 
+    private static final String TMP = "tmp";
     private final Path rootPath;
     private final Path tempPath;
     private final RecycleBin bin;
@@ -52,7 +63,7 @@ public class FileSystemManagerImpl implements FileSystemManager {
             throw new IllegalArgumentException("Could not create rootPath:" + rootPath, e);
         }
         try {
-            this.tempPath = Files.createTempDirectory(rootPath, "tmp");
+            this.tempPath = Files.createTempDirectory(rootPath, TMP);
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not create a tmp directory under rootPath:" + rootPath, e);
         }
@@ -81,7 +92,12 @@ public class FileSystemManagerImpl implements FileSystemManager {
     }
 
     /**
-     * {@inheritDoc}
+     * Remove the file or directory tree at the specified path. A best effort attempt is made to relocate the file or
+     * directory tree to a temporary location where it may persist for an amount of time. No guarantee on the amount of
+     * time the file or directory tree will persist is provided.
+     *
+     * @param relativePath the relative path to recycle
+     * @throws IllegalArgumentException if the path cannot be relative to or scape the root directory
      */
     @Override
     public void recycle(@NonNull final Path relativePath) throws IOException {

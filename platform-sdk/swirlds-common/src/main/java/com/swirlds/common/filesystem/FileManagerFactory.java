@@ -63,6 +63,10 @@ public interface FileManagerFactory {
         return createFileSystemManager(value, bin);
     }
 
+    /**
+     * Retrieves the default FileSystemManagerFactory instance
+     */
+    @NonNull
     static FileManagerFactory getInstance() {
         return FileManagerFactoryImpl.getInstance();
     }
