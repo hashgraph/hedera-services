@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.orphan;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -42,14 +42,14 @@ public interface OrphanBuffer {
     List<GossipEvent> handleEvent(@NonNull GossipEvent event);
 
     /**
-     * Sets the non-ancient event window that defines when an event is considered ancient.
+     * Sets the event window that defines when an event is considered ancient.
      *
-     * @param nonAncientEventWindow the non-ancient event window
+     * @param eventWindow the event window
      * @return the list of events that are no longer orphans as a result of this change
      */
-    @InputWireLabel("non-ancient event window")
+    @InputWireLabel("event window")
     @NonNull
-    List<GossipEvent> setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow);
+    List<GossipEvent> setEventWindow(@NonNull final EventWindow eventWindow);
 
     /**
      * Clears the orphan buffer.

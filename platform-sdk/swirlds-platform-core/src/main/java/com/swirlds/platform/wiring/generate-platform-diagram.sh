@@ -13,7 +13,7 @@ pcli diagram \
     -l 'eventDurabilityNexus:wait for durability:consensusRoundHandler' \
     -l 'gossip:get events:shadowgraph' \
     -l 'eventCreationManager:get transactions:transactionPool' \
-    -s 'eventWindowManager:non-ancient event window:🌀' \
+    -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
     -s 'applicationTransactionPrehandler:futures:🔮' \
     -s 'eventDurabilityNexus:wait for durability:🕑' \

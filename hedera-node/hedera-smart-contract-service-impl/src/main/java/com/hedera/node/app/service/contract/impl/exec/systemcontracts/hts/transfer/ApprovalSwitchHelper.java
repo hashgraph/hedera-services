@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -64,28 +63,26 @@ public class ApprovalSwitchHelper {
         requireNonNull(nativeOperations);
         final var revision = CryptoTransferTransactionBody.newBuilder();
         if (original.hasTransfers()) {
-            final var originalAdjusts = original.transfersOrThrow().accountAmountsOrElse(emptyList());
+            final var originalAdjusts = original.transfersOrThrow().accountAmounts();
             revision.transfers(TransferList.newBuilder()
                     .accountAmounts(revisedAdjusts(originalAdjusts, signatureTest, nativeOperations, senderId))
                     .build());
         }
-        if (original.hasTokenTransfers()) {
-            final var originalTokenTransfers = original.tokenTransfersOrThrow();
-            final TokenTransferList[] revisedTokenTransfers = new TokenTransferList[originalTokenTransfers.size()];
-            for (int i = 0, n = originalTokenTransfers.size(); i < n; i++) {
-                final var originalTokenTransfer = originalTokenTransfers.get(i);
-                final var revisedTokenTransfer = TokenTransferList.newBuilder().token(originalTokenTransfer.token());
-                if (originalTokenTransfer.transfersOrElse(emptyList()).isEmpty()) {
-                    revisedTokenTransfer.nftTransfers(revisedOwnershipChanges(
-                            originalTokenTransfer.nftTransfersOrThrow(), signatureTest, nativeOperations, senderId));
-                } else {
-                    revisedTokenTransfer.transfers(revisedAdjusts(
-                            originalTokenTransfer.transfersOrThrow(), signatureTest, nativeOperations, senderId));
-                }
-                revisedTokenTransfers[i] = revisedTokenTransfer.build();
+        final var originalTokenTransfers = original.tokenTransfers();
+        final TokenTransferList[] revisedTokenTransfers = new TokenTransferList[originalTokenTransfers.size()];
+        for (int i = 0, n = originalTokenTransfers.size(); i < n; i++) {
+            final var originalTokenTransfer = originalTokenTransfers.get(i);
+            final var revisedTokenTransfer = TokenTransferList.newBuilder().token(originalTokenTransfer.token());
+            if (originalTokenTransfer.transfers().isEmpty()) {
+                revisedTokenTransfer.nftTransfers(revisedOwnershipChanges(
+                        originalTokenTransfer.nftTransfers(), signatureTest, nativeOperations, senderId));
+            } else {
+                revisedTokenTransfer.transfers(
+                        revisedAdjusts(originalTokenTransfer.transfers(), signatureTest, nativeOperations, senderId));
             }
-            revision.tokenTransfers(revisedTokenTransfers);
+            revisedTokenTransfers[i] = revisedTokenTransfer.build();
         }
+        revision.tokenTransfers(revisedTokenTransfers);
         return revision.build();
     }
 

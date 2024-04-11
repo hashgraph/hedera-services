@@ -24,7 +24,7 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -55,9 +55,9 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
     private static final Function<EventDescriptor, List<OrphanedEvent>> EMPTY_LIST = ignored -> new ArrayList<>();
 
     /**
-     * The current non-ancient event window.
+     * The current event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow;
+    private EventWindow eventWindow;
 
     /**
      * The number of orphans currently in the buffer.
@@ -104,7 +104,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
-        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
             eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
@@ -120,7 +120,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
     @Override
     @NonNull
     public List<GossipEvent> handleEvent(@NonNull final GossipEvent event) {
-        if (nonAncientEventWindow.isAncient(event)) {
+        if (eventWindow.isAncient(event)) {
             // Ancient events can be safely ignored.
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return List.of();
@@ -146,17 +146,17 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
      */
     @Override
     @NonNull
-    public List<GossipEvent> setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
+    public List<GossipEvent> setEventWindow(@NonNull final EventWindow eventWindow) {
+        this.eventWindow = Objects.requireNonNull(eventWindow);
 
-        eventsWithParents.shiftWindow(nonAncientEventWindow.getAncientThreshold());
+        eventsWithParents.shiftWindow(eventWindow.getAncientThreshold());
 
         // As the map is cleared out, we need to gather the ancient parents and their orphans. We can't
         // modify the data structure as the window is being shifted, so we collect that data and act on
         // it once the window has finished shifting.
         final List<ParentAndOrphans> ancientParents = new ArrayList<>();
         missingParentMap.shiftWindow(
-                nonAncientEventWindow.getAncientThreshold(),
+                eventWindow.getAncientThreshold(),
                 (parent, orphans) -> ancientParents.add(new ParentAndOrphans(parent, orphans)));
 
         final List<GossipEvent> unorphanedEvents = new ArrayList<>();
@@ -204,7 +204,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
         final Iterator<EventDescriptor> parentIterator = new ParentIterator(event);
         while (parentIterator.hasNext()) {
             final EventDescriptor parent = parentIterator.next();
-            if (!eventsWithParents.contains(parent) && !nonAncientEventWindow.isAncient(parent)) {
+            if (!eventsWithParents.contains(parent) && !eventWindow.isAncient(parent)) {
                 missingParents.add(parent);
             }
         }
@@ -236,7 +236,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
             final GossipEvent nonOrphan = nonOrphanStack.pop();
             final EventDescriptor nonOrphanDescriptor = nonOrphan.getDescriptor();
 
-            if (nonAncientEventWindow.isAncient(nonOrphan)) {
+            if (eventWindow.isAncient(nonOrphan)) {
                 // Although it doesn't cause harm to pass along ancient events, it is unnecessary to do so.
                 intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
                 continue;

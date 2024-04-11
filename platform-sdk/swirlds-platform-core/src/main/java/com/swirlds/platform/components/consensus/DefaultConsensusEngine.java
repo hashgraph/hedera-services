@@ -22,7 +22,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.ConsensusLinker;
@@ -107,7 +107,7 @@ public class DefaultConsensusEngine implements ConsensusEngine {
         if (!consensusRounds.isEmpty()) {
             // If multiple rounds reach consensus at the same moment there is no need to pass in
             // each event window. The latest event window is sufficient to keep event storage clean.
-            linker.setNonAncientEventWindow(consensusRounds.getLast().getNonAncientEventWindow());
+            linker.setEventWindow(consensusRounds.getLast().getEventWindow());
         }
 
         return consensusRounds;
@@ -119,11 +119,11 @@ public class DefaultConsensusEngine implements ConsensusEngine {
     @Override
     public void outOfBandSnapshotUpdate(@NonNull final ConsensusSnapshot snapshot) {
         final long ancientThreshold = snapshot.getMinimumGenerationNonAncient(roundsNonAncient);
-        final NonAncientEventWindow nonAncientEventWindow =
-                new NonAncientEventWindow(snapshot.round(), ancientThreshold, ancientThreshold, ancientMode);
+        final EventWindow eventWindow =
+                new EventWindow(snapshot.round(), ancientThreshold, ancientThreshold, ancientMode);
 
         linker.clear(ClearTrigger.INSTANCE);
-        linker.setNonAncientEventWindow(nonAncientEventWindow);
+        linker.setEventWindow(eventWindow);
         consensus.loadSnapshot(snapshot);
     }
 }
