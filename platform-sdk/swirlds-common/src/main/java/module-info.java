@@ -10,6 +10,7 @@ module com.swirlds.common {
     exports com.swirlds.common.crypto;
     exports com.swirlds.common.crypto.config;
     exports com.swirlds.common.exceptions;
+    exports com.swirlds.common.filesystem;
     exports com.swirlds.common.formatting;
     exports com.swirlds.common.io;
     exports com.swirlds.common.io.config;
