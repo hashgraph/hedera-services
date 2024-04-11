@@ -24,7 +24,6 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -41,10 +40,6 @@ public record CustomFeeMeta(
         @NonNull TokenType tokenType) {
     public static CustomFeeMeta customFeeMetaFrom(@NonNull final Token token) {
         requireNonNull(token);
-        return new CustomFeeMeta(
-                token.tokenId(),
-                token.treasuryAccountId(),
-                token.customFeesOrElse(Collections.emptyList()),
-                token.tokenType());
+        return new CustomFeeMeta(token.tokenId(), token.treasuryAccountId(), token.customFees(), token.tokenType());
     }
 }

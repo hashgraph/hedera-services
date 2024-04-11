@@ -25,7 +25,6 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.StateAndRoundReserver;
-import com.swirlds.platform.wiring.StateAndRoundToStateReserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -59,8 +58,8 @@ public record ConsensusRoundHandlerWiring(
         final OutputWire<StateAndRound> stateAndRoundOutput = taskScheduler
                 .getOutputWire()
                 .buildAdvancedTransformer(new StateAndRoundReserver("postHandler_stateAndRoundReserver"));
-        final OutputWire<ReservedSignedState> stateOutput = stateAndRoundOutput.buildAdvancedTransformer(
-                new StateAndRoundToStateReserver("postHandler_stateReserver"));
+        final OutputWire<ReservedSignedState> stateOutput =
+                stateAndRoundOutput.buildTransformer("getState", "state and round", StateAndRound::reservedSignedState);
 
         return new ConsensusRoundHandlerWiring(
                 taskScheduler.buildInputWire("rounds"),

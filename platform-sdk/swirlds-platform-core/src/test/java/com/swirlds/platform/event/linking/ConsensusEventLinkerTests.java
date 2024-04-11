@@ -28,7 +28,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
@@ -75,7 +75,7 @@ class ConsensusEventLinkerTests {
         final List<EventImpl> linkedEvents = new LinkedList<>();
         final InOrderLinker linker = new ConsensusLinker(platformContext, new NodeId(0));
 
-        NonAncientEventWindow eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        EventWindow eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
 
         for (int i = 0; i < 10_000; i++) {
 
@@ -127,12 +127,12 @@ class ConsensusEventLinkerTests {
                     continue;
                 }
 
-                eventWindow = new NonAncientEventWindow(
+                eventWindow = new EventWindow(
                         ROUND_FIRST /* ignored in this test */,
                         event.getAncientIndicator(ancientMode),
                         ancientMode.getGenesisIndicator() /* ignored in this test */,
                         ancientMode);
-                linker.setNonAncientEventWindow(eventWindow);
+                linker.setEventWindow(eventWindow);
 
                 // All ancient events should have their parents nulled out
                 final Iterator<EventImpl> iterator = linkedEvents.iterator();

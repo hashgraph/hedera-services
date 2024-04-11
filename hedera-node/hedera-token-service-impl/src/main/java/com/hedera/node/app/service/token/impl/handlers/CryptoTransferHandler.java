@@ -41,7 +41,6 @@ import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -124,14 +123,14 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = context.body().cryptoTransferOrThrow();
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
-        for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
+        for (final var transfers : op.tokenTransfers()) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
             if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-            checkFungibleTokenTransfers(transfers.transfersOrElse(emptyList()), context, accountStore, false);
-            checkNftTransfers(transfers.nftTransfersOrElse(emptyList()), context, tokenMeta, op, accountStore);
+            checkFungibleTokenTransfers(transfers.transfers(), context, accountStore, false);
+            checkNftTransfers(transfers.nftTransfers(), context, tokenMeta, op, accountStore);
         }
 
-        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
+        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmounts();
         checkFungibleTokenTransfers(hbarTransfers, context, accountStore, true);
     }
 
@@ -155,24 +154,21 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         // warm all accounts from the transfer list
         final TransferList transferList = op.transfersOrElse(TransferList.DEFAULT);
-        transferList.accountAmountsOrElse(emptyList()).parallelStream()
+        transferList.accountAmounts().parallelStream()
                 .map(AccountAmount::accountID)
                 .filter(Objects::nonNull)
                 .forEach(accountStore::warm);
 
         // warm all token-data from the token transfer list
-        final List<TokenTransferList> tokenTransfers = op.tokenTransfersOrElse(emptyList());
-        tokenTransfers.parallelStream()
-                .filter(TokenTransferList::hasToken)
-                .filter(TokenTransferList::hasNftTransfers)
-                .forEach(tokenTransferList -> {
-                    final TokenID tokenID = tokenTransferList.tokenOrThrow();
-                    tokenStore.warm(tokenID);
-                    final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfersOrThrow();
-                    for (final NftTransfer nftTransfer : nftTransfers) {
-                        warmNftTransfer(accountStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
-                    }
-                });
+        final List<TokenTransferList> tokenTransfers = op.tokenTransfers();
+        tokenTransfers.parallelStream().filter(TokenTransferList::hasToken).forEach(tokenTransferList -> {
+            final TokenID tokenID = tokenTransferList.tokenOrThrow();
+            tokenStore.warm(tokenID);
+            final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfers();
+            for (final NftTransfer nftTransfer : nftTransfers) {
+                warmNftTransfer(accountStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
+            }
+        });
     }
 
     private void warmNftTransfer(
@@ -502,7 +498,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private boolean receivesFungibleValue(
             final AccountID target, final CryptoTransferTransactionBody op, final ReadableAccountStore accountStore) {
-        for (final var adjust : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
+        for (final var adjust : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
             final var unaliasedAccount = accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
             final var unaliasedTarget = accountStore.getAccountById(target);
             if (unaliasedAccount != null
@@ -512,8 +508,8 @@ public class CryptoTransferHandler implements TransactionHandler {
                 return true;
             }
         }
-        for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
-            for (final var adjust : transfers.transfersOrElse(emptyList())) {
+        for (final var transfers : op.tokenTransfers()) {
+            for (final var adjust : transfers.transfers()) {
                 final var unaliasedAccount = accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
                 final var unaliasedTarget = accountStore.getAccountById(target);
                 if (unaliasedAccount != null
@@ -536,18 +532,16 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
 
         /* BPT calculations shouldn't include any custom fee payment usage */
-        int totalXfers = op.transfersOrElse(TransferList.DEFAULT)
-                .accountAmountsOrElse(emptyList())
-                .size();
+        int totalXfers =
+                op.transfersOrElse(TransferList.DEFAULT).accountAmounts().size();
 
         var totalTokensInvolved = 0;
         var totalTokenTransfers = 0;
         var numNftOwnershipChanges = 0;
-        for (final var tokenTransfers : op.tokenTransfersOrElse(emptyList())) {
+        for (final var tokenTransfers : op.tokenTransfers()) {
             totalTokensInvolved++;
-            totalTokenTransfers += tokenTransfers.transfersOrElse(emptyList()).size();
-            numNftOwnershipChanges +=
-                    tokenTransfers.nftTransfersOrElse(emptyList()).size();
+            totalTokenTransfers += tokenTransfers.transfers().size();
+            numNftOwnershipChanges += tokenTransfers.nftTransfers().size();
         }
 
         int weightedTokensInvolved = tokenMultiplier * totalTokensInvolved;

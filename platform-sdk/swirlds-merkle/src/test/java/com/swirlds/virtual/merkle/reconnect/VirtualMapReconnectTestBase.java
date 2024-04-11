@@ -35,8 +35,6 @@ import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
@@ -86,10 +84,10 @@ public class VirtualMapReconnectTestBase {
     protected static final TestValue GOOSE = new TestValue("GOOSE");
 
     // Custom reconnect config to make tests with timeouts faster
-    protected static ReconnectConfig reconnectConfig = ConfigurationBuilder.create()
-            .withSources(new SimpleConfigSource("reconnect.asyncStreamTimeout", "5s"))
-            .withConfigDataType(ReconnectConfig.class)
-            .build()
+    protected static ReconnectConfig reconnectConfig = new TestConfigBuilder()
+            .withValue("reconnect.asyncStreamTimeout", "5s")
+            .withValue("reconnect.maxAckDelay", "1000ms")
+            .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
 
     protected VirtualMap<TestKey, TestValue> teacherMap;

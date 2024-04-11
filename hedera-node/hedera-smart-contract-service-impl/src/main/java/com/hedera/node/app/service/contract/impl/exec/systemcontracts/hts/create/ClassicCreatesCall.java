@@ -62,7 +62,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -145,7 +144,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         } else {
             ByteBuffer encodedOutput;
             final var op = syntheticCreate.tokenCreationOrThrow();
-            final var customFees = op.customFeesOrElse(Collections.emptyList());
+            final var customFees = op.customFees();
             if (op.tokenType() == FUNGIBLE_COMMON) {
                 if (customFees.isEmpty()) {
                     encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
