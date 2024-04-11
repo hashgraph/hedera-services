@@ -184,7 +184,8 @@ public class TokenCreateSpecs extends HapiSuite {
                 createsFungibleInfiniteByDefault(),
                 baseCreationsHaveExpectedPrices(),
                 /* HIP-23 */
-                validateNewTokenAssociations());
+                validateNewTokenAssociations(),
+                missingTreasurySignatureFails());
     }
 
     @HapiTest
@@ -581,6 +582,95 @@ public class TokenCreateSpecs extends HapiSuite {
                                         .balance(0)
                                         .kyc(TokenKycStatus.KycNotApplicable)
                                         .freeze(TokenFreezeStatus.FreezeNotApplicable)));
+    }
+
+    @HapiTest
+    public HapiSpec missingTreasurySignatureFails() {
+        String memo = "JUMP";
+        String saltedName = salted(PRIMARY);
+        final var pauseKey = "pauseKey";
+        return defaultHapiSpec("missingTreasurySignatureFails", NONDETERMINISTIC_TOKEN_NAMES)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                        newKeyNamed(ADMIN_KEY),
+                        newKeyNamed("freezeKey"),
+                        newKeyNamed("kycKey"),
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed("wipeKey"),
+                        newKeyNamed("feeScheduleKey"),
+                        newKeyNamed(pauseKey))
+                .when(
+                        tokenCreate(PRIMARY)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .entityMemo(memo)
+                                .name(saltedName)
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .adminKey(ADMIN_KEY)
+                                .freezeKey("freezeKey")
+                                .kycKey("kycKey")
+                                .supplyKey(SUPPLY_KEY)
+                                .wipeKey("wipeKey")
+                                .feeScheduleKey("feeScheduleKey")
+                                .pauseKey(pauseKey)
+                                .signedBy(DEFAULT_PAYER, ADMIN_KEY, AUTO_RENEW_ACCOUNT)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        tokenCreate(PRIMARY)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .entityMemo(memo)
+                                .name(saltedName)
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .adminKey(ADMIN_KEY)
+                                .freezeKey("freezeKey")
+                                .kycKey("kycKey")
+                                .supplyKey(SUPPLY_KEY)
+                                .wipeKey("wipeKey")
+                                .feeScheduleKey("feeScheduleKey")
+                                .pauseKey(pauseKey)
+                                .signedBy(DEFAULT_PAYER, ADMIN_KEY, AUTO_RENEW_ACCOUNT, TOKEN_TREASURY)
+                                .via(CREATE_TXN))
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            var createTxn = getTxnRecord(CREATE_TXN);
+                            allRunFor(spec, createTxn);
+                            var timestamp = createTxn
+                                    .getResponseRecord()
+                                    .getConsensusTimestamp()
+                                    .getSeconds();
+                            spec.registry().saveExpiry(PRIMARY, timestamp + THREE_MONTHS_IN_SECONDS);
+                        }),
+                        getTokenInfo(PRIMARY)
+                                .logged()
+                                .hasRegisteredId(PRIMARY)
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSupplyType(TokenSupplyType.FINITE)
+                                .hasEntityMemo(memo)
+                                .hasName(saltedName)
+                                .hasTreasury(TOKEN_TREASURY)
+                                .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .hasValidExpiry()
+                                .hasDecimals(1)
+                                .hasAdminKey(PRIMARY)
+                                .hasFreezeKey(PRIMARY)
+                                .hasKycKey(PRIMARY)
+                                .hasSupplyKey(PRIMARY)
+                                .hasWipeKey(PRIMARY)
+                                .hasFeeScheduleKey(PRIMARY)
+                                .hasPauseKey(PRIMARY)
+                                .hasPauseStatus(TokenPauseStatus.Unpaused)
+                                .hasMaxSupply(1000)
+                                .hasTotalSupply(500)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT));
     }
 
     @HapiTest
