@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.validators;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -91,9 +90,9 @@ public class AllowanceValidator {
      * @param allowanceMaxAccountLimit maximum number of allowances an Account can have.
      */
     public static void validateAllowanceLimit(final Account owner, final int allowanceMaxAccountLimit) {
-        final var totalAllowances = owner.cryptoAllowancesOrElse(emptyList()).size()
-                + owner.tokenAllowancesOrElse(emptyList()).size()
-                + owner.approveForAllNftAllowancesOrElse(emptyList()).size();
+        final var totalAllowances = owner.cryptoAllowances().size()
+                + owner.tokenAllowances().size()
+                + owner.approveForAllNftAllowances().size();
         validateFalse(totalAllowances > allowanceMaxAccountLimit, MAX_ALLOWANCES_EXCEEDED);
     }
 

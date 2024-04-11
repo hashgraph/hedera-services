@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDU
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -51,7 +50,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -86,7 +84,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
         if (tokenMetadata.hasFeeScheduleKey()) {
             context.requireKey(tokenMetadata.feeScheduleKey());
-            for (final var customFee : op.customFeesOrElse(emptyList())) {
+            for (final var customFee : op.customFees()) {
                 final var collector = customFee.feeCollectorAccountIdOrElse(AccountID.DEFAULT);
                 context.requireKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
             }
@@ -162,7 +160,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var op = body.tokenFeeScheduleUpdateOrThrow();
         final var token = feeContext.readableStore(ReadableTokenStore.class).get(op.tokenIdOrThrow());
         final var tokenOpsUsage = new TokenOpsUsage();
-        var newFees = op.customFeesOrElse(Collections.emptyList());
+        var newFees = op.customFees();
 
         // Ensure no null values for denominatingTokenId
         newFees = newFees.stream()
@@ -185,7 +183,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
                 body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
         final var lifetime = Math.max(0, token == null ? 0 : token.expirationSecond() - effConsTime);
 
-        final var existingFeeReprBytes = currentFeeScheduleSize(token.customFeesOrElse(emptyList()), tokenOpsUsage);
+        final var existingFeeReprBytes = currentFeeScheduleSize(token.customFees(), tokenOpsUsage);
         final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(existingFeeReprBytes, lifetime, newReprBytes, lifetime);
         return feeContext
                 .feeCalculator(SubType.DEFAULT)

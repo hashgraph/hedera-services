@@ -189,7 +189,7 @@ public class SolvencyPreCheck {
                     yield 0L;
                 }
                 final var payerID = txBody.transactionIDOrThrow().accountIDOrThrow();
-                yield -txBody.cryptoTransferOrThrow().transfersOrThrow().accountAmountsOrThrow().stream()
+                yield -txBody.cryptoTransferOrThrow().transfersOrThrow().accountAmounts().stream()
                         .filter(aa -> Objects.equals(aa.accountID(), payerID))
                         .mapToLong(AccountAmount::amount)
                         .sum();
