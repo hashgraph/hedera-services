@@ -15,7 +15,7 @@ pcli diagram \
     -l 'eventCreationManager:get transactions:transactionPool' \
     -l 'RunningEventHasher:future hash:consensusRoundHandler' \
     -l 'eventStreamManager:future hash:consensusRoundHandler' \
-    -s 'eventWindowManager:non-ancient event window:🌀' \
+    -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
     -s 'applicationTransactionPrehandler:futures:🔮' \
     -s 'eventDurabilityNexus:wait for durability:🕑' \

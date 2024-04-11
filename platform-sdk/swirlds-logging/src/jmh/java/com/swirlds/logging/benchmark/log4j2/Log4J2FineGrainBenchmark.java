@@ -77,7 +77,7 @@ public class Log4J2FineGrainBenchmark extends Log4J2BaseBenchmark {
             time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
             timeUnit = TimeUnit.MILLISECONDS)
     public void logOffStatement() {
-        logger.log(org.apache.logging.log4j.Level.OFF, "logSimpleStatement, Hello world!");
+        logger.log(org.apache.logging.log4j.Level.OFF, "logOffStatement, Hello world!");
     }
 
     @Benchmark
