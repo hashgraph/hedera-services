@@ -105,8 +105,8 @@ public class BaseExecutorFactoryTest {
             countDownLatchCallable.countDown();
             return null;
         });
-        final ScheduledFuture<Void> futureScheduled = baseExecutorFactory.schedule(
-                () -> countDownLatchScheduled.countDown(), 10, TimeUnit.MILLISECONDS);
+        final ScheduledFuture<Void> futureScheduled =
+                baseExecutorFactory.schedule(() -> countDownLatchScheduled.countDown(), 10, TimeUnit.MILLISECONDS);
         final ScheduledFuture<Void> futureScheduledAtFixedRate = baseExecutorFactory.scheduleAtFixedRate(
                 () -> countDownLatchScheduledAtFixedRate.countDown(), 10, 10, TimeUnit.MILLISECONDS);
 

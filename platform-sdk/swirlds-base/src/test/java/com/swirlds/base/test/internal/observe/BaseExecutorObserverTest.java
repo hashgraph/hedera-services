@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.base.test.internal.observe;
@@ -125,14 +124,14 @@ public class BaseExecutorObserverTest {
         }
     }
 
-    private static abstract class DummyBaseTask implements Runnable, BaseTask {
+    private abstract static class DummyBaseTask implements Runnable, BaseTask {
         @Override
         public String getType() {
             return TEST_TASK;
         }
     }
 
-    private static abstract class DummyBaseCallableTask implements Callable<Void>, BaseTask {
+    private abstract static class DummyBaseCallableTask implements Callable<Void>, BaseTask {
         @Override
         public String getType() {
             return TEST_TASK;
@@ -228,18 +227,17 @@ public class BaseExecutorObserverTest {
             }
         });
 
-        //then first task should not be finished
+        // then first task should not be finished
         assertThatNoException().isThrownBy(() -> observer.awaitTaskSubmitted(5, TimeUnit.MILLISECONDS));
         assertThatNoException().isThrownBy(() -> observer.awaitTaskStarted(5, TimeUnit.MILLISECONDS));
         observer.checkDoneNotCalled();
         observer.checkFailedNotCalled();
 
-        //then add a second observer and submit a task to check that submit event is fired but no start event is fired
+        // then add a second observer and submit a task to check that submit event is fired but no start event is fired
         try {
             observer2.checkSubmittedNotCalled();
             BaseExecutorFactory.addObserver(observer2);
-            baseExecutorFactory.submit(() -> {
-            });
+            baseExecutorFactory.submit(() -> {});
             assertThatNoException().isThrownBy(() -> observer2.awaitTaskSubmitted(5, TimeUnit.MILLISECONDS));
             assertThat(observer.taskSubmittedDefinition.get()).isNotNull();
             assertThat(observer.taskSubmittedDefinition.get().id()).isNotNull();
@@ -251,7 +249,7 @@ public class BaseExecutorObserverTest {
             BaseExecutorFactory.removeObserver(observer2);
         }
 
-        //then finish the first task
+        // then finish the first task
         lock.lock();
         try {
             condition.signalAll();
@@ -268,8 +266,7 @@ public class BaseExecutorObserverTest {
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
 
         // when
-        final Future<Void> future1 = baseExecutorFactory.submit(() -> {
-        });
+        final Future<Void> future1 = baseExecutorFactory.submit(() -> {});
 
         // then
         assertThatNoException().isThrownBy(() -> future1.get(1, TimeUnit.SECONDS));
@@ -286,9 +283,8 @@ public class BaseExecutorObserverTest {
         assertThat(type).isEqualTo(observer.taskStartedTaskDefinition.get().type());
         assertThat(type).isEqualTo(observer.taskDoneTaskDefinition.get().type());
 
-        //let's check that a second task has a different id
-        final Future<Void> future2 = baseExecutorFactory.submit(() -> {
-        });
+        // let's check that a second task has a different id
+        final Future<Void> future2 = baseExecutorFactory.submit(() -> {});
         assertThatNoException().isThrownBy(() -> future2.get(1, TimeUnit.SECONDS));
         assertThat(observer.taskSubmittedDefinition.get()).isNotNull();
         final UUID id2 = observer.taskSubmittedDefinition.get().id();
@@ -301,8 +297,7 @@ public class BaseExecutorObserverTest {
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
         final Runnable task = new DummyBaseTask() {
             @Override
-            public void run() {
-            }
+            public void run() {}
         };
 
         // when

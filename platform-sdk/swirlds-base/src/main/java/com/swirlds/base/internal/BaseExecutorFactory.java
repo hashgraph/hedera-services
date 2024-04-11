@@ -97,7 +97,8 @@ public interface BaseExecutorFactory {
      * @return a ScheduledFuture representing pending completion of the task.
      */
     @NonNull
-    default ScheduledFuture<Void> schedule(@NonNull final Runnable command, final long delay, @NonNull final TimeUnit unit) {
+    default ScheduledFuture<Void> schedule(
+            @NonNull final Runnable command, final long delay, @NonNull final TimeUnit unit) {
         final ScheduledFuture<?> scheduledFuture = getScheduledExecutor().schedule(command, delay, unit);
         return wrap(scheduledFuture);
     }
