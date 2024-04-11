@@ -162,11 +162,13 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
 
     private boolean matchesConsensusTimestampOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
         if (!matchesConsensusTimestampOf(sidecarRecord)) {
-            String message = """
+            String message =
+                    """
                     ***Mismatch in Consensus Timestamp:***
                     Expected: %s
                     Actual: %s
-                    """.formatted(consensusTimestamp, sidecarRecord.getConsensusTimestamp());
+                    """
+                            .formatted(consensusTimestamp, sidecarRecord.getConsensusTimestamp());
             log.error(message);
             mismatch.appendText(message);
             return false;
@@ -198,13 +200,15 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
         if (!mismatchedActions.isEmpty()) {
             StringDescription description = new StringDescription();
             mismatchedActions.forEach(action -> description.appendValue(action).appendText("\n"));
-            String message = """
+            String message =
+                    """
                     ***Mismatch in Actions:***
                     The following actions were expected but not found in the actual actions:
                     %s
                     Actual actions:
                     %s
-                    """.formatted(description, sidecarRecord.getActions().getContractActionsList());
+                    """
+                            .formatted(description, sidecarRecord.getActions().getContractActionsList());
             log.error(message);
             mismatch.appendText(message);
             return false;
@@ -236,14 +240,18 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
                 .toList();
         if (!mismatchedStateChanges.isEmpty()) {
             StringDescription description = new StringDescription();
-            mismatchedStateChanges.forEach(stateChange -> description.appendValue(stateChange).appendText("\n"));
-            String message = """
+            mismatchedStateChanges.forEach(
+                    stateChange -> description.appendValue(stateChange).appendText("\n"));
+            String message =
+                    """
                     ***Mismatch in State Changes:***
                     The following state changes were expected but not found in the actual state changes:
                     %s
                     Actual state changes:
                     %s
-                    """.formatted(description, sidecarRecord.getStateChanges().getContractStateChangesList());
+                    """
+                            .formatted(
+                                    description, sidecarRecord.getStateChanges().getContractStateChangesList());
             log.error(message);
             mismatch.appendText(message);
             return false;
@@ -260,11 +268,13 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
     public boolean matchesBytecodeOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
         Matcher<ContractBytecode> matcher = bytecodeMatcher.apply(bytecode);
         if (bytecode != null && !matcher.matches(sidecarRecord.getBytecode())) {
-            String message = """
+            String message =
+                    """
                     ***Mismatch in Bytecode:***
                     Expected: %s
                     Actual: %s
-                    """.formatted(bytecode, sidecarRecord.getBytecode());
+                    """
+                            .formatted(bytecode, sidecarRecord.getBytecode());
             log.error(message);
             mismatch.appendText(message);
             return false;
