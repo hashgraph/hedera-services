@@ -19,11 +19,16 @@ package com.hedera.node.app.service.schedule.impl;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Objects;
 
 public final class ScheduleStoreUtility {
@@ -65,5 +70,30 @@ public final class ScheduleStoreUtility {
                 SchedulableTransactionBody.PROTOBUF.toBytes(transactionToAdd).toByteArray();
         hasher.putInt(bytes.length);
         hasher.putBytes(bytes);
+    }
+
+    private static boolean isScheduleInList(final ScheduleID scheduleId, final ScheduleList scheduleList) {
+        return scheduleList.schedules().stream()
+                .anyMatch(s -> s.scheduleIdOrThrow().equals(scheduleId));
+    }
+
+    static ScheduleList addOrReplace(final Schedule schedule, @Nullable final ScheduleList scheduleList) {
+        if (scheduleList == null) {
+            return new ScheduleList(Collections.singletonList(schedule));
+        }
+        final var newScheduleList = scheduleList.copyBuilder();
+        final var scheduleId = schedule.scheduleIdOrThrow();
+        final var schedules = new ArrayList<>(scheduleList.schedules());
+        if (!isScheduleInList(scheduleId, scheduleList)) {
+            schedules.add(schedule);
+        } else {
+            for (int i = 0; i < schedules.size(); i++) {
+                final var existingSchedule = schedules.get(i);
+                if (existingSchedule.scheduleIdOrThrow().equals(scheduleId)) {
+                    schedules.set(i, schedule);
+                }
+            }
+        }
+        return newScheduleList.schedules(schedules).build();
     }
 }
