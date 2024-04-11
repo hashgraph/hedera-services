@@ -16,26 +16,29 @@
 
 package com.swirlds.logging;
 
+import com.swirlds.base.test.fixtures.io.WithSystemError;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.api.Marker;
+import com.swirlds.logging.api.extensions.event.LogEvent;
+import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.internal.LoggerImpl;
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
-import com.swirlds.logging.util.DummyConsumer;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled
+@WithSystemError
 public class LoggerImplTest {
 
     @Test
     void testSimpleLogger() {
         // given
-        LoggerImpl logger = new LoggerImpl("test-name", new SimpleLogEventFactory(), new DummyConsumer());
+        LoggerImpl logger = new LoggerImpl("test-name", new SimpleLogEventFactory(), dummySystem());
 
         // when
         final String name = logger.getName();
@@ -62,25 +65,23 @@ public class LoggerImplTest {
 
     @Test
     void testNullLogEventFactory() {
-        Assertions.assertThrows(
-                NullPointerException.class, () -> new LoggerImpl("test-name", null, new DummyConsumer()));
+        Assertions.assertThrows(NullPointerException.class, () -> new LoggerImpl("test-name", null, dummySystem()));
     }
 
     @Test
     void testSpecWithNullName() {
         // given + then
         Assertions.assertThrows(
-                NullPointerException.class,
-                () -> new LoggerImpl(null, new SimpleLogEventFactory(), new DummyConsumer()));
+                NullPointerException.class, () -> new LoggerImpl(null, new SimpleLogEventFactory(), null));
     }
 
     @Test
     void testSpecWithSimpleLogger() {
         // given
-        LoggerImpl logger = new LoggerImpl("test-name", new SimpleLogEventFactory(), new DummyConsumer());
+        LoggerImpl logger = new LoggerImpl("test-name", new SimpleLogEventFactory(), dummySystem());
 
         // then
-        LoggerApiSpecTest.testSpec(logger);
+        LoggerApiSpecAssertions.assertSpecForLogger(logger);
     }
 
     @Test
@@ -100,12 +101,31 @@ public class LoggerImplTest {
         final Logger logger = loggingSystem.getLogger("test-name");
 
         // then
-        LoggerApiSpecTest.testSpec(logger);
+        LoggerApiSpecAssertions.assertSpecForLogger(logger);
     }
 
     @Test
     void testSpecWithDifferentLoggers() {
-        LoggerApiSpecTest.testSpec(new LoggerImpl("test-name", new SimpleLogEventFactory(), new DummyConsumer()));
-        LoggerApiSpecTest.testSpec(new LoggerImpl("null", new SimpleLogEventFactory(), new DummyConsumer()));
+        LoggerApiSpecAssertions.assertSpecForLogger(
+                new LoggerImpl("test-name", new SimpleLogEventFactory(), dummySystem()));
+        LoggerApiSpecAssertions.assertSpecForLogger(new LoggerImpl("null", new SimpleLogEventFactory(), dummySystem()));
+    }
+
+    private static LogEventConsumer dummySystem() {
+        return new LogEventConsumer() {
+            @Override
+            public boolean isEnabled(String name, Level level, Marker marker) {
+                return true;
+            }
+            /**
+             * Accepts a log event but performs no action.
+             *
+             * @param event the log event to be accepted
+             */
+            @Override
+            public void accept(LogEvent event) {
+                // Empty implementation; does not perform any action
+            }
+        };
     }
 }

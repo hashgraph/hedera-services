@@ -29,7 +29,6 @@ import static com.swirlds.logging.benchmark.config.Constants.WARMUP_TIME_IN_SECO
 import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.benchmark.config.Constants;
 import com.swirlds.logging.benchmark.config.LoggingBenchmarkConfig;
-import com.swirlds.logging.benchmark.swirldslog.plain.SwirldsLogConfig;
 import com.swirlds.logging.benchmark.util.LogFiles;
 import com.swirlds.logging.benchmark.util.Throwables;
 import java.math.BigDecimal;
@@ -63,24 +62,22 @@ public class BridgedFineGrainBenchmark {
     public String loggingType;
 
     private Logger logger;
-    private BridgedConfiguration config;
+    private BridgedLog4JConfiguration config;
     private LoggingBenchmarkConfig<LoggingSystem> swirldsConfig;
 
     private static final Marker MARKER = MarkerManager.getMarker("marker");
 
     @Setup(Level.Trial)
     public void init() {
-        config = new BridgedConfiguration();
+        config = new BridgedLog4JConfiguration();
+        swirldsConfig = new BridgedSwirldsLogConfig();
         if (Objects.equals(loggingType, CONSOLE_TYPE)) {
-            swirldsConfig = new SwirldsLogConfig();
             swirldsConfig.configureConsoleLogging();
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, FILE_TYPE)) {
-            swirldsConfig = new SwirldsLogConfig();
             swirldsConfig.configureFileLogging(LogFiles.provideLogFilePath(Constants.LOG4J2, FILE_TYPE, ""));
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
         } else if (Objects.equals(loggingType, CONSOLE_AND_FILE_TYPE)) {
-            swirldsConfig = new SwirldsLogConfig();
             swirldsConfig.configureFileAndConsoleLogging(
                     LogFiles.provideLogFilePath(Constants.LOG4J2, CONSOLE_AND_FILE_TYPE, ""));
             logger = config.configureBridgedLogging().getLogger(LOGGER_NAME);
