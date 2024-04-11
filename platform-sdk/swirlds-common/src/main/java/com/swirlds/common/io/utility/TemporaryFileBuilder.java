@@ -29,7 +29,10 @@ import java.nio.file.Path;
 
 /**
  * This class provides utility methods for constructing temporary files.
+ *
+ * @deprecated Do not use this class, temporary files should be built from the file manager (in the platform context)
  */
+@Deprecated(forRemoval = true)
 public final class TemporaryFileBuilder {
 
     private TemporaryFileBuilder() {}
@@ -58,13 +61,12 @@ public final class TemporaryFileBuilder {
      * </p>
      *
      * <p>
-     * WARNING! Calling this method will cause any files in the original location to be deleted. It's ok to
-     * set the temporary file location to something like "/myTemporaryFiles" or "~/myTemporaryFiles". If it's set
-     * to something like "/" or "~/", EVERYTHING IN THOSE DIRECTORIES WILL BE DELETED!
+     * WARNING! Calling this method will cause any files in the original location to be deleted. It's ok to set the
+     * temporary file location to something like "/myTemporaryFiles" or "~/myTemporaryFiles". If it's set to something
+     * like "/" or "~/", EVERYTHING IN THOSE DIRECTORIES WILL BE DELETED!
      * </p>
      *
-     * @param newTemporaryFileLocation
-     * 		the new location where temporary files will be written
+     * @param newTemporaryFileLocation the new location where temporary files will be written
      */
     public static synchronized void overrideTemporaryFileLocation(final Path newTemporaryFileLocation)
             throws IOException {
@@ -77,8 +79,8 @@ public final class TemporaryFileBuilder {
     }
 
     /**
-     * Return a temporary file. File will not exist when this method returns. File is guaranteed to have a unique
-     * name. File will not be automatically deleted until this JVM is restarted.
+     * Return a temporary file. File will not exist when this method returns. File is guaranteed to have a unique name.
+     * File will not be automatically deleted until this JVM is restarted.
      *
      * @return a new temporary file
      */
@@ -87,12 +89,11 @@ public final class TemporaryFileBuilder {
     }
 
     /**
-     * Return a temporary file. File will not exist when this method returns. File is guaranteed to have a unique
-     * name. File will not be automatically deleted until this JVM is restarted.
+     * Return a temporary file. File will not exist when this method returns. File is guaranteed to have a unique name.
+     * File will not be automatically deleted until this JVM is restarted.
      *
-     * @param postfix
-     * 		an optional postfix, helps to make temporary file directory easier to understand
-     * 		if a human ever looks at it directly. Ignored if null.
+     * @param postfix an optional postfix, helps to make temporary file directory easier to understand if a human ever
+     *                looks at it directly. Ignored if null.
      * @return a new temporary file
      */
     public static synchronized Path buildTemporaryFile(final String postfix) throws IOException {
@@ -108,9 +109,8 @@ public final class TemporaryFileBuilder {
     }
 
     /**
-     * Return a temporary directory. Directory will exist when this method returns.
-     * Directory is guaranteed to have a unique name.
-     * Directory will not be automatically deleted until this JVM is restarted.
+     * Return a temporary directory. Directory will exist when this method returns. Directory is guaranteed to have a
+     * unique name. Directory will not be automatically deleted until this JVM is restarted.
      *
      * @return a new temporary directory
      */
@@ -119,13 +119,11 @@ public final class TemporaryFileBuilder {
     }
 
     /**
-     * Return a temporary directory. Directory will exist when this method returns.
-     * Directory is guaranteed to have a unique name.
-     * Directory will not be automatically deleted until this JVM is restarted.
+     * Return a temporary directory. Directory will exist when this method returns. Directory is guaranteed to have a
+     * unique name. Directory will not be automatically deleted until this JVM is restarted.
      *
-     * @param postfix
-     * 		an optional postfix, helps to make temporary file directory easier to understand
-     * 		if a human ever looks at it directly. Ignored if null.
+     * @param postfix an optional postfix, helps to make temporary file directory easier to understand if a human ever
+     *                looks at it directly. Ignored if null.
      * @return a new temporary directory
      */
     public static synchronized Path buildTemporaryDirectory(final String postfix) throws IOException {
