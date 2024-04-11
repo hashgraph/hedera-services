@@ -340,7 +340,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateGarbageCollectorWiring =
                 new ComponentWiring<>(model, StateGarbageCollector.class, config.stateGarbageCollector());
 
-        // TODO wire this up
         runningEventHasherWiring = new ComponentWiring<>(model, RunningEventHasher.class, config.runningEventHasher());
 
         wire();
