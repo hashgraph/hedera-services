@@ -20,7 +20,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -46,8 +46,7 @@ public class ConsensusOutput implements Clearable {
 
     private long latestRound;
 
-    private NonAncientEventWindow eventWindow =
-            NonAncientEventWindow.getGenesisNonAncientEventWindow(AncientMode.GENERATION_THRESHOLD);
+    private EventWindow eventWindow = EventWindow.getGenesisEventWindow(AncientMode.GENERATION_THRESHOLD);
 
     /**
      * Creates a new instance.
@@ -81,7 +80,7 @@ public class ConsensusOutput implements Clearable {
         for (final EventImpl consensusEvent : consensusRound.getConsensusEvents()) {
             nonAncientConsensusEvents.add(consensusEvent.getBaseEvent().getDescriptor());
         }
-        final long ancientThreshold = consensusRound.getNonAncientEventWindow().getAncientThreshold();
+        final long ancientThreshold = consensusRound.getEventWindow().getAncientThreshold();
         nonAncientEvents.shiftWindow(ancientThreshold, e -> {
             if (!nonAncientConsensusEvents.contains(e.getDescriptor())) {
                 staleEvents.add(e);
@@ -89,7 +88,7 @@ public class ConsensusOutput implements Clearable {
         });
         nonAncientConsensusEvents.shiftWindow(ancientThreshold);
 
-        eventWindow = consensusRound.getNonAncientEventWindow();
+        eventWindow = consensusRound.getEventWindow();
     }
 
     /**
@@ -132,7 +131,7 @@ public class ConsensusOutput implements Clearable {
      * @return the current event window
      */
     @NonNull
-    public NonAncientEventWindow getEventWindow() {
+    public EventWindow getEventWindow() {
         return eventWindow;
     }
 
@@ -144,6 +143,6 @@ public class ConsensusOutput implements Clearable {
         nonAncientEvents.clear();
         nonAncientConsensusEvents.clear();
         latestRound = 0;
-        eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(AncientMode.GENERATION_THRESHOLD);
+        eventWindow = EventWindow.getGenesisEventWindow(AncientMode.GENERATION_THRESHOLD);
     }
 }

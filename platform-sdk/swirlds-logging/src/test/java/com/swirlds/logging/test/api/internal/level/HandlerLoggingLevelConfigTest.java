@@ -16,52 +16,46 @@
 
 package com.swirlds.logging.test.api.internal.level;
 
-import static com.swirlds.base.test.fixtures.assertions.AssertionUtils.assertThrowsNPE;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import com.swirlds.logging.api.internal.level.MarkerState;
-import com.swirlds.logging.util.LoggingTestScenario;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
+import com.swirlds.logging.util.LoggingTestUtils;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public class HandlerLoggingLevelConfigTest {
 
-    private static final Duration MAX_DURATION = Duration.of(2, ChronoUnit.SECONDS);
-
     @Test
     void testConstructorExceptions() {
-        Assertions.assertThrows(NullPointerException.class, () -> new HandlerLoggingLevelConfig(null));
-        Assertions.assertThrows(NullPointerException.class, () -> new HandlerLoggingLevelConfig(null, (String) null));
+        Assertions.assertThrows(NullPointerException.class, () -> HandlerLoggingLevelConfig.create(null));
+        Assertions.assertThrows(
+                NullPointerException.class, () -> HandlerLoggingLevelConfig.create(null, (String) null));
     }
 
     @Test
-    @Disabled
     void testConstructor() {
         // given
-        final HandlerLoggingLevelConfig config =
-                new HandlerLoggingLevelConfig(getConfigBuilder().getOrCreateConfig());
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(
+                LoggingTestUtils.getConfigBuilder().getOrCreateConfig());
 
         // then
         checkDefaultBehavior(config);
     }
 
     @Test
-    @Disabled
     void testWithDifferentPrefix() {
         // given
-        final HandlerLoggingLevelConfig config =
-                new HandlerLoggingLevelConfig(getConfigBuilder().getOrCreateConfig(), "test.prefix");
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(
+                LoggingTestUtils.getConfigBuilder().getOrCreateConfig(), "test.prefix");
 
         // then
         checkDefaultBehavior(config);
@@ -70,9 +64,10 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testWithDifferentPrefixAndLevel() {
         // given
-        final Configuration configuration =
-                getConfigBuilder().withValue("logging.level", "ERROR").getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "test.prefix");
+        final Configuration configuration = LoggingTestUtils.getConfigBuilder()
+                .withValue("logging.level", "ERROR")
+                .getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration, "test.prefix");
 
         // then
         checkEnabledForLevel(config, "", Level.ERROR);
@@ -88,7 +83,7 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testWithConfigPerClass() {
         // given
-        final Configuration configuration = getConfigBuilder()
+        final Configuration configuration = LoggingTestUtils.getConfigBuilder()
                 .withValue("logging.level", "INFO")
                 .withValue("logging.level.com.sample", "DEBUG")
                 .withValue("logging.level.com.sample.package", "ERROR")
@@ -96,7 +91,7 @@ public class HandlerLoggingLevelConfigTest {
                 .withValue("logging.level.com.sample.package.ClassC", "TRACE")
                 .withValue("logging.level.com.sample.package.ClassCD", "DEBUG")
                 .getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration);
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration);
 
         // then
         checkEnabledForLevel(config, "", Level.INFO);
@@ -111,11 +106,11 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testPackagesWithSimilarNames() {
         // given
-        final Configuration configuration = getConfigBuilder()
+        final Configuration configuration = LoggingTestUtils.getConfigBuilder()
                 .withValue("logging.level", "INFO")
                 .withValue("logging.level.com.sample", "DEBUG")
                 .getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration);
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration);
 
         // then
         checkEnabledForLevel(config, "", Level.INFO);
@@ -128,78 +123,23 @@ public class HandlerLoggingLevelConfigTest {
         Stream.of(Level.values())
                 .filter(level::enabledLoggingOfLevel)
                 .forEach(l -> Assertions.assertTrue(
-                        config.isEnabled(name, l, null),
+                        config.isEnabled(name, l),
                         "%s should be enabled for package '%s' with level %s".formatted(l, name, level)));
         Stream.of(Level.values())
                 .filter(l -> !level.enabledLoggingOfLevel(l))
                 .forEach(l -> Assertions.assertFalse(
-                        config.isEnabled(name, l, null),
+                        config.isEnabled(name, l),
                         "%s should not be enabled for package '%s' with level %s".formatted(l, name, level)));
-    }
-
-    @Test
-    void testWithConfigUpdate() {
-        // given
-        final Configuration configuration = getConfigBuilder()
-                .withValue("logging.level", "INFO")
-                .withValue("logging.level.com.sample", "DEBUG")
-                .withValue("logging.level.com.sample.package", "ERROR")
-                .withValue("logging.level.com.sample.package.ClassB", "ERROR")
-                .withValue("logging.level.com.sample.package.ClassC", "TRACE")
-                .getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration);
-
-        // when
-        final Configuration newConfiguration = getConfigBuilder()
-                .withValue("logging.level", "ERROR")
-                .withValue("logging.level.com.sample.package", "WARN")
-                .getOrCreateConfig();
-        config.update(newConfiguration);
-
-        // then
-        checkEnabledForLevel(config, "", Level.ERROR);
-        checkEnabledForLevel(config, "a.long.name.for.a.logger", Level.ERROR);
-        checkEnabledForLevel(config, "com.sample.Class", Level.ERROR);
-        checkEnabledForLevel(config, "com.sample.package.ClassA", Level.WARN);
-        checkEnabledForLevel(config, "com.sample.package.ClassB", Level.WARN);
-        checkEnabledForLevel(config, "com.sample.package.ClassC", Level.WARN);
-    }
-
-    @Test
-    void testWithConfigUpdateWitEmptyConfig() {
-        // given
-        final Configuration configuration = getConfigBuilder()
-                .withValue("logging.level", "INFO")
-                .withValue("logging.level.com.sample", "DEBUG")
-                .withValue("logging.level.com.sample.package", "ERROR")
-                .withValue("logging.level.com.sample.package.ClassB", "ERROR")
-                .withValue("logging.level.com.sample.package.ClassC", "TRACE")
-                .getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration);
-
-        // when
-        final Configuration newConfiguration = getConfigBuilder().getOrCreateConfig();
-        config.update(newConfiguration);
-
-        // then
-        checkEnabledForLevel(config, "", Level.INFO);
-        checkEnabledForLevel(config, "a.long.name.for.a.logger", Level.INFO);
-        checkEnabledForLevel(config, "com.sample", Level.INFO);
-        checkEnabledForLevel(config, "com.sample.Class", Level.INFO);
-        checkEnabledForLevel(config, "com.sample.package", Level.INFO);
-        checkEnabledForLevel(config, "com.sample.package.ClassA", Level.INFO);
-        checkEnabledForLevel(config, "com.sample.package.ClassB", Level.INFO);
-        checkEnabledForLevel(config, "com.sample.package.ClassC", Level.INFO);
     }
 
     @Test
     void testWithConfigAndDefaultLevel() {
         // given
-        final Configuration configuration = getConfigBuilder()
+        final Configuration configuration = LoggingTestUtils.getConfigBuilder()
                 .withValue("logging.level", "WARN")
                 .withValue("logging.level.com.sample", "DEBUG")
                 .getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration);
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration);
 
         // then
         checkEnabledForLevel(config, "", Level.WARN);
@@ -214,10 +154,10 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testWithConfigAndDefaultLevelAndPrefix() {
         // given
-        final Configuration configuration = getConfigBuilder()
+        final Configuration configuration = LoggingTestUtils.getConfigBuilder()
                 .withValue("logging.level.com.sample", "DEBUG")
                 .getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "test.logging.level");
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration, "test.logging.level");
 
         // then
         checkEnabledForLevel(config, "", Level.INFO);
@@ -238,24 +178,16 @@ public class HandlerLoggingLevelConfigTest {
         checkEnabledForLevel(config, "com.sample.package.ClassA", Level.INFO);
         checkEnabledForLevel(config, "com.sample.package.ClassB", Level.INFO);
         checkEnabledForLevel(config, "com.sample.package.ClassC", Level.INFO);
-
-        Assertions.assertTrue(config.isEnabled(null, Level.ERROR, null), "always return true if error happens");
-        Assertions.assertTrue(config.isEnabled(null, Level.WARN, null), "always return true if error happens");
-        Assertions.assertTrue(config.isEnabled(null, Level.INFO, null), "always return true if error happens");
-        Assertions.assertTrue(config.isEnabled(null, Level.DEBUG, null), "always return true if error happens");
-        Assertions.assertTrue(config.isEnabled(null, Level.TRACE, null), "always return true if error happens");
-        Assertions.assertTrue(config.isEnabled(null, null, null), "always return true if error happens");
-        Assertions.assertTrue(config.isEnabled("", null, null), "always return true if error happens");
     }
 
     @Test
     void testPackageShouldOverrideDefaultLevel() {
         // given
-        final Configuration configuration = getConfigBuilder()
+        final Configuration configuration = LoggingTestUtils.getConfigBuilder()
                 .withValue("logging.level", Level.WARN)
                 .withValue("logging.level.com.sample", Level.INFO)
                 .getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "test.logging.level");
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration, "test.logging.level");
 
         // then
         checkEnabledForLevel(config, "com.sample.Foo", Level.INFO);
@@ -264,154 +196,210 @@ public class HandlerLoggingLevelConfigTest {
     @Test
     void testClassShouldOverrideDefaultLevel() {
         // given
-        final Configuration configuration = getConfigBuilder()
+        final Configuration configuration = LoggingTestUtils.getConfigBuilder()
                 .withValue("logging.level.com.sample.package.Class", Level.TRACE)
                 .getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(configuration, "test.logging.level");
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration, "test.logging.level");
 
         // then
         checkEnabledForLevel(config, "com.sample.package.Class", Level.TRACE);
     }
 
     @Test
-    @DisplayName("Multiple configuration updates test")
-    public void testConfigUpdate() {
+    void logLevelWithHandlerOverwrite() {
+        // given
+        final Configuration configuration = createDefaultBuilder()
+                .withValue("logging.level", "ERROR")
+                .withValue("logging.level.com.foo", "TRACE")
+                .withValue("logging.level.com.bar", "TRACE")
+                .withValue("logging.handler.HANDLER1.level.com.bar", "OFF")
+                .withValue("logging.handler.HANDLER2.level.com.foo", "OFF")
+                .withValue("logging.handler.HANDLER2.level", "INFO")
+                .getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration, "HANDLER1");
 
-        // Creates the configuration
-        HandlerLoggingLevelConfig configUnderTest =
-                new HandlerLoggingLevelConfig(getConfigBuilder().getOrCreateConfig());
-
-        // Ask the Orchestrator to run all desired scenarios up to 2 Seconds
-        // Scenarios define a configuration and a set of assertions for that config.
-        HandlerLoggingLevelConfigTestOrchestrator.runScenarios(
-                configUnderTest,
-                MAX_DURATION,
-                defaultScenario(),
-                scenario1(),
-                scenario2(),
-                scenario3(),
-                scenario4(),
-                scenario5());
+        // then
+        assertThat(config.isEnabled("com.bar.some.Class", Level.INFO)).isFalse();
+        assertThat(config.isEnabled("com.bar.some.Class", Level.ERROR)).isFalse();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE)).isTrue();
+        assertThat(config.isEnabled("com.some.Class", Level.ERROR)).isTrue();
+        assertThat(config.isEnabled("com.some.Class", Level.INFO)).isFalse();
     }
 
-    private static TestConfigBuilder getConfigBuilder() {
+    @Test
+    void logLevelWithHandlerOverwriteWithMarker() {
+        // given
+        final Marker markerBaz = new Marker("baz");
+        final Marker markerBum = new Marker("bum");
+        final Marker markerBrum = new Marker("brum");
+        final Marker markerPeng = new Marker("peng");
+        final Marker combinedMarker = new Marker("bum", markerBaz);
+
+        final Configuration configuration = createDefaultBuilder()
+                // Level
+                .withValue("logging.level", "ERROR")
+                .withValue("logging.level.com.foo", "TRACE")
+                .withValue("logging.level.com.bar", "TRACE")
+                // Markers
+                .withValue("logging.marker.baz", "ENABLED")
+                .withValue("logging.marker.bum", "DISABLED")
+                .withValue("logging.marker.peng", "UNDEFINED")
+                // Handler Markers
+                .withValue("logging.handler.HANDLER1.marker.peng", "DISABLED")
+                .withValue("logging.handler.HANDLER2.marker.peng", "ENABLED")
+                .getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration, "HANDLER1");
+
+        // then
+        assertThat(config.isEnabled("com.bar.some.Class", Level.INFO, markerBaz))
+                .isTrue();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, markerBum))
+                .isFalse();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, combinedMarker))
+                .isTrue();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.ERROR, markerPeng))
+                .isFalse();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE, markerBrum))
+                .isTrue();
+        assertThat(config.isEnabled("com.some.Class", Level.ERROR, markerBrum)).isTrue();
+        assertThat(config.isEnabled("com.some.Class", Level.INFO, markerBrum)).isFalse();
+    }
+
+    @Test
+    void logLevelWithDifferentHandlers() {
+        // given
+        final Marker markerA = new Marker("A");
+        final Marker markerB = new Marker("B");
+        final Marker markerC = new Marker("C");
+
+        final Configuration configuration = createDefaultBuilder()
+                .withValue("logging.handler.HANDLER1.marker.A", "ENABLED")
+                .withValue("logging.handler.HANDLER2.marker.C", "DISABLED")
+                .getOrCreateConfig();
+
+        final HandlerLoggingLevelConfig config1 = HandlerLoggingLevelConfig.create(configuration, "HANDLER1");
+        final HandlerLoggingLevelConfig config2 = HandlerLoggingLevelConfig.create(configuration, "HANDLER2");
+
+        // then
+        assertThat(config1.isEnabled("com.example.ClassA", Level.INFO, markerA)).isTrue();
+        assertThat(config1.isEnabled("com.example.ClassB", Level.ERROR, markerB))
+                .isTrue();
+        assertThat(config2.isEnabled("com.example.ClassC", Level.WARN, markerC)).isFalse();
+        assertThat(config2.isEnabled("com.example.ClassA", Level.INFO, markerC)).isFalse();
+    }
+
+    @Test
+    void logLevelWithDefaultHandler() {
+        // given
+        final Marker markerX = new Marker("X");
+        final Marker markerY = new Marker("Y");
+
+        final Configuration configuration = createDefaultBuilder()
+                .withValue("logging.handler.HANDLER1.marker.X", "ENABLED")
+                .withValue("logging.handler.HANDLER2.marker.Y", "DISABLED")
+                .getOrCreateConfig();
+
+        final HandlerLoggingLevelConfig config1 = HandlerLoggingLevelConfig.create(configuration, "HANDLER1");
+        final HandlerLoggingLevelConfig config2 = HandlerLoggingLevelConfig.create(configuration, "HANDLER2");
+
+        // then
+        assertThat(config1.isEnabled("com.example.Class", Level.INFO, markerX)).isTrue();
+        assertThat(config1.isEnabled("com.example.Class", Level.ERROR, markerY)).isTrue();
+        assertThat(config2.isEnabled("com.example.Class", Level.DEBUG, markerY)).isFalse();
+        assertThat(config2.isEnabled("com.example.Class", Level.TRACE, markerX)).isFalse();
+    }
+
+    @Test
+    void logLevelWithInheritedHandler() {
+        // given
+        final Marker markerM = new Marker("M");
+
+        final Configuration configuration = createDefaultBuilder()
+                .withValue("logging.level", "OFF")
+                .withValue("logging.handler.HANDLER1.marker.M", "ENABLED")
+                .withValue("logging.handler.HANDLER2.marker.M", "UNDEFINED")
+                .getOrCreateConfig();
+
+        final HandlerLoggingLevelConfig config1 = HandlerLoggingLevelConfig.create(configuration, "HANDLER1");
+        final HandlerLoggingLevelConfig config2 = HandlerLoggingLevelConfig.create(configuration, "HANDLER2");
+
+        // then
+        assertThat(config1.isEnabled("com.example.Class", Level.INFO, markerM)).isTrue();
+        assertThat(config1.isEnabled("com.example.Class", Level.TRACE, markerM)).isTrue();
+        assertThat(config2.isEnabled("com.example.Class", Level.ERROR, markerM)).isFalse();
+        assertThat(config2.isEnabled("com.example.Class", Level.DEBUG, markerM)).isFalse();
+    }
+
+    @Test
+    void logLevelMarkerOverwrite() {
+        // given
+        final Marker markerA = new Marker("A");
+
+        final Configuration configuration = createDefaultBuilder()
+                .withValue("logging.marker.A", "DISABLED")
+                .withValue("logging.handler.HANDLER1.marker.A", "ENABLED")
+                .getOrCreateConfig();
+
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration, "HANDLER1");
+
+        // then
+        assertThat(config.isEnabled("com.example.ClassA", Level.INFO, markerA)).isTrue();
+    }
+
+    @Test
+    void logLevelNoInheritanceForLevels() {
+        // given
+        final Marker markerBaz = new Marker("baz");
+
+        final Configuration configuration = createDefaultBuilder()
+                // Level
+                .withValue("logging.level", "ERROR")
+                .withValue("logging.level.com.foo", "TRACE")
+                .withValue("logging.level.com.bar", "TRACE")
+                // Markers
+                .withValue("logging.marker.baz", "DISABLED")
+                // Handler Markers
+                .withValue("logging.handler.HANDLER1.level", "OFF")
+                .withValue("logging.handler.HANDLER1.inheritLevels", "FALSE")
+                .withValue("logging.handler.HANDLER1.marker.baz", "ENABLED")
+                .getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration, "HANDLER1");
+
+        // then
+        assertThat(config.isEnabled("com.bar.some.Class", Level.INFO, markerBaz))
+                .isTrue();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE)).isFalse();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.ERROR)).isFalse();
+    }
+
+    @Test
+    void logLevelNoInheritanceForLevelsDefaultLevel() {
+        // given
+        final Marker markerBaz = new Marker("baz");
+
+        final Configuration configuration = createDefaultBuilder()
+                // Level
+                .withValue("logging.level", "ERROR")
+                .withValue("logging.level.com.foo", "TRACE")
+                .withValue("logging.level.com.bar", "TRACE")
+                // Markers
+                .withValue("logging.marker.baz", "DISABLED")
+                // Handler Markers
+                .withValue("logging.handler.HANDLER1.inheritLevels", "FALSE")
+                .withValue("logging.handler.HANDLER1.marker.baz", "ENABLED")
+                .getOrCreateConfig();
+        final HandlerLoggingLevelConfig config = HandlerLoggingLevelConfig.create(configuration, "HANDLER1");
+
+        // then
+        assertThat(config.isEnabled("com.bar.some.Class", Level.INFO, markerBaz))
+                .isTrue();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.TRACE)).isFalse();
+        assertThat(config.isEnabled("com.foo.some.Class", Level.INFO)).isTrue();
+    }
+
+    private TestConfigBuilder createDefaultBuilder() {
         return new TestConfigBuilder()
                 .withConverter(MarkerState.class, new MarkerStateConverter())
                 .withConverter(ConfigLevel.class, new ConfigLevelConverter());
-    }
-
-    // Default scenario: what should happen if no configuration is reloaded
-    private static LoggingTestScenario defaultScenario() {
-        return LoggingTestScenario.builder()
-                .name("default")
-                .assertThatLevelIsAllowed("", Level.ERROR)
-                .assertThatLevelIsAllowed("", Level.WARN)
-                .assertThatLevelIsAllowed("", Level.INFO)
-                .assertThatLevelIsNotAllowed("", Level.DEBUG)
-                .build();
-    }
-
-    // Scenario 1: Change logging level
-    private static LoggingTestScenario scenario1() {
-        return LoggingTestScenario.builder()
-                .name("scenario1")
-                .withConfiguration("logging.level", Level.TRACE)
-                .assertThatLevelIsAllowed("com.sample.Class", Level.TRACE) // Fix Scenario
-                .assertThatLevelIsAllowed("com.Class", Level.INFO)
-                .assertThatLevelIsAllowed("Class", Level.TRACE)
-                .build();
-    }
-
-    // Scenario 2: No Specific Configuration for Package
-    private static LoggingTestScenario scenario2() {
-        return LoggingTestScenario.builder()
-                .name("scenario2")
-                .withConfiguration("logging.level", Level.WARN)
-                .assertThatLevelIsNotAllowed("com.sample.Class", Level.DEBUG)
-                .build();
-    }
-
-    // Scenario 3: Class-Specific Configuration
-    private static LoggingTestScenario scenario3() {
-        return LoggingTestScenario.builder()
-                .name("scenario3")
-                .withConfiguration("logging.level.com.sample.package.Class", Level.ERROR)
-                .assertThatLevelIsAllowed("com.sample.package.Class", Level.ERROR)
-                .build();
-    }
-
-    // Scenario 4: Package-Level Configuration
-    private static LoggingTestScenario scenario4() {
-        return LoggingTestScenario.builder()
-                .name("scenario4")
-                .withConfiguration("logging.level.com.sample.package", Level.TRACE)
-                .assertThatLevelIsAllowed("com.sample.package.Class", Level.TRACE) // FIX SCENARIO
-                .build();
-    }
-
-    // Scenario 5: Mixed Configuration
-    private static LoggingTestScenario scenario5() {
-        String subPackage = ".sub";
-        String clazz = ".Random";
-        String subpackageSubClazz = ".sub.Random";
-        return LoggingTestScenario.builder()
-                .name("scenario5")
-                .withConfiguration("logging.level", Level.WARN)
-                .withConfiguration("logging.level.com.sample", Level.INFO)
-                .withConfiguration("logging.level.com.sample.package", Level.ERROR)
-                .assertThatLevelIsAllowed("Class", Level.ERROR)
-                .assertThatLevelIsAllowed("Class", Level.WARN)
-                .assertThatLevelIsNotAllowed("Class", Level.INFO)
-                .assertThatLevelIsNotAllowed("Class", Level.DEBUG)
-                .assertThatLevelIsNotAllowed("Class", Level.TRACE)
-                .assertThatLevelIsAllowed("a" + clazz, Level.WARN)
-                .assertThatLevelIsNotAllowed("b" + clazz, Level.INFO)
-                .assertThatLevelIsNotAllowed("c" + clazz, Level.DEBUG)
-                .assertThatLevelIsNotAllowed("d" + clazz, Level.TRACE)
-                .assertThatLevelIsAllowed("other" + clazz, Level.ERROR)
-                .assertThatLevelIsAllowed("other.a" + clazz, Level.WARN)
-                .assertThatLevelIsNotAllowed("other.b" + clazz, Level.INFO)
-                .assertThatLevelIsNotAllowed("other.c" + clazz, Level.DEBUG)
-                .assertThatLevelIsNotAllowed("other.d" + clazz, Level.TRACE)
-                .assertThatLevelIsAllowed("com.sample" + clazz, Level.ERROR)
-                .assertThatLevelIsAllowed("com.sample" + clazz, Level.WARN)
-                .assertThatLevelIsAllowed("com.sample" + clazz, Level.INFO)
-                .assertThatLevelIsNotAllowed("com.sample" + clazz, Level.DEBUG)
-                .assertThatLevelIsNotAllowed("com.sample" + clazz, Level.TRACE)
-                .assertThatLevelIsAllowed("com.sample.package" + clazz, Level.ERROR)
-                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.WARN)
-                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.INFO)
-                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.DEBUG)
-                .assertThatLevelIsNotAllowed("com.sample.package" + clazz, Level.TRACE)
-                .assertThatLevelIsAllowed("com.sample" + subPackage, Level.WARN)
-                .assertThatLevelIsAllowed("com.sample" + subpackageSubClazz, Level.INFO)
-                .build();
-    }
-
-    @Test
-    void testSimpleConfigUpdate() {
-        // given
-        final Configuration initialConfiguration =
-                getConfigBuilder().withValue("logging.level", Level.ERROR).getOrCreateConfig();
-        final Configuration updatedConfiguration =
-                getConfigBuilder().withValue("logging.level", Level.TRACE).getOrCreateConfig();
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(initialConfiguration);
-
-        // when
-        config.update(updatedConfiguration);
-
-        // then
-        checkEnabledForLevel(config, "com.sample.Foo", Level.TRACE);
-    }
-
-    @Test
-    void testConfigUpdateWithNullConfig() {
-        // given
-        final Configuration initialConfiguration = getConfigBuilder().getOrCreateConfig();
-        final Configuration updatedConfiguration = null;
-        final HandlerLoggingLevelConfig config = new HandlerLoggingLevelConfig(initialConfiguration);
-
-        // then
-        assertThrowsNPE(() -> config.update(updatedConfiguration));
     }
 }

@@ -3,6 +3,13 @@
 ###################################
 # NOTE: This rule is overriden by the more specific rules below. This is the catch-all rule for all files not covered by the more specific rules below.
 *                                               @hashgraph/release-engineering @hashgraph/release-engineering-managers
+#########################
+##### Example apps ######
+#########################
+# Platform-Base Example app
+/example-apps/**/module-info.java               @hashgraph/platform-base @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/example-apps/swirlds-platform-base-example/    @hashgraph/platform-base
+
 
 #########################
 ##### Hedera Node  ######

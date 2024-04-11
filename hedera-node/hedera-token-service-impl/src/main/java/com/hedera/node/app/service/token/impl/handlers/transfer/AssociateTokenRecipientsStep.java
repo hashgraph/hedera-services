@@ -28,7 +28,6 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwners
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -71,11 +70,11 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         final var nftStore = handleContext.writableStore(WritableNftStore.class);
         final List<TokenAssociation> newAssociations = new ArrayList<>();
 
-        for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
+        for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
             final var token = getIfUsable(tokenId, tokenStore);
 
-            for (final var aa : xfers.transfersOrElse(emptyList())) {
+            for (final var aa : xfers.transfers()) {
                 final var accountId = aa.accountIDOrElse(AccountID.DEFAULT);
                 final TokenAssociation newAssociation;
                 try {
@@ -99,7 +98,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 }
             }
 
-            for (final var nftTransfer : xfers.nftTransfersOrElse(emptyList())) {
+            for (final var nftTransfer : xfers.nftTransfers()) {
                 final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
                 final var senderId = nftTransfer.senderAccountIDOrElse(AccountID.DEFAULT);
                 // sender should be associated already. If not throw exception
@@ -183,7 +182,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             @NonNull final AccountID topLevelPayer,
             @NonNull final TokenID tokenId,
             final long amount) {
-        final var tokenAllowances = account.tokenAllowancesOrElse(emptyList());
+        final var tokenAllowances = account.tokenAllowances();
         for (final var allowance : tokenAllowances) {
             if (topLevelPayer.equals(allowance.spenderId()) && tokenId.equals(allowance.tokenId())) {
                 final var newAllowanceAmount = allowance.amount() + amount;

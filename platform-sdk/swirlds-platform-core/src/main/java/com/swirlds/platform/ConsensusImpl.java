@@ -31,8 +31,8 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.ConsensusSorter;
 import com.swirlds.platform.consensus.ConsensusUtils;
 import com.swirlds.platform.consensus.CountingVote;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.InitJudges;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
 import com.swirlds.platform.event.AncientMode;
@@ -679,7 +679,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 consensusEvents,
                 recentEvents.get(recentEvents.size() - 1),
                 new Generations(this),
-                new NonAncientEventWindow(decidedRoundNumber, nonAncientThreshold, nonExpiredThreshold, ancientMode),
+                new EventWindow(decidedRoundNumber, nonAncientThreshold, nonExpiredThreshold, ancientMode),
                 new ConsensusSnapshot(
                         decidedRoundNumber,
                         ConsensusUtils.getHashes(judges),

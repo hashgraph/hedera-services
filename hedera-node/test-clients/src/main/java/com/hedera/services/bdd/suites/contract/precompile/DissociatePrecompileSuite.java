@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
@@ -196,7 +197,7 @@ public class DissociatePrecompileSuite extends HapiSuite {
                         childRecordsCheck(
                                 nullTokenArray,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
+                                recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 nonExistingTokensInArray,
                                 CONTRACT_REVERT_EXECUTED,
@@ -283,7 +284,7 @@ public class DissociatePrecompileSuite extends HapiSuite {
                         childRecordsCheck(
                                 nullToken,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)));
+                                recordWith().status(INVALID_TOKEN_ID)));
     }
 
     @Override

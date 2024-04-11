@@ -24,10 +24,10 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
@@ -36,9 +36,10 @@ public class EventWindowManagerTests {
     @Test
     void WiringInputTest() {
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
-        final WiringModel model =
-                WiringModel.create(TestPlatformContextBuilder.create().build(), ForkJoinPool.commonPool());
-        final ComponentWiring<EventWindowManager, NonAncientEventWindow> wiring = new ComponentWiring<>(
+        final WiringModel model = WiringModelBuilder.create(
+                        TestPlatformContextBuilder.create().build())
+                .build();
+        final ComponentWiring<EventWindowManager, EventWindow> wiring = new ComponentWiring<>(
                 model,
                 EventWindowManager.class,
                 model.schedulerBuilder("eventWindowManager")
@@ -47,17 +48,17 @@ public class EventWindowManagerTests {
                         .cast());
         wiring.bind(eventWindowManager);
 
-        final AtomicReference<NonAncientEventWindow> output = new AtomicReference<>(null);
+        final AtomicReference<EventWindow> output = new AtomicReference<>(null);
 
         wiring.getOutputWire().solderTo("output", "event window", output::set);
 
-        final NonAncientEventWindow eventWindow1 = mock(NonAncientEventWindow.class);
+        final EventWindow eventWindow1 = mock(EventWindow.class);
         wiring.getInputWire(EventWindowManager::updateEventWindow).inject(eventWindow1);
         assertSame(eventWindow1, output.get());
 
-        final NonAncientEventWindow eventWindow2 = mock(NonAncientEventWindow.class);
+        final EventWindow eventWindow2 = mock(EventWindow.class);
         final ConsensusRound round = mock(ConsensusRound.class);
-        when(round.getNonAncientEventWindow()).thenReturn(eventWindow2);
+        when(round.getEventWindow()).thenReturn(eventWindow2);
         wiring.getInputWire(EventWindowManager::extractEventWindow).inject(round);
         assertSame(eventWindow2, output.get());
         assertNotSame(eventWindow1, eventWindow2);

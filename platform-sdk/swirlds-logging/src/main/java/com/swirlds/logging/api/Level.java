@@ -61,7 +61,7 @@ public enum Level {
             EMERGENCY_LOGGER.logNPE("level");
             return true;
         }
-        return this.levelOrdinal >= level.levelOrdinal;
+        return this.levelOrdinal >= level.levelOrdinal && level.levelOrdinal > 0;
     }
 
     /**

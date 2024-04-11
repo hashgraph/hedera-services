@@ -46,7 +46,6 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
@@ -92,11 +91,6 @@ public class ConsensusRoundHandler {
             new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
     /**
-     * Contains a background thread responsible for garbage collecting signed states
-     */
-    private final SignedStateGarbageCollector signedStateGarbageCollector;
-
-    /**
      * Enables submitting platform status actions.
      */
     private final StatusActionSubmitter statusActionSubmitter;
@@ -120,7 +114,6 @@ public class ConsensusRoundHandler {
      *
      * @param platformContext             contains various platform utilities
      * @param swirldStateManager          the swirld state manager to send events to
-     * @param signedStateGarbageCollector the garbage collector for signed states
      * @param waitForEventDurability      a method that blocks until an event becomes durable
      * @param statusActionSubmitter       enables submitting of platform status actions
      * @param softwareVersion             the current version of the software
@@ -128,14 +121,12 @@ public class ConsensusRoundHandler {
     public ConsensusRoundHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final SignedStateGarbageCollector signedStateGarbageCollector,
             @NonNull final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final SoftwareVersion softwareVersion) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
-        this.signedStateGarbageCollector = Objects.requireNonNull(signedStateGarbageCollector);
         this.waitForEventDurability = Objects.requireNonNull(waitForEventDurability);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
@@ -293,12 +284,10 @@ public class ConsensusRoundHandler {
                 CryptoStatic::verifySignature,
                 immutableStateCons,
                 "ConsensusRoundHandler.createSignedState()",
-                freezeRoundReceived);
+                freezeRoundReceived,
+                true);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("round handler output");
-        // make sure to create the first reservation before setting the garbage collector
-        signedState.setGarbageCollector(signedStateGarbageCollector);
-
         return new StateAndRound(reservedSignedState, consensusRound);
     }
 }

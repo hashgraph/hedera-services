@@ -72,7 +72,7 @@ import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
@@ -128,7 +128,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
@@ -283,8 +282,6 @@ public class SwirldsPlatform implements Platform {
      * Controls which states are saved to disk
      */
     private final SavedStateController savedStateController;
-
-    private final SignedStateGarbageCollector signedStateGarbageCollector;
 
     /**
      * Encapsulated wiring for the platform.
@@ -505,8 +502,6 @@ public class SwirldsPlatform implements Platform {
                 platformContext.getConfiguration().getConfigData(StateConfig.class), signedStateMetrics);
 
         thingsToStart.add(new SignedStateSentinel(platformContext, threadManager, Time.getCurrent()));
-        signedStateGarbageCollector =
-                thingsToStart.add(new SignedStateGarbageCollector(threadManager, signedStateMetrics));
 
         final LatestCompleteStateNotifier latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
 
@@ -560,7 +555,6 @@ public class SwirldsPlatform implements Platform {
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
-                signedStateGarbageCollector,
                 eventDurabilityNexus::waitUntilDurable,
                 platformStatusManager,
                 appVersion);
@@ -577,6 +571,7 @@ public class SwirldsPlatform implements Platform {
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,
+                blocks.randomBuilder().buildNonCryptographicRandom(),
                 this,
                 currentAddressBook,
                 selfId,
@@ -608,10 +603,7 @@ public class SwirldsPlatform implements Platform {
                 new DefaultPlatformPublisher(preconsensusEventConsumer, snapshotOverrideConsumer);
 
         platformWiring.bind(
-                builder.buildEventHasher(),
-                builder.buildInternalEventValidator(),
-                builder.buildEventDeduplicator(),
-                builder.buildEventSignatureValidator(),
+                builder,
                 orphanBuffer,
                 inOrderLinker,
                 consensusEngine,
@@ -672,8 +664,8 @@ public class SwirldsPlatform implements Platform {
 
         gossip = new SyncGossip(
                 platformContext,
+                blocks.randomBuilder().buildNonCryptographicRandom(),
                 threadManager,
-                time,
                 keysAndCerts,
                 notificationEngine,
                 currentAddressBook,
@@ -702,7 +694,6 @@ public class SwirldsPlatform implements Platform {
             initialAncientThreshold = initialState.getState().getPlatformState().getAncientThreshold();
             startingRound = initialState.getRound();
 
-            initialState.setGarbageCollector(signedStateGarbageCollector);
             logSignedStateHash(initialState);
             platformWiring
                     .getSignatureCollectorStateInput()
@@ -714,10 +705,10 @@ public class SwirldsPlatform implements Platform {
 
             loadStateIntoConsensus(initialState);
 
-            // We only load non-ancient events during start up, so the initial non-expired event window will be
-            // equal to the non-ancient event window when the system first starts. Over time as we get more events,
-            // the non-expired event window will continue to expand until it reaches its full size.
-            platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
+            // We only load non-ancient events during start up, so the initial expired threshold will be
+            // equal to the ancient threshold when the system first starts. Over time as we get more events,
+            // the expired threshold will continue to expand until it reaches its full size.
+            platformWiring.updateEventWindow(new EventWindow(
                     initialState.getRound(),
                     initialAncientThreshold,
                     initialAncientThreshold,
@@ -849,7 +840,7 @@ public class SwirldsPlatform implements Platform {
                 Objects.requireNonNull(signedState.getState().getPlatformState().getSnapshot()));
 
         // FUTURE WORK: this needs to be updated for birth round compatibility.
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 signedState.getRound(),
                 signedState.getState().getPlatformState().getAncientThreshold(),
                 signedState.getState().getPlatformState().getAncientThreshold(),
@@ -904,7 +895,6 @@ public class SwirldsPlatform implements Platform {
             savedStateController.reconnectStateReceived(
                     signedState.reserve("savedStateController.reconnectStateReceived"));
 
-            signedState.setGarbageCollector(signedStateGarbageCollector);
             logSignedStateHash(signedState);
             // this will send the state to the signature collector which will send it to be written to disk.
             // in the future, we might not send it to the collector because it already has all the signatures
@@ -920,7 +910,7 @@ public class SwirldsPlatform implements Platform {
                             signedState.getState().getPlatformState().getPreviousAddressBook(),
                             signedState.getState().getPlatformState().getAddressBook()));
 
-            platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
+            platformWiring.updateEventWindow(new EventWindow(
                     signedState.getRound(),
                     signedState.getState().getPlatformState().getAncientThreshold(),
                     signedState.getState().getPlatformState().getAncientThreshold(),
@@ -937,6 +927,7 @@ public class SwirldsPlatform implements Platform {
                             signedState.getRound(),
                             signedState.getConsensusTimestamp(),
                             signedState.getState().getSwirldState()));
+
         } catch (final RuntimeException e) {
             logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : FAILED, reason: {}", e.getMessage());
             // if the loading fails for whatever reason, we clear all data again in case some of it has been loaded
