@@ -44,6 +44,12 @@ public interface ExecutorFactory {
     @NonNull
     ExecutorService createExecutorService(int threadCount);
 
+    /**
+     * Create a ScheduledExecutorService with the given thread count.
+     *
+     * @param threadCount the thread count
+     * @return the ScheduledExecutorService
+     */
     ScheduledExecutorService createScheduledExecutorService(int threadCount);
 
     /**
