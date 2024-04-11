@@ -80,7 +80,8 @@ class PlatformWiringTests {
                 .withEventDeduplicator(mock(EventDeduplicator.class))
                 .withEventSignatureValidator(mock(EventSignatureValidator.class))
                 .withStateGarbageCollector(mock(StateGarbageCollector.class))
-                .withSelfEventSigner(mock(SelfEventSigner.class));
+                .withSelfEventSigner(mock(SelfEventSigner.class))
+                .withEventCreationManager(mock(EventCreationManager.class));
 
         wiring.bind(
                 componentBuilder,
@@ -94,7 +95,6 @@ class PlatformWiringTests {
                 mock(EventDurabilityNexus.class),
                 mock(Shadowgraph.class),
                 mock(PcesSequencer.class),
-                mock(EventCreationManager.class),
                 mock(StateSignatureCollector.class),
                 mock(TransactionPrehandler.class),
                 mock(EventWindowManager.class),
