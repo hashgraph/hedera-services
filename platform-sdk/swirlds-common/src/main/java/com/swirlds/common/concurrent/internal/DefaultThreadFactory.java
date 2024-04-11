@@ -69,6 +69,7 @@ public class DefaultThreadFactory implements ThreadFactory {
     }
 
     @Override
+    @NonNull
     public Thread newThread(@NonNull final Runnable innerRunnable) {
         Objects.requireNonNull(innerRunnable, "innerRunnable must not be null");
         final Runnable runnable = () -> {
