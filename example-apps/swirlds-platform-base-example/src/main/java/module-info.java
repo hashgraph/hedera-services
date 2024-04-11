@@ -14,6 +14,7 @@ module com.swirlds.platform.base.example {
     requires com.swirlds.common;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions;
+    requires com.swirlds.logging;
     requires com.swirlds.metrics.api;
     requires com.fasterxml.jackson.databind;
     requires com.google.common;
