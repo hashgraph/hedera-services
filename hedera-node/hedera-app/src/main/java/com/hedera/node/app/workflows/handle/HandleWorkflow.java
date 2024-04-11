@@ -45,7 +45,6 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NOD
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
@@ -84,6 +83,7 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
@@ -117,7 +117,6 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -169,7 +168,7 @@ public class HandleWorkflow {
     private final CacheWarmer cacheWarmer;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
-    private final Metrics metrics;
+    private final StoreMetricsService storeMetricsService;
 
     @Inject
     public HandleWorkflow(
@@ -197,7 +196,7 @@ public class HandleWorkflow {
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final Metrics metrics) {
+            @NonNull final StoreMetricsService storeMetricsService) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -226,7 +225,7 @@ public class HandleWorkflow {
         this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
         this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
-        this.metrics = requireNonNull(metrics, "metrics must not be null");
+        this.storeMetricsService = requireNonNull(storeMetricsService, "storeMetricsService must not be null");
     }
 
     /**
@@ -331,7 +330,7 @@ public class HandleWorkflow {
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
         final var tokenServiceContext = new TokenContextImpl(
-                configuration, metrics, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
+                configuration, storeMetricsService, stack, recordListBuilder, blockRecordManager, isFirstTransaction);
         genesisRecordsTimeHook.process(tokenServiceContext);
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
@@ -350,7 +349,8 @@ public class HandleWorkflow {
             final var firstSecondToExpire =
                     blockRecordManager.firstConsTimeOfLastBlock().getEpochSecond();
             final var lastSecondToExpire = consensusNow.getEpochSecond();
-            final var scheduleStore = new WritableStoreFactory(stack, ScheduleService.NAME, configuration, metrics)
+            final var scheduleStore = new WritableStoreFactory(
+                            stack, ScheduleService.NAME, configuration, storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             // purge all expired schedules between the first consensus time of last block and the current consensus time
             scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire, lastSecondToExpire);
@@ -402,7 +402,7 @@ public class HandleWorkflow {
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
             final var legacyFeeCalcNetworkVpt =
-                    transactionInfo.signatureMap().sigPairOrElse(emptyList()).size();
+                    transactionInfo.signatureMap().sigPair().size();
             final var verifier = new DefaultKeyVerifier(
                     legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.getVerificationResults());
             final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
@@ -436,7 +436,7 @@ public class HandleWorkflow {
                     networkUtilizationManager,
                     synchronizedThrottleAccumulator,
                     platformState,
-                    metrics);
+                    storeMetricsService);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
@@ -685,7 +685,7 @@ public class HandleWorkflow {
         return switch (function) {
             case CRYPTO_TRANSFER -> zeroAdjustIdsFrom(body.cryptoTransferOrThrow()
                     .transfersOrElse(TransferList.DEFAULT)
-                    .accountAmountsOrElse(emptyList()));
+                    .accountAmounts());
             case ETHEREUM_TRANSACTION, CONTRACT_CALL, CONTRACT_CREATE -> recordBuilder.explicitRewardSituationIds();
             default -> emptySet();
         };
@@ -780,7 +780,7 @@ public class HandleWorkflow {
             @NonNull final SavepointStackImpl stack,
             @NonNull final Configuration configuration,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
-        final var serviceApiFactory = new ServiceApiFactory(stack, configuration, metrics);
+        final var serviceApiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
     }

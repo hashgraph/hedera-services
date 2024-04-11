@@ -688,20 +688,20 @@ public class ThrottleAccumulator {
     }
 
     private boolean usesAliases(final CryptoTransferTransactionBody transferBody) {
-        for (var adjust : transferBody.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
+        for (var adjust : transferBody.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
             if (isAlias(adjust.accountIDOrElse(AccountID.DEFAULT))) {
                 return true;
             }
         }
 
-        for (var tokenAdjusts : transferBody.tokenTransfersOrElse(emptyList())) {
-            for (var ownershipChange : tokenAdjusts.nftTransfersOrElse(emptyList())) {
+        for (var tokenAdjusts : transferBody.tokenTransfers()) {
+            for (var ownershipChange : tokenAdjusts.nftTransfers()) {
                 if (isAlias(ownershipChange.senderAccountIDOrElse(AccountID.DEFAULT))
                         || isAlias(ownershipChange.receiverAccountIDOrElse(AccountID.DEFAULT))) {
                     return true;
                 }
             }
-            for (var tokenAdjust : tokenAdjusts.transfersOrElse(emptyList())) {
+            for (var tokenAdjust : tokenAdjusts.transfers()) {
                 if (isAlias(tokenAdjust.accountIDOrElse(AccountID.DEFAULT))) {
                     return true;
                 }
@@ -771,7 +771,7 @@ public class ThrottleAccumulator {
         EnumMap<HederaFunctionality, List<Pair<DeterministicThrottle, Integer>>> reqLists =
                 new EnumMap<>(HederaFunctionality.class);
 
-        for (var bucket : defs.throttleBucketsOrElse(emptyList())) {
+        for (var bucket : defs.throttleBuckets()) {
             try {
                 final var utilThrottleBucket = new ThrottleBucket<>(
                         bucket.burstPeriodMs(),

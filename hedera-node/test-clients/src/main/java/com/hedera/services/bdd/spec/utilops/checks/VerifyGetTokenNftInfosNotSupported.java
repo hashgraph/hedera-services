@@ -18,13 +18,13 @@ package com.hedera.services.bdd.spec.utilops.checks;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
-import org.junit.jupiter.api.Assertions;
 
 public class VerifyGetTokenNftInfosNotSupported extends UtilOp {
     @Override
@@ -33,8 +33,7 @@ public class VerifyGetTokenNftInfosNotSupported extends UtilOp {
         Query query = Query.newBuilder().setTokenGetNftInfos(op).build();
         Response response =
                 spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
-        Assertions.assertEquals(
-                NOT_SUPPORTED, response.getTokenGetNftInfos().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(NOT_SUPPORTED, response.getTokenGetNftInfos().getHeader().getNodeTransactionPrecheckCode());
         return false;
     }
 }
