@@ -17,14 +17,18 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -47,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_NOT_PROVIDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
@@ -54,9 +59,12 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
@@ -89,11 +97,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final String DELEGATE_KEY = "tokenUpdateAsKeyDelegate";
     private static final String ACCOUNT_TO_ASSOCIATE = "account3";
     private static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
+    private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     public static final String CUSTOM_NAME = "customName";
     public static final String CUSTOM_SYMBOL = "Ω";
     public static final String CUSTOM_MEMO = "Omega";
     private static final long ADMIN_KEY_TYPE = 1L;
     private static final long SUPPLY_KEY_TYPE = 16L;
+    private static final KeyShape KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
 
     public static void main(String... args) {
         new TokenUpdatePrecompileSuite().runSuiteAsync();
@@ -316,5 +326,249 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 //
                                 // .withTokenKeyValue(Key.newBuilder().build()))))
                                 ))));
+    }
+
+    @HapiTest
+    final HapiSpec tokenUpdateSingleFieldCases() {
+        final var tokenInfoUpdateContract = "TokenInfoSingularUpdate";
+        final var newTokenTreasury = "new treasury";
+        final AtomicReference<TokenID> token = new AtomicReference<>();
+        final AtomicReference<AccountID> newTreasury = new AtomicReference<>();
+        final AtomicReference<AccountID> autoRenewAccount = new AtomicReference<>();
+        return defaultHapiSpec("tokenUpdateNegativeCases")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        uploadInitCode(tokenInfoUpdateContract),
+                        contractCreate(tokenInfoUpdateContract).gas(GAS_TO_OFFER),
+                        newKeyNamed(MULTI_KEY).shape(KEY_SHAPE.signedWith(sigs(ON, tokenInfoUpdateContract))),
+                        newKeyNamed(ED25519KEY).shape(KEY_SHAPE.signedWith(sigs(ON, tokenInfoUpdateContract))),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
+                        cryptoCreate(newTokenTreasury).key(MULTI_KEY).exposingCreatedIdTo(newTreasury::set),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT)
+                                .balance(ONE_MILLION_HBARS)
+                                .key(ED25519KEY)
+                                .exposingCreatedIdTo(autoRenewAccount::set),
+                        tokenCreate(TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .name("Old Name")
+                                .symbol("SYM")
+                                .entityMemo("Memo")
+                                .autoRenewAccount(ACCOUNT)
+                                .autoRenewPeriod(AUTO_RENEW_PERIOD)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .feeScheduleKey(MULTI_KEY)
+                                .pauseKey(MULTI_KEY)
+                                .wipeKey(MULTI_KEY)
+                                .freezeKey(MULTI_KEY)
+                                .kycKey(MULTI_KEY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> token.set(asToken(id))),
+                        tokenAssociate(ACCOUNT, TOKEN),
+                        tokenAssociate(AUTO_RENEW_ACCOUNT, TOKEN),
+                        tokenAssociate(newTokenTreasury, TOKEN),
+                        grantTokenKyc(TOKEN, ACCOUNT),
+                        cryptoTransfer(moving(500, TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        "updateTokenName",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        "New Name")
+                                .via("updateOnlyName")
+                                .logged()
+                                .signingWith(MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol("SYM")
+                                .hasName("New Name")
+                                .hasEntityMemo("Memo")
+                                .hasTreasury(TOKEN_TREASURY)
+                                .hasAutoRenewAccount(ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY)
+                                .hasKycKey(MULTI_KEY)
+                                .hasFreezeKey(MULTI_KEY)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        "updateTokenSymbol",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        "SYM1")
+                                .via("updateOnlySym")
+                                .logged()
+                                .signingWith(MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol("SYM1")
+                                .hasName("New Name")
+                                .hasEntityMemo("Memo")
+                                .hasTreasury(TOKEN_TREASURY)
+                                .hasAutoRenewAccount(ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY)
+                                .hasKycKey(MULTI_KEY)
+                                .hasFreezeKey(MULTI_KEY)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        "updateTokenMemo",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        "New Memo")
+                                .via("updateOnlyMemo")
+                                .logged()
+                                .signingWith(MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol("SYM1")
+                                .hasName("New Name")
+                                .hasEntityMemo("New Memo")
+                                .hasTreasury(TOKEN_TREASURY)
+                                .hasAutoRenewAccount(ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY)
+                                .hasKycKey(MULTI_KEY)
+                                .hasFreezeKey(MULTI_KEY)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        "updateTokenTreasury",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(newTreasury.get())))
+                                .via("updateOnlyTreasury")
+                                .logged()
+                                .signingWith(MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol("SYM1")
+                                .hasName("New Name")
+                                .hasEntityMemo("New Memo")
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY)
+                                .hasKycKey(MULTI_KEY)
+                                .hasFreezeKey(MULTI_KEY)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        "updateTokenAutoRenewAccount",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(autoRenewAccount.get())))
+                                .via("updateOnlyAutoRenewAccount")
+                                .logged()
+                                .signingWith(MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol("SYM1")
+                                .hasName("New Name")
+                                .hasEntityMemo("New Memo")
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY)
+                                .hasKycKey(MULTI_KEY)
+                                .hasFreezeKey(MULTI_KEY)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY),
+                        contractCall(
+                                        tokenInfoUpdateContract,
+                                        "updateTokenAutoRenewPeriod",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(token.get())),
+                                        AUTO_RENEW_PERIOD - 1000L)
+                                .via("updateOnlyAutoRenewPeriod")
+                                .logged()
+                                .signingWith(MULTI_KEY)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTokenInfo(TOKEN)
+                                .logged()
+                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                .hasSymbol("SYM1")
+                                .hasName("New Name")
+                                .hasEntityMemo("New Memo")
+                                .hasTreasury(newTokenTreasury)
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .hasAutoRenewPeriod(AUTO_RENEW_PERIOD - 1000L)
+                                .hasSupplyType(TokenSupplyType.INFINITE)
+                                .searchKeysGlobally()
+                                .hasAdminKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY)
+                                .hasKycKey(MULTI_KEY)
+                                .hasFreezeKey(MULTI_KEY)
+                                .hasWipeKey(MULTI_KEY)
+                                .hasFeeScheduleKey(MULTI_KEY)
+                                .hasSupplyKey(MULTI_KEY)
+                                .hasPauseKey(MULTI_KEY))))
+                .then(
+                        childRecordsCheck(
+                                "updateOnlyName", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck("updateOnlySym", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyMemo", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyTreasury", SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyAutoRenewAccount",
+                                SUCCESS,
+                                recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                "updateOnlyAutoRenewPeriod",
+                                SUCCESS,
+                                recordWith().status(SUCCESS)));
     }
 }
