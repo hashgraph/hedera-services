@@ -242,7 +242,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     public HapiTokenCreate name(final String name) {
-        this.name = Optional.of(name);
+        this.name = Optional.ofNullable(name);
         return this;
     }
 
