@@ -160,7 +160,7 @@ public interface BaseExecutorFactory {
      *
      * @param observer the observer to add
      */
-    static void addObserver(@NonNull BaseExecutorObserver observer) {
+    static void addObserver(@NonNull final BaseExecutorObserver observer) {
         BaseScheduledExecutorService.getInstance().addObserver(observer);
     }
 
