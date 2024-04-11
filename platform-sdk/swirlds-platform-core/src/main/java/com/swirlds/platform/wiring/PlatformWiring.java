@@ -491,7 +491,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         savedStateControllerWiring.getOutputWire().solderTo(signedStateHasherWiring.stateAndRoundInput());
 
         consensusRoundHandlerWiring
-                .stateOutput()
+                .stateAndRoundOutput()
                 .solderTo(stateGarbageCollectorWiring.getInputWire(StateGarbageCollector::registerState));
         model.buildHeartbeatWire(config.stateGarbageCollectorHeartbeatPeriod())
                 .solderTo(stateGarbageCollectorWiring.getInputWire(StateGarbageCollector::heartbeat), OFFER);
