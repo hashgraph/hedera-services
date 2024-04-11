@@ -340,7 +340,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .when(childRecord.transferList())
                 .thenReturn(TransferList.newBuilder().build());
         lenient()
-                .when(childRecord.tokenTransferListsOrElse(List.of()))
+                .when(childRecord.tokenTransferLists())
                 .thenReturn(List.of(TokenTransferList.newBuilder()
                         .token(TOKEN_321)
                         .transfers(

@@ -98,7 +98,7 @@ public class CustomRoyaltyFeeAssessor {
                 fixedFeeAssessor.assessFixedFee(feeMeta, receiver, fallbackFee, result);
             } else {
                 if (!isPayerExempt(feeMeta, fee, sender)) {
-                    chargeRoyalty(exchangedValue, feeMeta, fee, result);
+                    chargeRoyalty(exchangedValue, fee, result);
                 }
             }
         }
@@ -118,13 +118,11 @@ public class CustomRoyaltyFeeAssessor {
      * then the fallback fee is charged to the receiver balance. Otherwise, the royalty fee is charged to the
      * credit value of the receiver.
      * @param exchangedValues fungible values exchanged to the receiver
-     * @param feeMeta custom fee meta
      * @param fee royalty fee
      * @param result assessment result
      */
     private void chargeRoyalty(
             @NonNull List<AdjustmentUtils.ExchangedValue> exchangedValues,
-            @NonNull final CustomFeeMeta feeMeta,
             @NonNull final CustomFee fee,
             @NonNull final AssessmentResult result) {
         for (final var exchange : exchangedValues) {
@@ -188,8 +186,8 @@ public class CustomRoyaltyFeeAssessor {
         final var htsAdjustments = result.getHtsAdjustments().computeIfAbsent(denom, ADJUSTMENTS_MAP_FACTORY);
         final var mutableInputHtsAdjustments =
                 result.getMutableInputBalanceAdjustments().get(denom);
-        mutableInputHtsAdjustments.merge(account, -royalty, Long::sum);
-        htsAdjustments.merge(feeCollector, royalty, Long::sum);
+        mutableInputHtsAdjustments.merge(account, -royalty, AdjustmentUtils::addExactOrThrow);
+        htsAdjustments.merge(feeCollector, royalty, AdjustmentUtils::addExactOrThrow);
     }
 
     /**
@@ -207,7 +205,7 @@ public class CustomRoyaltyFeeAssessor {
         final var hbarAdjustments = result.getHbarAdjustments();
         final var mutableHbarAdjustments =
                 result.getMutableInputBalanceAdjustments().get(HBAR_TOKEN_ID);
-        mutableHbarAdjustments.merge(account, -royalty, Long::sum);
-        hbarAdjustments.merge(feeCollector, royalty, Long::sum);
+        mutableHbarAdjustments.merge(account, -royalty, AdjustmentUtils::addExactOrThrow);
+        hbarAdjustments.merge(feeCollector, royalty, AdjustmentUtils::addExactOrThrow);
     }
 }
