@@ -57,10 +57,11 @@ public class TemporaryPathBuilder {
     }
 
     /**
-     * Return a temporary file. File will not exist when this method returns. File is guaranteed to have a unique name.
-     * File will not be automatically deleted until this JVM is restarted.
+     * Return a path where temporary files can be created. Nothing will exist at this path when this method returns.
+     * Path is guaranteed to have a unique name. Any files or directories stored at this path will be automatically
+     * deleted the next time the JVM is restarted.
      *
-     * @return a new temporary file
+     * @return a new temporary path
      */
     @NonNull
     public Path getTemporaryPath() throws IOException {
@@ -68,12 +69,13 @@ public class TemporaryPathBuilder {
     }
 
     /**
-     * Return a temporary file. File will not exist when this method returns. File is guaranteed to have a unique name.
-     * File will not be automatically deleted until this JVM is restarted.
+     * Return a path where temporary files can be created. Nothing will exist at this path when this method returns.
+     * Path is guaranteed to have a unique name. Any files or directories stored at this path will be automatically
+     * deleted the next time the JVM is restarted.
      *
-     * @param postfix an optional postfix, helps to make temporary file directory easier to understand if a human ever
-     *                looks at it directly. Ignored if null.
-     * @return a new temporary file
+     * @param postfix an optional postfix to append to the file name. This is intended to improve readability of the
+     *                file system by a human.
+     * @return a new temporary path
      */
     @NonNull
     public Path getTemporaryPath(@Nullable final String postfix) throws IOException {
