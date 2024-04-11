@@ -16,14 +16,9 @@
 
 package com.hedera.services.bdd.spec.verification.traceability;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
-import com.hedera.services.bdd.spec.assertions.matchers.TransactionSidecarRecordMatcher;
-import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -40,7 +35,6 @@ import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.testcontainers.shaded.org.hamcrest.Description;
 
 @SuppressWarnings("java:S1192") // "String literals should not be duplicated" - would impair readability here
 public class SidecarWatcher {
@@ -118,7 +112,7 @@ public class SidecarWatcher {
         for (final var actualSidecar : sidecarFile.getSidecarRecordsList()) {
             boolean matchesConsensusTimestamp = Optional.ofNullable(expectedSidecars.peek())
                     .map(ExpectedSidecar::expectedSidecarRecord)
-                    .map(expected -> expected.matchesConsensusTimestampOf(actualSidecar, Description.NONE))
+                    .map(expected -> expected.matchesConsensusTimestampOf(actualSidecar))
                     .orElse(false);
 
             if (hasSeenFirstExpectedSidecar && matchesConsensusTimestamp) {
@@ -149,63 +143,11 @@ public class SidecarWatcher {
         final var expectedSidecar = expectedSidecars.poll();
         final var expectedSidecarRecord = expectedSidecar.expectedSidecarRecord();
 
-        if (!areEqualUpToIntrinsicGasVariation(expectedSidecarRecord, actualSidecarRecord)) {
+        if (!expectedSidecar.expectedSidecarRecord().matches(actualSidecarRecord)) {
             final var spec = expectedSidecar.spec();
             failedSidecars.computeIfAbsent(spec, k -> new ArrayList<>());
             failedSidecars.get(spec).add(new MismatchedSidecar(expectedSidecarRecord, actualSidecarRecord));
         }
-    }
-
-    private boolean areEqualUpToIntrinsicGasVariation(
-            @NonNull final TransactionSidecarRecordMatcher expected, @NonNull final TransactionSidecarRecord actual) {
-        requireNonNull(expected, "Expected sidecar");
-        requireNonNull(actual, "Actual sidecar");
-        if (expected.matches(actual)) {
-            return true;
-        } else {
-            // Depending on the addresses used in TraceabilitySuite, the hard-coded gas values may vary
-            // slightly from observed results. For example, the actual sidecar may have an intrinsic gas
-            // cost differing from that of the expected sidecar by a value of 12 * X, where X is the
-            // difference in the number of zero bytes in the transaction payload used between the actual
-            // and hard-coded transactions (because the payload includes addresses with different numbers
-            // of zeros in their hex encoding). So we allow for a variation of up to 32L gas between
-            // expected and actual.
-            if (actual.hasActions() && expected.hasActions()) {
-                final var variedActual = actual.toBuilder()
-                        .setActions(withZeroedGasValues(actual.getActions()))
-                        .build();
-                final var variedExpected = expected.toBuilder()
-                        .setActions(withZeroedGasValues(expected.getActions()))
-                        .build();
-                if (variedExpected.matches(variedActual)) {
-                    return maxGasDeltaBetween(actual.getActions(), expected.getActions()) <= 32L;
-                }
-            }
-            return false;
-        }
-    }
-
-    private long maxGasDeltaBetween(@NonNull final ContractActions a, @NonNull final ContractActions b) {
-        final var aActions = a.getContractActionsList();
-        final var bActions = b.getContractActionsList();
-        if (aActions.size() != bActions.size()) {
-            throw new IllegalArgumentException("Arguments should be equal up to gas usage");
-        }
-        var maxGasDelta = 0L;
-        for (int i = 0, n = aActions.size(); i < n; i++) {
-            final var aAction = aActions.get(i);
-            final var bAction = bActions.get(i);
-            maxGasDelta = Math.max(maxGasDelta, Math.abs(aAction.getGas() - bAction.getGas()));
-        }
-        return maxGasDelta;
-    }
-
-    private ContractActions withZeroedGasValues(@NonNull final ContractActions actions) {
-        final var perturbedAction = ContractActions.newBuilder();
-        actions.getContractActionsList()
-                .forEach(action -> perturbedAction.addContractActions(
-                        action.toBuilder().setGas(0L).build()));
-        return perturbedAction.build();
     }
 
     public void waitUntilFinished() {

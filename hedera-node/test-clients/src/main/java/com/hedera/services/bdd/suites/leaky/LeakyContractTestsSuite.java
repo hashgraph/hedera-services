@@ -2206,7 +2206,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                                             spec.registry().getContractId(LAZY_CREATE_CONTRACT))
                                                     .setRecipientAccount(lazyAccountId)
                                                     .setOutput(EMPTY)
-                                                    .setGas(5_832_500)
+                                                    .setGas(5_832_424)
                                                     .setValue(250)
                                                     .build())));
                         }),

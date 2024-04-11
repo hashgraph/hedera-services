@@ -99,8 +99,8 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
             return true;
         } else if (expected == null || actual == null) {
             String message = "****** Actual ******: %s%n".formatted(actual);
-            log.warn(message);
             mismatch.appendText(message);
+            log.trace(message);
             return false;
         } else if (expected.getClass().isAssignableFrom(actual.getClass())) {
             try {
@@ -118,8 +118,8 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
                                     ****** Actual *****: %s
                                     """
                                         .formatted(fieldName, expectedValue, actualValue);
-                        log.warn(message);
                         mismatch.appendText(message).appendText("\n");
+                        log.trace(message);
                         return false;
                     }
                 }
@@ -131,8 +131,8 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
         } else {
             if (!defaultMatcher.apply(expected).matches(actual)) {
                 String message = "****** Actual ******: %s%n".formatted(actual);
-                log.warn(message);
                 mismatch.appendText(message);
+                log.trace(message);
                 return false;
             }
             return true;
