@@ -350,7 +350,6 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(autoRenewAccount::set),
                         tokenCreate(TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
-                                .tokenType(FUNGIBLE_COMMON)
                                 .name("Old Name")
                                 .symbol("SYM")
                                 .entityMemo("Memo")
