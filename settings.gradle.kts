@@ -99,8 +99,6 @@ include(":swirlds-fchashmap", "platform-sdk/swirlds-fchashmap")
 
 include(":swirlds-fcqueue", "platform-sdk/swirlds-fcqueue")
 
-include(":swirlds-filesystem-manager", "platform-sdk/swirlds-filesystem-manager")
-
 include(":swirlds-merkle", "platform-sdk/swirlds-merkle")
 
 include(":swirlds-merkledb", "platform-sdk/swirlds-jasperdb")
