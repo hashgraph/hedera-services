@@ -31,9 +31,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 
-// TODO unit test this
-// TODO consider metrics
-
 /**
  * A standard implementation of the {@link RunningEventHasher}.
  */
