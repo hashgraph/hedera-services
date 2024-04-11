@@ -1015,15 +1015,29 @@ public final class MerkleTestUtils {
                         };
                 final PlatformContext platformContext =
                         TestPlatformContextBuilder.create().build();
-                teacher = new TeachingSynchronizer(
-                        platformContext.getConfiguration(),
-                        Time.getCurrent(),
-                        getStaticThreadManager(),
-                        streams.getTeacherInput(),
-                        streams.getTeacherOutput(),
-                        desiredTree,
-                        streams::disconnect,
-                        reconnectConfig);
+                teacher =
+                        new TeachingSynchronizer(
+                                platformContext.getConfiguration(),
+                                Time.getCurrent(),
+                                getStaticThreadManager(),
+                                streams.getTeacherInput(),
+                                streams.getTeacherOutput(),
+                                desiredTree,
+                                streams::disconnect,
+                                reconnectConfig) {
+                            @Override
+                            protected StandardWorkGroup createStandardWorkGroup(
+                                    ThreadManager threadManager,
+                                    Runnable breakConnection,
+                                    Function<Throwable, Boolean> exceptionListener) {
+                                return new StandardWorkGroup(
+                                        threadManager,
+                                        "test-teaching-synchronizer",
+                                        breakConnection,
+                                        exceptionListener,
+                                        true);
+                            }
+                        };
             } else {
                 learner =
                         new LaggingLearningSynchronizer(
