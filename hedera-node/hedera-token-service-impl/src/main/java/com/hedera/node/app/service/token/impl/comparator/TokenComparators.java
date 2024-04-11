@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.comparator;
 import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
 
 import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.state.token.Account;
@@ -32,10 +33,13 @@ public final class TokenComparators {
 
     public static final Comparator<Account> ACCOUNT_COMPARATOR =
             Comparator.comparing(Account::accountId, ACCOUNT_ID_COMPARATOR);
-
     public static final Comparator<AccountAmount> ACCOUNT_AMOUNT_COMPARATOR =
             Comparator.comparing(AccountAmount::accountID, ACCOUNT_ID_COMPARATOR);
     public static final Comparator<TokenID> TOKEN_ID_COMPARATOR = Comparator.comparingLong(TokenID::tokenNum);
     public static final Comparator<TokenTransferList> TOKEN_TRANSFER_LIST_COMPARATOR =
             (o1, o2) -> Objects.compare(o1.token(), o2.token(), TOKEN_ID_COMPARATOR);
+    public static final Comparator<NftTransfer> NFT_TRANSFER_COMPARATOR = Comparator.comparing(
+                    NftTransfer::senderAccountID, ACCOUNT_ID_COMPARATOR)
+            .thenComparing(NftTransfer::receiverAccountID, ACCOUNT_ID_COMPARATOR)
+            .thenComparing(NftTransfer::serialNumber);
 }

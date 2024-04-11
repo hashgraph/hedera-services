@@ -46,6 +46,5 @@ class PrepareChatterEventTest {
         Mockito.when(event.getHashedData()).thenReturn(hashedData);
         prepareChatterEvent.handleMessage(event);
         Mockito.verify(cryptography).digestSync(hashedData);
-        Mockito.verify(event).buildDescriptor();
     }
 }

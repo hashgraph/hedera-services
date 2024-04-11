@@ -44,7 +44,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.function.Function;
 
 /**
@@ -122,7 +121,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
                 txBody.data().kind() == TransactionBody.DataOneOfType.CRYPTO_TRANSFER
                         ? ((CryptoTransferTransactionBody) txBody.data().as())
                                 .transfersOrElse(TransferList.DEFAULT)
-                                .accountAmountsOrElse(Collections.emptyList())
+                                .accountAmounts()
                                 .size()
                         : 0);
 
