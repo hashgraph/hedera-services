@@ -19,6 +19,7 @@ package com.swirlds.logging.test.fixtures;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.AbstractLogHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -51,10 +52,20 @@ public class InMemoryHandler extends AbstractLogHandler {
     /**
      * Creates a new log handler.
      *
+     * @param configKey     the configuration key
+     * @param configuration the configuration
+     */
+    public InMemoryHandler(final String configKey, final Configuration configuration) {
+        super(configKey, configuration);
+    }
+
+    /**
+     * Creates a new log handler.
+     *
      * @param configuration the configuration
      */
     public InMemoryHandler(final Configuration configuration) {
-        super("inMemory", configuration);
+        this("inMemory", configuration);
     }
 
     /**
@@ -73,7 +84,7 @@ public class InMemoryHandler extends AbstractLogHandler {
      * @param event the log event to be accepted and recorded
      */
     @Override
-    public void accept(LogEvent event) {
+    public void handle(@NonNull LogEvent event) {
         events.add(event);
     }
 

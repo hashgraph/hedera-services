@@ -25,7 +25,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_A
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -42,7 +41,6 @@ import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +78,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
         // Look at all fungible token transfers and put into aggregatedFungibleTokenChanges map.
         // Also, put any transfers happening with allowances in allowanceTransfers map.
-        for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
+        for (final var transfers : op.tokenTransfers()) {
             final var tokenId = transfers.tokenOrThrow();
             final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
@@ -88,7 +86,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
                 validateTrue(token.decimals() == transfers.expectedDecimalsOrThrow(), UNEXPECTED_TOKEN_DECIMALS);
             }
 
-            for (final var aa : transfers.transfersOrElse(emptyList())) {
+            for (final var aa : transfers.transfers()) {
                 validateTrue(
                         token.tokenType() == TokenType.FUNGIBLE_COMMON,
                         ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
@@ -144,7 +142,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
                     accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
             final var accountCopy = account.copyBuilder();
 
-            final var tokenAllowances = new ArrayList<>(account.tokenAllowancesOrElse(Collections.emptyList()));
+            final var tokenAllowances = new ArrayList<>(account.tokenAllowances());
             var haveExistingAllowance = false;
             for (int i = 0; i < tokenAllowances.size(); i++) {
                 final var allowance = tokenAllowances.get(i);
@@ -216,8 +214,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
             @NonNull final TokenID denom,
             @NonNull final List<AssessedCustomFee> assessedCustomFees) {
         for (final var fee : assessedCustomFees) {
-            if (denom.equals(fee.tokenId())
-                    && fee.effectivePayerAccountIdOrElse(emptyList()).contains(payer)) {
+            if (denom.equals(fee.tokenId()) && fee.effectivePayerAccountId().contains(payer)) {
                 return true;
             }
         }

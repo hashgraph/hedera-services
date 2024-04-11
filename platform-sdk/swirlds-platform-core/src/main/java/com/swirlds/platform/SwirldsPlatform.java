@@ -72,7 +72,7 @@ import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
@@ -571,6 +571,7 @@ public class SwirldsPlatform implements Platform {
 
         final EventCreationManager eventCreationManager = buildEventCreationManager(
                 platformContext,
+                blocks.randomBuilder().buildNonCryptographicRandom(),
                 this,
                 currentAddressBook,
                 selfId,
@@ -663,8 +664,8 @@ public class SwirldsPlatform implements Platform {
 
         gossip = new SyncGossip(
                 platformContext,
+                blocks.randomBuilder().buildNonCryptographicRandom(),
                 threadManager,
-                time,
                 keysAndCerts,
                 notificationEngine,
                 currentAddressBook,
@@ -704,10 +705,10 @@ public class SwirldsPlatform implements Platform {
 
             loadStateIntoConsensus(initialState);
 
-            // We only load non-ancient events during start up, so the initial non-expired event window will be
-            // equal to the non-ancient event window when the system first starts. Over time as we get more events,
-            // the non-expired event window will continue to expand until it reaches its full size.
-            platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
+            // We only load non-ancient events during start up, so the initial expired threshold will be
+            // equal to the ancient threshold when the system first starts. Over time as we get more events,
+            // the expired threshold will continue to expand until it reaches its full size.
+            platformWiring.updateEventWindow(new EventWindow(
                     initialState.getRound(),
                     initialAncientThreshold,
                     initialAncientThreshold,
@@ -839,7 +840,7 @@ public class SwirldsPlatform implements Platform {
                 Objects.requireNonNull(signedState.getState().getPlatformState().getSnapshot()));
 
         // FUTURE WORK: this needs to be updated for birth round compatibility.
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 signedState.getRound(),
                 signedState.getState().getPlatformState().getAncientThreshold(),
                 signedState.getState().getPlatformState().getAncientThreshold(),
@@ -909,7 +910,7 @@ public class SwirldsPlatform implements Platform {
                             signedState.getState().getPlatformState().getPreviousAddressBook(),
                             signedState.getState().getPlatformState().getAddressBook()));
 
-            platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
+            platformWiring.updateEventWindow(new EventWindow(
                     signedState.getRound(),
                     signedState.getState().getPlatformState().getAncientThreshold(),
                     signedState.getState().getPlatformState().getAncientThreshold(),

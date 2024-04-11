@@ -38,7 +38,6 @@ import com.hedera.pbj.runtime.ParseException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -137,7 +136,7 @@ public final class InitialModServiceScheduleSchema extends Schema {
                             final var existingList = schedulesByEquality.get(equalityKey);
                             final List<Schedule> existingSchedules = existingList == null
                                     ? new ArrayList<>()
-                                    : new ArrayList<>(existingList.schedulesOrElse(Collections.emptyList()));
+                                    : new ArrayList<>(existingList.schedules());
                             existingSchedules.add(schedule);
                             schedulesByEquality.put(
                                     equalityKey,

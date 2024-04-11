@@ -118,10 +118,10 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             }
         } else {
             final var op = syntheticTransfer.cryptoTransferOrThrow();
-            for (final var fungibleTransfers : op.tokenTransfersOrThrow()) {
+            for (final var fungibleTransfers : op.tokenTransfers()) {
                 TransferEventLoggingUtils.logSuccessfulFungibleTransfer(
                         requireNonNull(tokenId),
-                        fungibleTransfers.transfersOrThrow(),
+                        fungibleTransfers.transfers(),
                         enhancement.nativeOperations().readableAccountStore(),
                         frame);
             }
