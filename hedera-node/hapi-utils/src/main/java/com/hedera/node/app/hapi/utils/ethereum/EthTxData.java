@@ -61,7 +61,9 @@ public record EthTxData(
     static final BigInteger LEGACY_V_BYTE_SIGNATURE_0 = BigInteger.valueOf(27);
     static final BigInteger LEGACY_V_BYTE_SIGNATURE_1 = BigInteger.valueOf(28);
 
-    static final byte[] FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION;
+    static final int FOUNDRY_DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER = 100;
+    // The specific transaction bytes that are used to deploy the Foundry Deterministic Deployer contract
+    public static final byte[] FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION;
 
     static {
         try {
@@ -207,7 +209,7 @@ public record EthTxData(
     public BigInteger getMaxGasAsBigInteger() {
         long multiple = 1L;
         if (Arrays.equals(rawTx, FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION)) {
-            multiple = 100L;
+            multiple = FOUNDRY_DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER;
         }
         return switch (type) {
             case LEGACY_ETHEREUM -> new BigInteger(1, gasPrice).multiply(BigInteger.valueOf(multiple));
