@@ -116,6 +116,20 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
     }
 
     /**
+     * @return {@code true} if there are expected actions
+     */
+    public boolean hasActions() {
+        return this.actions != null;
+    }
+
+    /**
+     * @return {@code true} if there are expected state changes
+     */
+    public boolean hasStateChanges() {
+        return this.stateChanges != null;
+    }
+
+    /**
      * @param sidecarRecord the actual {@link TransactionSidecarRecord}
      * @return {@code true} if the consensus timestamp of the given
      * {@link TransactionSidecarRecord} matches the expected value
