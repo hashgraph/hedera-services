@@ -73,7 +73,7 @@ public final class ScheduleStoreUtility {
     }
 
     private static boolean isScheduleInList(final ScheduleID scheduleId, final ScheduleList scheduleList) {
-        return scheduleList.schedulesOrElse(Collections.emptyList()).stream()
+        return scheduleList.schedules().stream()
                 .anyMatch(s -> s.scheduleIdOrThrow().equals(scheduleId));
     }
 
@@ -83,7 +83,7 @@ public final class ScheduleStoreUtility {
         }
         final var newScheduleList = scheduleList.copyBuilder();
         final var scheduleId = schedule.scheduleIdOrThrow();
-        final var schedules = new ArrayList<>(scheduleList.schedulesOrElse(Collections.emptyList()));
+        final var schedules = new ArrayList<>(scheduleList.schedules());
         if (!isScheduleInList(scheduleId, scheduleList)) {
             schedules.add(schedule);
         } else {
