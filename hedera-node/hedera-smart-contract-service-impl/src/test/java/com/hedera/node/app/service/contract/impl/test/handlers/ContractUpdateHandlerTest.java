@@ -465,7 +465,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .adminKey(KeyUtils.A_COMPLEX_KEY)
                 .build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertEquals(op.adminKey(), updatedContract.key());
     }
@@ -477,7 +478,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .adminKey(EMPTY_KEY_LIST)
                 .build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertEquals(contract.key(), updatedContract.key());
     }
@@ -489,7 +491,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .expirationTime(Timestamp.newBuilder().seconds(10))
                 .build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertEquals(op.expirationTime().seconds(), updatedContract.expirationSecond());
         assertFalse(updatedContract.expiredAndPendingRemoval());
@@ -502,7 +505,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .autoRenewPeriod(Duration.newBuilder().seconds(10))
                 .build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertEquals(op.autoRenewPeriod().seconds(), updatedContract.autoRenewSeconds());
     }
@@ -514,7 +518,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         final var contract = Account.newBuilder().build();
         final var op = ContractUpdateTransactionBody.newBuilder().memo("memo").build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertEquals(op.memo(), updatedContract.memo());
         verify(attributeValidator, times(1)).validateMemo(op.memo());
@@ -528,7 +533,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         final var op =
                 ContractUpdateTransactionBody.newBuilder().memoWrapper("memo").build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertEquals(op.memoWrapper(), updatedContract.memo());
         verify(attributeValidator, times(1)).validateMemo(op.memoWrapper());
@@ -541,7 +547,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .stakedAccountId(AccountID.newBuilder().accountNum(1))
                 .build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertEquals(op.stakedAccountId(), updatedContract.stakedAccountId());
     }
@@ -553,7 +560,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .stakedAccountId(SENTINEL_ACCOUNT_ID)
                 .build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertNull(updatedContract.stakedAccountId());
     }
@@ -564,7 +572,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         final var op =
                 ContractUpdateTransactionBody.newBuilder().stakedNodeId(10).build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertEquals(op.stakedNodeId(), updatedContract.stakedNodeId());
     }
@@ -575,7 +584,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         final var op =
                 ContractUpdateTransactionBody.newBuilder().declineReward(true).build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertTrue(updatedContract.declineReward());
     }
@@ -587,7 +597,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .autoRenewAccountId(AccountID.newBuilder().accountNum(10))
                 .build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertEquals(op.autoRenewAccountId(), updatedContract.autoRenewAccountId());
     }
@@ -599,7 +610,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .maxAutomaticTokenAssociations(10)
                 .build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertEquals(op.maxAutomaticTokenAssociations(), updatedContract.maxAutoAssociations());
     }
@@ -621,7 +633,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .maxAutomaticTokenAssociations(10)
                 .build();
 
-        final var updatedContract = subject.update(contract, context, op, new ExpiryMeta(0, 0, null));
+        final var updatedContract =
+                subject.update(contract, context, op, new ExpiryMeta(0, 0, op.autoRenewAccountId()));
 
         assertEquals(op.adminKey(), updatedContract.key());
         assertEquals(op.expirationTime().seconds(), updatedContract.expirationSecond());

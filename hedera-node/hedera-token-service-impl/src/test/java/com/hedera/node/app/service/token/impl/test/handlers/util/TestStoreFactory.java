@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -47,6 +48,7 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.util.HashMap;
 import java.util.Map;
@@ -97,8 +99,9 @@ public final class TestStoreFactory {
 
     public static ReadableTokenRelationStore newReadableStoreWithTokenRels(final TokenRelation... tokenRels) {
         final var wrappedState = newTokenRelStateFromTokenRels(tokenRels);
-        return new ReadableTokenRelationStoreImpl(
-                new MapReadableStates(Map.of(TokenServiceImpl.TOKEN_RELS_KEY, wrappedState)));
+        final var aliasesState = newAliasesState(new HashMap<>());
+        return new ReadableTokenRelationStoreImpl(new MapReadableStates(
+                Map.of(TokenServiceImpl.TOKEN_RELS_KEY, wrappedState, ALIASES_KEY, aliasesState)));
     }
 
     private static MapWritableKVState<EntityIDPair, TokenRelation> newTokenRelStateFromTokenRels(
@@ -116,10 +119,24 @@ public final class TestStoreFactory {
         return new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);
     }
 
+    private static MapWritableKVState<ProtoBytes, AccountID> newAliasesState(final Map<Bytes, Long> aliases) {
+        final var backingMap = new HashMap<ProtoBytes, AccountID>();
+        for (final var entry : aliases.entrySet()) {
+            final var key = new ProtoBytes(entry.getKey());
+            final var value =
+                    AccountID.newBuilder().accountNum(entry.getValue()).build();
+            backingMap.put(key, value);
+        }
+
+        return new MapWritableKVState<>(ALIASES_KEY, backingMap);
+    }
+
     public static WritableTokenRelationStore newWritableStoreWithTokenRels(final TokenRelation... tokenRels) {
         final var wrappingState = newTokenRelStateFromTokenRels(tokenRels);
+        final var aliasesState = newAliasesState(new HashMap<>());
         return new WritableTokenRelationStore(
-                new MapWritableStates(Map.of(TokenServiceImpl.TOKEN_RELS_KEY, wrappingState)),
+                new MapWritableStates(
+                        Map.of(TokenServiceImpl.TOKEN_RELS_KEY, wrappingState, ALIASES_KEY, aliasesState)),
                 CONFIGURATION,
                 mock(StoreMetricsService.class));
     }

@@ -335,7 +335,9 @@ class UtilizationScaledThrottleMultiplierTest {
                                         EntityIDPair.newBuilder()
                                                         .tokenId(TokenID.newBuilder()
                                                                 .tokenNum(2L)),
-                                                TokenRelation.DEFAULT)));
+                                                TokenRelation.DEFAULT),
+                                TokenServiceImpl.ALIASES_KEY,
+                                Map.of()));
 
         var storeFactory = new ReadableStoreFactory(state);
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
