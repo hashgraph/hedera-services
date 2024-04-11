@@ -170,6 +170,11 @@ public class AdapterHandler<T> implements HttpHandlerDefinition {
     }
 
     @Override
+    public String toString() {
+        return path;
+    }
+
+    @Override
     public String path() {
         return path;
     }

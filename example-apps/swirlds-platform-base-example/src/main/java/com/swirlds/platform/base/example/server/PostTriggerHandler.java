@@ -101,4 +101,9 @@ public class PostTriggerHandler<T> implements HttpHandlerDefinition {
     public String path() {
         return path;
     }
+
+    @Override
+    public String toString() {
+        return path;
+    }
 }
