@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.eventhandling;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -42,7 +45,6 @@ import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -50,7 +52,7 @@ import org.junit.jupiter.api.Test;
  * Unit tests for {@link ConsensusRoundHandler}.
  */
 class ConsensusRoundHandlerTests {
-    private ConsensusRound mockConsensusRound(
+    private static ConsensusRound mockConsensusRound(
             @NonNull final EventImpl keystoneEvent, @NonNull final List<EventImpl> events, final long roundNumber) {
         final ConsensusRound consensusRound = mock(ConsensusRound.class);
         when(consensusRound.getConsensusEvents()).thenReturn(events);
@@ -96,14 +98,12 @@ class ConsensusRoundHandlerTests {
         final PlatformState platformState = mock(PlatformState.class);
         final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
 
-        final BlockingQueue<StateAndRound> stateHashSignQueue = mock(BlockingQueue.class);
         final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability = mock(CheckedConsumer.class);
         final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
-                stateHashSignQueue,
                 waitForEventDurability,
                 statusActionSubmitter,
                 mock(SoftwareVersion.class));
@@ -114,7 +114,12 @@ class ConsensusRoundHandlerTests {
         final long consensusRoundNumber = 5L;
         final ConsensusRound consensusRound = mockConsensusRound(keystoneEvent, events, consensusRoundNumber);
 
-        consensusRoundHandler.handleConsensusRound(consensusRound);
+        final StateAndRound handlerOutput = consensusRoundHandler.handleConsensusRound(consensusRound);
+        assertNotEquals(null, handlerOutput, "new state should have been created");
+        assertEquals(
+                1,
+                handlerOutput.reservedSignedState().get().getReservationCount(),
+                "state should be returned with a reservation");
 
         for (final EventImpl event : events) {
             verify(event).consensusReached();
@@ -123,7 +128,6 @@ class ConsensusRoundHandlerTests {
         verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager, never()).savedStateInFreezePeriod();
-        verify(stateHashSignQueue).put(any(StateAndRound.class));
         verify(platformState)
                 .setRunningEventHash(
                         events.getLast().getRunningHash().getFutureHash().getAndRethrow());
@@ -138,14 +142,12 @@ class ConsensusRoundHandlerTests {
         final SwirldStateManager swirldStateManager = mockSwirldStateManager(platformState);
         when(swirldStateManager.isInFreezePeriod(any())).thenReturn(true);
 
-        final BlockingQueue<StateAndRound> stateHashSignQueue = mock(BlockingQueue.class);
         final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability = mock(CheckedConsumer.class);
         final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 swirldStateManager,
-                stateHashSignQueue,
                 waitForEventDurability,
                 statusActionSubmitter,
                 mock(SoftwareVersion.class));
@@ -156,7 +158,12 @@ class ConsensusRoundHandlerTests {
         final long consensusRoundNumber = 5L;
         final ConsensusRound consensusRound = mockConsensusRound(keystoneEvent, events, consensusRoundNumber);
 
-        consensusRoundHandler.handleConsensusRound(consensusRound);
+        final StateAndRound handlerOutput = consensusRoundHandler.handleConsensusRound(consensusRound);
+        assertNotEquals(null, handlerOutput, "new state should have been created");
+        assertEquals(
+                1,
+                handlerOutput.reservedSignedState().get().getReservationCount(),
+                "state should be returned with a reservation");
 
         for (final EventImpl event : events) {
             verify(event, times(1)).consensusReached();
@@ -165,13 +172,13 @@ class ConsensusRoundHandlerTests {
         verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
-        verify(stateHashSignQueue).put(any(StateAndRound.class));
         verify(platformState)
                 .setRunningEventHash(
                         events.getLast().getRunningHash().getFutureHash().getAndRethrow());
 
         final ConsensusRound postFreezeConsensusRound = mockConsensusRound(keystoneEvent, events, consensusRoundNumber);
-        consensusRoundHandler.handleConsensusRound(postFreezeConsensusRound);
+        final StateAndRound postFreezeOutput = consensusRoundHandler.handleConsensusRound(postFreezeConsensusRound);
+        assertNull(postFreezeOutput, "no state should be created after freeze period");
 
         // these methods were called once from the first round, and shouldn't have been called again from the second
         for (final EventImpl event : events) {
@@ -181,7 +188,6 @@ class ConsensusRoundHandlerTests {
         verify(waitForEventDurability).accept(keystoneEvent.getBaseEvent());
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
-        verify(stateHashSignQueue).put(any(StateAndRound.class));
         verify(platformState)
                 .setRunningEventHash(
                         events.getLast().getRunningHash().getFutureHash().getAndRethrow());

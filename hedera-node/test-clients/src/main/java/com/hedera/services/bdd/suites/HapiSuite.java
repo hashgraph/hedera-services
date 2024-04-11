@@ -119,6 +119,8 @@ public abstract class HapiSuite {
     public static final String NODE = HapiSpecSetup.getDefaultInstance().defaultNodeName();
     public static final String HBAR_TOKEN_SENTINEL = "HBAR";
     public static final String SYSTEM_ADMIN = HapiSpecSetup.getDefaultInstance().strongControlName();
+    public static final String SOFTWARE_UPDATE_ADMIN =
+            HapiSpecSetup.getDefaultInstance().softwareUpdateAdminName();
     public static final String FREEZE_ADMIN = HapiSpecSetup.getDefaultInstance().freezeAdminName();
     public static final String FUNDING = HapiSpecSetup.getDefaultInstance().fundingAccountName();
     public static final String STAKING_REWARD =

@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
@@ -130,30 +129,25 @@ public final class InitialModServiceScheduleSchema extends Schema {
             final WritableKVState<ProtoBytes, ScheduleList> schedulesByEquality =
                     ctx.newStates().get(SCHEDULES_BY_EQUALITY_KEY);
             fs.byEquality().forEachNode((scheduleEqualityVirtualKey, sevv) -> sevv.getIds()
-                    .forEach(new BiConsumer<String, Long>() {
-                        @Override
-                        public void accept(String scheduleObjHash, Long scheduleId) {
-                            var schedule = schedulesById.get(ScheduleID.newBuilder()
-                                    .scheduleNum(scheduleId)
-                                    .build());
-                            if (schedule != null) {
-                                final var equalityKey =
-                                        new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
-                                final var existingList = schedulesByEquality.get(equalityKey);
-                                final List<Schedule> existingSchedules = existingList == null
-                                        ? new ArrayList<>()
-                                        : new ArrayList<>(existingList.schedulesOrElse(Collections.emptyList()));
-                                existingSchedules.add(schedule);
-                                schedulesByEquality.put(
-                                        equalityKey,
-                                        ScheduleList.newBuilder()
-                                                .schedules(existingSchedules)
-                                                .build());
-                            } else {
-                                log.error("BBM: ERROR: no schedule for scheduleObjHash->id "
-                                        + scheduleObjHash + " -> "
-                                        + scheduleId);
-                            }
+                    .forEach((scheduleObjHash, scheduleId) -> {
+                        var schedule = schedulesById.get(
+                                ScheduleID.newBuilder().scheduleNum(scheduleId).build());
+                        if (schedule != null) {
+                            final var equalityKey = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(schedule));
+                            final var existingList = schedulesByEquality.get(equalityKey);
+                            final List<Schedule> existingSchedules = existingList == null
+                                    ? new ArrayList<>()
+                                    : new ArrayList<>(existingList.schedulesOrElse(Collections.emptyList()));
+                            existingSchedules.add(schedule);
+                            schedulesByEquality.put(
+                                    equalityKey,
+                                    ScheduleList.newBuilder()
+                                            .schedules(existingSchedules)
+                                            .build());
+                        } else {
+                            log.error("BBM: ERROR: no schedule for scheduleObjHash->id "
+                                    + scheduleObjHash + " -> "
+                                    + scheduleId);
                         }
                     }));
             if (schedulesByEquality.isModified()) ((WritableKVStateBase<?, ?>) schedulesByEquality).commit();

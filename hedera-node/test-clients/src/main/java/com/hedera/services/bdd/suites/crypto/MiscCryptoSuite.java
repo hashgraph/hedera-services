@@ -26,6 +26,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyAddLiveHashNotSupported;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyUserFreezeNotAuthorized;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -69,6 +71,14 @@ public class MiscCryptoSuite extends HapiSuite {
 
     private List<HapiSpec> negativeTests() {
         return List.of(updateWithOutOfDateKeyFails());
+    }
+
+    @HapiTest
+    final HapiSpec unsupportedAndUnauthorizedTransactionsAreNotThrottled() {
+        return defaultHapiSpec("unsupportedAndUnauthorizedTransactionsAreNotThrottled")
+                .given()
+                .when()
+                .then(verifyAddLiveHashNotSupported(), verifyUserFreezeNotAuthorized());
     }
 
     @HapiTest

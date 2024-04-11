@@ -39,6 +39,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -132,7 +133,8 @@ class SerializationTest extends MerkleTestBase {
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
-        originalRegistry.migrate(originalTree, null, v1, config, networkInfo, mock(WritableEntityIdStore.class));
+        originalRegistry.migrate(
+                originalTree, null, v1, config, networkInfo, mock(Metrics.class), mock(WritableEntityIdStore.class));
 
         // When we serialize it to bytes and deserialize it back into a tree
         originalTree.copy(); // make a fast copy because we can only write to disk an immutable copy
@@ -154,6 +156,7 @@ class SerializationTest extends MerkleTestBase {
                 schemaV1.getVersion(),
                 config,
                 networkInfo,
+                mock(Metrics.class),
                 mock(WritableEntityIdStore.class));
         loadedTree.migrate(1);
 

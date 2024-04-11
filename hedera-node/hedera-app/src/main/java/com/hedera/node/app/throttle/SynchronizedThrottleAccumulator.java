@@ -48,7 +48,7 @@ public class SynchronizedThrottleAccumulator {
         this.frontendThrottle = requireNonNull(frontendThrottle, "frontendThrottle must not be null");
     }
 
-    /*
+    /**
      * Updates the throttle requirements for the given transaction and returns whether the transaction
      * should be throttled for the current time(Instant.now).
      *
@@ -61,7 +61,7 @@ public class SynchronizedThrottleAccumulator {
         return frontendThrottle.shouldThrottle(txnInfo, lastDecisionTime, state);
     }
 
-    /*
+    /**
      * Updates the throttle requirements for the given query and returns whether the query should be throttled for the
      * current time(Instant.now).
      *
@@ -78,10 +78,6 @@ public class SynchronizedThrottleAccumulator {
         requireNonNull(queryFunction);
         setDecisionTime(Instant.now());
         return frontendThrottle.shouldThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
-    }
-
-    public void leakUnusedThrottlePreviouslyReserved(int n, HederaFunctionality function) {
-        frontendThrottle.leakCapacityForNOfUnscaled(n, function);
     }
 
     private void setDecisionTime(@NonNull final Instant time) {

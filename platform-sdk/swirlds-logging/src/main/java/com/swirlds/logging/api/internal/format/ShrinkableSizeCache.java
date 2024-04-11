@@ -16,6 +16,7 @@
 
 package com.swirlds.logging.api.internal.format;
 
+import com.swirlds.base.internal.BaseExecutorFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.Deque;
@@ -23,11 +24,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,7 +43,6 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
 
     /**
      * Creates a ShrinkableSizeCache with MAX_ENTRIES max size and SHRINK_PERIOD_MS shrink period.
-     * @deprecated Use  {@link ShrinkableSizeCache#ShrinkableSizeCache(int, int, ScheduledExecutorService)} instead
      */
     public ShrinkableSizeCache() {
         this(ShrinkableSizeCache.MAX_ENTRIES);
@@ -55,9 +52,7 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
      * Creates a ShrinkableSizeCache with configurable max size and SHRINK_PERIOD_MS shrink period.
      *
      * @param maxSize configurable max size for the cache
-     * @deprecated Use  {@link ShrinkableSizeCache#ShrinkableSizeCache(int, int, ScheduledExecutorService)} instead
      */
-    @Deprecated(forRemoval = true)
     public ShrinkableSizeCache(final int maxSize) {
         this(maxSize, SHRINK_PERIOD_MS);
     }
@@ -67,38 +62,17 @@ public class ShrinkableSizeCache<K, V> implements Map<K, V> {
      *
      * @param maxSize          configurable max size for the cache
      * @param shrinkPeriodInMs configurable shrink period for the cache
-     * @deprecated Use  {@link ShrinkableSizeCache#ShrinkableSizeCache(int, int, ScheduledExecutorService)} instead
      */
-    @Deprecated(forRemoval = true)
     public ShrinkableSizeCache(final int maxSize, final int shrinkPeriodInMs) {
-        TimerTask cleanUpTask = new TimerTask() {
-            @Override
-            public void run() {
-                while (insertionOrderList.size() > maxSize) {
-                    delegatedMap.remove(insertionOrderList.pop());
-                }
-                ShrinkableSizeCache.this.afterUpdate();
-            }
-        };
-        new Timer(true).scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs);
-    }
-
-    /**
-     * Creates a ShrinkableSizeCache with configurable max size and shrink period.
-     *
-     * @param maxSize          configurable max size for the cache
-     * @param shrinkPeriodInMs configurable shrink period for the cache
-     * @param executorService  external ScheduledExecutorService to run the cleanup task
-     */
-    public ShrinkableSizeCache(
-            final int maxSize, final int shrinkPeriodInMs, final @NonNull ScheduledExecutorService executorService) {
         Runnable cleanUpTask = () -> {
             while (insertionOrderList.size() > maxSize) {
                 delegatedMap.remove(insertionOrderList.pop());
             }
             ShrinkableSizeCache.this.afterUpdate();
         };
-        executorService.scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs, TimeUnit.MILLISECONDS);
+        BaseExecutorFactory.getInstance()
+                .getScheduledExecutor()
+                .scheduleAtFixedRate(cleanUpTask, shrinkPeriodInMs, shrinkPeriodInMs, TimeUnit.MILLISECONDS);
     }
 
     /**

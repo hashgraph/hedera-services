@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.a
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKENS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKEN_RELS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -63,6 +65,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -251,9 +255,10 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         assertNull(op.accountID());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("OK response is correctly handled in findResponse")
-    void getsResponseIfOkResponse() {
+    void getsResponseIfOkResponse(boolean balancesInQueriesEnabled) {
         givenValidAccount(accountNum);
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
@@ -266,7 +271,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         given(readableStates1.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1);
 
-        given(token1.decimals()).willReturn(100);
+        lenient().when(token1.decimals()).thenReturn(100); // only needed when balancesInQueriesEnabled is true
         final var readableToken = MapReadableKVState.<TokenID, Token>builder(TOKENS)
                 .value(asToken(3L), token1)
                 .build();
@@ -302,6 +307,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
         final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
+                .withValue("tokens.balancesInQueries.enabled", balancesInQueriesEnabled)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
@@ -309,12 +315,17 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var accountBalanceResponse = response.cryptogetAccountBalance();
         assertEquals(ResponseCodeEnum.OK, accountBalanceResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo.tinybarBalance(), accountBalanceResponse.balance());
-        assertIterableEquals(getExpectedTokenBalance(3L), accountBalanceResponse.tokenBalances());
+        if (balancesInQueriesEnabled) {
+            assertIterableEquals(getExpectedTokenBalance(3L), accountBalanceResponse.tokenBalances());
+        } else {
+            assertThat(accountBalanceResponse.tokenBalances()).isEmpty();
+        }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("check maxRelsPerInfoQuery in TokenConfig is correctly handled")
-    void checkConfigmaxRelsPerInfoQuery() {
+    void checkConfigmaxRelsPerInfoQuery(boolean balancesInQueriesEnabled) {
         givenValidAccount(accountNum);
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
@@ -327,8 +338,8 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         given(readableStates1.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1);
 
-        given(token1.decimals()).willReturn(100);
-        given(token2.decimals()).willReturn(50);
+        lenient().when(token1.decimals()).thenReturn(100); // only needed when balancesInQueriesEnabled is true
+        lenient().when(token2.decimals()).thenReturn(50); // only needed when balancesInQueriesEnabled is true
         final var readableToken = MapReadableKVState.<TokenID, Token>builder(TOKENS)
                 .value(asToken(3L), token1)
                 .value(asToken(4L), token2)
@@ -398,6 +409,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
         final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
+                .withValue("tokens.balancesInQueries.enabled", balancesInQueriesEnabled)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
@@ -405,8 +417,12 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var accountBalanceResponse = response.cryptogetAccountBalance();
         assertEquals(ResponseCodeEnum.OK, accountBalanceResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo.tinybarBalance(), accountBalanceResponse.balance());
-        assertIterableEquals(getExpectedTokenBalances(), accountBalanceResponse.tokenBalances());
-        assertEquals(2, accountBalanceResponse.tokenBalances().size());
+        if (balancesInQueriesEnabled) {
+            assertIterableEquals(getExpectedTokenBalances(), accountBalanceResponse.tokenBalances());
+            assertEquals(2, accountBalanceResponse.tokenBalances().size());
+        } else {
+            assertThat(accountBalanceResponse.tokenBalances()).isEmpty();
+        }
     }
 
     private Account getExpectedInfo() {

@@ -28,7 +28,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.extraRewardReceivers;
-import static java.util.Collections.emptySet;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -66,6 +66,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -104,10 +105,10 @@ import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -151,12 +152,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final ParentRecordFinalizer parentRecordFinalizer;
     private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final StoreMetricsService storeMetricsService;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
     private ExpiryValidator expiryValidator;
     private ExchangeRateInfo exchangeRateInfo;
-    private Set<AccountID> dispatchPaidStakerIds;
+    private Map<AccountID, Long> dispatchPaidRewards;
     private PlatformState platformState;
 
     /**
@@ -215,7 +217,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final ParentRecordFinalizer parentRecordFinalizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final PlatformState platformState) {
+            @NonNull final PlatformState platformState,
+            @NonNull final StoreMetricsService storeMetricsService) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -244,9 +247,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
 
+        this.storeMetricsService = requireNonNull(storeMetricsService, "storeMetricsService must not be null");
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
-        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
-        this.serviceApiFactory = new ServiceApiFactory(stack, configuration);
+        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope, configuration, storeMetricsService);
+        this.serviceApiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
 
         if (payerKey == null) {
             this.feeCalculatorCreator = ignore -> NoOpFeeCalculator.INSTANCE;
@@ -360,7 +364,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     @Override
     public long newEntityNum() {
-        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        final var entityIdsFactory =
+                new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return entityIdsFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
     }
 
@@ -369,7 +374,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     @Override
     public long peekAtNewEntityNum() {
-        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        final var entityIdsFactory =
+                new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return entityIdsFactory.getStore(WritableEntityIdStore.class).peekAtNextNumber();
     }
 
@@ -583,8 +589,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
 
-        if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
-            throw new IllegalArgumentException("Only user- or child-transactions can dispatch preceding transactions");
+        if (category == PRECEDING) {
+            throw new IllegalArgumentException("A preceding transaction cannot dispatch preceding transactions");
         }
 
         final var precedingRecordBuilder = recordBuilderFactory.get();
@@ -644,8 +650,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
 
-    public @NonNull Set<AccountID> dispatchPaidStakerIds() {
-        return dispatchPaidStakerIds == null ? emptySet() : dispatchPaidStakerIds;
+    public @NonNull Map<AccountID, Long> dispatchPaidRewards() {
+        return dispatchPaidRewards == null ? emptyMap() : dispatchPaidRewards;
     }
 
     private void dispatchSyntheticTxn(
@@ -746,7 +752,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 parentRecordFinalizer,
                 networkUtilizationManager,
                 synchronizedThrottleAccumulator,
-                platformState);
+                platformState,
+                storeMetricsService);
 
         // in order to work correctly isSuperUser(), we need to keep track of top level payer in child context
         childContext.setTopLevelPayer(topLevelPayer);
@@ -775,7 +782,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (childCategory == SCHEDULED) {
             final var finalizeContext = new TriggeredFinalizeContext(
                     new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    new WritableStoreFactory(childStack, TokenService.NAME, configuration, storeMetricsService),
                     childRecordBuilder,
                     consensusNow(),
                     configuration);
@@ -783,41 +790,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     payer, finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
             final var paidStakingRewards = childRecordBuilder.getPaidStakingRewards();
             if (!paidStakingRewards.isEmpty()) {
-                if (dispatchPaidStakerIds == null) {
-                    dispatchPaidStakerIds = new LinkedHashSet<>();
+                if (dispatchPaidRewards == null) {
+                    dispatchPaidRewards = new LinkedHashMap<>();
                 }
-                paidStakingRewards.forEach(aa -> dispatchPaidStakerIds.add(aa.accountIDOrThrow()));
+                paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
             }
         } else {
             final var finalizeContext = new ChildFinalizeContextImpl(
                     new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
-                    childRecordBuilder);
-            childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
-        }
-        // For mono-service fidelity, we need to attach staking rewards for a
-        // triggered transaction to the record of the child here, and not the
-        // "parent" ScheduleCreate or ScheduleSign transaction
-        if (childCategory == SCHEDULED) {
-            final var finalizeContext = new TriggeredFinalizeContext(
-                    new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
-                    childRecordBuilder,
-                    consensusNow(),
-                    configuration);
-            parentRecordFinalizer.finalizeParentRecord(
-                    payer, finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
-            final var paidStakingRewards = childRecordBuilder.getPaidStakingRewards();
-            if (!paidStakingRewards.isEmpty()) {
-                if (dispatchPaidStakerIds == null) {
-                    dispatchPaidStakerIds = new LinkedHashSet<>();
-                }
-                paidStakingRewards.forEach(aa -> dispatchPaidStakerIds.add(aa.accountIDOrThrow()));
-            }
-        } else {
-            final var finalizeContext = new ChildFinalizeContextImpl(
-                    new ReadableStoreFactory(childStack),
-                    new WritableStoreFactory(childStack, TokenService.NAME),
+                    new WritableStoreFactory(childStack, TokenService.NAME, configuration, storeMetricsService),
                     childRecordBuilder);
             childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
         }
@@ -990,11 +971,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         return new RecordListCheckPoint(firstPreceding, lastFollowing);
-    }
-
-    @Override
-    public void reclaimPreviouslyReservedThrottle(int n, HederaFunctionality function) {
-        synchronizedThrottleAccumulator.leakUnusedThrottlePreviouslyReserved(n, function);
     }
 
     @Override

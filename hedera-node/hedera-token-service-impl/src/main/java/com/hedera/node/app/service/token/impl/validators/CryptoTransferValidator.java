@@ -73,7 +73,7 @@ public class CryptoTransferValidator {
         // Validate hbar transfers
         for (final AccountAmount acctAmount : acctAmounts) {
             validateTruePreCheck(acctAmount.hasAccountID(), INVALID_ACCOUNT_ID);
-            final var acctId = validateAccountID(acctAmount.accountIDOrThrow());
+            final var acctId = validateAccountID(acctAmount.accountIDOrThrow(), null);
             uniqueAcctIds.add(Pair.of(acctId, acctAmount.isApproval()));
             netBalance += acctAmount.amount();
         }

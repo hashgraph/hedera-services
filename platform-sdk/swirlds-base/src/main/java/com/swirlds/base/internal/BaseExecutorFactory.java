@@ -97,12 +97,13 @@ public interface BaseExecutorFactory {
      * @return a ScheduledFuture representing pending completion of the task.
      */
     @NonNull
-    default ScheduledFuture<Void> schedule(@NonNull final Runnable command, long delay, @NonNull final TimeUnit unit) {
+    default ScheduledFuture<Void> schedule(@NonNull final Runnable command, final long delay, @NonNull final TimeUnit unit) {
         final ScheduledFuture<?> scheduledFuture = getScheduledExecutor().schedule(command, delay, unit);
         return wrap(scheduledFuture);
     }
 
-    private static ScheduledFuture<Void> wrap(ScheduledFuture<?> scheduledFuture) {
+    @NonNull
+    private static ScheduledFuture<Void> wrap(@NonNull final ScheduledFuture<?> scheduledFuture) {
         return new ScheduledFuture<Void>() {
             @Override
             public long getDelay(TimeUnit unit) {
@@ -159,7 +160,7 @@ public interface BaseExecutorFactory {
      *
      * @param observer the observer to add
      */
-    static void addObserver(@NonNull BaseExecutorObserver observer) {
+    static void addObserver(@NonNull final BaseExecutorObserver observer) {
         BaseScheduledExecutorService.getInstance().addObserver(observer);
     }
 
@@ -168,7 +169,7 @@ public interface BaseExecutorFactory {
      *
      * @param observer the observer to remove
      */
-    static void removeObserver(@NonNull BaseExecutorObserver observer) {
+    static void removeObserver(@NonNull final BaseExecutorObserver observer) {
         BaseScheduledExecutorService.getInstance().removeObserver(observer);
     }
 }

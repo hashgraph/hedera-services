@@ -58,6 +58,7 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -107,7 +108,7 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         given(handleContext.readableStore(ReadableTopicStore.class)).willReturn(readableStore);
-        writableStore = new WritableTopicStore(writableStates);
+        writableStore = new WritableTopicStore(writableStates, config, mock(StoreMetricsService.class));
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         given(handleContext.configuration()).willReturn(config);
@@ -146,6 +147,19 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         final var context = new FakePreHandleContext(accountStore, newDefaultSubmitMessageTxn(topicEntityNum));
+        context.registerStore(ReadableTopicStore.class, readableStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
+    }
+
+    @Test
+    @DisplayName("Topic without id returns error")
+    void topicWithoutIdNotFound() throws PreCheckException {
+        mockPayerLookup();
+        readableTopicState = emptyReadableTopicState();
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
+        readableStore = new ReadableTopicStoreImpl(readableStates);
+        final var context = new FakePreHandleContext(accountStore, newDefaultSubmitMessageTxn());
         context.registerStore(ReadableTopicStore.class, readableStore);
 
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
@@ -322,6 +336,21 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
                         .topicNum(topicEntityNum.longValue())
                         .build())
                 .message(Bytes.wrap(message));
+        return TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .consensusSubmitMessage(submitMessageBuilder.build())
+                .build();
+    }
+
+    private TransactionBody newDefaultSubmitMessageTxn() {
+        return newSubmitMessageTxnWithoutId(
+                "Message for test-" + Instant.now() + "." + Instant.now().getNano());
+    }
+
+    private TransactionBody newSubmitMessageTxnWithoutId(final String message) {
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var submitMessageBuilder =
+                ConsensusSubmitMessageTransactionBody.newBuilder().message(Bytes.wrap(message));
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusSubmitMessage(submitMessageBuilder.build())
