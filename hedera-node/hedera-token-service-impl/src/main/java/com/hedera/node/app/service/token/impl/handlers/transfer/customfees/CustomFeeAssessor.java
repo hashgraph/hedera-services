@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenType;
@@ -54,10 +53,10 @@ public class CustomFeeAssessor extends BaseTokenHandler {
     }
 
     private int numNftTransfers(final CryptoTransferTransactionBody op) {
-        final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
+        final var tokenTransfers = op.tokenTransfers();
         var nftTransfers = 0;
         for (final var xfer : tokenTransfers) {
-            nftTransfers += xfer.nftTransfersOrElse(emptyList()).size();
+            nftTransfers += xfer.nftTransfers().size();
         }
         return nftTransfers;
     }

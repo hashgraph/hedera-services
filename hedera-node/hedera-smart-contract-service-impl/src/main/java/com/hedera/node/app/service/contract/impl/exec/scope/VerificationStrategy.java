@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
@@ -79,7 +78,7 @@ public interface VerificationStrategy {
             public boolean test(Key key) {
                 return switch (key.key().kind()) {
                     case KEY_LIST -> {
-                        final var keys = key.keyListOrThrow().keysOrElse(emptyList());
+                        final var keys = key.keyListOrThrow().keys();
                         for (final var childKey : keys) {
                             if (!test(childKey)) {
                                 yield false;
@@ -90,7 +89,7 @@ public interface VerificationStrategy {
                     case THRESHOLD_KEY -> {
                         final var thresholdKey = key.thresholdKeyOrThrow();
                         final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
-                        final var keys = keyList.keysOrElse(emptyList());
+                        final var keys = keyList.keys();
                         final var threshold = thresholdKey.threshold();
                         final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
                         var passed = 0;

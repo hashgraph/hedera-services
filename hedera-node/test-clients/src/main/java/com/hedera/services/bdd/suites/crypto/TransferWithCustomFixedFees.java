@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.crypto;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -38,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANSFER_TXN_2;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -142,7 +144,7 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 transferNonFungibleWithFixedHtsCustomFeeAmount0(),
                 transferFungibleWithFixedHbarCustomFeeSenderHasOnlyGasAmount(),
                 transferFungibleWithFixedHtsCustomFeeTotalSupply0(),
-                transferFungibleWithFixedHtsCustomFееNotEnoughForGasAndFee(),
+                transferFungibleWithFixedHtsCustomFeeNotEnoughForGasAndFee(),
                 transferFungibleWithFixedHtsCustomFees3LayersShouldFail(),
                 transferNonFungibleWithFixedHtsCustomFees3LayersShouldFail());
     }
@@ -1515,9 +1517,9 @@ public class TransferWithCustomFixedFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferFungibleWithFixedHtsCustomFееNotEnoughForGasAndFee() {
+    public HapiSpec transferFungibleWithFixedHtsCustomFeeNotEnoughForGasAndFee() {
         final var gasAmount = 1669096L;
-        return defaultHapiSpec("transferFungibleWithFixedHtsCustomFееNotEnoughForGasAndFee")
+        return defaultHapiSpec("transferFungibleWithFixedHtsCustomFeeNotEnoughForGasAndFee")
                 .given(
                         cryptoCreate(hbarCollector).balance(0L),
                         cryptoCreate(tokenOwner).balance(gasAmount),
@@ -1736,10 +1738,12 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 .then(withOpContext((spec, opLog) -> {
                     final var hollowAccountCollector =
                             spec.registry().getAccountIdName(spec.registry().getAccountAlias(SECP_256K1_SOURCE_KEY));
-
                     allRunFor(
                             spec,
-                            tokenAssociate(hollowAccountCollector, feeDenom),
+                            tokenAssociate(hollowAccountCollector, feeDenom)
+                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                                    .via(TRANSFER_TXN_2),
                             tokenCreate(fungibleToken)
                                     .treasury(tokenTreasury)
                                     .tokenType(TokenType.FUNGIBLE_COMMON)
