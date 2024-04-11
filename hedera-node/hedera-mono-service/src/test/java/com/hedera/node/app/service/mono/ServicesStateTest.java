@@ -330,7 +330,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Test
     void getsAccountIdAsExpected() {
         // setup:
-        subject.setChild(StateChildIndices.LEGACY_ADDRESS_BOOK, addressBook);
         subject.setPlatform(platform);
         given(platform.getAddressBook()).willReturn(addressBook);
 
@@ -896,7 +895,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void copiesNonNullChildren() {
-        subject.setChild(StateChildIndices.LEGACY_ADDRESS_BOOK, addressBook);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         // and:
@@ -905,7 +903,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setPlatform(platform);
         given(platform.getAddressBook()).willReturn(addressBook);
 
-        given(addressBook.copy()).willReturn(addressBook);
         given(networkContext.copy()).willReturn(networkContext);
         given(specialFiles.copy()).willReturn(specialFiles);
         given(metadata.copy()).willReturn(metadata);
@@ -920,7 +917,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertSame(metadata, copy.getMetadata());
         verify(metadata).copy();
         // and:
-        assertSame(addressBook, copy.addressBook());
         assertSame(networkContext, copy.networkCtx());
         assertSame(specialFiles, copy.specialFiles());
     }

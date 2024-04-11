@@ -26,11 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -147,83 +144,6 @@ class AddressBookTests {
                 NoSuchElementException.class,
                 () -> addressBook.updateWeight(addressBook.getNextNodeId(), 1),
                 "should not be able to set weight for non-existent node");
-    }
-
-    @Test
-    @DisplayName("Copy Mutable Test")
-    void copyMutableTest() {
-        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed()).setSize(100);
-        final AddressBook original = generator.build();
-
-        validateAddressBookConsistency(original);
-        assertTrue(original.isMutable(), "should be mutable");
-
-        final AddressBook copy = original.copy();
-        validateAddressBookConsistency(copy);
-
-        assertEquals(original, copy, "copy should be equal");
-        assertTrue(original.isMutable(), "original should be mutable");
-        assertTrue(copy.isMutable(), "copy should be mutable");
-
-        CryptographyHolder.get().digestSync(original);
-        CryptographyHolder.get().digestSync(copy);
-        final Hash originalHash = original.getHash();
-        final Hash copyHash = copy.getHash();
-
-        // Make sure that basic operations on the copy have no effect on the original
-
-        // remove
-        copy.remove(copy.getNodeId(0));
-        // update
-        copy.add(copy.getAddress(copy.getNodeId(50)).copySetNickname("foobar"));
-        // insert
-        copy.add(generator.buildNextAddress());
-
-        original.invalidateHash();
-        copy.invalidateHash();
-
-        CryptographyHolder.get().digestSync(original);
-        CryptographyHolder.get().digestSync(copy);
-
-        assertEquals(originalHash, original.getHash(), "original should be unchanged");
-        assertNotEquals(copyHash, copy.getHash(), "copy should be changed");
-    }
-
-    @Test
-    @DisplayName("Copy Immutable Test")
-    void copyImmutableTest() {
-        final AddressBook original = new RandomAddressBookGenerator(getRandomPrintSeed())
-                .setSize(100)
-                .build();
-
-        validateAddressBookConsistency(original);
-        original.seal();
-        assertTrue(original.isImmutable(), "should be immutable");
-
-        final AddressBook copy = original.copy();
-        validateAddressBookConsistency(copy);
-
-        assertEquals(original, copy, "copy should be equal");
-        assertTrue(copy.isMutable(), "copy should be mutable");
-    }
-
-    @Test
-    @DisplayName("Mutability Test")
-    void mutabilityTest() {
-        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed()).setSize(100);
-
-        final AddressBook addressBook = generator.build();
-        addressBook.seal();
-
-        assertThrows(
-                MutabilityException.class,
-                () -> addressBook.add(generator.buildNextAddress()),
-                "address book should be immutable");
-        assertThrows(
-                MutabilityException.class,
-                () -> addressBook.remove(addressBook.getNodeId(0)),
-                "address book should be immutable");
-        assertThrows(MutabilityException.class, addressBook::clear, "address book should be immutable");
     }
 
     @Test
