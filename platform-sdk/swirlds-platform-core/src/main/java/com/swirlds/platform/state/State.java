@@ -230,17 +230,13 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
 
         final StringBuilder sb = new StringBuilder();
 
-        // TODO also check the state metadata file
-
         new TextTable()
                 .setBordersEnabled(false)
                 .addRow("Round:", platformState.getRound())
                 .addRow("Timestamp:", platformState.getConsensusTimestamp())
                 .addRow("Next consensus number:", snapshot == null ? "null" : snapshot.nextConsensusNumber())
                 .addRow("Legacy running event hash:", hashEventsCons)
-                .addRow(
-                        "Legacy running event mnemonic:",
-                        hashEventsCons == null ? "null" : hashEventsCons.toMnemonic()) // TODO remove maybe?
+                .addRow("Legacy running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
                 .addRow("Running Event Hash: ", platformState.getRunningEventHash())
                 .addRow(
                         "Running Event Mnemonic: ",

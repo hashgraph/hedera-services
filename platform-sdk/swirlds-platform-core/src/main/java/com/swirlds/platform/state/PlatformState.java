@@ -86,7 +86,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * networks that were around prior to the introduction of this running hash, since the introduction of the running
      * event hash).
      */
-    private Hash runningEventHash; // TODO make sure this is logged where appropriate
+    private Hash runningEventHash;
 
     /**
      * the consensus timestamp for this signed state

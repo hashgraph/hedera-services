@@ -41,6 +41,5 @@ public interface EventStreamManager {
      * @param runningEventHashOverride the hash to update the running hash with
      */
     @InputWireLabel("hash override")
-    void legacyHashOverride(
-            @NonNull final RunningEventHashOverride runningEventHashOverride); // TODO change signature to Hash
+    void legacyHashOverride(@NonNull final RunningEventHashOverride runningEventHashOverride);
 }
