@@ -75,9 +75,7 @@ public abstract class DetGenerateUtils {
     }
 
     public static BaseEventUnhashedData generateBaseEventUnhashedData(final Random random) {
-        return new BaseEventUnhashedData(
-                null, // the other node id is no longer stored here.
-                generateRandomByteArray(random, DEFAULT_SIGNATURE_SIZE)); // signature
+        return new BaseEventUnhashedData(generateRandomByteArray(random, DEFAULT_SIGNATURE_SIZE));
     }
 
     public static ConsensusData generateConsensusEventData(final Random random) {

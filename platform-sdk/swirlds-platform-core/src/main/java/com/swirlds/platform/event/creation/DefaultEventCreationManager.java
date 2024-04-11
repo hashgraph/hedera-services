@@ -27,6 +27,7 @@ import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.platform.system.events.BaseEventHashedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -79,7 +80,7 @@ public class DefaultEventCreationManager implements EventCreationManager {
      */
     @Override
     @Nullable
-    public GossipEvent maybeCreateEvent() {
+    public BaseEventHashedData maybeCreateEvent() {
         if (!eventCreationRules.isEventCreationPermitted()) {
             phase.activatePhase(eventCreationRules.getEventCreationStatus());
             return null;
@@ -87,7 +88,7 @@ public class DefaultEventCreationManager implements EventCreationManager {
 
         phase.activatePhase(ATTEMPTING_CREATION);
 
-        final GossipEvent newEvent = creator.maybeCreateEvent();
+        final BaseEventHashedData newEvent = creator.maybeCreateEvent();
         if (newEvent == null) {
             // The only reason why the event creator may choose not to create an event
             // is if there are no eligible parents.

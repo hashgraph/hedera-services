@@ -23,7 +23,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -80,8 +79,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     public BaseEventUnhashedData() {}
 
-    public BaseEventUnhashedData(@Nullable final NodeId otherId, @NonNull final byte[] signature) {
-        this.otherId = otherId;
+    public BaseEventUnhashedData(@NonNull final byte[] signature) {
         this.signature = Objects.requireNonNull(signature, "signature must not be null");
     }
 
@@ -163,23 +161,5 @@ public class BaseEventUnhashedData implements SelfSerializable {
      */
     public byte[] getSignature() {
         return signature;
-    }
-
-    /**
-     * Synchronize the creator data between the hashed event's other parent data and the creatorId.  This method is to
-     * support backwards compatibility with the previous event serialization format.
-     *
-     * @param event the event to update
-     * @deprecated This method should be deleted when we are no longer supporting the previous event serialization
-     * format.
-     */
-    public void updateOtherParentEventDescriptor(@NonNull final BaseEventHashedData event) {
-        if (event.hasOtherParent()) {
-            if (otherId == null) {
-                otherId = event.getOtherParents().get(0).getCreator();
-            } else {
-                event.getOtherParents().get(0).setCreator(otherId);
-            }
-        }
     }
 }

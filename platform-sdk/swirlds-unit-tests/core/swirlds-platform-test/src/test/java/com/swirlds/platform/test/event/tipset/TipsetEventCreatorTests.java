@@ -52,6 +52,8 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -151,29 +153,26 @@ class TipsetEventCreatorTests {
 
     private void validateNewEvent(
             @NonNull final Map<Hash, EventImpl> events,
-            @NonNull final GossipEvent newEvent,
+            @NonNull final BaseEventHashedData newEvent,
             @NonNull final ConsensusTransactionImpl[] expectedTransactions,
             @NonNull final SimulatedNode simulatedNode,
             final boolean slowNode) {
 
-        final EventImpl selfParent = events.get(newEvent.getHashedData().getSelfParentHash());
+        final EventImpl selfParent = events.get(newEvent.getSelfParentHash());
         final long selfParentGeneration =
                 selfParent == null ? EventConstants.GENERATION_UNDEFINED : selfParent.getGeneration();
-        final EventImpl otherParent = events.get(newEvent.getHashedData().getOtherParentHash());
+        final EventImpl otherParent = events.get(newEvent.getOtherParentHash());
         final long otherParentGeneration =
                 otherParent == null ? EventConstants.GENERATION_UNDEFINED : otherParent.getGeneration();
 
         if (selfParent == null) {
             // The only legal time to have a null self parent is genesis.
             for (final EventImpl event : events.values()) {
-                if (event.getHashedData()
-                        .getHash()
-                        .equals(newEvent.getHashedData().getHash())) {
+                if (event.getHashedData().getHash().equals(newEvent.getHash())) {
                     // comparing to self
                     continue;
                 }
-                Assertions.assertNotEquals(
-                        event.getCreatorId(), newEvent.getHashedData().getCreatorId());
+                Assertions.assertNotEquals(event.getCreatorId(), newEvent.getCreatorId());
             }
         }
 
@@ -186,20 +185,19 @@ class TipsetEventCreatorTests {
                 // The only legal time to have no other-parent is at genesis before other events are received.
                 assertEquals(1, events.size());
             }
-            assertTrue(events.containsKey(newEvent.getHashedData().getHash()));
+            assertTrue(events.containsKey(newEvent.getHash()));
         }
 
         // Generation should be max of parents plus one
         final long expectedGeneration = Math.max(selfParentGeneration, otherParentGeneration) + 1;
-        assertEquals(expectedGeneration, newEvent.getHashedData().getGeneration());
+        assertEquals(expectedGeneration, newEvent.getGeneration());
 
         // Timestamp must always increase by 1 nanosecond, and there must always be a unique timestamp
         // with nanosecond precision for transaction.
         if (selfParent != null) {
-            final int minimumIncrement = Math.max(1, selfParent.getHashedData().getTransactions().length);
-            final Instant minimumTimestamp =
-                    selfParent.getHashedData().getTimeCreated().plus(Duration.ofNanos(minimumIncrement));
-            assertTrue(isGreaterThanOrEqualTo(newEvent.getHashedData().getTimeCreated(), minimumTimestamp));
+            final int minimumIncrement = Math.max(1, selfParent.getTransactions().length);
+            final Instant minimumTimestamp = selfParent.getTimeCreated().plus(Duration.ofNanos(minimumIncrement));
+            assertTrue(isGreaterThanOrEqualTo(newEvent.getTimeCreated(), minimumTimestamp));
         }
 
         // Validate tipset constraints.
@@ -215,7 +213,7 @@ class TipsetEventCreatorTests {
         }
 
         // We should see the expected transactions
-        assertArrayEquals(expectedTransactions, newEvent.getHashedData().getTransactions());
+        assertArrayEquals(expectedTransactions, newEvent.getTransactions());
 
         assertDoesNotThrow(() -> simulatedNode.eventCreator.toString());
     }
@@ -226,7 +224,7 @@ class TipsetEventCreatorTests {
     private void linkAndDistributeEvent(
             @NonNull final Map<NodeId, SimulatedNode> eventCreators,
             @NonNull final Map<Hash, EventImpl> events,
-            @NonNull final GossipEvent event) {
+            @NonNull final BaseEventHashedData event) {
 
         distributeEvent(eventCreators, linkEvent(eventCreators, events, event));
     }
@@ -238,18 +236,19 @@ class TipsetEventCreatorTests {
     private EventImpl linkEvent(
             @NonNull final Map<NodeId, SimulatedNode> eventCreators,
             @NonNull final Map<Hash, EventImpl> events,
-            @NonNull final GossipEvent event) {
+            @NonNull final BaseEventHashedData event) {
 
         eventCreators
-                .get(event.getHashedData().getCreatorId())
+                .get(event.getCreatorId())
                 .tipsetTracker
                 .addEvent(event.getDescriptor(), TipsetUtils.getParentDescriptors(event));
 
-        final EventImpl selfParent = events.get(event.getHashedData().getSelfParentHash());
-        final EventImpl otherParent = events.get(event.getHashedData().getOtherParentHash());
+        final EventImpl selfParent = events.get(event.getSelfParentHash());
+        final EventImpl otherParent = events.get(event.getOtherParentHash());
 
-        final EventImpl eventImpl = new EventImpl(event, new ConsensusData(), selfParent, otherParent);
-        events.put(event.getHashedData().getHash(), eventImpl);
+        final EventImpl eventImpl = new EventImpl(
+                new GossipEvent(event, new BaseEventUnhashedData()), new ConsensusData(), selfParent, otherParent);
+        events.put(event.getHash(), eventImpl);
 
         return eventImpl;
     }
@@ -263,7 +262,8 @@ class TipsetEventCreatorTests {
         for (final SimulatedNode eventCreator : eventCreators.values()) {
             eventCreator.eventCreator.registerEvent(eventImpl.getBaseEvent());
             eventCreator.tipsetTracker.addEvent(
-                    eventImpl.getBaseEvent().getDescriptor(), TipsetUtils.getParentDescriptors(eventImpl));
+                    eventImpl.getBaseEvent().getDescriptor(),
+                    TipsetUtils.getParentDescriptors(eventImpl.getBaseEvent().getHashedData()));
         }
     }
 
@@ -323,7 +323,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final GossipEvent event = eventCreator.maybeCreateEvent();
+                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
 
                 // In this test, it should be impossible for a node to be unable to create an event.
                 assertNotNull(event);
@@ -331,7 +331,7 @@ class TipsetEventCreatorTests {
                 linkAndDistributeEvent(nodes, events, event);
 
                 if (advancingClock) {
-                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    assertEquals(event.getTimeCreated(), time.now());
                 }
 
                 validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
@@ -384,7 +384,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final GossipEvent event = eventCreator.maybeCreateEvent();
+                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
 
                 // It's possible a node may not be able to create an event. But we are guaranteed
                 // to be able to create at least one event per cycle.
@@ -396,7 +396,7 @@ class TipsetEventCreatorTests {
                 linkAndDistributeEvent(nodes, events, event);
 
                 if (advancingClock) {
-                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    assertEquals(event.getTimeCreated(), time.now());
                 }
                 validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
             }
@@ -449,7 +449,7 @@ class TipsetEventCreatorTests {
                     final NodeId nodeId = address.getNodeId();
                     final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                    final GossipEvent event = eventCreator.maybeCreateEvent();
+                    final BaseEventHashedData event = eventCreator.maybeCreateEvent();
 
                     // It's possible a node may not be able to create an event. But we are guaranteed
                     // to be able to create at least one event per cycle.
@@ -461,7 +461,7 @@ class TipsetEventCreatorTests {
                     linkAndDistributeEvent(nodes, events, event);
 
                     if (advancingClock) {
-                        assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                        assertEquals(event.getTimeCreated(), time.now());
                     }
                     validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
                 }
@@ -523,7 +523,7 @@ class TipsetEventCreatorTests {
                     final NodeId nodeId = address.getNodeId();
                     final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                    final GossipEvent event = eventCreator.maybeCreateEvent();
+                    final BaseEventHashedData event = eventCreator.maybeCreateEvent();
 
                     if (count == 0) {
                         // The first time we attempt to create an event we should be able to do so.
@@ -536,7 +536,7 @@ class TipsetEventCreatorTests {
                     linkAndDistributeEvent(nodes, events, event);
 
                     if (advancingClock) {
-                        assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                        assertEquals(event.getTimeCreated(), time.now());
                     }
                     validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
 
@@ -607,7 +607,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final GossipEvent event = eventCreator.maybeCreateEvent();
+                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
 
                 // It's possible a node may not be able to create an event. But we are guaranteed
                 // to be able to create at least one event per cycle.
@@ -617,8 +617,8 @@ class TipsetEventCreatorTests {
                 atLeastOneEventCreated = true;
 
                 final NodeId otherId;
-                if (event.getHashedData().hasOtherParent()) {
-                    otherId = event.getHashedData().getOtherParents().getFirst().getCreator();
+                if (event.hasOtherParent()) {
+                    otherId = event.getOtherParents().getFirst().getCreator();
                 } else {
                     otherId = null;
                 }
@@ -630,7 +630,7 @@ class TipsetEventCreatorTests {
                 linkAndDistributeEvent(nodes, events, event);
 
                 if (advancingClock) {
-                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    assertEquals(event.getTimeCreated(), time.now());
                 }
                 validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
             }
@@ -704,7 +704,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final GossipEvent event = eventCreator.maybeCreateEvent();
+                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
 
                 // It's possible a node may not be able to create an event. But we are guaranteed
                 // to be able to create at least one event per cycle.
@@ -714,8 +714,8 @@ class TipsetEventCreatorTests {
                 atLeastOneEventCreated = true;
 
                 final NodeId otherId;
-                if (event.getHashedData().hasOtherParent()) {
-                    otherId = event.getHashedData().getOtherParents().getFirst().getCreator();
+                if (event.hasOtherParent()) {
+                    otherId = event.getOtherParents().getFirst().getCreator();
                 } else {
                     otherId = null;
                 }
@@ -743,7 +743,7 @@ class TipsetEventCreatorTests {
                 }
 
                 if (advancingClock) {
-                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    assertEquals(event.getTimeCreated(), time.now());
                 }
                 validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), true);
             }
@@ -794,7 +794,7 @@ class TipsetEventCreatorTests {
             final NodeId nodeId = address.getNodeId();
             final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-            final GossipEvent event = eventCreator.maybeCreateEvent();
+            final BaseEventHashedData event = eventCreator.maybeCreateEvent();
 
             // In this test, it should be impossible for a node to be unable to create an event.
             assertNotNull(event);
@@ -802,7 +802,7 @@ class TipsetEventCreatorTests {
             linkAndDistributeEvent(nodes, events, event);
 
             if (advancingClock) {
-                assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                assertEquals(event.getTimeCreated(), time.now());
             }
         }
     }
@@ -862,7 +862,7 @@ class TipsetEventCreatorTests {
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
         // Create some genesis events
-        final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
+        final BaseEventHashedData eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
         final GossipEvent eventB1 = createTestEvent(
@@ -880,15 +880,15 @@ class TipsetEventCreatorTests {
         // We should be able to create a total of 3 before we exhaust all possible parents.
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final GossipEvent eventA2 = eventCreator.maybeCreateEvent();
+        final BaseEventHashedData eventA2 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA2);
 
         // This will advance the snapshot, total advancement weight is 2 (2+1/4 > 2/3)
-        final GossipEvent eventA3 = eventCreator.maybeCreateEvent();
+        final BaseEventHashedData eventA3 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA3);
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final GossipEvent eventA4 = eventCreator.maybeCreateEvent();
+        final BaseEventHashedData eventA4 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA4);
 
         // It should not be possible to create another event since we have exhausted all possible other parents.
@@ -898,8 +898,8 @@ class TipsetEventCreatorTests {
         // but has not been updated in the current snapshot.
 
         final NodeId otherParentId;
-        if (eventA2.getHashedData().hasOtherParent()) {
-            otherParentId = eventA2.getHashedData().getOtherParents().getFirst().getCreator();
+        if (eventA2.hasOtherParent()) {
+            otherParentId = eventA2.getOtherParents().getFirst().getCreator();
         } else {
             otherParentId = null;
         }
@@ -941,7 +941,7 @@ class TipsetEventCreatorTests {
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
         // Create some genesis events
-        final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
+        final BaseEventHashedData eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
         final GossipEvent eventB1 = createTestEvent(
@@ -963,15 +963,15 @@ class TipsetEventCreatorTests {
         // We should be able to create a total of 3 before we exhaust all possible parents in the address book.
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final GossipEvent eventA2 = eventCreator.maybeCreateEvent();
+        final BaseEventHashedData eventA2 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA2);
 
         // This will advance the snapshot, total advancement weight is 2 (2+1/4 > 2/3)
-        final GossipEvent eventA3 = eventCreator.maybeCreateEvent();
+        final BaseEventHashedData eventA3 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA3);
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final GossipEvent eventA4 = eventCreator.maybeCreateEvent();
+        final BaseEventHashedData eventA4 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA4);
 
         // It should not be possible to create another event since we have exhausted all possible other parents in the
@@ -1075,7 +1075,7 @@ class TipsetEventCreatorTests {
                                     : AncientMode.GENERATION_THRESHOLD));
                 }
 
-                final GossipEvent event = eventCreator.maybeCreateEvent();
+                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
 
                 // In this test, it should be impossible for a node to be unable to create an event.
                 assertNotNull(event);
@@ -1083,14 +1083,14 @@ class TipsetEventCreatorTests {
                 linkAndDistributeEvent(nodes, events, event);
 
                 if (advancingClock) {
-                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    assertEquals(event.getTimeCreated(), time.now());
                 }
 
                 if (eventIndex == 0) {
-                    final long birthRound = event.getHashedData().getBirthRound();
+                    final long birthRound = event.getBirthRound();
                     assertEquals(ROUND_FIRST, birthRound);
                 } else {
-                    final long birthRound = event.getHashedData().getBirthRound();
+                    final long birthRound = event.getBirthRound();
                     if (useBirthRoundForAncient) {
                         assertEquals(pendingConsensusRound, birthRound);
                     } else {

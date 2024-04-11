@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -268,9 +267,8 @@ public class ClassicTransfersDecoder {
     private TokenTransferList mergeTokenTransferLists(
             @NonNull final TokenTransferList from, @NonNull final TokenTransferList to) {
         return from.copyBuilder()
-                .transfers(mergeTransfers(from.transfersOrElse(emptyList()), to.transfersOrElse(emptyList())))
-                .nftTransfers(
-                        mergeNftTransfers(from.nftTransfersOrElse(emptyList()), to.nftTransfersOrElse(emptyList())))
+                .transfers(mergeTransfers(from.transfers(), to.transfers()))
+                .nftTransfers(mergeNftTransfers(from.nftTransfers(), to.nftTransfers()))
                 .build();
     }
 
