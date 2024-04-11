@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -533,4 +534,92 @@ class EthTxDataTest {
             }
         }
     }
+
+    @Test
+    void negativeValueEIP1559() {
+        final var negativeValue = BigInteger.valueOf(-1000);
+
+        final var oneByte = new byte[]{1};
+        final EthTxData ethTxData = new EthTxData(
+            oneByte,
+            EthTransactionType.EIP1559,
+            oneByte,
+            1,
+            oneByte,
+            oneByte,
+            oneByte,
+            1,
+            oneByte,
+            negativeValue,
+            oneByte,
+            null,
+            1,
+            oneByte,
+            oneByte,
+            oneByte);
+        final var encoded = ethTxData.encodeTx();
+
+        final var populateEthTxData = EthTxData.populateEthTxData(encoded);
+
+        assertEquals(negativeValue, populateEthTxData.value());
+    }
+
+    @Test
+    void negativeValueEIP2930() {
+        final var negativeValue = BigInteger.valueOf(-1000);
+
+        final var oneByte = new byte[]{1};
+        final EthTxData ethTxData = new EthTxData(
+            oneByte,
+            EthTransactionType.EIP2930,
+            oneByte,
+            1,
+            oneByte,
+            oneByte,
+            oneByte,
+            1,
+            oneByte,
+            negativeValue,
+            oneByte,
+            null,
+            1,
+            oneByte,
+            oneByte,
+            oneByte);
+        final var encoded = ethTxData.encodeTx();
+
+        final var populateEthTxData = EthTxData.populateEthTxData(encoded);
+
+        assertEquals(negativeValue, populateEthTxData.value());
+    }
+
+    @Test
+    void negativeValueLegacy() {
+        final var negativeValue = BigInteger.valueOf(-1000);
+
+        final var oneByte = new byte[]{1};
+        final EthTxData ethTxData = new EthTxData(
+            oneByte,
+            EthTransactionType.LEGACY_ETHEREUM,
+            oneByte,
+            1,
+            oneByte,
+            oneByte,
+            oneByte,
+            1,
+            oneByte,
+            negativeValue,
+            oneByte,
+            null,
+            1,
+            oneByte,
+            oneByte,
+            oneByte);
+        final var encoded = ethTxData.encodeTx();
+
+        final var populateEthTxData = EthTxData.populateEthTxData(encoded);
+
+        assertEquals(negativeValue, populateEthTxData.value());
+    }
+
 }
