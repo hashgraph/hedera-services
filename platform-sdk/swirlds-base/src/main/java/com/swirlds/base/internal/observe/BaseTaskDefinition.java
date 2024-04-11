@@ -64,7 +64,7 @@ public record BaseTaskDefinition(@NonNull UUID id, @NonNull String type) {
      * @param <V> the type of the callable
      */
     @NonNull
-    public static <V> BaseTaskDefinition of(@NonNull Callable<V> callable) {
+    public static <V> BaseTaskDefinition of(@NonNull final Callable<V> callable) {
         Objects.requireNonNull(callable, "callable must not be null");
         final UUID id = UUID.randomUUID();
         if (callable instanceof BaseTask baseTask) {
