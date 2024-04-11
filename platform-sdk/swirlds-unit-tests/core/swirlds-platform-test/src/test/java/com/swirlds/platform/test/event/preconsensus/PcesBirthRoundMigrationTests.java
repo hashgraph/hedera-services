@@ -32,12 +32,9 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.GossipEvent;
@@ -243,12 +240,6 @@ class PcesBirthRoundMigrationTests {
                 .withTime(time)
                 .withConfiguration(configuration)
                 .build();
-        final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration,
-                platformContext.getMetrics(),
-                AdHocThreadManager.getStaticThreadManager(),
-                platformContext.getTime(),
-                new NodeId(0));
 
         final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, discontinuityType);
 
@@ -336,12 +327,6 @@ class PcesBirthRoundMigrationTests {
                 .withTime(time)
                 .withConfiguration(configuration)
                 .build();
-        final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration,
-                platformContext.getMetrics(),
-                AdHocThreadManager.getStaticThreadManager(),
-                platformContext.getTime(),
-                new NodeId(0));
 
         // should not throw
         PcesBirthRoundMigration.migratePcesToBirthRoundMode(platformContext, new NodeId(0), ROUND_FIRST, -1);
@@ -363,12 +348,6 @@ class PcesBirthRoundMigrationTests {
                 .withTime(time)
                 .withConfiguration(configuration)
                 .build();
-        final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration,
-                platformContext.getMetrics(),
-                AdHocThreadManager.getStaticThreadManager(),
-                platformContext.getTime(),
-                new NodeId(0));
 
         final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, DiscontinuityType.NONE);
 

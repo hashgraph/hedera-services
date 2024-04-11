@@ -22,9 +22,6 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.io.config.RecycleBinConfig;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.locks.AutoClosableLock;
@@ -32,7 +29,6 @@ import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.CompareTo;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -73,69 +69,36 @@ public class RecycleBinImpl implements RecycleBin, Stoppable {
     private final IntegerGauge recycledFileCountMetric;
 
     /**
-     * Create a new recycle bin.
+     * Create a new recycle bin under an existing directory.
      *
-     * @param configuration the configuration object
      * @param metrics       manages the creation of metrics
      * @param threadManager manages the creation of threads
      * @param time          provides wall clock time
-     * @param selfId        the ID of this node
-     * @throws IOException if the recycle bin directory could not be created
+     * @param recycleBinPath the existing directory to be used as bin
+     * @param maximumFileAge maximum file age
+     * @param minimumPeriod minimum retention period
      */
     public RecycleBinImpl(
-            @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull final NodeId selfId)
-            throws IOException {
-
-        Objects.requireNonNull(selfId);
-        Objects.requireNonNull(threadManager);
-        this.time = Objects.requireNonNull(time);
-
-        final RecycleBinConfig recycleBinConfig = configuration.getConfigData(RecycleBinConfig.class);
-        final StateCommonConfig stateConfig = configuration.getConfigData(StateCommonConfig.class);
-
-        maximumFileAge = recycleBinConfig.maximumFileAge();
-        recycleBinPath = recycleBinConfig.getStorageLocation(stateConfig, selfId);
-        Files.createDirectories(recycleBinPath);
-        topLevelRecycledFileCount = countRecycledFiles(recycleBinPath);
-
-        recycledFileCountMetric = metrics.getOrCreate(RECYLED_FILE_COUNT_CONFIG);
-        recycledFileCountMetric.set(topLevelRecycledFileCount);
-
-        cleanupThread = new StoppableThreadConfiguration<>(threadManager)
-                .setComponent("platform")
-                .setThreadName("recycle-bin-cleanup")
-                .setMinimumPeriod(recycleBinConfig.collectionPeriod())
-                .setWork(this::cleanup)
-                .build();
-    }
-
-    public RecycleBinImpl(
-            @NonNull final Configuration configuration,
-            @NonNull final Metrics metrics,
-            @NonNull final ThreadManager threadManager,
-            @NonNull final Time time,
-            @NonNull final Path recycleBinPath) {
+            @NonNull final Path recycleBinPath,
+            @NonNull final Duration maximumFileAge,
+            @NonNull final Duration minimumPeriod) {
 
         Objects.requireNonNull(threadManager);
         this.time = Objects.requireNonNull(time);
-
-        final RecycleBinConfig recycleBinConfig = configuration.getConfigData(RecycleBinConfig.class);
-
-        maximumFileAge = recycleBinConfig.maximumFileAge();
+        this.maximumFileAge = maximumFileAge;
         this.recycleBinPath = recycleBinPath;
-        topLevelRecycledFileCount = countRecycledFiles(recycleBinPath);
+        this.topLevelRecycledFileCount = countRecycledFiles(recycleBinPath);
 
-        recycledFileCountMetric = metrics.getOrCreate(RECYLED_FILE_COUNT_CONFIG);
-        recycledFileCountMetric.set(topLevelRecycledFileCount);
+        this.recycledFileCountMetric = metrics.getOrCreate(RECYLED_FILE_COUNT_CONFIG);
+        this.recycledFileCountMetric.set(topLevelRecycledFileCount);
 
-        cleanupThread = new StoppableThreadConfiguration<>(threadManager)
+        this.cleanupThread = new StoppableThreadConfiguration<>(threadManager)
                 .setComponent("platform")
                 .setThreadName("recycle-bin-cleanup")
-                .setMinimumPeriod(recycleBinConfig.collectionPeriod())
+                .setMinimumPeriod(minimumPeriod)
                 .setWork(this::cleanup)
                 .build();
     }

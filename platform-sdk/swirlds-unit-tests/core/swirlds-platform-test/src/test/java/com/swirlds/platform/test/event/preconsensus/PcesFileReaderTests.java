@@ -18,7 +18,6 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertIteratorEquality;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
@@ -34,7 +33,6 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -518,13 +516,6 @@ class PcesFileReaderTests {
         }
 
         final PlatformContext platformContext = buildContext(ancientMode);
-        final RecycleBinImpl recycleBin = new RecycleBinImpl(
-                platformContext.getConfiguration(),
-                new NoOpMetrics(),
-                getStaticThreadManager(),
-                Time.getCurrent(),
-                new NodeId(0));
-        recycleBin.clear();
 
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
@@ -626,14 +617,6 @@ class PcesFileReaderTests {
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
-        final RecycleBinImpl recycleBin = new RecycleBinImpl(
-                platformContext.getConfiguration(),
-                new NoOpMetrics(),
-                getStaticThreadManager(),
-                Time.getCurrent(),
-                new NodeId(0));
-        recycleBin.clear();
-
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
         final PcesFileTracker fileTracker1 =
@@ -733,14 +716,6 @@ class PcesFileReaderTests {
 
         final PlatformContext platformContext = buildContext(ancientMode);
 
-        final RecycleBinImpl recycleBin = new RecycleBinImpl(
-                platformContext.getConfiguration(),
-                new NoOpMetrics(),
-                getStaticThreadManager(),
-                Time.getCurrent(),
-                new NodeId(0));
-        recycleBin.clear();
-
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
         final PcesFileTracker fileTracker1 =
@@ -839,13 +814,6 @@ class PcesFileReaderTests {
         final long startAncientBoundary = filesAfterDiscontinuity.getFirst().getUpperBound();
 
         final PlatformContext platformContext = buildContext(ancientMode);
-        final RecycleBinImpl recycleBin = new RecycleBinImpl(
-                platformContext.getConfiguration(),
-                new NoOpMetrics(),
-                getStaticThreadManager(),
-                Time.getCurrent(),
-                new NodeId(0));
-        recycleBin.clear();
 
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;

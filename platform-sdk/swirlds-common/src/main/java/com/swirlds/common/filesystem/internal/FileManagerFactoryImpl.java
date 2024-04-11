@@ -23,6 +23,7 @@ import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.filesystem.FileManagerFactory;
 import com.swirlds.common.filesystem.FileSystemManager;
+import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.platform.NodeId;
@@ -42,6 +43,7 @@ public class FileManagerFactoryImpl implements FileManagerFactory {
      *
      * @param configuration the configuration instance to retrieve properties from
      * @param metrics
+     * @param selfId
      * @return a new instance of {@link FileSystemManager}
      * @throws IllegalArgumentException if {@code rootLocationPropertyName} cannot be found on configuration, if
      *                                  {@code rootLocation} already exist or if the dir structure to rootLocation
@@ -52,15 +54,22 @@ public class FileManagerFactoryImpl implements FileManagerFactory {
     public FileSystemManager createFileSystemManager(
             @NonNull final Configuration configuration, @NonNull final Metrics metrics, @NonNull final NodeId selfId) {
 
-        final TemporaryFileConfig config = ConfigurationHolder.getConfigData(TemporaryFileConfig.class);
+        final TemporaryFileConfig temporaryFileConfig = ConfigurationHolder.getConfigData(TemporaryFileConfig.class);
         final StateCommonConfig stateConfig = ConfigurationHolder.getConfigData(StateCommonConfig.class);
-        final String rootFileLocation = config.temporaryFilePath().replace("{nodeId}", selfId.toString());
+        final RecycleBinConfig recycleBinConfig = configuration.getConfigData(RecycleBinConfig.class);
+        final String rootFileLocation = temporaryFileConfig.temporaryFilePath().replace("{nodeId}", selfId.toString());
         final String rootLocation =
                 stateConfig.savedStateDirectory().resolve(rootFileLocation).toString();
 
         return new FileSystemManagerImpl(
                 rootLocation,
-                path -> new RecycleBinImpl(configuration, metrics, getStaticThreadManager(), Time.getCurrent(), path));
+                path -> new RecycleBinImpl(
+                        metrics,
+                        getStaticThreadManager(),
+                        Time.getCurrent(),
+                        path,
+                        recycleBinConfig.maximumFileAge(),
+                        recycleBinConfig.collectionPeriod()));
     }
 
     /**
