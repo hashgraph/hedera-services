@@ -1310,7 +1310,6 @@ public final class PbjConverter {
             case MISSING_SERIAL_NUMBERS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
             case TOKEN_HAS_NO_ADMIN_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_ADMIN_KEY;
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
-            case TOKEN_HAS_NO_ADMIN_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_ADMIN_KEY;
         };
     }
 

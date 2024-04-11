@@ -71,7 +71,6 @@ import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSu
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.encodeFunctionCall;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.encodeTuple;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.formattedAssertionValue;
-import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.getInitcode;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.hexedSolidityAddressToHeadlongAddress;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.uint256ReturnWithValue;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
