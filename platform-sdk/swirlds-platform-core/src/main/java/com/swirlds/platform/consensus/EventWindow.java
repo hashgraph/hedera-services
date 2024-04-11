@@ -28,10 +28,9 @@ import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Determines the non-ancient lower bound (inclusive) on events and communicates the window of rounds between the
- * pendingConsensusRound and the minimumRoundNonAncient (inclusive).
+ * Describes the current window of events that the platform is using.
  */
-public class NonAncientEventWindow {
+public class EventWindow {
 
     private final AncientMode ancientMode;
     private final long latestConsensusRound;
@@ -40,9 +39,9 @@ public class NonAncientEventWindow {
     private final long expiredThreshold;
 
     /**
-     * Create a new NonAncientEventWindow with the given bounds. The latestConsensusRound must be greater than or equal
-     * to the first round of consensus.  If the minimum round non-ancient is set to a number lower than the first round
-     * of consensus, the first round of consensus is used instead.  The minGenNonAncient value must be greater than or
+     * Create a new EventWindow with the given bounds. The latestConsensusRound must be greater than or equal to the
+     * first round of consensus.  If the minimum round non-ancient is set to a number lower than the first round of
+     * consensus, the first round of consensus is used instead.  The minGenNonAncient value must be greater than or
      * equal to the first generation for events.
      *
      * @param latestConsensusRound the latest round that has come to consensus
@@ -52,7 +51,7 @@ public class NonAncientEventWindow {
      * @throws IllegalArgumentException if the latestConsensusRound is less than the first round of consensus or if the
      *                                  minGenNonAncient value is less than the first generation for events.
      */
-    public NonAncientEventWindow(
+    public EventWindow(
             final long latestConsensusRound,
             final long ancientThreshold,
             final long expiredThreshold,
@@ -90,19 +89,19 @@ public class NonAncientEventWindow {
     }
 
     /**
-     * Creates a genesis non-ancient event window for the given ancient mode.
+     * Creates a genesis event window for the given ancient mode.
      *
      * @param ancientMode the ancient mode to use
-     * @return a genesis non-ancient event window.
+     * @return a genesis event window.
      */
     @NonNull
-    public static NonAncientEventWindow getGenesisNonAncientEventWindow(@NonNull final AncientMode ancientMode) {
+    public static EventWindow getGenesisEventWindow(@NonNull final AncientMode ancientMode) {
         final long firstIndicator = ancientMode == GENERATION_THRESHOLD ? FIRST_GENERATION : ROUND_FIRST;
-        return new NonAncientEventWindow(ROUND_NEGATIVE_INFINITY, firstIndicator, firstIndicator, ancientMode);
+        return new EventWindow(ROUND_NEGATIVE_INFINITY, firstIndicator, firstIndicator, ancientMode);
     }
 
     /**
-     * @return true if this is a genesis non-ancient event window, false otherwise.
+     * @return true if this is a genesis event window, false otherwise.
      */
     public boolean isGenesis() {
         return latestConsensusRound == ROUND_NEGATIVE_INFINITY;

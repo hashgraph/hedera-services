@@ -24,7 +24,7 @@ import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMIT
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -114,8 +114,8 @@ public class DefaultEventCreationManager implements EventCreationManager {
      * {@inheritDoc}
      */
     @Override
-    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        creator.setNonAncientEventWindow(nonAncientEventWindow);
+    public void setEventWindow(@NonNull final EventWindow eventWindow) {
+        creator.setEventWindow(eventWindow);
     }
 
     /**

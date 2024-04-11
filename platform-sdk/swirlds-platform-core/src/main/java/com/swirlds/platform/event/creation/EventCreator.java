@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.creation;
 
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,11 +35,11 @@ public interface EventCreator {
     void registerEvent(@NonNull GossipEvent event);
 
     /**
-     * Update the non-ancient event window.
+     * Update the event window.
      *
-     * @param nonAncientEventWindow the new non-ancient event window
+     * @param eventWindow the new event window
      */
-    void setNonAncientEventWindow(@NonNull NonAncientEventWindow nonAncientEventWindow);
+    void setEventWindow(@NonNull EventWindow eventWindow);
 
     /**
      * Create a new event if it is legal to do so. The only time this should not create an event is if there are no

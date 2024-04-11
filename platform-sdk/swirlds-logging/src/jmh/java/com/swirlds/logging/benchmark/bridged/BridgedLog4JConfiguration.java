@@ -26,7 +26,7 @@ import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.apache.logging.log4j.core.config.plugins.util.PluginManager;
 import org.apache.logging.log4j.spi.LoggerContext;
 
-public class BridgedConfiguration extends Log4JConfig {
+public class BridgedLog4JConfiguration extends Log4JConfig {
     public static final String BRIDGE_APPENDER_NAME = "SwirldsAppender";
 
     @NonNull
