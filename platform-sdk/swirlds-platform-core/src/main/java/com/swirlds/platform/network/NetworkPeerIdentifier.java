@@ -73,7 +73,6 @@ public class NetworkPeerIdentifier {
      */
     public @Nullable PeerInfo identifyTlsPeer(@NonNull final Certificate[] certs) {
         Objects.requireNonNull(certs);
-        Objects.requireNonNull(x501PrincipalsAndPeers);
         if (certs.length == 0) {
             return null;
         }
@@ -82,13 +81,13 @@ public class NetworkPeerIdentifier {
         // with the peer's own certificate first followed by any certificate authorities.
         // See https://www.rfc-editor.org/rfc/rfc5246
         final X509Certificate agreementCert = (X509Certificate) certs[0];
-        final PeerInfo matchingPair = x501PrincipalsAndPeers.get(agreementCert.getIssuerX500Principal());
-        if (matchingPair == null) {
+        final PeerInfo matchedPeer = x501PrincipalsAndPeers.get(agreementCert.getIssuerX500Principal());
+        if (matchedPeer == null) {
             noPeerFoundLogger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Unable to identify peer with the presented certificate {}.",
                     agreementCert);
         }
-        return matchingPair;
+        return matchedPeer;
     }
 }
