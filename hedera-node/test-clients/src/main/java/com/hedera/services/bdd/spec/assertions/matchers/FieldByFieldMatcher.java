@@ -98,9 +98,7 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
         if (expected == actual) {
             return true;
         } else if (expected == null || actual == null) {
-            String message = "****** Actual ******: %s%n".formatted(actual);
-            mismatch.appendText(message);
-            log.trace(message);
+            describeMismatch("****** Actual ******: %s%n".formatted(actual), mismatch);
             return false;
         } else if (expected.getClass().isAssignableFrom(actual.getClass())) {
             try {
@@ -111,28 +109,25 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
                     final var actualValue = beanProperty.getReadMethod().invoke(actual);
 
                     if (!haveEqualFieldValue(expectedValue, actualValue, fieldName)) {
-                        String message =
+                        describeMismatch(
                                 """
                                     ****** Mismatch in field '%s' ******
                                     ****** Expected ***: %s
                                     ****** Actual *****: %s
                                     """
-                                        .formatted(fieldName, expectedValue, actualValue);
-                        mismatch.appendText(message).appendText("\n");
-                        log.trace(message);
+                                        .formatted(fieldName, expectedValue, actualValue),
+                                mismatch);
                         return false;
                     }
                 }
                 return true;
             } catch (IntrospectionException | InvocationTargetException | IllegalAccessException e) {
-                log.warn(e.getMessage(), e);
+                log.error(e.getMessage(), e);
                 return false;
             }
         } else {
             if (!defaultMatcher.apply(expected).matches(actual)) {
-                String message = "****** Actual ******: %s%n".formatted(actual);
-                mismatch.appendText(message);
-                log.trace(message);
+                describeMismatch("****** Actual ******: %s%n".formatted(actual), mismatch);
                 return false;
             }
             return true;
@@ -149,9 +144,14 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
                 return defaultMatcher.apply(expected).matches(actual);
             }
         } catch (Exception e) {
-            log.warn(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             return false;
         }
+    }
+
+    private void describeMismatch(String message, Description mismatch) {
+        mismatch.appendText(message).appendText("\n");
+        log.trace(message);
     }
 
     private static List<PropertyDescriptor> beanGetterProperties(Object bean, Class<?> stopClass)

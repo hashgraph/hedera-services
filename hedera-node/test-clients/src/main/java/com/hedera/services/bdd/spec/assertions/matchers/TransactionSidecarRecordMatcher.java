@@ -204,15 +204,14 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
     private boolean matchesBytecodeOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
         Matcher<ContractBytecode> matcher = bytecodeMatcher.apply(bytecode);
         if (bytecode != null && !matcher.matches(sidecarRecord.getBytecode())) {
-            String message =
+            describeMismatch(
                     """
                     ***Mismatch in Bytecode:***
                     Expected: %s
                     Actual: %s
                     """
-                            .formatted(bytecode, sidecarRecord.getBytecode());
-            log.warn(message);
-            mismatch.appendText(message);
+                            .formatted(bytecode, sidecarRecord.getBytecode()),
+                    mismatch);
             return false;
         }
         return true;
