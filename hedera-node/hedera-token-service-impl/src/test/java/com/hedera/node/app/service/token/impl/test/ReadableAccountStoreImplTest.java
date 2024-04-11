@@ -168,7 +168,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void retriesEcdsaKeyAliasAsEvmAddressWhenMissing() {
+    void doesntRetryEcdsaKeyAliasAsEvmAddressWhenMissingUsingGet() {
         final var aSecp256K1Key = Key.newBuilder()
                 .ecdsaSecp256k1(Bytes.fromHex("030101010101010101010101010101010101010101010101010101010101010101"))
                 .build();
@@ -188,6 +188,30 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
                 .alias(Key.PROTOBUF.toBytes(aSecp256K1Key))
                 .build();
         final var result = subject.getAccountById(protoKeyId);
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void retriesEcdsaKeyAliasAsEvmAddressWhenMissingUsingGetByAlias() {
+        final var aSecp256K1Key = Key.newBuilder()
+                .ecdsaSecp256k1(Bytes.fromHex("030101010101010101010101010101010101010101010101010101010101010101"))
+                .build();
+        final var evmAddress = EthSigsUtils.recoverAddressFromPubKey(
+                aSecp256K1Key.ecdsaSecp256k1OrThrow().toByteArray());
+
+        readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAliases = emptyReadableAliasStateBuilder()
+                .value(new ProtoBytes(Bytes.wrap(evmAddress)), asAccount(accountNum))
+                .build();
+        given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+
+        subject = new ReadableAccountStoreImpl(readableStates);
+
+        final var protoKeyId = AccountID.newBuilder()
+                .alias(Key.PROTOBUF.toBytes(aSecp256K1Key))
+                .build();
+        final var result = subject.getAliasedAccountById(protoKeyId);
         assertThat(result).isNotNull();
     }
 
