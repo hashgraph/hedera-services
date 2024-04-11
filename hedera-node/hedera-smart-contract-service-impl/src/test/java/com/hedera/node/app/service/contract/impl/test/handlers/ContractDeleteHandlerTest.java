@@ -121,8 +121,8 @@ class ContractDeleteHandlerTest {
     @Test
     void failsWithoutObtainerSet() {
         final var txn = TransactionBody.newBuilder()
-                        .contractDeleteInstance(missingObtainer(VALID_CONTRACT_ADDRESS))
-                        .build();
+                .contractDeleteInstance(missingObtainer(VALID_CONTRACT_ADDRESS))
+                .build();
         final var ex = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertEquals(OBTAINER_REQUIRED, ex.responseCode());
     }
