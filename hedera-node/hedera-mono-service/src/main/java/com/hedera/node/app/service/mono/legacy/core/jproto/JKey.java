@@ -29,7 +29,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -132,7 +131,7 @@ public abstract class JKey implements HederaKey {
 
         if (key.hasThresholdKey()) {
             final var thresholdKey = key.thresholdKeyOrThrow();
-            List<com.hedera.hapi.node.base.Key> tKeys = thresholdKey.keys().keysOrElse(Collections.emptyList());
+            List<com.hedera.hapi.node.base.Key> tKeys = thresholdKey.keys().keys();
             List<JKey> jkeys = new ArrayList<>();
             for (var aKey : tKeys) {
                 JKey res = convertKey(aKey, depth + 1);

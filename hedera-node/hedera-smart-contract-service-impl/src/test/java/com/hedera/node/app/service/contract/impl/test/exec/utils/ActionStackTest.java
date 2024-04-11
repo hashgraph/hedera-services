@@ -140,7 +140,7 @@ class ActionStackTest {
         allActions.add(new ActionWrapper(ContractAction.DEFAULT));
         allActions.add(new ActionWrapper(ContractAction.DEFAULT));
         final var actions = subject.asContractActions();
-        assertEquals(actions.contractActionsOrThrow(), List.of(ContractAction.DEFAULT, ContractAction.DEFAULT));
+        assertEquals(actions.contractActions(), List.of(ContractAction.DEFAULT, ContractAction.DEFAULT));
     }
 
     @Test

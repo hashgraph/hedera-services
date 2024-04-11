@@ -72,4 +72,15 @@ public class BaseCryptoHandler {
         }
         return false;
     }
+
+    /**
+     * Checks if the accountID has an account number or alias
+     * @param accountID   the accountID to check
+     * @return {@code true} if the accountID has an account number or alias, {@code false} otherwise
+     */
+    public static boolean hasAccountNumOrAlias(@Nullable final AccountID accountID) {
+        return accountID != null
+                && ((accountID.hasAccountNum() && accountID.accountNumOrThrow() != 0L)
+                        || (accountID.hasAlias() && accountID.aliasOrThrow().length() > 0));
+    }
 }

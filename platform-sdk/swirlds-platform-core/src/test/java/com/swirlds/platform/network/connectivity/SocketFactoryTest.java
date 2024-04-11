@@ -16,18 +16,12 @@
 
 package com.swirlds.platform.network.connectivity;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
-import com.swirlds.platform.network.SocketConfig;
-import com.swirlds.platform.network.SocketConfig_;
 import com.swirlds.platform.system.address.AddressBook;
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
@@ -38,33 +32,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class SocketFactoryTest {
-    private static final byte[] DATA = {1, 2, 3};
-    private static final String STRING_IP = "127.0.0.1";
+class SocketFactoryTest extends ConnectivityTestBase {
     private static final int PORT = 30_000;
-    private static final SocketConfig NO_IP_TOS;
-    private static final SocketConfig IP_TOS;
-    private static final Configuration TLS_NO_IP_TOS_CONFIG;
-    private static final Configuration TLS_IP_TOS_CONFIG;
-
-    static {
-        TLS_NO_IP_TOS_CONFIG = new TestConfigBuilder()
-                .withValue(SocketConfig_.IP_TOS, "-1")
-                .withValue(SocketConfig_.USE_T_L_S, true)
-                .getOrCreateConfig();
-        TLS_IP_TOS_CONFIG = new TestConfigBuilder()
-                .withValue(SocketConfig_.IP_TOS, "100")
-                .withValue(SocketConfig_.USE_T_L_S, true)
-                .getOrCreateConfig();
-
-        final Configuration configurationNoIpTos =
-                new TestConfigBuilder().withValue(SocketConfig_.IP_TOS, "-1").getOrCreateConfig();
-        NO_IP_TOS = configurationNoIpTos.getConfigData(SocketConfig.class);
-
-        final Configuration configurationIpTos =
-                new TestConfigBuilder().withValue(SocketConfig_.IP_TOS, "100").getOrCreateConfig();
-        IP_TOS = configurationIpTos.getConfigData(SocketConfig.class);
-    }
 
     /**
      * Calls {@link #testSockets(SocketFactory, SocketFactory)} twice, to test both factories as server and as client
@@ -96,23 +65,7 @@ class SocketFactoryTest {
 
         final ServerSocket serverSocket = serverFactory.createServerSocket(PORT);
 
-        final Thread server = new Thread(() -> {
-            try {
-                final Socket s = serverSocket.accept();
-                final byte[] bytes = s.getInputStream().readNBytes(DATA.length);
-                assertArrayEquals(DATA, bytes, "Data read from socket must be the same as the data written");
-                s.close();
-            } catch (final IOException e) {
-                throw new RuntimeException(e);
-            } finally {
-                // for some reason, AutoClosable does not seem to close in time, and subsequent tests fail if used
-                try {
-                    serverSocket.close();
-                } catch (final IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
+        final Thread server = createSocketThread(serverSocket);
         final AtomicReference<Throwable> threadException = new AtomicReference<>();
         server.setUncaughtExceptionHandler((t, e) -> threadException.set(e));
         server.start();

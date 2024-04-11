@@ -45,6 +45,7 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -104,9 +105,11 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         }
 
         // Hbar changes from transaction including staking rewards
+        final var maxLegalBalance =
+                context.configuration().getConfigData(LedgerConfig.class).totalTinyBarFloat();
         final Map<AccountID, Long> hbarChanges;
         try {
-            hbarChanges = hbarChangesFrom(writableAccountStore);
+            hbarChanges = hbarChangesFrom(writableAccountStore, maxLegalBalance);
         } catch (HandleException e) {
             if (e.getStatus() == FAIL_INVALID) {
                 logHbarFinalizationFailInvalid(
@@ -185,7 +188,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         context.forEachChildRecord(ChildRecordBuilder.class, childRecord -> {
             final List<AccountAmount> childHbarChangesFromRecord = childRecord.transferList() == null
                     ? emptyList()
-                    : childRecord.transferList().accountAmountsOrElse(emptyList());
+                    : childRecord.transferList().accountAmounts();
             for (final var childChange : childHbarChangesFromRecord) {
                 final var accountId = childChange.accountID();
                 if (hbarChanges.containsKey(accountId)) {
@@ -196,7 +199,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                 }
             }
             for (final var tokenTransfers : childRecord.tokenTransferLists()) {
-                final var fungibleTransfers = tokenTransfers.transfersOrElse(emptyList());
+                final var fungibleTransfers = tokenTransfers.transfers();
                 final var tokenId = tokenTransfers.tokenOrThrow();
                 if (!fungibleTransfers.isEmpty()) {
                     for (final var unitAdjust : fungibleTransfers) {
@@ -211,7 +214,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                         }
                     }
                 } else {
-                    for (final var ownershipChange : tokenTransfers.nftTransfersOrElse(emptyList())) {
+                    for (final var ownershipChange : tokenTransfers.nftTransfers()) {
                         final var newOwnerId = ownershipChange.receiverAccountIDOrElse(ZERO_ACCOUNT_ID);
                         final var key = new NftID(tokenId, ownershipChange.serialNumber());
                         finalNftOwners.put(key, newOwnerId);
