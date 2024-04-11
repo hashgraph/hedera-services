@@ -30,6 +30,8 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.CacheConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -54,8 +56,17 @@ public class CacheWarmer {
     private final Executor executor;
 
     @Inject
-    public CacheWarmer(@NonNull final TransactionChecker checker, @NonNull final TransactionDispatcher dispatcher) {
-        this(checker, dispatcher, ForkJoinPool.commonPool());
+    public CacheWarmer(
+            @NonNull final TransactionChecker checker,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final ConfigProvider configProvider) {
+        this(
+                checker,
+                dispatcher,
+                new ForkJoinPool(configProvider
+                        .getConfiguration()
+                        .getConfigData(CacheConfig.class)
+                        .cryptoTransferWarmThreads()));
     }
 
     @VisibleForTesting
