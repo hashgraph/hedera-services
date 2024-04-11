@@ -17,7 +17,6 @@
 package com.swirlds.common.test.fixtures.merkle.dummy;
 
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.views.LearnerPushMerkleTreeView;
 
 public class DummyLearnerPushMerkleTreeView extends LearnerPushMerkleTreeView {
@@ -28,8 +27,8 @@ public class DummyLearnerPushMerkleTreeView extends LearnerPushMerkleTreeView {
      * @param root
      * 		the root of the tree (or subtree)
      */
-    public DummyLearnerPushMerkleTreeView(final ReconnectConfig reconnectConfig, final MerkleNode root) {
-        super(reconnectConfig, root);
+    public DummyLearnerPushMerkleTreeView(final MerkleNode root) {
+        super(root);
     }
 
     /**

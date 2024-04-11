@@ -78,9 +78,9 @@ public class BenchmarkSlowTeachingSynchronizer extends TeachingSynchronizer {
      * {@inheritDoc}
      */
     @Override
-    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
+    public <T extends SelfSerializable> AsyncOutputStream buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new BenchmarkSlowAsyncOutputStream<>(
+        return new BenchmarkSlowAsyncOutputStream(
                 out,
                 workGroup,
                 randomSeed,

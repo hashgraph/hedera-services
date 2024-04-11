@@ -24,14 +24,11 @@ import static com.swirlds.virtualmap.internal.Path.getRightChildPath;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
-import com.swirlds.common.merkle.synchronization.task.Lesson;
 import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushReceiveTask;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushSendTask;
@@ -54,6 +51,7 @@ import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -133,24 +131,22 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public void startTeacherTasks(
             final TeachingSynchronizer teachingSynchronizer,
+            final int viewId,
             final Time time,
             final StandardWorkGroup workGroup,
-            final MerkleDataInputStream inputStream,
-            final MerkleDataOutputStream outputStream,
-            final Queue<TeacherSubtree> subtrees) {
-        final AsyncInputStream<QueryResponse> in =
-                new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
-        in.start();
-        final AsyncOutputStream<Lesson<Long>> out = teachingSynchronizer.buildOutputStream(workGroup, outputStream);
-        out.start();
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
+            final Queue<TeacherSubtree> subtrees,
+            final Consumer<Boolean> completeListener) {
+        in.registerView(viewId, QueryResponse::new);
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
-        final TeacherPushSendTask<Long> teacherSendTask =
-                new TeacherPushSendTask<>(time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
+        final TeacherPushSendTask<Long> teacherSendTask = new TeacherPushSendTask<>(
+                viewId, time, reconnectConfig, workGroup, in, out, subtrees, this, senderIsFinished);
         teacherSendTask.start();
         final TeacherPushReceiveTask<Long> teacherReceiveTask =
-                new TeacherPushReceiveTask<>(workGroup, in, this, senderIsFinished);
+                new TeacherPushReceiveTask<>(workGroup, viewId, in, this, senderIsFinished, completeListener);
         teacherReceiveTask.start();
     }
 
@@ -249,7 +245,10 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public void serializeLeaf(final SerializableDataOutputStream out, final Long leaf) throws IOException {
         checkValidLeaf(leaf, reconnectState);
-        final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(leaf, false);
+        VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(leaf, false);
+        if (leafRecord == null) {
+            leafRecord = records.findLeafRecord(leaf, false);
+        }
         assert leafRecord != null : "Unexpected null leaf record at path=" + leaf;
         out.writeSerializable(leafRecord, false);
     }

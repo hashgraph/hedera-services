@@ -25,6 +25,7 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
@@ -35,10 +36,14 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.SocketException;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -85,6 +90,14 @@ public class TeachingSynchronizer {
 
     private final Time time;
 
+    /*
+     * During reconnect, all merkle sub-trees get unique IDs, which are used to dispatch
+     * messages to correct teacher/learner tree views, when multiple sub-trees are synced
+     * in parallel. This generator is used to generate these IDs, and a similar one exists
+     * on the learner side.
+     */
+    private final AtomicInteger viewIdGen = new AtomicInteger(0);
+
     /**
      * Create a new teaching synchronizer.
      *
@@ -126,10 +139,13 @@ public class TeachingSynchronizer {
     public void synchronize() throws InterruptedException {
         try {
             while (!subtrees.isEmpty()) {
-                try (final TeacherSubtree subtree = subtrees.remove()) {
-                    subtree.getView().waitUntilReady();
-                    sendTree(subtree.getRoot(), subtree.getView());
+                final Set<TeacherSubtree> toSync = new HashSet<>();
+                int count = 0;
+                while (!subtrees.isEmpty() && (count < reconnectConfig.maxParallelSubtrees())) {
+                    toSync.add(subtrees.remove());
+                    count++;
                 }
+                sendTreesInParallel(toSync);
             }
         } finally {
             // If we crash, make sure to clean up any remaining subtrees.
@@ -139,63 +155,74 @@ public class TeachingSynchronizer {
         }
     }
 
-    /**
-     * Send a tree (or subtree).
-     */
-    private <T> void sendTree(final MerkleNode root, final TeacherTreeView<T> view) throws InterruptedException {
-        logger.info(
-                RECONNECT.getMarker(),
-                "sending tree rooted at {} with route {}",
-                root == null ? null : root.getClass().getName(),
-                root == null ? "[]" : root.getRoute());
-
+    private void sendTreesInParallel(final Set<TeacherSubtree> toSend) throws InterruptedException {
         final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
+        final Function<Throwable, Boolean> reconnectExceptionListener = ex -> {
+            Throwable cause = ex;
+            while (cause != null) {
+                if (cause instanceof SocketException socketEx) {
+                    if (socketEx.getMessage().equalsIgnoreCase("Connection reset by peer")) {
+                        // Connection issues during reconnects are expected and recoverable, just
+                        // log them as info. All other exceptions should be treated as real errors
+                        logger.info(RECONNECT.getMarker(), "Connection reset while sending tree. Aborting");
+                        return true;
+                    }
+                }
+                cause = cause.getCause();
+            }
+            firstReconnectException.compareAndSet(null, ex);
+            // Let StandardWorkGroup log it as an error using the EXCEPTION marker
+            return false;
+        };
         // A future improvement might be to reuse threads between subtrees.
         final StandardWorkGroup workGroup =
-                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, ex -> {
-                    Throwable cause = ex;
-                    while (cause != null) {
-                        if (cause instanceof SocketException socketEx) {
-                            if (socketEx.getMessage().equalsIgnoreCase("Connection reset by peer")) {
-                                // Connection issues during reconnects are expected and recoverable, just
-                                // log them as info. All other exceptions should be treated as real errors
-                                logger.info(
-                                        RECONNECT.getMarker(),
-                                        "Connection reset while sending tree at {} with route {}. Aborting",
-                                        root == null ? null : root.getClass().getName(),
-                                        root == null ? "[]" : root.getRoute());
-                                return true;
-                            }
-                        }
-                        cause = cause.getCause();
-                    }
-                    firstReconnectException.compareAndSet(null, ex);
-                    // Let StandardWorkGroup log it as an error using the EXCEPTION marker
-                    return false;
-                });
+                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
 
-        view.startTeacherTasks(this, time, workGroup, inputStream, outputStream, subtrees);
+        final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, reconnectConfig);
+        final AsyncOutputStream out = buildOutputStream(workGroup, outputStream);
+
+        final AtomicInteger running = new AtomicInteger(toSend.size());
+        for (final TeacherSubtree subtree : toSend) {
+            final MerkleNode root = subtree.getRoot();
+            final String route = root == null ? "[]" : root.getRoute().toString();
+            final TeacherTreeView<?> view = subtree.getView();
+            view.waitUntilReady();
+            logger.info(RECONNECT.getMarker(), "Sending tree rooted with route {}", route);
+            final int viewId = viewIdGen.getAndIncrement();
+            view.startTeacherTasks(this, viewId, time, workGroup, in, out, subtrees, success -> {
+                if (success) {
+                    logger.info(RECONNECT.getMarker(), "Finished sending tree with route {}", route);
+                } else {
+                    logger.error(RECONNECT.getMarker(), "Failed to send tree with route {}", route);
+                }
+                if (running.decrementAndGet() == 0) {
+                    in.close();
+                    out.close();
+                }
+            });
+        }
+
+        in.start();
+        out.start();
 
         workGroup.waitForTermination();
 
+        // Tree views can only be closed after async streams are finished. If a view is closed first,
+        // requests to serialize/deserialize a node issued on the async threads may fail
+        toSend.forEach(TeacherSubtree::close);
+
         if (workGroup.hasExceptions()) {
-
-            // Depending on where the failure occurred, there may be deserialized objects still sitting in
-            // the async input stream's queue that haven't been attached to any tree.
-            view.abort();
-
+            in.abort();
             throw new MerkleSynchronizationException(
                     "Synchronization failed with exceptions", firstReconnectException.get());
         }
-
-        logger.info(RECONNECT.getMarker(), "finished sending tree");
     }
 
     /**
      * Build the output stream. Exposed to allow unit tests to override implementation to simulate latency.
      */
-    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
+    public <T extends SelfSerializable> AsyncOutputStream buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new AsyncOutputStream<>(out, workGroup, reconnectConfig);
+        return new AsyncOutputStream(out, workGroup, reconnectConfig);
     }
 }

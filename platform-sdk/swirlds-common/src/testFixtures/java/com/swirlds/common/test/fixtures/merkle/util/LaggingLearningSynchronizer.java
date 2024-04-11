@@ -54,8 +54,8 @@ public class LaggingLearningSynchronizer extends LearningSynchronizer {
      * {@inheritDoc}
      */
     @Override
-    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
+    public <T extends SelfSerializable> AsyncOutputStream buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new LaggingAsyncOutputStream<>(out, workGroup, latencyMilliseconds, reconnectConfig);
+        return new LaggingAsyncOutputStream(out, workGroup, latencyMilliseconds, reconnectConfig);
     }
 }

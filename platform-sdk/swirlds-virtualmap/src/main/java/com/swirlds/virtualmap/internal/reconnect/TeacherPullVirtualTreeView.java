@@ -21,11 +21,10 @@ import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
@@ -41,6 +40,7 @@ import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -112,17 +112,16 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public void startTeacherTasks(
             final TeachingSynchronizer teachingSynchronizer,
+            final int viewId,
             final Time time,
             final StandardWorkGroup workGroup,
-            final MerkleDataInputStream inputStream,
-            final MerkleDataOutputStream outputStream,
-            final Queue<TeacherSubtree> subtrees) {
-        final AsyncOutputStream<PullVirtualTreeResponse> out =
-                teachingSynchronizer.buildOutputStream(workGroup, outputStream);
-        out.start();
-
-        final TeacherPullVirtualTreeReceiveTask teacherReceiveTask =
-                new TeacherPullVirtualTreeReceiveTask(time, reconnectConfig, workGroup, inputStream, out, this);
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
+            final Queue<TeacherSubtree> subtrees,
+            final Consumer<Boolean> completeListener) {
+        in.registerView(viewId, PullVirtualTreeRequest::new);
+        final TeacherPullVirtualTreeReceiveTask teacherReceiveTask = new TeacherPullVirtualTreeReceiveTask(
+                viewId, time, reconnectConfig, workGroup, in, out, this, completeListener);
         teacherReceiveTask.exec();
     }
 

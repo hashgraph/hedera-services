@@ -27,7 +27,11 @@ import com.swirlds.common.utility.StopWatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -48,10 +52,8 @@ import org.apache.logging.log4j.Logger;
  * <p>
  * This object is not thread safe. Only one thread should attempt to send data over this stream at any point in time.
  * </p>
- *
- * @param <T> the type of the message to send
  */
-public class AsyncOutputStream<T extends SelfSerializable> implements AutoCloseable {
+public class AsyncOutputStream implements AutoCloseable {
 
     private static final Logger logger = LogManager.getLogger(AsyncOutputStream.class);
 
@@ -60,10 +62,18 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
      */
     private final SerializableDataOutputStream outputStream;
 
+    private final int queueSize;
+
     /**
-     * A queue of messages that need to be written to the output stream.
+     * A queue that need to be written to the output stream. The queue contains view IDs,
+     * which are then used to get message to write from {@link #viewMessages}.
      */
-    private final BlockingQueue<T> outgoingMessages;
+    private final BlockingQueue<Integer> streamQueue;
+
+    /**
+     * Queues of messages scheduled to write to the output stream, per merkle sub-tree.
+     */
+    private final Map<Integer, BlockingQueue<SelfSerializable>> viewMessages;
 
     /**
      * The time that has elapsed since the last flush was attempted.
@@ -108,7 +118,9 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
 
         this.outputStream = Objects.requireNonNull(outputStream, "outputStream must not be null");
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
-        this.outgoingMessages = new LinkedBlockingQueue<>(config.asyncStreamBufferSize());
+        this.queueSize = config.asyncStreamBufferSize();
+        this.streamQueue = new LinkedBlockingQueue<>(queueSize);
+        this.viewMessages = new HashMap<>();
         this.alive = true;
         this.timeSinceLastFlush = new StopWatch();
         this.timeSinceLastFlush.start();
@@ -132,20 +144,8 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
         return alive;
     }
 
-    protected SerializableDataOutputStream getOutputStream() {
-        return outputStream;
-    }
-
-    /**
-     * This is exposed to allow test classes to simulate latency.
-     */
-    protected BlockingQueue<T> getOutgoingMessages() {
-        return outgoingMessages;
-    }
-
     public void run() {
-        while ((isAlive() || !outgoingMessages.isEmpty())
-                && !Thread.currentThread().isInterrupted()) {
+        while ((isAlive() || !streamQueue.isEmpty()) && !Thread.currentThread().isInterrupted()) {
             flushIfRequired();
             boolean workDone = handleNextMessage();
             if (!workDone) {
@@ -168,12 +168,18 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     /**
      * Send a message asynchronously. Messages are guaranteed to be delivered in the order sent.
      */
-    public void sendAsync(final T message) throws InterruptedException {
+    public void sendAsync(final int viewId, final SelfSerializable message) throws InterruptedException {
         if (!isAlive()) {
             throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
         }
 
-        final boolean success = outgoingMessages.offer(message, timeout.toMillis(), TimeUnit.MILLISECONDS);
+        BlockingQueue<SelfSerializable> viewQueue = viewMessages.get(viewId);
+        if (viewQueue == null) {
+            viewQueue = new ArrayBlockingQueue<>(queueSize);
+            viewMessages.put(viewId, viewQueue);
+        }
+        boolean success = viewQueue.offer(message, timeout.toMillis(), TimeUnit.MILLISECONDS);
+        success = success && streamQueue.offer(viewId, timeout.toMillis(), TimeUnit.MILLISECONDS);
 
         if (!success) {
             try {
@@ -200,9 +206,14 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
      * @return true if a message was sent.
      */
     private boolean handleNextMessage() {
-        if (!outgoingMessages.isEmpty()) {
-            final T message = outgoingMessages.remove();
+        if (!streamQueue.isEmpty()) {
+            final int viewId = streamQueue.remove();
+            final Queue<SelfSerializable> viewQueue = viewMessages.get(viewId);
+            assert viewQueue != null;
+            assert !viewQueue.isEmpty();
+            final SelfSerializable message = viewQueue.remove();
             try {
+                outputStream.writeInt(viewId);
                 serializeMessage(message);
             } catch (final IOException e) {
                 throw new MerkleSynchronizationException(e);
@@ -214,7 +225,7 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
         return false;
     }
 
-    protected void serializeMessage(final T message) throws IOException {
+    protected void serializeMessage(final SelfSerializable message) throws IOException {
         message.serialize(outputStream);
     }
 

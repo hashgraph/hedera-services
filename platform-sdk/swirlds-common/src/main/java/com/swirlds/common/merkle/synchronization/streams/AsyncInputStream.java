@@ -28,10 +28,12 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -52,16 +54,23 @@ import org.apache.logging.log4j.Logger;
  * This object is not thread safe. Only one thread should attempt to read data from stream at any point in time.
  * </p>
  */
-public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseable {
+public class AsyncInputStream implements AutoCloseable {
 
     private static final Logger logger = LogManager.getLogger(AsyncInputStream.class);
 
     private static final String THREAD_NAME = "async-input-stream";
 
+    private final ReconnectConfig reconnectConfig;
+
     private final SerializableDataInputStream inputStream;
 
+    // Number of expected messages to read from this input stream. If the stream is used to
+    // synchronize multiple merkle sub-trees in parallel, this is the number of messages
+    // accross all of them
     private final AtomicInteger anticipatedMessages;
-    private final BlockingQueue<SelfSerializable> receivedMessages;
+
+    // Messages read from the underlying input stream so far, per merkle sub-tree
+    private final Map<Integer, BlockingQueue<SelfSerializable>> viewMessages;
 
     /**
      * The maximum amount of time to wait when reading a message.
@@ -75,7 +84,7 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
 
     private volatile boolean alive;
 
-    private final Supplier<T> messageFactory;
+    private final Map<Integer, Supplier<SelfSerializable>> messageFactories;
 
     private final StandardWorkGroup workGroup;
 
@@ -84,25 +93,24 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
      *
      * @param inputStream    the base stream to read from
      * @param workGroup      the work group that is managing this stream's thread
-     * @param messageFactory this function constructs new message objects. These messages objects are then used to read
-     *                       data via {@link SelfSerializable#deserialize(SerializableDataInputStream, int)}.
      * @param config         the configuration to use
      */
     public AsyncInputStream(
             @NonNull final SerializableDataInputStream inputStream,
             @NonNull final StandardWorkGroup workGroup,
-            @NonNull final Supplier<T> messageFactory,
             @NonNull final ReconnectConfig config) {
         Objects.requireNonNull(config, "config must not be null");
 
+        this.reconnectConfig = config;
         this.inputStream = Objects.requireNonNull(inputStream, "inputStream must not be null");
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
-        this.messageFactory = Objects.requireNonNull(messageFactory, "messageFactory must not be null");
         this.pollTimeout = config.asyncStreamTimeout();
         this.anticipatedMessages = new AtomicInteger(0);
-        this.receivedMessages = new LinkedBlockingQueue<>(config.asyncStreamBufferSize());
         this.finishedLatch = new CountDownLatch(1);
         this.alive = true;
+
+        this.viewMessages = new ConcurrentHashMap<>();
+        this.messageFactories = new ConcurrentHashMap<>();
     }
 
     /**
@@ -110,6 +118,13 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
      */
     public void start() {
         workGroup.execute(THREAD_NAME, this::run);
+    }
+
+    public void registerView(final int viewId, final Supplier<SelfSerializable> messageFactory) {
+        assert !messageFactories.containsKey(viewId);
+        messageFactories.put(viewId, messageFactory);
+        assert !viewMessages.containsKey(viewId);
+        viewMessages.put(viewId, new ArrayBlockingQueue<>(reconnectConfig.asyncStreamBufferSize()));
     }
 
     /**
@@ -122,43 +137,44 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
     }
 
     /**
-     * Get the number of messages that this stream is still expecting to receive.
-     */
-    public long getTotalAnticipatedMessages() {
-        return anticipatedMessages.get();
-    }
-
-    /**
      * This method is run on a background thread. Continuously reads things from the stream and puts them into the
      * queue.
      */
     private void run() {
-        T message = null;
+        SelfSerializable message = null;
         try {
             while (isAlive() && !Thread.currentThread().isInterrupted()) {
                 final int previous =
                         anticipatedMessages.getAndUpdate((final int value) -> value == 0 ? 0 : (value - 1));
 
                 if (previous == 0) {
-                    MILLISECONDS.sleep(1);
+                    Thread.onSpinWait();
                     continue;
                 }
 
+                final int viewId = inputStream.readInt();
+                final Supplier<SelfSerializable> messageFactory = messageFactories.get(viewId);
+                if (messageFactory == null) {
+                    throw new MerkleSynchronizationException("Unknown view ID: " + viewId);
+                }
                 message = messageFactory.get();
                 message.deserialize(inputStream, message.getVersion());
 
-                final boolean accepted = receivedMessages.offer(message, pollTimeout.toMillis(), MILLISECONDS);
+                final BlockingQueue<SelfSerializable> viewQueue = viewMessages.get(viewId);
+                if (viewQueue == null) {
+                    throw new MerkleSynchronizationException("Unknown view ID: " + viewId);
+                }
+                final boolean accepted = viewQueue.offer(message, pollTimeout.toMillis(), MILLISECONDS);
                 if (!accepted) {
-                    new MerkleSynchronizationException("Timed out waiting to add message to received messages queue");
+                    throw new MerkleSynchronizationException(
+                            "Timed out waiting to add message to received messages queue");
                 }
             }
         } catch (final IOException e) {
             throw new MerkleSynchronizationException(
                     String.format(
                             "Failed to deserialize object with class ID %d(0x%08X) (%s)",
-                            message.getClassId(),
-                            message.getClassId(),
-                            message.getClass().toString()),
+                            message.getClassId(), message.getClassId(), message.getClass()),
                     e);
         } catch (final InterruptedException e) {
             logger.warn(RECONNECT.getMarker(), "AsyncInputStream interrupted");
@@ -179,8 +195,26 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
      * Get an anticipated message. Blocks until the message is ready. Object returned will be the same object passed
      * into addAnticipatedMessage, but deserialized from the stream.
      */
-    public T readAnticipatedMessage() throws InterruptedException {
-        return asyncRead();
+    @SuppressWarnings("unchecked")
+    public <T extends SelfSerializable> T readAnticipatedMessage(final int viewId) throws InterruptedException {
+        final BlockingQueue<SelfSerializable> viewQueue = viewMessages.get(viewId);
+        if (viewQueue == null) {
+            throw new MerkleSynchronizationException("Unknown view ID: " + viewId);
+        }
+        final SelfSerializable data = viewQueue.poll(pollTimeout.toMillis(), MILLISECONDS);
+        if (data == null) {
+            try {
+                // An interrupt may not stop the thread if the thread is blocked on a stream read operation.
+                // The only way to ensure that the stream is closed is to close the stream.
+                inputStream.close();
+            } catch (IOException e) {
+                throw new MerkleSynchronizationException("Unable to close stream", e);
+            }
+
+            throw new MerkleSynchronizationException("Timed out waiting for data");
+        }
+
+        return (T) data;
     }
 
     /**
@@ -196,10 +230,12 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
             Thread.currentThread().interrupt();
         }
 
-        while (!receivedMessages.isEmpty()) {
-            SelfSerializable message = receivedMessages.remove();
-            if (message instanceof Releasable) {
-                ((Releasable) message).release();
+        for (final BlockingQueue<SelfSerializable> viewQueue : viewMessages.values()) {
+            while (!viewQueue.isEmpty()) {
+                final SelfSerializable message = viewQueue.remove();
+                if (message instanceof Releasable) {
+                    ((Releasable) message).release();
+                }
             }
         }
     }
@@ -210,27 +246,5 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
     @Override
     public void close() {
         alive = false;
-    }
-
-    /**
-     * Read a message. Will throw an exception if time equal to {@link #pollTimeout} passes without a message becoming
-     * available.
-     */
-    @SuppressWarnings("unchecked")
-    private T asyncRead() throws InterruptedException {
-        T data = (T) receivedMessages.poll(pollTimeout.toMillis(), MILLISECONDS);
-        if (data == null) {
-            try {
-                // An interrupt may not stop the thread if the thread is blocked on a stream read operation.
-                // The only way to ensure that the stream is closed is to close the stream.
-                inputStream.close();
-            } catch (IOException e) {
-                throw new MerkleSynchronizationException("Unable to close stream", e);
-            }
-
-            throw new MerkleSynchronizationException("Timed out waiting for data");
-        }
-
-        return data;
     }
 }

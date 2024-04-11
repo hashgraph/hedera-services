@@ -57,8 +57,9 @@ public class TeacherPushSendTask<T> {
 
     private final ReconnectConfig reconnectConfig;
     private final StandardWorkGroup workGroup;
-    private final AsyncInputStream<QueryResponse> in;
-    private final AsyncOutputStream<Lesson<T>> out;
+    private final int viewId;
+    private final AsyncInputStream in;
+    private final AsyncOutputStream out;
     private final Queue<TeacherSubtree> subtrees;
     private final TeacherTreeView<T> view;
 
@@ -81,14 +82,16 @@ public class TeacherPushSendTask<T> {
      * @param senderIsFinished      set to true when this thread has finished
      */
     public TeacherPushSendTask(
+            final int viewId,
             @NonNull final Time time,
             @NonNull final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
-            final AsyncInputStream<QueryResponse> in,
-            final AsyncOutputStream<Lesson<T>> out,
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
             final Queue<TeacherSubtree> subtrees,
             final TeacherTreeView<T> view,
             final AtomicBoolean senderIsFinished) {
+        this.viewId = viewId;
         this.reconnectConfig = reconnectConfig;
         this.workGroup = workGroup;
         this.in = in;
@@ -180,7 +183,7 @@ public class TeacherPushSendTask<T> {
             lesson = buildDataLesson(node);
         }
 
-        out.sendAsync(lesson);
+        out.sendAsync(viewId, lesson);
     }
 
     /**
@@ -200,9 +203,8 @@ public class TeacherPushSendTask<T> {
      * This thread is responsible for sending lessons (and nested queries) to the learner.
      */
     private void run() {
-        try (out) {
-            out.sendAsync(buildDataLesson(view.getRoot()));
-
+        try {
+            out.sendAsync(viewId, buildDataLesson(view.getRoot()));
             while (view.areThereNodesToHandle()) {
                 rateLimit();
                 final T node = view.getNextNodeToHandle();
@@ -212,7 +214,7 @@ public class TeacherPushSendTask<T> {
             logger.warn(RECONNECT.getMarker(), "teacher's sending thread interrupted");
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            throw new MerkleSynchronizationException("exception in the teacher's receiving thread", ex);
+            throw new MerkleSynchronizationException("exception in the teacher's sending thread", ex);
         } finally {
             senderIsFinished.set(true);
         }

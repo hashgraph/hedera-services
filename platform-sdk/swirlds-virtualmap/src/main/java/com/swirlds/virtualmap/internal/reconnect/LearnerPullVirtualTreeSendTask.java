@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -51,7 +52,9 @@ public class LearnerPullVirtualTreeSendTask {
     private static final String NAME = "reconnect-learner-sender";
 
     private final StandardWorkGroup workGroup;
-    private final AsyncOutputStream<PullVirtualTreeRequest> out;
+    private final int viewId;
+    private final AsyncInputStream in;
+    private final AsyncOutputStream out;
     private final LearnerPullVirtualTreeView view;
     private final NodeTraversalOrder traversalOrder;
 
@@ -88,13 +91,17 @@ public class LearnerPullVirtualTreeSendTask {
     public LearnerPullVirtualTreeSendTask(
             final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
-            final AsyncOutputStream<PullVirtualTreeRequest> out,
+            final int viewId,
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
             final LearnerPullVirtualTreeView view,
             final NodeTraversalOrder traversalOrder,
             final AtomicBoolean senderIsFinished,
             final CountDownLatch rootResponseReceived,
             final AtomicLong responsesExpected) {
         this.workGroup = workGroup;
+        this.viewId = viewId;
+        this.in = in;
         this.out = out;
         this.view = view;
         this.traversalOrder = traversalOrder;
@@ -110,10 +117,11 @@ public class LearnerPullVirtualTreeSendTask {
     }
 
     private void run() {
-        try (out) {
+        try {
             // Send a request for the root node first. The response will contain virtual tree path range
-            out.sendAsync(new PullVirtualTreeRequest(Path.ROOT_PATH, new Hash()));
+            out.sendAsync(viewId, new PullVirtualTreeRequest(Path.ROOT_PATH, new Hash()));
             responsesExpected.incrementAndGet();
+            in.anticipateMessage();
             if (!rootResponseReceived.await(rootResponseTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
                 throw new MerkleSynchronizationException("Timed out waiting for root node response from the teacher");
             }
@@ -126,11 +134,12 @@ public class LearnerPullVirtualTreeSendTask {
                     continue;
                 }
                 final Hash hash = path == Path.INVALID_PATH ? null : view.getNodeHash(path);
-                out.sendAsync(new PullVirtualTreeRequest(path, hash));
+                out.sendAsync(viewId, new PullVirtualTreeRequest(path, hash));
                 if (path == Path.INVALID_PATH) {
                     break;
                 }
                 responsesExpected.incrementAndGet();
+                in.anticipateMessage();
             }
             logger.debug(RECONNECT.getMarker(), "Learner send done");
         } catch (final InterruptedException ex) {

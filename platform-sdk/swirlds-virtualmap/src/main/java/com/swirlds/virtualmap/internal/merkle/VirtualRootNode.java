@@ -1455,7 +1455,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 originalMap.getRecords(), originalState.getFirstLeafPath(), originalState.getLastLeafPath());
         return switch (config.reconnectMode()) {
             case VirtualMapReconnectMode.PUSH -> new LearnerPushVirtualTreeView<>(
-                    reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
+                    this, originalMap.records, originalState, reconnectState, nodeRemover);
             case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM -> {
                 final NodeTraversalOrder topToBottom = new TopToBottomTraversalOrder();
                 yield new LearnerPullVirtualTreeView<>(

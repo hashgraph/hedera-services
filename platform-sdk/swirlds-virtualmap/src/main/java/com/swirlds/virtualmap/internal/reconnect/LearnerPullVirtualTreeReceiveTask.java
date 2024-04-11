@@ -18,12 +18,13 @@ package com.swirlds.virtualmap.internal.reconnect;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,7 +44,8 @@ public class LearnerPullVirtualTreeReceiveTask {
     private static final String NAME = "reconnect-learner-receiver";
 
     private final StandardWorkGroup workGroup;
-    private final SerializableDataInputStream in;
+    private final int viewId;
+    private final AsyncInputStream in;
     private final LearnerPullVirtualTreeView view;
 
     // Indicates if the learner sender task is done sending all requests to the teacher
@@ -55,6 +57,8 @@ public class LearnerPullVirtualTreeReceiveTask {
 
     // Indicates if a response for path 0 (virtual root node) has been received
     private final CountDownLatch rootResponseReceived;
+
+    private final Consumer<Boolean> completeListener;
 
     /**
      * Create a thread for receiving responses to queries from the teacher.
@@ -70,17 +74,21 @@ public class LearnerPullVirtualTreeReceiveTask {
      */
     public LearnerPullVirtualTreeReceiveTask(
             final StandardWorkGroup workGroup,
-            final SerializableDataInputStream in,
+            final int viewId,
+            final AsyncInputStream in,
             final LearnerPullVirtualTreeView view,
             final AtomicBoolean senderIsFinished,
             final AtomicLong expectedResponses,
-            final CountDownLatch rootResponseReceived) {
+            final CountDownLatch rootResponseReceived,
+            final Consumer<Boolean> completeListener) {
         this.workGroup = workGroup;
+        this.viewId = viewId;
         this.in = in;
         this.view = view;
         this.senderIsFinished = senderIsFinished;
         this.expectedResponses = expectedResponses;
         this.rootResponseReceived = rootResponseReceived;
+        this.completeListener = completeListener;
     }
 
     public void exec() {
@@ -88,15 +96,14 @@ public class LearnerPullVirtualTreeReceiveTask {
     }
 
     private void run() {
+        boolean success = false;
         try (view) {
             boolean finished = senderIsFinished.get();
             boolean responseExpected = expectedResponses.get() > 0;
 
             while (!finished || responseExpected) {
                 if (responseExpected) {
-                    final PullVirtualTreeResponse response = new PullVirtualTreeResponse(view);
-                    // the learner tree is notified about the new response in deserialize() method below
-                    response.deserialize(in, 0);
+                    final PullVirtualTreeResponse response = in.readAnticipatedMessage(viewId);
                     logger.debug(RECONNECT.getMarker(), "Learner receive path: " + response.getPath());
                     if (response.getPath() == 0) {
                         rootResponseReceived.countDown();
@@ -110,8 +117,11 @@ public class LearnerPullVirtualTreeReceiveTask {
                 responseExpected = expectedResponses.get() > 0;
             }
             logger.debug(RECONNECT.getMarker(), "Learner receive done");
+            success = true;
         } catch (final Exception ex) {
             throw new MerkleSynchronizationException("Exception in the learner's receiving task", ex);
+        } finally {
+            completeListener.accept(success);
         }
     }
 }

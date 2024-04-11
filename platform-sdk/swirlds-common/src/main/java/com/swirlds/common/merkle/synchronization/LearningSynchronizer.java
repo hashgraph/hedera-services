@@ -27,6 +27,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
@@ -38,11 +39,14 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.logging.legacy.payload.SynchronizationCompletePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -90,6 +94,14 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      * Responsible for creating and managing threads used by this object.
      */
     private final ThreadManager threadManager;
+
+    /*
+     * During reconnect, all merkle sub-trees get unique IDs, which are used to dispatch
+     * messages to correct teacher/learner tree views, when multiple sub-trees are synced
+     * in parallel. This generator is used to generate these IDs, and a similar one exists
+     * on the teacher side.
+     */
+    private final AtomicInteger viewIdGen = new AtomicInteger(0);
 
     /**
      * Create a new learning synchronizer.
@@ -180,15 +192,101 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         final long start = System.currentTimeMillis();
 
         while (!rootsToReceive.isEmpty()) {
-            final MerkleNode root = receiveTree(rootsToReceive.remove());
+            final List<MerkleNode> toReceive = new ArrayList<>();
+            int count = 0;
+            while (!rootsToReceive.isEmpty() && (count < reconnectConfig.maxParallelSubtrees())) {
+                toReceive.add(rootsToReceive.remove());
+                count++;
+            }
+            final List<MerkleNode> receivedRoots = receiveTreesInParallel(toReceive);
             if (newRoot == null) {
                 // The first tree synchronized will contain the root of the tree as a whole
-                newRoot = root;
+                assert receivedRoots.size() == 1;
+                newRoot = receivedRoots.get(0);
             }
         }
 
         synchronizationTimeMilliseconds = System.currentTimeMillis() - start;
         logger.info(RECONNECT.getMarker(), "synchronization complete");
+    }
+
+    private List<MerkleNode> receiveTreesInParallel(final List<MerkleNode> toReceive) throws InterruptedException {
+        final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
+        final Function<Throwable, Boolean> reconnectExceptionListener = ex -> {
+            firstReconnectException.compareAndSet(null, ex);
+            return false;
+        };
+        final StandardWorkGroup workGroup =
+                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
+
+        final List<AtomicReference<MerkleNode>> reconstructedRoots = new ArrayList<>(toReceive.size());
+        final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, reconnectConfig);
+        final AsyncOutputStream out = buildOutputStream(workGroup, outputStream);
+
+        final AtomicInteger runningCount = new AtomicInteger(toReceive.size());
+        for (final MerkleNode root : toReceive) {
+            final String route = root == null ? "[]" : root.getRoute().toString();
+            final LearnerTreeView<?> view;
+            if (root == null || !root.hasCustomReconnectView()) {
+                view = new LearnerPushMerkleTreeView(root);
+            } else {
+                assert root instanceof CustomReconnectRoot;
+                view = ((CustomReconnectRoot<?, ?>) root).buildLearnerView(reconnectConfig);
+            }
+
+            logger.info(RECONNECT.getMarker(), "Receiving tree rooted with route {}", route);
+
+            final AtomicReference<MerkleNode> reconstructedRoot = new AtomicReference<>();
+            reconstructedRoots.add(reconstructedRoot);
+            final int viewId = viewIdGen.getAndIncrement();
+            view.startLearnerTasks(this, workGroup, viewId, in, out, rootsToReceive, reconstructedRoot, success -> {
+                if (success) {
+                    viewsToInitialize.addFirst(view);
+                    logger.info(RECONNECT.getMarker(), "Finished receiving tree with route {}", route);
+                } else {
+                    logger.error(RECONNECT.getMarker(), "Failed to receive tree with route {}", route);
+                }
+                if (runningCount.decrementAndGet() == 0) {
+                    in.close();
+                    out.close();
+                }
+            });
+        }
+
+        in.start();
+        out.start();
+
+        InterruptedException interruptException = null;
+        try {
+            workGroup.waitForTermination();
+        } catch (final InterruptedException e) { // NOSONAR: Exception is rethrown below after cleanup.
+            interruptException = e;
+            logger.warn(RECONNECT.getMarker(), "interrupted while waiting for work group termination");
+        }
+
+        if (interruptException != null || workGroup.hasExceptions()) {
+            // Depending on where the failure occurred, there may be deserialized objects still sitting in
+            // the async input stream's queue that haven't been attached to any tree.
+            in.abort();
+
+            for (final AtomicReference<MerkleNode> root : reconstructedRoots) {
+                final MerkleNode merkleRoot = root.get();
+                if (merkleRoot.getReservationCount() == 0) {
+                    // If the root has a reference count of 0 then it is not underneath any other tree,
+                    // and this thread holds the implicit reference to the root.
+                    // This is the last chance to release that tree in this scenario.
+                    logger.warn(RECONNECT.getMarker(), "deleting partially constructed subtree");
+                    merkleRoot.release();
+                }
+            }
+            if (interruptException != null) {
+                throw interruptException;
+            }
+            throw new MerkleSynchronizationException(
+                    "Synchronization failed with exceptions", firstReconnectException.get());
+        }
+
+        return reconstructedRoots.stream().map(AtomicReference::get).toList();
     }
 
     /**
@@ -248,93 +346,11 @@ public class LearningSynchronizer implements ReconnectNodeCount {
     }
 
     /**
-     * Receive a tree (or subtree) from the teacher
-     *
-     * @param root the root of the tree (or subtree) that is already possessed
-     * @return the root of the reconstructed tree
-     */
-    @SuppressWarnings("unchecked")
-    private <T> MerkleNode receiveTree(final MerkleNode root) throws InterruptedException {
-
-        logger.info(
-                RECONNECT.getMarker(),
-                "receiving tree rooted at {} with route {}",
-                root == null ? "(unknown)" : root.getClass().getName(),
-                root == null ? "[]" : root.getRoute());
-
-        final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
-        final Function<Throwable, Boolean> reconnectExceptionListener = t -> {
-            firstReconnectException.compareAndSet(null, t);
-            return false;
-        };
-        final StandardWorkGroup workGroup =
-                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
-
-        final LearnerTreeView<T> view;
-        if (root == null || !root.hasCustomReconnectView()) {
-            view = (LearnerTreeView<T>) new LearnerPushMerkleTreeView(reconnectConfig, root);
-        } else {
-            assert root instanceof CustomReconnectRoot;
-            view = ((CustomReconnectRoot<?, T>) root).buildLearnerView(reconnectConfig);
-        }
-
-        final AtomicReference<T> reconstructedRoot = new AtomicReference<>();
-
-        view.startLearnerTasks(this, workGroup, inputStream, outputStream, rootsToReceive, reconstructedRoot);
-        InterruptedException interruptException = null;
-        try {
-            workGroup.waitForTermination();
-
-            logger.info(
-                    RECONNECT.getMarker(),
-                    "received tree rooted at {} with route {}",
-                    root == null ? "(unknown)" : root.getClass().getName(),
-                    root == null ? "[]" : root.getRoute());
-        } catch (final InterruptedException e) { // NOSONAR: Exception is rethrown below after cleanup.
-            interruptException = e;
-            logger.warn(RECONNECT.getMarker(), "interrupted while waiting for work group termination");
-        } catch (final Throwable t) {
-            logger.info(
-                    RECONNECT.getMarker(),
-                    "caught exception while receiving tree rooted at {} with route {}",
-                    root == null ? "(unknown)" : root.getClass().getName(),
-                    root == null ? "[]" : root.getRoute(),
-                    t);
-            throw t;
-        }
-
-        if (interruptException != null || workGroup.hasExceptions()) {
-
-            // Depending on where the failure occurred, there may be deserialized objects still sitting in
-            // the async input stream's queue that haven't been attached to any tree.
-            view.abort();
-
-            final MerkleNode merkleRoot = view.getMerkleRoot(reconstructedRoot.get());
-            if (merkleRoot != null && merkleRoot.getReservationCount() == 0) {
-                // If the root has a reference count of 0 then it is not underneath any other tree,
-                // and this thread holds the implicit reference to the root.
-                // This is the last chance to release that tree in this scenario.
-                logger.warn(RECONNECT.getMarker(), "deleting partially constructed subtree");
-                merkleRoot.release();
-            }
-            if (interruptException != null) {
-                throw interruptException;
-            }
-            throw new MerkleSynchronizationException(
-                    "Synchronization failed with exceptions", firstReconnectException.get());
-        }
-
-        viewsToInitialize.addFirst(view);
-
-        return view.getMerkleRoot(reconstructedRoot.get());
-    }
-
-    /**
      * Build the output stream. Exposed to allow unit tests to override implementation to simulate latency.
      */
-    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
+    public <T extends SelfSerializable> AsyncOutputStream buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new AsyncOutputStream<>(out, workGroup, reconnectConfig);
+        return new AsyncOutputStream(out, workGroup, reconnectConfig);
     }
 
     /**

@@ -22,14 +22,15 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.exceptions.MerkleSerializationException;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.virtualmap.internal.Path;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,12 +48,15 @@ public class TeacherPullVirtualTreeReceiveTask {
     private static final String NAME = "reconnect-teacher-receiver";
 
     private final StandardWorkGroup workGroup;
-    private final SerializableDataInputStream in;
-    private final AsyncOutputStream<PullVirtualTreeResponse> out;
-    private final TeacherPullVirtualTreeView view;
+    private final int viewId;
+    private final AsyncInputStream in;
+    private final AsyncOutputStream out;
+    private final TeacherPullVirtualTreeView<?, ?> view;
 
     private final RateLimiter rateLimiter;
     private final int sleepNanos;
+
+    private final Consumer<Boolean> completeListener;
 
     /**
      * Create new thread that will send data lessons and queries for a subtree.
@@ -65,16 +69,20 @@ public class TeacherPullVirtualTreeReceiveTask {
      * @param view                  an object that interfaces with the subtree
      */
     public TeacherPullVirtualTreeReceiveTask(
+            final int viewId,
             @NonNull final Time time,
             @NonNull final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
-            final SerializableDataInputStream in,
-            final AsyncOutputStream<PullVirtualTreeResponse> out,
-            final TeacherPullVirtualTreeView view) {
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
+            final TeacherPullVirtualTreeView<?, ?> view,
+            final Consumer<Boolean> completeListener) {
         this.workGroup = workGroup;
+        this.viewId = viewId;
         this.in = in;
         this.out = out;
         this.view = view;
+        this.completeListener = completeListener;
 
         final int maxRate = reconnectConfig.teacherMaxNodesPerSecond();
         if (maxRate > 0) {
@@ -110,11 +118,12 @@ public class TeacherPullVirtualTreeReceiveTask {
      * This thread is responsible for sending lessons (and nested queries) to the learner.
      */
     private void run() {
-        try (out) {
+        boolean success = false;
+        try {
+            in.anticipateMessage(); // anticipate root node response
             while (true) {
                 rateLimit();
-                final PullVirtualTreeRequest request = new PullVirtualTreeRequest();
-                request.deserialize(in, 0);
+                final PullVirtualTreeRequest request = in.readAnticipatedMessage(viewId);
                 logger.debug(RECONNECT.getMarker(), "Teacher receive path: " + request.getPath());
                 if (request.getPath() == Path.INVALID_PATH) {
                     logger.info(RECONNECT.getMarker(), "Teacher receiver is complete as requested by the learner");
@@ -132,14 +141,18 @@ public class TeacherPullVirtualTreeReceiveTask {
                         new PullVirtualTreeResponse(view, path, learnerHash, teacherHash);
                 // All real work is done in the async output thread. This call just registers a response
                 // and returns immediately
-                out.sendAsync(response);
+                out.sendAsync(viewId, response);
+                in.anticipateMessage();
             }
             logger.debug(RECONNECT.getMarker(), "Teacher receive done");
+            success = true;
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Teacher's receiving task is interrupted");
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
             throw new MerkleSynchronizationException("Exception in the teacher's receiving task", ex);
+        } finally {
+            completeListener.accept(success);
         }
     }
 }

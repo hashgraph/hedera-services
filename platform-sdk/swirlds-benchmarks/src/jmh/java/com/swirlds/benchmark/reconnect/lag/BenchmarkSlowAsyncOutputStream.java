@@ -31,7 +31,7 @@ import java.util.Random;
  * message, which emulates I/O-related performance issues (slow disk when the message
  * was read from disk originally, and then slow network I/O).
  */
-public class BenchmarkSlowAsyncOutputStream<T extends SelfSerializable> extends AsyncOutputStream<T> {
+public class BenchmarkSlowAsyncOutputStream extends AsyncOutputStream {
 
     private final LongFuzzer delayStorageMicrosecondsFuzzer;
     private final LongFuzzer delayNetworkMicrosecondsFuzzer;
@@ -61,21 +61,21 @@ public class BenchmarkSlowAsyncOutputStream<T extends SelfSerializable> extends 
      * {@inheritDoc}
      */
     @Override
-    public void sendAsync(final T message) throws InterruptedException {
+    public void sendAsync(final int viewId, final SelfSerializable message) throws InterruptedException {
         if (!isAlive()) {
             throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
         }
         sleepMicros(delayStorageMicrosecondsFuzzer.next());
-        getOutgoingMessages().put(message);
+        super.sendAsync(viewId, message);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void serializeMessage(final T message) throws IOException {
+    protected void serializeMessage(final SelfSerializable message) throws IOException {
         sleepMicros(delayNetworkMicrosecondsFuzzer.next());
-        message.serialize(getOutputStream());
+        super.serializeMessage(message);
     }
 
     /**

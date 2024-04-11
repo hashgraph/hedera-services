@@ -20,13 +20,12 @@ import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
@@ -47,6 +46,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * An implementation of {@link LearnerTreeView} for the virtual merkle. The learner during reconnect
@@ -142,28 +142,37 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     public void startLearnerTasks(
             final LearningSynchronizer learningSynchronizer,
             final StandardWorkGroup workGroup,
-            final MerkleDataInputStream inputStream,
-            final MerkleDataOutputStream outputStream,
+            final int viewId,
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
             final Queue<MerkleNode> rootsToReceive,
-            final AtomicReference<Long> reconstructedRoot) {
+            final AtomicReference<MerkleNode> reconstructedRoot,
+            final Consumer<Boolean> completeListener) {
         this.nodeCount = learningSynchronizer;
 
-        final AsyncOutputStream<PullVirtualTreeRequest> out =
-                learningSynchronizer.buildOutputStream(workGroup, outputStream);
-        out.start();
+        in.registerView(viewId, () -> new PullVirtualTreeResponse(this));
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean();
         final CountDownLatch rootResponseReceived = new CountDownLatch(1);
         final AtomicLong expectedResponses = new AtomicLong(0);
 
         final LearnerPullVirtualTreeReceiveTask learnerReceiveTask = new LearnerPullVirtualTreeReceiveTask(
-                workGroup, inputStream, this, senderIsFinished, expectedResponses, rootResponseReceived);
+                workGroup,
+                viewId,
+                in,
+                this,
+                senderIsFinished,
+                expectedResponses,
+                rootResponseReceived,
+                completeListener);
         learnerReceiveTask.exec();
-        reconstructedRoot.set(0L);
+        reconstructedRoot.set(root);
         assert traversalOrder != null;
         final LearnerPullVirtualTreeSendTask learnerSendTask = new LearnerPullVirtualTreeSendTask(
                 reconnectConfig,
                 workGroup,
+                viewId,
+                in,
                 out,
                 this,
                 traversalOrder,

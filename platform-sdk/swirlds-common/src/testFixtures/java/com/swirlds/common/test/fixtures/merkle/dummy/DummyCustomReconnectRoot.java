@@ -106,7 +106,7 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      */
     @Override
     public LearnerTreeView<MerkleNode> buildLearnerView(final ReconnectConfig reconnectConfig) {
-        return new DummyLearnerPushMerkleTreeView(reconnectConfig, this);
+        return new DummyLearnerPushMerkleTreeView(this);
     }
 
     /**
