@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import java.util.HashSet;
@@ -59,7 +59,7 @@ class SyncTestUtilsTest {
         knownSet.add(e3);
         knownSet.add(e1);
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(0, 1, 0, GENERATION_THRESHOLD);
+        final EventWindow eventWindow = new EventWindow(0, 1, 0, GENERATION_THRESHOLD);
 
         final Predicate<ShadowEvent> unknownNonAncient =
                 SyncUtils.unknownNonAncient(knownSet, eventWindow, eventWindow, GENERATION_THRESHOLD);

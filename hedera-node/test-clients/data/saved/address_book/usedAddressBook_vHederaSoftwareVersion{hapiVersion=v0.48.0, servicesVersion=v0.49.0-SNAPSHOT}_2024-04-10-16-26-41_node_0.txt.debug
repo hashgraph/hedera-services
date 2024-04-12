@@ -1,0 +1,13 @@
+--- Configuration Address Book ---
+address, 0, A, Alice, 1, 127.0.0.1, 60000, 127.0.0.1, 60001, 0.0.3
+
+nextNodeId, 1
+
+--- State Saved Address Book ---
+address, 0, A, Alice, 1, 127.0.0.1, 60000, 127.0.0.1, 60001, 0.0.3
+
+nextNodeId, 1
+
+--- Used Address Book ---
+The Configuration Address Book Was Used.
+

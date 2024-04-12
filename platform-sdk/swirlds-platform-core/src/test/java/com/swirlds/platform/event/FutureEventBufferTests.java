@@ -29,7 +29,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.ArrayList;
@@ -66,8 +66,8 @@ class FutureEventBufferTests {
         final long pendingConsensusRound = nonAncientBirthRound * 2;
         final long maxFutureRound = nonAncientBirthRound * 3;
 
-        final NonAncientEventWindow eventWindow =
-                new NonAncientEventWindow(pendingConsensusRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
+        final EventWindow eventWindow =
+                new EventWindow(pendingConsensusRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
 
         futureEventBuffer.updateEventWindow(eventWindow);
 
@@ -108,8 +108,8 @@ class FutureEventBufferTests {
                 newPendingConsensusRound <= maxFutureRound;
                 newPendingConsensusRound++) {
 
-            final NonAncientEventWindow newEventWindow = new NonAncientEventWindow(
-                    newPendingConsensusRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
+            final EventWindow newEventWindow =
+                    new EventWindow(newPendingConsensusRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
 
             final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
 
@@ -123,8 +123,8 @@ class FutureEventBufferTests {
         assertEquals(futureEvents, unBufferedEvents);
 
         // Make a big window shift. There should be no events that come out of the buffer.
-        final NonAncientEventWindow newEventWindow =
-                new NonAncientEventWindow(pendingConsensusRound * 1000, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
+        final EventWindow newEventWindow =
+                new EventWindow(pendingConsensusRound * 1000, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
         final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
         assertTrue(bufferedEvents.isEmpty());
     }
@@ -151,8 +151,8 @@ class FutureEventBufferTests {
         final long pendingConsensusRound = nonAncientBirthRound * 2;
         final long maxFutureRound = nonAncientBirthRound * 3;
 
-        final NonAncientEventWindow eventWindow =
-                new NonAncientEventWindow(pendingConsensusRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
+        final EventWindow eventWindow =
+                new EventWindow(pendingConsensusRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
 
         futureEventBuffer.updateEventWindow(eventWindow);
 
@@ -185,8 +185,8 @@ class FutureEventBufferTests {
             }
         }
 
-        final NonAncientEventWindow newEventWindow = new NonAncientEventWindow(
-                pendingConsensusRound * 1000, nonAncientBirthRound * 1000, 1, BIRTH_ROUND_THRESHOLD);
+        final EventWindow newEventWindow =
+                new EventWindow(pendingConsensusRound * 1000, nonAncientBirthRound * 1000, 1, BIRTH_ROUND_THRESHOLD);
 
         final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
         assertTrue(bufferedEvents.isEmpty());
@@ -212,8 +212,8 @@ class FutureEventBufferTests {
         final long pendingConsensusRound = random.nextLong(100, 1_000);
         final long nonAncientBirthRound = pendingConsensusRound / 2;
 
-        final NonAncientEventWindow eventWindow =
-                new NonAncientEventWindow(pendingConsensusRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
+        final EventWindow eventWindow =
+                new EventWindow(pendingConsensusRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
         futureEventBuffer.updateEventWindow(eventWindow);
 
         final long roundsUntilRelease = random.nextLong(10, 20);
@@ -232,8 +232,8 @@ class FutureEventBufferTests {
                 currentConsensusRound < eventBirthRound - 1;
                 currentConsensusRound++) {
 
-            final NonAncientEventWindow newEventWindow =
-                    new NonAncientEventWindow(currentConsensusRound, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
+            final EventWindow newEventWindow =
+                    new EventWindow(currentConsensusRound, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
             final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
             assertTrue(bufferedEvents.isEmpty());
         }
@@ -244,8 +244,8 @@ class FutureEventBufferTests {
         // To land with the pending consensus round at the exact value as the event's birth round, we need to
         // set the current consensus round to the event's birth round - 1.
 
-        final NonAncientEventWindow newEventWindow =
-                new NonAncientEventWindow(eventBirthRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
+        final EventWindow newEventWindow =
+                new EventWindow(eventBirthRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
         final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
         assertEquals(1, bufferedEvents.size());
         assertSame(event, bufferedEvents.getFirst());
