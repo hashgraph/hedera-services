@@ -48,7 +48,7 @@ import com.swirlds.platform.components.appcomm.CompleteStateNotificationWithClea
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
@@ -100,6 +100,7 @@ import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
 import com.swirlds.platform.wiring.components.RunningHashUpdaterWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import com.swirlds.platform.wiring.components.StateHasherWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -145,7 +146,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
     private final GossipWiring gossipWiring;
-    private final ComponentWiring<EventWindowManager, NonAncientEventWindow> eventWindowManagerWiring;
+    private final ComponentWiring<EventWindowManager, EventWindow> eventWindowManagerWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final ComponentWiring<EventStreamManager, Void> eventStreamManagerWiring;
     private final RunningHashUpdaterWiring runningHashUpdaterWiring;
@@ -156,7 +157,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             latestCompleteStateNotifierWiring;
     private final ComponentWiring<SignedStateNexus, Void> latestImmutableStateNexusWiring;
     private final ComponentWiring<LatestCompleteStateNexus, Void> latestCompleteStateNexusWiring;
-    private final ComponentWiring<SavedStateController, Void> savedStateControllerWiring;
+    private final ComponentWiring<SavedStateController, StateAndRound> savedStateControllerWiring;
     private final StateHasherWiring signedStateHasherWiring;
     private final PlatformCoordinator platformCoordinator;
     private final ComponentWiring<BirthRoundMigrationShim, GossipEvent> birthRoundMigrationShimWiring;
@@ -352,23 +353,21 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Solder the NonAncientEventWindow output to all components that need it.
+     * Solder the EventWindow output to all components that need it.
      */
-    private void solderNonAncientEventWindow() {
-        final OutputWire<NonAncientEventWindow> nonAncientEventWindowOutputWire =
-                eventWindowManagerWiring.getOutputWire();
+    private void solderEventWindow() {
+        final OutputWire<EventWindow> eventWindowOutputWire = eventWindowManagerWiring.getOutputWire();
 
-        nonAncientEventWindowOutputWire.solderTo(
-                eventDeduplicatorWiring.getInputWire(EventDeduplicator::setNonAncientEventWindow), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(
-                eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::setNonAncientEventWindow), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(inOrderLinkerWiring.nonAncientEventWindowInput(), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(pcesWriterWiring.nonAncientEventWindowInput(), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(
-                eventCreationManagerWiring.getInputWire(EventCreationManager::setNonAncientEventWindow), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(shadowgraphWiring.eventWindowInput(), INJECT);
-        nonAncientEventWindowOutputWire.solderTo(
+        eventWindowOutputWire.solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::setEventWindow), INJECT);
+        eventWindowOutputWire.solderTo(
+                eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::setEventWindow), INJECT);
+        eventWindowOutputWire.solderTo(orphanBufferWiring.eventWindowInput(), INJECT);
+        eventWindowOutputWire.solderTo(inOrderLinkerWiring.eventWindowInput(), INJECT);
+        eventWindowOutputWire.solderTo(pcesWriterWiring.eventWindowInput(), INJECT);
+        eventWindowOutputWire.solderTo(
+                eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow), INJECT);
+        eventWindowOutputWire.solderTo(shadowgraphWiring.eventWindowInput(), INJECT);
+        eventWindowOutputWire.solderTo(
                 latestCompleteStateNexusWiring.getInputWire(LatestCompleteStateNexus::updateEventWindow));
     }
 
@@ -451,7 +450,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .getCompleteStatesOutput()
                 .solderTo(latestCompleteStateNexusWiring.getInputWire(LatestCompleteStateNexus::setStateIfNewer));
 
-        solderNonAncientEventWindow();
+        solderEventWindow();
 
         pcesReplayerWiring.doneStreamingPcesOutputWire().solderTo(pcesWriterWiring.doneStreamingPcesInputWire());
         pcesReplayerWiring.eventOutput().solderTo(pipelineInputWire);
@@ -484,22 +483,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         consensusRoundHandlerWiring
                 .stateOutput()
                 .solderTo(latestImmutableStateNexusWiring.getInputWire(SignedStateNexus::setState));
-        // FUTURE WORK: it is guaranteed that markSavedState will be called before the state arrives at the
-        // signedStateFileManager, since SavedStateController::markSavedState is directly scheduled following a
-        // transformer (wired during construction), whereas the data flowing to the signedStateFileManager is soldered
-        // here in this method (via the signedStateHasher). This is guaranteed because data is distributed at runtime
-        // in the order that it was originally soldered.
-        //
-        // Though robust, this guarantee is not immediately obvious, and thus is difficult to maintain. The solution is
-        // to move the logic of SavedStateController::markSavedState into the signedStateFileManager. There is no reason
-        // that saved state marking needs to happen in a separate place from where states are actually being saved.
         consensusRoundHandlerWiring
-                .stateOutput()
+                .stateAndRoundOutput()
                 .solderTo(savedStateControllerWiring.getInputWire(SavedStateController::markSavedState));
-        consensusRoundHandlerWiring.stateAndRoundOutput().solderTo(signedStateHasherWiring.stateAndRoundInput());
+        savedStateControllerWiring.getOutputWire().solderTo(signedStateHasherWiring.stateAndRoundInput());
 
         consensusRoundHandlerWiring
-                .stateOutput()
+                .stateAndRoundOutput()
                 .solderTo(stateGarbageCollectorWiring.getInputWire(StateGarbageCollector::registerState));
         model.buildHeartbeatWire(config.stateGarbageCollectorHeartbeatPeriod())
                 .solderTo(stateGarbageCollectorWiring.getInputWire(StateGarbageCollector::heartbeat), OFFER);
@@ -830,15 +820,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     }
 
     /**
-     * Inject a new non-ancient event window into all components that need it.
+     * Inject a new event window into all components that need it.
      *
-     * @param nonAncientEventWindow the new non-ancient event window
+     * @param eventWindow the new event window
      */
-    public void updateNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
+    public void updateEventWindow(@NonNull final EventWindow eventWindow) {
         // Future work: this method can merge with consensusSnapshotOverride
         eventWindowManagerWiring
                 .getInputWire(EventWindowManager::updateEventWindow)
-                .inject(nonAncientEventWindow);
+                .inject(eventWindow);
 
         // Since there is asynchronous access to the shadowgraph, it's important to ensure that
         // it has fully ingested the new event window before continuing.

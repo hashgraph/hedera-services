@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.statedumpers.scheduledtransactions;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.statedumpers.associations.BBMTokenAssociation.entityIdFrom;
 import static com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.ScheduledTransactionsDumpUtils.reportOnScheduledTransactionsByEquality;
 import static com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.ScheduledTransactionsDumpUtils.reportOnScheduledTransactionsByExpiry;
 import static com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.ScheduledTransactionsDumpUtils.reportOnScheduledTransactionsById;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.hapi.node.base.ScheduleID;
@@ -28,7 +30,6 @@ import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
@@ -52,7 +53,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ScheduledTransactionsDumpUtils {
 
@@ -63,26 +63,35 @@ public class ScheduledTransactionsDumpUtils {
             @NonNull final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> byExpiry,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
-            final var dumpableScheduledTransactionsById = gatherModScheduledTransactionsById(scheduledTransactions);
-            reportOnScheduledTransactionsById(writer, dumpableScheduledTransactionsById);
-            System.out.printf(
-                    "=== mod scheduled transactions report is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
-            final var byEqualityDump = gatherModScheduledTransactionsByEquality(byEquality);
-            reportOnScheduledTransactionsByEquality(writer, byEqualityDump);
+            System.out.printf("=== Dumping schedule transactions %n ======");
+
+            final var byId = gatherModScheduledTransactionsById(scheduledTransactions);
+            reportOnScheduledTransactionsById(writer, byId);
+            System.out.println(
+                    "Size of byId in State : " + scheduledTransactions.size() + " and gathered : " + byId.size());
+
             // Not sure how to compare Equality Virtual map in mono and mod
             final var byExpiryDump = gatherModScheduledTransactionsByExpiry(byExpiry);
             reportOnScheduledTransactionsByExpiry(writer, byExpiryDump);
-            System.out.printf(
-                    "=== mod scheduled transactions by expiry report is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
+            System.out.println(
+                    "Size of byExpiry in State : " + byExpiry.size() + " and gathered : " + byExpiryDump.size());
+
+            try {
+                final var byEqualityDump = gatherModScheduledTransactionsByEquality(byEquality);
+                reportOnScheduledTransactionsByEquality(writer, byEqualityDump);
+                System.out.println("Size of byEquality in State : " + byEquality.size() + " and gathered : "
+                        + byEqualityDump.size());
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Error in gathering byEqualityDump");
+            }
         }
     }
 
     private static List<BBMScheduledEqualityValue> gatherModScheduledTransactionsByEquality(
             final VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<ScheduleList>> source) {
         final List<BBMScheduledEqualityValue> r = new ArrayList<>();
-        final var scheduledTransactions = new CopyOnWriteArrayList<BBMScheduledEqualityValue>();
+        final var scheduledTransactions = new ConcurrentLinkedQueue<BBMScheduledEqualityValue>();
 
         try {
             VirtualMapLike.from(source)
@@ -90,10 +99,15 @@ public class ScheduledTransactionsDumpUtils {
                             getStaticThreadManager(),
                             p -> scheduledTransactions.add(
                                     fromMod(p.key().getKey(), p.value().getValue())),
-                            8);
+                            1);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of scheduledTransactions by equality virtual map interrupted!");
             Thread.currentThread().interrupt();
+        }
+
+        while (!scheduledTransactions.isEmpty()) {
+            final var mapping = scheduledTransactions.poll();
+            r.add(mapping);
         }
         return r;
     }
@@ -132,11 +146,8 @@ public class ScheduledTransactionsDumpUtils {
             VirtualMapLike.from(source)
                     .extractVirtualMapDataC(
                             getStaticThreadManager(),
-                            p -> {
-                                scheduledTransactions.add(Pair.of(
-                                        fromMod(p.key().getKey()),
-                                        fromMod(p.value().getValue())));
-                            },
+                            p -> scheduledTransactions.add(Pair.of(
+                                    fromMod(p.key().getKey()), fromMod(p.value().getValue()))),
                             8);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of scheduledTransactions virtual map interrupted!");
@@ -194,9 +205,9 @@ public class ScheduledTransactionsDumpUtils {
                 RichInstant.fromJava(Instant.ofEpochSecond(value.calculatedExpirationSecond())),
                 RichInstant.fromJava(Instant.ofEpochSecond(
                         value.resolutionTime().seconds(), value.resolutionTime().nanos())),
-                PbjConverter.fromPbj(value.originalCreateTransaction()).toByteArray(),
-                PbjConverter.fromPbj(value.originalCreateTransaction()),
-                PbjConverter.fromPbj(value.scheduledTransaction()),
+                fromPbj(value.originalCreateTransaction()).toByteArray(),
+                fromPbj(childAsOrdinary(value)),
+                fromPbj(value.scheduledTransaction()),
                 value.signatories().stream().map(k -> toPrimitiveKey(k)).toList());
     }
 
