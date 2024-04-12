@@ -34,6 +34,7 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
@@ -52,9 +53,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -248,8 +247,8 @@ class PcesBirthRoundMigrationTests {
                                 AdHocThreadManager.getStaticThreadManager(),
                                 time,
                                 recycleBinPath,
-                                Duration.of(7, ChronoUnit.DAYS),
-                                Duration.of(1, ChronoUnit.DAYS)))
+                                TestRecycleBin.MAXIMUM_FILE_AGE,
+                                TestRecycleBin.MINIMUM_PERIOD))
                 .build();
 
         final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, discontinuityType);
@@ -343,8 +342,8 @@ class PcesBirthRoundMigrationTests {
                                 AdHocThreadManager.getStaticThreadManager(),
                                 time,
                                 recycleBinPath,
-                                Duration.of(7, ChronoUnit.DAYS),
-                                Duration.of(1, ChronoUnit.DAYS)))
+                                TestRecycleBin.MAXIMUM_FILE_AGE,
+                                TestRecycleBin.MINIMUM_PERIOD))
                 .build();
 
         // should not throw
@@ -371,8 +370,8 @@ class PcesBirthRoundMigrationTests {
                                 AdHocThreadManager.getStaticThreadManager(),
                                 time,
                                 recycleBinPath,
-                                Duration.of(7, ChronoUnit.DAYS),
-                                Duration.of(1, ChronoUnit.DAYS)))
+                                TestRecycleBin.MAXIMUM_FILE_AGE,
+                                TestRecycleBin.MINIMUM_PERIOD))
                 .build();
 
         final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, DiscontinuityType.NONE);

@@ -18,6 +18,7 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertIteratorEquality;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
@@ -26,15 +27,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
+import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
@@ -59,6 +61,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,12 +86,14 @@ class PcesFileReaderTests {
     private Random random;
 
     private final int fileCount = 100;
+    private Path recycleBinPath;
 
     @BeforeEach
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
         fileDirectory = testDirectory.resolve("data").resolve("0");
         random = getRandomPrintSeed();
+        recycleBinPath = testDirectory.resolve("recycle-bin");
     }
 
     @AfterEach
@@ -103,9 +108,6 @@ class PcesFileReaderTests {
     private PlatformContext buildContext(final boolean permitGaps, @NonNull final AncientMode ancientMode) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory.resolve("data"))
-                .withValue(
-                        "event.preconsensus.recycleBinDirectory",
-                        testDirectory.resolve("recycle")) // FUTURE: No property defined for value
                 .withValue(PcesConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
                 .withValue(PcesConfig_.PERMIT_GAPS, permitGaps)
                 .withValue(PcesConfig_.COMPACT_LAST_FILE_ON_STARTUP, false)
@@ -114,7 +116,30 @@ class PcesFileReaderTests {
 
         final Metrics metrics = new NoOpMetrics();
 
-        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent(), null);
+        final TestFileSystemManager fileSystemManager = new TestFileSystemManager(testDirectory);
+        fileSystemManager.setBin(TestRecycleBin.getInstance());
+        return new DefaultPlatformContext(
+                configuration, metrics, CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
+    }
+
+    private PlatformContext buildContext(
+            final boolean permitGaps,
+            @NonNull final AncientMode ancientMode,
+            BiFunction<Metrics, Time, RecycleBin> recycleBinProvider) {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory.resolve("data"))
+                .withValue(PcesConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
+                .withValue(PcesConfig_.PERMIT_GAPS, permitGaps)
+                .withValue(PcesConfig_.COMPACT_LAST_FILE_ON_STARTUP, false)
+                .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, ancientMode == BIRTH_ROUND_THRESHOLD)
+                .getOrCreateConfig();
+
+        final Metrics metrics = new NoOpMetrics();
+
+        final TestFileSystemManager fileSystemManager = new TestFileSystemManager(testDirectory);
+        fileSystemManager.setBin(recycleBinProvider.apply(metrics, Time.getCurrent()));
+        return new DefaultPlatformContext(
+                configuration, metrics, CryptographyHolder.get(), Time.getCurrent(), fileSystemManager);
     }
 
     protected static Stream<Arguments> buildArguments() {
@@ -435,19 +460,11 @@ class PcesFileReaderTests {
      * behavior.
      */
     private void validateRecycledFiles(
-            @NonNull final List<PcesFile> filesThatShouldBePresent,
-            @NonNull final List<PcesFile> allFiles,
-            @NonNull final PlatformContext platformContext)
+            @NonNull final List<PcesFile> filesThatShouldBePresent, @NonNull final List<PcesFile> allFiles)
             throws IOException {
 
-        final StateCommonConfig stateConfig = platformContext.getConfiguration().getConfigData(StateCommonConfig.class);
-        final RecycleBinConfig recycleBinConfig =
-                platformContext.getConfiguration().getConfigData(RecycleBinConfig.class);
-
-        final Path recycleBinDirectory = recycleBinConfig.getStorageLocation(stateConfig, new NodeId(0));
-
         final Set<Path> recycledFiles = new HashSet<>();
-        try (final Stream<Path> stream = Files.walk(recycleBinDirectory)) {
+        try (final Stream<Path> stream = Files.walk(this.recycleBinPath)) {
             stream.forEach(file -> recycledFiles.add(file.getFileName()));
         }
 
@@ -515,8 +532,16 @@ class PcesFileReaderTests {
             createDummyFile(file);
         }
 
-        final PlatformContext platformContext = buildContext(ancientMode);
-
+        final PlatformContext platformContext = buildContext(
+                false,
+                ancientMode,
+                (m, t) -> new RecycleBinImpl(
+                        m,
+                        getStaticThreadManager(),
+                        t,
+                        recycleBinPath,
+                        TestRecycleBin.MAXIMUM_FILE_AGE,
+                        TestRecycleBin.MINIMUM_PERIOD));
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
         final PcesFileTracker fileTracker1 =
@@ -540,7 +565,7 @@ class PcesFileReaderTests {
         assertIteratorEquality(
                 filesBeforeDiscontinuity.iterator(), fileTracker3.getFileIterator(NO_LOWER_BOUND, startingRound3));
 
-        validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
+        validateRecycledFiles(filesBeforeDiscontinuity, files);
 
         // Scenario 4: choose an origin that is incompatible with all state files. This will cause all remaining
         // files to be deleted.
@@ -551,7 +576,7 @@ class PcesFileReaderTests {
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker4.getFileIterator(NO_LOWER_BOUND, startingRound4));
 
-        validateRecycledFiles(List.of(), files, platformContext);
+        validateRecycledFiles(List.of(), files);
     }
 
     /**
@@ -615,7 +640,16 @@ class PcesFileReaderTests {
         // but it is the first file we want to iterate
         final long startAncientIdentifier = files.getFirst().getUpperBound();
 
-        final PlatformContext platformContext = buildContext(ancientMode);
+        final PlatformContext platformContext = buildContext(
+                false,
+                ancientMode,
+                (m, t) -> new RecycleBinImpl(
+                        m,
+                        getStaticThreadManager(),
+                        t,
+                        testDirectory.resolve("recycle-bin"),
+                        TestRecycleBin.MAXIMUM_FILE_AGE,
+                        TestRecycleBin.MINIMUM_PERIOD));
 
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
@@ -642,7 +676,7 @@ class PcesFileReaderTests {
                 filesBeforeDiscontinuity.iterator(),
                 fileTracker3.getFileIterator(startAncientIdentifier, startingRound3));
 
-        validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
+        validateRecycledFiles(filesBeforeDiscontinuity, files);
 
         // Scenario 4: choose an origin that is incompatible with all state files. This will cause all remaining
         // files to be deleted.
@@ -652,7 +686,7 @@ class PcesFileReaderTests {
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker4.getFileIterator(startAncientIdentifier, startingRound4));
 
-        validateRecycledFiles(List.of(), files, platformContext);
+        validateRecycledFiles(List.of(), files);
     }
 
     /**
@@ -714,8 +748,16 @@ class PcesFileReaderTests {
         // but it is the first file we want to iterate
         final long startAncientIdentifier = filesAfterDiscontinuity.getFirst().getUpperBound();
 
-        final PlatformContext platformContext = buildContext(ancientMode);
-
+        final PlatformContext platformContext = buildContext(
+                false,
+                ancientMode,
+                (m, t) -> new RecycleBinImpl(
+                        m,
+                        getStaticThreadManager(),
+                        t,
+                        testDirectory.resolve("recycle-bin"),
+                        TestRecycleBin.MAXIMUM_FILE_AGE,
+                        TestRecycleBin.MINIMUM_PERIOD));
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
         final PcesFileTracker fileTracker1 =
@@ -741,7 +783,7 @@ class PcesFileReaderTests {
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker3.getFileIterator(startAncientIdentifier, startingRound3));
 
-        validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
+        validateRecycledFiles(filesBeforeDiscontinuity, files);
 
         // Scenario 4: choose an origin that is incompatible with all state files. This will cause all remaining
         // files to be deleted.
@@ -751,7 +793,7 @@ class PcesFileReaderTests {
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker4.getFileIterator(startAncientIdentifier, startingRound4));
 
-        validateRecycledFiles(List.of(), files, platformContext);
+        validateRecycledFiles(List.of(), files);
     }
 
     /**
@@ -813,7 +855,16 @@ class PcesFileReaderTests {
         // but it is the first file we want to iterate
         final long startAncientBoundary = filesAfterDiscontinuity.getFirst().getUpperBound();
 
-        final PlatformContext platformContext = buildContext(ancientMode);
+        final PlatformContext platformContext = buildContext(
+                false,
+                ancientMode,
+                (m, t) -> new RecycleBinImpl(
+                        m,
+                        getStaticThreadManager(),
+                        t,
+                        testDirectory.resolve("recycle-bin"),
+                        TestRecycleBin.MAXIMUM_FILE_AGE,
+                        TestRecycleBin.MINIMUM_PERIOD));
 
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
         final long startingRound1 = origin;
@@ -837,7 +888,7 @@ class PcesFileReaderTests {
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker3.getFileIterator(startAncientBoundary, startingRound3));
 
-        validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
+        validateRecycledFiles(filesBeforeDiscontinuity, files);
 
         // Scenario 4: choose an origin that is incompatible with all state files. This will cause all remaining
         // files to be deleted.
@@ -847,7 +898,7 @@ class PcesFileReaderTests {
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker4.getFileIterator(startAncientBoundary, startingRound4));
 
-        validateRecycledFiles(List.of(), files, platformContext);
+        validateRecycledFiles(List.of(), files);
     }
 
     @Test
