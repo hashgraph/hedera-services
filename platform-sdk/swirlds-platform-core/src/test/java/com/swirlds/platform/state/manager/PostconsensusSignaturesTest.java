@@ -33,6 +33,7 @@ import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.proto.event.StateSignaturePayload;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -102,15 +103,17 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
             for (int node = 0; node < addressBook.getSize(); node++) {
                 manager.handlePostconsensusSignatureTransaction(
                         addressBook.getNodeId(node),
-                        new StateSignatureTransaction(
-                                round,
-                                buildFakeSignatureBytes(
-                                        addressBook
-                                                .getAddress(addressBook.getNodeId(node))
-                                                .getSigPublicKey(),
-                                        states.get(round).getState().getHash()),
-                                states.get(round).getState().getHash().getBytes(),
-                                Bytes.EMPTY));
+                        StateSignaturePayload.newBuilder()
+                                .round(round)
+                                .signature(
+                                        buildFakeSignatureBytes(
+                                                addressBook
+                                                        .getAddress(addressBook.getNodeId(node))
+                                                        .getSigPublicKey(),
+                                                states.get(round).getState().getHash()))
+                                .hash(states.get(round).getState().getHash().getBytes())
+                                .build()
+                );
             }
 
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {

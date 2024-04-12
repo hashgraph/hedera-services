@@ -29,6 +29,7 @@ import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.proto.event.StateSignaturePayload;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Random;
@@ -55,12 +56,16 @@ class TransactionSerializationTest {
         }
         final Bytes signature = randomSignatureBytes(random);
         final Bytes stateHash = randomHashBytes(random);
-        final Bytes epochHash = random.nextBoolean() ? randomHashBytes(random) : Bytes.EMPTY;
         final StateSignatureTransaction systemTransactionSignature =
-                new StateSignatureTransaction(random.nextLong(), signature, stateHash, epochHash);
+                new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                        .round(random.nextLong())
+                        .signature(signature)
+                        .hash(stateHash)
+                        .build()
+                        );
         final StateSignatureTransaction deserialized = serializeDeserialize(systemTransactionSignature);
 
-        assertEquals(systemTransactionSignature.signature(), deserialized.signature());
+        assertEquals(systemTransactionSignature.getPayload(), deserialized.getPayload());
         assertEquals(systemTransactionSignature.isSystem(), deserialized.isSystem());
         assertEquals(systemTransactionSignature.getVersion(), deserialized.getVersion());
         assertEquals(systemTransactionSignature.getClassId(), deserialized.getClassId());
