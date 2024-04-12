@@ -12,7 +12,7 @@ pcli diagram \
     -l 'applicationTransactionPrehandler:futures:consensusRoundHandler' \
     -l 'eventDurabilityNexus:wait for durability:consensusRoundHandler' \
     -l 'gossip:get events:shadowgraph' \
-    -l 'eventCreationManager:get transactions:transactionPool' \
+    -l 'EventCreationManager:get transactions:transactionPool' \
     -l 'RunningEventHasher:future hash:consensusRoundHandler' \
     -l 'eventStreamManager:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
@@ -40,7 +40,7 @@ pcli diagram \
     -g 'State Signature Collector:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
-    -g 'Event Creation:eventCreationManager,transactionPool,SelfEventSigner,🍎' \
+    -g 'Event Creation:EventCreationManager,transactionPool,SelfEventSigner,🍎' \
     -g 'Gossip:gossip,shadowgraph,InOrderLinker' \
     -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,statusManager_submitCatastrophicFailure' \
     -g 'Heartbeat:heartbeat,❤️' \
