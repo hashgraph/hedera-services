@@ -208,7 +208,8 @@ public record EthTxData(
 
     public BigInteger getMaxGasAsBigInteger() {
         long multiple = 1L;
-        if (Arrays.equals(rawTx, FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION)) {
+        if (type == EthTransactionType.LEGACY_ETHEREUM
+                && Arrays.equals(rawTx, FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION)) {
             multiple = FOUNDRY_DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER;
         }
         return switch (type) {
