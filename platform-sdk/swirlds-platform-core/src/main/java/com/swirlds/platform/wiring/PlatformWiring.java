@@ -240,7 +240,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         consensusEngineWiring =
                 new ComponentWiring<>(model, ConsensusEngine.class, schedulers.consensusEngineScheduler());
         eventCreationManagerWiring =
-                new ComponentWiring<>(model, EventCreationManager.class, schedulers.eventCreationManagerScheduler());
+                new ComponentWiring<>(model, EventCreationManager.class, config.eventCreationManager());
         selfEventSignerWiring = new ComponentWiring<>(model, SelfEventSigner.class, config.selfEventSigner());
         pcesSequencerWiring = new ComponentWiring<>(model, PcesSequencer.class, schedulers.pcesSequencerScheduler());
 
@@ -606,7 +606,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param eventDurabilityNexus      the event durability nexus to bind
      * @param shadowgraph               the shadowgraph to bind
      * @param pcesSequencer             the PCES sequencer to bind
-     * @param eventCreationManager      the event creation manager to bind
      * @param stateSignatureCollector   the signed state manager to bind
      * @param transactionPrehandler     the transaction prehandler to bind
      * @param eventWindowManager        the event window manager to bind
@@ -636,7 +635,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final EventDurabilityNexus eventDurabilityNexus,
             @NonNull final Shadowgraph shadowgraph,
             @NonNull final PcesSequencer pcesSequencer,
-            @NonNull final EventCreationManager eventCreationManager,
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final TransactionPrehandler transactionPrehandler,
             @NonNull final EventWindowManager eventWindowManager,
@@ -668,7 +666,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventDurabilityNexusWiring.bind(eventDurabilityNexus);
         shadowgraphWiring.bind(shadowgraph);
         pcesSequencerWiring.bind(pcesSequencer);
-        eventCreationManagerWiring.bind(eventCreationManager);
+        eventCreationManagerWiring.bind(builder.buildEventCreationManager());
         selfEventSignerWiring.bind(builder.buildSelfEventSigner());
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
         eventWindowManagerWiring.bind(eventWindowManager);

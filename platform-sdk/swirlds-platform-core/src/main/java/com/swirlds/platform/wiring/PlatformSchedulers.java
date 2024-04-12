@@ -29,7 +29,6 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
@@ -49,7 +48,6 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
 import com.swirlds.platform.state.signed.StateSavingResult;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.util.HashLogger;
@@ -66,7 +64,6 @@ import java.util.List;
  * @param postHashCollectorScheduler                the scheduler for the post hash collector
  * @param inOrderLinkerScheduler                    the scheduler for the in-order linker
  * @param consensusEngineScheduler                  the scheduler for the consensus engine
- * @param eventCreationManagerScheduler             the scheduler for the event creation manager
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
@@ -89,7 +86,6 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
         @NonNull TaskScheduler<List<ConsensusRound>> consensusEngineScheduler,
-        @NonNull TaskScheduler<BaseEventHashedData> eventCreationManagerScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler,
         @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler,
@@ -157,15 +153,6 @@ public record PlatformSchedulers(
                         .withSquelchingEnabled(true)
                         .withUnhandledTaskMetricEnabled(true)
                         .withHyperlink(platformCoreHyperlink(ConsensusEngine.class))
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("eventCreationManager")
-                        .withType(config.eventCreationManagerSchedulerType())
-                        .withUnhandledTaskCapacity(config.eventCreationManagerUnhandledCapacity())
-                        .withFlushingEnabled(true)
-                        .withSquelchingEnabled(true)
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(EventCreationManager.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("signedStateFileManager")
