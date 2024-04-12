@@ -1603,11 +1603,21 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
 
     @HapiTest
     public HapiSpec updateFailsIfTokenIsImmutable() {
+        final var autoRenewAccount = "autoRenewAccount";
+        final var newAutoRenewAccount = "newAutoRenewAccount";
+        final var firstPeriod = THREE_MONTHS_IN_SECONDS;
+        final var secondPeriod = THREE_MONTHS_IN_SECONDS + 1234;
         final var tokenSymbol = "TOKEN";
-        final var tokenName = "Name";
+        final var newTokenSymbol = "NEWTOKEN";
+        final var tokenName = "name";
+        final var newTokenName = "newName";
+        final var memo = "memo";
+        final var newMemo = "newMemo";
         return defaultHapiSpec("updateFailsIfTokenIsImmutable")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(autoRenewAccount),
+                        cryptoCreate(newAutoRenewAccount),
                         newKeyNamed(adminKey),
                         newKeyNamed(wipeKey),
                         newKeyNamed(kycKey),
@@ -1619,6 +1629,9 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         tokenCreate(tokenName)
                                 .name(tokenName)
                                 .symbol(tokenSymbol)
+                                .memo(memo)
+                                .autoRenewAccount(autoRenewAccount)
+                                .autoRenewPeriod(firstPeriod)
                                 .payingWith(civilian))
                 .when()
                 .then(
@@ -1660,6 +1673,27 @@ public class Hip540ChangeOrRemoveKeysSuite extends HapiSuite {
                         tokenUpdate(tokenName)
                                 .metadataKey(metadataKey)
                                 .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_IS_IMMUTABLE),
+                        tokenUpdate(tokenName)
+                                .symbol(newTokenSymbol)
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_IS_IMMUTABLE),
+                        tokenUpdate(tokenName)
+                                .name(newTokenName)
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_IS_IMMUTABLE),
+                        tokenUpdate(tokenName)
+                                .memo(newMemo)
+                                .signedBy(civilian, adminKey)
+                                .payingWith(civilian)
+                                .hasKnownStatus(TOKEN_IS_IMMUTABLE),
+                        tokenUpdate(tokenName)
+                                .autoRenewAccount(newAutoRenewAccount)
+                                .autoRenewPeriod(secondPeriod)
+                                .signedBy(civilian, adminKey, newAutoRenewAccount)
                                 .payingWith(civilian)
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
