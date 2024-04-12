@@ -22,6 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -68,17 +69,19 @@ public class DefaultStateGarbageCollector implements StateGarbageCollector {
      * {@inheritDoc}
      */
     @Override
-    public void registerState(@NonNull final ReservedSignedState state) {
-        try (state) {
-            if (state.get().shouldDeleteOnBackgroundThread()) {
+    public void registerState(@NonNull final StateAndRound stateAndRound) {
+        final ReservedSignedState reservedState = stateAndRound.reservedSignedState();
+        try (reservedState) {
+            final SignedState state = reservedState.get();
+            if (state.shouldDeleteOnBackgroundThread()) {
                 // Intentionally hold a java reference without a signed state reference count.
                 // This is the only place in the codebase that is allowed to do this.
-                states.add(state.get());
+                states.add(state);
             } else {
                 logger.error(
                         EXCEPTION.getMarker(),
                         "State for round {} is not configured to be deleted on background thread",
-                        state.get().getRound());
+                        state.getRound());
             }
         }
     }

@@ -32,7 +32,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.eventhandling.EventConfig_;
@@ -238,13 +238,13 @@ class EventDeduplicatorTests {
                 minimumGenerationNonAncient++;
                 minimumRoundNonAncient++;
                 if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-                    deduplicator.setNonAncientEventWindow(new NonAncientEventWindow(
+                    deduplicator.setEventWindow(new EventWindow(
                             ConsensusConstants.ROUND_FIRST,
                             minimumRoundNonAncient,
                             ConsensusConstants.ROUND_FIRST /* ignored in this context */,
                             AncientMode.BIRTH_ROUND_THRESHOLD));
                 } else {
-                    deduplicator.setNonAncientEventWindow(new NonAncientEventWindow(
+                    deduplicator.setEventWindow(new EventWindow(
                             ConsensusConstants.ROUND_FIRST,
                             minimumGenerationNonAncient,
                             ConsensusConstants.ROUND_FIRST /* ignored in this context */,

@@ -29,7 +29,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
@@ -151,34 +151,34 @@ class OrphanBufferTests {
     /**
      * Check if an event has been emitted or is ancient
      *
-     * @param event                 the event to check
-     * @param nonAncientEventWindow the non-ancient event window defining ancient.
+     * @param event       the event to check
+     * @param eventWindow the event window defining ancient.
      * @return true if the event has been emitted or is ancient, false otherwise
      */
     private static boolean eventEmittedOrAncient(
             @NonNull final EventDescriptor event,
-            @NonNull final NonAncientEventWindow nonAncientEventWindow,
+            @NonNull final EventWindow eventWindow,
             @NonNull final Collection<Hash> emittedEvents) {
 
-        return emittedEvents.contains(event.getHash()) || nonAncientEventWindow.isAncient(event);
+        return emittedEvents.contains(event.getHash()) || eventWindow.isAncient(event);
     }
 
     /**
      * Assert that an event should have been emitted by the orphan buffer, based on its parents being either emitted or
      * ancient.
      *
-     * @param event                 the event to check
-     * @param nonAncientEventWindow the non-ancient event window defining ancient.
-     * @param emittedEvents         the events that have been emitted so far
+     * @param event         the event to check
+     * @param eventWindow   the event window
+     * @param emittedEvents the events that have been emitted so far
      */
     private static void assertValidParents(
             @NonNull final GossipEvent event,
-            @NonNull final NonAncientEventWindow nonAncientEventWindow,
+            @NonNull final EventWindow eventWindow,
             @NonNull final Collection<Hash> emittedEvents) {
-        assertTrue(eventEmittedOrAncient(event.getHashedData().getSelfParent(), nonAncientEventWindow, emittedEvents));
+        assertTrue(eventEmittedOrAncient(event.getHashedData().getSelfParent(), eventWindow, emittedEvents));
 
         for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
-            assertTrue(eventEmittedOrAncient(otherParent, nonAncientEventWindow, emittedEvents));
+            assertTrue(eventEmittedOrAncient(otherParent, eventWindow, emittedEvents));
         }
     }
 
@@ -228,7 +228,7 @@ class OrphanBufferTests {
                 })
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
-        final OrphanBuffer orphanBuffer = new OrphanBuffer(
+        final DefaultOrphanBuffer orphanBuffer = new DefaultOrphanBuffer(
                 TestPlatformContextBuilder.create()
                         .withConfiguration(new TestConfigBuilder()
                                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, useBirthRoundForAncient)
@@ -260,16 +260,16 @@ class OrphanBufferTests {
             latestConsensusRound += maybeAdvanceRound.apply(random);
             final AncientMode ancientMode =
                     useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-            final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(
+            final EventWindow eventWindow = new EventWindow(
                     latestConsensusRound,
                     ancientMode.selectIndicator(
                             minimumGenerationNonAncient, Math.max(1, latestConsensusRound - 26 + 1)),
                     1 /* ignored in this context */,
                     ancientMode);
-            unorphanedEvents.addAll(orphanBuffer.setNonAncientEventWindow(nonAncientEventWindow));
+            unorphanedEvents.addAll(orphanBuffer.setEventWindow(eventWindow));
 
             for (final GossipEvent unorphanedEvent : unorphanedEvents) {
-                assertValidParents(unorphanedEvent, nonAncientEventWindow, emittedEvents);
+                assertValidParents(unorphanedEvent, eventWindow, emittedEvents);
                 emittedEvents.add(unorphanedEvent.getHashedData().getHash());
             }
         }

@@ -24,7 +24,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -106,7 +106,7 @@ public class Shadowgraph implements Clearable {
     /**
      * The most recent event window we know about.
      */
-    private NonAncientEventWindow eventWindow;
+    private EventWindow eventWindow;
 
     /**
      * For each peer, track the number of events in the intake pipeline prior to the shadowgraph.
@@ -133,7 +133,7 @@ public class Shadowgraph implements Clearable {
         this.metrics = new ShadowgraphMetrics(platformContext);
         this.numberOfNodes = addressBook.getSize();
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         oldestUnexpiredIndicator = ancientMode.getGenesisIndicator();
         tips = new HashSet<>();
         hashToShadowEvent = new HashMap<>();
@@ -146,7 +146,7 @@ public class Shadowgraph implements Clearable {
      *
      * @param eventWindow the starting event window
      */
-    public synchronized void startWithEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public synchronized void startWithEventWindow(@NonNull final EventWindow eventWindow) {
         this.eventWindow = eventWindow;
         oldestUnexpiredIndicator = eventWindow.getExpiredThreshold();
         logger.info(
@@ -159,7 +159,7 @@ public class Shadowgraph implements Clearable {
      * Reset the shadowgraph manager to its constructed state.
      */
     public synchronized void clear() {
-        eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         oldestUnexpiredIndicator = ancientMode.getGenesisIndicator();
         disconnectShadowEvents();
         tips.clear();
@@ -219,7 +219,7 @@ public class Shadowgraph implements Clearable {
      * Get the latest event window known to the shadowgraph.
      */
     @NonNull
-    public synchronized NonAncientEventWindow getEventWindow() {
+    public synchronized EventWindow getEventWindow() {
         return eventWindow;
     }
 
@@ -352,7 +352,7 @@ public class Shadowgraph implements Clearable {
      *
      * @param eventWindow describes the current window of non-expired events
      */
-    public synchronized void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public synchronized void updateEventWindow(@NonNull final EventWindow eventWindow) {
         final long expiredThreshold = eventWindow.getExpiredThreshold();
 
         if (expiredThreshold < eventWindow.getExpiredThreshold()) {

@@ -25,7 +25,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
@@ -241,13 +241,13 @@ public class SyncTestExecutor {
                 callerAncientThreshold++;
             }
 
-            caller.updateEventWindow(new NonAncientEventWindow(
+            caller.updateEventWindow(new EventWindow(
                     ancientMode.getGenesisIndicator(),
                     Math.max(ancientMode.getGenesisIndicator(), callerAncientThreshold),
                     Math.max(ancientMode.getGenesisIndicator(), callerExpiredThreshold),
                     ancientMode));
 
-            listener.updateEventWindow(new NonAncientEventWindow(
+            listener.updateEventWindow(new EventWindow(
                     ancientMode.getGenesisIndicator(),
                     Math.max(ancientMode.getGenesisIndicator(), listenerAncientThreshold),
                     Math.max(ancientMode.getGenesisIndicator(), listenerExpiredThreshold),

@@ -61,12 +61,12 @@ public class BridgedBenchmark {
     private Logger logger;
     private Log4JRunner logRunner;
 
-    private BridgedConfiguration config;
+    private BridgedLog4JConfiguration config;
     private LoggingBenchmarkConfig<LoggingSystem> swirldsConfig;
 
     @Setup(Level.Trial)
     public void init() {
-        config = new BridgedConfiguration();
+        config = new BridgedLog4JConfiguration();
 
         if (Objects.equals(loggingType, CONSOLE_TYPE)) {
             swirldsConfig = new SwirldsLogConfig();
