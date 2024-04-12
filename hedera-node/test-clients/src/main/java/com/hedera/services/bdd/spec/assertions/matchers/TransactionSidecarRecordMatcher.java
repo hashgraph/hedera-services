@@ -37,44 +37,73 @@ import org.testcontainers.shaded.org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.testcontainers.shaded.org.hamcrest.core.IsEqual;
 
 /**
- * Used in assertions to check only certain fields of a {@link TransactionSidecarRecord} object.
+ * Used in assertions to compare {@link TransactionSidecarRecord} objects.
+ * For example, to check for the presence of a specific action, state change, or bytecode.
  *
  * @author vyanev
  */
-@SuppressWarnings({"java:S4968", "java:S1192"}) // wildcard types and string literals
-public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<TransactionSidecarRecord> {
+public final class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<TransactionSidecarRecord> {
 
     private static final Logger log = LogManager.getLogger(TransactionSidecarRecordMatcher.class);
 
-    // Expected values
+    /**
+     * The expected consensus timestamp
+     */
     private Timestamp consensusTimestamp;
+
+    /**
+     * The expected actions
+     */
     private ContractActions actions;
+
+    /**
+     * The expected state changes
+     */
     private ContractStateChanges stateChanges;
+
+    /**
+     * The expected bytecode
+     */
     private ContractBytecode bytecode;
 
-    // Matchers for the expected values
+    /**
+     * Matcher for the consensus timestamp
+     */
     private Function<Timestamp, Matcher<Timestamp>> consensusTimestampMatcher;
+
+    /**
+     * Matcher for the actions
+     */
     private Function<ContractAction, Matcher<ContractAction>> actionMatcher;
+
+    /**
+     * Matcher for the state changes
+     */
     private Function<ContractStateChange, Matcher<ContractStateChange>> stateChangeMatcher;
+
+    /**
+     * Matcher for the bytecode
+     */
     private Function<ContractBytecode, Matcher<ContractBytecode>> bytecodeMatcher;
 
     private TransactionSidecarRecordMatcher(
-            Timestamp consensusTimestamp,
-            ContractActions contractActions,
-            ContractStateChanges contractStateChanges,
-            ContractBytecode bytecode) {
+            final Timestamp consensusTimestamp,
+            final ContractActions contractActions,
+            final ContractStateChanges contractStateChanges,
+            final ContractBytecode bytecode) {
+        super(TransactionSidecarRecord.class);
         setConsensusTimestamp(consensusTimestamp);
         setActions(contractActions);
         setStateChanges(contractStateChanges);
         setBytecode(bytecode);
     }
 
-    private void setConsensusTimestamp(Timestamp consensusTimestamp) {
+    private void setConsensusTimestamp(final Timestamp consensusTimestamp) {
         this.consensusTimestamp = consensusTimestamp;
         this.consensusTimestampMatcher = Matchers::equalTo;
     }
 
-    private void setActions(ContractActions actions) {
+    private void setActions(final ContractActions actions) {
         this.actions = actions;
         this.actionMatcher = action -> withEqualFields(action, action.getClass().getSuperclass())
                 .withCustomMatchersForFields(Map.of(
@@ -82,24 +111,24 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
                         "gasUsed", within32Units(action.getGasUsed())));
     }
 
-    private void setStateChanges(ContractStateChanges stateChanges) {
+    private void setStateChanges(final ContractStateChanges stateChanges) {
         this.stateChanges = stateChanges;
         this.stateChangeMatcher = IsEqual::equalTo;
     }
 
-    private void setBytecode(ContractBytecode bytecode) {
+    private void setBytecode(final ContractBytecode bytecode) {
         this.bytecode = bytecode;
         this.bytecodeMatcher = IsEqual::equalTo;
     }
 
     /**
-     * Checks if the given {@link TransactionSidecarRecord} matches the expected values.
+     * Checks if the {@link TransactionSidecarRecord} matches the expected values.
      * @param sidecarRecord the {@link TransactionSidecarRecord} to check
      * @param mismatch {@link Description} of the mismatch
-     * @return {@code true} if the {@link TransactionSidecarRecord}'s properties match the expected values
+     * @return {@code true} if the record's properties match the expected values
      */
     @Override
-    public boolean matchesSafely(TransactionSidecarRecord sidecarRecord, Description mismatch) {
+    public boolean matchesSafely(TransactionSidecarRecord sidecarRecord, final Description mismatch) {
         return matchesConsensusTimestampOf(sidecarRecord, mismatch)
                 && matchesActionsOf(sidecarRecord, mismatch)
                 && matchesStateChangesOf(sidecarRecord, mismatch)
@@ -134,12 +163,13 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
      * @return {@code true} if the consensus timestamp of the given
      * {@link TransactionSidecarRecord} matches the expected value
      */
-    public boolean matchesConsensusTimestampOf(TransactionSidecarRecord sidecarRecord) {
-        Matcher<Timestamp> matcher = consensusTimestampMatcher.apply(consensusTimestamp);
+    public boolean matchesConsensusTimestampOf(final TransactionSidecarRecord sidecarRecord) {
+        final Matcher<Timestamp> matcher = consensusTimestampMatcher.apply(consensusTimestamp);
         return consensusTimestamp == null || matcher.matches(sidecarRecord.getConsensusTimestamp());
     }
 
-    private boolean matchesConsensusTimestampOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
+    private boolean matchesConsensusTimestampOf(
+            final TransactionSidecarRecord sidecarRecord, final Description mismatch) {
         if (!matchesConsensusTimestampOf(sidecarRecord)) {
             describeMismatch(
                     """
@@ -154,7 +184,7 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
         return true;
     }
 
-    private boolean matchesActionsOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
+    private boolean matchesActionsOf(final TransactionSidecarRecord sidecarRecord, final Description mismatch) {
         if (this.actions == null) {
             return true;
         }
@@ -184,7 +214,7 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
         return true;
     }
 
-    private boolean matchesStateChangesOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
+    private boolean matchesStateChangesOf(final TransactionSidecarRecord sidecarRecord, final Description mismatch) {
         if (this.stateChanges == null) {
             return true;
         }
@@ -215,8 +245,8 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
         return true;
     }
 
-    private boolean matchesBytecodeOf(TransactionSidecarRecord sidecarRecord, Description mismatch) {
-        Matcher<ContractBytecode> matcher = bytecodeMatcher.apply(bytecode);
+    private boolean matchesBytecodeOf(final TransactionSidecarRecord sidecarRecord, final Description mismatch) {
+        final Matcher<ContractBytecode> matcher = bytecodeMatcher.apply(bytecode);
         if (bytecode != null && !matcher.matches(sidecarRecord.getBytecode())) {
             describeMismatch(
                     """
@@ -231,13 +261,13 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
         return true;
     }
 
-    private static void describeMismatch(String message, Description mismatch) {
+    private static void describeMismatch(final String message, final Description mismatch) {
         log.warn(message);
         mismatch.appendText(message);
     }
 
     /**
-     * @return the {@link TransactionSidecarRecord} with the expected values from the matcher
+     * @return a {@link TransactionSidecarRecord} with the expected fields
      */
     public TransactionSidecarRecord toSidecarRecord() {
         final TransactionSidecarRecord.Builder builder = TransactionSidecarRecord.newBuilder();
@@ -263,6 +293,9 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
         return new Builder();
     }
 
+    /**
+     * Builder for the {@link TransactionSidecarRecordMatcher}
+     */
     public static class Builder {
 
         private Timestamp consensusTimestamp;
@@ -270,26 +303,45 @@ public class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMatcher<T
         private ContractStateChanges stateChanges;
         private ContractBytecode bytecode;
 
-        public Builder setConsensusTimestamp(Timestamp consensusTimestamp) {
+        /**
+         * @param consensusTimestamp the expected consensus timestamp
+         * @return {@code this}
+         */
+        public Builder setConsensusTimestamp(final Timestamp consensusTimestamp) {
             this.consensusTimestamp = consensusTimestamp;
             return this;
         }
 
-        public Builder setActions(ContractActions actions) {
+        /**
+         * @param actions the expected actions
+         * @return {@code this}
+         */
+        public Builder setActions(final ContractActions actions) {
             this.actions = actions;
             return this;
         }
 
-        public Builder setStateChanges(ContractStateChanges stateChanges) {
+        /**
+         * @param stateChanges the expected state changes
+         * @return {@code this}
+         */
+        public Builder setStateChanges(final ContractStateChanges stateChanges) {
             this.stateChanges = stateChanges;
             return this;
         }
 
-        public Builder setBytecode(ContractBytecode bytecode) {
+        /**
+         * @param bytecode the expected bytecode
+         * @return {@code this}
+         */
+        public Builder setBytecode(final ContractBytecode bytecode) {
             this.bytecode = bytecode;
             return this;
         }
 
+        /**
+         * @return {@link TransactionSidecarRecordMatcher} with the expected fields
+         */
         public TransactionSidecarRecordMatcher build() {
             return new TransactionSidecarRecordMatcher(consensusTimestamp, actions, stateChanges, bytecode);
         }

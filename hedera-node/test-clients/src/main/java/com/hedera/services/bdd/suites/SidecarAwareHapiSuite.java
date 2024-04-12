@@ -144,13 +144,14 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
     }
 
     /**
-     * Expect a sidecar file to be generated for the given transaction name with the given contract bytecode.
+     * Expect a sidecar file to be generated with a sidecar record
+     * for the given transaction name with the given contract bytecode.
      *
      * @param txnName The name of the transaction to expect the sidecar for.
      * @param contractName The name of the contract to expect the bytecode for.
      * @param binFileName The name of the bin file to get the init-code from.
      * @param constructorArgs The constructor arguments to use for the init-code.
-     * @return A {@link CustomSpecAssert} that will expect the sidecar file to be generated.
+     * @return {@link CustomSpecAssert} expecting the sidecar file to be generated.
      */
     protected static CustomSpecAssert expectContractBytecodeSidecarFor(
             final String txnName,
@@ -187,7 +188,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      * @param txnName The name of the transaction to expect the sidecar for.
      * @param binFileName The name of the bin file to get the init-code from.
      * @param constructorArgs The constructor arguments to use for the init-code.
-     * @return A {@link CustomSpecAssert} that will expect the sidecar file to be generated.
+     * @return {@link CustomSpecAssert} expecting the sidecar file to be generated.
      */
     protected static CustomSpecAssert expectFailedContractBytecodeSidecarFor(
             final String txnName, final String binFileName, final Object... constructorArgs) {
@@ -213,7 +214,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      *
      * @param txnName The name of the transaction to expect the sidecar for.
      * @param contractName The name of the contract to expect the bytecode for.
-     * @return A {@link CustomSpecAssert} that will expect the sidecar file to be generated.
+     * @return {@link CustomSpecAssert} expecting the sidecar file to be generated.
      */
     protected static CustomSpecAssert expectContractBytecodeWithMinimalFieldsSidecarFor(
             final String txnName, final String contractName) {
@@ -245,7 +246,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
      *
      * @param txnName The name of the transaction.
      * @param contractName The name of the contract.
-     * @return {@link CustomSpecAssert} that expects the sidecar file to be generated.
+     * @return {@link CustomSpecAssert} expecting the sidecar file to be generated.
      */
     protected static CustomSpecAssert expectContractBytecode(final String txnName, final String contractName) {
         return withOpContext((spec, opLog) -> {
@@ -270,7 +271,8 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
     }
 
     /**
-     * Expect a sidecar file to be generated with a record (for the transaction with the given consensus timestamp)
+     * Expect a sidecar file to be generated with a record
+     * (for the transaction with the given consensus timestamp)
      * that contains the given contract ID, init-code, and runtime code.
      *
      * @param specName The name of the spec.
@@ -300,8 +302,8 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
     }
 
     /**
-     * Asserts that all expected sidecar records for contract actions have been externalized.
-     * @return A {@link CustomSpecAssert} that will assert that all expected sidecar records have been externalized.
+     * Asserts all expected sidecar records for contract actions have been externalized.
+     * @return {@link CustomSpecAssert} with the assertions.
      */
     protected static CustomSpecAssert assertContainsAllExpectedContractActions() {
         return assertionsHold((spec, assertLog) -> {
@@ -317,7 +319,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
 
     /**
      * Asserts that all expected sidecar records for contract state changes have been externalized.
-     * @return A {@link CustomSpecAssert} that will assert that all expected sidecar records have been externalized.
+     * @return {@link CustomSpecAssert} with the assertions.
      */
     protected static CustomSpecAssert assertContainsAllExpectedStateChanges() {
         return assertionsHold((spec, assertLog) -> {
@@ -332,8 +334,8 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
     }
 
     /**
-     * Asserts that there are no mismatched sidecars.
-     * @return A {@link CustomSpecAssert} that will assert that there are no mismatched sidecars.
+     * Asserts that there are no mismatched sidecars and no pending sidecars.
+     * @return {@link CustomSpecAssert} with the assertions.
      */
     protected static CustomSpecAssert assertNoMismatchedSidecars() {
         return assertionsHold((spec, assertLog) -> {

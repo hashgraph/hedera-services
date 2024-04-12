@@ -21,7 +21,7 @@ package com.hedera.services.bdd.spec.assertions.matchers;
  *
  * @author vyanev
  */
-public class MatcherUtils {
+public final class MatcherUtils {
 
     private MatcherUtils() {
         throw new IllegalStateException("Utility class");
@@ -30,17 +30,15 @@ public class MatcherUtils {
     /**
      * @param expected the expected object
      * @param stopClass the class to stop at when comparing fields
-     * @return {@link FieldByFieldMatcher} that checks if the actual object has equal fields to the expected object
+     * @return {@link FieldByFieldMatcher} checking if the objects have equal fields
      */
     public static <T> FieldByFieldMatcher<T> withEqualFields(T expected, Class<?> stopClass) {
         return new FieldByFieldMatcher<>(expected, stopClass);
     }
 
     /**
-     * Checks if the actual gas is within 32 units of the expected gas.
-     *
      * @param expectedGas the expected gas
-     * @return {@link GasMatcher} that checks if the actual gas is within 32 units of the expected gas
+     * @return {@link GasMatcher} checking if the gas is within 32 units of the expected gas
      */
     public static GasMatcher within32Units(Long expectedGas) {
         return new GasMatcher(expectedGas, false);

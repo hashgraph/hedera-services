@@ -21,12 +21,12 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,15 +44,40 @@ import org.testcontainers.shaded.org.hamcrest.TypeSafeDiagnosingMatcher;
  * @param <T> the type of the object
  */
 public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
+
     private static final Logger log = LogManager.getLogger(FieldByFieldMatcher.class);
 
+    /**
+     * The expected object
+     */
     private final T expected;
+
+    /**
+     * The class to stop at when comparing fields
+     */
     private final Class<?> stopClass;
+
+    /**
+     * The default matcher used if there is no custom matcher for that field
+     */
     private final Function<Object, Matcher<Object>> defaultMatcher;
-    private final Map<String, Matcher<?>> customMatchers = new HashMap<>();
+
+    /**
+     * The custom matchers used for the specified fields
+     */
+    private final Map<String, Matcher<?>> customMatchers = new ConcurrentHashMap<>();
+
+    /**
+     * The specified fields to ignore when comparing the objects
+     */
     private final Set<String> ignoredFields = new HashSet<>();
 
-    public FieldByFieldMatcher(T expected, Class<?> stopClass) {
+    /**
+     * @param expected the expected object
+     * @param stopClass the class to stop at when comparing fields
+     */
+    public FieldByFieldMatcher(final T expected, final Class<?> stopClass) {
+        super(expected.getClass());
         this.expected = expected;
         this.defaultMatcher = Matchers::equalTo;
         this.stopClass = stopClass;
@@ -90,17 +115,21 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
      * @param description {@link Description} of the expected object
      */
     @Override
-    public void describeTo(Description description) {
+    public void describeTo(final Description description) {
         description.appendText(expected.toString());
     }
 
     private boolean areEqual(Object expected, Object actual, Description mismatch) {
         if (expected == actual) {
             return true;
-        } else if (expected == null || actual == null) {
+        }
+
+        if (expected == null || actual == null) {
             describeMismatch("****** Actual ******: %s%n".formatted(actual), mismatch);
             return false;
-        } else if (expected.getClass().isAssignableFrom(actual.getClass())) {
+        }
+
+        if (expected.getClass().isAssignableFrom(actual.getClass())) {
             try {
                 final List<PropertyDescriptor> beanProperties = beanGetterProperties(actual, stopClass);
                 for (final PropertyDescriptor beanProperty : beanProperties) {
@@ -125,40 +154,36 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
                 log.error(e.getMessage(), e);
                 return false;
             }
-        } else {
-            if (!defaultMatcher.apply(expected).matches(actual)) {
-                describeMismatch("****** Actual ******: %s%n".formatted(actual), mismatch);
-                return false;
-            }
-            return true;
         }
-    }
 
-    private boolean haveEqualFieldValue(Object expected, Object actual, String fieldName) {
-        try {
-            if (ignoredFields.contains(fieldName)) {
-                return true;
-            } else if (customMatchers.containsKey(fieldName)) {
-                return customMatchers.get(fieldName).matches(actual);
-            } else {
-                return defaultMatcher.apply(expected).matches(actual);
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+        if (!defaultMatcher.apply(expected).matches(actual)) {
+            describeMismatch("****** Actual ******: %s%n".formatted(actual), mismatch);
             return false;
         }
+
+        return true;
     }
 
-    private void describeMismatch(String message, Description mismatch) {
+    private boolean haveEqualFieldValue(final Object expected, final Object actual, final String fieldName) {
+        if (ignoredFields.contains(fieldName)) {
+            return true;
+        } else if (customMatchers.containsKey(fieldName)) {
+            return customMatchers.get(fieldName).matches(actual);
+        } else {
+            return defaultMatcher.apply(expected).matches(actual);
+        }
+    }
+
+    private void describeMismatch(final String message, final Description mismatch) {
         mismatch.appendText(message).appendText("\n");
         log.trace(message);
     }
 
-    private static List<PropertyDescriptor> beanGetterProperties(Object bean, Class<?> stopClass)
+    private static List<PropertyDescriptor> beanGetterProperties(final Object bean, final Class<?> stopClass)
             throws IntrospectionException {
         return Arrays.stream(
                         Introspector.getBeanInfo(bean.getClass(), stopClass).getPropertyDescriptors())
-                .filter(propertyDescriptor -> Objects.nonNull(propertyDescriptor.getReadMethod()))
+                .filter(descriptor -> Objects.nonNull(descriptor.getReadMethod()))
                 .toList();
     }
 }

@@ -21,25 +21,39 @@ import org.testcontainers.shaded.org.hamcrest.Description;
 import org.testcontainers.shaded.org.hamcrest.TypeSafeMatcher;
 
 /**
- * Used in assertions to check if the gas is within 32 units of the expected gas.
+ * Used in assertions to check if the gas is within {@code 32L} units of the expected gas.
  *
  * <p>
- * Depending on the addresses used in {@link TraceabilitySuite}, the hard-coded gas values may vary
- * slightly from the observed results. For example, the actual sidecar may have an intrinsic gas
- * cost differing from that of the expected sidecar by a value of {@code 12 * X}, where {@code X} is the
- * difference in the number of zero bytes in the transaction payload used between the actual
- * and hard-coded transactions (because the payload includes addresses with different numbers
- * of zeros in their hex encoding). So we allow for a variation of up to {@code 32L} gas between expected and actual.
+ * Depending on the addresses used in {@link TraceabilitySuite},
+ * the hard-coded gas values may vary slightly from the observed results.
+ * For example, the actual sidecar may have an intrinsic gas cost differing
+ * from that of the expected sidecar by a value of {@code 12 * X},
+ * where {@code X} is the difference in the number of zero bytes in the
+ * transaction payload used between the actual and expected transactions
+ * (because the payload includes addresses with different numbers of zeros
+ * in their hex encoding). So we allow for a variation of up to {@code 32L} gas.
  * </p>
  *
  * @author vyanev
  */
 public class GasMatcher extends TypeSafeMatcher<Long> {
 
+    /**
+     * The expected gas value
+     */
     private final Long expectedGas;
+
+    /**
+     * Flag indicating whether to ignore gas completely
+     */
     private final boolean ignoreGas;
 
-    public GasMatcher(Long expectedGas, boolean ignoreGas) {
+    /**
+     * @param expectedGas the expected gas
+     * @param ignoreGas flag indicating whether to ignore gas completely
+     */
+    public GasMatcher(final Long expectedGas, final boolean ignoreGas) {
+        super(Long.class);
         this.expectedGas = expectedGas;
         this.ignoreGas = ignoreGas;
     }
@@ -49,11 +63,11 @@ public class GasMatcher extends TypeSafeMatcher<Long> {
      * @return {@code true} if the actual gas is within 32 units of the expected gas
      */
     @Override
-    public boolean matchesSafely(Long actualGas) {
+    public boolean matchesSafely(final Long actualGas) {
         if (ignoreGas) {
             return true;
         }
-        long delta = Math.max(0L, Math.abs(actualGas - expectedGas));
+        final long delta = Math.max(0L, Math.abs(actualGas - expectedGas));
         return delta <= 32L;
     }
 
