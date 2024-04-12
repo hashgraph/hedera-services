@@ -40,6 +40,7 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
+import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -83,7 +84,8 @@ class PlatformWiringTests {
                 .withSelfEventSigner(mock(SelfEventSigner.class))
                 .withOrphanBuffer(mock(OrphanBuffer.class))
                 .withRunningEventHasher(mock(RunningEventHasher.class))
-                .withEventCreationManager(mock(EventCreationManager.class));
+                .withEventCreationManager(mock(EventCreationManager.class))
+                .withConsensusEventStream(mock(ConsensusEventStream.class));
 
         wiring.bind(
                 componentBuilder,

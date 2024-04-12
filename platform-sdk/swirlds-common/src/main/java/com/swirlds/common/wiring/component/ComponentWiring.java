@@ -25,6 +25,7 @@ import com.swirlds.common.wiring.component.internal.WiringComponentProxy;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
@@ -43,6 +44,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Builds and manages input/output wires for a component.
@@ -607,6 +609,20 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
         // Bind filters
         for (final FilterToBind<COMPONENT_TYPE, Object> filterToBind : filtersToBind) {
             filterToBind.filter().bind(x -> filterToBind.predicate().apply(component, x));
+        }
+    }
+
+    /**
+     * Bind to a component. This method is similar to {@link #bind(Object)}, but it allows the component to be created
+     * if and only if we need to bind to it. This method will invoke the supplier if the task scheduler type is anything
+     * other than a {@link com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType#NO_OP NO_OP} scheduler.
+     *
+     * @param componentBuilder builds or supplies the component
+     */
+    public void bind(@NonNull final Supplier<COMPONENT_TYPE> componentBuilder) {
+        Objects.requireNonNull(componentBuilder);
+        if (scheduler.getType() != TaskSchedulerType.NO_OP) {
+            bind(componentBuilder.get());
         }
     }
 

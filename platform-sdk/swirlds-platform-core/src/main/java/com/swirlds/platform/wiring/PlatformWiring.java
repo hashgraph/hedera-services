@@ -650,11 +650,11 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final AppNotifier notifier,
             @NonNull final PlatformPublisher platformPublisher) {
 
-        eventHasherWiring.bind(builder.buildEventHasher());
-        internalEventValidatorWiring.bind(builder.buildInternalEventValidator());
-        eventDeduplicatorWiring.bind(builder.buildEventDeduplicator());
-        eventSignatureValidatorWiring.bind(builder.buildEventSignatureValidator());
-        orphanBufferWiring.bind(builder.buildOrphanBuffer());
+        eventHasherWiring.bind(builder::buildEventHasher);
+        internalEventValidatorWiring.bind(builder::buildInternalEventValidator);
+        eventDeduplicatorWiring.bind(builder::buildEventDeduplicator);
+        eventSignatureValidatorWiring.bind(builder::buildEventSignatureValidator);
+        orphanBufferWiring.bind(builder::buildOrphanBuffer);
         inOrderLinkerWiring.bind(inOrderLinker);
         consensusEngineWiring.bind(consensusEngine);
         signedStateFileManagerWiring.bind(signedStateFileManager);
@@ -664,14 +664,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventDurabilityNexusWiring.bind(eventDurabilityNexus);
         shadowgraphWiring.bind(shadowgraph);
         pcesSequencerWiring.bind(pcesSequencer);
-        eventCreationManagerWiring.bind(builder.buildEventCreationManager());
-        selfEventSignerWiring.bind(builder.buildSelfEventSigner());
+        eventCreationManagerWiring.bind(builder::buildEventCreationManager);
+        selfEventSignerWiring.bind(builder::buildSelfEventSigner);
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
         eventWindowManagerWiring.bind(eventWindowManager);
         applicationTransactionPrehandlerWiring.bind(transactionPrehandler);
         consensusRoundHandlerWiring.bind(consensusRoundHandler);
-        runningEventHasherWiring.bind(builder.buildRunningEventHasher());
-        consensusEventStreamWiring.bind(builder.buildConsensusEventStream());
+        runningEventHasherWiring.bind(builder::buildRunningEventHasher);
+        consensusEventStreamWiring.bind(builder::buildConsensusEventStream);
         issDetectorWiring.bind(issDetector);
         issHandlerWiring.bind(issHandler);
         hashLoggerWiring.bind(hashLogger);
@@ -685,7 +685,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         signedStateHasherWiring.bind(signedStateHasher);
         notifierWiring.bind(notifier);
         platformPublisherWiring.bind(platformPublisher);
-        stateGarbageCollectorWiring.bind(builder.buildStateGarbageCollector());
+        stateGarbageCollectorWiring.bind(builder::buildStateGarbageCollector);
     }
 
     /**
