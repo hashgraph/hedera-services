@@ -54,6 +54,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -155,19 +156,21 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         // warm all accounts from the transfer list
         final TransferList transferList = op.transfersOrElse(TransferList.DEFAULT);
-        transferList.accountAmountsOrElse(emptyList()).parallelStream()
+        transferList.accountAmountsOrElse(emptyList()).stream()
                 .map(AccountAmount::accountID)
                 .filter(Objects::nonNull)
                 .forEach(accountStore::warm);
 
         // warm all token-data from the token transfer list
         final List<TokenTransferList> tokenTransfers = op.tokenTransfersOrElse(emptyList());
-        tokenTransfers.parallelStream()
+        tokenTransfers.stream()
                 .filter(TokenTransferList::hasToken)
                 .filter(TokenTransferList::hasNftTransfers)
                 .forEach(tokenTransferList -> {
                     final TokenID tokenID = tokenTransferList.tokenOrThrow();
-                    tokenStore.warm(tokenID);
+                    final Token token = tokenStore.get(tokenID);
+                    final AccountID treasuryID = token == null ? null : token.treasuryAccountId();
+                    if (treasuryID != null) accountStore.warm(treasuryID);
                     final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfersOrThrow();
                     for (final NftTransfer nftTransfer : nftTransfers) {
                         warmNftTransfer(accountStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
