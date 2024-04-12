@@ -198,7 +198,7 @@ public class FileSystemManagerImplTest {
         doNothing().when(mockRecycleBin).recycle(any(Path.class));
 
         // when
-        fileSystemManager.recycle(relativePath);
+        fileSystemManager.recycle(Path.of(getTestRootPath(), relativePath.toString()) );
 
         // then
         // Assert that the recycle bin method was called with the resolved path
