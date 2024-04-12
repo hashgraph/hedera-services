@@ -40,7 +40,6 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
-import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -101,7 +100,6 @@ class PlatformWiringTests {
                 mock(TransactionPrehandler.class),
                 mock(EventWindowManager.class),
                 mock(ConsensusRoundHandler.class),
-                mock(EventStreamManager.class),
                 mock(IssDetector.class),
                 mock(IssHandler.class),
                 mock(HashLogger.class),

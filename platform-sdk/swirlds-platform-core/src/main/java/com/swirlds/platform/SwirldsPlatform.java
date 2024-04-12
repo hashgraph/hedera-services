@@ -88,8 +88,6 @@ import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
-import com.swirlds.platform.event.stream.DefaultEventStreamManager;
-import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
@@ -517,19 +515,6 @@ public class SwirldsPlatform implements Platform {
             eventStreamManagerName = String.valueOf(selfId);
         }
 
-        final EventStreamManager eventStreamManager = new DefaultEventStreamManager(
-                platformContext,
-                time,
-                threadManager,
-                getSelfId(),
-                this,
-                eventStreamManagerName,
-                eventConfig.enableEventStreaming(),
-                eventConfig.eventsLogDir(),
-                eventConfig.eventsLogPeriod(),
-                eventConfig.eventStreamQueueCapacity(),
-                this::isLastEventBeforeRestart);
-
         initializeState(initialState);
 
         final TransactionConfig transactionConfig =
@@ -563,6 +548,7 @@ public class SwirldsPlatform implements Platform {
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
         blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
+        blocks.isInFreezePeriodReference().set(swirldStateManager::isInFreezePeriod);
 
         platformWiring.wireExternalComponents(platformStatusManager, blocks.transactionPool());
 
@@ -600,7 +586,6 @@ public class SwirldsPlatform implements Platform {
                 transactionPrehandler,
                 eventWindowManager,
                 consensusRoundHandler,
-                eventStreamManager,
                 issDetector,
                 issHandler,
                 hashLogger,
