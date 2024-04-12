@@ -33,7 +33,7 @@ import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.wiring.ClearTrigger;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -172,7 +172,7 @@ public class InOrderLinker {
      *
      * @param ignored ignored trigger object
      */
-    public void clear(@NonNull final ClearTrigger ignored) {
+    public void clear(@NonNull final NoInput ignored) {
         parentDescriptorMap.clear();
         parentHashMap.clear();
     }
