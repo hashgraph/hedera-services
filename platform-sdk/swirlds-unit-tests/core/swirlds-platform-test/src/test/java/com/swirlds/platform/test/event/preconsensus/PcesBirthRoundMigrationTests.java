@@ -30,11 +30,12 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.GossipEvent;
@@ -51,7 +52,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -229,7 +232,6 @@ class PcesBirthRoundMigrationTests {
         final DiscontinuityType discontinuityType = DiscontinuityType.values()[discontinuity];
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleBinPath)
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, pcesPath)
                 .getOrCreateConfig();
         TemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
@@ -239,6 +241,15 @@ class PcesBirthRoundMigrationTests {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
+                .withTestFileSystemManager(
+                        testDirectory,
+                        (m, t) -> new RecycleBinImpl(
+                                m,
+                                AdHocThreadManager.getStaticThreadManager(),
+                                time,
+                                recycleBinPath,
+                                Duration.of(7, ChronoUnit.DAYS),
+                                Duration.of(1, ChronoUnit.DAYS)))
                 .build();
 
         final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, discontinuityType);
@@ -316,7 +327,6 @@ class PcesBirthRoundMigrationTests {
     @Test
     void genesisWithBirthRoundsTest() throws IOException {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleBinPath)
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, pcesPath)
                 .getOrCreateConfig();
         TemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
@@ -326,6 +336,15 @@ class PcesBirthRoundMigrationTests {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
+                .withTestFileSystemManager(
+                        testDirectory,
+                        (m, t) -> new RecycleBinImpl(
+                                m,
+                                AdHocThreadManager.getStaticThreadManager(),
+                                time,
+                                recycleBinPath,
+                                Duration.of(7, ChronoUnit.DAYS),
+                                Duration.of(1, ChronoUnit.DAYS)))
                 .build();
 
         // should not throw
@@ -337,16 +356,23 @@ class PcesBirthRoundMigrationTests {
         final Random random = getRandomPrintSeed();
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleBinPath)
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, pcesPath)
                 .getOrCreateConfig();
-        TemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
 
         final FakeTime time = new FakeTime();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
+                .withTestFileSystemManager(
+                        testDirectory,
+                        (m, t) -> new RecycleBinImpl(
+                                m,
+                                AdHocThreadManager.getStaticThreadManager(),
+                                time,
+                                recycleBinPath,
+                                Duration.of(7, ChronoUnit.DAYS),
+                                Duration.of(1, ChronoUnit.DAYS)))
                 .build();
 
         final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, DiscontinuityType.NONE);

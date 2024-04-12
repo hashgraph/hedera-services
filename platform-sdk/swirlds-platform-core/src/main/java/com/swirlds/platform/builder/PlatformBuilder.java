@@ -34,8 +34,8 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.filesystem.FileManagerFactory;
 import com.swirlds.common.filesystem.FileSystemManager;
+import com.swirlds.common.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
@@ -363,7 +363,7 @@ public final class PlatformBuilder {
         final Metrics metrics = getMetricsProvider().createPlatformMetrics(selfId);
 
         final FileSystemManager fileSystemManager =
-                FileManagerFactory.getInstance().createFileSystemManager(configuration, metrics, selfId);
+                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, metrics);
         return new DefaultPlatformContext(configuration, metrics, cryptography, Time.getCurrent(), fileSystemManager);
     }
 
