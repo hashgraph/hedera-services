@@ -31,7 +31,6 @@ import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
-import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
@@ -63,7 +62,6 @@ import java.util.List;
  *
  * @param eventHasherScheduler                      the scheduler for the event hasher
  * @param postHashCollectorScheduler                the scheduler for the post hash collector
- * @param orphanBufferScheduler                     the scheduler for the orphan buffer
  * @param inOrderLinkerScheduler                    the scheduler for the in-order linker
  * @param consensusEngineScheduler                  the scheduler for the consensus engine
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
@@ -86,7 +84,6 @@ import java.util.List;
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
         @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
-        @NonNull TaskScheduler<List<GossipEvent>> orphanBufferScheduler,
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
         @NonNull TaskScheduler<List<ConsensusRound>> consensusEngineScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
@@ -139,14 +136,6 @@ public record PlatformSchedulers(
                         .withExternalBackPressure(true)
                         .withUnhandledTaskMetricEnabled(true)
                         .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("orphanBuffer")
-                        .withType(config.orphanBufferSchedulerType())
-                        .withUnhandledTaskCapacity(config.orphanBufferUnhandledCapacity())
-                        .withFlushingEnabled(true)
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(OrphanBuffer.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("inOrderLinker")
