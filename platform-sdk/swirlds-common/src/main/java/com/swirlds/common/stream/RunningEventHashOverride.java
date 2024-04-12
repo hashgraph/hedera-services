@@ -20,9 +20,12 @@ import com.swirlds.common.crypto.Hash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A record used to update the running event hash on various components when a new state is loaded
+ * A record used to override the running event hash on various components when a new state is loaded (i.e. after a
+ * reconnect or a restart).
  *
- * @param runningEventHash the running event hash of the loaded state
- * @param isReconnect      whether or not this is a reconnect state
+ * @param legacyRunningEventHash the legacy running event hash of the loaded state, used by the consensus event stream
+ * @param runningEventHash       the running event hash of the loaded state
+ * @param isReconnect            whether or not this is a reconnect state
  */
-public record RunningEventHashUpdate(@NonNull Hash runningEventHash, boolean isReconnect) {}
+public record RunningEventHashOverride(
+        @NonNull Hash legacyRunningEventHash, @NonNull Hash runningEventHash, boolean isReconnect) {}

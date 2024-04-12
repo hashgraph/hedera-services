@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.stream;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -23,7 +24,7 @@ import static org.mockito.Mockito.verify;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.MultiStream;
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.component.ComponentWiring;
@@ -83,7 +84,7 @@ class EventStreamManagerTest {
     @ValueSource(booleans = {true, false})
     void setStartWriteAtCompleteWindowTest(final boolean startWriteAtCompleteWindow) {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final Hash runningHash = RandomUtils.randomHash(random);
+        final Hash runningHash = randomHash(random);
 
         final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
@@ -97,8 +98,8 @@ class EventStreamManagerTest {
                         .cast());
         wiring.bind(eventStreamManager);
 
-        wiring.getInputWire(EventStreamManager::updateRunningHash)
-                .inject(new RunningEventHashUpdate(runningHash, startWriteAtCompleteWindow));
+        wiring.getInputWire(EventStreamManager::legacyHashOverride)
+                .inject(new RunningEventHashOverride(runningHash, randomHash(random), startWriteAtCompleteWindow));
         verify(multiStreamMock).setRunningHash(runningHash);
     }
 
