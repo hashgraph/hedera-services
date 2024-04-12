@@ -16,6 +16,10 @@
 
 package com.hedera.services.bdd.spec.assertions.matchers;
 
+import java.util.List;
+import java.util.function.Function;
+import org.testcontainers.shaded.org.hamcrest.Matcher;
+
 /**
  * Utility class with methods for creating custom matchers.
  *
@@ -32,15 +36,30 @@ public final class MatcherUtils {
      * @param stopClass the class to stop at when comparing fields
      * @return {@link FieldByFieldMatcher} checking if the objects have equal fields
      */
-    public static <T> FieldByFieldMatcher<T> withEqualFields(T expected, Class<?> stopClass) {
+    public static <T> FieldByFieldMatcher<T> withEqualFields(final T expected, final Class<?> stopClass) {
         return new FieldByFieldMatcher<>(expected, stopClass);
     }
 
     /**
      * @param expectedGas the expected gas
-     * @return {@link GasMatcher} checking if the gas is within 32 units of the expected gas
+     * @return {@link GasMatcher} checking for equality within a range of 32 units
      */
-    public static GasMatcher within32Units(Long expectedGas) {
+    public static GasMatcher within32Units(final Long expectedGas) {
         return new GasMatcher(expectedGas, false);
+    }
+
+    /**
+     * @param expectedItems list of expected items
+     * @param actualItems list of actual items
+     * @param matcher the matcher to use for comparison
+     * @param <T> the type of the items
+     * @return list of items that are in the expected list but not in the actual list
+     */
+    public static <T> List<T> getMismatchedItems(
+            final List<T> expectedItems, final List<T> actualItems, final Function<T, Matcher<T>> matcher) {
+        return expectedItems.stream()
+                .filter(expectedItem -> actualItems.stream()
+                        .noneMatch(actualItem -> matcher.apply(expectedItem).matches(actualItem)))
+                .toList();
     }
 }

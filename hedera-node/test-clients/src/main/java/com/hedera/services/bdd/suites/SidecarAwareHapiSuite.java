@@ -302,7 +302,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
     }
 
     /**
-     * Asserts all expected sidecar records for contract actions have been externalized.
+     * Asserts all expected sidecars for contract actions have been externalized.
      * @return {@link CustomSpecAssert} with the assertions.
      */
     protected static CustomSpecAssert assertContainsAllExpectedContractActions() {
@@ -318,7 +318,7 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
     }
 
     /**
-     * Asserts that all expected sidecar records for contract state changes have been externalized.
+     * Asserts all expected sidecars for contract state changes have been externalized.
      * @return {@link CustomSpecAssert} with the assertions.
      */
     protected static CustomSpecAssert assertContainsAllExpectedStateChanges() {

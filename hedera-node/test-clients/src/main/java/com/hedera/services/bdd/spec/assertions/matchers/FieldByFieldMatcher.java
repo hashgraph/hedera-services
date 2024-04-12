@@ -20,6 +20,7 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -36,8 +37,10 @@ import org.testcontainers.shaded.org.hamcrest.Matchers;
 import org.testcontainers.shaded.org.hamcrest.TypeSafeDiagnosingMatcher;
 
 /**
- * Used in assertions to check if all fields of an object match the expected fields.
- * Adds utilities to ignore fields and use custom matchers for fields.
+ * Used in assertions to check if two objects are equal on a field-by-field basis.
+ * Provides utilities to ignore fields and use custom matchers for certain fields.
+ * Object comparison is done using reflections on all properties
+ * which have a getter method and are not in the {@code ignoredFields} list.
  *
  * @author vyanev
  *
@@ -53,6 +56,11 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
     private final T expected;
 
     /**
+     * The expected object's class
+     */
+    private final Class<?> expectedType;
+
+    /**
      * The class to stop at when comparing fields
      */
     private final Class<?> stopClass;
@@ -60,7 +68,7 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
     /**
      * The default matcher used if there is no custom matcher for that field
      */
-    private final Function<Object, Matcher<Object>> defaultMatcher;
+    private final Function<Object, Matcher<Object>> defaultMatcher = Matchers::equalTo;
 
     /**
      * The custom matchers used for the specified fields
@@ -79,16 +87,16 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
     public FieldByFieldMatcher(final T expected, final Class<?> stopClass) {
         super(expected.getClass());
         this.expected = expected;
-        this.defaultMatcher = Matchers::equalTo;
+        this.expectedType = expected.getClass();
         this.stopClass = stopClass;
     }
 
     /**
-     * @param customMatchers the custom matchers for the fields
+     * @param matchers the custom matchers for the fields
      * @return this {@link FieldByFieldMatcher}
      */
-    public FieldByFieldMatcher<T> withCustomMatchersForFields(Map<String, Matcher<?>> customMatchers) {
-        this.customMatchers.putAll(customMatchers);
+    public FieldByFieldMatcher<T> withCustomMatchersForFields(final Map<String, Matcher<?>> matchers) {
+        customMatchers.putAll(matchers);
         return this;
     }
 
@@ -107,8 +115,8 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
      * @return {@code true} if the actual object matches the expected object
      */
     @Override
-    protected boolean matchesSafely(T actual, Description mismatch) {
-        return areEqual(expected, actual, mismatch);
+    protected boolean matchesSafely(final T actual, final Description mismatch) {
+        return matchesFieldByField(actual, mismatch);
     }
 
     /**
@@ -119,7 +127,7 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
         description.appendText(expected.toString());
     }
 
-    private boolean areEqual(Object expected, Object actual, Description mismatch) {
+    private boolean matchesFieldByField(final Object actual, final Description mismatch) {
         if (expected == actual) {
             return true;
         }
@@ -129,14 +137,14 @@ public class FieldByFieldMatcher<T> extends TypeSafeDiagnosingMatcher<T> {
             return false;
         }
 
-        if (expected.getClass().isAssignableFrom(actual.getClass())) {
+        if (expectedType.isAssignableFrom(actual.getClass())) {
             try {
                 final List<PropertyDescriptor> beanProperties = beanGetterProperties(actual, stopClass);
                 for (final PropertyDescriptor beanProperty : beanProperties) {
-                    final var fieldName = beanProperty.getName();
-                    final var expectedValue = beanProperty.getReadMethod().invoke(expected);
-                    final var actualValue = beanProperty.getReadMethod().invoke(actual);
-
+                    final String fieldName = beanProperty.getName();
+                    final Method readMethod = beanProperty.getReadMethod();
+                    final Object expectedValue = readMethod.invoke(expected);
+                    final Object actualValue = readMethod.invoke(actual);
                     if (!haveEqualFieldValue(expectedValue, actualValue, fieldName)) {
                         describeMismatch(
                                 """

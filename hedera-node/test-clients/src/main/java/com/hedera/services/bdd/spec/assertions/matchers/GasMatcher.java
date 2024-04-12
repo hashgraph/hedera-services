@@ -21,8 +21,7 @@ import org.testcontainers.shaded.org.hamcrest.Description;
 import org.testcontainers.shaded.org.hamcrest.TypeSafeMatcher;
 
 /**
- * Used in assertions to check if the gas is within {@code 32L} units of the expected gas.
- *
+ * Used in assertions to check if two gas values are equal within a certain range.
  * <p>
  * Depending on the addresses used in {@link TraceabilitySuite},
  * the hard-coded gas values may vary slightly from the observed results.
@@ -75,7 +74,7 @@ public class GasMatcher extends TypeSafeMatcher<Long> {
      * @param description {@link Description} of the expected gas
      */
     @Override
-    public void describeTo(Description description) {
+    public void describeTo(final Description description) {
         if (ignoreGas) {
             description.appendText("any gas");
         } else {

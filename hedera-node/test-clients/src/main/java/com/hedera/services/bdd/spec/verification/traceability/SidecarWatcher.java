@@ -110,7 +110,7 @@ public class SidecarWatcher {
 
     private void onNewSidecarFile(final SidecarFile sidecarFile) {
         for (final var actualSidecar : sidecarFile.getSidecarRecordsList()) {
-            boolean matchesConsensusTimestamp = Optional.ofNullable(expectedSidecars.peek())
+            final boolean matchesConsensusTimestamp = Optional.ofNullable(expectedSidecars.peek())
                     .map(ExpectedSidecar::expectedSidecarRecord)
                     .map(expected -> expected.matchesConsensusTimestampOf(actualSidecar))
                     .orElse(false);
