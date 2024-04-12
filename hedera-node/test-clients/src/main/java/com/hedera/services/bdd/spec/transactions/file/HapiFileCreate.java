@@ -124,7 +124,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
     }
 
     public HapiFileCreate key(String keyName) {
-        this.keyName = Optional.of(keyName);
+        this.keyName = Optional.ofNullable(keyName);
         return this;
     }
 
