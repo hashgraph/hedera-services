@@ -42,11 +42,10 @@ version =
 val MIN_JAVA_VERSION = JavaVersion.VERSION_21
 val CUR_JAVA_VERSION = JavaVersion.current()
 if (CUR_JAVA_VERSION.ordinal < MIN_JAVA_VERSION.ordinal) {
-    System.err.println("ERROR: Gradle is started with Java " + CUR_JAVA_VERSION
+    throw StopExecutionException("ERROR: Gradle is started with Java " + CUR_JAVA_VERSION
             + ". This project requires running Gradle with Java " + MIN_JAVA_VERSION + " or above."
             + " Please check your JAVA_HOME and/or PATH and configure the default JDK to use Java version "
             + MIN_JAVA_VERSION + " or above.");
-    System.exit(1);
 }
 
 java {
