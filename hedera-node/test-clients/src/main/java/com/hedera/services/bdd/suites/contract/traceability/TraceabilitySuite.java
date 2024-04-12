@@ -4215,10 +4215,6 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                             allRunFor(spec, topLevelCallTxnRecord);
                             final var hapiGetContractBytecode = getContractBytecode(mirrorLiteralId.get())
                                     .exposingBytecodeTo(bytecodeFromMirror::set);
-                            final var targetedAddress =
-                                    ByteStringUtils.wrapUnsafely(Bytes.fromHexString(expectedCreate2Address.get())
-                                            .trimLeadingZeros()
-                                            .toArrayUnsafe());
                             allRunFor(
                                     spec,
                                     topLevelCallTxnRecord,
@@ -4266,10 +4262,7 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                                                                     spec.registry()
                                                                             .getContractId(contract))
                                                             .setGas(3870609)
-                                                            .setTargetedAddress(targetedAddress)
-                                                            // TODO: Update this after the issue related to
-                                                            //  targeted_address being wrongly set to be resolved
-                                                            // .setRecipientContract(childId)
+                                                            .setRecipientContract(childId)
                                                             .setGasUsed(44936)
                                                             .setValue(tcValue)
                                                             .setOutput(EMPTY)
