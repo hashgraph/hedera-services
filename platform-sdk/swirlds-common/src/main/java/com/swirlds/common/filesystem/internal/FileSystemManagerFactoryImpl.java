@@ -21,20 +21,19 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.filesystem.FileManagerFactory;
 import com.swirlds.common.filesystem.FileSystemManager;
+import com.swirlds.common.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.RecycleBinImpl;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class FileManagerFactoryImpl implements FileManagerFactory {
+public class FileSystemManagerFactoryImpl implements FileSystemManagerFactory {
 
     private static class InstanceHolder {
-        private static final FileManagerFactoryImpl INSTANCE = new FileManagerFactoryImpl();
+        private static final FileSystemManagerFactoryImpl INSTANCE = new FileSystemManagerFactoryImpl();
     }
 
     /**
@@ -43,7 +42,6 @@ public class FileManagerFactoryImpl implements FileManagerFactory {
      *
      * @param configuration the configuration instance to retrieve properties from
      * @param metrics
-     * @param selfId
      * @return a new instance of {@link FileSystemManager}
      * @throws IllegalArgumentException if {@code rootLocationPropertyName} cannot be found on configuration, if
      *                                  {@code rootLocation} already exist or if the dir structure to rootLocation
@@ -52,12 +50,12 @@ public class FileManagerFactoryImpl implements FileManagerFactory {
     @NonNull
     @Override
     public FileSystemManager createFileSystemManager(
-            @NonNull final Configuration configuration, @NonNull final Metrics metrics, @NonNull final NodeId selfId) {
+            @NonNull final Configuration configuration, @NonNull final Metrics metrics) {
 
         final TemporaryFileConfig temporaryFileConfig = ConfigurationHolder.getConfigData(TemporaryFileConfig.class);
         final StateCommonConfig stateConfig = ConfigurationHolder.getConfigData(StateCommonConfig.class);
         final RecycleBinConfig recycleBinConfig = configuration.getConfigData(RecycleBinConfig.class);
-        final String rootFileLocation = temporaryFileConfig.temporaryFilePath().replace("{nodeId}", selfId.toString());
+        final String rootFileLocation = temporaryFileConfig.temporaryFilePath();
         final String rootLocation =
                 stateConfig.savedStateDirectory().resolve(rootFileLocation).toString();
 
@@ -76,7 +74,7 @@ public class FileManagerFactoryImpl implements FileManagerFactory {
      * Retrieves the default FileSystemManagerFactory instance
      */
     @NonNull
-    public static FileManagerFactory getInstance() {
+    public static FileSystemManagerFactory getInstance() {
         return InstanceHolder.INSTANCE;
     }
 }

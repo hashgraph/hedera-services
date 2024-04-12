@@ -16,8 +16,7 @@
 
 package com.swirlds.common.filesystem;
 
-import com.swirlds.common.filesystem.internal.FileManagerFactoryImpl;
-import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.filesystem.internal.FileSystemManagerFactoryImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -25,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Creates instances of {@link FileSystemManager}
  */
-public interface FileManagerFactory {
+public interface FileSystemManagerFactory {
 
     /**
      * Creates a {@link FileSystemManager} by searching {@code root} path in the {@link Configuration} class under a
@@ -36,13 +35,13 @@ public interface FileManagerFactory {
      */
     @NonNull
     FileSystemManager createFileSystemManager(
-            @NonNull final Configuration configuration, @NonNull final Metrics metrics, @NonNull final NodeId selfId);
+            @NonNull final Configuration configuration, @NonNull final Metrics metrics);
 
     /**
      * Retrieves the default FileSystemManagerFactory instance
      */
     @NonNull
-    static FileManagerFactory getInstance() {
-        return FileManagerFactoryImpl.getInstance();
+    static FileSystemManagerFactory getInstance() {
+        return FileSystemManagerFactoryImpl.getInstance();
     }
 }

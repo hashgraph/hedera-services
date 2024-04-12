@@ -49,7 +49,7 @@ public class FileSystemManagerImpl implements FileSystemManager {
     private static final Logger logger = LogManager.getLogger(FileSystemManagerImpl.class);
     private static final String TMP = "tmp";
     private static final String USER = "usr";
-    private static final String BIN = "bin";
+    private static final String BIN = "recycle-bin";
     private final Path rootPath;
     private final Path tempPath;
     private final Path userPath;
@@ -61,7 +61,7 @@ public class FileSystemManagerImpl implements FileSystemManager {
      * Creates an instance of {@link FileSystemManager}
      *
      * @param rootLocation the location to be used as root path. It should not exist.
-     * @param binSupplier          the recycle bin.
+     * @param binSupplier          for building the recycle bin.
      * @throws UncheckedIOException if rootLocation already exist or if the dir structure to rootLocation cannot be
      *                                  created
      */
