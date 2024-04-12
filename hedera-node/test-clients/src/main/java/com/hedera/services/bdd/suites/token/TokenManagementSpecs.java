@@ -127,9 +127,70 @@ public class TokenManagementSpecs extends HapiSuite {
                 fungibleCommonMaxSupplyReachWork(),
                 mintingMaxLongValueWorks(),
                 nftMintProvidesMintedNftsAndNewTotalSupply(),
-                zeroUnitTokenOperationsWorkAsExpected()
-                //                aliasFormWorksForAllTokenOps()
+                zeroUnitTokenOperationsWorkAsExpected(),
+                aliasFormFailsForAllTokenOps()
+                // aliasFormWorksForAllTokenOps(), // this will be enabled when alias forms are allowed in all token ops
                 );
+    }
+
+    @HapiTest
+    private HapiSpec aliasFormFailsForAllTokenOps() {
+        final var CIVILIAN = "civilian";
+        final var PAUSE_KEY = "pauseKey";
+        final var KYC_KEY = "kycKey";
+        final var FREEZE_KEY = "freezeKey";
+        final var WIPE_KEY = "wipeKey";
+        final var PRIMARY = "primary";
+        final var partyAlias = "partyAlias";
+        final var counterAlias = "counterAlias";
+        return defaultHapiSpec("aliasFormFailsForAllTokenOps")
+                .given(
+                        newKeyNamed(partyAlias).shape(ED25519),
+                        newKeyNamed(counterAlias).shape(ED25519),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed(PAUSE_KEY),
+                        newKeyNamed(KYC_KEY),
+                        newKeyNamed(FREEZE_KEY),
+                        newKeyNamed(WIPE_KEY),
+                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, partyAlias, ONE_HBAR)),
+                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, counterAlias, ONE_HBAR)))
+                .when(
+                        tokenCreate(PRIMARY)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .treasury(TOKEN_TREASURY)
+                                .pauseKey(PAUSE_KEY)
+                                .kycKey(KYC_KEY)
+                                .freezeKey(FREEZE_KEY)
+                                .wipeKey(WIPE_KEY),
+
+                        // associate and dissociate with alias
+                        tokenAssociateWithAlias(partyAlias, PRIMARY)
+                                .signedBy(partyAlias, DEFAULT_PAYER)
+                                .hasKnownStatus(INVALID_ACCOUNT_ID),
+                        tokenDissociateWithAlias(partyAlias, PRIMARY)
+                                .signedBy(partyAlias, DEFAULT_PAYER)
+                                .hasKnownStatus(INVALID_ACCOUNT_ID),
+                        // associate again for next steps
+                        tokenAssociateWithAlias(partyAlias, PRIMARY)
+                                .signedBy(partyAlias, DEFAULT_PAYER)
+                                .hasKnownStatus(INVALID_ACCOUNT_ID),
+                        // grant and revoke kyc
+                        grantTokenKycWithAlias(PRIMARY, partyAlias).hasKnownStatus(INVALID_ACCOUNT_ID),
+                        // revoke kyc
+                        revokeTokenKycWithAlias(PRIMARY, partyAlias).hasKnownStatus(INVALID_ACCOUNT_ID),
+                        // freeze, unfreeze
+                        tokenFreezeWithAlias(PRIMARY, partyAlias).hasKnownStatus(INVALID_ACCOUNT_ID),
+                        tokenUnfreezeWithAlias(PRIMARY, partyAlias).hasKnownStatus(INVALID_ACCOUNT_ID),
+
+                        // wipe won't happen if the kyc key exists and kyc not granted
+                        grantTokenKycWithAlias(PRIMARY, partyAlias).hasKnownStatus(INVALID_ACCOUNT_ID),
+                        wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1).hasKnownStatus(INVALID_ACCOUNT_ID))
+                .then();
     }
 
     @Override
