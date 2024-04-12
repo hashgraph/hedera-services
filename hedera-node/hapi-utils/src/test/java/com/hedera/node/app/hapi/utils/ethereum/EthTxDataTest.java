@@ -540,7 +540,6 @@ class EthTxDataTest {
     @Test
     void maxGasForFoundryDeterministicDeployerIsAsExpected() {
         final var oneByte = new byte[] {1};
-        // high bit of most significant byte is zero
         // 45 tinybar as weibar
         final var smallGasPrice = Hex.decode("68c6171400");
         final var type = EthTransactionType.LEGACY_ETHEREUM;
