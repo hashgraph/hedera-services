@@ -76,6 +76,7 @@ import java.time.Duration;
  * @param consensusRoundHandlerSchedulerType                the consensus round handler scheduler type
  * @param consensusRoundHandlerUnhandledCapacity            number of unhandled tasks allowed for the consensus round
  *                                                          handler
+ * @param runningEventHasher                                configuration for the running event hasher scheduler
  * @param issDetectorSchedulerType                          the ISS detector scheduler type
  * @param issDetectorUnhandledCapacity                      number of unhandled tasks allowed for the ISS detector
  * @param hashLoggerSchedulerType                           the hash logger scheduler type

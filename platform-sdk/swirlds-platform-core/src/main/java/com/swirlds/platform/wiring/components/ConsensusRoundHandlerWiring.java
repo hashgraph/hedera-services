@@ -30,14 +30,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Wiring for the {@link com.swirlds.platform.eventhandling.ConsensusRoundHandler}
  *
- * @param roundInput              the input wire for consensus rounds to be applied to the state
- * @param overrideLegacyRunningEventHashInput  the input wire for updating the running event hash
- * @param stateAndRoundOutput     the output wire for the reserved signed state, bundled with the round that caused
- *                                the state to be created
- * @param stateOutput             the output wire for the reserved signed state
- * @param flushRunnable           the runnable to flush the task scheduler
- * @param startSquelchingRunnable the runnable to start squelching
- * @param stopSquelchingRunnable  the runnable to stop squelching
+ * @param roundInput                          the input wire for consensus rounds to be applied to the state
+ * @param overrideLegacyRunningEventHashInput the input wire for updating the running event hash
+ * @param stateAndRoundOutput                 the output wire for the reserved signed state, bundled with the round that
+ *                                            caused the state to be created
+ * @param stateOutput                         the output wire for the reserved signed state
+ * @param flushRunnable                       the runnable to flush the task scheduler
+ * @param startSquelchingRunnable             the runnable to start squelching
+ * @param stopSquelchingRunnable              the runnable to stop squelching
  */
 public record ConsensusRoundHandlerWiring(
         @NonNull InputWire<ConsensusRound> roundInput,

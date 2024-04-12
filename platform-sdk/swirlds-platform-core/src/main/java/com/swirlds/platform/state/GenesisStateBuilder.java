@@ -40,7 +40,9 @@ public final class GenesisStateBuilder {
      * @return a genesis platform state
      */
     private static PlatformState buildGenesisPlatformState(
-            final AddressBook addressBook, final SoftwareVersion appVersion) {
+            @NonNull final PlatformContext platformContext,
+            final AddressBook addressBook,
+            final SoftwareVersion appVersion) {
 
         final PlatformState platformState = new PlatformState();
         platformState.setAddressBook(addressBook.copy());
@@ -48,6 +50,7 @@ public final class GenesisStateBuilder {
         platformState.setCreationSoftwareVersion(appVersion);
         platformState.setRound(0);
         platformState.setLegacyRunningEventHash(null);
+        platformState.setRunningEventHash(platformContext.getCryptography().getNullHash());
         platformState.setEpochHash(null);
         platformState.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 
@@ -71,7 +74,7 @@ public final class GenesisStateBuilder {
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final State state = new State();
-        state.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
+        state.setPlatformState(buildGenesisPlatformState(platformContext, addressBook, appVersion));
         state.setSwirldState(swirldState);
 
         final long genesisFreezeTime = basicConfig.genesisFreezeTime();
