@@ -186,16 +186,19 @@ public final class TestPlatformContextBuilder {
         }
 
         return new PlatformContext() {
+            @NonNull
             @Override
             public Configuration getConfiguration() {
                 return configuration;
             }
 
+            @NonNull
             @Override
             public Cryptography getCryptography() {
                 return cryptography;
             }
 
+            @NonNull
             @Override
             public Metrics getMetrics() {
                 return metrics;
@@ -207,7 +210,7 @@ public final class TestPlatformContextBuilder {
                 return time;
             }
 
-            @Nullable
+            @NonNull
             @Override
             public FileSystemManager getFileSystemManager() {
                 return fileSystemManager;
