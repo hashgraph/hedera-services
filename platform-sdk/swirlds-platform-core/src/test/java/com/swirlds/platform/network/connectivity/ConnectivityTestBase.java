@@ -86,16 +86,15 @@ class ConnectivityTestBase {
      * the server socket open until told to close
      *
      * @param serverSocket the server socket
-     * @param data         the expected data from the socket
      * @param stop         flag for stopping the thread
      */
-    static Thread createSocketThread(final ServerSocket serverSocket, final byte[] data, final AtomicBoolean stop) {
+    static Thread createSocketThread(final ServerSocket serverSocket, final AtomicBoolean stop) {
         final Thread thread = new Thread(() -> {
             try {
                 while (!stop.get()) {
                     final Socket s = serverSocket.accept();
-                    final byte[] bytes = s.getInputStream().readNBytes(data.length);
-                    assertArrayEquals(data, bytes, "Data read from socket must be the same as the data written");
+                    final byte[] bytes = s.getInputStream().readNBytes(TEST_DATA.length);
+                    assertArrayEquals(TEST_DATA, bytes, "Data read from socket must be the same as the data written");
                 }
             } catch (final IOException e) {
                 throw new RuntimeException(e);

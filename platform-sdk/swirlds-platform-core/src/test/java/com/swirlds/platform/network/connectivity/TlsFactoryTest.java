@@ -69,7 +69,7 @@ class TlsFactoryTest extends ConnectivityTestBase {
         // test that B can talk to A - A(serverSocket) -> B(clientSocket1)
         serverSocket = socketFactoryA.createServerSocket(PORT);
         serverSocket.setSoTimeout(10000);
-        serverThread = createSocketThread(serverSocket, TEST_DATA, closeSeverConnection);
+        serverThread = createSocketThread(serverSocket, closeSeverConnection);
 
         clientSocketB = socketFactoryB.createClientSocket(STRING_IP, PORT);
         testSocket(serverThread, clientSocketB);
