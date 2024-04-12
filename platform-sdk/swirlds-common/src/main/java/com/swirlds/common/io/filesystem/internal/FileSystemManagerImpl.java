@@ -116,16 +116,15 @@ public class FileSystemManagerImpl implements FileSystemManager {
     /**
      * Remove the file or directory tree at the specified absolute path. A best effort attempt is made to relocate the
      * file or directory tree to a temporary location where it may persist for an amount of time. No guarantee on the
-     * amount of time the file or directory tree will persist is provided. {@code absolutePath} should be under
-     * {@code rootPath} or {@link IllegalArgumentException} is thrown
+     * amount of time the file or directory tree will persist is provided.
      *
      * @param absolutePath the path to recycle
      * @throws IllegalArgumentException if the path cannot be relative to or scape the root directory
      */
     @Override
     public void recycle(@NonNull final Path absolutePath) throws IOException {
-        final Path path = absolutePath.startsWith(rootPath) ? absolutePath : rootPath.resolve(absolutePath);
-        bin.recycle(requireValidSubPathOf(rootPath, path));
+        // FUTURE-WORK absolutePath should be under rootPath. check with requireValidSubPathOf(rootPath, absolutePath)
+        bin.recycle(absolutePath);
     }
 
     /**

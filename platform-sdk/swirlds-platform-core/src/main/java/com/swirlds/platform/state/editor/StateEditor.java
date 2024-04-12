@@ -68,7 +68,7 @@ public class StateEditor {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
 
         platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), null);
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);

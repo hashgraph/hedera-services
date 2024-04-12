@@ -36,7 +36,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;
@@ -103,9 +102,7 @@ class PcesFileManagerTests {
                 .withValue(PcesConfig_.COMPACT_LAST_FILE_ON_STARTUP, false)
                 .getOrCreateConfig();
 
-        final Metrics metrics = new NoOpMetrics();
-
-        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), time, null);
+        return new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get(), time);
     }
 
     @ParameterizedTest

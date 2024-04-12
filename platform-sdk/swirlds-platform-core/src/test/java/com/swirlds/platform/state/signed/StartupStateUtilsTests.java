@@ -39,6 +39,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
@@ -91,6 +92,7 @@ class StartupStateUtilsTests {
     @BeforeEach
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
+        TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
         signedStateFilePath = new SignedStateFilePath(new TestConfigBuilder()
                 .withValue("state.savedStateDirectory", testDirectory.toString())
                 .getOrCreateConfig()
@@ -108,17 +110,29 @@ class StartupStateUtilsTests {
     }
 
     @NonNull
+    private PlatformContext buildContext(final boolean deleteInvalidStateFiles, final RecycleBin recycleBin) {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
+                .withValue(StateConfig_.DELETE_INVALID_STATE_FILES, deleteInvalidStateFiles)
+                .getOrCreateConfig();
+
+        return TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .withTestFileSystemManager(testDirectory, recycleBin)
+                .build();
+    }
+
+    @NonNull
     private PlatformContext buildContext(final boolean deleteInvalidStateFiles) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
                 .withValue(StateConfig_.DELETE_INVALID_STATE_FILES, deleteInvalidStateFiles)
                 .getOrCreateConfig();
 
-        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+        return TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
+                .withTestFileSystemManager(testDirectory)
                 .build();
-
-        return platformContext;
     }
 
     /**
@@ -236,7 +250,18 @@ class StartupStateUtilsTests {
     void corruptedStateRecyclingPermittedTest(final int invalidStateCount)
             throws IOException, SignedStateLoadingException {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(true);
+        final AtomicInteger recycleCount = new AtomicInteger(0);
+        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
+        // increment recycle count every time recycleBin.recycle() is called
+        doAnswer(invocation -> {
+                    invocation.callRealMethod();
+                    recycleCount.incrementAndGet();
+                    return null;
+                })
+                .when(recycleBin)
+                .recycle(any());
+
+        final PlatformContext platformContext = buildContext(true, recycleBin);
 
         int stateCount = 5;
 
@@ -250,17 +275,6 @@ class StartupStateUtilsTests {
                 latestUncorruptedState = state;
             }
         }
-
-        final AtomicInteger recycleCount = new AtomicInteger(0);
-        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
-        // increment recycle count every time recycleBin.recycle() is called
-        doAnswer(invocation -> {
-                    invocation.callRealMethod();
-                    recycleCount.incrementAndGet();
-                    return null;
-                })
-                .when(recycleBin)
-                .recycle(any());
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext,
@@ -623,7 +637,19 @@ class StartupStateUtilsTests {
     void recoveryCorruptedStateRecyclingPermittedTest(final int invalidStateCount)
             throws IOException, SignedStateLoadingException {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(true);
+
+        final AtomicInteger recycleCount = new AtomicInteger(0);
+        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
+        // increment recycle count every time recycleBin.recycle() is called
+        doAnswer(invocation -> {
+                    invocation.callRealMethod();
+                    recycleCount.incrementAndGet();
+                    return null;
+                })
+                .when(recycleBin)
+                .recycle(any());
+
+        final PlatformContext platformContext = buildContext(true, recycleBin);
 
         int stateCount = 5;
 
@@ -637,17 +663,6 @@ class StartupStateUtilsTests {
                 latestUncorruptedState = state;
             }
         }
-
-        final AtomicInteger recycleCount = new AtomicInteger(0);
-        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
-        // increment recycle count every time recycleBin.recycle() is called
-        doAnswer(invocation -> {
-                    invocation.callRealMethod();
-                    recycleCount.incrementAndGet();
-                    return null;
-                })
-                .when(recycleBin)
-                .recycle(any());
 
         final Hash epoch = randomHash(random);
         final long epochRound = latestRound + 1;
@@ -708,8 +723,6 @@ class StartupStateUtilsTests {
     @DisplayName("doRecoveryCleanup() Initial Epoch Test")
     void doRecoveryCleanupInitialEpochTest() throws IOException {
 
-        final PlatformContext platformContext = buildContext(false);
-
         final AtomicInteger recycleCount = new AtomicInteger(0);
         final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
         // increment recycle count every time recycleBin.recycle() is called
@@ -720,6 +733,7 @@ class StartupStateUtilsTests {
                 })
                 .when(recycleBin)
                 .recycle(any());
+        final PlatformContext platformContext = buildContext(false, recycleBin);
 
         final Random random = getRandomPrintSeed();
 
@@ -764,12 +778,6 @@ class StartupStateUtilsTests {
 
         final Hash epoch = randomHash(random);
 
-        final PlatformContext platformContext = buildContext(false);
-
-        final Scratchpad<RecoveryScratchpad> scratchpad =
-                Scratchpad.create(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
-        scratchpad.set(RecoveryScratchpad.EPOCH_HASH, epoch);
-
         final AtomicInteger recycleCount = new AtomicInteger(0);
         final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
         // increment recycle count every time recycleBin.recycle() is called
@@ -780,6 +788,11 @@ class StartupStateUtilsTests {
                 })
                 .when(recycleBin)
                 .recycle(any());
+        final PlatformContext platformContext = buildContext(false, recycleBin);
+
+        final Scratchpad<RecoveryScratchpad> scratchpad =
+                Scratchpad.create(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
+        scratchpad.set(RecoveryScratchpad.EPOCH_HASH, epoch);
 
         int stateCount = 5;
         int latestRound = random.nextInt(1_000, 10_000);
@@ -821,8 +834,6 @@ class StartupStateUtilsTests {
     void doRecoveryCleanupWorkRequiredTest(final int statesToDelete) throws IOException {
         final Random random = getRandomPrintSeed();
 
-        final PlatformContext platformContext = buildContext(false);
-
         final AtomicInteger recycleCount = new AtomicInteger(0);
         final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
         // increment recycle count every time recycleBin.recycle() is called
@@ -833,6 +844,8 @@ class StartupStateUtilsTests {
                 })
                 .when(recycleBin)
                 .recycle(any());
+
+        final PlatformContext platformContext = buildContext(false, recycleBin);
 
         int stateCount = 5;
         int latestRound = random.nextInt(1_000, 10_000);

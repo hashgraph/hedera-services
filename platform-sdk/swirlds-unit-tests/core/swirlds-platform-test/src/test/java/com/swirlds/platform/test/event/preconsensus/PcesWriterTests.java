@@ -44,7 +44,6 @@ import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.TransactionConfig_;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -271,10 +270,8 @@ class PcesWriterTests {
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, ancientMode == BIRTH_ROUND_THRESHOLD)
                 .getOrCreateConfig();
 
-        final Metrics metrics = new NoOpMetrics();
-
         return new DefaultPlatformContext(
-                configuration, metrics, CryptographyHolder.get(), new FakeTime(Duration.ofMillis(1)), null);
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), new FakeTime(Duration.ofMillis(1)));
     }
 
     /**

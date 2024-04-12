@@ -165,7 +165,7 @@ public final class CompareStatesCommand extends AbstractCommand {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(
                 ConfigurationBuilder.create(), getAbsolutePath("settings.txt"), configurationPaths);
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), null);
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         try (final ReservedSignedState stateA = loadAndHashState(platformContext, stateAPath)) {
             try (final ReservedSignedState stateB = loadAndHashState(platformContext, stateBPath)) {

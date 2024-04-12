@@ -73,7 +73,7 @@ public class ValidateAddressBookStateCommand extends AbstractCommand {
         BootstrapUtils.setupConstructableRegistry();
 
         final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), null);
+                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         System.out.printf("Reading state from %s %n", statePath.toAbsolutePath());
         final DeserializedSignedState deserializedSignedState =

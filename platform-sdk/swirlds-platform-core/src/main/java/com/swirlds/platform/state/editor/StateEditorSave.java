@@ -78,7 +78,7 @@ public class StateEditorSave extends StateEditorOperation {
                     DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
 
             final PlatformContext platformContext = new DefaultPlatformContext(
-                    configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent(), null);
+                    configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
             try (final ReservedSignedState signedState = getStateEditor().getSignedStateCopy()) {
                 writeSignedStateFilesToDirectory(platformContext, NO_NODE_ID, directory, signedState.get());

@@ -49,6 +49,7 @@ public record FileSystemManagerConfig(
      * 		the state config object
      * @return the location where temporary files are stored
      */
+    @NonNull
     public Path getRootPath(final StateCommonConfig stateConfig) {
         return getAbsolutePath(stateConfig.savedStateDirectory().resolve(rootPath()));
     }
@@ -62,6 +63,7 @@ public record FileSystemManagerConfig(
      * @param selfId      the ID of this node
      * @return the location where recycle bin files are stored
      */
+    @NonNull
     public Path getRootPath(@NonNull final StateCommonConfig stateConfig, @NonNull final NodeId selfId) {
         return getAbsolutePath(stateConfig
                 .savedStateDirectory()

@@ -356,11 +356,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         registerConstructables();
 
         final var platformContext = new DefaultPlatformContext(
-                buildConfiguration(configurationPaths),
-                new NoOpMetrics(),
-                CryptographyHolder.get(),
-                Time.getCurrent(),
-                null);
+                buildConfiguration(configurationPaths), new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
 
         ReservedSignedState rss;
         try {

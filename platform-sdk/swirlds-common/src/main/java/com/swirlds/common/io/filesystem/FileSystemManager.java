@@ -34,7 +34,7 @@ public interface FileSystemManager extends Startable, Stoppable {
      *
      * @param relativePath the path to resolve against the root directory
      * @return the resolved path
-     * @throws IllegalArgumentException if the path is "below" the root directory (e.g. resolve("../foo")
+     * @throws IllegalArgumentException if the path is "above" the root directory (e.g. resolve("../foo")
      */
     @NonNull
     Path resolve(@NonNull Path relativePath);
@@ -46,7 +46,7 @@ public interface FileSystemManager extends Startable, Stoppable {
      *
      * @param tag if indicated, will be suffixed to the returned path
      * @return the resolved path
-     * @throws IllegalArgumentException if the path is "below" the root directory (e.g. resolve("../foo")
+     * @throws IllegalArgumentException if the path is "above" the root directory (e.g. resolve("../foo")
      */
     @NonNull
     Path resolveNewTemp(@Nullable String tag);
@@ -58,7 +58,6 @@ public interface FileSystemManager extends Startable, Stoppable {
      * Implementations can choose to validate if the provided absolute path is below the root of this file-system-manager .
      *
      *  @param path the absolute path to recycle.
-     * @throws IllegalArgumentException if the path cannot be relative to or scape the root directory
      */
     void recycle(@NonNull Path path) throws IOException;
 }
