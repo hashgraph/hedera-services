@@ -21,7 +21,7 @@ import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformC
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -101,7 +101,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
-        @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
+        @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> hashLoggerScheduler,
@@ -249,7 +249,7 @@ public record PlatformSchedulers(
                         .withHyperlink(platformCommonHyperlink(EventStreamManager.class))
                         .build()
                         .cast(),
-                model.schedulerBuilder("runningHashUpdate")
+                model.schedulerBuilder("RunningEventHashOverride")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                         .build()
                         .cast(),

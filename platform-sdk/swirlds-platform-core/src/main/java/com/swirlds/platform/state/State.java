@@ -223,7 +223,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
     public String getInfoString(final int hashDepth) {
         final PlatformState platformState = getPlatformState();
         final Hash epochHash = platformState.getNextEpochHash();
-        final Hash hashEventsCons = platformState.getRunningEventHash();
+        final Hash hashEventsCons = platformState.getLegacyRunningEventHash();
 
         final ConsensusSnapshot snapshot = platformState.getSnapshot();
         final List<MinimumJudgeInfo> minimumJudgeInfo = snapshot == null ? null : snapshot.getMinimumJudgeInfoList();
@@ -235,8 +235,14 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
                 .addRow("Round:", platformState.getRound())
                 .addRow("Timestamp:", platformState.getConsensusTimestamp())
                 .addRow("Next consensus number:", snapshot == null ? "null" : snapshot.nextConsensusNumber())
-                .addRow("Running event hash:", hashEventsCons)
-                .addRow("Running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
+                .addRow("Legacy running event hash:", hashEventsCons)
+                .addRow("Legacy running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
+                .addRow("Running Event Hash: ", platformState.getRunningEventHash())
+                .addRow(
+                        "Running Event Mnemonic: ",
+                        platformState.getRunningEventHash() == null
+                                ? "null"
+                                : platformState.getRunningEventHash().toMnemonic())
                 .addRow("Rounds non-ancient:", platformState.getRoundsNonAncient())
                 .addRow("Creation version:", platformState.getCreationSoftwareVersion())
                 .addRow("Epoch mnemonic:", epochHash == null ? "null" : epochHash.toMnemonic())

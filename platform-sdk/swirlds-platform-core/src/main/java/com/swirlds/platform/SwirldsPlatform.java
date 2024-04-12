@@ -46,7 +46,7 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
@@ -629,6 +629,17 @@ public class SwirldsPlatform implements Platform {
                 appNotifier,
                 publisher);
 
+        final Hash runningEventHash = initialState.getState().getPlatformState().getRunningEventHash() == null
+                ? platformContext.getCryptography().getNullHash()
+                : initialState.getState().getPlatformState().getRunningEventHash();
+        final Hash legacyRunningEventHash =
+                initialState.getState().getPlatformState().getLegacyRunningEventHash() == null
+                        ? platformContext.getCryptography().getNullHash()
+                        : initialState.getState().getPlatformState().getLegacyRunningEventHash();
+        final RunningEventHashOverride runningEventHashOverride =
+                new RunningEventHashOverride(legacyRunningEventHash, runningEventHash, false);
+        platformWiring.updateRunningHash(runningEventHashOverride);
+
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
                 getSavedStateFiles(platformContext, actualMainClassName, selfId, swirldName);
@@ -697,8 +708,6 @@ public class SwirldsPlatform implements Platform {
                     .put(initialState.reserve("loading initial state into sig collector"));
 
             savedStateController.registerSignedStateFromDisk(initialState);
-
-            platformWiring.updateRunningHash(new RunningEventHashUpdate(initialState.getHashEventsCons(), false));
 
             loadStateIntoConsensus(initialState);
 
@@ -913,7 +922,11 @@ public class SwirldsPlatform implements Platform {
                     signedState.getState().getPlatformState().getAncientThreshold(),
                     ancientMode));
 
-            platformWiring.updateRunningHash(new RunningEventHashUpdate(signedState.getHashEventsCons(), true));
+            final RunningEventHashOverride runningEventHashOverride = new RunningEventHashOverride(
+                    signedState.getState().getPlatformState().getLegacyRunningEventHash(),
+                    signedState.getState().getPlatformState().getRunningEventHash(),
+                    true);
+            platformWiring.updateRunningHash(runningEventHashOverride);
             platformWiring.getPcesWriterRegisterDiscontinuityInput().inject(signedState.getRound());
 
             // Notify any listeners that the reconnect has been completed
