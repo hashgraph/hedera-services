@@ -66,8 +66,6 @@ import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
-import com.swirlds.platform.components.consensus.ConsensusEngine;
-import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -558,8 +556,6 @@ public class SwirldsPlatform implements Platform {
 
         final InOrderLinker inOrderLinker = new GossipLinker(platformContext, blocks.intakeEventCounter());
 
-        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, currentAddressBook, selfId);
-
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
         blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
@@ -588,7 +584,6 @@ public class SwirldsPlatform implements Platform {
         platformWiring.bind(
                 builder,
                 inOrderLinker,
-                consensusEngine,
                 signedStateFileManager,
                 stateSigner,
                 pcesReplayer,

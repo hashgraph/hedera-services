@@ -237,8 +237,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 new ComponentWiring<>(model, EventSignatureValidator.class, config.eventSignatureValidator());
         orphanBufferWiring = new ComponentWiring<>(model, OrphanBuffer.class, config.orphanBuffer());
         inOrderLinkerWiring = InOrderLinkerWiring.create(schedulers.inOrderLinkerScheduler());
-        consensusEngineWiring =
-                new ComponentWiring<>(model, ConsensusEngine.class, schedulers.consensusEngineScheduler());
+        consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, config.consensusEngine());
         eventCreationManagerWiring =
                 new ComponentWiring<>(model, EventCreationManager.class, config.eventCreationManager());
         selfEventSignerWiring = new ComponentWiring<>(model, SelfEventSigner.class, config.selfEventSigner());
@@ -598,7 +597,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @param builder                   builds platform components that need to be bound to wires
      * @param inOrderLinker             the in order linker to bind
-     * @param consensusEngine           the consensus engine to bind
      * @param signedStateFileManager    the signed state file manager to bind
      * @param stateSigner               the state signer to bind
      * @param pcesReplayer              the PCES replayer to bind
@@ -627,7 +625,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     public void bind(
             @NonNull final PlatformComponentBuilder builder,
             @NonNull final InOrderLinker inOrderLinker,
-            @NonNull final ConsensusEngine consensusEngine,
             @NonNull final SignedStateFileManager signedStateFileManager,
             @NonNull final StateSigner stateSigner,
             @NonNull final PcesReplayer pcesReplayer,
@@ -658,7 +655,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventSignatureValidatorWiring.bind(builder.buildEventSignatureValidator());
         orphanBufferWiring.bind(builder.buildOrphanBuffer());
         inOrderLinkerWiring.bind(inOrderLinker);
-        consensusEngineWiring.bind(consensusEngine);
+        consensusEngineWiring.bind(builder.buildConsensusEngine());
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);

@@ -21,6 +21,8 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
+import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.creation.DefaultEventCreationManager;
@@ -85,6 +87,7 @@ public class PlatformComponentBuilder {
     private OrphanBuffer orphanBuffer;
     private RunningEventHasher runningEventHasher;
     private EventCreationManager eventCreationManager;
+    private ConsensusEngine consensusEngine;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -463,5 +466,38 @@ public class PlatformComponentBuilder {
                     new DefaultEventCreationManager(blocks.platformContext(), eventCreator, eventCreationRules);
         }
         return eventCreationManager;
+    }
+
+    /**
+     * Provide a consensus engine in place of the platform's default consensus engine.
+     *
+     * @param consensusEngine the consensus engine to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withConsensusEngine(@NonNull final ConsensusEngine consensusEngine) {
+        throwIfAlreadyUsed();
+        if (this.consensusEngine != null) {
+            throw new IllegalStateException("Consensus engine has already been set");
+        }
+        this.consensusEngine = Objects.requireNonNull(consensusEngine);
+        return this;
+    }
+
+    /**
+     * Build the consensus engine if it has not yet been built. If one has been provided via
+     * {@link #withConsensusEngine(ConsensusEngine)}, that engine will be used. If this method is called more
+     * than once, only the first call will build the consensus engine. Otherwise, the default engine will be
+     * created and returned.
+     *
+     * @return the consensus engine
+     */
+    @NonNull
+    public ConsensusEngine buildConsensusEngine() {
+        if (consensusEngine == null) {
+            consensusEngine = new DefaultConsensusEngine(
+                    blocks.platformContext(), blocks.initialState().get().getAddressBook(), blocks.selfId());
+        }
+        return consensusEngine;
     }
 }
