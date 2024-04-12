@@ -13,6 +13,8 @@ pcli diagram \
     -l 'eventDurabilityNexus:wait for durability:consensusRoundHandler' \
     -l 'gossip:get events:shadowgraph' \
     -l 'eventCreationManager:get transactions:transactionPool' \
+    -l 'RunningEventHasher:future hash:consensusRoundHandler' \
+    -l 'eventStreamManager:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
     -s 'applicationTransactionPrehandler:futures:🔮' \
@@ -28,6 +30,7 @@ pcli diagram \
     -s 'toNotification:state written notification:📦' \
     -s 'latestCompleteStateNotifier:complete state notification:💢' \
     -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
+    -s 'RunningEventHashOverride:hash override:💨' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
@@ -37,7 +40,6 @@ pcli diagram \
     -g 'State Signature Collector:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
-    -g 'Consensus Event Stream:eventStreamManager,runningHashUpdate' \
     -g 'Event Creation:eventCreationManager,transactionPool,SelfEventSigner,🍎' \
     -g 'Gossip:gossip,shadowgraph,inOrderLinker' \
     -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,statusManager_submitCatastrophicFailure' \
@@ -49,7 +51,6 @@ pcli diagram \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
     -g 'State Verification:stateSigner,hashLogger,ISS Detector,🖋️,💥' \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
-    -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \

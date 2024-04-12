@@ -14,32 +14,31 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.stream;
+package com.swirlds.platform.event.runninghash;
 
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
- * Generates event stream files when enableEventStreaming is true, and calculates runningHash for consensus Events.
+ * Computes the running event hash of events that have reached consensus.
  */
-public interface EventStreamManager {
+public interface RunningEventHasher {
 
     /**
-     * Adds a list of events to the event stream.
+     * Compute the running event hash for the given round. When computed, write the hash to the round.
      *
-     * @param events the list of events to add
+     * @param round the round
      */
-    @InputWireLabel("consensus events")
-    void addEvents(@NonNull final List<EventImpl> events);
+    @InputWireLabel("rounds")
+    void computeRunningEventHash(@NonNull final ConsensusRound round);
 
     /**
-     * Updates the running hash with the given event hash. Called when a state is loaded.
+     * Override the running event hash of the previous round. This must be called at restart and reconnect boundaries.
      *
-     * @param runningEventHashOverride the hash to update the running hash with
+     * @param runningEventHashOverride the running event hash override
      */
     @InputWireLabel("hash override")
-    void legacyHashOverride(@NonNull final RunningEventHashOverride runningEventHashOverride);
+    void overrideRunningEventHash(@NonNull final RunningEventHashOverride runningEventHashOverride);
 }
