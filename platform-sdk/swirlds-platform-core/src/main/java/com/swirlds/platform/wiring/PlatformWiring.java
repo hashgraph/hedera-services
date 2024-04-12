@@ -26,7 +26,7 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
@@ -61,6 +61,7 @@ import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
@@ -98,7 +99,7 @@ import com.swirlds.platform.wiring.components.IssHandlerWiring;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.PcesWriterWiring;
-import com.swirlds.platform.wiring.components.RunningHashUpdaterWiring;
+import com.swirlds.platform.wiring.components.RunningEventHashOverrideWiring;
 import com.swirlds.platform.wiring.components.ShadowgraphWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import com.swirlds.platform.wiring.components.StateHasherWiring;
@@ -149,7 +150,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ComponentWiring<EventWindowManager, EventWindow> eventWindowManagerWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final ComponentWiring<EventStreamManager, Void> eventStreamManagerWiring;
-    private final RunningHashUpdaterWiring runningHashUpdaterWiring;
+    private final RunningEventHashOverrideWiring runningEventHashOverrideWiring;
     private final IssDetectorWiring issDetectorWiring;
     private final IssHandlerWiring issHandlerWiring;
     private final HashLoggerWiring hashLoggerWiring;
@@ -167,6 +168,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final ComponentWiring<PlatformPublisher, Void> platformPublisherWiring;
     private final boolean publishPreconsensusEvents;
     private final boolean publishSnapshotOverrides;
+    private final ComponentWiring<RunningEventHasher, Void> runningEventHasherWiring;
 
     /**
      * Constructor.
@@ -253,7 +255,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         consensusRoundHandlerWiring = ConsensusRoundHandlerWiring.create(schedulers.consensusRoundHandlerScheduler());
         eventStreamManagerWiring =
                 new ComponentWiring<>(model, EventStreamManager.class, schedulers.eventStreamManagerScheduler());
-        runningHashUpdaterWiring = RunningHashUpdaterWiring.create(schedulers.runningHashUpdateScheduler());
+        runningEventHashOverrideWiring = RunningEventHashOverrideWiring.create(schedulers.runningHashUpdateScheduler());
 
         signedStateHasherWiring = StateHasherWiring.create(schedulers.stateHasherScheduler());
 
@@ -338,6 +340,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         stateGarbageCollectorWiring =
                 new ComponentWiring<>(model, StateGarbageCollector.class, config.stateGarbageCollector());
+
+        runningEventHasherWiring = new ComponentWiring<>(model, RunningEventHasher.class, config.runningEventHasher());
 
         wire();
     }
@@ -477,6 +481,9 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .getSplitAndTransformedOutput(ConsensusEngine::getConsensusEvents)
                 .solderTo(eventStreamManagerWiring.getInputWire(EventStreamManager::addEvents));
 
+        consensusRoundOutputWire.solderTo(
+                runningEventHasherWiring.getInputWire(RunningEventHasher::computeRunningEventHash));
+
         consensusRoundHandlerWiring
                 .stateOutput()
                 .solderTo(latestImmutableStateNexusWiring.getInputWire(SignedStateNexus::setState));
@@ -506,12 +513,15 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .oldestMinimumGenerationOnDiskOutputWire()
                 .solderTo(pcesWriterWiring.minimumAncientIdentifierToStoreInputWire());
 
-        runningHashUpdaterWiring
+        runningEventHashOverrideWiring
                 .runningHashUpdateOutput()
-                .solderTo(consensusRoundHandlerWiring.runningHashUpdateInput());
-        runningHashUpdaterWiring
+                .solderTo(consensusRoundHandlerWiring.overrideLegacyRunningEventHashInput());
+        runningEventHashOverrideWiring
                 .runningHashUpdateOutput()
-                .solderTo(eventStreamManagerWiring.getInputWire(EventStreamManager::updateRunningHash));
+                .solderTo(eventStreamManagerWiring.getInputWire(EventStreamManager::legacyHashOverride));
+        runningEventHashOverrideWiring
+                .runningHashUpdateOutput()
+                .solderTo(runningEventHasherWiring.getInputWire(RunningEventHasher::overrideRunningEventHash));
 
         issDetectorWiring.issNotificationOutput().solderTo(issHandlerWiring.issNotificationInput());
 
@@ -662,6 +672,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventWindowManagerWiring.bind(eventWindowManager);
         applicationTransactionPrehandlerWiring.bind(transactionPrehandler);
         consensusRoundHandlerWiring.bind(consensusRoundHandler);
+        runningEventHasherWiring.bind(builder.buildRunningEventHasher());
         eventStreamManagerWiring.bind(eventStreamManager);
         issDetectorWiring.bind(issDetector);
         issHandlerWiring.bind(issHandler);
@@ -801,8 +812,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      *
      * @param runningHashUpdate the object containing necessary information to update the running hash
      */
-    public void updateRunningHash(@NonNull final RunningEventHashUpdate runningHashUpdate) {
-        runningHashUpdaterWiring.runningHashUpdateInput().inject(runningHashUpdate);
+    public void updateRunningHash(@NonNull final RunningEventHashOverride runningHashUpdate) {
+        runningEventHashOverrideWiring.runningHashUpdateInput().inject(runningHashUpdate);
     }
 
     /**
