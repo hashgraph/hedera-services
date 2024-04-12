@@ -512,7 +512,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
         for (final var transfers : op.tokenTransfers()) {
             for (final var adjust : transfers.transfers()) {
-                final var unaliasedAccount = accountStore.getAliasedAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
+                final var unaliasedAccount =
+                        accountStore.getAliasedAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
                 final var unaliasedTarget = accountStore.getAliasedAccountById(target);
                 if (unaliasedAccount != null
                         && unaliasedTarget != null
