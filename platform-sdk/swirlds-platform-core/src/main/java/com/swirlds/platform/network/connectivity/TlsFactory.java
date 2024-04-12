@@ -78,7 +78,7 @@ public class TlsFactory implements SocketFactory {
             @NonNull final SocketConfig socketConfig,
             @NonNull final CryptoConfig cryptoConfig)
             throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException,
-            UnrecoverableKeyException {
+                    UnrecoverableKeyException {
         Objects.requireNonNull(agrCert);
         Objects.requireNonNull(agrKey);
         Objects.requireNonNull(peers);
@@ -93,7 +93,7 @@ public class TlsFactory implements SocketFactory {
         // PKCS12 uses file extension .p12 or .pfx
         final KeyStore agrKeyStore = KeyStore.getInstance(CryptoConstants.KEYSTORE_TYPE);
         agrKeyStore.load(null, null); // initialize
-        agrKeyStore.setKeyEntry("key", agrKey, password, new Certificate[]{agrCert});
+        agrKeyStore.setKeyEntry("key", agrKey, password, new Certificate[] {agrCert});
 
         // "PKIX" may be more interoperable than KeyManagerFactory.getDefaultAlgorithm or
         // TrustManagerFactory.getDefaultAlgorithm(), which was "SunX509" on one system tested

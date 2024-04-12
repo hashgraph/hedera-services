@@ -162,10 +162,10 @@ public final class NetworkUtils {
                     socketConfig,
                     cryptoConfig);
         } catch (final NoSuchAlgorithmException
-                       | UnrecoverableKeyException
-                       | KeyStoreException
-                       | CertificateException
-                       | IOException e) {
+                | UnrecoverableKeyException
+                | KeyStoreException
+                | CertificateException
+                | IOException e) {
             throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
         }
     }

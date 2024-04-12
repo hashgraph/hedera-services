@@ -32,7 +32,7 @@ import java.util.Objects;
  */
 public interface SocketFactory {
     /** The IPv4 address to listen all interface: [0.0.0.0]. */
-    byte[] ALL_INTERFACES = new byte[]{0, 0, 0, 0};
+    byte[] ALL_INTERFACES = new byte[] {0, 0, 0, 0};
 
     int IP_TOP_MIN = 0;
     int IP_TOP_MAX = 255;

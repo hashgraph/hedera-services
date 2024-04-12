@@ -35,7 +35,7 @@ class ConnectivityTestBase {
     protected static final SocketConfig IP_TOS;
     protected static final Configuration TLS_NO_IP_TOS_CONFIG;
     protected static final Configuration TLS_IP_TOS_CONFIG;
-    protected static final byte[] TEST_DATA = new byte[]{1, 2, 3};
+    protected static final byte[] TEST_DATA = new byte[] {1, 2, 3};
 
     static {
         TLS_NO_IP_TOS_CONFIG = new TestConfigBuilder()

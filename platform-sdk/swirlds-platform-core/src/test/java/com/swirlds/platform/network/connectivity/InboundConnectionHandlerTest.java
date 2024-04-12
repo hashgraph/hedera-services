@@ -43,7 +43,7 @@ import org.mockito.Mockito;
 
 class InboundConnectionHandlerTest extends ConnectivityTestBase {
 
-    private static final byte[] SOME_DATA = new byte[]{4, 5, 6};
+    private static final byte[] SOME_DATA = new byte[] {4, 5, 6};
     private static final int PORT = 31_000;
     private static final PlatformContext platformContext = TestPlatformContextBuilder.create()
             .withConfiguration(TLS_NO_IP_TOS_CONFIG)

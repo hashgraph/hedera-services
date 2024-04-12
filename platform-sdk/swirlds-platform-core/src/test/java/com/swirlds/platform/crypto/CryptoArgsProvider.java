@@ -80,7 +80,7 @@ public class CryptoArgsProvider {
      */
     public static Pair<AddressBook, Map<NodeId, KeysAndCerts>> getAddressBookWithKeys(final int size)
             throws URISyntaxException, UnrecoverableKeyException, KeyLoadingException, KeyStoreException,
-            NoSuchAlgorithmException {
+                    NoSuchAlgorithmException {
         final AddressBook loadedAB = createAddressBook(size);
         final Map<NodeId, KeysAndCerts> loadedC =
                 CryptoStatic.loadKeysAndCerts(loadedAB, ResourceLoader.getFile("preGeneratedKeysAndCerts/"), PASSWORD);
