@@ -22,6 +22,7 @@ import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
@@ -50,7 +51,7 @@ public class PlatformCoordinator {
     private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
     private final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring;
-    private final OrphanBufferWiring orphanBufferWiring;
+    private final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring;
     private final InOrderLinkerWiring inOrderLinkerWiring;
     private final ShadowgraphWiring shadowgraphWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
@@ -82,7 +83,7 @@ public class PlatformCoordinator {
             @NonNull final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring,
             @NonNull final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring,
             @NonNull final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring,
-            @NonNull final OrphanBufferWiring orphanBufferWiring,
+            @NonNull final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring,
             @NonNull final InOrderLinkerWiring inOrderLinkerWiring,
             @NonNull final ShadowgraphWiring shadowgraphWiring,
             @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
@@ -126,7 +127,7 @@ public class PlatformCoordinator {
         internalEventValidatorWiring.flush();
         eventDeduplicatorWiring.flush();
         eventSignatureValidatorWiring.flush();
-        orphanBufferWiring.flushRunnable().run();
+        orphanBufferWiring.flush();
         inOrderLinkerWiring.flushRunnable().run();
         shadowgraphWiring.flushRunnable().run();
         consensusEngineWiring.flush();
@@ -173,10 +174,10 @@ public class PlatformCoordinator {
 
         // Phase 4: clear
         // Data is no longer moving through the system. Clear all the internal data structures in the wiring objects.
-        eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear).inject(new ClearTrigger());
-        orphanBufferWiring.clearInput().inject(new ClearTrigger());
-        inOrderLinkerWiring.clearInput().inject(new ClearTrigger());
-        stateSignatureCollectorWiring.getClearInput().inject(new ClearTrigger());
-        eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(new ClearTrigger());
+        eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear).inject(NoInput.getInstance());
+        orphanBufferWiring.getInputWire(OrphanBuffer::clear).inject(NoInput.getInstance());
+        inOrderLinkerWiring.clearInput().inject(NoInput.getInstance());
+        stateSignatureCollectorWiring.getClearInput().inject(NoInput.getInstance());
+        eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(NoInput.getInstance());
     }
 }

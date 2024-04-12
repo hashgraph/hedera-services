@@ -29,7 +29,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.wiring.ClearTrigger;
+import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.SignedStateReserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -46,7 +46,7 @@ public class StateSignatureCollectorWiring {
     private final BindableInputWire<List<ScopedSystemTransaction<StateSignatureTransaction>>, List<ReservedSignedState>>
             postConsSigInput;
     private final BindableInputWire<ReservedSignedState, List<ReservedSignedState>> reservedStateInput;
-    private final BindableInputWire<ClearTrigger, List<ReservedSignedState>> clearInput;
+    private final BindableInputWire<NoInput, List<ReservedSignedState>> clearInput;
     private final InputWire<GossipEvent> preConsensusEventInput;
     private final InputWire<ConsensusRound> postConsensusEventInput;
     private final OutputWire<ReservedSignedState> allStatesOutput;
@@ -167,7 +167,7 @@ public class StateSignatureCollectorWiring {
 
     /** @return the input wire that clears the collector */
     @NonNull
-    public InputWire<ClearTrigger> getClearInput() {
+    public InputWire<NoInput> getClearInput() {
         return clearInput;
     }
 
