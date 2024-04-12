@@ -36,11 +36,11 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.SocketException;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -139,7 +139,7 @@ public class TeachingSynchronizer {
     public void synchronize() throws InterruptedException {
         try {
             while (!subtrees.isEmpty()) {
-                final Set<TeacherSubtree> toSync = new HashSet<>();
+                final List<TeacherSubtree> toSync = new ArrayList<>();
                 int count = 0;
                 while (!subtrees.isEmpty() && (count < reconnectConfig.maxParallelSubtrees())) {
                     toSync.add(subtrees.remove());
@@ -155,7 +155,7 @@ public class TeachingSynchronizer {
         }
     }
 
-    private void sendTreesInParallel(final Set<TeacherSubtree> toSend) throws InterruptedException {
+    private void sendTreesInParallel(final List<TeacherSubtree> toSend) throws InterruptedException {
         final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
         final Function<Throwable, Boolean> reconnectExceptionListener = ex -> {
             Throwable cause = ex;
