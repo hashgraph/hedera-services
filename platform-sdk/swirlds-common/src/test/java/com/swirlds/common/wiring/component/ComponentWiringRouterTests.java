@@ -26,7 +26,6 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.transformers.RoutableData;
-import com.swirlds.common.wiring.transformers.RoutableDataType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -38,16 +37,38 @@ import org.junit.jupiter.api.Test;
 
 class ComponentWiringRouterTests {
 
-    private enum TestDataType implements RoutableDataType {
+    private enum TestDataType {
         FOO, // Long values
         BAR, // Long values
         BAZ; // Boolean values
+
+        /**
+         * Create a new {@link RoutableData} object with the given data.
+         *
+         * @param data the data
+         * @return the new {@link RoutableData} object
+         */
+        @NonNull
+        public RoutableData<TestDataType> of(@NonNull final Object data) {
+            return new RoutableData<>(this, data);
+        }
     }
 
-    private enum TestDataType2 implements RoutableDataType {
+    private enum TestDataType2 {
         FOO, // Long values
         BAR, // Long values
         BAZ; // Boolean values
+
+        /**
+         * Create a new {@link RoutableData} object with the given data.
+         *
+         * @param data the data
+         * @return the new {@link RoutableData} object
+         */
+        @NonNull
+        public RoutableData<TestDataType2> of(@NonNull final Object data) {
+            return new RoutableData<>(this, data);
+        }
     }
 
     private interface TestComponent {

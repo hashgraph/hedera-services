@@ -36,7 +36,7 @@ import java.util.List;
  * @param <ROUTER_TYPE> an enum that describes the addresses where data can be routed. Each enum value corresponds to a
  *                      different address where data can be routed.
  */
-public class WireRouter<ROUTER_TYPE extends Enum<ROUTER_TYPE> & RoutableDataType> {
+public class WireRouter<ROUTER_TYPE extends Enum<ROUTER_TYPE>> {
 
     private final BindableInputWire<RoutableData<ROUTER_TYPE>, Void> inputWire;
     private final List<StandardOutputWire<Object>> outputWires;

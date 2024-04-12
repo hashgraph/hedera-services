@@ -25,5 +25,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param data          the data
  * @param <ROUTER_TYPE> the type of the enum that defines the addresses
  */
-public record RoutableData<ROUTER_TYPE extends Enum<ROUTER_TYPE> & RoutableDataType>(
-        @NonNull ROUTER_TYPE address, @NonNull Object data) {}
+public record RoutableData<ROUTER_TYPE extends Enum<ROUTER_TYPE>>(@NonNull ROUTER_TYPE address, @NonNull Object data) {}

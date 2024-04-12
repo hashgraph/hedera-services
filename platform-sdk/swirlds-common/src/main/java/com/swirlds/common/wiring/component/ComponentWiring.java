@@ -26,7 +26,6 @@ import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.transformers.RoutableData;
-import com.swirlds.common.wiring.transformers.RoutableDataType;
 import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireRouter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
@@ -366,7 +365,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
      * @return the output wire
      */
     @NonNull
-    public <ROUTER_ENUM extends Enum<ROUTER_ENUM> & RoutableDataType, DATA_TYPE> OutputWire<DATA_TYPE> getRoutedOutput(
+    public <ROUTER_ENUM extends Enum<ROUTER_ENUM>, DATA_TYPE> OutputWire<DATA_TYPE> getRoutedOutput(
             @NonNull final ROUTER_ENUM address) {
 
         final Class<ROUTER_ENUM> clazz = (Class<ROUTER_ENUM>) address.getClass();
@@ -388,8 +387,8 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
      * @return the output wire
      */
     @NonNull
-    public <ROUTER_ENUM extends Enum<ROUTER_ENUM> & RoutableDataType, DATA_TYPE>
-            OutputWire<DATA_TYPE> getSplitAndRoutedOutput(@NonNull final ROUTER_ENUM address) {
+    public <ROUTER_ENUM extends Enum<ROUTER_ENUM>, DATA_TYPE> OutputWire<DATA_TYPE> getSplitAndRoutedOutput(
+            @NonNull final ROUTER_ENUM address) {
 
         final Class<ROUTER_ENUM> clazz = (Class<ROUTER_ENUM>) address.getClass();
         return getOrBuildSplitRouter(clazz).getOutput(address);
@@ -404,7 +403,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
      * @return the router
      */
     @NonNull
-    private <ROUTER_TYPE extends Enum<ROUTER_TYPE> & RoutableDataType> WireRouter<ROUTER_TYPE> getOrBuildRouter(
+    private <ROUTER_TYPE extends Enum<ROUTER_TYPE>> WireRouter<ROUTER_TYPE> getOrBuildRouter(
             @NonNull final Class<ROUTER_TYPE> routerType) {
 
         if (splitRouter != null) {
@@ -437,7 +436,7 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
      * @return the router
      */
     @NonNull
-    private <ROUTER_TYPE extends Enum<ROUTER_TYPE> & RoutableDataType> WireRouter<ROUTER_TYPE> getOrBuildSplitRouter(
+    private <ROUTER_TYPE extends Enum<ROUTER_TYPE>> WireRouter<ROUTER_TYPE> getOrBuildSplitRouter(
             @NonNull final Class<ROUTER_TYPE> routerType) {
 
         if (router != null) {
