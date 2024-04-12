@@ -116,10 +116,10 @@ public interface SocketFactory {
     Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException;
 
     /**
-     * A convenient handler for executing reload logic on dynamic peers
-     * e.g. it could be used to reload a TLS trust store, or ask peers to re-authenticate
+     * A convenient handler for refreshing connectivity components
+     * e.g. it could be used to refresh a TLS trust store, or ask peers to re-authenticate
      *
      * @param peerInfoList the updated list of peers
      */
-    void reload(List<PeerInfo> peerInfoList);
+    void refresh(List<PeerInfo> peerInfoList);
 }

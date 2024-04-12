@@ -25,6 +25,8 @@ import com.swirlds.platform.network.SocketConfig_;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 class ConnectivityTestBase {
 
@@ -33,6 +35,7 @@ class ConnectivityTestBase {
     protected static final SocketConfig IP_TOS;
     protected static final Configuration TLS_NO_IP_TOS_CONFIG;
     protected static final Configuration TLS_IP_TOS_CONFIG;
+    protected static final byte[] TEST_DATA = new byte[]{1, 2, 3};
 
     static {
         TLS_NO_IP_TOS_CONFIG = new TestConfigBuilder()
@@ -76,5 +79,53 @@ class ConnectivityTestBase {
                 }
             }
         });
+    }
+
+    /**
+     * Creates a socket thread which doesn't get closed immediately - verifies the transferred data is correct - leaves
+     * the server socket open until told to close
+     *
+     * @param serverSocket the server socket
+     * @param data         the expected data from the socket
+     * @param stop         flag for stopping the thread
+     */
+    static Thread createSocketThread(final ServerSocket serverSocket, final byte[] data, final AtomicBoolean stop) {
+        final Thread thread = new Thread(() -> {
+            try {
+                while (!stop.get()) {
+                    final Socket s = serverSocket.accept();
+                    final byte[] bytes = s.getInputStream().readNBytes(data.length);
+                    assertArrayEquals(data, bytes, "Data read from socket must be the same as the data written");
+                }
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            } finally {
+                try {
+                    serverSocket.close();
+                } catch (final IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        thread.start();
+        return thread;
+    }
+
+    /**
+     * Sends a message to a listening server socket to be read and verified by a listening server
+     *
+     * @param serverThread the thread the server socket is listening on
+     * @param clientSocket the client socket
+     */
+    static void testSocket(final Thread serverThread, final Socket clientSocket) throws Throwable {
+
+        final AtomicReference<Throwable> threadException = new AtomicReference<>();
+        serverThread.setUncaughtExceptionHandler((t, e) -> threadException.set(e));
+
+        clientSocket.getOutputStream().write(TEST_DATA);
+
+        if (threadException.get() != null) {
+            throw threadException.get();
+        }
     }
 }

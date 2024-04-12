@@ -38,6 +38,8 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -51,14 +53,15 @@ import javax.net.ssl.TrustManagerFactory;
  */
 public class TlsFactory implements SocketFactory {
     private final SocketConfig socketConfig;
-    private final SSLServerSocketFactory sslServerSocketFactory;
-    private final SSLSocketFactory sslSocketFactory;
+    private SSLServerSocketFactory sslServerSocketFactory;
+    private SSLSocketFactory sslSocketFactory;
 
     private final SSLContext sslContext;
     private final SecureRandom nonDetRandom;
     private final KeyManagerFactory keyManagerFactory;
     private final TrustManagerFactory trustManagerFactory;
     private final List<PeerInfo> currentPeers = new ArrayList<>();
+    private final Lock lock = new ReentrantLock();
 
     /**
      * Construct this object to create and receive TLS connections.
@@ -76,29 +79,36 @@ public class TlsFactory implements SocketFactory {
             @NonNull final CryptoConfig cryptoConfig)
             throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException,
             UnrecoverableKeyException {
+        Objects.requireNonNull(agrCert);
+        Objects.requireNonNull(agrKey);
+        Objects.requireNonNull(peers);
         this.socketConfig = Objects.requireNonNull(socketConfig);
-        this.sslContext = SSLContext.getInstance(CryptoConstants.SSL_VERSION);
-        this.nonDetRandom = CryptoStatic.getNonDetRandom();
+        Objects.requireNonNull(cryptoConfig);
+        final char[] password = cryptoConfig.keystorePassword().toCharArray();
 
         /* nondeterministic CSPRNG */
-        // "PKIX" may be more interoperable than KeyManagerFactory.getDefaultAlgorithm or
-        // TrustManagerFactory.getDefaultAlgorithm(), which was "SunX509" on one system tested
-        this.keyManagerFactory = KeyManagerFactory.getInstance(CryptoConstants.KEY_MANAGER_FACTORY_TYPE);
+        this.nonDetRandom = CryptoStatic.getNonDetRandom();
+
         // the agrKeyStore should contain an entry with both agrKeyPair.getPrivate() and agrCert
         // PKCS12 uses file extension .p12 or .pfx
         final KeyStore agrKeyStore = KeyStore.getInstance(CryptoConstants.KEYSTORE_TYPE);
         agrKeyStore.load(null, null); // initialize
-        final char[] password = cryptoConfig.keystorePassword().toCharArray();
         agrKeyStore.setKeyEntry("key", agrKey, password, new Certificate[]{agrCert});
+
+        // "PKIX" may be more interoperable than KeyManagerFactory.getDefaultAlgorithm or
+        // TrustManagerFactory.getDefaultAlgorithm(), which was "SunX509" on one system tested
+        this.keyManagerFactory = KeyManagerFactory.getInstance(CryptoConstants.KEY_MANAGER_FACTORY_TYPE);
         keyManagerFactory.init(agrKeyStore, password);
         this.trustManagerFactory = TrustManagerFactory.getInstance(CryptoConstants.TRUST_MANAGER_FACTORY_TYPE);
+        this.sslContext = SSLContext.getInstance(CryptoConstants.SSL_VERSION);
         SSLContext.setDefault(sslContext);
 
-        reload(peers);
-        sslServerSocketFactory = sslContext.getServerSocketFactory();
-        sslSocketFactory = sslContext.getSocketFactory();
+        refresh(peers);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull ServerSocket createServerSocket(final int port) throws IOException {
         final SSLServerSocket serverSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
@@ -109,6 +119,9 @@ public class TlsFactory implements SocketFactory {
         return serverSocket;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException {
         Objects.requireNonNull(hostname);
@@ -122,17 +135,25 @@ public class TlsFactory implements SocketFactory {
         return clientSocket;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void reload(final @NonNull List<PeerInfo> peers) {
-        // we just extend the list for now, until the work to calculate diffs is done
-        // then, we will have two lists of peers to add and to remove
-        currentPeers.addAll(Objects.requireNonNull(peers));
+    public void refresh(final @NonNull List<PeerInfo> peers) {
+        lock.lock();
         try {
+            // we just extend the list for now, until the work to calculate diffs is done
+            // then, we will have two lists of peers to add and to remove
+            currentPeers.addAll(Objects.requireNonNull(peers));
             final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(currentPeers);
             trustManagerFactory.init(signingTrustStore);
             sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), nonDetRandom);
+            sslServerSocketFactory = sslContext.getServerSocketFactory();
+            sslSocketFactory = sslContext.getSocketFactory();
         } catch (final KeyStoreException | KeyManagementException e) {
             throw new PlatformInitializationException("A problem occurred while initializing the SocketFactory", e);
+        } finally {
+            lock.unlock();
         }
     }
 }
