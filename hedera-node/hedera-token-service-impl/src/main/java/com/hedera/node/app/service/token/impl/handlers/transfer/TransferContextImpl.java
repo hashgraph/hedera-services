@@ -85,7 +85,7 @@ public class TransferContextImpl implements TransferContext {
 
     @Override
     public AccountID getFromAlias(final AccountID aliasedId) {
-        final var account = accountStore.get(aliasedId);
+        final var account = accountStore.getAliasedAccountById(aliasedId);
 
         if (account != null) {
             final var id = account.accountId();
@@ -187,7 +187,9 @@ public class TransferContextImpl implements TransferContext {
         for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
             if (aa.isApproval() && aa.amount() < 0L) {
                 maybeValidateHbarAllowance(
-                        accountStore.get(aa.accountIDOrElse(AccountID.DEFAULT)), topLevelPayer, aa.amount());
+                        accountStore.getAliasedAccountById(aa.accountIDOrElse(AccountID.DEFAULT)),
+                        topLevelPayer,
+                        aa.amount());
             }
         }
         final var nftStore = context.readableStore(ReadableNftStore.class);
@@ -195,7 +197,8 @@ public class TransferContextImpl implements TransferContext {
             final var tokenId = tokenTransfers.tokenOrElse(TokenID.DEFAULT);
             for (final var oc : tokenTransfers.nftTransfersOrElse(emptyList())) {
                 if (oc.isApproval()) {
-                    final var maybeOwner = accountStore.get(oc.senderAccountIDOrElse(AccountID.DEFAULT));
+                    final var maybeOwner =
+                            accountStore.getAliasedAccountById(oc.senderAccountIDOrElse(AccountID.DEFAULT));
                     if (maybeOwner != null) {
                         final var maybeNft = nftStore.get(new NftID(tokenId, oc.serialNumber()));
                         if (maybeNft != null) {
@@ -213,7 +216,7 @@ public class TransferContextImpl implements TransferContext {
         for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
             for (final var aa : xfers.transfersOrElse(emptyList())) {
                 if (aa.hasAccountID() && aa.accountIDOrThrow().hasAccountNum()) {
-                    final var maybeAccount = accountStore.get(aa.accountIDOrElse(AccountID.DEFAULT));
+                    final var maybeAccount = accountStore.getAliasedAccountById(aa.accountIDOrElse(AccountID.DEFAULT));
                     validateTrue(maybeAccount != null, INVALID_ACCOUNT_ID);
                 }
             }

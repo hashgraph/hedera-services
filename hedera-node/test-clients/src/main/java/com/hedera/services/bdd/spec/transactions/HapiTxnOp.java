@@ -645,6 +645,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
+    public T payingWithAliased(String name) {
+        payingWithAlias = true;
+        payer = Optional.of(name);
+        return self();
+    }
+
     public T withUnknownFieldIn(final UnknownFieldLocation location) {
         unknownFieldLocation = location;
         return self();
