@@ -22,6 +22,16 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatform
 
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.event.creation.DefaultEventCreationManager;
+import com.swirlds.platform.event.creation.EventCreationManager;
+import com.swirlds.platform.event.creation.EventCreator;
+import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
+import com.swirlds.platform.event.creation.rules.BackpressureRule;
+import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.platform.event.creation.rules.MaximumRateRule;
+import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
+import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
@@ -59,6 +69,7 @@ import java.util.Objects;
  *     <li>A component should use {@link com.swirlds.common.wiring.component.ComponentWiring ComponentWiring} to define
  *         wiring API.</li>
  *     <li>The order in which components are constructed should not matter.</li>
+ *     <li>A component must not be a static singleton or use static stateful variables in any way.</li>
  * </ul>
  */
 public class PlatformComponentBuilder {
@@ -73,6 +84,7 @@ public class PlatformComponentBuilder {
     private StateGarbageCollector stateGarbageCollector;
     private OrphanBuffer orphanBuffer;
     private RunningEventHasher runningEventHasher;
+    private EventCreationManager eventCreationManager;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -402,5 +414,54 @@ public class PlatformComponentBuilder {
             runningEventHasher = new DefaultRunningEventHasher();
         }
         return runningEventHasher;
+    }
+
+    /**
+     * Provide an event creation manager in place of the platform's default event creation manager.
+     *
+     * @param eventCreationManager the event creation manager to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withEventCreationManager(@NonNull final EventCreationManager eventCreationManager) {
+        throwIfAlreadyUsed();
+        if (this.eventCreationManager != null) {
+            throw new IllegalStateException("Event creation manager has already been set");
+        }
+        this.eventCreationManager = Objects.requireNonNull(eventCreationManager);
+        return this;
+    }
+
+    /**
+     * Build the event creation manager if it has not yet been built. If one has been provided via
+     * {@link #withEventCreationManager(EventCreationManager)}, that manager will be used. If this method is called more
+     * than once, only the first call will build the event creation manager. Otherwise, the default manager will be
+     * created and returned.
+     *
+     * @return the event creation manager
+     */
+    @NonNull
+    public EventCreationManager buildEventCreationManager() {
+        if (eventCreationManager == null) {
+            final EventCreator eventCreator = new TipsetEventCreator(
+                    blocks.platformContext(),
+                    blocks.randomBuilder().buildNonCryptographicRandom(),
+                    data -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
+                    blocks.initialState().get().getState().getPlatformState().getAddressBook(),
+                    blocks.selfId(),
+                    blocks.appVersion(),
+                    blocks.transactionPool());
+
+            final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
+                    new MaximumRateRule(blocks.platformContext()),
+                    new BackpressureRule(
+                            blocks.platformContext(),
+                            () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong()),
+                    new PlatformStatusRule(() -> blocks.currentPlatformStatus().get(), blocks.transactionPool()));
+
+            eventCreationManager =
+                    new DefaultEventCreationManager(blocks.platformContext(), eventCreator, eventCreationRules);
+        }
+        return eventCreationManager;
     }
 }
