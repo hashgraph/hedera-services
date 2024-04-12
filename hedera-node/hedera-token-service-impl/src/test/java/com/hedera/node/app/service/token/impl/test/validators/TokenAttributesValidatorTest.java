@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.service.token.impl.test.validators;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
@@ -35,9 +37,12 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -50,6 +55,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenAttributesValidatorTest {
+    private static final TokenID VALID_TOKEN_ID =
+            TokenID.newBuilder().shardNum(0).realmNum(0).tokenNum(1).build();
+    private static final AccountID VALID_ACCOUNT_ID =
+            AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(1).build();
+
     private TokenAttributesValidator subject;
     private TokensConfig tokensConfig;
 
@@ -62,6 +72,64 @@ class TokenAttributesValidatorTest {
                 .withValue("tokens.maxMetadataBytes", "100")
                 .getOrCreateConfig();
         tokensConfig = configuration.getConfigData(TokensConfig.class);
+    }
+
+    @Test
+    void validateAccountIdChecks() throws PreCheckException {
+        // Success case
+        TokenAttributesValidator.validateAccountId(true, VALID_ACCOUNT_ID);
+
+        assertThatThrownBy(() -> TokenAttributesValidator.validateAccountId(true, null))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_ACCOUNT_ID));
+        assertThatThrownBy(() -> TokenAttributesValidator.validateAccountId(false, VALID_ACCOUNT_ID))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_ACCOUNT_ID));
+    }
+
+    @Test
+    void validateNonNullTokenIdChecks() throws PreCheckException {
+        // Success case
+        TokenAttributesValidator.validateTokenId(true, VALID_TOKEN_ID);
+
+        assertThatThrownBy(() -> TokenAttributesValidator.validateTokenId(
+                        true,
+                        TokenID.newBuilder()
+                                .shardNum(0)
+                                .realmNum(0)
+                                .tokenNum(-1)
+                                .build()))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_ID));
+        assertThatThrownBy(() -> TokenAttributesValidator.validateTokenId(false, VALID_TOKEN_ID))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_ID));
+    }
+
+    @Test
+    void validateNullableTokenIdChecks() throws PreCheckException {
+        // Success cases
+        TokenAttributesValidator.validateNullableTokenId(null);
+        TokenAttributesValidator.validateNullableTokenId(VALID_TOKEN_ID);
+
+        assertThatThrownBy(() -> TokenAttributesValidator.validateNullableTokenId(TokenID.newBuilder()
+                        .shardNum(-1)
+                        .realmNum(0)
+                        .tokenNum(1)
+                        .build()))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_ID));
+        assertThatThrownBy(() -> TokenAttributesValidator.validateNullableTokenId(TokenID.newBuilder()
+                        .shardNum(0)
+                        .realmNum(-1)
+                        .tokenNum(1)
+                        .build()))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_ID));
+        assertThatThrownBy(() -> TokenAttributesValidator.validateNullableTokenId(
+                        TokenID.newBuilder().shardNum(1).realmNum(1).tokenNum(0).build()))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_ID));
     }
 
     @Test

@@ -29,7 +29,6 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwners
 import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator.verifyTokenInstanceAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -51,6 +50,7 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -101,10 +101,12 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.tokenWipeOrThrow();
 
+        // Validate the token and account ID's
+        TokenAttributesValidator.validateTokenId(op.hasToken(), op.token());
+        TokenAttributesValidator.validateAccountId(op.hasAccount(), op.account());
+
         // All the pure checks for burning a token must also be checked for wiping a token
         verifyTokenInstanceAmounts(op.amount(), op.serialNumbers(), op.hasToken(), INVALID_WIPING_AMOUNT);
-
-        validateTruePreCheck(op.hasAccount(), INVALID_ACCOUNT_ID);
     }
 
     @Override

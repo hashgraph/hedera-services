@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
@@ -23,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
@@ -32,11 +34,16 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
+import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,6 +62,36 @@ public class TokenAttributesValidator {
     @Inject
     public TokenAttributesValidator() {
         // Dagger
+    }
+
+    /**
+     * Performs a "pure" check for a given account ID. If the account ID is not in the body, is null, or is invalid, a {@link PreCheckException} is thrown.
+     */
+    public static void validateAccountId(final boolean bodyHasAccountId, @Nullable final AccountID accountID)
+            throws PreCheckException {
+        validateTruePreCheck(bodyHasAccountId, INVALID_ACCOUNT_ID);
+        validateAccountID(accountID, INVALID_ACCOUNT_ID);
+    }
+
+    /**
+     * Performs a "pure" check for a given token ID. If the token ID is not in the body, is null, or is invalid, a {@link PreCheckException} is thrown.
+     */
+    public static void validateTokenId(final boolean bodyHasTokenId, @Nullable final TokenID tokenID)
+            throws PreCheckException {
+        validateTruePreCheck(bodyHasTokenId, INVALID_TOKEN_ID);
+        validateTruePreCheck(tokenID != null, INVALID_TOKEN_ID);
+        validateNullableTokenId(tokenID);
+    }
+
+    /**
+     * Performs validation checks for a token ID <b>only if</b> the tokenID is not null.
+     */
+    public static void validateNullableTokenId(@Nullable final TokenID tokenID) throws PreCheckException {
+        if (tokenID != null) {
+            validateTruePreCheck(tokenID.shardNum() >= 0, INVALID_TOKEN_ID);
+            validateTruePreCheck(tokenID.realmNum() >= 0, INVALID_TOKEN_ID);
+            validateTruePreCheck(tokenID.tokenNum() > 0, INVALID_TOKEN_ID);
+        }
     }
 
     /**
