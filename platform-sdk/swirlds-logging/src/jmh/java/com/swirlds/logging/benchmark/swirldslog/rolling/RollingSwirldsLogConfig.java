@@ -46,7 +46,6 @@ public class RollingSwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSy
                 .withValue("logging.handler.file.file", logFile)
                 .withValue("logging.handler.file.file-rolling.maxFileSize", "500MB")
                 .withValue("logging.handler.file.file-rolling.maxRollover", "1")
-                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
 
         return configure(configuration);
@@ -64,7 +63,6 @@ public class RollingSwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSy
                 .withValue("logging.handler.console.enabled", "true")
                 .withValue("logging.handler.console.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.console.level", "trace")
-                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
 
         return configure(configuration);

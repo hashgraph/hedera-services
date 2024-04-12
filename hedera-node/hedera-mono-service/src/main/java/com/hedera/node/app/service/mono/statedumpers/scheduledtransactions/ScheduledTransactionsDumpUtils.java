@@ -49,18 +49,22 @@ public class ScheduledTransactionsDumpUtils {
             final var byId = scheduledTransactions.byId();
             final var byEquality = scheduledTransactions.byEquality();
             final var byExpirationSecond = scheduledTransactions.byExpirationSecond();
-            System.out.printf("=== Dumping schedule transactions %s%n ======");
+
+            System.out.printf("=== Dumping schedule transactions %n ======");
+
             final var byIdDump = gatherMonoScheduledTransactionsByID(byId);
             reportOnScheduledTransactionsById(writer, byIdDump);
+            System.out.println("Size of byId in State : " + byId.size() + " and gathered : " + byIdDump.size());
 
             final var byEqualityDump = gatherMonoScheduledTransactionsByEquality(byEquality);
             reportOnScheduledTransactionsByEquality(writer, byEqualityDump);
-            // Not sure how to compare Equality Virtual map in mono and mod
+            System.out.println(
+                    "Size of byEquality in State : " + byEquality.size() + " and gathered : " + byEqualityDump.size());
+
             final var byExpiryDump = gatherMonoScheduledTransactionsByExpiry(byExpirationSecond);
             reportOnScheduledTransactionsByExpiry(writer, byExpiryDump);
-            System.out.printf(
-                    "=== mono scheduled transactions report by expiry is %d bytes at checkpoint %s%n",
-                    writer.getSize(), checkpoint.name());
+            System.out.println("Size of byExpiry in State : " + byExpirationSecond.size() + " and gathered : "
+                    + byExpiryDump.size());
         }
     }
 

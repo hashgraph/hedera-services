@@ -109,6 +109,8 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                 transferNonFungibleWithFixedHtsCustomFee(),
                 transferFungibleToHollowAccountWithFixedHBarFee(),
                 transferFungibleToHollowAccountWithFixedHtsFee(),
+                transferNonFungibleToHollowAccountWithFixedHBarFee(),
+                transferNonFungibleToHollowAccountWithFixedHtsFee(),
                 transferApprovedFungibleWithFixedHbarCustomFee(),
                 transferApprovedFungibleWithFixedHtsCustomFeeAsOwner(),
                 transferApprovedFungibleWithFixedHtsCustomFeeAsSpender(),
@@ -1759,6 +1761,83 @@ public class TransferWithCustomFixedFees extends HapiSuite {
                                     .hasTokenBalance(fungibleToken, 999)
                                     .hasTokenBalance(feeDenom, tokenTotal - htsFee),
                             getAccountBalance(tokenReceiver).hasTokenBalance(fungibleToken, 1),
+                            getAccountBalance(hollowAccountCollector).hasTokenBalance(feeDenom, htsFee));
+                }));
+    }
+
+    @HapiTest
+    public HapiSpec transferNonFungibleToHollowAccountWithFixedHBarFee() {
+        return defaultHapiSpec("transferNonFungibleToHollowAccountWithFixedHBarFee")
+                .given(
+                        newKeyNamed(NFT_KEY),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(tokenTreasury).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(tokenOwner),
+                        cryptoCreate(alice))
+                .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY))
+                .then(withOpContext((spec, opLog) -> {
+                    final var hollowAccountCollector =
+                            spec.registry().getAccountIdName(spec.registry().getAccountAlias(SECP_256K1_SOURCE_KEY));
+
+                    allRunFor(
+                            spec,
+                            tokenCreate(nonFungibleToken)
+                                    .treasury(tokenTreasury)
+                                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                    .supplyKey(NFT_KEY)
+                                    .supplyType(TokenSupplyType.INFINITE)
+                                    .initialSupply(0)
+                                    .withCustom(fixedHbarFee(hbarFee, hollowAccountCollector)),
+                            mintToken(nonFungibleToken, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+                            tokenAssociate(tokenOwner, nonFungibleToken),
+                            tokenAssociate(alice, nonFungibleToken),
+                            cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)),
+                            cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenOwner, alice))
+                                    .fee(1L),
+                            getAccountBalance(hollowAccountCollector).hasTinyBars(ONE_HUNDRED_HBARS + hbarFee),
+                            getAccountBalance(tokenOwner).hasTokenBalance(nonFungibleToken, 0L),
+                            getAccountBalance(alice).hasTokenBalance(nonFungibleToken, 1L));
+                }));
+    }
+
+    @HapiTest
+    public HapiSpec transferNonFungibleToHollowAccountWithFixedHtsFee() {
+        return defaultHapiSpec("transferNonFungibleToHollowAccountWithFixedHtsFee")
+                .given(
+                        newKeyNamed(NFT_KEY),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenReceiver),
+                        cryptoCreate(tokenTreasury),
+                        tokenCreate(feeDenom).treasury(tokenOwner).initialSupply(tokenTotal))
+                .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY))
+                .then(withOpContext((spec, opLog) -> {
+                    final var hollowAccountCollector =
+                            spec.registry().getAccountIdName(spec.registry().getAccountAlias(SECP_256K1_SOURCE_KEY));
+                    allRunFor(
+                            spec,
+                            tokenAssociate(hollowAccountCollector, feeDenom)
+                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                                    .via(TRANSFER_TXN_2),
+                            tokenCreate(nonFungibleToken)
+                                    .treasury(tokenTreasury)
+                                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                    .supplyKey(NFT_KEY)
+                                    .supplyType(TokenSupplyType.INFINITE)
+                                    .initialSupply(0)
+                                    .withCustom(fixedHtsFee(htsFee, feeDenom, hollowAccountCollector)),
+                            mintToken(nonFungibleToken, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+                            tokenAssociate(tokenReceiver, nonFungibleToken),
+                            tokenAssociate(tokenOwner, nonFungibleToken),
+                            cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner)),
+                            cryptoTransfer(movingUnique(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
+                                    .fee(ONE_HUNDRED_HBARS)
+                                    .payingWith(tokenOwner),
+                            getAccountBalance(tokenOwner)
+                                    .hasTokenBalance(nonFungibleToken, 0L)
+                                    .hasTokenBalance(feeDenom, tokenTotal - htsFee),
+                            getAccountBalance(tokenReceiver).hasTokenBalance(nonFungibleToken, 1L),
                             getAccountBalance(hollowAccountCollector).hasTokenBalance(feeDenom, htsFee));
                 }));
     }

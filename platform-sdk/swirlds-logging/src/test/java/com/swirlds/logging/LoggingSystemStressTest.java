@@ -24,6 +24,9 @@ import static com.swirlds.logging.util.LoggingTestUtils.linesToStatements;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
+import com.swirlds.base.test.fixtures.io.SystemErrProvider;
+import com.swirlds.base.test.fixtures.io.WithSystemError;
+import com.swirlds.base.test.fixtures.io.WithSystemOut;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.Loggers;
@@ -47,6 +50,8 @@ import org.junit.jupiter.api.Test;
 
 @WithTestExecutor
 @WithLoggingMirror
+@WithSystemError
+@WithSystemOut
 @Tag(TIMING_SENSITIVE)
 public class LoggingSystemStressTest {
 
@@ -55,6 +60,9 @@ public class LoggingSystemStressTest {
 
     @Inject
     private LoggingMirror loggingMirror;
+
+    @Inject
+    private SystemErrProvider errorProvider;
 
     @Test
     void testMultipleLoggersInParallel(final TestExecutor testExecutor) {
