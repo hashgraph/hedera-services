@@ -20,7 +20,6 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGet
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapGetSize;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logMapIterate;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
