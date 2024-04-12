@@ -38,7 +38,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public record InOrderLinkerWiring(
         @NonNull InputWire<GossipEvent> eventInput,
         @NonNull InputWire<EventWindow> eventWindowInput,
-        @NonNull InputWire<ClearTrigger> clearInput,
+        @NonNull InputWire<NoInput> clearInput,
         @NonNull OutputWire<EventImpl> eventOutput,
         @NonNull Runnable flushRunnable) {
 
@@ -65,6 +65,6 @@ public record InOrderLinkerWiring(
     public void bind(@NonNull final InOrderLinker inOrderLinker) {
         ((BindableInputWire<GossipEvent, EventImpl>) eventInput).bind(inOrderLinker::linkEvent);
         ((BindableInputWire<EventWindow, EventImpl>) eventWindowInput).bindConsumer(inOrderLinker::setEventWindow);
-        ((BindableInputWire<ClearTrigger, EventImpl>) clearInput).bindConsumer(inOrderLinker::clear);
+        ((BindableInputWire<NoInput, EventImpl>) clearInput).bindConsumer(inOrderLinker::clear);
     }
 }

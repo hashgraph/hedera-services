@@ -1,16 +1,20 @@
 import com.swirlds.config.api.ConfigurationExtension;
-import com.swirlds.platform.base.example.config.BaseConfigurationExtension;
+import com.swirlds.platform.base.example.ext.BaseConfigurationExtension;
 
 module com.swirlds.platform.base.example {
-    exports com.swirlds.platform.base.example.config to
+    exports com.swirlds.platform.base.example.ext to
             com.swirlds.config.impl;
 
-    opens com.swirlds.platform.base.example.domain to
+    opens com.swirlds.platform.base.example.store.domain to
             com.fasterxml.jackson.databind;
+
+    exports com.swirlds.platform.base.example.server to
+            com.swirlds.config.impl;
 
     requires com.swirlds.common;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions;
+    requires com.swirlds.logging;
     requires com.swirlds.metrics.api;
     requires com.fasterxml.jackson.databind;
     requires com.google.common;

@@ -23,7 +23,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.platform.system.transaction.SystemTransaction;
 import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -151,7 +150,7 @@ public class TransactionUtils {
         return new SwirldTransaction(buffer.array());
     }
 
-    public static SystemTransaction incrementingSystemTransaction() {
+    public static StateSignatureTransaction incrementingSystemTransaction() {
         return new StateSignatureTransaction(0, randomSignatureBytes(random), randomHashBytes(random), Bytes.EMPTY);
     }
 
