@@ -19,6 +19,7 @@ package com.swirlds.platform.event.linking;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -26,6 +27,9 @@ import java.util.Objects;
  * Links events to their parents. Expects events to be provided in topological order.
  * <p>
  * This implementation updates the intake event counter when an ancient event is discarded by the linker.
+ * <p>
+ * Note: This class doesn't have a direct dependency on the {@link Shadowgraph ShadowGraph},
+ * but it is dependent in the sense that the Shadowgraph is currently responsible for eventually unlinking events.
  */
 public class GossipLinker extends AbstractInOrderLinker {
 

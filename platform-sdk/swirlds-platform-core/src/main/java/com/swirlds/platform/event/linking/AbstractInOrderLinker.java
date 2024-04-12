@@ -29,7 +29,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -54,8 +53,6 @@ import org.apache.logging.log4j.Logger;
  *     <li>The parent's generation does not match the generation claimed by the child event</li>
  *     <li>The parent's time created is greater than or equal to the child's time created</li>
  * </ul>
- * Note: This class doesn't have a direct dependency on the {@link Shadowgraph ShadowGraph},
- * but it is dependent in the sense that the Shadowgraph is currently responsible for eventually unlinking events.
  */
 abstract class AbstractInOrderLinker implements InOrderLinker {
     private static final Logger logger = LogManager.getLogger(AbstractInOrderLinker.class);
