@@ -21,6 +21,7 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.units.TimeUnit;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metrics;
@@ -67,14 +68,16 @@ public class ReconnectMetrics {
                     RECONNECT_CATEGORY, "senderReconnectDurationMs")
             .withInitialValue(0)
             .withAccumulator(Long::sum)
-            .withDescription("duration of reconnect as a sender, ms");
+            .withDescription("duration of reconnect as a sender")
+            .withUnit(TimeUnit.UNIT_MILLISECONDS.getAbbreviation());
     private final LongAccumulator senderReconnectDurationMs;
 
     private static final LongAccumulator.Config RECEIVER_DURATION_CONFIG = new LongAccumulator.Config(
                     RECONNECT_CATEGORY, "receiverReconnectDurationMs")
             .withInitialValue(0)
             .withAccumulator(Long::sum)
-            .withDescription("duration of reconnect as a receiver, ms");
+            .withDescription("duration of reconnect as a receiver")
+            .withUnit(TimeUnit.UNIT_MILLISECONDS.getAbbreviation());
     private final LongAccumulator receiverReconnectDurationMs;
 
     // Assuming that reconnect is a "singleton" operation (a single node cannot teach multiple learners
