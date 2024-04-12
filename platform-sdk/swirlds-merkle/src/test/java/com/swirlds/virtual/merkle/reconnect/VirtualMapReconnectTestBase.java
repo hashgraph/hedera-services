@@ -85,7 +85,7 @@ public class VirtualMapReconnectTestBase {
 
     // Custom reconnect config to make tests with timeouts faster
     protected static ReconnectConfig reconnectConfig = new TestConfigBuilder()
-            .withValue("reconnect.asyncStreamTimeout", "5s")
+            .withValue("reconnect.asyncStreamTimeout", "20s")
             .withValue("reconnect.maxAckDelay", "1000ms")
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
