@@ -27,7 +27,6 @@ import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
@@ -174,8 +173,9 @@ public class SignaturePool {
         }
 
         final SwirldTransaction tx = transactions.get(nextIdx);
-        tx.clearSignatures();
-        tx.extractSignature(
+
+        return new TransactionSignature(
+                tx.getContents(),
                 transactionSize + PUBLIC_KEY_LENGTH,
                 SIGNATURE_LENGTH,
                 transactionSize,
@@ -183,14 +183,6 @@ public class SignaturePool {
                 0,
                 transactionSize,
                 SignatureType.ED25519);
-
-        final List<TransactionSignature> signatures = tx.getSignatures();
-
-        if (signatures.isEmpty()) {
-            return null;
-        }
-
-        return signatures.get(0);
     }
 
     /**
