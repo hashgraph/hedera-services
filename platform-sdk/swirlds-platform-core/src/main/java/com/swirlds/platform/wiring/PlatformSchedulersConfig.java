@@ -142,6 +142,4 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration platformPublisher,
-        @ConfigProperty(defaultValue = "DIRECT_THREAD_SAFE")
-                TaskSchedulerConfiguration
-                        consensusEventStream) {} // TODO should disappear during from diagram when a no op
+        @ConfigProperty(defaultValue = "NO_OP") TaskSchedulerConfiguration consensusEventStream) {}
