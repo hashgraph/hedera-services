@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.fees;
 
-import static java.util.Collections.emptyList;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -96,8 +94,7 @@ public class FeeContextImpl implements FeeContext {
     @Override
     public FeeCalculator feeCalculator(@NonNull SubType subType) {
         // For mono-service compatibility, we treat the sig map size as the number of verifications
-        final var numVerifications =
-                txInfo.signatureMap().sigPairOrElse(emptyList()).size();
+        final var numVerifications = txInfo.signatureMap().sigPair().size();
         final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(txInfo.signatureMap());
         return feeManager.createFeeCalculator(
                 txInfo.txBody(),

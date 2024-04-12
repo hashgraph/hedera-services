@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -67,7 +66,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
             // Expected decimals are already validated in AdjustFungibleTokenChangesStep.
             // So not doing same check again here
 
-            for (final var nftTransfer : xfers.nftTransfersOrElse(emptyList())) {
+            for (final var nftTransfer : xfers.nftTransfers()) {
                 final var senderId = nftTransfer.senderAccountIDOrThrow();
                 final var receiverId = nftTransfer.receiverAccountIDOrThrow();
                 final var serial = nftTransfer.serialNumber();
@@ -125,7 +124,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
      */
     static void validateSpenderHasAllowance(
             final Account owner, final AccountID spender, final TokenID tokenId, final Nft nft) {
-        final var approveForAllAllowances = owner.approveForAllNftAllowancesOrElse(emptyList());
+        final var approveForAllAllowances = owner.approveForAllNftAllowances();
         final var allowance = AccountApprovalForAllAllowance.newBuilder()
                 .spenderId(spender)
                 .tokenId(tokenId)

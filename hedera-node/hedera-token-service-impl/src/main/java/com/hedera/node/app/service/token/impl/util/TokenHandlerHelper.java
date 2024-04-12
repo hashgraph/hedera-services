@@ -80,6 +80,11 @@ public class TokenHandlerHelper {
         throw new UnsupportedOperationException("Utility class only");
     }
 
+    public enum AccountIDType {
+        ALIASED_ID,
+        NOT_ALIASED_ID
+    }
+
     /**
      * Returns the account if it exists and is usable. A {@link HandleException} is thrown if the account is invalid.
      * Note that this method should also work with account ID's that represent smart contracts
@@ -97,7 +102,34 @@ public class TokenHandlerHelper {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ResponseCodeEnum errorIfNotUsable) {
-        return getIfUsable(accountId, accountStore, expiryValidator, errorIfNotUsable, ACCOUNT_DELETED);
+        return getIfUsable(
+                accountId,
+                accountStore,
+                expiryValidator,
+                errorIfNotUsable,
+                ACCOUNT_DELETED,
+                AccountIDType.NOT_ALIASED_ID);
+    }
+
+    /**
+     * Returns the account if it exists and is usable. A {@link HandleException} is thrown if the account is invalid.
+     * Note that this method should also work with account ID's that represent smart contracts
+     * If the account is deleted the return error code is ACCOUNT_DELETED
+     *
+     * @param accountId the ID of the account to get
+     * @param accountStore the {@link ReadableTokenStore} to use for account retrieval
+     * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
+     * @param errorIfNotUsable the {@link ResponseCodeEnum} to use if the account is not found/usable
+     * @throws HandleException if any of the account conditions are not met
+     */
+    @NonNull
+    public static Account getIfUsableForAliasedId(
+            @NonNull final AccountID accountId,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ResponseCodeEnum errorIfNotUsable) {
+        return getIfUsable(
+                accountId, accountStore, expiryValidator, errorIfNotUsable, ACCOUNT_DELETED, AccountIDType.ALIASED_ID);
     }
 
     /**
@@ -116,7 +148,13 @@ public class TokenHandlerHelper {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ResponseCodeEnum errorIfNotUsable) {
-        return getIfUsable(accountId, accountStore, expiryValidator, errorIfNotUsable, INVALID_AUTORENEW_ACCOUNT);
+        return getIfUsable(
+                accountId,
+                accountStore,
+                expiryValidator,
+                errorIfNotUsable,
+                INVALID_AUTORENEW_ACCOUNT,
+                AccountIDType.NOT_ALIASED_ID);
     }
 
     /**
@@ -136,7 +174,12 @@ public class TokenHandlerHelper {
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ResponseCodeEnum errorIfNotUsable) {
         return getIfUsable(
-                accountId, accountStore, expiryValidator, errorIfNotUsable, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+                accountId,
+                accountStore,
+                expiryValidator,
+                errorIfNotUsable,
+                INVALID_TREASURY_ACCOUNT_FOR_TOKEN,
+                AccountIDType.NOT_ALIASED_ID);
     }
 
     @NonNull
@@ -145,14 +188,20 @@ public class TokenHandlerHelper {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ResponseCodeEnum errorIfNotUsable,
-            @NonNull final ResponseCodeEnum errorOnAccountDeleted) {
+            @NonNull final ResponseCodeEnum errorOnAccountDeleted,
+            @NonNull final AccountIDType accountIDType) {
         requireNonNull(accountId);
         requireNonNull(accountStore);
         requireNonNull(expiryValidator);
         requireNonNull(errorIfNotUsable);
         requireNonNull(errorOnAccountDeleted);
 
-        final var acct = accountStore.getAccountById(accountId);
+        final Account acct;
+        if (accountIDType == AccountIDType.ALIASED_ID) {
+            acct = accountStore.getAliasedAccountById(accountId);
+        } else {
+            acct = accountStore.getAccountById(accountId);
+        }
         validateTrue(acct != null, errorIfNotUsable);
         final var isContract = acct.smartContract();
 

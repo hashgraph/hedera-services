@@ -99,9 +99,9 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
         } else {
             final var nftTransfer = syntheticTransfer
                     .cryptoTransferOrThrow()
-                    .tokenTransfersOrThrow()
+                    .tokenTransfers()
                     .get(0)
-                    .nftTransfersOrThrow()
+                    .nftTransfers()
                     .get(0);
             logSuccessfulNftTransfer(tokenId, nftTransfer, readableAccountStore(), frame);
             return gasOnly(

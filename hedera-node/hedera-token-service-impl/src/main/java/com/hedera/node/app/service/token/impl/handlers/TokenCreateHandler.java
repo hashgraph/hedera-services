@@ -28,7 +28,6 @@ import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.ver
 import static com.hedera.node.app.service.token.impl.validators.CustomFeesValidator.SENTINEL_TOKEN_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -102,7 +101,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         if (tokenCreateTxnBody.hasAdminKey()) {
             context.requireKey(tokenCreateTxnBody.adminKeyOrThrow());
         }
-        final var customFees = tokenCreateTxnBody.customFeesOrElse(emptyList());
+        final var customFees = tokenCreateTxnBody.customFees();
         addCustomFeeCollectorKeys(context, customFees);
     }
 
@@ -140,7 +139,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // validate custom fees and get back list of fees with created token denomination
         final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
-                newToken, accountStore, tokenRelationStore, tokenStore, op.customFeesOrElse(emptyList()));
+                newToken, accountStore, tokenRelationStore, tokenStore, op.customFees());
         // Put token into modifications map
         tokenStore.put(newToken);
         // associate token with treasury and collector ids of custom fees whose token denomination
@@ -161,7 +160,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             mintFungible(newToken, treasuryRel, op.initialSupply(), accountStore, tokenStore, tokenRelationStore);
         }
         // Increment treasury's title count
-        final var treasuryAccount = requireNonNull(accountStore.getForModify(treasuryRel.accountIdOrThrow()));
+        final var treasuryAccount = requireNonNull(accountStore.get(treasuryRel.accountIdOrThrow()));
         accountStore.put(treasuryAccount
                 .copyBuilder()
                 .numberTreasuryTitles(treasuryAccount.numberTreasuryTitles() + 1)
@@ -262,7 +261,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 false,
                 op.freezeDefault(),
                 false,
-                modifyCustomFeesWithSentinelValues(op.customFeesOrElse(emptyList()), newTokenNum),
+                modifyCustomFeesWithSentinelValues(op.customFees(), newTokenNum),
                 op.metadata(),
                 op.metadataKey());
     }
@@ -435,9 +434,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         return feeContext
                 .feeCalculator(tokenSubTypeFrom(
-                        type,
-                        op.hasFeeScheduleKey()
-                                || !op.customFeesOrElse(emptyList()).isEmpty()))
+                        type, op.hasFeeScheduleKey() || !op.customFees().isEmpty()))
                 .addBytesPerTransaction(meta.getBaseSize())
                 .addRamByteSeconds(tokenSizes)
                 .addNetworkRamByteSeconds(meta.getNetworkRecordRb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())

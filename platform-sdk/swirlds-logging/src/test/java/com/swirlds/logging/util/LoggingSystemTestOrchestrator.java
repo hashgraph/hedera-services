@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.test.api.internal.level;
+package com.swirlds.logging.util;
 
-import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
-import com.swirlds.logging.util.LoggingTestScenario;
+import com.swirlds.logging.api.internal.LoggingSystem;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -32,20 +31,17 @@ import java.util.stream.IntStream;
  * <li>verify the scenario when the configuration is loaded
  *  <ol>
  */
-public final class HandlerLoggingLevelConfigTestOrchestrator {
+public final class LoggingSystemTestOrchestrator {
     private final List<LoggingTestScenario> scenarios;
 
     /**
-     * Runs the different {@code testScenarios} in random order up to {@code durationLimit}.
-     * All scenarios are run at least once.
+     * Runs the different {@code testScenarios} in random order up to {@code durationLimit}. All scenarios are run at
+     * least once.
      */
     public static void runScenarios(
-            final HandlerLoggingLevelConfig configUnderTest,
-            Duration durationLimit,
-            LoggingTestScenario... loggingTestScenarios) {
+            final LoggingSystem loggingSystem, Duration durationLimit, LoggingTestScenario... loggingTestScenarios) {
 
-        HandlerLoggingLevelConfigTestOrchestrator orchestrator =
-                new HandlerLoggingLevelConfigTestOrchestrator(loggingTestScenarios);
+        LoggingSystemTestOrchestrator orchestrator = new LoggingSystemTestOrchestrator(loggingTestScenarios);
 
         final List<Integer> list = IntStream.rangeClosed(0, loggingTestScenarios.length - 1)
                 .boxed()
@@ -54,28 +50,36 @@ public final class HandlerLoggingLevelConfigTestOrchestrator {
         long startTime = System.currentTimeMillis();
 
         for (Integer index : list) {
-            orchestrator.testScenario(index, configUnderTest);
+            orchestrator.testScenario(index, loggingSystem);
         }
-
-        long availableTime = durationLimit.toMillis() - (System.currentTimeMillis() - startTime);
-        for (int i = 0; availableTime > 0; i++) {
-            orchestrator.testScenario(list.get(i % list.size()), configUnderTest);
-            availableTime -= (System.currentTimeMillis() - startTime);
+        if (durationLimit != null && !durationLimit.isZero()) {
+            long availableTime = durationLimit.toMillis() - (System.currentTimeMillis() - startTime);
+            for (int i = 0; availableTime > 0; i++) {
+                orchestrator.testScenario(list.get(i % list.size()), loggingSystem);
+                availableTime -= (System.currentTimeMillis() - startTime);
+            }
+        } else {
+            for (int i = 0; i < loggingTestScenarios.length; i++) {
+                orchestrator.testScenario(list.get(i), loggingSystem);
+            }
         }
     }
 
-    private HandlerLoggingLevelConfigTestOrchestrator(LoggingTestScenario... loggingTestScenarios) {
+    public static void runScenarios(final LoggingSystem loggingSystem, LoggingTestScenario... loggingTestScenarios) {
+        runScenarios(loggingSystem, null, loggingTestScenarios);
+    }
+
+    private LoggingSystemTestOrchestrator(LoggingTestScenario... loggingTestScenarios) {
         this.scenarios = List.of(loggingTestScenarios);
     }
 
     /**
      * Performs the verification of scenario given by its index on the list
      */
-    private void testScenario(int scenario, HandlerLoggingLevelConfig config) {
-        System.out.printf("Testing scenario %d%n", scenario);
+    private void testScenario(int scenario, LoggingSystem system) {
         // Reload Configuration for desired scenario
-        config.update(this.scenarios.get(scenario).configuration());
+        system.update(this.scenarios.get(scenario).configuration());
         // Performs the check
-        this.scenarios.get(scenario).verifyAssertionRules(config);
+        this.scenarios.get(scenario).verifyAssertionRules(system);
     }
 }
