@@ -25,8 +25,10 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.PlatformMetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class DefaultPlatformContextTest {
@@ -45,12 +47,13 @@ class DefaultPlatformContextTest {
                 metricsProvider.createPlatformMetrics(nodeId),
                 CryptographyHolder.get(),
                 Time.getCurrent(),
-                null);
+                new TestFileSystemManager(Path.of("/tmp/test")));
 
         // then
         assertNotNull(context.getConfiguration(), "Configuration must not be null");
         assertNotNull(context.getMetrics(), "Metrics must not be null");
         assertNotNull(context.getCryptography(), "Cryptography must not be null");
         assertNotNull(context.getTime(), "Time must not be null");
+        assertNotNull(context.getFileSystemManager(), "FileSystemManager must not be null");
     }
 }
