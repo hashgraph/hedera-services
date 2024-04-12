@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.filesystem.internal;
+package com.swirlds.common.io.filesystem.internal;
 
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static java.nio.file.Files.exists;
 
-import com.swirlds.common.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -62,7 +62,7 @@ public class FileSystemManagerImpl implements FileSystemManager {
     /**
      * Creates an instance of {@link FileSystemManager}
      * If root directory already exist, deletes its content and recreates it.
-
+     *
      * @param rootLocation the location to be used as root path. It should not exist.
      * @param binSupplier  for building the recycle bin.
      * @throws UncheckedIOException if the dir structure to rootLocation cannot be

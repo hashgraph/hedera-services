@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.filesystem.internal;
+package com.swirlds.common.io.filesystem.internal;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.filesystem.FileSystemManager;
-import com.swirlds.common.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.io.config.FileSystemManagerConfig;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -41,7 +41,7 @@ public class FileSystemManagerFactoryImpl implements FileSystemManagerFactory {
      * property name indicated in {@code rootLocationPropertyName}
      *
      * @param configuration the configuration instance to retrieve properties from
-     * @param metrics
+     * @param metrics metrics instance
      * @return a new instance of {@link FileSystemManager}
      * @throws IllegalArgumentException if {@code rootLocationPropertyName} cannot be found on configuration, if
      *                                  {@code rootLocation} already exist or if the dir structure to rootLocation

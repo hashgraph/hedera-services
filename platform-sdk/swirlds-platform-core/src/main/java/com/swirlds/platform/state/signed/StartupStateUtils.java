@@ -26,7 +26,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateF
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;

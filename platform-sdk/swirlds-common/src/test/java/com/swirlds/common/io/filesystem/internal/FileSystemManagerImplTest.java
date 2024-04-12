@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.filesystem.internal;
+package com.swirlds.common.io.filesystem.internal;
 
 /*
  * Copyright (C) 2024 Hedera Hashgraph, LLC

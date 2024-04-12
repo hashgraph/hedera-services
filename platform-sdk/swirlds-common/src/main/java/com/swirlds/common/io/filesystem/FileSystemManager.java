@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.filesystem;
+package com.swirlds.common.io.filesystem;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;

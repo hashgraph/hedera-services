@@ -10,13 +10,13 @@ module com.swirlds.common {
     exports com.swirlds.common.crypto;
     exports com.swirlds.common.crypto.config;
     exports com.swirlds.common.exceptions;
-    exports com.swirlds.common.filesystem;
     exports com.swirlds.common.formatting;
     exports com.swirlds.common.io;
     exports com.swirlds.common.io.config;
     exports com.swirlds.common.io.exceptions;
     exports com.swirlds.common.io.extendable;
     exports com.swirlds.common.io.extendable.extensions;
+    exports com.swirlds.common.io.filesystem;
     exports com.swirlds.common.io.streams;
     exports com.swirlds.common.io.utility;
     exports com.swirlds.common.merkle;

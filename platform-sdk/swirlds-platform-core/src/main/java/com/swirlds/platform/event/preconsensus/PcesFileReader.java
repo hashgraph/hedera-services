@@ -21,7 +21,7 @@ import static com.swirlds.platform.event.preconsensus.PcesUtilities.compactPreco
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.fileSanityChecks;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.platform.event.AncientMode;
 import edu.umd.cs.findbugs.annotations.NonNull;

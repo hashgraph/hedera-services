@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.filesystem;
+package com.swirlds.common.io.filesystem;
 
-import com.swirlds.common.filesystem.internal.FileSystemManagerFactoryImpl;
+import com.swirlds.common.io.filesystem.internal.FileSystemManagerFactoryImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -18,7 +18,7 @@ package com.swirlds.common.test.fixtures;
 
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 
-import com.swirlds.common.filesystem.FileSystemManager;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,7 +29,7 @@ import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * A {@link com.swirlds.common.filesystem.FileSystemManager} that uses {@link TestRecycleBin}
+ * A {@link FileSystemManager} that uses {@link TestRecycleBin}
  */
 public class TestFileSystemManager implements FileSystemManager {
 
