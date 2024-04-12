@@ -81,9 +81,9 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(addressIdConverter.convert(FROM_ADDRESS)).willReturn(SENDER_ID);
         given(addressIdConverter.convertCredit(TO_ADDRESS)).willReturn(RECEIVER_ID);
-        given(accountStore.getAccountById(SENDER_ID))
+        given(accountStore.getAliasedAccountById(SENDER_ID))
                 .willReturn(Account.newBuilder().accountId(SENDER_ID).build());
-        given(accountStore.getAccountById(RECEIVER_ID))
+        given(accountStore.getAliasedAccountById(RECEIVER_ID))
                 .willReturn(Account.newBuilder().accountId(RECEIVER_ID).build());
 
         subject = subjectFor(1L);
