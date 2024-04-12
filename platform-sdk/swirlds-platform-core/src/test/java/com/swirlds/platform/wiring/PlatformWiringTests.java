@@ -86,7 +86,6 @@ class PlatformWiringTests {
                 .withRunningEventHasher(mock(RunningEventHasher.class))
                 .withInOrderLinker(mock(InOrderLinker.class));
 
-
         wiring.bind(
                 componentBuilder,
                 mock(ConsensusEngine.class),

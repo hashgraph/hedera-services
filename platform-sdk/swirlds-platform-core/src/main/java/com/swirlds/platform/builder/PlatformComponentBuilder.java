@@ -74,11 +74,8 @@ public class PlatformComponentBuilder {
     private SelfEventSigner selfEventSigner;
     private StateGarbageCollector stateGarbageCollector;
     private OrphanBuffer orphanBuffer;
-<<<<<<< HEAD
-    private InOrderLinker inOrderLinker;
-=======
     private RunningEventHasher runningEventHasher;
->>>>>>> develop
+    private InOrderLinker inOrderLinker;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
