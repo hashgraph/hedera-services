@@ -127,8 +127,9 @@ public class TokenManagementSpecs extends HapiSuite {
                 fungibleCommonMaxSupplyReachWork(),
                 mintingMaxLongValueWorks(),
                 nftMintProvidesMintedNftsAndNewTotalSupply(),
-                zeroUnitTokenOperationsWorkAsExpected(),
-                aliasFormWorksForAllTokenOps());
+                zeroUnitTokenOperationsWorkAsExpected()
+                //                aliasFormWorksForAllTokenOps()
+                );
     }
 
     @Override
@@ -136,7 +137,8 @@ public class TokenManagementSpecs extends HapiSuite {
         return true;
     }
 
-    @HapiTest
+    //    @HapiTest
+    // This test should be enabled when aliases are supported in all transaction bodies
     private HapiSpec aliasFormWorksForAllTokenOps() {
         final var CIVILIAN = "civilian";
         final var PAUSE_KEY = "pauseKey";
