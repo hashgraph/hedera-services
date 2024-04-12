@@ -142,7 +142,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         if (!(op.hasAutoRenewAccount() && designatesAccountRemoval(op.autoRenewAccount()))
                 && topic.hasAutoRenewAccountId()) {
             validateFalse(
-                    !topic.hasAdminKey() || (topic.hasAdminKey() && isEmpty(topic.adminKey())),
+                    !topic.hasAdminKey() || (op.hasAdminKey() && isEmpty(op.adminKey())),
                     AUTORENEW_ACCOUNT_NOT_ALLOWED);
         }
         validateMaybeNewAttributes(handleContext, op, topic);
