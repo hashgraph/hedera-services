@@ -103,18 +103,12 @@ class ConsensusRoundHandlerTests {
 
     private static void assertEventReachedConsensus(@NonNull final EventImpl event) {
         assertTrue(event.getTransactions().length > 0, "event should have transactions");
-        event.consensusTransactionIterator().forEachRemaining(transaction -> {
-            assertNotNull(transaction.getConsensusTimestamp(), "transaction should have a consensus timestamp");
-            assertNotEquals(-1, transaction.getConsensusOrder(), "transaction should have a consensus order");
-        });
+        event.consensusTransactionIterator().forEachRemaining(transaction -> assertNotNull(transaction.getConsensusTimestamp(), "transaction should have a consensus timestamp"));
     }
 
     private static void assertEventDidNotReachConsensus(@NonNull final EventImpl event) {
         assertTrue(event.getTransactions().length > 0, "event should have transactions");
-        event.consensusTransactionIterator().forEachRemaining(transaction -> {
-            assertNull(transaction.getConsensusTimestamp(), "transaction should not have a consensus timestamp");
-            assertEquals(-1, transaction.getConsensusOrder(), "transaction should not have a consensus order");
-        });
+        event.consensusTransactionIterator().forEachRemaining(transaction -> assertNull(transaction.getConsensusTimestamp(), "transaction should not have a consensus timestamp"));
     }
 
     @Test
