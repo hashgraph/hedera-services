@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * All enums used by {@link RoutableData} must implement this interface. This is to enforce a uniform clean pattern when
  * creating {@link RoutableData} objects.
  */
-public interface RoutableDataType {
+public interface RoutableDataType { // TODO performance risk
 
     /**
      * Create a new {@link RoutableData} object with the given data.

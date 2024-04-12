@@ -29,32 +29,40 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Create a wire router. A wire router takes a single input and splits data into multiple outputs based on the data
- * type.
+ * Create a wire router. A wire router takes a single input and splits data into multiple outputs with different
+ * addresses. When data is sent to a router, the address is also sent. The router then sends the data to the output wire
+ * at hte specified address.
  *
- * @param <DATA_TYPE> an enum that describes the different types of data handled by this router. Each enum value
- *                    corresponds to a different output wire.
+ * @param <ROUTER_TYPE> an enum that describes the addresses where data can be routed. Each enum value corresponds to a
+ *                      different address where data can be routed.
  */
-public class WireRouter<DATA_TYPE extends Enum<DATA_TYPE> & RoutableDataType> {
+public class WireRouter<ROUTER_TYPE extends Enum<ROUTER_TYPE> & RoutableDataType> {
 
-    private final BindableInputWire<RoutableData<DATA_TYPE>, Void> inputWire;
+    private final BindableInputWire<RoutableData<ROUTER_TYPE>, Void> inputWire;
     private final List<StandardOutputWire<Object>> outputWires;
+    private final Class<ROUTER_TYPE> clazz;
 
     /**
      * Constructor.
      *
-     * @param model the wiring model containing this router
-     * @param clazz the class of the enum that describes the different types of data handled by this router
+     * @param model           the wiring model containing this router
+     * @param routerName      the name of the router
+     * @param routerInputName the label for the input wire going into the router
+     * @param clazz           the class of the enum that describes the different addresses that data can be routed to.
      */
-    public WireRouter(@NonNull final WiringModel model, @NonNull final Class<DATA_TYPE> clazz) {
-        final TaskScheduler<Void> scheduler = model.schedulerBuilder("TODO_name")
+    public WireRouter(
+            @NonNull final WiringModel model,
+            @NonNull final String routerName,
+            @NonNull final String routerInputName,
+            @NonNull final Class<ROUTER_TYPE> clazz) {
+        final TaskScheduler<Void> scheduler = model.schedulerBuilder(routerName)
                 .withType(DIRECT_THREADSAFE)
                 .build()
                 .cast();
 
         outputWires = new ArrayList<>(clazz.getEnumConstants().length);
         for (int index = 0; index < clazz.getEnumConstants().length; index++) {
-            final DATA_TYPE dataType = clazz.getEnumConstants()[index];
+            final ROUTER_TYPE dataType = clazz.getEnumConstants()[index];
             if (dataType.ordinal() != index) {
                 throw new IllegalArgumentException("Enum values must be in order");
             }
@@ -63,8 +71,9 @@ public class WireRouter<DATA_TYPE extends Enum<DATA_TYPE> & RoutableDataType> {
             outputWires.add(outputWire);
         }
 
-        inputWire = scheduler.buildInputWire("TODO input name");
+        inputWire = scheduler.buildInputWire(routerInputName);
         inputWire.bindConsumer(this::routeData);
+        this.clazz = clazz;
     }
 
     /**
@@ -73,21 +82,31 @@ public class WireRouter<DATA_TYPE extends Enum<DATA_TYPE> & RoutableDataType> {
      * @return the input wire
      */
     @NonNull
-    public InputWire<RoutableData<DATA_TYPE>> getInput() {
+    public InputWire<RoutableData<ROUTER_TYPE>> getInput() {
         return inputWire;
     }
 
     /**
-     * Get the output wire for a specific data type.
+     * Get the output wire for a specific address.
      *
-     * @param dataType      the data type
+     * @param address       the data type
      * @param <OUTPUT_TYPE> the type of data that the output wire carries
      * @return the output wire
      */
     @NonNull
     @SuppressWarnings("unchecked")
-    public <OUTPUT_TYPE> OutputWire<OUTPUT_TYPE> getOutput(@NonNull final DATA_TYPE dataType) {
-        return (OutputWire<OUTPUT_TYPE>) outputWires.get(dataType.ordinal());
+    public <OUTPUT_TYPE> OutputWire<OUTPUT_TYPE> getOutput(@NonNull final ROUTER_TYPE address) {
+        return (OutputWire<OUTPUT_TYPE>) outputWires.get(address.ordinal());
+    }
+
+    /**
+     * Get the type of the enum that defines this router.
+     *
+     * @return the class of the enum
+     */
+    @NonNull
+    public Class<ROUTER_TYPE> getRouterType() {
+        return clazz;
     }
 
     /**
@@ -95,8 +114,8 @@ public class WireRouter<DATA_TYPE extends Enum<DATA_TYPE> & RoutableDataType> {
      *
      * @param routableData the data to route
      */
-    private void routeData(@NonNull final RoutableData<DATA_TYPE> routableData) {
-        final DATA_TYPE dataType = routableData.type();
+    private void routeData(@NonNull final RoutableData<ROUTER_TYPE> routableData) {
+        final ROUTER_TYPE dataType = routableData.address();
         final StandardOutputWire<Object> outputWire = outputWires.get(dataType.ordinal());
         outputWire.forward(routableData.data());
     }

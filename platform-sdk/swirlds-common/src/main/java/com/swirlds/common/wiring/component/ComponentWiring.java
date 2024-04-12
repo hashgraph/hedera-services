@@ -25,7 +25,9 @@ import com.swirlds.common.wiring.component.internal.WiringComponentProxy;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
+import com.swirlds.common.wiring.transformers.RoutableDataType;
 import com.swirlds.common.wiring.transformers.WireFilter;
+import com.swirlds.common.wiring.transformers.WireRouter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -93,6 +95,11 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
      * A splitter (if one has been constructed).
      */
     private OutputWire<Object> splitterOutput;
+
+    /**
+     * A router (if one has been constructed).
+     */
+    private WireRouter<?> router;
 
     /**
      * Create a new component wiring.
@@ -336,6 +343,51 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
             splitterOutput = getOutputWire().buildSplitter(scheduler.getName() + "Splitter", "data");
         }
         return (OutputWire<ELEMENT>) splitterOutput;
+    }
+
+    /**
+     * Get an output wire that will receive a specific type of routed data. Data routing is when a component has
+     * multiple outputs, and different things want to receive a subset of that output. Each output is described by a
+     * routing address, which are implemented by enum values.
+     *
+     * @param address       an enum value that describes one of the different types of data that can be routed
+     * @param <ROUTER_ENUM> the enum that describes the different types of data handled by this router
+     * @param <DATA_TYPE>   the type of data that travels over the output wire
+     * @return the output wire
+     */
+    @NonNull
+    public <ROUTER_ENUM extends Enum<ROUTER_ENUM> & RoutableDataType, DATA_TYPE> OutputWire<DATA_TYPE> getRoutedOutput(
+            @NonNull final ROUTER_ENUM address) {
+
+        final Class<ROUTER_ENUM> clazz = (Class<ROUTER_ENUM>) address.getClass();
+        return getOrBuildRouter(clazz).getOutput(address);
+    }
+
+    /**
+     * Get the router for this component if one has been built. Build and return a new router if one has not been
+     * built.
+     *
+     * @param routerType    the type of the router
+     * @param <ROUTER_TYPE> the type of the router
+     * @return the router
+     */
+    @NonNull
+    private <ROUTER_TYPE extends Enum<ROUTER_TYPE> & RoutableDataType> WireRouter<ROUTER_TYPE> getOrBuildRouter(
+            @NonNull final Class<ROUTER_TYPE> routerType) {
+
+        if (router != null) {
+            if (!router.getRouterType().equals(routerType)) {
+                throw new IllegalArgumentException("Only one type of router can be constructed per task scheduler. "
+                        + "This task scheduler already has a router of type "
+                        + router.getRouterType().getName() + "but an attempt was made to construct a router of type "
+                        + routerType.getName());
+            }
+        } else {
+            router = new WireRouter<>(model, getSchedulerName() + "Router", "data", routerType);
+            getOutputWire().solderTo((InputWire<OUTPUT_TYPE>) router.getInput());
+        }
+
+        return (WireRouter<ROUTER_TYPE>) router;
     }
 
     /**

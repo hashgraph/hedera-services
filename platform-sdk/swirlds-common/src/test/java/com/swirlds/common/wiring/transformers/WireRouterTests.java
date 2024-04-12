@@ -45,7 +45,7 @@ class WireRouterTests {
                 TestPlatformContextBuilder.create().build();
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final WireRouter<TestDataType> router = new WireRouter<>(model, TestDataType.class);
+        final WireRouter<TestDataType> router = new WireRouter<>(model, "router", "router input", TestDataType.class);
 
         final AtomicLong latestFoo = new AtomicLong();
         final AtomicLong latestBar = new AtomicLong();

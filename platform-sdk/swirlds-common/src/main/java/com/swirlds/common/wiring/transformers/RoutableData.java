@@ -18,4 +18,12 @@ package com.swirlds.common.wiring.transformers;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public record RoutableData<TYPE extends Enum<TYPE> & RoutableDataType>(@NonNull TYPE type, @NonNull Object data) {}
+/**
+ * Data that can be routed to a specific address.
+ *
+ * @param address       the address to route to (will be an enum value from ROUTER_TYPE)
+ * @param data          the data
+ * @param <ROUTER_TYPE> the type of the enum that defines the addresses
+ */
+public record RoutableData<ROUTER_TYPE extends Enum<ROUTER_TYPE> & RoutableDataType>(
+        @NonNull ROUTER_TYPE address, @NonNull Object data) {}
