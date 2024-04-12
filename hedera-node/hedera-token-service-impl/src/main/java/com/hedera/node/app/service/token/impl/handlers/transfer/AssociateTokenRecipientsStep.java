@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_A
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep.validateSpenderHasAllowance;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -167,7 +168,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final HandleContext handleContext) {
-        final var account = getIfUsable(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
+        final var account =
+                getIfUsableForAliasedId(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
         final var config = handleContext.configuration();
 
