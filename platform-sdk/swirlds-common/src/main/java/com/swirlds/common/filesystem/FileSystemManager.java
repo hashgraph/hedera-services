@@ -30,19 +30,21 @@ public interface FileSystemManager extends Startable, Stoppable {
 
     /**
      * Resolve a path relative to the root directory of the file system manager.
+     * Implementations can choose the convenient subfolder inside the root directory.
      *
      * @param relativePath the path to resolve against the root directory
      * @return the resolved path
-     * @throws IllegalArgumentException if the path cannot be relative to or scape the root directory
+     * @throws IllegalArgumentException if the path is "below" the root directory (e.g. resolve("../foo")
      */
     @NonNull
     Path resolve(@NonNull Path relativePath);
 
     /**
-     * Creates a temporary file relative to the root directory of the file system manager. Implementations can
-     * choose to use an index to assure the path will be unique inside the directory
+     * Creates a path relative to the root directory of the file system manager.
+     * Implementations can choose the convenient subfolder inside the root directory.
+     * There is no file or directory actually being created after the invocation of this method.
      *
-     * @param tag if indicated, will be suffixed to the path
+     * @param tag if indicated, will be suffixed to the returned path
      * @return the resolved path
      * @throws IllegalArgumentException if the path is "below" the root directory (e.g. resolve("../foo")
      */
@@ -53,8 +55,9 @@ public interface FileSystemManager extends Startable, Stoppable {
      * Remove the file or directory tree at the specified path. A best effort attempt is made to relocate the file or
      * directory tree to a temporary location where it may persist for an amount of time. No guarantee on the amount of
      * time the file or directory tree will persist is provided.
+     * Implementations can choose to validate if the provided absolute path is below the root of this file-system-manager .
      *
-     * @param path the relative path to recycle. Can be relative to the root dir or absolute
+     *  @param path the absolute path to recycle.
      * @throws IllegalArgumentException if the path cannot be relative to or scape the root directory
      */
     void recycle(@NonNull Path path) throws IOException;

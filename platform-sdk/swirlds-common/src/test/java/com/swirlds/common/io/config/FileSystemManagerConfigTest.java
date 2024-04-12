@@ -19,16 +19,17 @@ package com.swirlds.common.io.config;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class TemporaryFileConfigTest {
+class FileSystemManagerConfigTest {
 
     @Test
     public void testDefaultValuesValid() {
         // given
         final ConfigurationBuilder builder =
-                ConfigurationBuilder.create().withConfigDataType(TemporaryFileConfig.class);
+                ConfigurationBuilder.create().withConfigDataType(FileSystemManagerConfig.class);
 
         // then
         Assertions.assertDoesNotThrow(
@@ -39,19 +40,20 @@ class TemporaryFileConfigTest {
     public void testGetRealTempPath() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withConfigDataType(TemporaryFileConfig.class)
+                .withConfigDataType(FileSystemManagerConfig.class)
                 .withConfigDataType(StateCommonConfig.class)
                 .build();
 
         // when
-        final TemporaryFileConfig temporaryFileConfig = configuration.getConfigData(TemporaryFileConfig.class);
+        final FileSystemManagerConfig fileSystemManagerConfig =
+                configuration.getConfigData(FileSystemManagerConfig.class);
         final StateCommonConfig stateConfig = configuration.getConfigData(StateCommonConfig.class);
-        final String temporaryFilePath = temporaryFileConfig.getTemporaryFilePath(stateConfig);
+        final Path temporaryFilePath = fileSystemManagerConfig.getRootPath(stateConfig);
 
         // then
         Assertions.assertNotNull(temporaryFilePath, "The path should never be null");
         Assertions.assertTrue(
-                temporaryFilePath.endsWith(temporaryFileConfig.temporaryFilePath()),
+                temporaryFilePath.endsWith(fileSystemManagerConfig.rootPath()),
                 "The path should be the real path of the configured folder.");
     }
 }

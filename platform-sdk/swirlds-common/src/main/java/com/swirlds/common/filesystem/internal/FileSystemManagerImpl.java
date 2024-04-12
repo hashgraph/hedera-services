@@ -36,13 +36,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Default implementation of {@link FileSystemManager} Creates the rootPath and it's parent structure. Fails if the
- * indicated location already exist on the filesystem.
- * All {@link Path}s provided by this class are handled in the same filesystem as indicated in rootLocation parameter.
+ * Default implementation of {@link FileSystemManager} It organizes the file creation in the following structure: root
+ * usr tmp recycle-bin
+ * <p>
+ * If root directory already exist, deletes its content and recreates it. All {@link Path}s provided by this class are
+ * handled in the same filesystem as indicated in rootLocation parameter.
  *
  * @implNote Creates and manages a temp dir when creating an instance of this class using
  * {@link Files#createTempDirectory(Path, String, FileAttribute[])} located under {@code rootPath} where all temporary
- * files are located. Java's API is responsible for deleting those files at shutdown.
+ * files are located.
  */
 public class FileSystemManagerImpl implements FileSystemManager {
 
@@ -59,11 +61,12 @@ public class FileSystemManagerImpl implements FileSystemManager {
 
     /**
      * Creates an instance of {@link FileSystemManager}
-     *
+     * If root directory already exist, deletes its content and recreates it.
+
      * @param rootLocation the location to be used as root path. It should not exist.
-     * @param binSupplier          for building the recycle bin.
-     * @throws UncheckedIOException if rootLocation already exist or if the dir structure to rootLocation cannot be
-     *                                  created
+     * @param binSupplier  for building the recycle bin.
+     * @throws UncheckedIOException if the dir structure to rootLocation cannot be
+     *                              created
      */
     FileSystemManagerImpl(@NonNull final String rootLocation, @NonNull final Function<Path, RecycleBin> binSupplier) {
         this.rootPath = Path.of(rootLocation).normalize();
@@ -111,27 +114,28 @@ public class FileSystemManagerImpl implements FileSystemManager {
     }
 
     /**
-     * Remove the file or directory tree at the specified path. A best effort attempt is made to relocate the file or
-     * directory
-     * tree to a temporary location where it may persist for an amount of time. No guarantee on the amount of
-     * time the file or directory tree will persist is provided.
+     * Remove the file or directory tree at the specified absolute path. A best effort attempt is made to relocate the
+     * file or directory tree to a temporary location where it may persist for an amount of time. No guarantee on the
+     * amount of time the file or directory tree will persist is provided. {@code absolutePath} should be under
+     * {@code rootPath} or {@link IllegalArgumentException} is thrown
      *
-     * @param relativePath the relative path to recycle
+     * @param absolutePath the path to recycle
      * @throws IllegalArgumentException if the path cannot be relative to or scape the root directory
      */
     @Override
-    public void recycle(@NonNull final Path relativePath) throws IOException {
-        final Path path = relativePath.startsWith(rootPath) ? relativePath : rootPath.resolve(relativePath);
+    public void recycle(@NonNull final Path absolutePath) throws IOException {
+        final Path path = absolutePath.startsWith(rootPath) ? absolutePath : rootPath.resolve(absolutePath);
         bin.recycle(requireValidSubPathOf(rootPath, path));
     }
 
     /**
      * Checks that the specified {@code path} reference is relative to {@code parent} and is not {@code parent} itself.
-     * throws a customized IllegalArgumentException if this condition is not true.
+     * throws IllegalArgumentException if this condition is not true.
      *
      * @param parent the path to check against.
      * @param path   the path to check if is
      * @return {@code path} if it represents a valid path inside {@code parent}
+     * @throws IllegalArgumentException if the reference is not relative to root or is root itself
      */
     @NonNull
     private static Path requireValidSubPathOf(@NonNull final Path parent, @NonNull final Path path) {
@@ -145,12 +149,6 @@ public class FileSystemManagerImpl implements FileSystemManager {
     }
 
     /**
-     * <p>Calls {@link #stop(StopBehavior)} with the default {@link StopBehavior StopBehavior} defined on the
-     * object</p>
-     *
-     * @return true if operation was successful, or false if the thread is in the incorrect state to be stopped
-     */
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -159,8 +157,10 @@ public class FileSystemManagerImpl implements FileSystemManager {
     }
 
     /**
-     * Start this object.
+     * {@inheritDoc}
      */
     @Override
-    public void start() {}
+    public void start() {
+        bin.start();
+    }
 }

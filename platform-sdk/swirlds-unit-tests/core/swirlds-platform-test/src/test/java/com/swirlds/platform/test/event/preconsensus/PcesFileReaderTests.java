@@ -671,8 +671,8 @@ class PcesFileReaderTests {
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
         final long startingRound3 = random.nextLong(startingOrigin, max(origin - 1, startingOrigin + 1));
-        final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
-                platformContext, fileDirectory, startingRound3, false, ancientMode);
+        final PcesFileTracker fileTracker3 =
+                PcesFileReader.readFilesFromDisk(platformContext, fileDirectory, startingRound3, false, ancientMode);
         assertIteratorEquality(
                 filesBeforeDiscontinuity.iterator(),
                 fileTracker3.getFileIterator(startAncientIdentifier, startingRound3));
@@ -778,8 +778,8 @@ class PcesFileReaderTests {
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
         final long startingRound3 = random.nextLong(startingOrigin, max(origin - 1, startingOrigin + 1));
-        final PcesFileTracker fileTracker3 = PcesFileReader.readFilesFromDisk(
-                platformContext, fileDirectory, startingRound3, false, ancientMode);
+        final PcesFileTracker fileTracker3 =
+                PcesFileReader.readFilesFromDisk(platformContext, fileDirectory, startingRound3, false, ancientMode);
         // There is no files with a compatible origin and events with ancient indicators in the span we want.
         assertIteratorEquality(
                 Collections.emptyIterator(), fileTracker3.getFileIterator(startAncientIdentifier, startingRound3));

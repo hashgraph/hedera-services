@@ -23,12 +23,12 @@ import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.filesystem.FileSystemManager;
 import com.swirlds.common.filesystem.FileSystemManagerFactory;
-import com.swirlds.common.io.config.RecycleBinConfig;
-import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.common.io.config.FileSystemManagerConfig;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 
 public class FileSystemManagerFactoryImpl implements FileSystemManagerFactory {
 
@@ -52,22 +52,20 @@ public class FileSystemManagerFactoryImpl implements FileSystemManagerFactory {
     public FileSystemManager createFileSystemManager(
             @NonNull final Configuration configuration, @NonNull final Metrics metrics) {
 
-        final TemporaryFileConfig temporaryFileConfig = ConfigurationHolder.getConfigData(TemporaryFileConfig.class);
+        final FileSystemManagerConfig fileSystemManagerConfig =
+                ConfigurationHolder.getConfigData(FileSystemManagerConfig.class);
         final StateCommonConfig stateConfig = ConfigurationHolder.getConfigData(StateCommonConfig.class);
-        final RecycleBinConfig recycleBinConfig = configuration.getConfigData(RecycleBinConfig.class);
-        final String rootFileLocation = temporaryFileConfig.temporaryFilePath();
-        final String rootLocation =
-                stateConfig.savedStateDirectory().resolve(rootFileLocation).toString();
+        final Path rootDirLocation = fileSystemManagerConfig.getRootPath(stateConfig);
 
         return new FileSystemManagerImpl(
-                rootLocation,
+                rootDirLocation.toString(),
                 path -> new RecycleBinImpl(
                         metrics,
                         getStaticThreadManager(),
                         Time.getCurrent(),
                         path,
-                        recycleBinConfig.maximumFileAge(),
-                        recycleBinConfig.collectionPeriod()));
+                        fileSystemManagerConfig.recycleBinMaximumFileAge(),
+                        fileSystemManagerConfig.recycleBinCollectionPeriod()));
     }
 
     /**
