@@ -24,7 +24,7 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
@@ -33,7 +33,7 @@ import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.wiring.ClearTrigger;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -92,9 +92,9 @@ public class InOrderLinker {
     private final Map<Hash, EventImpl> parentHashMap = new HashMap<>(INITIAL_CAPACITY);
 
     /**
-     * The current non-ancient event window.
+     * The current event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow;
+    private EventWindow eventWindow;
 
     /**
      * Constructor
@@ -111,7 +111,7 @@ public class InOrderLinker {
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
-        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             this.parentDescriptorMap =
                     new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
@@ -129,7 +129,7 @@ public class InOrderLinker {
      */
     @Nullable
     public EventImpl linkEvent(@NonNull final GossipEvent event) {
-        if (nonAncientEventWindow.isAncient(event)) {
+        if (eventWindow.isAncient(event)) {
             // This event is ancient, so we don't need to link it.
             ancientEventAdded(event);
             return null;
@@ -154,14 +154,14 @@ public class InOrderLinker {
     }
 
     /**
-     * Set the non-ancient event window, defining the minimum non-ancient threshold.
+     * Set the event window, defining the minimum non-ancient threshold.
      *
-     * @param nonAncientEventWindow the non-ancient event window
+     * @param eventWindow the event window
      */
-    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
+    public void setEventWindow(@NonNull final EventWindow eventWindow) {
+        this.eventWindow = Objects.requireNonNull(eventWindow);
 
-        parentDescriptorMap.shiftWindow(nonAncientEventWindow.getAncientThreshold(), (descriptor, event) -> {
+        parentDescriptorMap.shiftWindow(eventWindow.getAncientThreshold(), (descriptor, event) -> {
             parentHashMap.remove(descriptor.getHash());
             eventHasBecomeAncient(event);
         });
@@ -172,7 +172,7 @@ public class InOrderLinker {
      *
      * @param ignored ignored trigger object
      */
-    public void clear(@NonNull final ClearTrigger ignored) {
+    public void clear(@NonNull final NoInput ignored) {
         parentDescriptorMap.clear();
         parentHashMap.clear();
     }
@@ -299,7 +299,7 @@ public class InOrderLinker {
             return null;
         }
 
-        if (nonAncientEventWindow.isAncient(parentDescriptor)) {
+        if (eventWindow.isAncient(parentDescriptor)) {
             // ancient parents don't need to be linked
             return null;
         }

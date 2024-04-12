@@ -45,6 +45,7 @@ public class StandardWorkGroup {
     private static final String DEFAULT_TASK_NAME = "IDLE";
 
     private final String groupName;
+    private final boolean logExceptionsToStdErr;
     private final ExecutorService executorService;
 
     private final ConcurrentFuturePool<Void> futures;
@@ -56,7 +57,7 @@ public class StandardWorkGroup {
     private final Function<Throwable, Boolean> exceptionListener;
 
     public StandardWorkGroup(final ThreadManager threadManager, final String groupName, final Runnable abortAction) {
-        this(threadManager, groupName, abortAction, null);
+        this(threadManager, groupName, abortAction, null, false);
     }
 
     /**
@@ -83,7 +84,17 @@ public class StandardWorkGroup {
             final String groupName,
             final Runnable abortAction,
             final Function<Throwable, Boolean> exceptionListener) {
+        this(threadManager, groupName, abortAction, exceptionListener, false);
+    }
+
+    public StandardWorkGroup(
+            final ThreadManager threadManager,
+            final String groupName,
+            final Runnable abortAction,
+            final Function<Throwable, Boolean> exceptionListener,
+            final boolean logExceptionsToStdErr) {
         this.groupName = groupName;
+        this.logExceptionsToStdErr = logExceptionsToStdErr;
         this.futures = new ConcurrentFuturePool<>(this::handleError);
 
         this.abortAction = abortAction;
@@ -177,6 +188,10 @@ public class StandardWorkGroup {
             }
             if (!exceptionHandled) {
                 logger.error(EXCEPTION.getMarker(), "Work Group Exception [ groupName = {} ]", groupName, ex);
+                // Log to stderr for testing purposes
+                if (logExceptionsToStdErr) {
+                    ex.printStackTrace(System.err);
+                }
             }
 
             hasExceptions = true;

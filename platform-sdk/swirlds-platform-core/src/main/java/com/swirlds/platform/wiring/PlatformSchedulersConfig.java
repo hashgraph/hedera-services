@@ -39,9 +39,7 @@ import java.time.Duration;
  * @param internalEventValidator                            configuration for the internal event validator scheduler
  * @param eventDeduplicator                                 configuration for the event deduplicator scheduler
  * @param eventSignatureValidator                           configuration for the event signature validator scheduler
- * @param orphanBufferSchedulerType                         the orphan buffer scheduler type
- * @param orphanBufferUnhandledCapacity                     number of unhandled tasks allowed in the orphan buffer
- *                                                          scheduler
+ * @param orphanBuffer                                      configuration for the orphan buffer scheduler
  * @param inOrderLinkerSchedulerType                        the in-order linker scheduler type
  * @param inOrderLinkerUnhandledCapacity                    number of unhandled tasks allowed in the in-order linker
  *                                                          scheduler
@@ -103,8 +101,8 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration eventDeduplicator,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventSignatureValidator,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType orphanBufferSchedulerType,
-        @ConfigProperty(defaultValue = "500") int orphanBufferUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration orphanBuffer,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType inOrderLinkerSchedulerType,
         @ConfigProperty(defaultValue = "500") int inOrderLinkerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusEngineSchedulerType,

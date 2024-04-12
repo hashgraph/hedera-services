@@ -18,6 +18,7 @@ package com.swirlds.demo.stats.signing;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.demo.stats.signing.algorithms.ExtendedSignature;
 import com.swirlds.demo.stats.signing.algorithms.SigningAlgorithm;
@@ -118,12 +119,12 @@ final class SttTransactionPool {
         init();
     }
 
-    void expandSignatures(final Transaction tx) {
+    TransactionSignature expandSignatures(final Transaction tx) {
         if (!TransactionCodec.txIsSigned(tx.getContents())) {
-            return;
+            return null;
         }
 
-        tx.add(TransactionCodec.extractSignature(tx.getContents()));
+        return TransactionCodec.extractSignature(tx.getContents());
     }
 
     /**

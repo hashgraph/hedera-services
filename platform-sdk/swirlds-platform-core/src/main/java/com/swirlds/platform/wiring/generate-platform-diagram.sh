@@ -13,12 +13,12 @@ pcli diagram \
     -l 'eventDurabilityNexus:wait for durability:consensusRoundHandler' \
     -l 'gossip:get events:shadowgraph' \
     -l 'eventCreationManager:get transactions:transactionPool' \
-    -s 'eventWindowManager:non-ancient event window:🌀' \
+    -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
     -s 'applicationTransactionPrehandler:futures:🔮' \
     -s 'eventDurabilityNexus:wait for durability:🕑' \
     -s 'pcesReplayer:done streaming pces:✅' \
-    -s 'orphanBufferSplitter:events to gossip:📬' \
+    -s 'OrphanBufferSplitter:events to gossip:📬' \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'SelfEventSigner:non-validated events:🍎' \
@@ -27,10 +27,10 @@ pcli diagram \
     -s 'issNotificationSplitter:Iss Notification:💥' \
     -s 'toNotification:state written notification:📦' \
     -s 'latestCompleteStateNotifier:complete state notification:💢' \
-    -s 'orphanBufferSplitter:preconsensus signatures:🔰' \
+    -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
-    -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
+    -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
     -g 'Consensus Engine:consensusEngine,consensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
     -g 'State File Manager:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,statusManager_submitStateWritten,toNotification' \
     -g 'State File Management:State File Manager,📦,📀' \
@@ -44,11 +44,11 @@ pcli diagram \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Transaction Prehandling:applicationTransactionPrehandler,🔮' \
-    -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,postHandler_stateReserver' \
+    -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \
     -g 'State Hasher:stateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
     -g 'State Verification:stateSigner,hashLogger,ISS Detector,🖋️,💥' \
-    -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus,savedStateController' \
+    -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
     -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \

@@ -72,7 +72,7 @@ import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
@@ -81,7 +81,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.linking.GossipLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
-import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
@@ -561,7 +560,6 @@ public class SwirldsPlatform implements Platform {
 
         final PcesSequencer sequencer = new DefaultPcesSequencer();
 
-        final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, blocks.intakeEventCounter());
         final InOrderLinker inOrderLinker = new GossipLinker(platformContext, blocks.intakeEventCounter());
 
         final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, currentAddressBook, selfId);
@@ -604,7 +602,6 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.bind(
                 builder,
-                orphanBuffer,
                 inOrderLinker,
                 consensusEngine,
                 signedStateFileManager,
@@ -705,10 +702,10 @@ public class SwirldsPlatform implements Platform {
 
             loadStateIntoConsensus(initialState);
 
-            // We only load non-ancient events during start up, so the initial non-expired event window will be
-            // equal to the non-ancient event window when the system first starts. Over time as we get more events,
-            // the non-expired event window will continue to expand until it reaches its full size.
-            platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
+            // We only load non-ancient events during start up, so the initial expired threshold will be
+            // equal to the ancient threshold when the system first starts. Over time as we get more events,
+            // the expired threshold will continue to expand until it reaches its full size.
+            platformWiring.updateEventWindow(new EventWindow(
                     initialState.getRound(),
                     initialAncientThreshold,
                     initialAncientThreshold,
@@ -840,7 +837,7 @@ public class SwirldsPlatform implements Platform {
                 Objects.requireNonNull(signedState.getState().getPlatformState().getSnapshot()));
 
         // FUTURE WORK: this needs to be updated for birth round compatibility.
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 signedState.getRound(),
                 signedState.getState().getPlatformState().getAncientThreshold(),
                 signedState.getState().getPlatformState().getAncientThreshold(),
@@ -910,7 +907,7 @@ public class SwirldsPlatform implements Platform {
                             signedState.getState().getPlatformState().getPreviousAddressBook(),
                             signedState.getState().getPlatformState().getAddressBook()));
 
-            platformWiring.updateNonAncientEventWindow(new NonAncientEventWindow(
+            platformWiring.updateEventWindow(new EventWindow(
                     signedState.getRound(),
                     signedState.getState().getPlatformState().getAncientThreshold(),
                     signedState.getState().getPlatformState().getAncientThreshold(),

@@ -44,7 +44,6 @@ public class SwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
                 .withValue("logging.handler.file.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.file.level", "trace")
                 .withValue("logging.handler.file.file", logFile)
-                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
 
         return configure(configuration);
@@ -62,7 +61,6 @@ public class SwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
                 .withValue("logging.handler.console.enabled", "true")
                 .withValue("logging.handler.console.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.console.level", "trace")
-                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
 
         return configure(configuration);
@@ -86,7 +84,6 @@ public class SwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSystem> {
                 .withValue("logging.handler.console.enabled", "true")
                 .withValue("logging.handler.console.formatTimestamp", ConfigManagement.formatTimestamp() + "")
                 .withValue("logging.handler.console.level", "trace")
-                .withValue("logging.provider.log4j.enabled", "true")
                 .build();
 
         return configure(configuration);
