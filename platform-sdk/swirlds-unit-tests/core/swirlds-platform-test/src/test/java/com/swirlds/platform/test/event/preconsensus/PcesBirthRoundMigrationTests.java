@@ -31,8 +31,8 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.io.utility.RecycleBinImpl;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -233,7 +233,7 @@ class PcesBirthRoundMigrationTests {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, pcesPath)
                 .getOrCreateConfig();
-        TemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
 
         final FakeTime time = new FakeTime();
 
@@ -328,7 +328,7 @@ class PcesBirthRoundMigrationTests {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, pcesPath)
                 .getOrCreateConfig();
-        TemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(temporaryFilePath);
 
         final FakeTime time = new FakeTime();
 

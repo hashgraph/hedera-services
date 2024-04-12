@@ -28,7 +28,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -134,7 +134,7 @@ public final class PcesBirthRoundMigration {
         logger.info(
                 STARTUP.getMarker(), "Backing up PCES files prior to PCES modification in case of unexpected failure.");
 
-        final Path copyDirectory = TemporaryFileBuilder.buildTemporaryFile("pces-backup");
+        final Path copyDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("pces-backup");
         FileUtils.hardLinkTree(databaseDirectory, copyDirectory);
         fileSystemManager.recycle(copyDirectory);
     }
@@ -221,7 +221,7 @@ public final class PcesBirthRoundMigration {
             throws IOException {
 
         // First, write the data to a temporary file. If we crash, easier to recover if this operation is atomic.
-        final Path temporaryFile = TemporaryFileBuilder.buildTemporaryFile("new-pces-file");
+        final Path temporaryFile = LegacyTemporaryFileBuilder.buildTemporaryFile("new-pces-file");
         final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(
                 new BufferedOutputStream(new FileOutputStream(temporaryFile.toFile())));
         outputStream.writeInt(PcesMutableFile.FILE_VERSION);

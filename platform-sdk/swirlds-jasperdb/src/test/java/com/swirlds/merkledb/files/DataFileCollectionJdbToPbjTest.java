@@ -21,7 +21,7 @@ import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.getVariable
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.LongListHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -91,7 +91,7 @@ public class DataFileCollectionJdbToPbjTest {
     @EnumSource(FilesTestType.class)
     @DisplayName("Write JDB files")
     void writeJdbTest(final FilesTestType testType) throws IOException {
-        final Path dir = TemporaryFileBuilder.buildTemporaryDirectory("writeJdbTest");
+        final Path dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("writeJdbTest");
         final Path testDir = dir.resolve(testType.name());
 
         final int FILES = 5;
@@ -113,7 +113,7 @@ public class DataFileCollectionJdbToPbjTest {
     @EnumSource(FilesTestType.class)
     @DisplayName("Write a mix of JDB and PBJ files")
     void writeMixTest(final FilesTestType testType) throws IOException {
-        final Path dir = TemporaryFileBuilder.buildTemporaryDirectory("writeMixTest");
+        final Path dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("writeMixTest");
         final Path testDir = dir.resolve(testType.name());
 
         final int FILES = 10;
@@ -134,7 +134,7 @@ public class DataFileCollectionJdbToPbjTest {
     @EnumSource(FilesTestType.class)
     @DisplayName("Write JDB files, then write PBJ files")
     void writeJdbWritePbjTest(final FilesTestType testType) throws IOException {
-        final Path dir = TemporaryFileBuilder.buildTemporaryDirectory("writeJdbWritePbjTest");
+        final Path dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("writeJdbWritePbjTest");
         final Path testDir = dir.resolve(testType.name());
 
         final int FILES = 8;
@@ -158,7 +158,7 @@ public class DataFileCollectionJdbToPbjTest {
     @DisplayName("Write a mix of JDB and PBJ files, merge")
     void writeMixMergeTest(final FilesTestType testType, final boolean usePbj)
             throws IOException, InterruptedException {
-        final Path dir = TemporaryFileBuilder.buildTemporaryDirectory("writeMixMergeTest");
+        final Path dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("writeMixMergeTest");
         final Path testDir = dir.resolve(testType.name());
 
         final int FILES = 15;
@@ -186,7 +186,7 @@ public class DataFileCollectionJdbToPbjTest {
     @DisplayName("Write a mix of JDB and PBJ files, merge, write more PBJ files")
     void writeMixMergeWritePbjTest(final FilesTestType testType, final boolean usePbj)
             throws IOException, InterruptedException {
-        final Path dir = TemporaryFileBuilder.buildTemporaryDirectory("writeMixMergeWritePbjTest");
+        final Path dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("writeMixMergeWritePbjTest");
         final Path testDir = dir.resolve(testType.name());
 
         final int FILES = 12;
