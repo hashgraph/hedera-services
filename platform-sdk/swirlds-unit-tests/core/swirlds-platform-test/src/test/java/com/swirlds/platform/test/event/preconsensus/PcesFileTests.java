@@ -19,6 +19,7 @@ package com.swirlds.platform.test.event.preconsensus;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.common.test.fixtures.io.FileManipulation.writeRandomBytes;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFile.EVENT_FILE_SEPARATOR;
@@ -33,9 +34,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.io.utility.RecycleBinImpl;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
+import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -313,9 +318,16 @@ class PcesFileTests {
         final Instant now = Instant.now();
 
         final Path streamDirectory = testDirectory.resolve("data");
-        final NodeId selfId = new NodeId(0);
         final Path recycleDirectory = testDirectory.resolve("recycle");
-        final Path actualRecycleDirectory = recycleDirectory.resolve(selfId.toString());
+
+        TestFileSystemManager fsm = new TestFileSystemManager(testDirectory);
+        fsm.setBin(new RecycleBinImpl(
+                new NoOpMetrics(),
+                getStaticThreadManager(),
+                Time.getCurrent(),
+                recycleDirectory,
+                TestRecycleBin.MAXIMUM_FILE_AGE,
+                TestRecycleBin.MINIMUM_PERIOD));
 
         Files.createDirectories(streamDirectory);
         Files.createDirectories(recycleDirectory);
@@ -358,11 +370,11 @@ class PcesFileTests {
                 }
             }
 
-            file.deleteFile(streamDirectory, null);
+            file.deleteFile(streamDirectory, fsm);
 
             if (random.nextBoolean()) {
                 // Deleting twice shouldn't have any ill effects
-                file.deleteFile(streamDirectory, null);
+                file.deleteFile(streamDirectory, fsm);
             }
 
             deletedFiles.add(file);
@@ -373,8 +385,7 @@ class PcesFileTests {
 
         // All files should have been moved to the recycle directory
         for (final PcesFile file : files) {
-            assertTrue(
-                    Files.exists(actualRecycleDirectory.resolve(file.getPath().getFileName())));
+            assertTrue(Files.exists(recycleDirectory.resolve(file.getPath().getFileName())));
         }
     }
 
