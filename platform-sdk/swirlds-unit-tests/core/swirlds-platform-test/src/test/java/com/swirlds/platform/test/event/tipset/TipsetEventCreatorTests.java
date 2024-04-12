@@ -38,7 +38,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreator;
@@ -1003,7 +1003,7 @@ class TipsetEventCreatorTests {
         final EventCreator eventCreator =
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
-        eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(
+        eventCreator.setEventWindow(new EventWindow(
                 1,
                 100,
                 1 /* ignored in this context */,
@@ -1018,7 +1018,7 @@ class TipsetEventCreatorTests {
     /**
      * Checks that birth round on events is being set if the setting for using birth round is set.
      * <p>
-     * FUTURE WORK: Update this test to use RosterDiff instead of NonAncientEventWindow
+     * FUTURE WORK: Update this test to use RosterDiff instead of EventWindow
      */
     @ParameterizedTest
     @CsvSource({"true, true", "true, false", "false, true", "false, false"})
@@ -1066,7 +1066,7 @@ class TipsetEventCreatorTests {
                     }
 
                     // Set non-ancientEventWindow after creating genesis event from each node.
-                    eventCreator.setNonAncientEventWindow(new NonAncientEventWindow(
+                    eventCreator.setEventWindow(new EventWindow(
                             pendingConsensusRound - 1,
                             ancientThreshold,
                             1 /* ignored in this context */,

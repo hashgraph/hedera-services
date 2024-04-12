@@ -96,8 +96,7 @@ public class GuiEventStorage {
             return;
         }
 
-        linker.setNonAncientThreshold(
-                rounds.getLast().getNonAncientEventWindow().getAncientThreshold());
+        linker.setNonAncientThreshold(rounds.getLast().getEventWindow().getAncientThreshold());
     }
 
     /**

@@ -46,7 +46,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.TransactionConfig_;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
@@ -331,7 +331,7 @@ class PcesWriterTests {
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
 
-            writer.updateNonAncientEventBoundary(new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode));
+            writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
 
             if (event.getAncientIndicator(ancientMode) < lowerBound) {
                 // Although it's not common, it's possible that the generator will generate
@@ -399,7 +399,7 @@ class PcesWriterTests {
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
 
-            writer.updateNonAncientEventBoundary(new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode));
+            writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
 
             if (event.getAncientIndicator(ancientMode) < lowerBound) {
                 // Although it's not common, it's actually possible that the generator will generate
@@ -423,7 +423,7 @@ class PcesWriterTests {
         if (lowerBound > ancientEvent.getAncientIndicator(ancientMode)) {
             // This is probably not possible... but just in case make sure this event is ancient
             try {
-                writer.updateNonAncientEventBoundary(new NonAncientEventWindow(
+                writer.updateNonAncientEventBoundary(new EventWindow(
                         1,
                         ancientEvent.getAncientIndicator(ancientMode) + 1,
                         ancientEvent.getAncientIndicator(ancientMode) + 1,
@@ -522,7 +522,7 @@ class PcesWriterTests {
             passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
-            writer.updateNonAncientEventBoundary(new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode));
+            writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
         }
 
         assertTrue(eventDurabilityNexus.isEventDurable(events.getLast()));
@@ -578,7 +578,7 @@ class PcesWriterTests {
                 passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
 
                 lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
-                writer.updateNonAncientEventBoundary(new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode));
+                writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
 
                 if (event.getAncientIndicator(ancientMode) < lowerBound) {
                     // Although it's not common, it's actually possible that the generator will generate
@@ -618,7 +618,7 @@ class PcesWriterTests {
                 passValueToDurabilityNexus(writer.writeEvent(event), eventDurabilityNexus);
 
                 lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
-                writer.updateNonAncientEventBoundary(new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode));
+                writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
 
                 if (event.getAncientIndicator(ancientMode) < lowerBound) {
                     // Although it's not common, it's actually possible that the generator will generate
@@ -695,7 +695,7 @@ class PcesWriterTests {
             }
 
             lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
-            writer.updateNonAncientEventBoundary(new NonAncientEventWindow(1, lowerBound, lowerBound, ancientMode));
+            writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
 
             // request a flush sometimes
             if (random.nextInt(10) == 0) {

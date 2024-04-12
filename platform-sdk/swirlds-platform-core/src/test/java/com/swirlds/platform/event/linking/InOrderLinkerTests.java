@@ -31,7 +31,7 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
@@ -128,7 +128,7 @@ class InOrderLinkerTests {
      * @param ancientEvents the events that will be considered ancient
      * @return the event window that will cause the given events to be considered ancient
      */
-    private static NonAncientEventWindow chooseEventWindow(
+    private static EventWindow chooseEventWindow(
             @NonNull final AncientMode ancientMode, final GossipEvent... ancientEvents) {
 
         long ancientValue = 0;
@@ -139,7 +139,7 @@ class InOrderLinkerTests {
                 case GENERATION_THRESHOLD -> Math.max(ancientValue, ancientEvent.getGeneration());};
         }
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 ROUND_FIRST /* ignored in this context */,
                 ancientValue + 1, /* one more than the ancient value, so that the events are ancient */
                 ROUND_FIRST /* ignored in this context */,
@@ -161,7 +161,7 @@ class InOrderLinkerTests {
         inOrderLinkerSetup(ancientMode);
 
         // In the following test events are created with increasing generation and birth round numbers.
-        // The linking should fail to occur based on the advancing non-ancient event window.
+        // The linking should fail to occur based on the advancing event window.
         // The values used for birthRound and generation are just for this test and do not reflect real world values.
 
         final GossipEvent child1 = new TestingEventBuilder(random)
@@ -181,9 +181,9 @@ class InOrderLinkerTests {
         time.tick(Duration.ofSeconds(1));
 
         // cause genesisOtherParent to become ancient
-        NonAncientEventWindow eventWindow = chooseEventWindow(ancientMode, genesisOtherParent);
+        EventWindow eventWindow = chooseEventWindow(ancientMode, genesisOtherParent);
         assertFalse(eventWindow.isAncient(child1));
-        inOrderLinker.setNonAncientEventWindow(eventWindow);
+        inOrderLinker.setEventWindow(eventWindow);
 
         final GossipEvent child2 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
@@ -204,7 +204,7 @@ class InOrderLinkerTests {
         // cause child1 to become ancient
         eventWindow = chooseEventWindow(ancientMode, child1);
         assertFalse(eventWindow.isAncient(child2));
-        inOrderLinker.setNonAncientEventWindow(eventWindow);
+        inOrderLinker.setEventWindow(eventWindow);
 
         final GossipEvent child3 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
@@ -223,7 +223,7 @@ class InOrderLinkerTests {
         time.tick(Duration.ofSeconds(1));
         // make both parents ancient.
         eventWindow = chooseEventWindow(ancientMode, child2, child3);
-        inOrderLinker.setNonAncientEventWindow(eventWindow);
+        inOrderLinker.setEventWindow(eventWindow);
 
         final GossipEvent child4 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
@@ -292,7 +292,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
+        inOrderLinker.setEventWindow(new EventWindow(
                 ROUND_FIRST /* not consequential for this test */,
                 3,
                 ROUND_FIRST /* ignored in this context */,

@@ -26,7 +26,6 @@ import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAc
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ReferenceCounter;
@@ -454,15 +453,6 @@ public class SignedState implements SignedStateInfo {
      */
     public @NonNull SwirldState getSwirldState() {
         return state.getSwirldState();
-    }
-
-    /**
-     * Get the hash of the consensus events in this state.
-     *
-     * @return the hash of the consensus events in this state
-     */
-    public @NonNull Hash getHashEventsCons() {
-        return state.getPlatformState().getRunningEventHash();
     }
 
     /**

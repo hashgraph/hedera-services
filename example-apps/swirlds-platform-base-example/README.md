@@ -5,6 +5,7 @@
 A simple enough application that utilizes platform-base modules. This application serves as a testing environment for platform-base module behavior without the need for platform and services layers.
 See [base](../platform-sdk/docs/base/base.md)
 
+
 ## Overview
 
 This project consists of a simple inventory management application that provides a REST API to handle items, inventories, and operations. The application utilizes an Undertow HTTP server to listen to connections on the configured port and limited 3rd party dependencies.

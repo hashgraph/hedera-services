@@ -21,7 +21,7 @@ import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformC
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
@@ -32,7 +32,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
-import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
@@ -65,7 +64,6 @@ import java.util.List;
  *
  * @param eventHasherScheduler                      the scheduler for the event hasher
  * @param postHashCollectorScheduler                the scheduler for the post hash collector
- * @param orphanBufferScheduler                     the scheduler for the orphan buffer
  * @param inOrderLinkerScheduler                    the scheduler for the in-order linker
  * @param consensusEngineScheduler                  the scheduler for the consensus engine
  * @param eventCreationManagerScheduler             the scheduler for the event creation manager
@@ -89,7 +87,6 @@ import java.util.List;
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
         @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
-        @NonNull TaskScheduler<List<GossipEvent>> orphanBufferScheduler,
         @NonNull TaskScheduler<EventImpl> inOrderLinkerScheduler,
         @NonNull TaskScheduler<List<ConsensusRound>> consensusEngineScheduler,
         @NonNull TaskScheduler<BaseEventHashedData> eventCreationManagerScheduler,
@@ -104,7 +101,7 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
-        @NonNull TaskScheduler<RunningEventHashUpdate> runningHashUpdateScheduler,
+        @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> hashLoggerScheduler,
@@ -143,14 +140,6 @@ public record PlatformSchedulers(
                         .withExternalBackPressure(true)
                         .withUnhandledTaskMetricEnabled(true)
                         .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("orphanBuffer")
-                        .withType(config.orphanBufferSchedulerType())
-                        .withUnhandledTaskCapacity(config.orphanBufferUnhandledCapacity())
-                        .withFlushingEnabled(true)
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(OrphanBuffer.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("inOrderLinker")
@@ -260,7 +249,7 @@ public record PlatformSchedulers(
                         .withHyperlink(platformCommonHyperlink(EventStreamManager.class))
                         .build()
                         .cast(),
-                model.schedulerBuilder("runningHashUpdate")
+                model.schedulerBuilder("RunningEventHashOverride")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                         .build()
                         .cast(),
