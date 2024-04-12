@@ -39,7 +39,7 @@ pcli diagram \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
     -g 'Consensus Event Stream:eventStreamManager,runningHashUpdate' \
     -g 'Event Creation:eventCreationManager,transactionPool,SelfEventSigner,🍎' \
-    -g 'Gossip:gossip,shadowgraph,inOrderLinker' \
+    -g 'Gossip:gossip,shadowgraph,InOrderLinker' \
     -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,statusManager_submitCatastrophicFailure' \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \

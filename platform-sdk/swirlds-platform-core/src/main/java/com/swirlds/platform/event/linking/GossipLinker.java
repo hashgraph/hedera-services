@@ -27,7 +27,7 @@ import java.util.Objects;
  * <p>
  * This implementation updates the intake event counter when an ancient event is discarded by the linker.
  */
-public class GossipLinker extends InOrderLinker {
+public class GossipLinker extends AbstractInOrderLinker {
 
     private final IntakeEventCounter counter;
 
