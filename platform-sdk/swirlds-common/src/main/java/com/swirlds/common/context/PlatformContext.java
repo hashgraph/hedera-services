@@ -22,7 +22,6 @@ import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Public interface of the platform context that provides access to all basic services and resources. By using the
@@ -71,6 +70,6 @@ public interface PlatformContext {
      *
      * @return the {@link FileSystemManager} for this node
      */
-    @Nullable
+    @NonNull
     FileSystemManager getFileSystemManager();
 }
