@@ -26,6 +26,10 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
+import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
+import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
@@ -67,6 +71,8 @@ public class PlatformComponentBuilder {
     private EventSignatureValidator eventSignatureValidator;
     private SelfEventSigner selfEventSigner;
     private StateGarbageCollector stateGarbageCollector;
+    private OrphanBuffer orphanBuffer;
+    private RunningEventHasher runningEventHasher;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -331,5 +337,70 @@ public class PlatformComponentBuilder {
             selfEventSigner = new DefaultSelfEventSigner(blocks.keysAndCerts());
         }
         return selfEventSigner;
+    }
+
+    /**
+     * Build the orphan buffer if it has not yet been built. If one has been provided via
+     * {@link #withOrphanBuffer(OrphanBuffer)}, that orphan buffer will be used. If this method is called more than
+     * once, only the first call will build the orphan buffer. Otherwise, the default orphan buffer will be created and
+     * returned.
+     *
+     * @return the orphan buffer
+     */
+    @NonNull
+    public OrphanBuffer buildOrphanBuffer() {
+        if (orphanBuffer == null) {
+            orphanBuffer = new DefaultOrphanBuffer(blocks.platformContext(), blocks.intakeEventCounter());
+        }
+        return orphanBuffer;
+    }
+
+    /**
+     * Provide an orphan buffer in place of the platform's default orphan buffer.
+     *
+     * @param orphanBuffer the orphan buffer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withOrphanBuffer(@NonNull final OrphanBuffer orphanBuffer) {
+        throwIfAlreadyUsed();
+        if (this.orphanBuffer != null) {
+            throw new IllegalStateException("Orphan buffer has already been set");
+        }
+        this.orphanBuffer = Objects.requireNonNull(orphanBuffer);
+
+        return this;
+    }
+
+    /**
+     * Provide a running event hasher in place of the platform's default running event hasher.
+     *
+     * @param runningEventHasher the running event hasher to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withRunningEventHasher(@NonNull final RunningEventHasher runningEventHasher) {
+        throwIfAlreadyUsed();
+        if (this.runningEventHasher != null) {
+            throw new IllegalStateException("Running event hasher has already been set");
+        }
+        this.runningEventHasher = Objects.requireNonNull(runningEventHasher);
+        return this;
+    }
+
+    /**
+     * Build the running event hasher if it has not yet been built. If one has been provided via
+     * {@link #withRunningEventHasher(RunningEventHasher)}, that hasher will be used. If this method is called more than
+     * once, only the first call will build the running event hasher. Otherwise, the default hasher will be created and
+     * returned.
+     *
+     * @return the running event hasher
+     */
+    @NonNull
+    public RunningEventHasher buildRunningEventHasher() {
+        if (runningEventHasher == null) {
+            runningEventHasher = new DefaultRunningEventHasher();
+        }
+        return runningEventHasher;
     }
 }

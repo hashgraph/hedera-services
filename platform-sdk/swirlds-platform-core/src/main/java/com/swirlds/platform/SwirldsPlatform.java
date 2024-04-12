@@ -46,7 +46,7 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.scratchpad.Scratchpad;
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
@@ -81,7 +81,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.linking.GossipLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
-import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
@@ -561,7 +560,6 @@ public class SwirldsPlatform implements Platform {
 
         final PcesSequencer sequencer = new DefaultPcesSequencer();
 
-        final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, blocks.intakeEventCounter());
         final InOrderLinker inOrderLinker = new GossipLinker(platformContext, blocks.intakeEventCounter());
 
         final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, currentAddressBook, selfId);
@@ -604,7 +602,6 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.bind(
                 builder,
-                orphanBuffer,
                 inOrderLinker,
                 consensusEngine,
                 signedStateFileManager,
@@ -631,6 +628,17 @@ public class SwirldsPlatform implements Platform {
                 signedStateHasher,
                 appNotifier,
                 publisher);
+
+        final Hash runningEventHash = initialState.getState().getPlatformState().getRunningEventHash() == null
+                ? platformContext.getCryptography().getNullHash()
+                : initialState.getState().getPlatformState().getRunningEventHash();
+        final Hash legacyRunningEventHash =
+                initialState.getState().getPlatformState().getLegacyRunningEventHash() == null
+                        ? platformContext.getCryptography().getNullHash()
+                        : initialState.getState().getPlatformState().getLegacyRunningEventHash();
+        final RunningEventHashOverride runningEventHashOverride =
+                new RunningEventHashOverride(legacyRunningEventHash, runningEventHash, false);
+        platformWiring.updateRunningHash(runningEventHashOverride);
 
         // Load the minimum generation into the pre-consensus event writer
         final List<SavedStateInfo> savedStates =
@@ -700,8 +708,6 @@ public class SwirldsPlatform implements Platform {
                     .put(initialState.reserve("loading initial state into sig collector"));
 
             savedStateController.registerSignedStateFromDisk(initialState);
-
-            platformWiring.updateRunningHash(new RunningEventHashUpdate(initialState.getHashEventsCons(), false));
 
             loadStateIntoConsensus(initialState);
 
@@ -916,7 +922,11 @@ public class SwirldsPlatform implements Platform {
                     signedState.getState().getPlatformState().getAncientThreshold(),
                     ancientMode));
 
-            platformWiring.updateRunningHash(new RunningEventHashUpdate(signedState.getHashEventsCons(), true));
+            final RunningEventHashOverride runningEventHashOverride = new RunningEventHashOverride(
+                    signedState.getState().getPlatformState().getLegacyRunningEventHash(),
+                    signedState.getState().getPlatformState().getRunningEventHash(),
+                    true);
+            platformWiring.updateRunningHash(runningEventHashOverride);
             platformWiring.getPcesWriterRegisterDiscontinuityInput().inject(signedState.getRound());
 
             // Notify any listeners that the reconnect has been completed
