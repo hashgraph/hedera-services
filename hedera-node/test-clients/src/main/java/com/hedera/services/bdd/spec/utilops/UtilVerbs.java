@@ -121,6 +121,8 @@ import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForBehindOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForFreezeOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForReconnectOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForShutdownOp;
+import com.hedera.services.bdd.spec.utilops.mod.Modification;
+import com.hedera.services.bdd.spec.utilops.mod.SubmitModificationsOp;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
@@ -262,6 +264,12 @@ public class UtilVerbs {
     public static EnvFilterOp ifNotCi(@NonNull final HapiSpecOperation... ops) {
         requireNonNull(ops);
         return new EnvFilterOp(EnvFilterOp.EnvType.NOT_CI, ops);
+    }
+
+    public static SubmitModificationsOp submitModified(
+            @NonNull final Function<Transaction, List<Modification>> modificationsFn,
+            @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier) {
+        return new SubmitModificationsOp(txnOpSupplier, modificationsFn);
     }
 
     public static SourcedOp sourcing(Supplier<HapiSpecOperation> source) {
