@@ -51,7 +51,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.mod.ModUtils.withSuccessivelyClearedAccountIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModUtils.withSuccessivelyVariedIds;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -168,11 +168,14 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec missingAccountIdsFailAsExpected() {
-        return defaultHapiSpec("missingAccountIdsFailAsExpected")
-                .given(cryptoCreate(TOKEN_TREASURY), tokenCreate("a").treasury(TOKEN_TREASURY))
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate("a").treasury(TOKEN_TREASURY),
+                        tokenCreate("b").treasury(TOKEN_TREASURY))
                 .when()
-                .then(submitModified(withSuccessivelyClearedAccountIds(), () -> tokenAssociate(DEFAULT_PAYER, "a")));
+                .then(submitModified(withSuccessivelyVariedIds(), () -> tokenAssociate(DEFAULT_PAYER, "a", "b")));
     }
 
     @HapiTest

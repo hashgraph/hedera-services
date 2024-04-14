@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.mod;
 
+import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -32,8 +33,16 @@ public record ExpectedResponse(
         return new ExpectedResponse(EnumSet.of(status), null);
     }
 
+    public static ExpectedResponse atIngestOneOf(@NonNull final ResponseCodeEnum... statuses) {
+        return new ExpectedResponse(EnumSet.copyOf(asList(statuses)), null);
+    }
+
     public static ExpectedResponse atConsensus(@NonNull final ResponseCodeEnum status) {
         return new ExpectedResponse(null, EnumSet.of(status));
+    }
+
+    public static ExpectedResponse atConsensusOneOf(@NonNull final ResponseCodeEnum... statuses) {
+        return new ExpectedResponse(null, EnumSet.copyOf(asList(statuses)));
     }
 
     public void customize(@NonNull final HapiTxnOp<?> op) {
