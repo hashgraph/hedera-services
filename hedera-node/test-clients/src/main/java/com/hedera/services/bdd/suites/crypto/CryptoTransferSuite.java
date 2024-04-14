@@ -86,10 +86,12 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
+import static com.hedera.services.bdd.spec.utilops.mod.ModUtils.withSuccessivelyVariedIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
@@ -290,6 +292,28 @@ public class CryptoTransferSuite extends HapiSuite {
                 .when(cryptoTransfer(moving(1L, tokenId).between(operator, accountId1)))
                 .then(cryptoTransfer(moving(1L, tokenId).between(accountId1, accountId2))
                         .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate("a").maxAutomaticTokenAssociations(2),
+                        cryptoCreate("b").maxAutomaticTokenAssociations(2),
+                        tokenCreate("fungible").initialSupply(1_234_567),
+                        tokenCreate("nonfungible")
+                                .supplyKey("supplyKey")
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L),
+                        mintToken("nonfungible", List.of(ByteString.copyFromUtf8("memo"))))
+                .when()
+                .then(submitModified(
+                        withSuccessivelyVariedIds(),
+                        () -> cryptoTransfer(
+                                movingHbar(2 * ONE_HBAR).distributing(DEFAULT_PAYER, "a", "b"),
+                                moving(100L, "fungible").between(DEFAULT_PAYER, "a"),
+                                movingUnique("nonfungible", 1L).between(DEFAULT_PAYER, "b"))));
     }
 
     @HapiTest
