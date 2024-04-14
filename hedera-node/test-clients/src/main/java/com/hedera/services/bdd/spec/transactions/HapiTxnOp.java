@@ -55,6 +55,7 @@ import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.stats.TxnObs;
+import com.hedera.services.bdd.spec.utilops.mod.BodyModification;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -66,6 +67,7 @@ import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.grpc.StatusRuntimeException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -819,6 +821,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T sansNodeAccount() {
         omitNodeAccount = true;
+        return self();
+    }
+
+    public T withBodyMod(@Nullable final BodyModification modification) {
+        this.modification = modification;
         return self();
     }
 
