@@ -33,6 +33,7 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.ScheduledTxnFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -47,7 +48,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -110,11 +110,11 @@ public class ScheduleVirtualValueTest {
     @Test
     void serializeWithByteBufferWorks() throws Exception {
         checkSerialize(() -> {
-            final var buffer = ByteBuffer.allocate(100000);
+            final var buffer = BufferedData.allocate(100000);
             subject.serialize(buffer);
-            buffer.rewind();
-            var copy = new ScheduleVirtualValue();
-            copy.deserialize(buffer, ScheduleVirtualValue.CURRENT_VERSION);
+            buffer.reset();
+            var serializer = new ScheduleVirtualValueSerializer();
+            var copy = serializer.deserialize(buffer);
 
             assertEqualSchedules(subject, copy);
 
@@ -125,12 +125,13 @@ public class ScheduleVirtualValueTest {
     @Test
     void serializeWithMixedWorksBytesFirst() throws Exception {
         checkSerialize(() -> {
-            final var buffer = ByteBuffer.allocate(100000);
+            final var arr = new byte[100000];
+            final var buffer = BufferedData.wrap(arr);
             subject.serialize(buffer);
 
             var copy = new ScheduleVirtualValue();
             copy.deserialize(
-                    new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+                    new SerializableDataInputStream(new ByteArrayInputStream(arr)),
                     ScheduleVirtualValue.CURRENT_VERSION);
 
             assertEqualSchedules(subject, copy);
@@ -146,9 +147,9 @@ public class ScheduleVirtualValueTest {
             final var out = new SerializableDataOutputStream(byteArr);
             subject.serialize(out);
 
-            final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+            final var buffer = BufferedData.wrap(byteArr.toByteArray());
             var copy = new ScheduleVirtualValue();
-            copy.deserialize(buffer, ScheduleVirtualValue.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEqualSchedules(subject, copy);
 

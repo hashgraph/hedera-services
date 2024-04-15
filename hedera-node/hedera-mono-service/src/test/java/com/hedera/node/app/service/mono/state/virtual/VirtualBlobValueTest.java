@@ -25,10 +25,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -85,35 +85,35 @@ class VirtualBlobValueTest {
 
     @Test
     void serializeWithByteBufferWorks() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocate(10);
-        final ByteBuffer inOrder = ByteBuffer.allocate(10);
+        final BufferedData buffer = BufferedData.allocate(10);
+        final BufferedData inOrder = BufferedData.allocate(10);
 
         subject.serialize(buffer);
-        buffer.rewind();
+        buffer.reset();
 
-        inOrder.putInt(data.length);
-        inOrder.put(data);
-        inOrder.rewind();
+        inOrder.writeInt(data.length);
+        inOrder.writeBytes(data);
+        inOrder.reset();
 
         assertEquals(buffer, inOrder);
     }
 
     @Test
     void deserializeWithByteBufferWorks() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocate(10);
+        final BufferedData buffer = BufferedData.allocate(10);
         final var defaultSubject = new VirtualBlobValue();
 
-        final ByteBuffer inOrder = ByteBuffer.allocate(10);
+        final BufferedData inOrder = BufferedData.allocate(10);
 
         subject.serialize(buffer);
-        buffer.rewind();
+        buffer.reset();
 
-        inOrder.putInt(data.length);
-        inOrder.put(data);
+        inOrder.writeInt(data.length);
+        inOrder.writeBytes(data);
         inOrder.limit(inOrder.position());
-        inOrder.rewind();
+        inOrder.reset();
 
-        defaultSubject.deserialize(buffer, VirtualBlobValue.CURRENT_VERSION);
+        defaultSubject.deserialize(buffer);
 
         assertEquals(subject, defaultSubject);
     }

@@ -20,7 +20,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class UniqueTokenValueSerializer implements ValueSerializer<UniqueTokenValue> {
@@ -77,14 +76,6 @@ public class UniqueTokenValueSerializer implements ValueSerializer<UniqueTokenVa
         value.serialize(out);
     }
 
-    @Override
-    @Deprecated
-    public void serialize(final UniqueTokenValue value, final ByteBuffer out) {
-        Objects.requireNonNull(value);
-        Objects.requireNonNull(out);
-        value.serialize(out);
-    }
-
     // Value deserialization
 
     @Override
@@ -92,15 +83,6 @@ public class UniqueTokenValueSerializer implements ValueSerializer<UniqueTokenVa
         Objects.requireNonNull(in);
         final UniqueTokenValue value = new UniqueTokenValue();
         value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public UniqueTokenValue deserialize(final ByteBuffer buffer, final long version) {
-        Objects.requireNonNull(buffer);
-        final UniqueTokenValue value = new UniqueTokenValue();
-        value.deserialize(buffer, (int) version);
         return value;
     }
 }
