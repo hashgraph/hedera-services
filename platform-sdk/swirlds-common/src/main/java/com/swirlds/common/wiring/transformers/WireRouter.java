@@ -31,7 +31,7 @@ import java.util.List;
 /**
  * Create a wire router. A wire router takes a single input and splits data into multiple outputs with different
  * addresses. When data is sent to a router, the address is also sent. The router then sends the data to the output wire
- * at hte specified address.
+ * at the specified address.
  *
  * @param <ROUTER_TYPE> an enum that describes the addresses where data can be routed. Each enum value corresponds to a
  *                      different address where data can be routed.

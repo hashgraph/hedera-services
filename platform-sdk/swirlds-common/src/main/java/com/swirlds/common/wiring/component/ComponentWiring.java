@@ -351,9 +351,9 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
     }
 
     /**
-     * Get an output wire that will receive a specific type of routed data. Data routing is when a component has
-     * multiple outputs, and different things want to receive a subset of that output. Each output is described by a
-     * routing address, which are implemented by enum values.
+     * Get an output wire that will emit a specific type of routed data. Data routing is when a component has multiple
+     * outputs, and different things want to receive a subset of that output. Each output is described by a routing
+     * address, which are implemented by enum values.
      * <p>
      * This method should only be used for components which have an output type of
      * {@link com.swirlds.common.wiring.transformers.RoutableData RoutableData}. Calling this method more than once with
@@ -428,8 +428,8 @@ public class ComponentWiring<COMPONENT_TYPE, OUTPUT_TYPE> {
     }
 
     /**
-     * Get the router for this component if one has been built. Build and return a new router if one has not been
-     * built.
+     * Get the router for split data for this component if one has been built. Build and return a new splitter and
+     * router if one has not been built.
      *
      * @param routerType    the type of the router
      * @param <ROUTER_TYPE> the type of the router
