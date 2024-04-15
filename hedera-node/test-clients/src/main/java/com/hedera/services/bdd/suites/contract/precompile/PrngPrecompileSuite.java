@@ -52,7 +52,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = false)
+@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 public class PrngPrecompileSuite extends HapiSuite {
 
