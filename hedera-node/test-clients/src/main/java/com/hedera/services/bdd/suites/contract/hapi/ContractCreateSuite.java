@@ -58,7 +58,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -673,6 +675,20 @@ public class ContractCreateSuite extends HapiSuite {
                             getAccountInfo(contractControlled).has(accountWith().key(contractIdKey));
                     allRunFor(spec, keyCheck);
                 }));
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        final var autoRenewAccount = "autoRenewAccount";
+        final var creationNumber = new AtomicLong();
+        final var contract = "CreateTrivial";
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(uploadInitCode(contract), cryptoCreate(autoRenewAccount).balance(ONE_HUNDRED_HBARS))
+                .when()
+                .then(submitModified(
+                        withSuccessivelyVariedIds(), () -> contractCreate("contract" + creationNumber.getAndIncrement())
+                                .bytecode(contract)
+                                .autoRenewAccountId(autoRenewAccount)));
     }
 
     @HapiTest
