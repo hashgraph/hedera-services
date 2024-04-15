@@ -77,3 +77,16 @@ Content-Type: application/json
 {
   "value": 7.2
 }
+
+### POST request to add tasks to base executor
+POST http://{{server}}:{{port}}/executor/call
+Content-Type: application/json
+
+{
+  "count": 10,
+  "durationInMs": 150,
+  "fail": false
+}
+
+### POST request to add tasks to base executor
+POST http://{{server}}:{{port}}/executor/reset

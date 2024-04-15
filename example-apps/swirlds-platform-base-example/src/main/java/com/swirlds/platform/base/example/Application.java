@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.base.example;
 
+import com.swirlds.platform.base.example.executorsample.BaseExecutorHandlerFactory;
 import com.swirlds.platform.base.example.ext.BaseContextFactory;
 import com.swirlds.platform.base.example.metricsample.MetricsSampleHandlerFactory;
 import com.swirlds.platform.base.example.server.Server;
@@ -35,7 +36,8 @@ public class Application {
         StoreSampleHandlerFactory storeSampleHandlerFactory = new StoreSampleHandlerFactory();
 
         MetricsSampleHandlerFactory metricsSampleHandlerFactory = new MetricsSampleHandlerFactory();
-
-        Server.start(baseContext, Set.of(storeSampleHandlerFactory, metricsSampleHandlerFactory));
+        BaseExecutorHandlerFactory baseExecutorHandlerFactory = new BaseExecutorHandlerFactory();
+        Server.start(baseContext,
+                Set.of(storeSampleHandlerFactory, metricsSampleHandlerFactory, baseExecutorHandlerFactory));
     }
 }

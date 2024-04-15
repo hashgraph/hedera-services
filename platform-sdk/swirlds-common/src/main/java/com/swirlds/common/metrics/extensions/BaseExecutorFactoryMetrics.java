@@ -16,18 +16,19 @@
 
 package com.swirlds.common.metrics.extensions;
 
-import static com.swirlds.base.units.UnitConstants.MICROSECOND_UNIT;
+import static com.swirlds.base.units.UnitConstants.MILLISECOND_UNIT;
 
 import com.swirlds.base.internal.BaseExecutorFactory;
 import com.swirlds.base.internal.observe.BaseExecutorObserver;
 import com.swirlds.base.internal.observe.BaseTaskDefinition;
 import com.swirlds.metrics.api.Counter;
-import com.swirlds.metrics.api.DoubleAccumulator;
-import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.DoubleGauge;
+import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -35,46 +36,85 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class BaseExecutorFactoryMetrics {
 
+    public static final String BASE_EXECUTOR = "base_executor";
+
+    private final static BaseExecutorFactoryMetrics INSTANCE = new BaseExecutorFactoryMetrics();
+
+    private TaskExecutionTimeMetric taskExecutionTimeMetric;
+
+    private TaskExecutionTimeMetric taskDoneExecutionTimeMetric;
+
+    private TaskExecutionTimeMetric taskFailExecutionTimeMetric;
+
+    private Counter taskCountAccumulator;
+
+    private Counter taskExecutionCountAccumulator;
+
+    private Counter tasksDoneCountAccumulator;
+
+    private Counter tasksFailedCountAccumulator;
+
+    private boolean installed = false;
+
+    private BaseExecutorFactoryMetrics() {
+    }
+
+    public synchronized void reset() {
+        Optional.ofNullable(taskExecutionTimeMetric).ifPresent(TaskExecutionTimeMetric::reset);
+        Optional.ofNullable(taskDoneExecutionTimeMetric).ifPresent(TaskExecutionTimeMetric::reset);
+        Optional.ofNullable(taskFailExecutionTimeMetric).ifPresent(TaskExecutionTimeMetric::reset);
+        Optional.ofNullable(taskCountAccumulator).ifPresent(Counter::reset);
+        Optional.ofNullable(taskExecutionCountAccumulator).ifPresent(Counter::reset);
+        Optional.ofNullable(tasksDoneCountAccumulator).ifPresent(Counter::reset);
+        Optional.ofNullable(tasksFailedCountAccumulator).ifPresent(Counter::reset);
+    }
+
     /**
      * Installs metrics for the {@link BaseExecutorFactory}.
      *
      * @param metrics the metrics system
      */
-    public static void installForBaseExecutor(@NonNull Metrics metrics) {
+    public synchronized void installForBaseExecutor(@NonNull Metrics metrics) {
         Objects.requireNonNull(metrics, "metrics must not be null");
 
+        if (installed) {
+            return;
+        } else {
+            installed = true;
+        }
+
         final Counter.Config taskCountAccumulatorConfig = new Counter.Config(
-                        "base_executor", "base_executor_task_count")
+                BASE_EXECUTOR, "count")
                 .withUnit("tasks")
                 .withDescription("The number of tasks submitted to the base executor");
-        final Counter taskCountAccumulator = metrics.getOrCreate(taskCountAccumulatorConfig);
+        taskCountAccumulator = metrics.getOrCreate(taskCountAccumulatorConfig);
 
         final Counter.Config taskExecutionCountAccumulatorConfig = new Counter.Config(
-                        "base_executor", "base_executor_task_execution_count")
+                BASE_EXECUTOR, "execution_count")
                 .withUnit("tasks")
                 .withDescription("The number of tasks executed by the base executor");
-        final Counter taskExecutionCountAccumulator = metrics.getOrCreate(taskExecutionCountAccumulatorConfig);
+        taskExecutionCountAccumulator = metrics.getOrCreate(taskExecutionCountAccumulatorConfig);
 
         final Counter.Config tasksDoneCountAccumulatorConfig = new Counter.Config(
-                        "base_executor", "base_executor_tasks_done_count")
+                BASE_EXECUTOR, "done_count")
                 .withUnit("tasks")
                 .withDescription("The number of tasks executed successfully by the base executor");
-        final Counter tasksDoneCountAccumulator = metrics.getOrCreate(tasksDoneCountAccumulatorConfig);
+        tasksDoneCountAccumulator = metrics.getOrCreate(tasksDoneCountAccumulatorConfig);
 
         final Counter.Config tasksFailedCountAccumulatorConfig = new Counter.Config(
-                        "base_executor", "base_executor_tasks_failed_count")
+                BASE_EXECUTOR, "failed_count")
                 .withUnit("tasks")
                 .withDescription("The number of tasks failed to execute by the base executor");
-        final Counter tasksFailedCountAccumulator = metrics.getOrCreate(tasksFailedCountAccumulatorConfig);
+        tasksFailedCountAccumulator = metrics.getOrCreate(tasksFailedCountAccumulatorConfig);
 
-        final TaskExecutionTimeMetric taskExecutionTimeMetric =
-                new TaskExecutionTimeMetric("base_executor_task_execution_time", metrics);
+        taskExecutionTimeMetric =
+                new TaskExecutionTimeMetric(BASE_EXECUTOR, "task_execution", metrics);
 
-        final TaskExecutionTimeMetric taskDoneExecutionTimeMetric =
-                new TaskExecutionTimeMetric("base_executor_task_done_execution_time", metrics);
+        taskDoneExecutionTimeMetric =
+                new TaskExecutionTimeMetric(BASE_EXECUTOR, "task_done_execution", metrics);
 
-        final TaskExecutionTimeMetric taskFailExecutionTimeMetric =
-                new TaskExecutionTimeMetric("base_executor_task_Fail_execution_time", metrics);
+        taskFailExecutionTimeMetric =
+                new TaskExecutionTimeMetric(BASE_EXECUTOR, "task_failed_execution", metrics);
 
         final BaseExecutorObserver observer = new BaseExecutorObserver() {
 
@@ -110,67 +150,66 @@ public class BaseExecutorFactoryMetrics {
      */
     private static class TaskExecutionTimeMetric {
 
-        private final Counter countMetric;
+        private final AtomicLong callCount;
 
-        private final LongAccumulator maxMillisMetric;
+        private final LongGauge maxMillisMetric;
 
-        private final LongAccumulator minMillisMetric;
+        private final LongGauge minMillisMetric;
 
-        private final DoubleAccumulator averageMillisMetric;
+        private final DoubleGauge averageMillisMetric;
 
-        public TaskExecutionTimeMetric(final String name, @NonNull Metrics metrics) {
-            final Counter.Config countConfig = new Counter.Config("base_executor", name + "_count")
-                    .withDescription("The number of update calls to the time metric")
-                    .withUnit("calls");
-            countMetric = metrics.getOrCreate(countConfig);
+        public TaskExecutionTimeMetric(final String category, final String name, @NonNull Metrics metrics) {
+            callCount = new AtomicLong(0);
 
-            final LongAccumulator.Config maxMillisConfig = new LongAccumulator.Config(
-                            "base_executor", name + "_max_millis")
+            final LongGauge.Config maxMillisConfig = new LongGauge.Config(
+                    BASE_EXECUTOR, name + "_max")
                     .withDescription("The maximum time in milliseconds that a task took to execute")
-                    .withUnit(MICROSECOND_UNIT)
-                    .withAccumulator((a, b) -> Math.max(a, b))
+                    .withUnit(MILLISECOND_UNIT)
                     .withInitialValue(0L);
             maxMillisMetric = metrics.getOrCreate(maxMillisConfig);
 
-            final LongAccumulator.Config minMillisConfig = new LongAccumulator.Config(
-                            "base_executor", name + "_min_millis")
+            final LongGauge.Config minMillisConfig = new LongGauge.Config(
+                    BASE_EXECUTOR, name + "_min")
                     .withDescription("The minimum time in milliseconds that a task took to execute")
-                    .withUnit(MICROSECOND_UNIT)
-                    .withAccumulator((a, b) -> Math.min(a, b))
+                    .withUnit(MILLISECOND_UNIT)
                     .withInitialValue(0L);
             minMillisMetric = metrics.getOrCreate(minMillisConfig);
 
-            final AtomicLong count = new AtomicLong(0);
-            final DoubleAccumulator.Config averageMillisConfig = new DoubleAccumulator.Config(
-                            "base_executor", name + "_avg_millis")
+            final DoubleGauge.Config averageMillisConfig = new DoubleGauge.Config(
+                    BASE_EXECUTOR, name + "_avg")
                     .withDescription("The average time in milliseconds that a task took to execute")
-                    .withUnit(MICROSECOND_UNIT)
-                    .withAccumulator((a, b) -> {
-                        final long prefCount = count.getAndIncrement();
-                        if (a == Double.NaN) {
-                            return b;
-                        }
-                        if (b == Double.NaN) {
-                            return a;
-                        }
-                        try {
-                            return ((a * prefCount) + b) / (prefCount + 1);
-                        } catch (Exception e) {
-                            return Double.NaN;
-                        }
-                    })
+                    .withUnit(MILLISECOND_UNIT)
                     .withInitialValue(Double.NaN);
             averageMillisMetric = metrics.getOrCreate(averageMillisConfig);
         }
 
-        public void update(@NonNull Duration duration) {
-            Objects.requireNonNull(duration, "duration must not be null");
-            countMetric.increment();
-
-            final long millis = duration.toMillis();
-            maxMillisMetric.update(millis);
-            minMillisMetric.update(millis);
-            averageMillisMetric.update(millis);
+        public void reset() {
+            callCount.set(0);
+            maxMillisMetric.set(0L);
+            minMillisMetric.set(0L);
+            averageMillisMetric.set(Double.NaN);
         }
+
+        public void update(final @NonNull Duration duration) {
+            Objects.requireNonNull(duration, "duration must not be null");
+            final long prefCount = callCount.getAndIncrement();
+            final long millis = duration.toMillis();
+            maxMillisMetric.set(Math.max(maxMillisMetric.get(), millis));
+            minMillisMetric.set(Math.min(minMillisMetric.get(), millis));
+            if (Double.isNaN(averageMillisMetric.get())) {
+                averageMillisMetric.set(duration.toMillis());
+            }
+            try {
+                final double newAvg =
+                        ((averageMillisMetric.get() * prefCount) + duration.toMillis()) / callCount.get();
+                averageMillisMetric.set(newAvg);
+            } catch (Exception e) {
+                averageMillisMetric.set(Double.NaN);
+            }
+        }
+    }
+
+    public static BaseExecutorFactoryMetrics getInstance() {
+        return INSTANCE;
     }
 }
