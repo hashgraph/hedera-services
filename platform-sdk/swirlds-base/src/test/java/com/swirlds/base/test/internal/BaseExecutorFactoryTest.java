@@ -20,15 +20,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.swirlds.base.internal.BaseExecutorFactory;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
+@Timeout(15)
 public class BaseExecutorFactoryTest {
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testSubmitRunnable() {
         // given
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
@@ -43,6 +48,7 @@ public class BaseExecutorFactoryTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testSubmitCallable() {
         // given
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
@@ -60,6 +66,7 @@ public class BaseExecutorFactoryTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testSchedule() {
         // given
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
@@ -75,6 +82,7 @@ public class BaseExecutorFactoryTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testScheduleAtFixedRate() {
         // given
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
@@ -91,6 +99,7 @@ public class BaseExecutorFactoryTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testMultipleTasks() {
         // given
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
