@@ -157,7 +157,7 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
         requires("java.logging")
     }
-    module("com.google.guava:failureaccess", "com.google.guava.failureaccess")
+    module("com.google.guava:failureaccess", "com.google.common.util.concurrent.internal")
     module("com.google.api.grpc:proto-google-common-protos", "com.google.api.grpc.common")
     module("com.google.dagger:dagger", "dagger")
     module("io.perfmark:perfmark-api", "io.perfmark")
