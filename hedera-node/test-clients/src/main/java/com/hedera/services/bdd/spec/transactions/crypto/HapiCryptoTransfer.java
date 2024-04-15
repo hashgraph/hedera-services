@@ -124,6 +124,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     private boolean fullyAggregateTokenTransfers = true;
     private static boolean transferToKey = false;
 
+    private Optional<Pair<String[], Long>> appendedPartitionFromTo = Optional.empty();
+
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.CryptoTransfer;
@@ -216,6 +218,12 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
     public HapiCryptoTransfer(final TokenMovement... sources) {
         this.tokenAwareProviders = List.of(sources);
+    }
+
+    public HapiCryptoTransfer(
+            final String account, final String fromPartitionToken, final String toPartitionToken, final long amount) {
+        appendedPartitionFromTo =
+                Optional.of(Pair.of(new String[] {account, fromPartitionToken, toPartitionToken}, amount));
     }
 
     public HapiCryptoTransfer dontFullyAggregateTokenTransfers() {
@@ -488,6 +496,24 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                     .addTransfers(
                             AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount));
             b.addTokenTransfers(appendList);
+        }
+        if (appendedPartitionFromTo.isPresent()) {
+            final var extra = appendedPartitionFromTo.get();
+            final var involved = extra.getLeft();
+            final var account = TxnUtils.asId(involved[0], spec);
+            final var fromPartitionToken = TxnUtils.asTokenId(involved[1], spec);
+            final var toPartitionToken = TxnUtils.asTokenId(involved[2], spec);
+            final var amount = extra.getRight();
+            final var reduceUnits = TokenTransferList.newBuilder()
+                    .setToken(fromPartitionToken)
+                    .addTransfers(
+                            AccountAmount.newBuilder().setAccountID(account).setAmount(-amount));
+            b.addTokenTransfers(reduceUnits);
+            final var appendUnits = TokenTransferList.newBuilder()
+                    .setToken(toPartitionToken)
+                    .addTransfers(
+                            AccountAmount.newBuilder().setAccountID(account).setAmount(+amount));
+            b.addTokenTransfers(appendUnits);
         }
         if (breakNetZeroTokenChangeInvariant && b.getTokenTransfersCount() > 0) {
             for (int i = 0, n = b.getTokenTransfersCount(); i < n; i++) {
