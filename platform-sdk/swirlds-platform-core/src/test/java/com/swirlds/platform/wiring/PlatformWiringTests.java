@@ -85,11 +85,11 @@ class PlatformWiringTests {
                 .withOrphanBuffer(mock(OrphanBuffer.class))
                 .withRunningEventHasher(mock(RunningEventHasher.class))
                 .withEventCreationManager(mock(EventCreationManager.class))
+                .withInOrderLinker(mock(InOrderLinker.class))
                 .withConsensusEventStream(mock(ConsensusEventStream.class));
 
         wiring.bind(
                 componentBuilder,
-                mock(InOrderLinker.class),
                 mock(ConsensusEngine.class),
                 mock(SignedStateFileManager.class),
                 mock(StateSigner.class),

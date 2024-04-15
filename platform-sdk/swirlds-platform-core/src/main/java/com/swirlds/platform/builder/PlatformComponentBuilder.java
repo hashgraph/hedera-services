@@ -36,6 +36,8 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.linking.GossipLinker;
+import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
@@ -88,6 +90,7 @@ public class PlatformComponentBuilder {
     private OrphanBuffer orphanBuffer;
     private RunningEventHasher runningEventHasher;
     private EventCreationManager eventCreationManager;
+    private InOrderLinker inOrderLinker;
     private ConsensusEventStream consensusEventStream;
 
     /**
@@ -467,6 +470,39 @@ public class PlatformComponentBuilder {
                     new DefaultEventCreationManager(blocks.platformContext(), eventCreator, eventCreationRules);
         }
         return eventCreationManager;
+    }
+
+    /**
+     * Provide an in-order linker in place of the platform's default in-order linker.
+     *
+     * @param inOrderLinker the in-order linker to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withInOrderLinker(@NonNull final InOrderLinker inOrderLinker) {
+        throwIfAlreadyUsed();
+        if (this.inOrderLinker != null) {
+            throw new IllegalStateException("In-order linker has already been set");
+        }
+        this.inOrderLinker = Objects.requireNonNull(inOrderLinker);
+
+        return this;
+    }
+
+    /**
+     * Build the in-order linker if it has not yet been built. If one has been provided via
+     * {@link #withInOrderLinker(InOrderLinker)}, that in-order linker will be used. If this method is called more than
+     * once, only the first call will build the in-order linker. Otherwise, the default in-order linker will be created
+     * and returned.
+     *
+     * @return the in-order linker
+     */
+    @NonNull
+    public InOrderLinker buildInOrderLinker() {
+        if (inOrderLinker == null) {
+            inOrderLinker = new GossipLinker(blocks.platformContext(), blocks.intakeEventCounter());
+        }
+        return inOrderLinker;
     }
 
     /**
