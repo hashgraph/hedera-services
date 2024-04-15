@@ -140,4 +140,4 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration platformPublisher,
-        @ConfigProperty(defaultValue = "NO_OP") TaskSchedulerConfiguration consensusEventStream) {}
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration consensusEventStream) {}
