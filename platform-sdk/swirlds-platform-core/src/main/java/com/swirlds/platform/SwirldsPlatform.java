@@ -22,7 +22,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
-import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
 import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.migratePcesToBirthRoundMode;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateForBirthRoundMigration;
@@ -78,9 +77,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.creation.EventCreationManager;
-import com.swirlds.platform.event.linking.GossipLinker;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
@@ -219,8 +215,6 @@ public class SwirldsPlatform implements Platform {
      */
     private final SignedStateNexus latestImmutableStateNexus = new LockFreeStateNexus();
 
-    private final TransactionPool transactionPool;
-
     /**
      * Handles all interaction with {@link SwirldState}
      */
@@ -355,6 +349,7 @@ public class SwirldsPlatform implements Platform {
                 platformContext, preconsensusEventConsumer != null, snapshotOverrideConsumer != null));
 
         final Consumer<PlatformStatus> statusChangeConsumer = s -> {
+            blocks.currentPlatformStatus().set(s);
             platformWiring
                     .getNotifierWiring()
                     .getInputWire(AppNotifier::sendPlatformStatusChangeNotification)
@@ -473,7 +468,6 @@ public class SwirldsPlatform implements Platform {
                 selfId,
                 swirldName);
 
-        transactionPool = new TransactionPool(platformContext);
         final LatestCompleteStateNexus latestCompleteStateNexus =
                 new DefaultLatestCompleteStateNexus(stateConfig, platformContext.getMetrics());
 
@@ -560,26 +554,13 @@ public class SwirldsPlatform implements Platform {
 
         final PcesSequencer sequencer = new DefaultPcesSequencer();
 
-        final InOrderLinker inOrderLinker = new GossipLinker(platformContext, blocks.intakeEventCounter());
-
         final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, currentAddressBook, selfId);
 
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
+        blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
 
-        final EventCreationManager eventCreationManager = buildEventCreationManager(
-                platformContext,
-                blocks.randomBuilder().buildNonCryptographicRandom(),
-                this,
-                currentAddressBook,
-                selfId,
-                appVersion,
-                transactionPool,
-                intakeQueueSizeSupplier,
-                platformStatusManager::getCurrentStatus,
-                latestReconnectRound::get);
-
-        platformWiring.wireExternalComponents(platformStatusManager, transactionPool);
+        platformWiring.wireExternalComponents(platformStatusManager, blocks.transactionPool());
 
         final IssHandler issHandler =
                 new IssHandler(stateConfig, this::haltRequested, SystemExitUtils::handleFatalError, issScratchpad);
@@ -602,7 +583,6 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.bind(
                 builder,
-                inOrderLinker,
                 consensusEngine,
                 signedStateFileManager,
                 stateSigner,
@@ -611,7 +591,6 @@ public class SwirldsPlatform implements Platform {
                 eventDurabilityNexus,
                 shadowGraph,
                 sequencer,
-                eventCreationManager,
                 stateSignatureCollector,
                 transactionPrehandler,
                 eventWindowManager,
@@ -650,6 +629,7 @@ public class SwirldsPlatform implements Platform {
             platformWiring.getPcesMinimumGenerationToStoreInput().inject(minimumGenerationNonAncientForOldestState);
         }
 
+        final TransactionPool transactionPool = blocks.transactionPool();
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
                 transactionConfig,

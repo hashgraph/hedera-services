@@ -109,8 +109,8 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.readableAccountStore()).willReturn(readableAccountStore);
-        given(readableAccountStore.getAccountById(SENDER_ID)).willReturn(OWNER_ACCOUNT);
-        given(readableAccountStore.getAccountById(B_NEW_ACCOUNT_ID)).willReturn(ALIASED_RECEIVER);
+        given(readableAccountStore.getAliasedAccountById(SENDER_ID)).willReturn(OWNER_ACCOUNT);
+        given(readableAccountStore.getAliasedAccountById(B_NEW_ACCOUNT_ID)).willReturn(ALIASED_RECEIVER);
 
         subject = subjectForTransfer(1L);
 
@@ -130,8 +130,8 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
                         eq(ContractCallRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(nativeOperations.readableAccountStore()).willReturn(readableAccountStore);
-        given(readableAccountStore.getAccountById(A_NEW_ACCOUNT_ID)).willReturn(OWNER_ACCOUNT);
-        given(readableAccountStore.getAccountById(B_NEW_ACCOUNT_ID)).willReturn(ALIASED_RECEIVER);
+        given(readableAccountStore.getAliasedAccountById(A_NEW_ACCOUNT_ID)).willReturn(OWNER_ACCOUNT);
+        given(readableAccountStore.getAliasedAccountById(B_NEW_ACCOUNT_ID)).willReturn(ALIASED_RECEIVER);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
 
         subject = subjectForTransferFrom(1L);

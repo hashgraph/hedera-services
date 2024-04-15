@@ -31,13 +31,25 @@ public interface ReadableAccountStore {
 
     /**
      * Fetches an {@link Account} object from state with the given {@link AccountID}. If the account could not be
-     * fetched because the given account doesn't exist, returns {@code null}.
+     * fetched because the given account doesn't exist, returns {@code null}. It doesn't look up in alias state
+     * to find the account.
+     *
+     * @param accountID given account id
+     * @return {@link Account} object if successfully fetched or {@code null} if the account doesn't exist
+     */
+    @Nullable
+    Account getAccountById(@NonNull final AccountID accountID);
+
+    /**
+     * Fetches an {@link Account} object from state with the given {@link AccountID}. If the account could not be
+     * fetched because the given account doesn't exist, returns {@code null}. It looks up in alias state
+     * to find the account.
      *
      * @param accountID given account id or alias
      * @return {@link Account} object if successfully fetched or {@code null} if the account doesn't exist
      */
     @Nullable
-    Account getAccountById(@NonNull final AccountID accountID);
+    Account getAliasedAccountById(@NonNull final AccountID accountID);
 
     /**
      * Fetches an {@link Account} object from state with the given alias. If the account could not be
@@ -93,7 +105,7 @@ public interface ReadableAccountStore {
             builder.accountNum(contractID.contractNumOrElse(0L));
         }
 
-        final var account = getAccountById(builder.build());
+        final var account = getAliasedAccountById(builder.build());
         return account == null || !account.smartContract() ? null : account;
     }
 
