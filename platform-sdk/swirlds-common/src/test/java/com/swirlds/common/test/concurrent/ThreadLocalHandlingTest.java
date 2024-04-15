@@ -18,6 +18,7 @@ package com.swirlds.common.test.concurrent;
 
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.concurrent.internal.DefaultExecutorFactory;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Fail;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -49,6 +51,7 @@ public class ThreadLocalHandlingTest {
 
     @ParameterizedTest
     @CsvSource({"100,1", "1,1", "100,10", "100,100"})
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testExecutorService(final int taskCount, final int threadCount) {
         // given
         final List<String> errors = new ArrayList<>();
@@ -72,6 +75,7 @@ public class ThreadLocalHandlingTest {
 
     @ParameterizedTest
     @CsvSource({"100,1", "1,1", "100,10", "100,100"})
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testScheduledExecutorService(final int taskCount, final int threadCount) {
         // given
         final List<String> errors = new ArrayList<>();
@@ -102,6 +106,7 @@ public class ThreadLocalHandlingTest {
 
     @ParameterizedTest
     @CsvSource({"100,1", "1,1", "100,10", "100,100"})
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testForkJoinPool(final int taskCount, final int threadCount) {
         // given
         final List<String> errors = new ArrayList<>();
@@ -124,6 +129,7 @@ public class ThreadLocalHandlingTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testThread() {
         // given
         final List<String> errors = new ArrayList<>();

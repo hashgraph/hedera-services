@@ -17,6 +17,7 @@
 package com.swirlds.common.test.concurrent;
 
 import com.swirlds.common.concurrent.internal.DefaultForkJoinWorkerThreadFactory;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class DefaultForkJoinWorkerThreadFactoryTest {
@@ -115,6 +117,7 @@ public class DefaultForkJoinWorkerThreadFactoryTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testCorrectInternalThreadConfiguration() {
         // given
         final AtomicReference<String> threadNameHolder = new AtomicReference<>();
@@ -144,6 +147,7 @@ public class DefaultForkJoinWorkerThreadFactoryTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testStartupCall() {
         // given
         final AtomicBoolean startupCallHolder = new AtomicBoolean(false);
@@ -168,6 +172,7 @@ public class DefaultForkJoinWorkerThreadFactoryTest {
     }
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testStartupCalledOnlyOnce() {
         // given
         final AtomicInteger startupCallHolder = new AtomicInteger(0);

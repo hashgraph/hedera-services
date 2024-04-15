@@ -19,6 +19,7 @@ package com.swirlds.common.test.concurrent;
 import com.swirlds.base.context.Context;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.concurrent.internal.DefaultExecutorFactory;
+import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.Loggers;
 import com.swirlds.logging.test.fixtures.LoggingMirror;
@@ -28,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @WithLoggingMirror
@@ -36,6 +38,7 @@ public class ExecutorFactoryTest {
     private static final Logger log = Loggers.getLogger(ExecutorFactoryTest.class);
 
     @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
     void test(LoggingMirror mirror) {
         // given
         final String platformId = "platform-123";
