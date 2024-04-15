@@ -21,7 +21,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public class EntityNumValue implements VirtualValue {
 
@@ -58,19 +57,6 @@ public class EntityNumValue implements VirtualValue {
         final var immutableNum = copy();
         immutableNum.isImmutable = true;
         return immutableNum;
-    }
-
-    @Deprecated
-    void serialize(final ByteBuffer byteBuffer) {
-        byteBuffer.putLong(num);
-    }
-
-    @Deprecated
-    void deserialize(ByteBuffer byteBuffer, int version) {
-        if (isImmutable) {
-            throw new MutabilityException(CANNOT_DESERIALIZE_INTO_AN_IMMUTABLE_ENTITY_NUM_VALUE);
-        }
-        num = byteBuffer.getLong();
     }
 
     @Override

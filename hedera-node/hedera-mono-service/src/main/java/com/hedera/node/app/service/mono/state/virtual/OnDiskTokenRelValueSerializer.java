@@ -21,7 +21,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class OnDiskTokenRelValueSerializer implements ValueSerializer<OnDiskTokenRel> {
@@ -72,14 +71,6 @@ public class OnDiskTokenRelValueSerializer implements ValueSerializer<OnDiskToke
         value.serialize(out);
     }
 
-    @Override
-    @Deprecated
-    public void serialize(final OnDiskTokenRel value, final ByteBuffer out) {
-        Objects.requireNonNull(value);
-        Objects.requireNonNull(out);
-        value.serialize(out);
-    }
-
     // Value deserialization
 
     @Override
@@ -87,15 +78,6 @@ public class OnDiskTokenRelValueSerializer implements ValueSerializer<OnDiskToke
         Objects.requireNonNull(in);
         final OnDiskTokenRel value = new OnDiskTokenRel();
         value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public OnDiskTokenRel deserialize(final ByteBuffer buffer, final long version) {
-        Objects.requireNonNull(buffer);
-        final OnDiskTokenRel value = new OnDiskTokenRel();
-        value.deserialize(buffer, (int) version);
         return value;
     }
 }

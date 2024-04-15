@@ -20,9 +20,6 @@ import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
-import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -34,7 +31,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 /**
@@ -108,50 +104,15 @@ public class MonoMapCodecAdapter {
             public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
                     throws ParseException {
                 try {
-                    if (input instanceof ReadableStreamingData in) {
-                        final var item = factory.get();
-                        final var buffer = new byte[input.readInt()];
-                        input.readBytes(buffer);
-                        final var bais = new ByteArrayInputStream(buffer);
-                        item.deserialize(new SerializableDataInputStream(bais), version);
-                        return item;
-                    } else if (input instanceof BufferedData dataBuffer) {
-                        // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
-                        final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
-                        dataBuffer.readBytes(byteBuffer);
-                        // TODO: Remove the following line once this was fixed in BufferedData
-                        dataBuffer.skip(dataBuffer.remaining());
-                        byteBuffer.rewind();
-                        return keySerializer.deserialize(byteBuffer, version);
-                    } else {
-                        throw new IllegalArgumentException("Unsupported DataInput type: "
-                                + input.getClass().getName());
-                    }
-                } catch (final IOException e) {
+                    return keySerializer.deserialize(input);
+                } catch (final Exception e) {
                     throw new ParseException(e);
                 }
             }
 
             @Override
-            public void write(final @NonNull T item, final @NonNull WritableSequentialData output) throws IOException {
-                if (output instanceof WritableStreamingData out) {
-                    final var baos = new ByteArrayOutputStream();
-                    try (final var outStream = new SerializableDataOutputStream(baos)) {
-                        item.serialize(outStream);
-                        outStream.flush();
-                    }
-                    out.writeInt(baos.toByteArray().length);
-                    out.writeBytes(baos.toByteArray());
-                } else if (output instanceof BufferedData dataBuffer) {
-                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
-                    final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
-                    keySerializer.serialize(item, byteBuffer);
-                    byteBuffer.rewind();
-                    dataBuffer.writeBytes(byteBuffer);
-                } else {
-                    throw new IllegalArgumentException(
-                            "Unsupported DataOutput type: " + output.getClass().getName());
-                }
+            public void write(final @NonNull T item, final @NonNull WritableSequentialData output) {
+                keySerializer.serialize(item, output);
             }
 
             @Override
@@ -179,50 +140,15 @@ public class MonoMapCodecAdapter {
             public T parse(final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
                     throws ParseException {
                 try {
-                    if (input instanceof ReadableStreamingData in) {
-                        final var item = factory.get();
-                        final var buffer = new byte[input.readInt()];
-                        input.readBytes(buffer);
-                        final var bais = new ByteArrayInputStream(buffer);
-                        item.deserialize(new SerializableDataInputStream(bais), version);
-                        return item;
-                    } else if (input instanceof BufferedData dataBuffer) {
-                        // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
-                        final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
-                        dataBuffer.readBytes(byteBuffer);
-                        // TODO: Remove the following line once this was fixed in BufferedData
-                        dataBuffer.skip(dataBuffer.remaining());
-                        byteBuffer.rewind();
-                        return valueSerializer.deserialize(byteBuffer, version);
-                    } else {
-                        throw new IllegalArgumentException("Unsupported DataInput type: "
-                                + input.getClass().getName());
-                    }
-                } catch (final IOException e) {
+                    return valueSerializer.deserialize(input);
+                } catch (final Exception e) {
                     throw new ParseException(e);
                 }
             }
 
             @Override
-            public void write(final @NonNull T item, final @NonNull WritableSequentialData output) throws IOException {
-                if (output instanceof WritableStreamingData out) {
-                    final var baos = new ByteArrayOutputStream();
-                    try (final var outStream = new SerializableDataOutputStream(baos)) {
-                        item.serialize(outStream);
-                        outStream.flush();
-                    }
-                    out.writeInt(baos.toByteArray().length);
-                    out.writeBytes(baos.toByteArray());
-                } else if (output instanceof BufferedData dataBuffer) {
-                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
-                    final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
-                    valueSerializer.serialize(item, byteBuffer);
-                    byteBuffer.rewind();
-                    dataBuffer.writeBytes(byteBuffer);
-                } else {
-                    throw new IllegalArgumentException(
-                            "Unsupported DataOutput type: " + output.getClass().getName());
-                }
+            public void write(final @NonNull T item, final @NonNull WritableSequentialData output) {
+                valueSerializer.serialize(item, output);
             }
 
             @Override

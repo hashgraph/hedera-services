@@ -12,13 +12,15 @@ pcli diagram \
     -l 'applicationTransactionPrehandler:futures:consensusRoundHandler' \
     -l 'eventDurabilityNexus:wait for durability:consensusRoundHandler' \
     -l 'gossip:get events:shadowgraph' \
-    -l 'eventCreationManager:get transactions:transactionPool' \
+    -l 'EventCreationManager:get transactions:transactionPool' \
+    -l 'RunningEventHasher:future hash:consensusRoundHandler' \
+    -l 'eventStreamManager:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
     -s 'applicationTransactionPrehandler:futures:🔮' \
     -s 'eventDurabilityNexus:wait for durability:🕑' \
     -s 'pcesReplayer:done streaming pces:✅' \
-    -s 'orphanBufferSplitter:events to gossip:📬' \
+    -s 'OrphanBufferSplitter:events to gossip:📬' \
     -s 'getKeystoneEventSequenceNumber:flush request:🚽' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'SelfEventSigner:non-validated events:🍎' \
@@ -27,19 +29,19 @@ pcli diagram \
     -s 'issNotificationSplitter:Iss Notification:💥' \
     -s 'toNotification:state written notification:📦' \
     -s 'latestCompleteStateNotifier:complete state notification:💢' \
-    -s 'orphanBufferSplitter:preconsensus signatures:🔰' \
+    -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
+    -s 'RunningEventHashOverride:hash override:💨' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Event Hashing:eventHasher,postHashCollector' \
-    -g 'Orphan Buffer:orphanBuffer,orphanBufferSplitter' \
-    -g 'Consensus Engine:consensusEngine,consensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
+    -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
+    -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
     -g 'State File Manager:saveToDiskFilter,signedStateFileManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,statusManager_submitStateWritten,toNotification' \
     -g 'State File Management:State File Manager,📦,📀' \
     -g 'State Signature Collector:stateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:pcesSequencer,pcesWriter,eventDurabilityNexus,🕑' \
-    -g 'Consensus Event Stream:eventStreamManager,runningHashUpdate' \
-    -g 'Event Creation:eventCreationManager,transactionPool,SelfEventSigner,🍎' \
-    -g 'Gossip:gossip,shadowgraph,inOrderLinker' \
+    -g 'Event Creation:EventCreationManager,transactionPool,SelfEventSigner,🍎' \
+    -g 'Gossip:gossip,shadowgraph,InOrderLinker' \
     -g 'ISS Detector:issDetector,issNotificationSplitter,issHandler,statusManager_submitCatastrophicFailure' \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
@@ -49,7 +51,6 @@ pcli diagram \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
     -g 'State Verification:stateSigner,hashLogger,ISS Detector,🖋️,💥' \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
-    -c 'Consensus Event Stream' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \
