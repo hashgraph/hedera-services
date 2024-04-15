@@ -288,10 +288,10 @@ public class PrngPrecompileSuite extends HapiSuite {
                 .given(
                         uploadInitCode(THE_PRNG_CONTRACT),
                         contractCreate(THE_PRNG_CONTRACT).balance(ONE_HBAR))
-                .when(sourcing(() -> contractCall(THE_PRNG_CONTRACT, GET_SEED_PAYABLE)
+                .when(contractCall(THE_PRNG_CONTRACT, GET_SEED_PAYABLE)
                         .gas(GAS_TO_OFFER)
                         .via(TX)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(getTxnRecord(TX)
                         .andAllChildRecords()
                         .hasChildRecordCount(1)
