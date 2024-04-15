@@ -16,6 +16,8 @@
 
 package com.hedera.test.utils;
 
+import static com.hedera.hapi.node.base.AccountID.AccountOneOfType.ACCOUNT_NUM;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
@@ -38,6 +40,12 @@ public class TestFixturesKeyLookup implements ReadableAccountStore {
     @Nullable
     @Override
     public Account getAccountById(@NonNull AccountID accountID) {
+        return accountID.account().kind() == ACCOUNT_NUM ? accounts.get(accountID) : null;
+    }
+
+    @Nullable
+    @Override
+    public Account getAliasedAccountById(@NonNull final AccountID accountID) {
         final var alias = accountID.alias();
         if (alias != null && alias.length() > 0) {
             final var num = aliases.get(new ProtoBytes(alias));

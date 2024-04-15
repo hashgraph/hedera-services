@@ -78,7 +78,7 @@ public class TransferContextImpl implements TransferContext {
 
     @Override
     public AccountID getFromAlias(final AccountID aliasedId) {
-        final var account = accountStore.get(aliasedId);
+        final var account = accountStore.getAliasedAccountById(aliasedId);
 
         if (account != null) {
             final var id = account.accountId();
@@ -168,7 +168,9 @@ public class TransferContextImpl implements TransferContext {
         for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
             if (aa.isApproval() && aa.amount() < 0L) {
                 maybeValidateHbarAllowance(
-                        accountStore.get(aa.accountIDOrElse(AccountID.DEFAULT)), topLevelPayer, aa.amount());
+                        accountStore.getAliasedAccountById(aa.accountIDOrElse(AccountID.DEFAULT)),
+                        topLevelPayer,
+                        aa.amount());
             }
         }
     }
