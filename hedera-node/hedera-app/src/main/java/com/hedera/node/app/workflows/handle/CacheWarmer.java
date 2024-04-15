@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -59,13 +60,23 @@ public class CacheWarmer {
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final ConfigProvider configProvider) {
+        this(
+                checker,
+                dispatcher,
+                new ForkJoinPool(configProvider
+                        .getConfiguration()
+                        .getConfigData(CacheConfig.class)
+                        .cryptoTransferWarmThreads()));
+    }
+
+    @VisibleForTesting
+    CacheWarmer(
+            @NonNull final TransactionChecker checker,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final Executor executor) {
         this.checker = checker;
         this.dispatcher = requireNonNull(dispatcher);
-        final int parallelism = configProvider
-                .getConfiguration()
-                .getConfigData(CacheConfig.class)
-                .cryptoTransferWarmThreads();
-        this.executor = new ForkJoinPool(parallelism);
+        this.executor = requireNonNull(executor);
     }
 
     /**
