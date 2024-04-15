@@ -1228,7 +1228,7 @@ public class LeakyCryptoTestsSuite extends SidecarAwareHapiSuite {
                                                         .build())));
                             }));
                 }))
-                .then(tearDownSidecarWatcher(), assertContainsAllExpectedContractActions());
+                .then(tearDownSidecarWatcher(), assertNoMismatchedSidecars());
     }
 
     @HapiTest

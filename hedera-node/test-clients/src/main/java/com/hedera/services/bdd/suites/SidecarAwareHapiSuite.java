@@ -32,7 +32,6 @@ import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.matchers.TransactionSidecarRecordMatcher;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
-import com.hedera.services.bdd.spec.verification.traceability.MismatchedSidecar;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActions;
@@ -299,38 +298,6 @@ public abstract class SidecarAwareHapiSuite extends HapiSuite {
                                 .setRuntimeBytecode(runtimeCode)
                                 .build())
                         .build()));
-    }
-
-    /**
-     * Asserts all expected sidecars for contract actions have been externalized.
-     * @return {@link CustomSpecAssert} with the assertions.
-     */
-    protected static CustomSpecAssert assertContainsAllExpectedContractActions() {
-        return assertionsHold((spec, assertLog) -> {
-            assertTrue(
-                    sidecarWatcher.containsAllExpectedSidecarRecords(MismatchedSidecar::hasActions),
-                    sidecarWatcher.getMismatchErrors(MismatchedSidecar::hasActions));
-            assertTrue(
-                    sidecarWatcher.thereAreNoPendingSidecars(),
-                    "There are some contract actions that have not been yet externalized"
-                            + " in the sidecar files after all specs: " + sidecarWatcher.getPendingErrors());
-        });
-    }
-
-    /**
-     * Asserts all expected sidecars for contract state changes have been externalized.
-     * @return {@link CustomSpecAssert} with the assertions.
-     */
-    protected static CustomSpecAssert assertContainsAllExpectedStateChanges() {
-        return assertionsHold((spec, assertLog) -> {
-            assertTrue(
-                    sidecarWatcher.containsAllExpectedSidecarRecords(MismatchedSidecar::hasStateChanges),
-                    sidecarWatcher.getMismatchErrors(MismatchedSidecar::hasStateChanges));
-            assertTrue(
-                    sidecarWatcher.thereAreNoPendingSidecars(),
-                    "There are some contract state changes that have not been yet externalized"
-                            + " in the sidecar files after all specs: " + sidecarWatcher.getPendingErrors());
-        });
     }
 
     /**
