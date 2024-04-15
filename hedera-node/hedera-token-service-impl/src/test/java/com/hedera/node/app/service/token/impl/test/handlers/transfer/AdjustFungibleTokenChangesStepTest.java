@@ -65,8 +65,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         final var replacedOp = getReplacedOp();
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, payerId);
 
-        final var senderAccountBefore = writableAccountStore.get(ownerId);
-        final var receiverAccountBefore = writableAccountStore.get(receiver);
+        final var senderAccountBefore = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountBefore = writableAccountStore.getAliasedAccountById(receiver);
         final var senderRelBefore = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelBefore = writableTokenRelStore.get(receiver, fungibleTokenId);
         writableTokenRelStore.put(receiverRelBefore
@@ -83,8 +83,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         adjustFungibleTokenChangesStep.doIn(transferContext);
 
         // see numPositiveBalances and numOwnedNfts change
-        final var senderAccountAfter = writableAccountStore.get(ownerId);
-        final var receiverAccountAfter = writableAccountStore.get(receiver);
+        final var senderAccountAfter = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountAfter = writableAccountStore.getAliasedAccountById(receiver);
         final var senderRelAfter = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelAfter = writableTokenRelStore.get(receiver, fungibleTokenId);
 
@@ -110,8 +110,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         // payer is spender for allowances
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, spenderId);
 
-        final var senderAccountBefore = writableAccountStore.get(ownerId);
-        final var receiverAccountBefore = writableAccountStore.get(receiver);
+        final var senderAccountBefore = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountBefore = writableAccountStore.getAliasedAccountById(receiver);
         final var senderRelBefore = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelBefore = writableTokenRelStore.get(receiver, fungibleTokenId);
         writableTokenRelStore.put(receiverRelBefore
@@ -130,8 +130,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         adjustFungibleTokenChangesStep.doIn(transferContext);
 
         // see numPositiveBalances and numOwnedNfts change
-        final var senderAccountAfter = writableAccountStore.get(ownerId);
-        final var receiverAccountAfter = writableAccountStore.get(receiver);
+        final var senderAccountAfter = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountAfter = writableAccountStore.getAliasedAccountById(receiver);
         final var senderRelAfter = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelAfter = writableTokenRelStore.get(receiver, fungibleTokenId);
 

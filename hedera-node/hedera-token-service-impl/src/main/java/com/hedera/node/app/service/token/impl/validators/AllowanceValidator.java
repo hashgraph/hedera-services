@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.AccountIDType.NOT_ALIASED_ID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -139,7 +140,12 @@ public class AllowanceValidator {
         } else {
             // If owner is in modifications get the modified account from state
             return TokenHandlerHelper.getIfUsable(
-                    owner, accountStore, expiryValidator, INVALID_ALLOWANCE_OWNER_ID, INVALID_ALLOWANCE_OWNER_ID);
+                    owner,
+                    accountStore,
+                    expiryValidator,
+                    INVALID_ALLOWANCE_OWNER_ID,
+                    INVALID_ALLOWANCE_OWNER_ID,
+                    NOT_ALIASED_ID);
         }
     }
 }
