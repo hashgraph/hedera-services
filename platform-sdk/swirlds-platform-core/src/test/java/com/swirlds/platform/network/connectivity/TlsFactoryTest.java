@@ -45,9 +45,14 @@ class TlsFactoryTest extends ConnectivityTestBase {
     private static ServerSocket serverSocket;
     private static Thread serverThread;
     private static AddressBook updatedAddressBook;
-    private final AtomicBoolean closeSeverConnection = new AtomicBoolean(false);
     private static NodeId nodeA;
+    private final AtomicBoolean closeSeverConnection = new AtomicBoolean(false);
 
+    /**
+     * Set up the test by creating the address book, keys and certs, and the socket factories for nodes A and B. The
+     * base case is that the client socket of a node B can connect to the server socket of another node A. Subsequent
+     * tests verify the different behaviours of a third node C
+     */
     @BeforeEach
     void setUp() throws Throwable {
         // create addressBook, keysAndCerts
@@ -68,7 +73,6 @@ class TlsFactoryTest extends ConnectivityTestBase {
 
         // test that B can talk to A - A(serverSocket) -> B(clientSocket1)
         serverSocket = socketFactoryA.createServerSocket(PORT);
-        serverSocket.setSoTimeout(10000);
         serverThread = createSocketThread(serverSocket, TEST_DATA, closeSeverConnection);
 
         clientSocketB = socketFactoryB.createClientSocket(STRING_IP, PORT);
