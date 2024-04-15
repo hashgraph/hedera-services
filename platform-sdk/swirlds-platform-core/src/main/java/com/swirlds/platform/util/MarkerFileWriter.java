@@ -26,7 +26,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,11 +43,6 @@ public class MarkerFileWriter {
     private static final Logger logger = LogManager.getLogger(MarkerFileWriter.class);
 
     /**
-     * Flag to indicate if we still need to log an info message about the marker file directory not being set.
-     */
-    private static final AtomicBoolean logMarkerFileDirectoryNotSet = new AtomicBoolean(true);
-
-    /**
      * Rate limited logger for failure to write marker files.
      */
     private final RateLimitedLogger failedToWriteMarkerFileLogger;
@@ -55,6 +51,8 @@ public class MarkerFileWriter {
      * The directory where the marker files are written.  If null, no marker files are written.
      */
     private final Path markerFileDirectory;
+
+    private final Map<String, Void> markerFilesWrittern = new ConcurrentHashMap<>();
 
     /**
      * Creates a new {@link MarkerFileWriter} with the given {@link PlatformContext}.  If the marker file writer is
@@ -79,7 +77,6 @@ public class MarkerFileWriter {
                     Files.createDirectories(markerFileDirectoryPath);
                     directory = markerFileDirectoryPath;
                 } catch (final IOException e) {
-                    directory = null;
                     logger.error(
                             LogMarker.EXCEPTION.getMarker(),
                             "Failed to create marker file directory: {}",
@@ -103,17 +100,16 @@ public class MarkerFileWriter {
             // Configuration did not set a marker file directory.  No need to write marker file.
             return;
         }
-        final Path markerFile = markerFileDirectory.resolve(filename);
-        if (Files.exists(markerFile)) {
-            // No need to create file when it already exists.
-            return;
-        }
-        try {
-            Files.createFile(markerFile);
-        } catch (final IOException e) {
-            failedToWriteMarkerFileLogger.error(
-                    LogMarker.EXCEPTION.getMarker(), "Failed to create marker file: {}", markerFile, e);
-        }
+        markerFilesWrittern.computeIfAbsent(filename, key -> {
+            final Path markerFile = markerFileDirectory.resolve(filename);
+            try {
+                Files.createFile(markerFile);
+            } catch (final IOException e) {
+                failedToWriteMarkerFileLogger.error(
+                        LogMarker.EXCEPTION.getMarker(), "Failed to create marker file: {}", markerFile, e);
+            }
+            return null;
+        });
     }
 
     /**

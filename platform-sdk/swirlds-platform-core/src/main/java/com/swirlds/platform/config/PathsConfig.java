@@ -27,13 +27,13 @@ import java.nio.file.Path;
 /**
  * Configurations related to paths.
  *
- * @param settingsUsedDir the directory where the settings used file will be created on startup if and only if
- *                        settings.txt exists
- * @param keysDirPath     path to data/keys/
- * @param appsDirPath     path to data/apps/
- * @param logPath         path to log4j2.xml (which might not exist)
- * @param markerFilesDir  path to the directory where marker files are written.  Set the value to `none` to turn off
- *                        writing marker files.
+ * @param settingsUsedDir          the directory where the settings used file will be created on startup if and only if
+ *                                 settings.txt exists
+ * @param keysDirPath              path to data/keys/
+ * @param appsDirPath              path to data/apps/
+ * @param logPath                  path to log4j2.xml (which might not exist)
+ * @param markerFilesDir           path to the directory where marker files are written.
+ * @param writePlatformMarkerFiles whether to write marker files or not
  */
 @ConfigData("paths")
 public record PathsConfig(

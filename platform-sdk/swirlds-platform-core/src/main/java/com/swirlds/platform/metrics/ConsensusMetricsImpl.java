@@ -44,13 +44,13 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
                     PLATFORM_CATEGORY, "judgesWeight")
             .withDescription("weight of judges of rounds")
             .withFormat(FORMAT_10_3);
+    private final RunningAverageMetric avgJudgesWeight;
     private static final RunningAverageMetric.Config AVG_FIRST_EVENT_IN_ROUND_RECEIVED_TIME_CONFIG =
             new RunningAverageMetric.Config(PLATFORM_CATEGORY, "secR2nR")
                     .withDescription("time from first event received in one round, to first event received in the "
                             + "next round (in seconds)")
                     .withFormat(FORMAT_10_3);
     private final RunningAverageMetric avgFirstEventInRoundReceivedTime;
-    private final RunningAverageMetric avgJudgesWeight;
 
     private static final RunningAverageMetric.Config NUM_COIN_ROUNDS_CONFIG = new RunningAverageMetric.Config(
                     INTERNAL_CATEGORY, "coinR")

@@ -363,13 +363,10 @@ class IssDetectorTests extends PlatformTest {
                                     expectedRoundStatus.get((int) notification.getRound()),
                                     notification.getIssType()));
         });
-        issDetectorTestHelper.getIssNotificationList().forEach(notification -> {
-            switch (notification.getIssType()) {
-                case IssType.CATASTROPHIC_ISS -> assertMarkerFile(IssType.CATASTROPHIC_ISS.toString(), true);
-                case IssType.SELF_ISS -> assertMarkerFile(IssType.SELF_ISS.toString(), true);
-                case IssType.OTHER_ISS -> assertMarkerFile(IssType.OTHER_ISS.toString(), true);
-            }
-        });
+        issDetectorTestHelper
+                .getIssNotificationList()
+                .forEach(notification ->
+                        assertMarkerFile(notification.getIssType().toString(), true));
     }
 
     /**
