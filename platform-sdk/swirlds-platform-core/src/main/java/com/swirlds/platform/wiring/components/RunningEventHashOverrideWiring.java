@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.wiring.components;
 
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -24,14 +24,14 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A wiring object for distributing {@link RunningEventHashUpdate}s
+ * A wiring object for distributing {@link RunningEventHashOverride}s
  *
  * @param runningHashUpdateInput  the input wire for running hash updates to be distributed
  * @param runningHashUpdateOutput the output wire for running hash updates to be distributed
  */
-public record RunningHashUpdaterWiring(
-        @NonNull InputWire<RunningEventHashUpdate> runningHashUpdateInput,
-        @NonNull OutputWire<RunningEventHashUpdate> runningHashUpdateOutput) {
+public record RunningEventHashOverrideWiring(
+        @NonNull InputWire<RunningEventHashOverride> runningHashUpdateInput,
+        @NonNull OutputWire<RunningEventHashOverride> runningHashUpdateOutput) {
 
     /**
      * Create a new wiring object
@@ -40,10 +40,13 @@ public record RunningHashUpdaterWiring(
      * @return the new wiring object
      */
     @NonNull
-    public static RunningHashUpdaterWiring create(@NonNull final TaskScheduler<RunningEventHashUpdate> taskScheduler) {
-        final BindableInputWire<RunningEventHashUpdate, RunningEventHashUpdate> inputWire =
-                taskScheduler.buildInputWire("running hash update");
-        final RunningHashUpdaterWiring wiring = new RunningHashUpdaterWiring(inputWire, taskScheduler.getOutputWire());
+    public static RunningEventHashOverrideWiring create(
+            @NonNull final TaskScheduler<RunningEventHashOverride> taskScheduler) {
+
+        final BindableInputWire<RunningEventHashOverride, RunningEventHashOverride> inputWire =
+                taskScheduler.buildInputWire("hash override");
+        final RunningEventHashOverrideWiring wiring =
+                new RunningEventHashOverrideWiring(inputWire, taskScheduler.getOutputWire());
 
         // this is just a pass through method
         inputWire.bind(runningHashUpdate -> runningHashUpdate);

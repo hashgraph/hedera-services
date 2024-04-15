@@ -22,12 +22,26 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatform
 
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.event.creation.DefaultEventCreationManager;
+import com.swirlds.platform.event.creation.EventCreationManager;
+import com.swirlds.platform.event.creation.EventCreator;
+import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
+import com.swirlds.platform.event.creation.rules.BackpressureRule;
+import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.platform.event.creation.rules.MaximumRateRule;
+import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
+import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.linking.GossipLinker;
+import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
+import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
@@ -57,6 +71,7 @@ import java.util.Objects;
  *     <li>A component should use {@link com.swirlds.common.wiring.component.ComponentWiring ComponentWiring} to define
  *         wiring API.</li>
  *     <li>The order in which components are constructed should not matter.</li>
+ *     <li>A component must not be a static singleton or use static stateful variables in any way.</li>
  * </ul>
  */
 public class PlatformComponentBuilder {
@@ -70,6 +85,9 @@ public class PlatformComponentBuilder {
     private SelfEventSigner selfEventSigner;
     private StateGarbageCollector stateGarbageCollector;
     private OrphanBuffer orphanBuffer;
+    private RunningEventHasher runningEventHasher;
+    private EventCreationManager eventCreationManager;
+    private InOrderLinker inOrderLinker;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -367,5 +385,118 @@ public class PlatformComponentBuilder {
         this.orphanBuffer = Objects.requireNonNull(orphanBuffer);
 
         return this;
+    }
+
+    /**
+     * Provide a running event hasher in place of the platform's default running event hasher.
+     *
+     * @param runningEventHasher the running event hasher to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withRunningEventHasher(@NonNull final RunningEventHasher runningEventHasher) {
+        throwIfAlreadyUsed();
+        if (this.runningEventHasher != null) {
+            throw new IllegalStateException("Running event hasher has already been set");
+        }
+        this.runningEventHasher = Objects.requireNonNull(runningEventHasher);
+        return this;
+    }
+
+    /**
+     * Build the running event hasher if it has not yet been built. If one has been provided via
+     * {@link #withRunningEventHasher(RunningEventHasher)}, that hasher will be used. If this method is called more than
+     * once, only the first call will build the running event hasher. Otherwise, the default hasher will be created and
+     * returned.
+     *
+     * @return the running event hasher
+     */
+    @NonNull
+    public RunningEventHasher buildRunningEventHasher() {
+        if (runningEventHasher == null) {
+            runningEventHasher = new DefaultRunningEventHasher();
+        }
+        return runningEventHasher;
+    }
+
+    /**
+     * Provide an event creation manager in place of the platform's default event creation manager.
+     *
+     * @param eventCreationManager the event creation manager to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withEventCreationManager(@NonNull final EventCreationManager eventCreationManager) {
+        throwIfAlreadyUsed();
+        if (this.eventCreationManager != null) {
+            throw new IllegalStateException("Event creation manager has already been set");
+        }
+        this.eventCreationManager = Objects.requireNonNull(eventCreationManager);
+        return this;
+    }
+
+    /**
+     * Build the event creation manager if it has not yet been built. If one has been provided via
+     * {@link #withEventCreationManager(EventCreationManager)}, that manager will be used. If this method is called more
+     * than once, only the first call will build the event creation manager. Otherwise, the default manager will be
+     * created and returned.
+     *
+     * @return the event creation manager
+     */
+    @NonNull
+    public EventCreationManager buildEventCreationManager() {
+        if (eventCreationManager == null) {
+            final EventCreator eventCreator = new TipsetEventCreator(
+                    blocks.platformContext(),
+                    blocks.randomBuilder().buildNonCryptographicRandom(),
+                    data -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
+                    blocks.initialState().get().getState().getPlatformState().getAddressBook(),
+                    blocks.selfId(),
+                    blocks.appVersion(),
+                    blocks.transactionPool());
+
+            final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
+                    new MaximumRateRule(blocks.platformContext()),
+                    new BackpressureRule(
+                            blocks.platformContext(),
+                            () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong()),
+                    new PlatformStatusRule(() -> blocks.currentPlatformStatus().get(), blocks.transactionPool()));
+
+            eventCreationManager =
+                    new DefaultEventCreationManager(blocks.platformContext(), eventCreator, eventCreationRules);
+        }
+        return eventCreationManager;
+    }
+
+    /**
+     * Provide an in-order linker in place of the platform's default in-order linker.
+     *
+     * @param inOrderLinker the in-order linker to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withInOrderLinker(@NonNull final InOrderLinker inOrderLinker) {
+        throwIfAlreadyUsed();
+        if (this.inOrderLinker != null) {
+            throw new IllegalStateException("In-order linker has already been set");
+        }
+        this.inOrderLinker = Objects.requireNonNull(inOrderLinker);
+        return this;
+    }
+
+    /**
+     * Build the in-order linker if it has not yet been built. If one has been provided via
+     * {@link #withInOrderLinker(InOrderLinker)}, that in-order linker will be used. If this method is called more than
+     * once, only the first call will build the in-order linker. Otherwise, the default in-order linker will be created
+     * and returned.
+     *
+     * @return the in-order linker
+     */
+    @NonNull
+    public InOrderLinker buildInOrderLinker() {
+        if (inOrderLinker == null) {
+            inOrderLinker = new GossipLinker(blocks.platformContext(), blocks.intakeEventCounter());
+        }
+        return inOrderLinker;
     }
 }

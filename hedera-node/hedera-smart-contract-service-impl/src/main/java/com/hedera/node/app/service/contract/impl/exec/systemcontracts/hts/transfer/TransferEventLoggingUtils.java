@@ -102,8 +102,8 @@ public class TransferEventLoggingUtils {
             @NonNull final AccountID receiverId,
             @NonNull final ReadableAccountStore accountStore) {
         final var tokenAddress = asLongZeroAddress(tokenId.tokenNum());
-        final var senderAddress = priorityAddressOf(requireNonNull(accountStore.getAccountById(senderId)));
-        final var receiverAddress = priorityAddressOf(requireNonNull(accountStore.getAccountById(receiverId)));
+        final var senderAddress = priorityAddressOf(requireNonNull(accountStore.getAliasedAccountById(senderId)));
+        final var receiverAddress = priorityAddressOf(requireNonNull(accountStore.getAliasedAccountById(receiverId)));
         return LogBuilder.logBuilder()
                 .forLogger(tokenAddress)
                 .forEventSignature(AbiConstants.TRANSFER_EVENT)
