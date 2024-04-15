@@ -42,10 +42,12 @@ import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.utilops.mod.QueryModification;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -54,6 +56,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -71,6 +75,10 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     private boolean recordsNodePayment = false;
     private boolean stopAfterCostAnswer = false;
     private boolean expectStrictCostAnswer = false;
+
+    @Nullable
+    private QueryModification queryModification = null;
+
     protected Response response = null;
     protected List<TransactionRecord> childRecords = null;
     protected List<TransactionReceipt> childReceipts = null;
@@ -98,6 +106,10 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     protected abstract void submitWith(HapiSpec spec, Transaction payment) throws Throwable;
 
     protected abstract boolean needsPayment();
+
+    protected Query maybeModified(@NonNull final Query query, @NonNull final HapiSpec spec) {
+        return queryModification != null ? queryModification.apply(query, spec) : query;
+    }
 
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         return 0L;
