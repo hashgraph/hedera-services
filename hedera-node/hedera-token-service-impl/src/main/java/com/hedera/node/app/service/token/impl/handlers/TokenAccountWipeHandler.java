@@ -56,6 +56,7 @@ import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.validation.Validations;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -102,8 +103,8 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         final var op = txn.tokenWipeOrThrow();
 
         // Validate the token and account ID's
-        TokenAttributesValidator.validateTokenId(op.hasToken(), op.token());
-        TokenAttributesValidator.validateAccountId(op.hasAccount(), op.account());
+        TokenAttributesValidator.validateTokenId(op.token());
+        Validations.validateAccountID(op.account(), INVALID_ACCOUNT_ID);
 
         // All the pure checks for burning a token must also be checked for wiping a token
         verifyTokenInstanceAmounts(op.amount(), op.serialNumbers(), op.hasToken(), INVALID_WIPING_AMOUNT);
