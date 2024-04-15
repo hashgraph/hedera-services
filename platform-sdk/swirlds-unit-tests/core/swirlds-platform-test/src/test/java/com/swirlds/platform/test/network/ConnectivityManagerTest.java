@@ -27,7 +27,7 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
-import com.swirlds.platform.network.topology.StaticConnectionManagers;
+import com.swirlds.platform.network.topology.ConnectivityManager;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
@@ -42,7 +42,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class StaticConnectionManagersTest {
+class ConnectivityManagerTest {
     @Mock
     OutboundConnectionCreator connectionCreator;
 
@@ -58,7 +58,7 @@ class StaticConnectionManagersTest {
                 new RandomAddressBookGenerator(r).setSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
         final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
-        final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
+        final ConnectivityManager managers = new ConnectivityManager(topology, connectionCreator);
         final List<NodeId> neighbors = topology.getNeighbors();
         final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
 
@@ -91,7 +91,7 @@ class StaticConnectionManagersTest {
                 new RandomAddressBookGenerator(r).setSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
         final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
-        final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
+        final ConnectivityManager managers = new ConnectivityManager(topology, connectionCreator);
         final List<NodeId> neighbors = topology.getNeighbors();
         final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
 

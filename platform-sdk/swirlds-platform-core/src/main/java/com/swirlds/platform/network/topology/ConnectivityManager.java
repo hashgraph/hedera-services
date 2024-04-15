@@ -24,8 +24,11 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.InboundConnectionManager;
 import com.swirlds.platform.network.OutboundConnectionManager;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,12 +36,18 @@ import org.apache.logging.log4j.Logger;
 /**
  * Pre-builds connection managers for the supplied topology, does not allow changes at runtime
  */
-public class StaticConnectionManagers {
-    private static final Logger logger = LogManager.getLogger(StaticConnectionManagers.class);
+public class ConnectivityManager {
+    private static final Logger logger = LogManager.getLogger(ConnectivityManager.class);
     private final NetworkTopology topology;
     private final Map<ConnectionMapping, ConnectionManager> connectionManagers;
 
-    public StaticConnectionManagers(final NetworkTopology topology, final OutboundConnectionCreator connectionCreator) {
+    /**
+     * Create a new connectivity manager with the given topology and connection creator
+     *
+     * @param topology          the network topology
+     * @param connectionCreator the connection creator
+     */
+    public ConnectivityManager(final NetworkTopology topology, final OutboundConnectionCreator connectionCreator) {
         this.topology = topology;
         // is thread safe because it never changes
         connectionManagers = new HashMap<>();
@@ -52,6 +61,15 @@ public class StaticConnectionManagers {
                         new OutboundConnectionManager(neighbor, connectionCreator));
             }
         }
+    }
+
+    /**
+     *
+     */
+    public List<ConnectionManager> updatePeers(@NonNull final List<PeerInfo> peers) {
+        // update the connection managers with the new peers
+        // return the list of connection managers that need to be updated
+        return null;
     }
 
     public ConnectionManager getManager(final NodeId id, final boolean outbound) {

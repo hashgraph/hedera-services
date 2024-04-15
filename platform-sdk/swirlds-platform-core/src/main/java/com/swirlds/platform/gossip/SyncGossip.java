@@ -65,7 +65,7 @@ import com.swirlds.platform.network.protocol.ProtocolRunnable;
 import com.swirlds.platform.network.protocol.ReconnectProtocolFactory;
 import com.swirlds.platform.network.protocol.SyncProtocolFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
-import com.swirlds.platform.network.topology.StaticConnectionManagers;
+import com.swirlds.platform.network.topology.ConnectivityManager;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
@@ -123,7 +123,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     protected final NetworkTopology topology;
     protected final NetworkMetrics networkMetrics;
     protected final ReconnectHelper reconnectHelper;
-    protected final StaticConnectionManagers connectionManagers;
+    protected final ConnectivityManager connectionManagers;
     protected final FallenBehindManagerImpl fallenBehindManager;
     protected final SyncManagerImpl syncManager;
     protected final ReconnectThrottle reconnectThrottle;
@@ -197,7 +197,7 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator =
                 new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
-        connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
+        connectionManagers = new ConnectivityManager(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 platformContext,
                 this,
