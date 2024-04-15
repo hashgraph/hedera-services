@@ -130,10 +130,10 @@ public interface SocketFactory {
     Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException;
 
     /**
-     * A convenient handler for refreshing connectivity components
-     * e.g. it could be used to refresh a TLS trust store, or ask peers to re-authenticate
+     * A convenient handler for reloading connectivity components
+     * e.g. it could be used to reload a TLS trust store, or ask peers to re-authenticate
      *
      * @param peerInfoList the updated list of peers
      */
-    void refresh(@NonNull final List<PeerInfo> peerInfoList);
+    void reload(@NonNull final List<PeerInfo> peerInfoList);
 }

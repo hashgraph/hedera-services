@@ -36,6 +36,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * The tests in this class are unidirectional server socket tests. For bidirectional tests, see
+ * {@link SocketFactoryTest}
+ */
 class TlsFactoryTest extends ConnectivityTestBase {
     private static final int PORT = 34_000;
 
@@ -56,7 +60,7 @@ class TlsFactoryTest extends ConnectivityTestBase {
     @BeforeEach
     void setUp() throws Throwable {
         // create addressBook, keysAndCerts
-        final Pair<AddressBook, Map<NodeId, KeysAndCerts>> akPair1 = CryptoArgsProvider.getAddressBookWithKeys(2);
+        final Pair<AddressBook, Map<NodeId, KeysAndCerts>> akPair1 = CryptoArgsProvider.loadAddressBookWithKeys(2);
         final AddressBook addressBook = akPair1.left();
         final Map<NodeId, KeysAndCerts> keysAndCerts = akPair1.right();
         assertTrue(addressBook.getSize() > 1, "Address book must contain at least 2 nodes");
@@ -81,7 +85,7 @@ class TlsFactoryTest extends ConnectivityTestBase {
 
         // create a new address book with keys and new set of nodes
         final Pair<AddressBook, Map<NodeId, KeysAndCerts>> addressBookWithKeys =
-                CryptoArgsProvider.getAddressBookWithKeys(6);
+                CryptoArgsProvider.loadAddressBookWithKeys(6);
         updatedAddressBook = addressBookWithKeys.left();
         final Address address = addressBook.getAddress(nodeA).copySetNodeId(updatedAddressBook.getNextNodeId());
         updatedAddressBook.add(address); // ensure original node is in new
@@ -97,12 +101,12 @@ class TlsFactoryTest extends ConnectivityTestBase {
 
     /**
      * Asserts that for sockets A and B that can connect to each other, if A's peer list changes and in effect its trust
-     * store is reloaded, B, as well as peer C in the updated peer list can still connect to A, and A to them.
+     * store is reloaded, B, as well as peer C in the updated peer list can still connect to A.
      */
     @Test
     void tlsFactoryRefreshTest() throws Throwable {
         // re-initialize SSLContext for A using a new peer list which contains C
-        socketFactoryA.refresh(Utilities.createPeerInfoList(updatedAddressBook, nodeA));
+        socketFactoryA.reload(Utilities.createPeerInfoList(updatedAddressBook, nodeA));
         // now, we expect that C can talk to A
         final Socket clientSocketC = socketFactoryC.createClientSocket(STRING_IP, PORT);
         testSocket(serverThread, clientSocketC);

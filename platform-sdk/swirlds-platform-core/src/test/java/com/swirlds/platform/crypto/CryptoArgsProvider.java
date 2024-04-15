@@ -45,7 +45,7 @@ public class CryptoArgsProvider {
     static Stream<Arguments> basicTestArgs() throws Exception {
         Instant start = Instant.now();
         final Pair<AddressBook, Map<NodeId, KeysAndCerts>> addressBookWithKeys =
-                getAddressBookWithKeys(NUMBER_OF_ADDRESSES);
+                loadAddressBookWithKeys(NUMBER_OF_ADDRESSES);
         System.out.println(
                 "Key loading took " + Duration.between(start, Instant.now()).toMillis());
         start = Instant.now();
@@ -77,7 +77,7 @@ public class CryptoArgsProvider {
      *
      * @param size the size of the required address book
      */
-    public static Pair<AddressBook, Map<NodeId, KeysAndCerts>> getAddressBookWithKeys(final int size)
+    public static Pair<AddressBook, Map<NodeId, KeysAndCerts>> loadAddressBookWithKeys(final int size)
             throws URISyntaxException, UnrecoverableKeyException, KeyLoadingException, KeyStoreException,
                     NoSuchAlgorithmException {
         final AddressBook loadedAB = createAddressBook(size);

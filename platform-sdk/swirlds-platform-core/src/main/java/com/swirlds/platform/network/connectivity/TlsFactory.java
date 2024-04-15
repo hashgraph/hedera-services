@@ -35,7 +35,6 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.Lock;
@@ -60,7 +59,6 @@ public class TlsFactory implements SocketFactory {
     private final SecureRandom nonDetRandom;
     private final KeyManagerFactory keyManagerFactory;
     private final TrustManagerFactory trustManagerFactory;
-    private final List<PeerInfo> currentPeers = new ArrayList<>();
     private final Lock lock = new ReentrantLock();
 
     /**
@@ -103,7 +101,7 @@ public class TlsFactory implements SocketFactory {
         this.sslContext = SSLContext.getInstance(CryptoConstants.SSL_VERSION);
         SSLContext.setDefault(sslContext);
 
-        refresh(peers);
+        reload(peers);
     }
 
     /**
@@ -139,13 +137,12 @@ public class TlsFactory implements SocketFactory {
      * {@inheritDoc}
      */
     @Override
-    public void refresh(@NonNull final List<PeerInfo> peers) {
+    public void reload(@NonNull final List<PeerInfo> peers) {
         lock.lock();
         try {
             // we just extend the list for now, until the work to calculate diffs is done
             // then, we will have two lists of peers to add and to remove
-            currentPeers.addAll(Objects.requireNonNull(peers));
-            final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(currentPeers);
+            final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(Objects.requireNonNull(peers));
             trustManagerFactory.init(signingTrustStore);
             sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), nonDetRandom);
             sslServerSocketFactory = sslContext.getServerSocketFactory();
