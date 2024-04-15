@@ -19,7 +19,7 @@ package com.swirlds.platform.event.deduplication;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.wiring.ClearTrigger;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -64,5 +64,5 @@ public interface EventDeduplicator {
      *
      * @param ignored ignored trigger object
      */
-    void clear(@NonNull final ClearTrigger ignored);
+    void clear(@NonNull final NoInput ignored);
 }
