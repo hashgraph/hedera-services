@@ -161,9 +161,9 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         AccountID aId;
-        if (referenceType == ReferenceType.REGISTRY_NAME) {
+        if (account != null && referenceType == ReferenceType.REGISTRY_NAME) {
             aId = TxnUtils.asId(account, spec);
-        } else {
+        } else if (account != null) {
             aId = asIdForKeyLookUp(alias, spec);
             account = asAccountString(aId);
         }
