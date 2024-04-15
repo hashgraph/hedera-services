@@ -98,6 +98,7 @@ public class LoggingSystem implements LogEventConsumer {
         this.handlers = new CopyOnWriteArrayList<>();
         this.loggers = new ConcurrentHashMap<>();
         this.levelConfig = new AtomicReference<>(HandlerLoggingLevelConfig.create(configuration, null));
+        Runtime.getRuntime().addShutdownHook(new Thread(this::stopAndFinalize));
     }
 
     /**
