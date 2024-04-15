@@ -69,7 +69,7 @@ public abstract class InputWire<IN> {
     }
 
     /**
-     * Get teh type of the task scheduler that this input channel is bound to.
+     * Get the type of the task scheduler that this input channel is bound to.
      *
      * @return the type of the task scheduler that this input channel is bound to
      */

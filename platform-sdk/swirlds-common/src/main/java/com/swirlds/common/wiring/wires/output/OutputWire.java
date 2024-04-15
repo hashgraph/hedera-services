@@ -49,8 +49,8 @@ public abstract class OutputWire<OUT> {
     /**
      * Constructor.
      *
-     * @param model             the wiring model containing this output wire
-     * @param name              the name of the output wire
+     * @param model the wiring model containing this output wire
+     * @param name  the name of the output wire
      */
     public OutputWire(@NonNull final TraceableWiringModel model, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
@@ -231,7 +231,7 @@ public abstract class OutputWire<OUT> {
      * @param transformerName      the name of the transformer
      * @param transformerInputName the label for the input wire going into the transformer
      * @param transformer          the function that transforms the output of this wire into the output of the
-     *                             transformer. Called once per data item. Null data returned by this method his not
+     *                             transformer. Called once per data item. Null data returned by this method is not
      *                             forwarded.
      * @param <NEW_OUT>            the output type of the transformer
      * @return the output wire of the transformer
