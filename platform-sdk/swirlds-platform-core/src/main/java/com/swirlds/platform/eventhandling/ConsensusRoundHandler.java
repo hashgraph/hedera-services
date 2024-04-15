@@ -257,21 +257,23 @@ public class ConsensusRoundHandler {
 
         platformState.setRunningEventHash(round.getRunningEventHash());
 
-        // Update the running hash object. If there are no events, the running hash does not change.
-        // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is here
-        // anyway, for when that changes in the future.
-        if (!round.isEmpty()) {
-            previousRoundLegacyRunningEventHash = round.getConsensusEvents()
-                    .getLast()
-                    .getRunningHash()
-                    .getFutureHash()
-                    .getAndRethrow();
-        }
-
         if (writeLegacyRunningEventHash) {
+            // Update the running hash object. If there are no events, the running hash does not change.
+            // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is
+            // here
+            // anyway, for when that changes in the future.
+            if (!round.isEmpty()) {
+                previousRoundLegacyRunningEventHash = round.getConsensusEvents()
+                        .getLast()
+                        .getRunningHash()
+                        .getFutureHash()
+                        .getAndRethrow();
+            }
+
             platformState.setLegacyRunningEventHash(previousRoundLegacyRunningEventHash);
         } else {
-            platformState.setLegacyRunningEventHash(null);
+            platformState.setLegacyRunningEventHash(
+                    platformContext.getCryptography().getNullHash());
         }
     }
 

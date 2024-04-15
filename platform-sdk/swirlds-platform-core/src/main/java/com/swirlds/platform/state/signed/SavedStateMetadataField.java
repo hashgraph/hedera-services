@@ -41,14 +41,25 @@ public enum SavedStateMetadataField {
      */
     CONSENSUS_TIMESTAMP,
     /**
-     * The running hash of all events, starting from genesis, that have been handled to create this state.
+     * The running hash of all events, starting from genesis, that have been handled to create this state. (If this is
+     * on a network that was created before the running event hash was computed in the current way, * then this will be
+     * the running event hash since the current running event hash algorithm was introduced.)
      */
     RUNNING_EVENT_HASH,
     /**
      * The running hash of all events, starting from genesis, that have been handled to create this state, in mnemonic
-     * form.
+     * form. (If this is on a network that was created before the running event hash was computed in the current way,
+     * then this will be the running event hash since the current running event hash algorithm was introduced.)
      */
     RUNNING_EVENT_HASH_MNEMONIC,
+    /**
+     * The legacy running event hash used by the consensus event stream.
+     */
+    LEGACY_RUNNING_EVENT_HASH,
+    /**
+     * The legacy running event hash used by the consensus event stream, in mnemonic form.
+     */
+    LEGACY_RUNNING_EVENT_HASH_MNEMONIC,
     /**
      * The minimum generation of non-ancient events after this state reached consensus. Future work: this needs to be
      * migrated once we have switched to {@link com.swirlds.platform.event.AncientMode#BIRTH_ROUND_THRESHOLD}.

@@ -104,6 +104,7 @@ class SavedStateMetadataTests {
         final long numberOfConsensusEvents = random.nextLong();
         final Instant timestamp = RandomUtils.randomInstant(random);
         final Hash runningEventHash = randomHash(random);
+        final Hash legacyRunningEventHash = randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
@@ -125,6 +126,8 @@ class SavedStateMetadataTests {
                 timestamp,
                 runningEventHash,
                 runningEventHash.toMnemonic(),
+                legacyRunningEventHash,
+                legacyRunningEventHash.toMnemonic(),
                 minimumGenerationNonAncient,
                 softwareVersion.toString(),
                 wallClockTime,
@@ -144,6 +147,8 @@ class SavedStateMetadataTests {
         assertEquals(timestamp, deserialized.consensusTimestamp());
         assertEquals(runningEventHash, deserialized.runningEventHash());
         assertEquals(runningEventHash.toMnemonic(), deserialized.runningEventHashMnemonic());
+        assertEquals(legacyRunningEventHash, deserialized.legacyRunningEventHash());
+        assertEquals(legacyRunningEventHash.toMnemonic(), deserialized.legacyRunningEventHashMnemonic());
         assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
         assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
         assertEquals(wallClockTime, deserialized.wallClockTime());
@@ -165,6 +170,7 @@ class SavedStateMetadataTests {
         final long numberOfConsensusEvents = random.nextLong();
         final Instant timestamp = RandomUtils.randomInstant(random);
         final Hash runningEventHash = randomHash(random);
+        final Hash legacyRunningEventHash = randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
@@ -183,6 +189,8 @@ class SavedStateMetadataTests {
                 timestamp,
                 runningEventHash,
                 runningEventHash.toMnemonic(),
+                legacyRunningEventHash,
+                legacyRunningEventHash.toMnemonic(),
                 minimumGenerationNonAncient,
                 softwareVersion.toString(),
                 wallClockTime,
@@ -251,6 +259,8 @@ class SavedStateMetadataTests {
         final Instant timestamp = RandomUtils.randomInstant(random);
         final Hash runningEventHash = randomHash(random);
         final String runningEventHashMnemonic = runningEventHash.toMnemonic();
+        final Hash legacyRunningEventHash = randomHash(random);
+        final String legacyRunningEventHashMnemonic = legacyRunningEventHash.toMnemonic();
         final long minimumGenerationNonAncient = random.nextLong();
         final Instant wallClockTime = RandomUtils.randomInstant(random);
         final NodeId nodeId = generateRandomNodeId(random);
@@ -271,6 +281,8 @@ class SavedStateMetadataTests {
                 timestamp,
                 runningEventHash,
                 runningEventHashMnemonic,
+                legacyRunningEventHash,
+                legacyRunningEventHashMnemonic,
                 minimumGenerationNonAncient,
                 "why\nare\nthere\nnewlines\nhere\nplease\nstop\n",
                 wallClockTime,
@@ -334,6 +346,7 @@ class SavedStateMetadataTests {
         final long numberOfConsensusEvents = random.nextLong();
         final Instant timestamp = RandomUtils.randomInstant(random);
         final Hash runningEventHash = randomHash(random);
+        final Hash legacyRunningEventHash = randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
@@ -354,6 +367,8 @@ class SavedStateMetadataTests {
                 timestamp,
                 runningEventHash,
                 runningEventHash.toMnemonic(),
+                legacyRunningEventHash,
+                legacyRunningEventHash.toMnemonic(),
                 minimumGenerationNonAncient,
                 softwareVersion.toString(),
                 wallClockTime,

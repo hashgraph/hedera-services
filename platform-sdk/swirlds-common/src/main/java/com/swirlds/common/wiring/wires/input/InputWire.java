@@ -42,7 +42,6 @@ public abstract class InputWire<IN> {
      * @param name          the name of the input wire
      */
     protected InputWire(@NonNull final TaskScheduler<?> taskScheduler, @NonNull final String name) {
-
         this.taskSchedulerInput = Objects.requireNonNull(taskScheduler);
         this.name = Objects.requireNonNull(name);
         this.taskSchedulerName = taskScheduler.getName();
