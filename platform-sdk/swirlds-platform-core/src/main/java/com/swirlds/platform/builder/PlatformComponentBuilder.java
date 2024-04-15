@@ -42,6 +42,8 @@ import com.swirlds.platform.event.linking.GossipLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.join.DefaultPcesJoin;
+import com.swirlds.platform.event.preconsensus.join.PcesJoin;
 import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
@@ -91,6 +93,7 @@ public class PlatformComponentBuilder {
     private EventCreationManager eventCreationManager;
     private InOrderLinker inOrderLinker;
     private ConsensusEngine consensusEngine;
+    private PcesJoin pcesJoin;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -533,5 +536,36 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(), blocks.initialState().get().getAddressBook(), blocks.selfId());
         }
         return consensusEngine;
+    }
+
+    /**
+     * Provide a PcesJoin in place of the platform's default PcesJoin.
+     *
+     * @param pcesJoin the PcesJoin to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withPcesJoin(@NonNull final PcesJoin pcesJoin) {
+        throwIfAlreadyUsed();
+        if (this.pcesJoin != null) {
+            throw new IllegalStateException("PcesJoin has already been set");
+        }
+        this.pcesJoin = Objects.requireNonNull(pcesJoin);
+        return this;
+    }
+
+    /**
+     * Build the PcesJoin if it has not yet been built. If one has been provided via
+     * {@link #withPcesJoin(PcesJoin)}, that PcesJoin will be used. If this method is called more than once,
+     * only the first call will build the PcesJoin. Otherwise, the default PcesJoin will be created and returned.
+     *
+     * @return the PcesJoin
+     */
+    @NonNull
+    public PcesJoin buildPcesJoin() {
+        if (pcesJoin == null) {
+            pcesJoin = new DefaultPcesJoin();
+        }
+        return pcesJoin;
     }
 }

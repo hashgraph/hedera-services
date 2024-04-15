@@ -61,6 +61,7 @@ import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.preconsensus.join.PcesJoin;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stream.EventStreamManager;
@@ -142,6 +143,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final StateSignerWiring stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final PcesWriterWiring pcesWriterWiring;
+    private final ComponentWiring<PcesJoin, List<ConsensusRound>> pcesJoinWiring;
     private final ComponentWiring<PcesSequencer, GossipEvent> pcesSequencerWiring;
     private final EventDurabilityNexusWiring eventDurabilityNexusWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
@@ -277,6 +279,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
+        pcesJoinWiring = new ComponentWiring<>(model, PcesJoin.class, config.pcesJoin());
         eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
 
         gossipWiring = GossipWiring.create(model);
@@ -661,6 +664,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(pcesWriter);
+        pcesJoinWiring.bind(builder.buildPcesJoin());
         eventDurabilityNexusWiring.bind(eventDurabilityNexus);
         shadowgraphWiring.bind(shadowgraph);
         pcesSequencerWiring.bind(pcesSequencer);

@@ -138,4 +138,6 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration stateGarbageCollector,
         @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration platformPublisher) {}
+                TaskSchedulerConfiguration platformPublisher,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) UNHANDLED_TASK_METRIC") // TODO flushing?
+                TaskSchedulerConfiguration pcesJoin) {}
