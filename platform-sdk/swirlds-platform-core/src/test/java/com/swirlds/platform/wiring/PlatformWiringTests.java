@@ -86,7 +86,8 @@ class PlatformWiringTests {
                 .withRunningEventHasher(mock(RunningEventHasher.class))
                 .withEventCreationManager(mock(EventCreationManager.class))
                 .withInOrderLinker(mock(InOrderLinker.class))
-                .withConsensusEngine(mock(ConsensusEngine.class));
+                .withConsensusEngine(mock(ConsensusEngine.class))
+                .withPcesSequencer(mock(PcesSequencer.class));
 
         wiring.bind(
                 componentBuilder,
@@ -96,7 +97,6 @@ class PlatformWiringTests {
                 mock(PcesWriter.class),
                 mock(EventDurabilityNexus.class),
                 mock(Shadowgraph.class),
-                mock(PcesSequencer.class),
                 mock(StateSignatureCollector.class),
                 mock(TransactionPrehandler.class),
                 mock(EventWindowManager.class),
