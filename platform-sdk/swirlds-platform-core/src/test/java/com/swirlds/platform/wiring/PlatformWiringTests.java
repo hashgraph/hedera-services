@@ -84,11 +84,11 @@ class PlatformWiringTests {
                 .withSelfEventSigner(mock(SelfEventSigner.class))
                 .withOrphanBuffer(mock(OrphanBuffer.class))
                 .withRunningEventHasher(mock(RunningEventHasher.class))
-                .withEventCreationManager(mock(EventCreationManager.class));
+                .withEventCreationManager(mock(EventCreationManager.class))
+                .withInOrderLinker(mock(InOrderLinker.class));
 
         wiring.bind(
                 componentBuilder,
-                mock(InOrderLinker.class),
                 mock(ConsensusEngine.class),
                 mock(SignedStateFileManager.class),
                 mock(StateSigner.class),
