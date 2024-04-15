@@ -4212,7 +4212,6 @@ public class TraceabilitySuite extends SidecarAwareHapiSuite {
                             final var topLevelCallTxnRecord = getTxnRecord(CREATE_2_TXN)
                                     .andAllChildRecords()
                                     .logged();
-                            allRunFor(spec, topLevelCallTxnRecord);
                             final var hapiGetContractBytecode = getContractBytecode(mirrorLiteralId.get())
                                     .exposingBytecodeTo(bytecodeFromMirror::set);
                             allRunFor(
