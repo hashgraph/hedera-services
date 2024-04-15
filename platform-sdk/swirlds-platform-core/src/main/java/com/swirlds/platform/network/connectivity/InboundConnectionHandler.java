@@ -37,6 +37,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.Socket;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import javax.net.ssl.SSLSocket;
 import org.apache.logging.log4j.LogManager;
@@ -89,17 +90,17 @@ public class InboundConnectionHandler {
      * Identifies the peer that has just established a new connection and create a {@link Connection}
      *
      * @param clientSocket the newly created socket
+     * @param peerInfoList the list of peers
      */
-    public void handle(@NonNull final Socket clientSocket) {
+    public void handle(final Socket clientSocket, final List<PeerInfo> peerInfoList) {
         final long acceptTime = time.currentTimeMillis();
-        Objects.requireNonNull(clientSocket);
         try {
             clientSocket.setTcpNoDelay(socketConfig.tcpNoDelay());
             clientSocket.setSoTimeout(socketConfig.timeoutSyncClientSocket());
 
             final SSLSocket sslSocket = (SSLSocket) clientSocket;
             final PeerInfo connectedPeer =
-                    networkPeerIdentifier.identifyTlsPeer(sslSocket.getSession().getPeerCertificates());
+                    networkPeerIdentifier.identifyTlsPeer(sslSocket.getSession().getPeerCertificates(), peerInfoList);
             if (connectedPeer == null) {
                 clientSocket.close();
                 return;

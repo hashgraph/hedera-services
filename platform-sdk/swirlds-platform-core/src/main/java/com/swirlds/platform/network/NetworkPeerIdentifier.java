@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.network;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
 import com.swirlds.common.context.PlatformContext;
@@ -25,11 +26,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import javax.security.auth.x500.X500Principal;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,49 +46,51 @@ public class NetworkPeerIdentifier {
      */
     private final RateLimitedLogger noPeerFoundLogger;
 
-    // a mapping of X500Principal and their peers
-    private final Map<X500Principal, PeerInfo> x501PrincipalsAndPeers;
+    private final RateLimitedLogger multiplePeersFoundLogger;
 
-    /**
-     * constructor
-     *
-     * @param platformContext the platform context
-     * @param peers           list of peers
-     */
-    public NetworkPeerIdentifier(@NonNull final PlatformContext platformContext, @NonNull final List<PeerInfo> peers) {
+    public NetworkPeerIdentifier(@NonNull final PlatformContext platformContext) {
         Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(peers);
         noPeerFoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(5));
-        this.x501PrincipalsAndPeers = HashMap.newHashMap(peers.size());
-        for (final PeerInfo peerInfo : peers) {
-            x501PrincipalsAndPeers.put(
-                    ((X509Certificate) peerInfo.signingCertificate()).getSubjectX500Principal(), peerInfo);
-        }
+        multiplePeersFoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(5));
     }
 
     /**
      * identifies a client on the other end of the socket using their signing certificate.
      *
-     * @param certs a list of TLS certificates from the connected socket
+     * @param certs        a list of TLS certificates from the connected socket
+     * @param peerInfoList List of known peers
      * @return info of the identified peer
      */
-    public @Nullable PeerInfo identifyTlsPeer(@NonNull final Certificate[] certs) {
+    public @Nullable PeerInfo identifyTlsPeer(
+            @NonNull final Certificate[] certs, @NonNull final List<PeerInfo> peerInfoList) {
         Objects.requireNonNull(certs);
-        Objects.requireNonNull(x501PrincipalsAndPeers);
+        Objects.requireNonNull(peerInfoList);
         if (certs.length == 0) {
             return null;
         }
 
+        PeerInfo matchingPair = null;
         // the peer certificates chain is an ordered array of peer certificates,
         // with the peer's own certificate first followed by any certificate authorities.
         // See https://www.rfc-editor.org/rfc/rfc5246
         final X509Certificate agreementCert = (X509Certificate) certs[0];
-        final PeerInfo matchingPair = x501PrincipalsAndPeers.get(agreementCert.getIssuerX500Principal());
-        if (matchingPair == null) {
+        final Set<PeerInfo> peers = peerInfoList.stream()
+                .filter(peerInfo -> ((X509Certificate) peerInfo.signingCertificate())
+                        .getSubjectX500Principal()
+                        .equals(agreementCert.getIssuerX500Principal()))
+                .collect(Collectors.toSet());
+        final Optional<PeerInfo> peer = peers.stream().findFirst();
+        if (peer.isEmpty()) {
             noPeerFoundLogger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Unable to identify peer with the presented certificate {}.",
                     agreementCert);
+        } else {
+            if (peers.size() > 1) {
+                multiplePeersFoundLogger.info(
+                        EXCEPTION.getMarker(), "Found {} matching peers for the presented certificate", peers.size());
+            }
+            matchingPair = peer.get();
         }
         return matchingPair;
     }

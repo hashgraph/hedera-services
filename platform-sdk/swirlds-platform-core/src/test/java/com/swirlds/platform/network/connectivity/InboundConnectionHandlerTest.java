@@ -48,6 +48,7 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
     private static final PlatformContext platformContext = TestPlatformContextBuilder.create()
             .withConfiguration(TLS_NO_IP_TOS_CONFIG)
             .build();
+    private static final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext);
     private static final ConnectionTracker ct = Mockito.mock(ConnectionTracker.class);
 
     /**
@@ -70,7 +71,6 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
         final KeysAndCerts keysAndCerts1 = keysAndCerts.get(thisNode);
         final KeysAndCerts keysAndCerts2 = keysAndCerts.get(otherNode);
         final List<PeerInfo> peerInfoList = Utilities.createPeerInfoList(addressBook, otherNode);
-        final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, peerInfoList);
 
         final SocketFactory socketFactory1 =
                 NetworkUtils.createSocketFactory(thisNode, addressBook, keysAndCerts1, TLS_NO_IP_TOS_CONFIG);
@@ -92,7 +92,7 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
 
         final InboundConnectionHandler inbound = new InboundConnectionHandler(
                 platformContext, ct, identifier, thisNode, connConsumer, Time.getCurrent());
-        inbound.handle(socket); // 2 can talk to 1 via tls ok
+        inbound.handle(socket, peerInfoList); // 2 can talk to 1 via tls ok
         socket.close();
     }
 
@@ -115,7 +115,6 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
         final KeysAndCerts keysAndCerts1 = keysAndCerts.get(thisNode);
         final KeysAndCerts keysAndCerts2 = keysAndCerts.get(otherNode);
         final List<PeerInfo> peerInfoList = Utilities.createPeerInfoList(addressBook, thisNode);
-        final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, peerInfoList);
 
         final SocketFactory s1 =
                 NetworkUtils.createSocketFactory(thisNode, addressBook, keysAndCerts1, TLS_NO_IP_TOS_CONFIG);
@@ -133,7 +132,7 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
 
         final InboundConnectionHandler inbound = new InboundConnectionHandler(
                 platformContext, ct, identifier, thisNode, connConsumer, Time.getCurrent());
-        inbound.handle(socket);
+        inbound.handle(socket, peerInfoList);
         Assertions.assertTrue(socket.isClosed());
     }
 }
