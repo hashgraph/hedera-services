@@ -26,7 +26,6 @@ import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.StateSigner;
-import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
@@ -36,7 +35,6 @@ import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
-import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -58,7 +56,6 @@ import java.util.List;
  *
  * @param eventHasherScheduler                      the scheduler for the event hasher
  * @param postHashCollectorScheduler                the scheduler for the post hash collector
- * @param consensusEngineScheduler                  the scheduler for the consensus engine
  * @param signedStateFileManagerScheduler           the scheduler for the signed state file manager
  * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
@@ -79,7 +76,6 @@ import java.util.List;
 public record PlatformSchedulers(
         @NonNull TaskScheduler<GossipEvent> eventHasherScheduler,
         @NonNull TaskScheduler<GossipEvent> postHashCollectorScheduler,
-        @NonNull TaskScheduler<List<ConsensusRound>> consensusEngineScheduler,
         @NonNull TaskScheduler<StateSavingResult> signedStateFileManagerScheduler,
         @NonNull TaskScheduler<StateSignatureTransaction> stateSignerScheduler,
         @NonNull TaskScheduler<DoneStreamingPcesTrigger> pcesReplayerScheduler,
@@ -129,15 +125,6 @@ public record PlatformSchedulers(
                         .withExternalBackPressure(true)
                         .withUnhandledTaskMetricEnabled(true)
                         .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("consensusEngine")
-                        .withType(config.consensusEngineSchedulerType())
-                        .withUnhandledTaskCapacity(config.consensusEngineUnhandledCapacity())
-                        .withFlushingEnabled(true)
-                        .withSquelchingEnabled(true)
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(ConsensusEngine.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("signedStateFileManager")

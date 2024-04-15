@@ -21,6 +21,8 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
+import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.creation.DefaultEventCreationManager;
@@ -91,6 +93,7 @@ public class PlatformComponentBuilder {
     private RunningEventHasher runningEventHasher;
     private EventCreationManager eventCreationManager;
     private InOrderLinker inOrderLinker;
+    private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
 
     /**
@@ -473,6 +476,22 @@ public class PlatformComponentBuilder {
     }
 
     /**
+     * Build the in-order linker if it has not yet been built. If one has been provided via
+     * {@link #withInOrderLinker(InOrderLinker)}, that in-order linker will be used. If this method is called more than
+     * once, only the first call will build the in-order linker. Otherwise, the default in-order linker will be created
+     * and returned.
+     *
+     * @return the in-order linker
+     */
+    @NonNull
+    public InOrderLinker buildInOrderLinker() {
+        if (inOrderLinker == null) {
+            inOrderLinker = new GossipLinker(blocks.platformContext(), blocks.intakeEventCounter());
+        }
+        return inOrderLinker;
+    }
+
+    /**
      * Provide an in-order linker in place of the platform's default in-order linker.
      *
      * @param inOrderLinker the in-order linker to use
@@ -490,19 +509,35 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Build the in-order linker if it has not yet been built. If one has been provided via
-     * {@link #withInOrderLinker(InOrderLinker)}, that in-order linker will be used. If this method is called more than
-     * once, only the first call will build the in-order linker. Otherwise, the default in-order linker will be created
-     * and returned.
+     * Provide a consensus engine in place of the platform's default consensus engine.
      *
-     * @return the in-order linker
+     * @param consensusEngine the consensus engine to use
+     * @return this builder
      */
     @NonNull
-    public InOrderLinker buildInOrderLinker() {
-        if (inOrderLinker == null) {
-            inOrderLinker = new GossipLinker(blocks.platformContext(), blocks.intakeEventCounter());
+    public PlatformComponentBuilder withConsensusEngine(@NonNull final ConsensusEngine consensusEngine) {
+        throwIfAlreadyUsed();
+        if (this.consensusEngine != null) {
+            throw new IllegalStateException("Consensus engine has already been set");
         }
-        return inOrderLinker;
+        this.consensusEngine = Objects.requireNonNull(consensusEngine);
+        return this;
+    }
+
+    /**
+     * Build the consensus engine if it has not yet been built. If one has been provided via
+     * {@link #withConsensusEngine(ConsensusEngine)}, that engine will be used. If this method is called more than once,
+     * only the first call will build the consensus engine. Otherwise, the default engine will be created and returned.
+     *
+     * @return the consensus engine
+     */
+    @NonNull
+    public ConsensusEngine buildConsensusEngine() {
+        if (consensusEngine == null) {
+            consensusEngine = new DefaultConsensusEngine(
+                    blocks.platformContext(), blocks.initialState().get().getAddressBook(), blocks.selfId());
+        }
+        return consensusEngine;
     }
 
     /**
