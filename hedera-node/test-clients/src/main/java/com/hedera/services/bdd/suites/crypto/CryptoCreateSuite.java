@@ -52,7 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 
 import com.google.protobuf.ByteString;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -60,6 +59,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.utility.CommonUtils;
@@ -297,7 +297,7 @@ public class CryptoCreateSuite extends HapiSuite {
         KeyShape shape = listOf(0);
         long initialBalance = 10_000L;
         ShardID shardID = ShardID.newBuilder().build();
-        final AccountID VALID_ACCOUNT_ID = AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(1).build();
+        RealmID realmID = RealmID.newBuilder().build();
 
         return defaultHapiSpec("createAnAccountEmptyKeyList")
                 .given()
@@ -307,6 +307,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .keyShape(shape)
                                 .balance(initialBalance)
                                 .shardId(shardID)
+                                .realmId(realmID)
                                 .logged()
                                 .hasPrecheck(KEY_REQUIRED)
                         // In modular code this error is thrown in handle, but it is fixed using dynamic property
