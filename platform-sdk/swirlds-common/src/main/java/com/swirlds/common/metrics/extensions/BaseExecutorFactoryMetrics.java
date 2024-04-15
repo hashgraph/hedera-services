@@ -38,7 +38,7 @@ public class BaseExecutorFactoryMetrics {
 
     public static final String BASE_EXECUTOR = "base_executor";
 
-    private final static BaseExecutorFactoryMetrics INSTANCE = new BaseExecutorFactoryMetrics();
+    private static final BaseExecutorFactoryMetrics INSTANCE = new BaseExecutorFactoryMetrics();
 
     private TaskExecutionTimeMetric taskExecutionTimeMetric;
 
@@ -56,8 +56,7 @@ public class BaseExecutorFactoryMetrics {
 
     private boolean installed = false;
 
-    private BaseExecutorFactoryMetrics() {
-    }
+    private BaseExecutorFactoryMetrics() {}
 
     public synchronized void reset() {
         Optional.ofNullable(taskExecutionTimeMetric).ifPresent(TaskExecutionTimeMetric::reset);
@@ -83,38 +82,31 @@ public class BaseExecutorFactoryMetrics {
             installed = true;
         }
 
-        final Counter.Config taskCountAccumulatorConfig = new Counter.Config(
-                BASE_EXECUTOR, "count")
+        final Counter.Config taskCountAccumulatorConfig = new Counter.Config(BASE_EXECUTOR, "count")
                 .withUnit("tasks")
                 .withDescription("The number of tasks submitted to the base executor");
         taskCountAccumulator = metrics.getOrCreate(taskCountAccumulatorConfig);
 
-        final Counter.Config taskExecutionCountAccumulatorConfig = new Counter.Config(
-                BASE_EXECUTOR, "execution_count")
+        final Counter.Config taskExecutionCountAccumulatorConfig = new Counter.Config(BASE_EXECUTOR, "execution_count")
                 .withUnit("tasks")
                 .withDescription("The number of tasks executed by the base executor");
         taskExecutionCountAccumulator = metrics.getOrCreate(taskExecutionCountAccumulatorConfig);
 
-        final Counter.Config tasksDoneCountAccumulatorConfig = new Counter.Config(
-                BASE_EXECUTOR, "done_count")
+        final Counter.Config tasksDoneCountAccumulatorConfig = new Counter.Config(BASE_EXECUTOR, "done_count")
                 .withUnit("tasks")
                 .withDescription("The number of tasks executed successfully by the base executor");
         tasksDoneCountAccumulator = metrics.getOrCreate(tasksDoneCountAccumulatorConfig);
 
-        final Counter.Config tasksFailedCountAccumulatorConfig = new Counter.Config(
-                BASE_EXECUTOR, "failed_count")
+        final Counter.Config tasksFailedCountAccumulatorConfig = new Counter.Config(BASE_EXECUTOR, "failed_count")
                 .withUnit("tasks")
                 .withDescription("The number of tasks failed to execute by the base executor");
         tasksFailedCountAccumulator = metrics.getOrCreate(tasksFailedCountAccumulatorConfig);
 
-        taskExecutionTimeMetric =
-                new TaskExecutionTimeMetric(BASE_EXECUTOR, "task_execution", metrics);
+        taskExecutionTimeMetric = new TaskExecutionTimeMetric(BASE_EXECUTOR, "task_execution", metrics);
 
-        taskDoneExecutionTimeMetric =
-                new TaskExecutionTimeMetric(BASE_EXECUTOR, "task_done_execution", metrics);
+        taskDoneExecutionTimeMetric = new TaskExecutionTimeMetric(BASE_EXECUTOR, "task_done_execution", metrics);
 
-        taskFailExecutionTimeMetric =
-                new TaskExecutionTimeMetric(BASE_EXECUTOR, "task_failed_execution", metrics);
+        taskFailExecutionTimeMetric = new TaskExecutionTimeMetric(BASE_EXECUTOR, "task_failed_execution", metrics);
 
         final BaseExecutorObserver observer = new BaseExecutorObserver() {
 
@@ -161,22 +153,19 @@ public class BaseExecutorFactoryMetrics {
         public TaskExecutionTimeMetric(final String category, final String name, @NonNull Metrics metrics) {
             callCount = new AtomicLong(0);
 
-            final LongGauge.Config maxMillisConfig = new LongGauge.Config(
-                    BASE_EXECUTOR, name + "_max")
+            final LongGauge.Config maxMillisConfig = new LongGauge.Config(BASE_EXECUTOR, name + "_max")
                     .withDescription("The maximum time in milliseconds that a task took to execute")
                     .withUnit(MILLISECOND_UNIT)
                     .withInitialValue(0L);
             maxMillisMetric = metrics.getOrCreate(maxMillisConfig);
 
-            final LongGauge.Config minMillisConfig = new LongGauge.Config(
-                    BASE_EXECUTOR, name + "_min")
+            final LongGauge.Config minMillisConfig = new LongGauge.Config(BASE_EXECUTOR, name + "_min")
                     .withDescription("The minimum time in milliseconds that a task took to execute")
                     .withUnit(MILLISECOND_UNIT)
                     .withInitialValue(0L);
             minMillisMetric = metrics.getOrCreate(minMillisConfig);
 
-            final DoubleGauge.Config averageMillisConfig = new DoubleGauge.Config(
-                    BASE_EXECUTOR, name + "_avg")
+            final DoubleGauge.Config averageMillisConfig = new DoubleGauge.Config(BASE_EXECUTOR, name + "_avg")
                     .withDescription("The average time in milliseconds that a task took to execute")
                     .withUnit(MILLISECOND_UNIT)
                     .withInitialValue(Double.NaN);
@@ -200,8 +189,7 @@ public class BaseExecutorFactoryMetrics {
                 averageMillisMetric.set(duration.toMillis());
             }
             try {
-                final double newAvg =
-                        ((averageMillisMetric.get() * prefCount) + duration.toMillis()) / callCount.get();
+                final double newAvg = ((averageMillisMetric.get() * prefCount) + duration.toMillis()) / callCount.get();
                 averageMillisMetric.set(newAvg);
             } catch (Exception e) {
                 averageMillisMetric.set(Double.NaN);

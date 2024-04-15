@@ -37,7 +37,8 @@ public class Application {
 
         MetricsSampleHandlerFactory metricsSampleHandlerFactory = new MetricsSampleHandlerFactory();
         BaseExecutorHandlerFactory baseExecutorHandlerFactory = new BaseExecutorHandlerFactory();
-        Server.start(baseContext,
+        Server.start(
+                baseContext,
                 Set.of(storeSampleHandlerFactory, metricsSampleHandlerFactory, baseExecutorHandlerFactory));
     }
 }
