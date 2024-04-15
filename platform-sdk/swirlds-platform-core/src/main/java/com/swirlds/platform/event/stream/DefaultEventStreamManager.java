@@ -33,7 +33,7 @@ import com.swirlds.common.stream.HashCalculatorForStream;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
@@ -249,7 +249,7 @@ public class DefaultEventStreamManager implements EventStreamManager {
      * {@inheritDoc}
      */
     @Override
-    public void updateRunningHash(@NonNull final RunningEventHashUpdate runningEventHashUpdate) {
+    public void legacyHashOverride(@NonNull final RunningEventHashOverride runningEventHashOverride) {
         try {
             if (hashQueueThread != null) {
                 hashQueueThread.pause();
@@ -263,10 +263,10 @@ public class DefaultEventStreamManager implements EventStreamManager {
         }
 
         if (streamFileWriter != null) {
-            streamFileWriter.setStartWriteAtCompleteWindow(runningEventHashUpdate.isReconnect());
+            streamFileWriter.setStartWriteAtCompleteWindow(runningEventHashOverride.isReconnect());
         }
 
-        initialHash = new Hash(runningEventHashUpdate.runningEventHash());
+        initialHash = new Hash(runningEventHashOverride.legacyRunningEventHash());
         logger.info(EVENT_STREAM.getMarker(), "EventStreamManager::updateRunningHash: {}", initialHash);
         multiStream.setRunningHash(initialHash);
 

@@ -140,6 +140,10 @@ public class SigControl implements Serializable {
         return new SigControl(M, childControls);
     }
 
+    public static SigControl emptyList() {
+        return new SigControl(LIST);
+    }
+
     protected SigControl(Nature nature) {
         this.nature = nature;
     }

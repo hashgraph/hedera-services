@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
@@ -135,6 +136,7 @@ public abstract class HapiSpecOperation {
     protected Optional<Supplier<AccountID>> nodeSupplier = Optional.empty();
     protected OptionalDouble usdFee = OptionalDouble.empty();
     protected Optional<Integer> retryLimits = Optional.empty();
+    protected boolean payingWithAlias = false;
 
     @Nullable
     protected UnknownFieldLocation unknownFieldLocation = null;
@@ -256,8 +258,8 @@ public abstract class HapiSpecOperation {
                 return Optional.empty();
             }
             if (verboseLoggingOn) {
-                String message = MessageFormat.format("{0}{1} failed - {2}", spec.logPrefix(), this, t);
-                log.warn(message);
+                String message = MessageFormat.format("{0}{1} failed", spec.logPrefix(), this);
+                log.warn(message, t);
             } else if (!loggingOff) {
                 String message = MessageFormat.format("{0}{1} failed - {2}!", spec.logPrefix(), this, t.getMessage());
                 log.warn(message);
@@ -297,7 +299,15 @@ public abstract class HapiSpecOperation {
                 builder.clearTransactionID();
             } else {
                 payer.ifPresent(payerId -> {
-                    final var id = TxnUtils.asId(payerId, spec);
+                    AccountID id;
+                    if (payingWithAlias) {
+                        final var key = spec.registry().getKey(payerId);
+                        final var lookedUpKey = key.toByteString();
+                        id = asIdWithAlias(lookedUpKey);
+                    } else {
+                        id = TxnUtils.asId(payerId, spec);
+                    }
+
                     final TransactionID txnId = builder.getTransactionID().toBuilder()
                             .setAccountID(id)
                             .build();

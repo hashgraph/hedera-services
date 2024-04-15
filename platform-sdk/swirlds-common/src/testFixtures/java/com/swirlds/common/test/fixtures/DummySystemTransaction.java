@@ -18,14 +18,13 @@ package com.swirlds.common.test.fixtures;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.system.transaction.SystemTransaction;
-import com.swirlds.platform.system.transaction.SystemTransactionType;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import java.io.IOException;
 
 /**
  * Dummy instance of a system transaction, for testing purposes
  */
-public class DummySystemTransaction extends SystemTransaction {
+public class DummySystemTransaction extends ConsensusTransactionImpl {
 
     @Override
     public long getClassId() {
@@ -54,7 +53,12 @@ public class DummySystemTransaction extends SystemTransaction {
     }
 
     @Override
-    public SystemTransactionType getType() {
+    public boolean isSystem() {
+        return true;
+    }
+
+    @Override
+    public byte[] getContents() {
         return null;
     }
 }
