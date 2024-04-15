@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.hapi.node.base.AccountID.AccountOneOfType.ACCOUNT_NUM;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static java.util.Objects.requireNonNull;
 
@@ -150,7 +151,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     public Account getForModify(@NonNull final AccountID id) {
         requireNonNull(id);
         // Get the account number based on the account identifier. It may be null.
-        final var accountId = unaliasedAccountId(id);
+        final var accountId = id.account().kind() == ACCOUNT_NUM ? id : null;
         return accountId == null ? null : accountState().getForModify(accountId);
     }
 
@@ -165,7 +166,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     @Nullable
     public Account getOriginalValue(@NonNull final AccountID id) {
         requireNonNull(id);
-        final var accountId = unaliasedAccountId(id);
+        // Get the account number based on the account identifier. It may be null.
+        final var accountId = id.account().kind() == ACCOUNT_NUM ? id : null;
         return accountId == null ? null : accountState().getOriginalValue(accountId);
     }
 

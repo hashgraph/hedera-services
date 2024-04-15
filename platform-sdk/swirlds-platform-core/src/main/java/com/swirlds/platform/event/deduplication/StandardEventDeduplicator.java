@@ -32,7 +32,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.wiring.ClearTrigger;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
@@ -166,7 +166,7 @@ public class StandardEventDeduplicator implements EventDeduplicator {
      * {@inheritDoc}
      */
     @Override
-    public void clear(@NonNull final ClearTrigger ignored) {
+    public void clear(@NonNull final NoInput ignored) {
         observedEvents.clear();
     }
 }
