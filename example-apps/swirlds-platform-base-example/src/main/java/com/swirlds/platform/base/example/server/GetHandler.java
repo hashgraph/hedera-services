@@ -14,9 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.base.example;
+package com.swirlds.platform.base.example.server;
 
-import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.base.example.ext.BaseContext;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public record BaseContext(Metrics metrics, Configuration configuration) {}
+/**
+ * A {@link HttpHandlerDefinition} that deals with get requests
+ */
+public class GetHandler<T> extends GenericHandler<T> {
+
+    public GetHandler(
+            @NonNull final String path,
+            @NonNull final BaseContext context,
+            Class<T> consumeType,
+            final GetHandler getHandler) {
+        super(path, context, consumeType);
+        setGetHandler(getHandler);
+    }
+}

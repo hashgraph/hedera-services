@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.base.example.server;
 
-import com.swirlds.platform.base.example.BaseContext;
+import com.swirlds.platform.base.example.ext.BaseContext;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 public interface HttpHandlerFactory {
 
-    Set<HttpHandlerDefinition> initAndCreate(BaseContext context);
+    @NonNull
+    Set<HttpHandlerDefinition> initAndCreate(@NonNull BaseContext context);
 }
