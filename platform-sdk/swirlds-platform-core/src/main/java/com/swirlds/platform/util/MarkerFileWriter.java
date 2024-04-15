@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Writes marker files with the given filename to disk in the configured directory.  If there is no configured
- * directory, no marker files are written.
+ * directory, no marker files are written.  The marker files are written at most once until the program restarts.
  */
 public class MarkerFileWriter {
 
@@ -52,7 +52,11 @@ public class MarkerFileWriter {
      */
     private final Path markerFileDirectory;
 
-    private final Map<String, Void> markerFilesWrittern = new ConcurrentHashMap<>();
+    /**
+     * A map of marker file names to whether or not the file has been written.  This is used to ensure that each marker
+     * file is written at most once until the program restarts.
+     */
+    private final Map<String, Boolean> markerFilesWritten = new ConcurrentHashMap<>();
 
     /**
      * Creates a new {@link MarkerFileWriter} with the given {@link PlatformContext}.  If the marker file writer is
@@ -100,7 +104,7 @@ public class MarkerFileWriter {
             // Configuration did not set a marker file directory.  No need to write marker file.
             return;
         }
-        markerFilesWrittern.computeIfAbsent(filename, key -> {
+        markerFilesWritten.computeIfAbsent(filename, key -> {
             final Path markerFile = markerFileDirectory.resolve(filename);
             try {
                 Files.createFile(markerFile);
@@ -108,7 +112,7 @@ public class MarkerFileWriter {
                 failedToWriteMarkerFileLogger.error(
                         LogMarker.EXCEPTION.getMarker(), "Failed to create marker file: {}", markerFile, e);
             }
-            return null;
+            return true;
         });
     }
 

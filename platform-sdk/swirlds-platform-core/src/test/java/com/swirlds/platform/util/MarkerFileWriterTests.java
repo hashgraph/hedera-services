@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.config.PathsConfig_;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,8 @@ public class MarkerFileWriterTests {
     void testWriteMarkerFile() {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder()
-                        .withValue("paths.markerFilesDir", testDirectoryPath.toString())
+                        .withValue(PathsConfig_.MARKER_FILES_DIR, testDirectoryPath.toString())
+                        .withValue(PathsConfig_.WRITE_PLATFORM_MARKER_FILES, true)
                         .getOrCreateConfig())
                 .build();
 
