@@ -97,8 +97,6 @@ class TokenAttributesValidatorTest {
                         TokenID.newBuilder().shardNum(1).realmNum(1).tokenNum(0).build()))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
-
-        // Null token ID
         assertThatThrownBy(() -> TokenAttributesValidator.validateTokenId(TokenID.newBuilder()
                         .shardNum(0)
                         .realmNum(0)
@@ -106,6 +104,8 @@ class TokenAttributesValidatorTest {
                         .build()))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
+
+        // Null token ID
         assertThatThrownBy(() -> TokenAttributesValidator.validateTokenId(null))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
