@@ -25,9 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_NOT_PROVIDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
@@ -116,21 +114,20 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var op = txn.cryptoCreateAccountOrThrow();
         validateTruePreCheck(
                 op.autoRenewPeriod() != null && op.autoRenewPeriod().seconds() > -1, INVALID_RENEWAL_PERIOD);
-        validateTruePreCheck(op.hasShardID() && op.shardIDOrThrow().shardNum() >= 0, INVALID_ACCOUNT_ID);
-        validateTruePreCheck(op.hasRealmID() && op.realmIDOrThrow().realmNum() >= 0, INVALID_ACCOUNT_ID);
+        if (op.hasShardID()) {
+            validateTruePreCheck(op.shardIDOrThrow().shardNum() >= 0, INVALID_ACCOUNT_ID);
+        }
+        if (op.hasRealmID()) {
+            validateTruePreCheck(op.realmIDOrThrow().realmNum() >= 0, INVALID_ACCOUNT_ID);
+        }
         if (op.hasNewRealmAdminKey()) {
-            validateTruePreCheck(!op.newRealmAdminKey().keyList().keys().isEmpty(), INVALID_ADMIN_KEY);
+            validateFalsePreCheck(isEmpty(op.newRealmAdminKeyOrThrow()), INVALID_ADMIN_KEY);
         }
         validateTruePreCheck(op.maxAutomaticTokenAssociations() >= 0, INVALID_TRANSACTION_BODY);
         validateTruePreCheck(op.initialBalance() >= 0L, INVALID_INITIAL_BALANCE);
         validateTruePreCheck(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
-        // FUTURE: should this return SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
-        validateTruePreCheck(op.sendRecordThreshold() >= 0L, INVALID_SEND_RECORD_THRESHOLD);
-        // FUTURE: should this return RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
-        validateTruePreCheck(op.receiveRecordThreshold() >= 0L, INVALID_RECEIVE_RECORD_THRESHOLD);
-        validateTruePreCheck(
-                op.proxyAccountIDOrElse(AccountID.DEFAULT).equals(AccountID.DEFAULT),
-                PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
+        // sendRecordThreshold, receiveRecordThreshold and proxyAccountID are deprecated. So no need to check them.
+        validateFalsePreCheck(op.hasProxyAccountID(), PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
         // You can never set the alias to be an "entity num alias" (sometimes called "long-zero").
         final var alias = op.alias();
         validateFalsePreCheck(isEntityNumAlias(alias), INVALID_ALIAS_KEY);
