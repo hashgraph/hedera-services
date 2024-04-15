@@ -44,10 +44,14 @@ public interface SocketFactory {
     /**
      * Configures and binds the provided ServerSocket
      *
-     * @param serverSocket the socket to configure and bind
-     * @param socketConfig the configuration for the socket
-     * @param port         the TCP port to bind
-     * @throws IOException if the bind is unsuccessful
+     * @param serverSocket
+     * 		the socket to configure and bind
+     * @param socketConfig
+     * 		the configuration for the socket
+     * @param port
+     * 		the TCP port to bind
+     * @throws IOException
+     * 		if the bind is unsuccessful
      */
     static void configureAndBind(
             @NonNull final ServerSocket serverSocket, @NonNull final SocketConfig socketConfig, final int port)
@@ -70,11 +74,16 @@ public interface SocketFactory {
     /**
      * Configures and connects the provided client Socket
      *
-     * @param clientSocket the socket to configure and connect
-     * @param socketConfig the configuration for the socket
-     * @param hostname     the address to connect to
-     * @param port         the TCP port to connect to
-     * @throws IOException if the connections fails
+     * @param clientSocket
+     * 		the socket to configure and connect
+     * @param socketConfig
+     * 		the configuration for the socket
+     * @param hostname
+     * 		the address to connect to
+     * @param port
+     * 		the TCP port to connect to
+     * @throws IOException
+     * 		if the connections fails
      */
     static void configureAndConnect(
             @NonNull final Socket clientSocket,
@@ -97,9 +106,11 @@ public interface SocketFactory {
     /**
      * Create a new ServerSocket, then binds it to the given port on all interfaces
      *
-     * @param port the port to bind to
+     * @param port
+     * 		the port to bind to
      * @return a new server socket
-     * @throws IOException if the socket cannot be created
+     * @throws IOException
+     * 		if the socket cannot be created
      */
     @NonNull
     ServerSocket createServerSocket(final int port) throws IOException;
@@ -107,10 +118,13 @@ public interface SocketFactory {
     /**
      * Create a new Socket, then connect to the given ip and port.
      *
-     * @param hostname the address to connect to
-     * @param port     the port to connect to
+     * @param hostname
+     * 		the address to connect to
+     * @param port
+     * 		the port to connect to
      * @return the new socket
-     * @throws IOException if the connection cannot be made
+     * @throws IOException
+     * 		if the connection cannot be made
      */
     @NonNull
     Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException;
@@ -121,5 +135,5 @@ public interface SocketFactory {
      *
      * @param peerInfoList the updated list of peers
      */
-    void refresh(List<PeerInfo> peerInfoList);
+    void refresh(@NonNull final List<PeerInfo> peerInfoList);
 }

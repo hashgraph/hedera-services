@@ -51,7 +51,7 @@ public class TcpFactory implements SocketFactory {
     }
 
     @Override
-    public void refresh(final List<PeerInfo> peerInfoList) {
+    public void refresh(@NonNull final List<PeerInfo> peerInfoList) {
         // not implemented for TCP Factory
     }
 }

@@ -139,7 +139,7 @@ public class TlsFactory implements SocketFactory {
      * {@inheritDoc}
      */
     @Override
-    public void refresh(final @NonNull List<PeerInfo> peers) {
+    public void refresh(@NonNull final List<PeerInfo> peers) {
         lock.lock();
         try {
             // we just extend the list for now, until the work to calculate diffs is done

@@ -22,9 +22,12 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConfig_;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -57,48 +60,35 @@ class ConnectivityTestBase {
     }
 
     /**
-     * creates a server socket thread for testing purposes
+     * Creates a socket thread which runs continuously until asked to close
+     * - verifies the transferred data is correct
+     * - leaves the server socket open until told to close
      *
-     * @param serverSocket the server socket to listen on
+     * @param serverSocket  the server socket
+     * @param data          the data to be read from the socket
+     * @param stopFlag      flag for stopping the thread
      */
-    static Thread createSocketThread(final ServerSocket serverSocket, final byte[] data) {
-        return new Thread(() -> {
-            try {
-                final Socket s = serverSocket.accept();
-                final byte[] bytes = s.getInputStream().readNBytes(data.length);
-                assertArrayEquals(data, bytes, "Data read from socket must be the same as the data written");
-                s.close();
-            } catch (final IOException e) {
-                throw new RuntimeException(e);
-            } finally {
-                // for some reason, AutoClosable does not seem to close in time, and subsequent tests fail if used
-                try {
-                    serverSocket.close();
-                } catch (final IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-    }
-
-    /**
-     * Creates a socket thread which doesn't get closed immediately - verifies the transferred data is correct - leaves
-     * the server socket open until told to close
-     *
-     * @param serverSocket the server socket
-     * @param stop         flag for stopping the thread
-     */
-    static Thread createSocketThread(final ServerSocket serverSocket, final AtomicBoolean stop) {
+    static Thread createSocketThread(
+            @NonNull final ServerSocket serverSocket,
+            @NonNull final byte[] data,
+            @NonNull final AtomicBoolean stopFlag) {
+        Objects.requireNonNull(serverSocket);
+        Objects.requireNonNull(stopFlag);
         final Thread thread = new Thread(() -> {
             try {
-                while (!stop.get()) {
+                while (!stopFlag.get()) {
                     final Socket s = serverSocket.accept();
-                    final byte[] bytes = s.getInputStream().readNBytes(TEST_DATA.length);
-                    assertArrayEquals(TEST_DATA, bytes, "Data read from socket must be the same as the data written");
+                    final byte[] bytes = s.getInputStream().readNBytes(data.length);
+                    assertArrayEquals(data, bytes, "Data read from socket must be the same as the data written");
                 }
             } catch (final IOException e) {
-                throw new RuntimeException(e);
+                if (!(e instanceof SocketTimeoutException)) {
+                    throw new RuntimeException(e);
+                } else {
+                    // ignore timeout exceptions as the socket blocks for a while until eventually closing
+                }
             } finally {
+                // for some reason, AutoClosable does not seem to close in time, and subsequent tests fail if used
                 try {
                     serverSocket.close();
                 } catch (final IOException e) {
@@ -116,11 +106,9 @@ class ConnectivityTestBase {
      * @param serverThread the thread the server socket is listening on
      * @param clientSocket the client socket
      */
-    static void testSocket(final Thread serverThread, final Socket clientSocket) throws Throwable {
-
+    static void testSocket(@NonNull final Thread serverThread, @NonNull final Socket clientSocket) throws Throwable {
         final AtomicReference<Throwable> threadException = new AtomicReference<>();
         serverThread.setUncaughtExceptionHandler((t, e) -> threadException.set(e));
-
         clientSocket.getOutputStream().write(TEST_DATA);
 
         if (threadException.get() != null) {
