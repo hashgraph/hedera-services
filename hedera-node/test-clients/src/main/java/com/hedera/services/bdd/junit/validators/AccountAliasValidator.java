@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit;
+package com.hedera.services.bdd.junit.validators;
 
 import com.hedera.node.app.service.mono.statedumpers.accounts.BBMHederaAccount;
-import com.hedera.services.stream.proto.RecordStreamFile;
+import com.hedera.services.bdd.junit.RecordStreamValidator;
+import com.hedera.services.bdd.junit.RecordWithSidecars;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Set;
 
-public interface RecordStreamValidator {
-    default void validateFiles(List<RecordStreamFile> files) {
-        // No-op
-    }
+public class AccountAliasValidator implements RecordStreamValidator {
 
-    default void validateRecordsAndSidecars(List<RecordWithSidecars> records) {
-        // No-op
-    }
-
-    default void validateRecordsAndSidecarsHapi(HapiTestEnv env, List<RecordWithSidecars> records)
+    @Override
+    public void validateAccountAliases(Set<BBMHederaAccount> accountsFromState, List<RecordWithSidecars> records)
             throws InvocationTargetException, IllegalAccessException {
-        // No-op
-    }
 
-    default void validateAccountAliases(Set<BBMHederaAccount> accountsFromState, List<RecordWithSidecars> records)
-            throws InvocationTargetException, IllegalAccessException {
-        // No-op
+        for (final var recordWithSidecars : records) {
+            final var items = recordWithSidecars.recordFile().getRecordStreamItemsList();
+            System.out.println("compare here");
+        }
     }
 }

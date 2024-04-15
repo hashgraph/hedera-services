@@ -54,6 +54,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle.UsageSnapshot;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.HapiUtils;
@@ -64,6 +65,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.hederahashgraph.api.proto.java.AccountID.AccountCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
@@ -78,7 +80,7 @@ public final class PbjConverter {
         requireNonNull(accountID);
         final var builder =
                 AccountID.newBuilder().shardNum(accountID.getShardNum()).realmNum(accountID.getRealmNum());
-        if (accountID.getAccountCase() == com.hederahashgraph.api.proto.java.AccountID.AccountCase.ALIAS) {
+        if (accountID.getAccountCase() == AccountCase.ALIAS) {
             builder.alias(Bytes.wrap(accountID.getAlias().toByteArray()));
         } else {
             builder.accountNum(accountID.getAccountNum());

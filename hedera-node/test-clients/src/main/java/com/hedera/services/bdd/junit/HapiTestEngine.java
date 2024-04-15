@@ -24,6 +24,8 @@ import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.service.mono.statedumpers.accounts.BBMHederaAccount;
+import com.hedera.services.bdd.junit.validators.AccountAliasValidator;
 import com.hedera.services.bdd.junit.validators.BlockNoValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
@@ -84,7 +86,7 @@ import org.junit.platform.engine.support.hierarchical.Node;
  */
 public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecutionContext> /* implements TestEngine */ {
 
-    public static final int NODE_COUNT = 4;
+    public static final int NODE_COUNT = 1;
 
     static {
         // This is really weird, but it exists because we have to force JUL to use Log4J as early as possible.
@@ -217,7 +219,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
             // Allow for a simple switch to enable in-process Alice node for debugging
             final String debugEnv = System.getenv("HAPI_DEBUG_NODE");
-            final boolean debugMode = Boolean.parseBoolean(debugEnv);
+            final boolean debugMode = true;
             final var nodesType = debugMode ? IN_PROCESS_ALICE : OUT_OF_PROCESS_ALICE;
             // For now, switching to non-in process servers, because in process doesn't work for the
             // restart and reconnect testing.
@@ -462,7 +464,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 new TransactionBodyValidator(),
                 new ExpiryRecordsValidator(),
                 new BalanceReconciliationValidator(),
-                new TokenReconciliationValidator());
+                new TokenReconciliationValidator(),
+                new AccountAliasValidator());
 
         public RecordStreamValidationTestDescriptor(TestDescriptor parent) {
             super(parent.getUniqueId().append("validation", "recordStream"), "recordStreamValidation");
@@ -504,6 +507,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 }
             }
 
+            Set<BBMHederaAccount> accountsFromState = StateAccess.readAccountsFromNodesState(HapiTestEngine.NODE_COUNT);
+
             // assert validators pass
             final var streamData = data;
             final var errorsIfAny = validators.stream()
@@ -513,6 +518,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                             // found
                             v.validateFiles(streamData.files());
                             v.validateRecordsAndSidecarsHapi(env, streamData.records());
+                            v.validateAccountAliases(accountsFromState, streamData.records());
                             return Stream.empty();
                         } catch (final Throwable t) {
                             return Stream.of(t);
