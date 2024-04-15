@@ -536,7 +536,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     blocks.selfId(),
                     (byte[] data) -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
-                    "CES",
+                    "" + blocks.selfId().id(),
                     (EventImpl event) -> event.isLastInRoundReceived()
                             && blocks.isInFreezePeriodReference().get().test(event.getConsensusTimestamp()));
         }
