@@ -140,7 +140,7 @@ public class TlsFactory implements SocketFactory {
     public void reload(@NonNull final List<PeerInfo> peers) {
         lock.lock();
         try {
-            // we just extend the list for now, until the work to calculate diffs is done
+            // we just reset the list for now, until the work to calculate diffs is done
             // then, we will have two lists of peers to add and to remove
             final KeyStore signingTrustStore = CryptoStatic.createPublicKeyStore(Objects.requireNonNull(peers));
             trustManagerFactory.init(signingTrustStore);
