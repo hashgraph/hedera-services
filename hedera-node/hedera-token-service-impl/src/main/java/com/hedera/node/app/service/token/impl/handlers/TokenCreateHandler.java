@@ -161,7 +161,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             mintFungible(newToken, treasuryRel, op.initialSupply(), accountStore, tokenStore, tokenRelationStore);
         }
         // Increment treasury's title count
-        final var treasuryAccount = requireNonNull(accountStore.getForModify(treasuryRel.accountIdOrThrow()));
+        final var treasuryAccount = requireNonNull(accountStore.get(treasuryRel.accountIdOrThrow()));
         accountStore.put(treasuryAccount
                 .copyBuilder()
                 .numberTreasuryTitles(treasuryAccount.numberTreasuryTitles() + 1)
