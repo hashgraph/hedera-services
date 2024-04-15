@@ -197,7 +197,7 @@ If the airdrop transaction fees from the list above are covered by a separate pa
 * Verify that an airdrop with a token and a missing recipient pointed by its public `ECDSA key alias`, works correctly by auto-creating the recipient with `maxAutoAssociations=-1` and the token is directly transferred to it
 * Verify that an airdrop with a token and a missing recipient pointed by its `evm_address` alias, works correctly by lazy-creating the recipient with `maxAutoAssociations=-1` and the token is directly transferred to it
 * Verify that an airdrop with a missing TokenID fails
-* Verify that an airdrop with a missing recipient pointed by an `EDD25519 key alias` fails
+* Verify that an airdrop with a missing recipient pointed by an `ED25519 key alias` fails
 * Verify that an airdrop with an NFT and non-existing serial number fails
 * Verify that an airdrop with wrong input data (e.g. negative amount, negative serial number or missing mandatory field) fails
 * Verify that an airdrop with a missing signature of the sender fails
