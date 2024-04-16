@@ -26,13 +26,13 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.wiring.ClearTrigger;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
@@ -56,9 +56,9 @@ public class StandardEventDeduplicator implements EventDeduplicator {
     private static final int INITIAL_CAPACITY = 1024;
 
     /**
-     * The current non-ancient event window.
+     * The current event window.
      */
-    private NonAncientEventWindow nonAncientEventWindow;
+    private EventWindow eventWindow;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -110,7 +110,7 @@ public class StandardEventDeduplicator implements EventDeduplicator {
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
-        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             observedEvents = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
         } else {
@@ -124,7 +124,7 @@ public class StandardEventDeduplicator implements EventDeduplicator {
     @Override
     @Nullable
     public GossipEvent handleEvent(@NonNull final GossipEvent event) {
-        if (nonAncientEventWindow.isAncient(event)) {
+        if (eventWindow.isAncient(event)) {
             // Ancient events can be safely ignored.
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return null;
@@ -156,17 +156,17 @@ public class StandardEventDeduplicator implements EventDeduplicator {
      * {@inheritDoc}
      */
     @Override
-    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
+    public void setEventWindow(@NonNull final EventWindow eventWindow) {
+        this.eventWindow = Objects.requireNonNull(eventWindow);
 
-        observedEvents.shiftWindow(nonAncientEventWindow.getAncientThreshold());
+        observedEvents.shiftWindow(eventWindow.getAncientThreshold());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void clear(@NonNull final ClearTrigger ignored) {
+    public void clear(@NonNull final NoInput ignored) {
         observedEvents.clear();
     }
 }

@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 
@@ -59,6 +60,19 @@ public record EthTxData(
     // EIP155 note support for v = 27|28 cases in unprotected transaction cases
     static final BigInteger LEGACY_V_BYTE_SIGNATURE_0 = BigInteger.valueOf(27);
     static final BigInteger LEGACY_V_BYTE_SIGNATURE_1 = BigInteger.valueOf(28);
+
+    static final int FOUNDRY_DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER = 100;
+    // The specific transaction bytes that are used to deploy the Foundry Deterministic Deployer contract
+    public static final byte[] FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION;
+
+    static {
+        try {
+            FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION = Hex.decodeHex(
+                    "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222");
+        } catch (DecoderException e) {
+            throw new IllegalStateException("FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION could not be decoded", e);
+        }
+    }
 
     public static EthTxData populateEthTxData(byte[] data) {
         try {
@@ -193,8 +207,14 @@ public record EthTxData(
     }
 
     public BigInteger getMaxGasAsBigInteger() {
+        long multiple = 1L;
+        if (type == EthTransactionType.LEGACY_ETHEREUM
+                && Arrays.equals(rawTx, FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION)) {
+            multiple = FOUNDRY_DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER;
+        }
         return switch (type) {
-            case LEGACY_ETHEREUM, EIP2930 -> new BigInteger(1, gasPrice);
+            case LEGACY_ETHEREUM -> new BigInteger(1, gasPrice).multiply(BigInteger.valueOf(multiple));
+            case EIP2930 -> new BigInteger(1, gasPrice);
             case EIP1559 -> new BigInteger(1, maxGas);
         };
     }

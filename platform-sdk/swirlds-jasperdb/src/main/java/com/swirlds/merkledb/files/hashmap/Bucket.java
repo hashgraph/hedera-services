@@ -31,7 +31,6 @@ import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -337,17 +336,9 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
         checkLargestBucket(entryCount);
     }
 
-    void readFrom(final ByteBuffer buffer) throws IOException {
-        throw new UnsupportedOperationException("Cannot read Bucket from JDB");
-    }
-
     public void writeTo(final WritableSequentialData out) {
         bucketData.resetPosition();
         out.writeBytes(bucketData);
-    }
-
-    void writeTo(final ByteBuffer buffer) throws IOException {
-        throw new UnsupportedOperationException("Cannot write Bucket to JDB");
     }
 
     // =================================================================================================================

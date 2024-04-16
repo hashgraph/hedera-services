@@ -38,6 +38,7 @@ import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
@@ -80,13 +81,15 @@ class PlatformWiringTests {
                 .withEventDeduplicator(mock(EventDeduplicator.class))
                 .withEventSignatureValidator(mock(EventSignatureValidator.class))
                 .withStateGarbageCollector(mock(StateGarbageCollector.class))
-                .withSelfEventSigner(mock(SelfEventSigner.class));
+                .withSelfEventSigner(mock(SelfEventSigner.class))
+                .withOrphanBuffer(mock(OrphanBuffer.class))
+                .withRunningEventHasher(mock(RunningEventHasher.class))
+                .withEventCreationManager(mock(EventCreationManager.class))
+                .withInOrderLinker(mock(InOrderLinker.class))
+                .withConsensusEngine(mock(ConsensusEngine.class));
 
         wiring.bind(
                 componentBuilder,
-                mock(OrphanBuffer.class),
-                mock(InOrderLinker.class),
-                mock(ConsensusEngine.class),
                 mock(SignedStateFileManager.class),
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),
@@ -94,7 +97,6 @@ class PlatformWiringTests {
                 mock(EventDurabilityNexus.class),
                 mock(Shadowgraph.class),
                 mock(PcesSequencer.class),
-                mock(EventCreationManager.class),
                 mock(StateSignatureCollector.class),
                 mock(TransactionPrehandler.class),
                 mock(EventWindowManager.class),

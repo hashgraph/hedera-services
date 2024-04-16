@@ -60,7 +60,8 @@ public class RandomSignedStateGenerator {
 
     private State state;
     private Long round;
-    private Hash hashEventsCons;
+    private Hash legacyRunningEventHash;
+    private Hash runningEventHash;
     private AddressBook addressBook;
     private Instant consensusTimestamp;
     private Boolean freezeState = false;
@@ -132,11 +133,18 @@ public class RandomSignedStateGenerator {
             roundInstance = round;
         }
 
-        final Hash hashEventsConsInstance;
-        if (hashEventsCons == null) {
-            hashEventsConsInstance = randomHash(random);
+        final Hash legacyRunningEventHashInstance;
+        if (legacyRunningEventHash == null) {
+            legacyRunningEventHashInstance = randomHash(random);
         } else {
-            hashEventsConsInstance = hashEventsCons;
+            legacyRunningEventHashInstance = legacyRunningEventHash;
+        }
+
+        final Hash runningEventHashInstance;
+        if (runningEventHash == null) {
+            runningEventHashInstance = randomHash(random);
+        } else {
+            runningEventHashInstance = runningEventHash;
         }
 
         final Instant consensusTimestampInstance;
@@ -184,7 +192,8 @@ public class RandomSignedStateGenerator {
         final PlatformState platformState = stateInstance.getPlatformState();
 
         platformState.setRound(roundInstance);
-        platformState.setRunningEventHash(hashEventsConsInstance);
+        platformState.setLegacyRunningEventHash(legacyRunningEventHashInstance);
+        platformState.setRunningEventHash(runningEventHashInstance);
         platformState.setConsensusTimestamp(consensusTimestampInstance);
         platformState.setCreationSoftwareVersion(softwareVersionInstance);
         platformState.setRoundsNonAncient(roundsNonAncientInstance);
@@ -298,12 +307,23 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Set the running hash of all events that have been applied to this state since genesis.
+     * Set the legacy running hash of all events that have been applied to this state since genesis.
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setHashEventsCons(final Hash hashEventsCons) {
-        this.hashEventsCons = hashEventsCons;
+    public RandomSignedStateGenerator setLegacyRunningEventHash(final Hash legacyRunningEventHash) {
+        this.legacyRunningEventHash = legacyRunningEventHash;
+        return this;
+    }
+
+    /**
+     * Set the running hash of all events that have been applied to this state since the last freeze.
+     *
+     * @return this object
+     */
+    @NonNull
+    public RandomSignedStateGenerator setRunningEventHash(final Hash runningEventHash) {
+        this.runningEventHash = runningEventHash;
         return this;
     }
 

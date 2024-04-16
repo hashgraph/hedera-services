@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.hapi.utils.ethereum;
 
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.FOUNDRY_DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -533,6 +535,37 @@ class EthTxDataTest {
                 assertTrue(testTransaction.getMaxGasAsBigInteger().compareTo(BigInteger.ZERO) > 0);
             }
         }
+    }
+
+    @Test
+    void maxGasForFoundryDeterministicDeployerIsAsExpected() {
+        final var oneByte = new byte[] {1};
+        // 45 tinybar as weibar
+        final var smallGasPrice = Hex.decode("68c6171400");
+        final var type = EthTransactionType.LEGACY_ETHEREUM;
+        final EthTxData testTransaction = new EthTxData(
+                FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION,
+                type,
+                oneByte,
+                1,
+                smallGasPrice,
+                smallGasPrice,
+                smallGasPrice,
+                1,
+                oneByte,
+                BigInteger.ONE,
+                oneByte,
+                oneByte,
+                1,
+                oneByte,
+                oneByte,
+                oneByte);
+        assertTrue(testTransaction
+                        .getMaxGasAsBigInteger()
+                        .compareTo(BigInteger.valueOf(45)
+                                .multiply(BigInteger.valueOf(FOUNDRY_DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER))
+                                .multiply(WEIBARS_TO_TINYBARS))
+                == 0);
     }
 
     @Test
