@@ -368,8 +368,8 @@ public record EthTxData(
         }
 
         final var value = rlpList.get(4).asBytes().length == 0
-            ? BigInteger.ZERO
-            : new BigInteger(rlpList.get(4).asBytes());
+                ? BigInteger.ZERO
+                : new BigInteger(rlpList.get(4).asBytes());
 
         return new EthTxData(
                 rawTx,
@@ -381,7 +381,7 @@ public record EthTxData(
                 null, // maxGas
                 rlpList.get(2).asLong(), // gasLimit
                 rlpList.get(3).data(), // to
-            rlpList.get(4).asBigInt(), // value
+                value, // value
                 rlpList.get(5).data(), // callData
                 null, // accessList
                 recId,
@@ -407,8 +407,8 @@ public record EthTxData(
         }
 
         final var value = rlpList.get(6).asBytes().length == 0
-            ? BigInteger.ZERO
-            : new BigInteger(rlpList.get(6).asBytes());
+                ? BigInteger.ZERO
+                : new BigInteger(rlpList.get(6).asBytes());
 
         return new EthTxData(
                 rawTx,
@@ -420,7 +420,7 @@ public record EthTxData(
                 rlpList.get(3).data(), // maxGas
                 rlpList.get(4).asLong(), // gasLimit
                 rlpList.get(5).data(), // to
-            rlpList.get(6).asBigInt(), // value
+                value, // value
                 rlpList.get(7).data(), // callData
                 rlpList.get(8).data(), // accessList
                 rlpList.get(9).asByte(), // recId
@@ -446,8 +446,8 @@ public record EthTxData(
         }
 
         final var value = rlpList.get(5).asBytes().length == 0
-            ? BigInteger.ZERO
-            : new BigInteger(rlpList.get(5).asBytes());
+                ? BigInteger.ZERO
+                : new BigInteger(rlpList.get(5).asBytes());
 
         return new EthTxData(
                 rawTx,
@@ -459,7 +459,7 @@ public record EthTxData(
                 null, // maxGas
                 rlpList.get(3).asLong(), // gasLimit
                 rlpList.get(4).data(), // to
-            rlpList.get(5).asBigInt(), // value
+                value, // value
                 rlpList.get(6).data(), // callData
                 rlpList.get(7).data(), // accessList
                 rlpList.get(8).asByte(), // recId

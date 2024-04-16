@@ -539,24 +539,24 @@ class EthTxDataTest {
     void negativeValueEIP1559() {
         final var negativeValue = BigInteger.valueOf(-1000);
 
-        final var oneByte = new byte[]{1};
+        final var oneByte = new byte[] {1};
         final EthTxData ethTxData = new EthTxData(
-            oneByte,
-            EthTransactionType.EIP1559,
-            oneByte,
-            1,
-            oneByte,
-            oneByte,
-            oneByte,
-            1,
-            oneByte,
-            negativeValue,
-            oneByte,
-            null,
-            1,
-            oneByte,
-            oneByte,
-            oneByte);
+                oneByte,
+                EthTransactionType.EIP1559,
+                oneByte,
+                1,
+                oneByte,
+                oneByte,
+                oneByte,
+                1,
+                oneByte,
+                negativeValue,
+                oneByte,
+                null,
+                1,
+                oneByte,
+                oneByte,
+                oneByte);
         final var encoded = ethTxData.encodeTx();
 
         final var populateEthTxData = EthTxData.populateEthTxData(encoded);
@@ -568,24 +568,24 @@ class EthTxDataTest {
     void negativeValueEIP2930() {
         final var negativeValue = BigInteger.valueOf(-1000);
 
-        final var oneByte = new byte[]{1};
+        final var oneByte = new byte[] {1};
         final EthTxData ethTxData = new EthTxData(
-            oneByte,
-            EthTransactionType.EIP2930,
-            oneByte,
-            1,
-            oneByte,
-            oneByte,
-            oneByte,
-            1,
-            oneByte,
-            negativeValue,
-            oneByte,
-            null,
-            1,
-            oneByte,
-            oneByte,
-            oneByte);
+                oneByte,
+                EthTransactionType.EIP2930,
+                oneByte,
+                1,
+                oneByte,
+                oneByte,
+                oneByte,
+                1,
+                oneByte,
+                negativeValue,
+                oneByte,
+                null,
+                1,
+                oneByte,
+                oneByte,
+                oneByte);
         final var encoded = ethTxData.encodeTx();
 
         final var populateEthTxData = EthTxData.populateEthTxData(encoded);
@@ -597,29 +597,28 @@ class EthTxDataTest {
     void negativeValueLegacy() {
         final var negativeValue = BigInteger.valueOf(-1000);
 
-        final var oneByte = new byte[]{1};
+        final var oneByte = new byte[] {1};
         final EthTxData ethTxData = new EthTxData(
-            oneByte,
-            EthTransactionType.LEGACY_ETHEREUM,
-            oneByte,
-            1,
-            oneByte,
-            oneByte,
-            oneByte,
-            1,
-            oneByte,
-            negativeValue,
-            oneByte,
-            null,
-            1,
-            oneByte,
-            oneByte,
-            oneByte);
+                oneByte,
+                EthTransactionType.LEGACY_ETHEREUM,
+                oneByte,
+                1,
+                oneByte,
+                oneByte,
+                oneByte,
+                1,
+                oneByte,
+                negativeValue,
+                oneByte,
+                null,
+                1,
+                oneByte,
+                oneByte,
+                oneByte);
         final var encoded = ethTxData.encodeTx();
 
         final var populateEthTxData = EthTxData.populateEthTxData(encoded);
 
         assertEquals(negativeValue, populateEthTxData.value());
     }
-
 }
