@@ -281,8 +281,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(NEGATIVE_MINT_CONTRACT)),
-                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(MULTI_KEY),
                         contractCall(
                                         NEGATIVE_MINT_CONTRACT,
                                         mintToken,
@@ -393,7 +393,9 @@ public class ContractMintHTSSuite extends HapiSuite {
                         newKeyNamed(DELEGATE_CONTRACT_KEY_NAME)
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, NESTED_MINT_CONTRACT))),
                         cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(DELEGATE_CONTRACT_KEY_NAME),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(DELEGATE_CONTRACT_KEY_NAME)
+                                .signedByPayerAnd(MULTI_KEY),
                         contractCall(
                                         NESTED_MINT_CONTRACT,
                                         "sendNFTAfterMint",

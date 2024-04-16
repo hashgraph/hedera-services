@@ -61,7 +61,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -202,11 +201,6 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         serializeTo(to::writeByte, to::writeInt, to::writeLong, data -> to.writeBytes(data, 0, data.length));
     }
 
-    @Deprecated
-    public void serialize(final ByteBuffer to) {
-        serializeTo(to::put, to::putInt, to::putLong, data -> to.put(data, 0, data.length));
-    }
-
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         deserializeFrom(in::readByte, in::readInt, in::readLong, in::readFully);
@@ -214,11 +208,6 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
 
     public void deserialize(final ReadableSequentialData in) {
         deserializeFrom(in::readByte, in::readInt, in::readLong, in::readBytes);
-    }
-
-    @Deprecated
-    public void deserialize(final ByteBuffer from, final int version) {
-        deserializeFrom(from::get, from::getInt, from::getLong, from::get);
     }
 
     @Override
