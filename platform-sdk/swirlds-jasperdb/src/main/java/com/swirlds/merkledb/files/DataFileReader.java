@@ -451,7 +451,8 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
                 // Fill the byte buffer from the channel
                 readBB.clear();
                 readBB.limit(PRE_READ_BUF_SIZE); // No need to read more than that for a header
-                MerkleDbFileUtils.completelyRead(fileChannel, readBB, byteOffsetInFile);
+                int bytesRead = MerkleDbFileUtils.completelyRead(fileChannel, readBB, byteOffsetInFile);
+                assert bytesRead == Math.min(PRE_READ_BUF_SIZE, fileChannel.size() - byteOffsetInFile);
                 // Then read the tag and size from the read buffer, since it's wrapped over the byte buffer
                 readBuf.reset();
                 final int tag = readBuf.getVarInt(0, false); // tag
@@ -462,7 +463,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
                 final int size = readBuf.getVarInt(sizeOfTag, false);
                 final int sizeOfSize = ProtoWriterTools.sizeOfUnsignedVarInt32(size);
                 // Check if the whole data item is already read in the header
-                if (PRE_READ_BUF_SIZE >= sizeOfTag + sizeOfSize + size) {
+                if (bytesRead >= sizeOfTag + sizeOfSize + size) {
                     readBuf.position(sizeOfTag + sizeOfSize);
                     readBuf.limit(sizeOfTag + sizeOfSize + size);
                     return readBuf;
@@ -477,7 +478,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
                     readBB.position(0);
                     readBB.limit(size);
                 }
-                final int bytesRead = MerkleDbFileUtils.completelyRead(
+                bytesRead = MerkleDbFileUtils.completelyRead(
                         fileChannel, readBB, byteOffsetInFile + sizeOfTag + sizeOfSize);
                 assert bytesRead == size : "Failed to read all data item bytes";
                 readBuf.position(0);
