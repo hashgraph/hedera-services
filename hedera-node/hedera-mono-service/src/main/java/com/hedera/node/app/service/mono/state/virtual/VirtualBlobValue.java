@@ -22,7 +22,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class VirtualBlobValue implements VirtualValue {
@@ -81,12 +80,6 @@ public class VirtualBlobValue implements VirtualValue {
         out.writeBytes(data);
     }
 
-    @Deprecated
-    void serialize(ByteBuffer buffer) {
-        buffer.putInt(data.length);
-        buffer.put(data);
-    }
-
     @Override
     public void deserialize(SerializableDataInputStream in, int version) throws IOException {
         data = in.readByteArray(Integer.MAX_VALUE);
@@ -96,13 +89,6 @@ public class VirtualBlobValue implements VirtualValue {
         final int size = in.readInt();
         data = new byte[size];
         in.readBytes(data);
-    }
-
-    @Deprecated
-    void deserialize(ByteBuffer buffer, int version) {
-        final var n = buffer.getInt();
-        data = new byte[n];
-        buffer.get(data);
     }
 
     @Override
