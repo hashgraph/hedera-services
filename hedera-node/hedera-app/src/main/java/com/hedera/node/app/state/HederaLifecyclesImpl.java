@@ -108,7 +108,8 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
                     configAddressBook.updateWeight(id, stakingInfo.weight());
                     configNodeIds.remove(id);
                 } else {
-                    // We need to validate and mark any node that are removed during upgrade as deleted.
+                    // We need to validate and mark any node that are removed during upgrade as deleted
+                    // and also set the weight to 0
                     stakingInfoState.put(
                             EntityNumber.newBuilder().number(id.id()).build(),
                             stakingInfo.copyBuilder().deleted(true).weight(0).build());
@@ -121,15 +122,16 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             // for any newly added nodes that doesn't exist in state, weight should be set to 0
             // irrespective of the weight provided in config.txt
             if (!configNodeIds.isEmpty()) {
-                addAdditionalNodesToState(
-                        stakingInfoState, configNodeIds, context.getConfiguration(), configAddressBookSize);
                 configNodeIds.forEach(nodeId -> {
                     configAddressBook.updateWeight(nodeId, 0);
                     logger.info(
                             "Node {} is newly added in configAddressBook during upgrade "
-                                    + "and is added to state with weight 0 in state",
+                                    + "with weight 0 in configAddressBook",
                             nodeId);
                 });
+                // update the state with new nodes and set weight to 0
+                addAdditionalNodesToState(
+                        stakingInfoState, configNodeIds, context.getConfiguration(), configAddressBookSize);
             }
 
             if (stakingInfoState.isModified()) {
@@ -140,6 +142,13 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
         }
     }
 
+    /**
+     * Add additional nodes to state with weight 0 and update all nodes maxStake to maxStakePerNode
+     * @param stakingToState The state to update
+     * @param newNodeIds The new node ids to add
+     * @param config The configuration
+     * @param configAddressBookSize The size of the address book
+     */
     private void addAdditionalNodesToState(
             @NonNull final WritableKVState<EntityNumber, StakingNodeInfo> stakingToState,
             @NonNull final Set<NodeId> newNodeIds,
@@ -163,12 +172,15 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
                     .weight(0)
                     .build();
             stakingToState.put(new EntityNumber(nodeId.id()), newNodeStakingInfo);
+            logger.info("Node {} is added in state with weight 0 and maxStakePerNode {} ", nodeId, maxStakePerNode);
         }
-
         // Update all nodes maxStake to maxStakePerNode
         stakingToState.keys().forEachRemaining(key -> {
             final var stakingInfo = stakingToState.get(key);
-            final var copy = stakingInfo.copyBuilder().maxStake(maxStakePerNode).build();
+            final var copy = requireNonNull(stakingInfo)
+                    .copyBuilder()
+                    .maxStake(maxStakePerNode)
+                    .build();
             stakingToState.put(key, copy);
         });
     }
