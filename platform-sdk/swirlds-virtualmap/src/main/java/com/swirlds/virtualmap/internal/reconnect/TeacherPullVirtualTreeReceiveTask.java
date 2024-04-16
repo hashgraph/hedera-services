@@ -120,7 +120,7 @@ public class TeacherPullVirtualTreeReceiveTask {
     private void run() {
         boolean success = false;
         try {
-            in.anticipateMessage(); // anticipate root node response
+            in.anticipateMessage(); // anticipate root node request
             while (true) {
                 rateLimit();
                 final PullVirtualTreeRequest request = in.readAnticipatedMessage(viewId);

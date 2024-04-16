@@ -180,6 +180,10 @@ public class TeachingSynchronizer {
 
         final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, reconnectConfig);
         final AsyncOutputStream out = buildOutputStream(workGroup, outputStream);
+        // Async output can be started right away. Its internal queues for every view are initialized
+        // in sendAsync(). Async input is different, views are explicitly registered in it using
+        // registerView() method. This is why it is started below, after all tasks are created
+        out.start();
 
         final AtomicInteger running = new AtomicInteger(toSend.size());
         for (final TeacherSubtree subtree : toSend) {
@@ -202,8 +206,9 @@ public class TeachingSynchronizer {
             });
         }
 
+        // All views have registered themselves in async input. It can now accept messages from the
+        // underlying input stream and put them to the right view's queues. It's time to start it
         in.start();
-        out.start();
 
         workGroup.waitForTermination();
 

@@ -220,8 +220,13 @@ public class LearningSynchronizer implements ReconnectNodeCount {
                 new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, reconnectExceptionListener);
 
         final List<AtomicReference<MerkleNode>> reconstructedRoots = new ArrayList<>(toReceive.size());
+
         final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, reconnectConfig);
         final AsyncOutputStream out = buildOutputStream(workGroup, outputStream);
+        // Async output can be started right away. Its internal queues for every view are initialized
+        // in sendAsync(). Async input is different, views are explicitly registered in it using
+        // registerView() method. This is why it is started below, after all tasks are created
+        out.start();
 
         final AtomicInteger runningCount = new AtomicInteger(toReceive.size());
         for (final MerkleNode root : toReceive) {
@@ -253,8 +258,9 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             });
         }
 
+        // All views have registered themselves in async input. It can now accept messages from the
+        // underlying input stream and put them to the right view's queues. It's time to start it
         in.start();
-        out.start();
 
         InterruptedException interruptException = null;
         try {

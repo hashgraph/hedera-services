@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -120,12 +121,13 @@ public class AsyncOutputStream implements AutoCloseable {
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
         this.queueSize = config.asyncStreamBufferSize();
         this.streamQueue = new LinkedBlockingQueue<>(queueSize * config.maxParallelSubtrees());
-        this.viewMessages = new HashMap<>();
         this.alive = true;
         this.timeSinceLastFlush = new StopWatch();
         this.timeSinceLastFlush.start();
         this.flushInterval = config.asyncOutputStreamFlush();
         this.timeout = config.asyncStreamTimeout();
+
+        this.viewMessages = new ConcurrentHashMap<>();
     }
 
     /**
