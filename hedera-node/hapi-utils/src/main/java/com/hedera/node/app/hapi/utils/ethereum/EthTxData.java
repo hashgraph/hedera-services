@@ -432,7 +432,7 @@ public record EthTxData(
                 rlpList.get(3).data(), // maxGas
                 rlpList.get(4).asLong(), // gasLimit
                 rlpList.get(5).data(), // to
-                toValue(rlpList.get(6).asBytes()), // value
+                toValue(rlpList.get(6).data()), // value
                 rlpList.get(7).data(), // callData
                 rlpList.get(8).data(), // accessList
                 rlpList.get(9).asByte(), // recId
