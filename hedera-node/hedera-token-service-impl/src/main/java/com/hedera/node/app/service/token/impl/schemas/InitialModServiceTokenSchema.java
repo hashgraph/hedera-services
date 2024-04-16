@@ -205,6 +205,10 @@ public class InitialModServiceTokenSchema extends Schema {
                         nodeId.number());
             }
         });
+        // validate if any new nodes are added in addressBook and not in staking info. If so, add them to staking info
+        // with weight 0. Also update maxStake and minStake for the new nodes.
+        addAdditionalNodesIfAny(stakingToState, networkInfo.addressBook(), ctx.configuration());
+
         if (stakingToState.isModified()) {
             ((WritableKVStateBase) stakingToState).commit();
         }
@@ -310,11 +314,6 @@ public class InitialModServiceTokenSchema extends Schema {
                                 .build(),
                         toStakingInfo);
             });
-
-            // It is possible this is migrated to a state that has more number of nodes
-            // than the current network. In that case, we need to mark the extra nodes with zero weight until
-            // they are added to the network in EndOfStakingPeriodCalculator
-            addAdditionalNodes(stakingToState, ctx.networkInfo().addressBook(), ctx.configuration());
 
             if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
             final var stakingConfig = ctx.configuration().getConfigData(StakingConfig.class);
@@ -437,34 +436,37 @@ public class InitialModServiceTokenSchema extends Schema {
         mnc = null;
     }
 
-    private void addAdditionalNodes(
+    private void addAdditionalNodesIfAny(
             final WritableKVState<EntityNumber, StakingNodeInfo> stakingToState,
             final List<NodeInfo> nodeInfos,
             final Configuration config) {
-        final var stakingInfoSize = stakingToState.size();
-        final var numberOfNodes = nodeInfos.size();
+        final var existingNodeIds = stakingToState.size();
+        final var numberOfNodesInAddressBook = nodeInfos.size();
+        final long maxStakePerNode =
+                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodesInAddressBook;
+        final var numRewardHistoryStoredPeriods =
+                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
 
-        if (stakingInfoSize < numberOfNodes) {
-            final long maxStakePerNode =
-                    config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodes;
-            final long minStakePerNode = 0;
-            final var numRewardHistoryStoredPeriods =
-                    config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
-            final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods + 1];
-            Arrays.fill(rewardSumHistory, 0L);
-            for (final var node : nodeInfos) {
-                if (stakingToState.get(new EntityNumber(node.nodeId())) != null) {
-                    continue;
+        final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods + 1];
+        Arrays.fill(rewardSumHistory, 0L);
+        for (final var nodeId : nodeInfos) {
+            final var entityNum = new EntityNumber(nodeId.nodeId());
+            final var stakingInfo = stakingToState.get(entityNum);
+            if (stakingInfo != null) {
+                if (existingNodeIds != numberOfNodesInAddressBook) {
+                    stakingToState.put(
+                            entityNum,
+                            stakingInfo.copyBuilder().maxStake(maxStakePerNode).build());
                 }
-                final var nodeNumber = node.nodeId();
-                final var stakingInfo = StakingNodeInfo.newBuilder()
-                        .nodeNumber(nodeNumber)
+            } else {
+                final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
+                        .nodeNumber(nodeId.nodeId())
                         .maxStake(maxStakePerNode)
-                        .minStake(minStakePerNode)
+                        .minStake(0L)
                         .rewardSumHistory(Arrays.asList(rewardSumHistory))
-                        .weight(500)
+                        .weight(0)
                         .build();
-                stakingToState.put(EntityNumber.newBuilder().number(nodeNumber).build(), stakingInfo);
+                stakingToState.put(entityNum, newNodeStakingInfo);
             }
         }
     }
