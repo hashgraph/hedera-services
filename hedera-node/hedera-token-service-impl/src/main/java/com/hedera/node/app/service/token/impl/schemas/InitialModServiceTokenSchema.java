@@ -64,6 +64,7 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -76,11 +77,13 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -307,6 +310,12 @@ public class InitialModServiceTokenSchema extends Schema {
                                 .build(),
                         toStakingInfo);
             });
+
+            // It is possible this is migrated to a state that has more number of nodes
+            // than the current network. In that case, we need to mark the extra nodes with zero weight until
+            // they are added to the network in EndOfStakingPeriodCalculator
+            addAdditionalNodes(stakingToState, ctx.networkInfo().addressBook(), ctx.configuration());
+
             if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
             final var stakingConfig = ctx.configuration().getConfigData(StakingConfig.class);
             final var currentStakingPeriod =
@@ -426,6 +435,38 @@ public class InitialModServiceTokenSchema extends Schema {
 
         stakingFs = null;
         mnc = null;
+    }
+
+    private void addAdditionalNodes(
+            final WritableKVState<EntityNumber, StakingNodeInfo> stakingToState,
+            final List<NodeInfo> nodeInfos,
+            final Configuration config) {
+        final var stakingInfoSize = stakingToState.size();
+        final var numberOfNodes = nodeInfos.size();
+
+        if (stakingInfoSize < numberOfNodes) {
+            final long maxStakePerNode =
+                    config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodes;
+            final long minStakePerNode = 0;
+            final var numRewardHistoryStoredPeriods =
+                    config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
+            final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods + 1];
+            Arrays.fill(rewardSumHistory, 0L);
+            for (final var node : nodeInfos) {
+                if (stakingToState.get(new EntityNumber(node.nodeId())) != null) {
+                    continue;
+                }
+                final var nodeNumber = node.nodeId();
+                final var stakingInfo = StakingNodeInfo.newBuilder()
+                        .nodeNumber(nodeNumber)
+                        .maxStake(maxStakePerNode)
+                        .minStake(minStakePerNode)
+                        .rewardSumHistory(Arrays.asList(rewardSumHistory))
+                        .weight(500)
+                        .build();
+                stakingToState.put(EntityNumber.newBuilder().number(nodeNumber).build(), stakingInfo);
+            }
+        }
     }
 
     private void createGenesisSchema(@NonNull final MigrationContext ctx) {
