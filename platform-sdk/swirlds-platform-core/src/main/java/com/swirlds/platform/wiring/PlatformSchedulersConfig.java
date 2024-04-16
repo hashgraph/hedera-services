@@ -39,11 +39,9 @@ import java.time.Duration;
  * @param internalEventValidator                            configuration for the internal event validator scheduler
  * @param eventDeduplicator                                 configuration for the event deduplicator scheduler
  * @param eventSignatureValidator                           configuration for the event signature validator scheduler
- * @param orphanBuffer                                      configuration for the orphan buffer scheduler
+ * @param orphanBuffer                                      configuration for the orphan buffer scheduler scheduler
+ * @param consensusEngine                                   configuration for the consensus engine scheduler
  * @param inOrderLinker                                     configuration for the in order linker scheduler
- * @param consensusEngineSchedulerType                      the consensus engine scheduler type
- * @param consensusEngineUnhandledCapacity                  number of unhandled tasks allowed in the consensus engine
- *                                                          scheduler
  * @param eventCreationManager                              configuration for the event creation manager scheduler
  * @param selfEventSigner                                   configuration for the self event signer scheduler
  * @param signedStateFileManagerSchedulerType               the signed state file manager scheduler type
@@ -100,10 +98,12 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration eventSignatureValidator,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration orphanBuffer,
+        @ConfigProperty(
+                        defaultValue =
+                                "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
+                TaskSchedulerConfiguration consensusEngine,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration inOrderLinker,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusEngineSchedulerType,
-        @ConfigProperty(defaultValue = "500") int consensusEngineUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventCreationManager,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration selfEventSigner,

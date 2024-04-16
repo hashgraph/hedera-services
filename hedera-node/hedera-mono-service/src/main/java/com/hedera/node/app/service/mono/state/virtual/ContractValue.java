@@ -21,7 +21,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes32;
@@ -234,21 +233,10 @@ public class ContractValue implements VirtualValue {
         outputStream.write(this.uint256Value);
     }
 
-    @Deprecated
-    void serialize(ByteBuffer byteBuffer) {
-        byteBuffer.put(this.uint256Value);
-    }
-
     @Override
     public void deserialize(SerializableDataInputStream inputStream, int i) throws IOException {
         if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         int lengthRead = inputStream.read(this.uint256Value);
         assert lengthRead == SERIALIZED_SIZE;
-    }
-
-    @Deprecated
-    void deserialize(ByteBuffer byteBuffer, int i) {
-        if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
-        byteBuffer.get(this.uint256Value);
     }
 }

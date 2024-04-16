@@ -163,7 +163,7 @@ public record TaskSchedulerConfiguration(
                 continue;
             }
 
-            throw new IllegalArgumentException("Invalid task scheduler configuration: " + string);
+            throw new IllegalArgumentException("Invalid task scheduler configuration: " + part);
         }
 
         return new TaskSchedulerConfiguration(
