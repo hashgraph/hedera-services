@@ -24,12 +24,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,10 +72,10 @@ class SecondSinceEpocVirtualKeyTest {
     }
 
     @Test
-    void deserializeWorks() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocate(100);
-        buffer.putLong(longKey);
-        buffer.rewind();
+    void deserializeWorks() {
+        final BufferedData buffer = BufferedData.allocate(100);
+        buffer.writeLong(longKey);
+        buffer.reset();
 
         SecondSinceEpocVirtualKey key = new SecondSinceEpocVirtualKey();
 
@@ -105,9 +105,9 @@ class SecondSinceEpocVirtualKeyTest {
     @Test
     void serializeActuallyWithByteBufferWorks() throws Exception {
         checkSerialize(() -> {
-            final var buffer = ByteBuffer.allocate(100000);
+            final var buffer = BufferedData.allocate(100000);
             subject.serialize(buffer);
-            buffer.rewind();
+            buffer.reset();
             var copy = new SecondSinceEpocVirtualKey();
             copy.deserialize(buffer);
 
@@ -120,12 +120,13 @@ class SecondSinceEpocVirtualKeyTest {
     @Test
     void serializeActuallyWithMixedWorksBytesFirst() throws Exception {
         checkSerialize(() -> {
-            final var buffer = ByteBuffer.allocate(100000);
+            final var arr = new byte[100000];
+            final var buffer = BufferedData.wrap(arr);
             subject.serialize(buffer);
 
             var copy = new SecondSinceEpocVirtualKey();
             copy.deserialize(
-                    new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+                    new SerializableDataInputStream(new ByteArrayInputStream(arr)),
                     SecondSinceEpocVirtualKey.CURRENT_VERSION);
 
             assertEquals(subject, copy);
@@ -141,7 +142,7 @@ class SecondSinceEpocVirtualKeyTest {
             final var out = new SerializableDataOutputStream(byteArr);
             subject.serialize(out);
 
-            final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+            final var buffer = BufferedData.wrap(byteArr.toByteArray());
             var copy = new SecondSinceEpocVirtualKey();
             copy.deserialize(buffer);
 

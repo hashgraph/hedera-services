@@ -31,10 +31,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -106,25 +106,25 @@ class VirtualBlobKeyTest {
     }
 
     @Test
-    void serializeWorks() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocate(16);
-        final ByteBuffer verify = ByteBuffer.allocate(16);
-        verify.put((byte) FILE_DATA.ordinal());
-        verify.putInt(entityNum);
-        verify.rewind();
+    void serializeWorks() {
+        final BufferedData buffer = BufferedData.allocate(16);
+        final BufferedData verify = BufferedData.allocate(16);
+        verify.writeByte((byte) FILE_DATA.ordinal());
+        verify.writeInt(entityNum);
+        verify.flip();
 
         subject.serialize(buffer);
-        buffer.rewind();
+        buffer.flip();
 
         assertEquals(verify, buffer);
     }
 
     @Test
-    void deserializeWorks() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocate(16);
-        buffer.put((byte) FILE_DATA.ordinal());
-        buffer.putInt(entityNum);
-        buffer.rewind();
+    void deserializeWorks() {
+        final BufferedData buffer = BufferedData.allocate(16);
+        buffer.writeByte((byte) FILE_DATA.ordinal());
+        buffer.writeInt(entityNum);
+        buffer.flip();
 
         VirtualBlobKey blobKey = new VirtualBlobKey();
 

@@ -27,7 +27,6 @@ import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -143,12 +142,6 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
         }
     }
 
-    @Override
-    @Deprecated(forRemoval = true)
-    public void serialize(final OnDiskKey<K> key, final ByteBuffer buffer) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
     // Key deserialization
 
     @Override
@@ -164,11 +157,6 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
     }
 
     @Override
-    public OnDiskKey<K> deserialize(final ByteBuffer buffer, final long ignored) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean equals(@NonNull final BufferedData bufferedData, @NonNull final OnDiskKey<K> keyToCompare) {
         // Future work: https://github.com/hashgraph/pbj/issues/73
         try {
@@ -176,10 +164,5 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
         } catch (final ParseException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public boolean equals(final ByteBuffer byteBuffer, final int ignored, final OnDiskKey<K> key) {
-        throw new UnsupportedOperationException();
     }
 }

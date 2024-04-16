@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
@@ -82,6 +83,11 @@ public class EthereumTransactionHandler implements TransactionHandler {
                 context.body().ethereumTransactionOrThrow(),
                 context.createStore(ReadableFileStore.class),
                 context.configuration());
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        // nothing to do
     }
 
     /**
