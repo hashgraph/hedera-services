@@ -30,6 +30,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
@@ -93,9 +94,7 @@ class PcesFileManagerTests {
     private PlatformContext buildContext(@NonNull final AncientMode ancientMode, @NonNull final Time time) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory.resolve("data"))
-                .withValue(
-                        "event.preconsensus.recycleBinDirectory",
-                        testDirectory.resolve("recycle")) // FUTURE: No property defined for value
+                .withValue(FileSystemManagerConfig_.ROOT_PATH, testDirectory.resolve("data"))
                 .withValue(PcesConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, ancientMode == BIRTH_ROUND_THRESHOLD)
                 .withValue(PcesConfig_.PERMIT_GAPS, false)

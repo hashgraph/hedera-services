@@ -55,7 +55,7 @@ public interface FileSystemManager extends Startable, Stoppable {
      * Remove the file or directory tree at the specified path. A best effort attempt is made to relocate the file or
      * directory tree to a temporary location where it may persist for an amount of time. No guarantee on the amount of
      * time the file or directory tree will persist is provided.
-     * Implementations can choose to validate if the provided absolute path is below the root of this file-system-manager .
+     * Implementations can choose to validate if the provided absolute path is above the root of this file-system-manager.
      *
      *  @param path the absolute path to recycle.
      */

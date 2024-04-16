@@ -17,7 +17,6 @@
 package com.swirlds.common.io.filesystem.internal;
 
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
-import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static java.nio.file.Files.exists;
 
 import com.swirlds.common.io.filesystem.FileSystemManager;
@@ -29,61 +28,78 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
- * Default implementation of {@link FileSystemManager} It organizes the file creation in the following structure: root
- * usr tmp recycle-bin
+ * Manages the file system operations and organizes file creation within a specified root directory.
  * <p>
- * If root directory already exist, deletes its content and recreates it. All {@link Path}s provided by this class are
- * handled in the same filesystem as indicated in rootLocation parameter.
- *
- * @implNote Creates and manages a temp dir when creating an instance of this class using
- * {@link Files#createTempDirectory(Path, String, FileAttribute[])} located under {@code rootPath} where all temporary
- * files are located.
+ * This implementation of {@link FileSystemManager} organizes file creation within a specified root directory in the
+ * following structure:
+ * <pre>
+ * root
+ * ├── USER
+ * ├── TMP
+ * └── BIN
+ * </pre>
+ * The name of the directories can be provided by configuration
+ * <p>
+ * If the root directory already exists, it is used. Otherwise, it is created. Similarly, if the 'USER' directory
+ * already exists, it is used; otherwise, it is created. The 'TMP' directory is always recreated, while the 'BIN'
+ * directory is created if it doesn't exist.
+ * <p>
+ * All {@link Path}s provided by this class are handled within the same filesystem as indicated by the
+ * {@code rootLocation} parameter.
+ * </p>
+ * <p>
+ * Note: The methods in this class may throw {@link UncheckedIOException} if IO operations fail unexpectedly.
+ * </p>
  */
 public class FileSystemManagerImpl implements FileSystemManager {
 
-    private static final Logger logger = LogManager.getLogger(FileSystemManagerImpl.class);
-    private static final String TMP = "tmp";
-    private static final String USER = "usr";
-    private static final String BIN = "recycle-bin";
     private final Path rootPath;
     private final Path tempPath;
-    private final Path userPath;
+    private final Path savedPath;
     private final Path recycleBinPath;
     private final RecycleBin bin;
     private static final AtomicLong TMP_FIELD_INDEX = new AtomicLong(0);
 
     /**
-     * Creates an instance of {@link FileSystemManager}
-     * If root directory already exist, deletes its content and recreates it.
+     * Creates an instance of {@link FileSystemManager}. If the root directory already exists, it is used; otherwise, it
+     * is created.
      *
-     * @param rootLocation the location to be used as root path. It should not exist.
-     * @param binSupplier  for building the recycle bin.
-     * @throws UncheckedIOException if the dir structure to rootLocation cannot be
-     *                              created
+     * @param rootLocation      the location to be used as root path. It should not exist.
+     * @param dataDirName       the name of the user data file directory
+     * @param tmpDirName        the name of the tmp file directory
+     * @param recycleBinDirName the name of the recycle bin directory
+     * @param binSupplier       for building the recycle bin.
+     * @throws UncheckedIOException if the dir structure to rootLocation cannot be created
      */
-    FileSystemManagerImpl(@NonNull final String rootLocation, @NonNull final Function<Path, RecycleBin> binSupplier) {
+    FileSystemManagerImpl(
+            @NonNull final String rootLocation,
+            final String dataDirName,
+            final String tmpDirName,
+            final String recycleBinDirName,
+            @NonNull final Function<Path, RecycleBin> binSupplier) {
         this.rootPath = Path.of(rootLocation).normalize();
-        if (exists(rootPath)) {
-            logger.info(STARTUP.getMarker(), "Deleting rootPath {}", rootPath);
-            rethrowIO(() -> FileUtils.deleteDirectory(rootPath));
+        if (!exists(rootPath)) {
+            rethrowIO(() -> Files.createDirectories(rootPath));
         }
 
-        this.tempPath = rootPath.resolve(TMP);
-        this.userPath = rootPath.resolve(USER);
-        this.recycleBinPath = rootPath.resolve(BIN);
+        this.tempPath = rootPath.resolve(tmpDirName);
+        this.savedPath = rootPath.resolve(dataDirName);
+        this.recycleBinPath = rootPath.resolve(recycleBinDirName);
 
-        rethrowIO(() -> Files.createDirectories(rootPath));
-        rethrowIO(() -> Files.createDirectory(userPath));
+        if (!exists(savedPath)) {
+            rethrowIO(() -> Files.createDirectory(savedPath));
+        }
+        if (exists(tempPath)) {
+            rethrowIO(() -> FileUtils.deleteDirectory(tempPath));
+        }
         rethrowIO(() -> Files.createDirectory(tempPath));
-        rethrowIO(() -> Files.createDirectory(recycleBinPath));
-
+        if (!exists(recycleBinPath)) {
+            rethrowIO(() -> Files.createDirectory(recycleBinPath));
+        }
         this.bin = binSupplier.apply(recycleBinPath);
     }
 
@@ -93,7 +109,7 @@ public class FileSystemManagerImpl implements FileSystemManager {
     @NonNull
     @Override
     public Path resolve(@NonNull final Path relativePath) {
-        return requireValidSubPathOf(userPath, userPath.resolve(relativePath));
+        return requireValidSubPathOf(savedPath, savedPath.resolve(relativePath));
     }
 
     /**
@@ -123,8 +139,7 @@ public class FileSystemManagerImpl implements FileSystemManager {
      */
     @Override
     public void recycle(@NonNull final Path absolutePath) throws IOException {
-        // FUTURE-WORK absolutePath should be under rootPath. check with requireValidSubPathOf(rootPath, absolutePath)
-        bin.recycle(absolutePath);
+        bin.recycle(requireValidSubPathOf(rootPath, absolutePath));
     }
 
     /**

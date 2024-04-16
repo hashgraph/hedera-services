@@ -85,6 +85,7 @@ import com.swirlds.common.config.BasicCommonConfig;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.config.FileSystemManagerConfig;
+import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
@@ -133,6 +134,7 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(StateCommonConfig.class)
                 .withConfigDataType(TransactionConfig.class)
                 .withConfigDataType(CryptoConfig.class)
+                .withConfigDataType(TemporaryFileConfig.class)
                 .withConfigDataType(FileSystemManagerConfig.class)
                 .withConfigDataType(ReconnectConfig.class)
                 .withConfigDataType(MetricsConfig.class)

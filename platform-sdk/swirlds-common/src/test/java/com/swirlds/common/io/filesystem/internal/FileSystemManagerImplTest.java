@@ -41,6 +41,7 @@ import static org.mockito.Mockito.verify;
 
 import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
 import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
+import com.swirlds.common.io.config.FileSystemManagerConfig;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import java.io.IOException;
@@ -69,7 +70,12 @@ public class FileSystemManagerImplTest {
     private Path rootPathParent;
 
     public FileSystemManagerImpl getFileSystemManager() {
-        return new FileSystemManagerImpl(getTestRootPath(), p -> mockRecycleBin);
+        return new FileSystemManagerImpl(
+                getTestRootPath(),
+                FileSystemManagerConfig.DATA,
+                FileSystemManagerConfig.TMP,
+                FileSystemManagerConfig.BIN,
+                p -> mockRecycleBin);
     }
 
     private String getTestRootPath() {
@@ -92,19 +98,25 @@ public class FileSystemManagerImplTest {
         // given
         final String largeRootLocation =
                 new StringBuffer(getTestRootPath()).repeat("/child", 100).toString();
-        new FileSystemManagerImpl(largeRootLocation, p -> mockRecycleBin);
+        new FileSystemManagerImpl(
+                largeRootLocation,
+                FileSystemManagerConfig.DATA,
+                FileSystemManagerConfig.TMP,
+                FileSystemManagerConfig.BIN,
+                p -> mockRecycleBin);
         // then
         assertThat(Path.of(largeRootLocation)).isDirectory().isNotEmptyDirectory();
     }
 
     @Test
-    public void testNew_deletesAllIfPathExist() throws IOException {
+    public void testNew_deletesAllInTempFolderIfPathExist() throws IOException {
         // given
         final Path dir = Path.of(getTestRootPath());
-        Files.createDirectories(dir);
+        final Path tmpDir = dir.resolve("tmp");
+        Files.createDirectories(tmpDir);
         final List<String> tmpFileNames = IntStream.range(0, 10)
                 .boxed()
-                .map(x -> FileUtils.rethrowIO(() -> Files.createTempFile(dir, x + "", null)))
+                .map(x -> FileUtils.rethrowIO(() -> Files.createTempFile(tmpDir, x + "", null)))
                 .map(p -> p.toFile().getName())
                 .toList();
         // when
@@ -113,10 +125,10 @@ public class FileSystemManagerImplTest {
         // then
         assertThat(dir)
                 .isNotEmptyDirectory()
-                .isDirectoryContaining("glob:**tmp")
-                .isDirectoryContaining("glob:**usr")
-                .isDirectoryContaining("glob:**bin")
-                .isDirectoryNotContaining("glob:{" + String.join(",", tmpFileNames) + "}");
+                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.TMP)
+                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DATA)
+                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.BIN);
+        assertThat(tmpDir).isDirectoryNotContaining("glob:{" + String.join(",", tmpFileNames) + "}");
     }
 
     @Test
@@ -128,7 +140,8 @@ public class FileSystemManagerImplTest {
 
         // then
         // Assert that the resolved path is correctly formed from root and relative path
-        assertThat(resolvedPath).isEqualTo(Paths.get(getTestRootPath(), "usr/data/file.txt"));
+        assertThat(resolvedPath)
+                .isEqualTo(Paths.get(getTestRootPath(), FileSystemManagerConfig.DATA, "data", "file.txt"));
     }
 
     @Test

@@ -36,6 +36,7 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
@@ -263,6 +264,7 @@ class PcesWriterTests {
     private PlatformContext buildContext(@NonNull final AncientMode ancientMode) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory)
+                .withValue(FileSystemManagerConfig_.ROOT_PATH, testDirectory)
                 .withValue(PcesConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
                 .withValue(TransactionConfig_.MAX_TRANSACTION_BYTES_PER_EVENT, Integer.MAX_VALUE)
                 .withValue(TransactionConfig_.MAX_TRANSACTION_COUNT_PER_EVENT, Integer.MAX_VALUE)

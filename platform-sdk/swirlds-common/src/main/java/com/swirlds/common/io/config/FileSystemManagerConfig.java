@@ -16,15 +16,9 @@
 
 package com.swirlds.common.io.config;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-
-import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.io.filesystem.FileSystemManager;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Path;
 import java.time.Duration;
 
 /**
@@ -37,38 +31,15 @@ import java.time.Duration;
  */
 @ConfigData("fileSystemManager")
 public record FileSystemManagerConfig(
-        @ConfigProperty(defaultValue = "swirlds-root") String rootPath,
+        @ConfigProperty(defaultValue = "data")
+                String rootPath, // On purpose matches root of {@link StateCommonConfig#savedStateDirectory()}
+        @ConfigProperty(defaultValue = DATA) String userDataDir,
+        @ConfigProperty(defaultValue = TMP) String tmpDir,
+        @ConfigProperty(defaultValue = BIN) String recycleBinDir,
         @ConfigProperty(defaultValue = "7d") Duration recycleBinMaximumFileAge,
         @ConfigProperty(defaultValue = "1d") Duration recycleBinCollectionPeriod) {
 
-    /**
-     * Returns the real path for the root that depends on the {@link StateCommonConfig#savedStateDirectory()}
-     * property.
-     *
-     * @param stateConfig
-     * 		the state config object
-     * @return the location where temporary files are stored
-     */
-    @NonNull
-    public Path getRootPath(final StateCommonConfig stateConfig) {
-        return getAbsolutePath(stateConfig.savedStateDirectory().resolve(rootPath()));
-    }
-
-    /**
-     * Returns the real path for the root of the filesystem that depends both on the {@link StateCommonConfig#savedStateDirectory()}
-     * property and the {@link NodeId}
-     *
-     *
-     * @param stateConfig the state config object
-     * @param selfId      the ID of this node
-     * @return the location where recycle bin files are stored
-     */
-    @NonNull
-    public Path getRootPath(@NonNull final StateCommonConfig stateConfig, @NonNull final NodeId selfId) {
-        return getAbsolutePath(stateConfig
-                .savedStateDirectory()
-                .resolve(Long.toString(
-                        selfId.id())) // Or is the node the first parameter ?? how do we write the states files?
-                .resolve(rootPath()));
-    }
+    public static final String TMP = "tmp";
+    public static final String DATA = "saved";
+    public static final String BIN = "recycle-bin";
 }

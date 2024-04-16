@@ -22,7 +22,7 @@ import static java.nio.file.Files.exists;
 
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.io.config.FileSystemManagerConfig;
+import com.swirlds.common.io.config.TemporaryFileConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,10 +49,9 @@ public final class LegacyTemporaryFileBuilder {
      */
     public static synchronized Path getTemporaryFileLocation() throws IOException {
         if (temporaryFileLocation == null) {
-            final FileSystemManagerConfig config = ConfigurationHolder.getConfigData(FileSystemManagerConfig.class);
+            final TemporaryFileConfig config = ConfigurationHolder.getConfigData(TemporaryFileConfig.class);
             final StateCommonConfig stateConfig = ConfigurationHolder.getConfigData(StateCommonConfig.class);
-            overrideTemporaryFileLocation(getAbsolutePath(
-                    stateConfig.savedStateDirectory().resolve(config.rootPath()).toString()));
+            overrideTemporaryFileLocation(getAbsolutePath(config.getTemporaryFilePath(stateConfig)));
         }
 
         return temporaryFileLocation;
