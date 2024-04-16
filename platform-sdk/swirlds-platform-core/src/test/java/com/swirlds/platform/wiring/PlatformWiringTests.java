@@ -34,10 +34,10 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
-import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
+import com.swirlds.platform.event.preconsensus.join.PcesJoin;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stream.EventStreamManager;
@@ -86,7 +86,8 @@ class PlatformWiringTests {
                 .withRunningEventHasher(mock(RunningEventHasher.class))
                 .withEventCreationManager(mock(EventCreationManager.class))
                 .withInOrderLinker(mock(InOrderLinker.class))
-                .withConsensusEngine(mock(ConsensusEngine.class));
+                .withConsensusEngine(mock(ConsensusEngine.class))
+                .withPcesJoin(mock(PcesJoin.class));
 
         wiring.bind(
                 componentBuilder,
@@ -94,7 +95,6 @@ class PlatformWiringTests {
                 mock(StateSigner.class),
                 mock(PcesReplayer.class),
                 mock(PcesWriter.class),
-                mock(EventDurabilityNexus.class),
                 mock(Shadowgraph.class),
                 mock(PcesSequencer.class),
                 mock(StateSignatureCollector.class),

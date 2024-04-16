@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus.join;
 
+import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -35,8 +36,9 @@ public interface PcesJoin {
      *                              that can be guaranteed to be durable
      * @return a list of zero or more rounds that are safe to handle from an event durability perspective
      */
+    @InputWireLabel("durable event info")
     @NonNull
-    List<ConsensusRound> setLatestDurableSequenceNumber(long durableSequenceNumber);
+    List<ConsensusRound> setLatestDurableSequenceNumber(@NonNull Long durableSequenceNumber);
 
     /**
      * Provide the next round that has reached consensus.
@@ -44,6 +46,7 @@ public interface PcesJoin {
      * @param round the round that has reached consensus
      * @return a list of zero or more rounds that are safe to handle from an event durability perspective
      */
+    @InputWireLabel("rounds")
     @NonNull
     List<ConsensusRound> addRound(@NonNull ConsensusRound round);
 

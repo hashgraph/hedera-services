@@ -56,9 +56,6 @@ import java.time.Duration;
  * @param pcesSequencerSchedulerType                        the preconsensus event sequencer scheduler type
  * @param pcesSequencerUnhandledTaskCapacity                number of unhandled tasks allowed in the preconsensus event
  *                                                          sequencer scheduler
- * @param eventDurabilityNexusSchedulerType                 the durability nexus scheduler type
- * @param eventDurabilityNexusUnhandledTaskCapacity         number of unhandled tasks allowed in the durability nexus
- *                                                          scheduler
  * @param applicationTransactionPrehandlerSchedulerType     the application transaction prehandler scheduler type
  * @param applicationTransactionPrehandlerUnhandledCapacity number of unhandled tasks allowed for the application
  *                                                          transaction prehandler
@@ -115,8 +112,6 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType pcesSequencerSchedulerType,
         @ConfigProperty(defaultValue = "-1") int pcesSequencerUnhandledTaskCapacity,
-        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType eventDurabilityNexusSchedulerType,
-        @ConfigProperty(defaultValue = "-1") int eventDurabilityNexusUnhandledTaskCapacity,
         @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
         @ConfigProperty(defaultValue = "500") int applicationTransactionPrehandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,

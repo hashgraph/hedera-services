@@ -57,7 +57,6 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
-import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
@@ -93,7 +92,6 @@ import com.swirlds.platform.system.status.PlatformStatusManager;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.util.HashLogger;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
-import com.swirlds.platform.wiring.components.EventDurabilityNexusWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.HashLoggerWiring;
 import com.swirlds.platform.wiring.components.IssDetectorWiring;
@@ -145,7 +143,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final PcesWriterWiring pcesWriterWiring;
     private final ComponentWiring<PcesJoin, List<ConsensusRound>> pcesJoinWiring;
     private final ComponentWiring<PcesSequencer, GossipEvent> pcesSequencerWiring;
-    private final EventDurabilityNexusWiring eventDurabilityNexusWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
     private final ShadowgraphWiring shadowgraphWiring;
@@ -280,7 +277,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         pcesJoinWiring = new ComponentWiring<>(model, PcesJoin.class, config.pcesJoin());
-        eventDurabilityNexusWiring = EventDurabilityNexusWiring.create(schedulers.eventDurabilityNexusScheduler());
 
         gossipWiring = GossipWiring.create(model);
         eventWindowManagerWiring = new ComponentWiring<>(
@@ -471,15 +467,20 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
 
+        // TODO: fix javadoc, consider better ways to wire
         // The request to flush the keystone event for a round must be sent to the PCES writer before the consensus
         // round is passed to the round handler. This prevents a deadlock scenario where the consensus round
         // handler has a full queue and won't accept additional rounds, and is waiting on a keystone event to be
         // durably flushed to disk. Meanwhile, the PCES writer hasn't even received the flush request yet, so the
         // necessary keystone event is *never* flushed.
         consensusRoundOutputWire.orderedSolderTo(List.of(
-                keystoneEventSequenceNumberTransformer.getInputWire(), consensusRoundHandlerWiring.roundInput()));
+                keystoneEventSequenceNumberTransformer.getInputWire(),
+                pcesJoinWiring.getInputWire(PcesJoin::addRound)));
         consensusRoundOutputWire.solderTo(
                 eventWindowManagerWiring.getInputWire(EventWindowManager::extractEventWindow));
+
+        final OutputWire<ConsensusRound> splitPcesJoinOutput = pcesJoinWiring.getSplitOutput();
+        splitPcesJoinOutput.solderTo(consensusRoundHandlerWiring.roundInput());
 
         consensusEngineWiring
                 .getSplitAndTransformedOutput(ConsensusEngine::getConsensusEvents)
@@ -512,7 +513,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
-                .solderTo(eventDurabilityNexusWiring.latestDurableSequenceNumber());
+                .solderTo(pcesJoinWiring.getInputWire(PcesJoin::setLatestDurableSequenceNumber));
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
                 .solderTo(pcesWriterWiring.minimumAncientIdentifierToStoreInputWire());
@@ -606,7 +607,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param stateSigner               the state signer to bind
      * @param pcesReplayer              the PCES replayer to bind
      * @param pcesWriter                the PCES writer to bind
-     * @param eventDurabilityNexus      the event durability nexus to bind
      * @param shadowgraph               the shadowgraph to bind
      * @param pcesSequencer             the PCES sequencer to bind
      * @param stateSignatureCollector   the signed state manager to bind
@@ -633,7 +633,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final StateSigner stateSigner,
             @NonNull final PcesReplayer pcesReplayer,
             @NonNull final PcesWriter pcesWriter,
-            @NonNull final EventDurabilityNexus eventDurabilityNexus,
             @NonNull final Shadowgraph shadowgraph,
             @NonNull final PcesSequencer pcesSequencer,
             @NonNull final StateSignatureCollector stateSignatureCollector,
@@ -665,7 +664,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(pcesWriter);
         pcesJoinWiring.bind(builder.buildPcesJoin());
-        eventDurabilityNexusWiring.bind(eventDurabilityNexus);
         shadowgraphWiring.bind(shadowgraph);
         pcesSequencerWiring.bind(pcesSequencer);
         eventCreationManagerWiring.bind(builder.buildEventCreationManager());

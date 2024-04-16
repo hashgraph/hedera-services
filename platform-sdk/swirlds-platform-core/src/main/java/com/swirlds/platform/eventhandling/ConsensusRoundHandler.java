@@ -25,16 +25,13 @@ import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.IDLE
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.SETTING_EVENT_CONSENSUS_DATA;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_EVENT_DURABILITY;
 import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_PREHANDLE;
 
-import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
@@ -93,11 +90,6 @@ public class ConsensusRoundHandler {
     private final SoftwareVersion softwareVersion;
 
     /**
-     * A method that blocks until an event becomes durable.
-     */
-    private final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability;
-
-    /**
      * The number of non-ancient rounds.
      */
     private final int roundsNonAncient;
@@ -107,22 +99,19 @@ public class ConsensusRoundHandler {
     /**
      * Constructor
      *
-     * @param platformContext        contains various platform utilities
-     * @param swirldStateManager     the swirld state manager to send events to
-     * @param waitForEventDurability a method that blocks until an event becomes durable
-     * @param statusActionSubmitter  enables submitting of platform status actions
-     * @param softwareVersion        the current version of the software
+     * @param platformContext       contains various platform utilities
+     * @param swirldStateManager    the swirld state manager to send events to
+     * @param statusActionSubmitter enables submitting of platform status actions
+     * @param softwareVersion       the current version of the software
      */
     public ConsensusRoundHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final CheckedConsumer<GossipEvent, InterruptedException> waitForEventDurability,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final SoftwareVersion softwareVersion) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
-        this.waitForEventDurability = Objects.requireNonNull(waitForEventDurability);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
@@ -181,9 +170,6 @@ public class ConsensusRoundHandler {
         handlerMetrics.recordConsensusTime(consensusRound.getConsensusTimestamp());
 
         try {
-            handlerMetrics.setPhase(WAITING_FOR_EVENT_DURABILITY);
-            waitForEventDurability.accept(consensusRound.getKeystoneEvent().getBaseEvent());
-
             handlerMetrics.setPhase(SETTING_EVENT_CONSENSUS_DATA);
             for (final EventImpl event : consensusRound.getConsensusEvents()) {
                 event.consensusReached();

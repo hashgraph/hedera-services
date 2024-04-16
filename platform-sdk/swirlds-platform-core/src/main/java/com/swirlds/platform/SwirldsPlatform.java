@@ -76,7 +76,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
-import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
@@ -503,7 +502,6 @@ public class SwirldsPlatform implements Platform {
                 platformWiring::flushIntakePipeline,
                 platformWiring::flushConsensusRoundHandler,
                 () -> latestImmutableStateNexus.getState("PCES replay"));
-        final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
 
         final Address address = getSelfAddress();
         final String eventStreamManagerName;
@@ -543,12 +541,8 @@ public class SwirldsPlatform implements Platform {
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
 
-        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext,
-                swirldStateManager,
-                eventDurabilityNexus::waitUntilDurable,
-                platformStatusManager,
-                appVersion);
+        final ConsensusRoundHandler consensusRoundHandler =
+                new ConsensusRoundHandler(platformContext, swirldStateManager, platformStatusManager, appVersion);
 
         final PcesSequencer sequencer = new DefaultPcesSequencer();
 
@@ -583,7 +577,6 @@ public class SwirldsPlatform implements Platform {
                 stateSigner,
                 pcesReplayer,
                 pcesWriter,
-                eventDurabilityNexus,
                 shadowGraph,
                 sequencer,
                 stateSignatureCollector,

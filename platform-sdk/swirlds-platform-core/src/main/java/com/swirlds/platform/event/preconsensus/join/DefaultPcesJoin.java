@@ -18,7 +18,6 @@ package com.swirlds.platform.event.preconsensus.join;
 
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,7 +41,7 @@ public class DefaultPcesJoin implements PcesJoin {
      */
     @NonNull
     @Override
-    public List<ConsensusRound> setLatestDurableSequenceNumber(final long durableSequenceNumber) {
+    public List<ConsensusRound> setLatestDurableSequenceNumber(@NonNull final Long durableSequenceNumber) {
         if (durableSequenceNumber < this.durableSequenceNumber) {
             throw new IllegalArgumentException(
                     "The durable sequence number cannot be less than the current durable sequence number. "

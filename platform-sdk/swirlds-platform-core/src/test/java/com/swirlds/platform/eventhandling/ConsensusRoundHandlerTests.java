@@ -138,11 +138,7 @@ class ConsensusRoundHandlerTests {
         final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext,
-                swirldStateManager,
-                waitForEventDurability,
-                statusActionSubmitter,
-                mock(SoftwareVersion.class));
+                platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
 
         final EventImpl keystoneEvent = buildEvent();
         final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
@@ -181,11 +177,7 @@ class ConsensusRoundHandlerTests {
         final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext,
-                swirldStateManager,
-                waitForEventDurability,
-                statusActionSubmitter,
-                mock(SoftwareVersion.class));
+                platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
 
         final EventImpl keystoneEvent = buildEvent();
         final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
@@ -242,11 +234,7 @@ class ConsensusRoundHandlerTests {
         when(swirldStateManager.getStateForSigning()).thenReturn(state);
 
         final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext,
-                swirldStateManager,
-                mock(CheckedConsumer.class),
-                mock(StatusActionSubmitter.class),
-                mock(SoftwareVersion.class));
+                platformContext, swirldStateManager, mock(StatusActionSubmitter.class), mock(SoftwareVersion.class));
 
         final EventImpl keystoneEvent = buildEvent();
         final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
