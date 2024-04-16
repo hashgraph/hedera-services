@@ -387,10 +387,6 @@ public record EthTxData(
             chainId = new byte[0];
         }
 
-        final var value = rlpList.get(4).asBytes().length == 0
-                ? BigInteger.ZERO
-                : new BigInteger(rlpList.get(4).asBytes());
-
         return new EthTxData(
                 rawTx,
                 EthTransactionType.LEGACY_ETHEREUM,
@@ -401,7 +397,7 @@ public record EthTxData(
                 null, // maxGas
                 rlpList.get(2).asLong(), // gasLimit
                 rlpList.get(3).data(), // to
-                value, // value
+                toValue(rlpList.get(4).data()), // value
                 rlpList.get(5).data(), // callData
                 null, // accessList
                 recId,
@@ -426,10 +422,6 @@ public record EthTxData(
             return null;
         }
 
-        final var value = rlpList.get(6).asBytes().length == 0
-                ? BigInteger.ZERO
-                : new BigInteger(rlpList.get(6).asBytes());
-
         return new EthTxData(
                 rawTx,
                 EthTransactionType.EIP1559,
@@ -440,7 +432,7 @@ public record EthTxData(
                 rlpList.get(3).data(), // maxGas
                 rlpList.get(4).asLong(), // gasLimit
                 rlpList.get(5).data(), // to
-                value, // value
+                toValue(rlpList.get(6).asBytes()), // value
                 rlpList.get(7).data(), // callData
                 rlpList.get(8).data(), // accessList
                 rlpList.get(9).asByte(), // recId
@@ -465,10 +457,6 @@ public record EthTxData(
             return null;
         }
 
-        final var value = rlpList.get(5).asBytes().length == 0
-                ? BigInteger.ZERO
-                : new BigInteger(rlpList.get(5).asBytes());
-
         return new EthTxData(
                 rawTx,
                 EthTransactionType.EIP2930,
@@ -479,7 +467,7 @@ public record EthTxData(
                 null, // maxGas
                 rlpList.get(3).asLong(), // gasLimit
                 rlpList.get(4).data(), // to
-                value, // value
+                toValue(rlpList.get(5).data()), // value
                 rlpList.get(6).data(), // callData
                 rlpList.get(7).data(), // accessList
                 rlpList.get(8).asByte(), // recId
@@ -487,6 +475,12 @@ public record EthTxData(
                 rlpList.get(9).data(), // r
                 rlpList.get(10).data() // s
                 );
+    }
+
+    // Wrapping the bytes in a BigInteger to handle when there is a negative value. If we use the RLPItem.asBigInt()
+    // method it doesn't handle two's complement correctly.
+    private static BigInteger toValue(final byte[] value) {
+        return value.length == 0 ? BigInteger.ZERO : new BigInteger(value);
     }
 
     // before EIP155 the value of v in
