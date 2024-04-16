@@ -22,6 +22,7 @@ import static java.nio.file.Files.exists;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -52,7 +53,7 @@ import java.util.function.Function;
  * {@code rootLocation} parameter.
  * </p>
  * <p>
- * Note: The methods in this class may throw {@link UncheckedIOException} if IO operations fail unexpectedly.
+ * Note: Two different instances of {@link FileSystemManagerImpl} created on the same root location can create paths using the same name.
  * </p>
  */
 public class FileSystemManagerImpl implements FileSystemManager {
@@ -62,11 +63,12 @@ public class FileSystemManagerImpl implements FileSystemManager {
     private final Path savedPath;
     private final Path recycleBinPath;
     private final RecycleBin bin;
-    private static final AtomicLong TMP_FIELD_INDEX = new AtomicLong(0);
+    private final AtomicLong tmpFileNameIndex = new AtomicLong(0);
 
     /**
-     * Creates an instance of {@link FileSystemManager}. If the root directory already exists, it is used; otherwise, it
-     * is created.
+     * Creates a {@link FileSystemManager} and a {@link com.swirlds.common.io.utility.RecycleBin} by searching {@code root}
+     * path in the {@link Configuration} class using
+     * {@code FileSystemManagerConfig} record
      *
      * @param rootLocation      the location to be used as root path. It should not exist.
      * @param dataDirName       the name of the user data file directory
@@ -104,7 +106,11 @@ public class FileSystemManagerImpl implements FileSystemManager {
     }
 
     /**
-     * {@inheritDoc}
+     * Resolve a path relative to the{@code savedPath} of this file system manager.
+     *
+     * @param relativePath the path to resolve against the root directory
+     * @return the resolved path
+     * @throws IllegalArgumentException if the path is "above" the root directory (e.g. resolve("../foo")
      */
     @NonNull
     @Override
@@ -113,14 +119,21 @@ public class FileSystemManagerImpl implements FileSystemManager {
     }
 
     /**
-     * {@inheritDoc}
+     * Creates a path relative to the {@code tempPath} directory of the file system manager.
+     * There is no file or directory actually being created after the invocation of this method.
+     * All calls to this method will return a different path even if {@code tag} is not set.
+     * A separate instance pointing to the same {@code rootPath} can create the same paths and should be managed outside this class.
+     *
+     * @param tag if indicated, will be suffixed to the returned path
+     * @return the resolved path
+     * @throws IllegalArgumentException if the path is "above" the root directory (e.g. resolve("../foo")
      */
     @NonNull
     @Override
     public Path resolveNewTemp(@Nullable final String tag) {
         final StringBuilder nameBuilder = new StringBuilder();
         nameBuilder.append(System.currentTimeMillis());
-        nameBuilder.append(TMP_FIELD_INDEX.getAndIncrement());
+        nameBuilder.append(tmpFileNameIndex.getAndIncrement());
         if (tag != null) {
             nameBuilder.append("-");
             nameBuilder.append(tag);
@@ -135,7 +148,7 @@ public class FileSystemManagerImpl implements FileSystemManager {
      * amount of time the file or directory tree will persist is provided.
      *
      * @param absolutePath the path to recycle
-     * @throws IllegalArgumentException if the path cannot be relative to or scape the root directory
+     * @throws IllegalArgumentException if the path is "above" the root directory (e.g. recycle("../../foo")
      */
     @Override
     public void recycle(@NonNull final Path absolutePath) throws IOException {
@@ -143,13 +156,13 @@ public class FileSystemManagerImpl implements FileSystemManager {
     }
 
     /**
-     * Checks that the specified {@code path} reference is relative to {@code parent} and is not {@code parent} itself.
+     * Checks that the specified {@code path} reference is "below" {@code parent} and is not {@code parent} itself.
      * throws IllegalArgumentException if this condition is not true.
      *
      * @param parent the path to check against.
      * @param path   the path to check if is
      * @return {@code path} if it represents a valid path inside {@code parent}
-     * @throws IllegalArgumentException if the reference is not relative to root or is root itself
+     * @throws IllegalArgumentException if the reference is "above" {@code parent} or is {@code parent} itself
      */
     @NonNull
     private static Path requireValidSubPathOf(@NonNull final Path parent, @NonNull final Path path) {

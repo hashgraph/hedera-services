@@ -19,7 +19,6 @@ package com.swirlds.common.io.filesystem.internal;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.config.FileSystemManagerConfig;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
@@ -27,6 +26,7 @@ import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.UncheckedIOException;
 
 public class FileSystemManagerFactoryImpl implements FileSystemManagerFactory {
 
@@ -35,36 +35,34 @@ public class FileSystemManagerFactoryImpl implements FileSystemManagerFactory {
     }
 
     /**
-     * Creates a {@link FileSystemManager} by searching {@code root} path in the {@link Configuration} class under a
-     * property name indicated in {@code rootLocationPropertyName}
+     * Creates a {@link FileSystemManager} and a {@link com.swirlds.common.io.utility.RecycleBin} by searching {@code root}
+     * path in the {@link Configuration} class using
+     * {@code FileSystemManagerConfig} record
      *
      * @param configuration the configuration instance to retrieve properties from
      * @param metrics metrics instance
      * @return a new instance of {@link FileSystemManager}
-     * @throws IllegalArgumentException if {@code rootLocationPropertyName} cannot be found on configuration, if
-     *                                  {@code rootLocation} already exist or if the dir structure to rootLocation
-     *                                  cannot be created
+     * @throws UncheckedIOException if the dir structure to rootLocation cannot be created
      */
     @NonNull
     @Override
     public FileSystemManager createFileSystemManager(
             @NonNull final Configuration configuration, @NonNull final Metrics metrics) {
 
-        final FileSystemManagerConfig fileSystemManagerConfig =
-                ConfigurationHolder.getConfigData(FileSystemManagerConfig.class);
+        final FileSystemManagerConfig fsmConfig = configuration.getConfigData(FileSystemManagerConfig.class);
 
         return new FileSystemManagerImpl(
-                fileSystemManagerConfig.rootPath(),
-                fileSystemManagerConfig.userDataDir(),
-                fileSystemManagerConfig.tmpDir(),
-                fileSystemManagerConfig.recycleBinDir(),
+                fsmConfig.rootPath(),
+                fsmConfig.userDataDir(),
+                fsmConfig.tmpDir(),
+                fsmConfig.recycleBinDir(),
                 path -> new RecycleBinImpl(
                         metrics,
                         getStaticThreadManager(),
                         Time.getCurrent(),
                         path,
-                        fileSystemManagerConfig.recycleBinMaximumFileAge(),
-                        fileSystemManagerConfig.recycleBinCollectionPeriod()));
+                        fsmConfig.recycleBinMaximumFileAge(),
+                        fsmConfig.recycleBinCollectionPeriod()));
     }
 
     /**

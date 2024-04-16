@@ -72,9 +72,9 @@ public class FileSystemManagerImplTest {
     public FileSystemManagerImpl getFileSystemManager() {
         return new FileSystemManagerImpl(
                 getTestRootPath(),
-                FileSystemManagerConfig.DATA,
-                FileSystemManagerConfig.TMP,
-                FileSystemManagerConfig.BIN,
+                FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME,
+                FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME,
+                FileSystemManagerConfig.DEFAULT_RECYCLE_BIN_DIR_NAME,
                 p -> mockRecycleBin);
     }
 
@@ -100,9 +100,9 @@ public class FileSystemManagerImplTest {
                 new StringBuffer(getTestRootPath()).repeat("/child", 100).toString();
         new FileSystemManagerImpl(
                 largeRootLocation,
-                FileSystemManagerConfig.DATA,
-                FileSystemManagerConfig.TMP,
-                FileSystemManagerConfig.BIN,
+                FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME,
+                FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME,
+                FileSystemManagerConfig.DEFAULT_RECYCLE_BIN_DIR_NAME,
                 p -> mockRecycleBin);
         // then
         assertThat(Path.of(largeRootLocation)).isDirectory().isNotEmptyDirectory();
@@ -125,9 +125,9 @@ public class FileSystemManagerImplTest {
         // then
         assertThat(dir)
                 .isNotEmptyDirectory()
-                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.TMP)
-                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DATA)
-                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.BIN);
+                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME)
+                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME)
+                .isDirectoryContaining("glob:**" + FileSystemManagerConfig.DEFAULT_RECYCLE_BIN_DIR_NAME);
         assertThat(tmpDir).isDirectoryNotContaining("glob:{" + String.join(",", tmpFileNames) + "}");
     }
 
@@ -141,7 +141,8 @@ public class FileSystemManagerImplTest {
         // then
         // Assert that the resolved path is correctly formed from root and relative path
         assertThat(resolvedPath)
-                .isEqualTo(Paths.get(getTestRootPath(), FileSystemManagerConfig.DATA, "data", "file.txt"));
+                .isEqualTo(Paths.get(
+                        getTestRootPath(), FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME, "data", "file.txt"));
     }
 
     @Test
@@ -246,9 +247,7 @@ public class FileSystemManagerImplTest {
     }
 
     @Test
-    @Disabled
     public void testRecycle_absolutePath() {
-        // FUTURE-WORK re-enable this after we reenable the assertion of the deleted file being contained in the root
         // dir
         // given
         final FileSystemManagerImpl fileSystemManager = getFileSystemManager();
@@ -257,9 +256,7 @@ public class FileSystemManagerImplTest {
     }
 
     @Test
-    @Disabled
     public void testRecycle_pathEscapingRoot() {
-        // FUTURE-WORK re-enable this after we reenable the assertion of the deleted file being contained in the root
         // dir
         // given
         final FileSystemManagerImpl fileSystemManager = getFileSystemManager();
