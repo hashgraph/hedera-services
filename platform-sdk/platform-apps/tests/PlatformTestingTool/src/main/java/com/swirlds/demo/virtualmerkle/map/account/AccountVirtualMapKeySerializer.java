@@ -21,8 +21,6 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * This is the key serializer for the {@link AccountVirtualMapKey}.
@@ -61,11 +59,6 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
     }
 
     @Override
-    public void serialize(final AccountVirtualMapKey key, final ByteBuffer buffer) throws IOException {
-        key.serialize(buffer);
-    }
-
-    @Override
     public AccountVirtualMapKey deserialize(@NonNull ReadableSequentialData in) {
         final AccountVirtualMapKey key = new AccountVirtualMapKey();
         key.deserialize(in);
@@ -73,19 +66,7 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
     }
 
     @Override
-    public AccountVirtualMapKey deserialize(final ByteBuffer buffer, final long dataVersion) {
-        final AccountVirtualMapKey key = new AccountVirtualMapKey();
-        key.deserialize(buffer);
-        return key;
-    }
-
-    @Override
     public boolean equals(@NonNull BufferedData buffer, @NonNull AccountVirtualMapKey keyToCompare) {
         return keyToCompare.equals(buffer);
-    }
-
-    @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final AccountVirtualMapKey keyToCompare) {
-        return keyToCompare.equals(buffer, dataVersion);
     }
 }

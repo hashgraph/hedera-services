@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkledb.files;
+package com.hedera.node.app.service.contract.impl.exec.v050;
 
-public enum DataFileType {
+import com.hedera.node.app.service.contract.impl.exec.v046.Version046FeatureFlags;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
-    /** JasperDB / MerkleDb binary format */
-    JDB,
-
-    /** PBJ (protobuf) format */
-    PBJ;
+@Singleton
+public class Version050FeatureFlags extends Version046FeatureFlags {
+    @Inject
+    public Version050FeatureFlags() {
+        // Dagger2
+    }
 }
