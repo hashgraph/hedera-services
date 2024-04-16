@@ -21,10 +21,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.token.CryptoGetAccountBalanceQuery.BalanceSourceOneOfType.UNSET;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
@@ -82,11 +85,27 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         final var query = context.query();
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final CryptoGetAccountBalanceQuery op = query.cryptogetAccountBalanceOrThrow();
+        validateTruePreCheck(op.balanceSource() != null, INVALID_ACCOUNT_ID);
+        if (op.balanceSource().kind().equals(UNSET)) {
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
+        }
         if (op.hasAccountID()) {
             final var account = accountStore.getAliasedAccountById(requireNonNull(op.accountID()));
             validateFalsePreCheck(account == null, INVALID_ACCOUNT_ID);
             validateFalsePreCheck(account.deleted(), ACCOUNT_DELETED);
+
+            AccountID accountId = (AccountID) op.balanceSource().value();
+            validateTruePreCheck(accountId.shardNum() >= 0, INVALID_ACCOUNT_ID);
+            validateTruePreCheck(accountId.realmNum() >= 0, INVALID_ACCOUNT_ID);
+            validateTruePreCheck(accountId.accountNumOrThrow() >= 0, INVALID_ACCOUNT_ID);
+            if (accountId.hasAlias()) {
+                validateTruePreCheck(accountId.aliasOrThrow().length() >= 0, INVALID_ACCOUNT_ID);
+            }
         } else if (op.hasContractID()) {
+            ContractID contractId = (ContractID) op.balanceSource().value();
+            validateTruePreCheck(contractId.shardNum() >= 0, INVALID_CONTRACT_ID);
+            validateTruePreCheck(contractId.realmNum() >= 0, INVALID_CONTRACT_ID);
+            validateTruePreCheck(contractId.contractNumOrThrow() >= 0, INVALID_CONTRACT_ID);
             final var contract = accountStore.getContractById(requireNonNull(op.contractID()));
             validateFalsePreCheck(contract == null || !contract.smartContract(), INVALID_CONTRACT_ID);
             validateFalsePreCheck(contract.deleted(), CONTRACT_DELETED);
