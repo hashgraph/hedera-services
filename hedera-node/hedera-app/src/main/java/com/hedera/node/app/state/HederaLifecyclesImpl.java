@@ -43,7 +43,6 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
@@ -89,12 +88,13 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             @NonNull final AddressBook configAddressBook,
             @NonNull final PlatformContext context) {
         final var tokenServiceState = state.getWritableStates(TokenService.NAME);
-        final var stakingInfoState = state.getWritableStates(TokenService.NAME)
-                .<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
+        final var stakingInfoState =
+                state.getWritableStates(TokenService.NAME).<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
         if (!tokenServiceState.isEmpty()) {
             final var readableStoreFactory = new ReadableStoreFactory(state);
             // Get all nodeIds added in the config.txt
             Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
+            final var configAddressBookSize = configNodeIds.size();
             final var stakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
             final var allNodeIds = stakingInfoStore.getAll();
             for (final var nodeId : allNodeIds) {
@@ -109,23 +109,28 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
                     configNodeIds.remove(id);
                 } else {
                     // We need to validate and mark any node that are removed during upgrade as deleted.
-                    stakingInfoState.put(EntityNumber.newBuilder().number(id.id()).build(),
-                            stakingInfo.copyBuilder()
-                                    .deleted(true)
-                                    .weight(0)
-                                    .build());
-                    logger.info("Node {} is deleted from configAddressBook during upgrade " +
-                            "and is marked deleted in state", id);
+                    stakingInfoState.put(
+                            EntityNumber.newBuilder().number(id.id()).build(),
+                            stakingInfo.copyBuilder().deleted(true).weight(0).build());
+                    logger.info(
+                            "Node {} is deleted from configAddressBook during upgrade "
+                                    + "and is marked deleted in state",
+                            id);
                 }
             }
             // for any newly added nodes that doesn't exist in state, weight should be set to 0
             // irrespective of the weight provided in config.txt
-            configNodeIds.forEach(nodeId -> {
-                    addAdditionalNodesToState(stakingInfoState, configNodeIds, context.getConfiguration());
+            if (!configNodeIds.isEmpty()) {
+                addAdditionalNodesToState(
+                        stakingInfoState, configNodeIds, context.getConfiguration(), configAddressBookSize);
+                configNodeIds.forEach(nodeId -> {
                     configAddressBook.updateWeight(nodeId, 0);
-                    logger.info("Node {} is newly added in configAddressBook during upgrade " +
-                        "and is added to state with weight 0 in state", nodeId);
-            });
+                    logger.info(
+                            "Node {} is newly added in configAddressBook during upgrade "
+                                    + "and is added to state with weight 0 in state",
+                            nodeId);
+                });
+            }
 
             if (stakingInfoState.isModified()) {
                 ((WritableKVStateBase) stakingInfoState).commit();
@@ -136,38 +141,36 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
     }
 
     private void addAdditionalNodesToState(
-            final WritableKVState<EntityNumber, StakingNodeInfo> stakingToState,
-            final Set<NodeId> nodeIds,
-            final Configuration config) {
-        final var existingNodeIds = stakingToState.size();
-        final var numberOfNodesInAddressBook = nodeIds.size();
+            @NonNull final WritableKVState<EntityNumber, StakingNodeInfo> stakingToState,
+            @NonNull final Set<NodeId> newNodeIds,
+            @NonNull final Configuration config,
+            final int configAddressBookSize) {
         final long maxStakePerNode =
-                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodesInAddressBook;
+                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / configAddressBookSize;
         final var numRewardHistoryStoredPeriods =
                 config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
 
         final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods + 1];
         Arrays.fill(rewardSumHistory, 0L);
-        for (final var nodeId : nodeIds) {
-            final var entityNum = new EntityNumber(nodeId.id());
-            final var stakingInfo = stakingToState.get(entityNum);
-            if (stakingInfo != null) {
-                if (existingNodeIds != numberOfNodesInAddressBook) {
-                    stakingToState.put(
-                            entityNum,
-                            stakingInfo.copyBuilder().maxStake(maxStakePerNode).build());
-                }
-            } else {
-                final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
-                        .nodeNumber(nodeId.id())
-                        .maxStake(maxStakePerNode)
-                        .minStake(0L)
-                        .rewardSumHistory(Arrays.asList(rewardSumHistory))
-                        .weight(0)
-                        .build();
-                stakingToState.put(entityNum, newNodeStakingInfo);
-            }
+
+        // Add new nodes with weight 0
+        for (final var nodeId : newNodeIds) {
+            final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
+                    .nodeNumber(nodeId.id())
+                    .maxStake(maxStakePerNode)
+                    .minStake(0L)
+                    .rewardSumHistory(Arrays.asList(rewardSumHistory))
+                    .weight(0)
+                    .build();
+            stakingToState.put(new EntityNumber(nodeId.id()), newNodeStakingInfo);
         }
+
+        // Update all nodes maxStake to maxStakePerNode
+        stakingToState.keys().forEachRemaining(key -> {
+            final var stakingInfo = stakingToState.get(key);
+            final var copy = stakingInfo.copyBuilder().maxStake(maxStakePerNode).build();
+            stakingToState.put(key, copy);
+        });
     }
 
     @Override

@@ -64,7 +64,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -77,13 +76,11 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -188,9 +185,7 @@ public class InitialModServiceTokenSchema extends Schema {
     }
 
     @Override
-    public void restart(@NonNull MigrationContext ctx) {
-
-    }
+    public void restart(@NonNull MigrationContext ctx) {}
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
