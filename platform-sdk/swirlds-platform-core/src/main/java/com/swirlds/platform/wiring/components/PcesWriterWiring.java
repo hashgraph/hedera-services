@@ -20,7 +20,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
@@ -33,7 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *                                                 complete
  * @param eventInputWire                           the input wire for events to be written
  * @param discontinuityInputWire                   the input wire for PCES discontinuities
- * @param nonAncientEventWindowInput               the input wire for non ancient event windows
+ * @param eventWindowInput                         the input wire for the event window
  * @param minimumAncientIdentifierToStoreInputWire the input wire for the minimum ancient identifier of events to store
  * @param flushRequestInputWire                    the input wire for flush requests
  * @param latestDurableSequenceNumberOutput        the output wire for the latest durable sequence number
@@ -42,7 +42,7 @@ public record PcesWriterWiring(
         @NonNull InputWire<DoneStreamingPcesTrigger> doneStreamingPcesInputWire,
         @NonNull InputWire<GossipEvent> eventInputWire,
         @NonNull InputWire<Long> discontinuityInputWire,
-        @NonNull InputWire<NonAncientEventWindow> nonAncientEventWindowInput,
+        @NonNull InputWire<EventWindow> eventWindowInput,
         @NonNull InputWire<Long> minimumAncientIdentifierToStoreInputWire,
         @NonNull InputWire<Long> flushRequestInputWire,
         @NonNull OutputWire<Long> latestDurableSequenceNumberOutput) {
@@ -59,7 +59,7 @@ public record PcesWriterWiring(
                 taskScheduler.buildInputWire("done streaming pces"),
                 taskScheduler.buildInputWire("events to write"),
                 taskScheduler.buildInputWire("discontinuity"),
-                taskScheduler.buildInputWire("non-ancient event window"),
+                taskScheduler.buildInputWire("event window"),
                 taskScheduler.buildInputWire("minimum identifier to store"),
                 taskScheduler.buildInputWire("flush request"),
                 taskScheduler.getOutputWire());
@@ -75,7 +75,7 @@ public record PcesWriterWiring(
                 .bindConsumer(pcesWriter::beginStreamingNewEvents);
         ((BindableInputWire<GossipEvent, Long>) eventInputWire).bind(pcesWriter::writeEvent);
         ((BindableInputWire<Long, Long>) discontinuityInputWire).bind(pcesWriter::registerDiscontinuity);
-        ((BindableInputWire<NonAncientEventWindow, Long>) nonAncientEventWindowInput)
+        ((BindableInputWire<EventWindow, Long>) eventWindowInput)
                 .bindConsumer(pcesWriter::updateNonAncientEventBoundary);
         ((BindableInputWire<Long, Long>) minimumAncientIdentifierToStoreInputWire)
                 .bindConsumer(pcesWriter::setMinimumAncientIdentifierToStore);

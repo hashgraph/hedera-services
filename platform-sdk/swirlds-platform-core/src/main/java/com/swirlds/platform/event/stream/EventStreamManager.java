@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.stream;
 
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,7 +38,8 @@ public interface EventStreamManager {
     /**
      * Updates the running hash with the given event hash. Called when a state is loaded.
      *
-     * @param runningEventHashUpdate the hash to update the running hash with
+     * @param runningEventHashOverride the hash to update the running hash with
      */
-    void updateRunningHash(@NonNull final RunningEventHashUpdate runningEventHashUpdate);
+    @InputWireLabel("hash override")
+    void legacyHashOverride(@NonNull final RunningEventHashOverride runningEventHashOverride);
 }

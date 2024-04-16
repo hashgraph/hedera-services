@@ -17,7 +17,6 @@
 package com.swirlds.platform.system.transaction;
 
 import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
-import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_STATE_SIG;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
@@ -34,7 +33,7 @@ import java.util.Objects;
  * Every round, the signature of a signed state is put in this transaction
  * and gossiped to other nodes
  */
-public final class StateSignatureTransaction extends SystemTransaction {
+public final class StateSignatureTransaction extends ConsensusTransactionImpl {
 
     /**
      * class identifier for the purposes of serialization
@@ -142,14 +141,6 @@ public final class StateSignatureTransaction extends SystemTransaction {
      * {@inheritDoc}
      */
     @Override
-    public SystemTransactionType getType() {
-        return SYS_TRANS_STATE_SIG;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeByteArray(stateSignature.getSignatureBytes());
 
@@ -248,5 +239,18 @@ public final class StateSignatureTransaction extends SystemTransaction {
     @Override
     public int hashCode() {
         return Objects.hash(stateSignature, stateHash, round, epochHash);
+    }
+
+    /**
+     * This method just returns null. It is a temporary method that will be removed once we switch to StateSignaturePayload.
+     */
+    @Override
+    public byte[] getContents() {
+        return null;
+    }
+
+    @Override
+    public boolean isSystem() {
+        return true;
     }
 }

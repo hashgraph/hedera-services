@@ -83,7 +83,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final CryptoGetAccountBalanceQuery op = query.cryptogetAccountBalanceOrThrow();
         if (op.hasAccountID()) {
-            final var account = accountStore.getAccountById(requireNonNull(op.accountID()));
+            final var account = accountStore.getAliasedAccountById(requireNonNull(op.accountID()));
             validateFalsePreCheck(account == null, INVALID_ACCOUNT_ID);
             validateFalsePreCheck(account.deleted(), ACCOUNT_DELETED);
         } else if (op.hasContractID()) {
@@ -110,7 +110,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         response.header(header);
         if (header.nodeTransactionPrecheckCode() == OK) {
             final var account = op.hasAccountID()
-                    ? accountStore.getAccountById(op.accountIDOrThrow())
+                    ? accountStore.getAliasedAccountById(op.accountIDOrThrow())
                     : accountStore.getContractById(op.contractIDOrThrow());
             requireNonNull(account);
             response.accountID(account.accountIdOrThrow()).balance(account.tinybarBalance());

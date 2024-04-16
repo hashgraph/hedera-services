@@ -23,7 +23,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -83,13 +82,6 @@ public class AccountVirtualMapKey implements VirtualKey {
         out.writeLong(accountID);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        buffer.putLong(realmID);
-        buffer.putLong(shardID);
-        buffer.putLong(accountID);
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -106,20 +98,8 @@ public class AccountVirtualMapKey implements VirtualKey {
         this.accountID = in.readLong();
     }
 
-    @Deprecated
-    void deserialize(final ByteBuffer buffer) {
-        this.realmID = buffer.getLong();
-        this.shardID = buffer.getLong();
-        this.accountID = buffer.getLong();
-    }
-
     public boolean equals(final BufferedData buffer) {
         return realmID == buffer.readLong() && shardID == buffer.readLong() && accountID == buffer.readLong();
-    }
-
-    @Deprecated
-    boolean equals(final ByteBuffer buffer, final int version) {
-        return realmID == buffer.getLong() && shardID == buffer.getLong() && accountID == buffer.getLong();
     }
 
     /**

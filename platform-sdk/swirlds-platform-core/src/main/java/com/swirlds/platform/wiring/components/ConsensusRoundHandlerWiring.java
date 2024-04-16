@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.wiring.components;
 
-import com.swirlds.common.stream.RunningEventHashUpdate;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -25,24 +25,23 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.StateAndRoundReserver;
-import com.swirlds.platform.wiring.StateAndRoundToStateReserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Wiring for the {@link com.swirlds.platform.eventhandling.ConsensusRoundHandler}
  *
- * @param roundInput              the input wire for consensus rounds to be applied to the state
- * @param runningHashUpdateInput  the input wire for updating the running event hash
- * @param stateAndRoundOutput     the output wire for the reserved signed state, bundled with the round that caused
- *                                the state to be created
- * @param stateOutput             the output wire for the reserved signed state
- * @param flushRunnable           the runnable to flush the task scheduler
- * @param startSquelchingRunnable the runnable to start squelching
- * @param stopSquelchingRunnable  the runnable to stop squelching
+ * @param roundInput                          the input wire for consensus rounds to be applied to the state
+ * @param overrideLegacyRunningEventHashInput the input wire for updating the running event hash
+ * @param stateAndRoundOutput                 the output wire for the reserved signed state, bundled with the round that
+ *                                            caused the state to be created
+ * @param stateOutput                         the output wire for the reserved signed state
+ * @param flushRunnable                       the runnable to flush the task scheduler
+ * @param startSquelchingRunnable             the runnable to start squelching
+ * @param stopSquelchingRunnable              the runnable to stop squelching
  */
 public record ConsensusRoundHandlerWiring(
         @NonNull InputWire<ConsensusRound> roundInput,
-        @NonNull InputWire<RunningEventHashUpdate> runningHashUpdateInput,
+        @NonNull InputWire<RunningEventHashOverride> overrideLegacyRunningEventHashInput,
         @NonNull OutputWire<StateAndRound> stateAndRoundOutput,
         @NonNull OutputWire<ReservedSignedState> stateOutput,
         @NonNull Runnable flushRunnable,
@@ -59,12 +58,12 @@ public record ConsensusRoundHandlerWiring(
         final OutputWire<StateAndRound> stateAndRoundOutput = taskScheduler
                 .getOutputWire()
                 .buildAdvancedTransformer(new StateAndRoundReserver("postHandler_stateAndRoundReserver"));
-        final OutputWire<ReservedSignedState> stateOutput = stateAndRoundOutput.buildAdvancedTransformer(
-                new StateAndRoundToStateReserver("postHandler_stateReserver"));
+        final OutputWire<ReservedSignedState> stateOutput =
+                stateAndRoundOutput.buildTransformer("getState", "state and round", StateAndRound::reservedSignedState);
 
         return new ConsensusRoundHandlerWiring(
                 taskScheduler.buildInputWire("rounds"),
-                taskScheduler.buildInputWire("running hash update"),
+                taskScheduler.buildInputWire("hash override"),
                 stateAndRoundOutput,
                 stateOutput,
                 taskScheduler::flush,
@@ -80,7 +79,7 @@ public record ConsensusRoundHandlerWiring(
     public void bind(@NonNull final ConsensusRoundHandler consensusRoundHandler) {
         ((BindableInputWire<ConsensusRound, StateAndRound>) roundInput)
                 .bind(consensusRoundHandler::handleConsensusRound);
-        ((BindableInputWire<RunningEventHashUpdate, StateAndRound>) runningHashUpdateInput)
-                .bindConsumer(consensusRoundHandler::updateRunningHash);
+        ((BindableInputWire<RunningEventHashOverride, StateAndRound>) overrideLegacyRunningEventHashInput)
+                .bindConsumer(consensusRoundHandler::updateLegacyRunningEventHash);
     }
 }

@@ -109,7 +109,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
 
         // The account must exist for that transaction ID
         final var accountStore = context.createStore(ReadableAccountStore.class);
-        final var account = accountStore.getAccountById(op.accountIdOrThrow());
+        final var account = accountStore.getAliasedAccountById(op.accountIdOrThrow());
         mustExist(account, INVALID_ACCOUNT_ID);
     }
 
@@ -159,7 +159,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             @NonNull final ReadableTokenStore readableTokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final LedgerConfig ledgerConfig) {
-        final var account = accountStore.getAccountById(accountID);
+        final var account = accountStore.getAliasedAccountById(accountID);
         if (account == null) {
             return Optional.empty();
         } else {
@@ -320,8 +320,8 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         final var query = queryContext.query();
         final var accountStore = queryContext.createStore(ReadableAccountStore.class);
         final var op = query.accountDetailsOrThrow();
-        final var accountId = op.accountIdOrThrow();
-        final var account = accountStore.getAccountById(accountId);
+        final var accountId = op.accountIdOrElse(AccountID.DEFAULT);
+        final var account = accountStore.getAliasedAccountById(accountId);
 
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountDetailsResourceUsage(
                         cryptoOpsUsage, null, null)

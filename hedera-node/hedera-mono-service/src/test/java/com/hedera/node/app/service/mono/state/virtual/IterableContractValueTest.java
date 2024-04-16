@@ -34,13 +34,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -245,20 +245,20 @@ class IterableContractValueTest {
         final var rawPrevKey = prevUint256Key.toArrayUnsafe();
         final var rawNextKey = nextUint256Key.toArrayUnsafe();
 
-        final ByteBuffer out = ByteBuffer.allocate(subject.getSerializedSize());
+        final BufferedData out = BufferedData.allocate(subject.getSerializedSize());
 
         subject.serialize(out);
 
-        final ByteBuffer byteBuffer = ByteBuffer.allocate(subject.getSerializedSize());
+        final BufferedData byteBuffer = BufferedData.allocate(subject.getSerializedSize());
 
-        byteBuffer.put(subject.getValue());
-        byteBuffer.put(numNonZeroBytesInPrev);
+        byteBuffer.writeBytes(subject.getValue());
+        byteBuffer.writeByte(numNonZeroBytesInPrev);
         for (int i = 0, offset = 32 - numNonZeroBytesInPrev; i < numNonZeroBytesInPrev; i++) {
-            byteBuffer.put(rawPrevKey[i + offset]);
+            byteBuffer.writeByte(rawPrevKey[i + offset]);
         }
-        byteBuffer.put(numNonZeroBytesInNext);
+        byteBuffer.writeByte(numNonZeroBytesInNext);
         for (int i = 0, offset = 32 - numNonZeroBytesInNext; i < numNonZeroBytesInNext; i++) {
-            byteBuffer.put(rawNextKey[i + offset]);
+            byteBuffer.writeByte(rawNextKey[i + offset]);
         }
 
         assertEquals(out, byteBuffer);
@@ -361,26 +361,25 @@ class IterableContractValueTest {
     @Test
     void deserializeWithByteBufferWorks() throws IOException {
         subject = new IterableContractValue();
-        final ByteBuffer byteBuffer = ByteBuffer.allocate(48);
-        byteBuffer.put(bytesValue); // for read uint256Value
-        byteBuffer.put(new byte[8]); // for read prevUint256Key
-        byteBuffer.put(new byte[8]); // for red nextUint256Key
-        byteBuffer.rewind();
+        final BufferedData byteBuffer = BufferedData.allocate(48);
+        byteBuffer.writeBytes(bytesValue); // for read uint256Value
+        byteBuffer.writeBytes(new byte[8]); // for read prevUint256Key
+        byteBuffer.writeBytes(new byte[8]); // for red nextUint256Key
+        byteBuffer.reset();
 
-        subject.deserialize(byteBuffer, ITERABLE_VERSION);
+        subject.deserialize(byteBuffer);
 
         assertArrayEquals(bytesValue, subject.getValue());
     }
 
     @Test
     void deserializeWithByteBufferWorksForV2WithBothKeys() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocate(256);
-        buffer.mark();
+        final BufferedData buffer = BufferedData.allocate(256);
         subject.serialize(buffer);
         buffer.reset();
 
         final var newSubject = new IterableContractValue();
-        newSubject.deserialize(buffer, ITERABLE_VERSION);
+        newSubject.deserialize(buffer);
 
         assertEquals(subject, newSubject);
     }
@@ -400,8 +399,8 @@ class IterableContractValueTest {
         assertThrows(IllegalStateException.class, () -> readOnly.deserialize(in, ITERABLE_VERSION));
 
         // and when
-        final ByteBuffer byteBuffer = ByteBuffer.allocate(bytesValue.length);
+        final BufferedData byteBuffer = BufferedData.allocate(bytesValue.length);
 
-        assertThrows(IllegalStateException.class, () -> readOnly.deserialize(byteBuffer, ITERABLE_VERSION));
+        assertThrows(IllegalStateException.class, () -> readOnly.deserialize(byteBuffer));
     }
 }
