@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.contract.hapi;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -50,7 +49,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAl
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -80,12 +78,10 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
-import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
@@ -96,6 +92,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -115,7 +112,6 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -266,7 +262,8 @@ public class ContractCallSuite extends HapiSuite {
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
                 hollowCreationFailsCleanly(),
                 repeatedCreate2FailsWithInterpretableActionSidecars(),
-                callStaticCallToLargeAddress());
+                callStaticCallToLargeAddress(),
+                internalCallsAgainstSystemAccounts());
     }
 
     @HapiTest
@@ -787,26 +784,38 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec test() {
+    final HapiSpec internalCallsAgainstSystemAccounts() {
         final var contract = "MakeCalls";
         final var withAmount = "makeCallWithAmount";
         final var withoutAmount = "makeCallWithoutAmount";
 
-        return defaultHapiSpec("cannotUseMirrorAddressOfAliasedContractInPrecompileMethod")
+        return defaultHapiSpec(
+                        "internalCallsAgainstSystemAccounts",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .given(
-                    cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
-                    uploadInitCode(contract),
-                    contractCreate(contract).gas(4_000_000L)
-                )
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract).gas(GAS_TO_OFFER))
                 .when(
                         contractCall(
-                                contract,
-                                withAmount,
-                                asHeadlongAddress(hex(asAddress(AccountID.newBuilder().setAccountNum(357).build()))),
-                                new byte[] {"WoRtHlEsS".getBytes()[0]})
-                                .gas(4_000_000L)
+                                        contract,
+                                        withoutAmount,
+                                        asHeadlongAddress(hex(asAddress(AccountID.newBuilder()
+                                                .setAccountNum(357)
+                                                .build()))),
+                                        new byte[] {"system account".getBytes()[0]})
+                                .gas(GAS_TO_OFFER),
+                        contractCall(
+                                        contract,
+                                        withAmount,
+                                        asHeadlongAddress(hex(asAddress(AccountID.newBuilder()
+                                                .setAccountNum(357)
+                                                .build()))),
+                                        new byte[] {"system account".getBytes()[0]})
+                                .gas(GAS_TO_OFFER)
                                 .sending(2L)
-                )
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED))
                 .then();
     }
 

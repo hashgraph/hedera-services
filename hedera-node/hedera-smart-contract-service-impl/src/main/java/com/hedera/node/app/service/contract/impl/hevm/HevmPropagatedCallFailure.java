@@ -41,7 +41,11 @@ public enum HevmPropagatedCallFailure {
     /**
      * The call failed because its externalizing its result would exceed the maximum number of child records.
      */
-    RESULT_CANNOT_BE_EXTERNALIZED(INSUFFICIENT_CHILD_RECORDS);
+    RESULT_CANNOT_BE_EXTERNALIZED(INSUFFICIENT_CHILD_RECORDS),
+    /**
+     * The call failed because invalid fee was submitted for an EVM call
+     */
+    INVALID_FEE_SUBMITTED(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED);
 
     private final @Nullable CustomExceptionalHaltReason exceptionalHaltReason;
 

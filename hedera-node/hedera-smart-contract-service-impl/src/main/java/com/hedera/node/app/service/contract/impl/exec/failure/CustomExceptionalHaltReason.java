@@ -76,6 +76,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
             return ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
         } else if (reason == CustomExceptionalHaltReason.INVALID_CONTRACT_ID) {
             return ResponseCodeEnum.INVALID_CONTRACT_ID;
+        } else if (reason == CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED) {
+            return ResponseCodeEnum.INVALID_FEE_SUBMITTED;
         } else {
             return ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
         }

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.getAndClearPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.maybeNext;
@@ -39,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -167,6 +169,8 @@ public class FrameRunner {
     private void propagateHaltException(MessageFrame frame, ExceptionalHaltReason haltReason) {
         if (haltReason.equals(INSUFFICIENT_CHILD_RECORDS)) {
             setPropagatedCallFailure(frame, RESULT_CANNOT_BE_EXTERNALIZED);
+        } else if (haltReason.equals(INVALID_FEE_SUBMITTED)) {
+            setPropagatedCallFailure(frame, HevmPropagatedCallFailure.INVALID_FEE_SUBMITTED);
         }
     }
 }
