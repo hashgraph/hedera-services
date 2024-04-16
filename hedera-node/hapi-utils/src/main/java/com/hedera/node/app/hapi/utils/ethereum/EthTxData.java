@@ -402,10 +402,6 @@ public record EthTxData(
             return null;
         }
 
-        final var value = rlpList.get(6).asBytes().length == 0
-                ? BigInteger.ZERO
-                : new BigInteger(rlpList.get(6).asBytes());
-
         return new EthTxData(
                 rawTx,
                 EthTransactionType.EIP1559,
@@ -416,7 +412,7 @@ public record EthTxData(
                 rlpList.get(3).data(), // maxGas
                 rlpList.get(4).asLong(), // gasLimit
                 rlpList.get(5).data(), // to
-                value,
+                rlpList.get(6).asBigInt(), // value
                 rlpList.get(7).data(), // callData
                 rlpList.get(8).data(), // accessList
                 rlpList.get(9).asByte(), // recId
