@@ -1,4 +1,4 @@
-## Services
+## Service architecture
 
 The main goal of the base modules is not to provide static util functions.
 Instead, the modules should provide services that can be used by other modules.
