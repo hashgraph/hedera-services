@@ -24,6 +24,7 @@ import com.hedera.node.app.service.mono.state.submerkle.ContractNonceInfo;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.state.submerkle.EvmLog;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
@@ -39,7 +40,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -139,12 +139,8 @@ public class SerdeUtils {
             final int version, final byte[] serializedForm, final ValueSerializer<T> serializer) {
         final T reconstruction;
 
-        final var buffer = ByteBuffer.wrap(serializedForm);
-        try {
-            reconstruction = serializer.deserialize(buffer, version);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        final var buffer = BufferedData.wrap(serializedForm);
+        reconstruction = serializer.deserialize(buffer);
         assertEquals(serializedForm.length, buffer.position(), "No bytes should be left in the buffer");
 
         return reconstruction;
@@ -168,13 +164,10 @@ public class SerdeUtils {
 
     public static <T extends VirtualValue> byte[] serializeToBuffer(
             final T source, final ValueSerializer<T> serializer, final int maxSerializedLen) {
-        final var buffer = ByteBuffer.wrap(new byte[maxSerializedLen]);
-        try {
-            serializer.serialize(source, buffer);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return Arrays.copyOfRange(buffer.array(), 0, buffer.position());
+        final var arr = new byte[maxSerializedLen];
+        final var buffer = BufferedData.wrap(arr);
+        serializer.serialize(source, buffer);
+        return Arrays.copyOfRange(arr, 0, (int) buffer.position());
     }
 
     @FunctionalInterface

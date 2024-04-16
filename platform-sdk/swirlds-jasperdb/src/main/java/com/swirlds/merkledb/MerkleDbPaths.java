@@ -22,8 +22,8 @@ import java.nio.file.Path;
  * Simple class for building and holding the set of sub-paths for data in a MerkleDb datasource directory
  */
 public class MerkleDbPaths {
+
     public final Path storageDir;
-    public final Path metadataFileOld;
     public final Path metadataFile;
     public final Path pathToDiskLocationInternalNodesFile;
     public final Path pathToDiskLocationLeafNodesFile;
@@ -41,7 +41,6 @@ public class MerkleDbPaths {
      */
     public MerkleDbPaths(final Path storageDir) {
         this.storageDir = storageDir;
-        metadataFileOld = storageDir.resolve("metadata.jdbm");
         metadataFile = storageDir.resolve("table_metadata.pbj");
         pathToDiskLocationInternalNodesFile = storageDir.resolve("pathToDiskLocationInternalNodes.ll");
         pathToDiskLocationLeafNodesFile = storageDir.resolve("pathToDiskLocationLeafNodes.ll");

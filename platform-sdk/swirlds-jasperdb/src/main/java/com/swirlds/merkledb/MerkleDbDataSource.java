@@ -58,12 +58,9 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -86,12 +83,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     /** Count of open database instances */
     private static final LongAdder COUNT_OF_OPEN_DATABASES = new LongAdder();
-
-    /** The version number for format of current data files */
-    private static class MetadataFileFormatVersion {
-        public static final int ORIGINAL = 1;
-        public static final int KEYRANGE_ONLY = 2;
-    }
 
     /** Data source metadata fields */
     private static final FieldDefinition FIELD_DSMETADATA_MINVALIDKEY =
@@ -736,18 +727,12 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             }
             hash.serialize(out);
         } else {
-            final Object hashBytes = hashStoreDisk.getBytes(path);
+            final BufferedData hashBytes = hashStoreDisk.getBytes(path);
             if (hashBytes == null) {
                 return false;
             }
             // Hash.serialize() format is: digest ID (4 bytes) + size (4 bytes) + hash (48 bytes)
-            if (hashBytes instanceof ByteBuffer byteBufferBytes) {
-                virtualHashRecordSerializer.extractAndWriteHashBytes(byteBufferBytes, out);
-            } else if (hashBytes instanceof BufferedData bufferedDataBytes) {
-                virtualHashRecordSerializer.extractAndWriteHashBytes(bufferedDataBytes, out);
-            } else {
-                throw new RuntimeException("Unknown data item bytes format");
-            }
+            virtualHashRecordSerializer.extractAndWriteHashBytes(hashBytes, out);
         }
         return true;
     }
@@ -980,30 +965,19 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     private void saveMetadata(final MerkleDbPaths targetDir) throws IOException {
         final KeyRange leafRange = validLeafPathRange;
-        if (database.getConfig().usePbj()) {
-            final Path targetFile = targetDir.metadataFile;
-            try (final OutputStream fileOut =
-                    Files.newOutputStream(targetFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-                final WritableSequentialData out = new WritableStreamingData(fileOut);
-                if (leafRange.getMinValidKey() != 0) {
-                    ProtoWriterTools.writeTag(out, FIELD_DSMETADATA_MINVALIDKEY);
-                    out.writeVarLong(leafRange.getMinValidKey(), false);
-                }
-                if (leafRange.getMaxValidKey() != 0) {
-                    ProtoWriterTools.writeTag(out, FIELD_DSMETADATA_MAXVALIDKEY);
-                    out.writeVarLong(leafRange.getMaxValidKey(), false);
-                }
-                fileOut.flush();
+        final Path targetFile = targetDir.metadataFile;
+        try (final OutputStream fileOut =
+                Files.newOutputStream(targetFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            final WritableSequentialData out = new WritableStreamingData(fileOut);
+            if (leafRange.getMinValidKey() != 0) {
+                ProtoWriterTools.writeTag(out, FIELD_DSMETADATA_MINVALIDKEY);
+                out.writeVarLong(leafRange.getMinValidKey(), false);
             }
-        } else {
-            final Path targetFile = targetDir.metadataFileOld;
-            try (final DataOutputStream metaOut = new DataOutputStream(
-                    Files.newOutputStream(targetFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE))) {
-                metaOut.writeInt(MetadataFileFormatVersion.KEYRANGE_ONLY); // serialization version
-                metaOut.writeLong(leafRange.getMinValidKey());
-                metaOut.writeLong(leafRange.getMaxValidKey());
-                metaOut.flush();
+            if (leafRange.getMaxValidKey() != 0) {
+                ProtoWriterTools.writeTag(out, FIELD_DSMETADATA_MAXVALIDKEY);
+                out.writeVarLong(leafRange.getMaxValidKey(), false);
             }
+            fileOut.flush();
         }
     }
 
@@ -1025,20 +999,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     }
                 }
                 validLeafPathRange = new KeyRange(minValidKey, maxValidKey);
-            }
-            Files.delete(sourceFile);
-            return true;
-        } else if (Files.exists(sourceDir.metadataFileOld)) {
-            final Path sourceFile = sourceDir.metadataFileOld;
-            try (final DataInputStream metaIn = new DataInputStream(Files.newInputStream(sourceFile))) {
-                final int fileVersion = metaIn.readInt();
-                if (fileVersion == MetadataFileFormatVersion.ORIGINAL) {
-                    metaIn.readLong(); // skip hashesRamToDiskThreshold
-                } else if (fileVersion != MetadataFileFormatVersion.KEYRANGE_ONLY) {
-                    throw new IOException(
-                            "Tried to read a file with incompatible file format version [" + fileVersion + "].");
-                }
-                validLeafPathRange = new KeyRange(metaIn.readLong(), metaIn.readLong());
             }
             Files.delete(sourceFile);
             return true;
