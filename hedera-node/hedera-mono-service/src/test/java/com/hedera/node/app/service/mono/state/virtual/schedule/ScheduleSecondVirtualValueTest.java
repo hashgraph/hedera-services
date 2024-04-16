@@ -28,13 +28,13 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableMap;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import org.eclipse.collections.api.list.primitive.LongList;
@@ -127,51 +127,52 @@ class ScheduleSecondVirtualValueTest {
     }
 
     @Test
-    void serializeWithByteBufferWorks() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocate(256);
+    void serializeWithByteBufferWorks() {
+        final BufferedData buffer = BufferedData.allocate(256);
         subject.serialize(buffer);
+        buffer.reset();
 
-        final ByteBuffer inOrder = ByteBuffer.allocate(256);
-        inOrder.putInt(2);
+        final BufferedData inOrder = BufferedData.allocate(256);
+        inOrder.writeInt(2);
 
-        inOrder.putInt(3);
-        inOrder.putLong(50L);
-        inOrder.putLong(60L);
-        inOrder.putLong(70L);
-        inOrder.putLong(10L);
-        inOrder.putInt(20);
+        inOrder.writeInt(3);
+        inOrder.writeLong(50L);
+        inOrder.writeLong(60L);
+        inOrder.writeLong(70L);
+        inOrder.writeLong(10L);
+        inOrder.writeInt(20);
 
-        inOrder.putInt(1);
-        inOrder.putLong(80L);
-        inOrder.putLong(30L);
-        inOrder.putInt(40);
-        inOrder.putLong(3L);
+        inOrder.writeInt(1);
+        inOrder.writeLong(80L);
+        inOrder.writeLong(30L);
+        inOrder.writeInt(40);
+        inOrder.writeLong(3L);
+        inOrder.reset();
 
         assertEquals(buffer, inOrder);
     }
 
     @Test
     void deserializeWithByteBufferWorks() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocate(256);
-        buffer.putInt(2);
+        final BufferedData buffer = BufferedData.allocate(256);
+        buffer.writeInt(2);
 
-        buffer.putInt(3);
-        buffer.putLong(50L);
-        buffer.putLong(60L);
-        buffer.putLong(70L);
-        buffer.putLong(10L);
-        buffer.putInt(20);
+        buffer.writeInt(3);
+        buffer.writeLong(50L);
+        buffer.writeLong(60L);
+        buffer.writeLong(70L);
+        buffer.writeLong(10L);
+        buffer.writeInt(20);
 
-        buffer.putInt(1);
-        buffer.putLong(80L);
-        buffer.putLong(30L);
-        buffer.putInt(40);
-        buffer.putLong(3L);
-        buffer.rewind();
+        buffer.writeInt(1);
+        buffer.writeLong(80L);
+        buffer.writeLong(30L);
+        buffer.writeInt(40);
+        buffer.writeLong(3L);
+        buffer.reset();
 
-        final var defaultSubject = new ScheduleSecondVirtualValue();
-
-        defaultSubject.deserialize(buffer, ScheduleSecondVirtualValue.CURRENT_VERSION);
+        final var serializer = new ScheduleSecondVirtualValueSerializer();
+        final var defaultSubject = serializer.deserialize(buffer);
 
         assertSubjectEquals(subject, defaultSubject);
     }
@@ -197,11 +198,11 @@ class ScheduleSecondVirtualValueTest {
     @Test
     void serializeActuallyWithByteBufferWorks() throws Exception {
         checkSerialize(() -> {
-            final var buffer = ByteBuffer.allocate(100000);
+            final var buffer = BufferedData.allocate(100000);
             subject.serialize(buffer);
-            buffer.rewind();
+            buffer.reset();
             var copy = new ScheduleSecondVirtualValue();
-            copy.deserialize(buffer, ScheduleSecondVirtualValue.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertSubjectEquals(subject, copy);
 
@@ -212,12 +213,13 @@ class ScheduleSecondVirtualValueTest {
     @Test
     void serializeActuallyWithMixedWorksBytesFirst() throws Exception {
         checkSerialize(() -> {
-            final var buffer = ByteBuffer.allocate(100000);
+            final var arr = new byte[100000];
+            final var buffer = BufferedData.wrap(arr);
             subject.serialize(buffer);
 
             var copy = new ScheduleSecondVirtualValue();
             copy.deserialize(
-                    new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+                    new SerializableDataInputStream(new ByteArrayInputStream(arr)),
                     ScheduleSecondVirtualValue.CURRENT_VERSION);
 
             assertSubjectEquals(subject, copy);
@@ -233,9 +235,9 @@ class ScheduleSecondVirtualValueTest {
             final var out = new SerializableDataOutputStream(byteArr);
             subject.serialize(out);
 
-            final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+            final var buffer = BufferedData.wrap(byteArr.toByteArray());
             var copy = new ScheduleSecondVirtualValue();
-            copy.deserialize(buffer, ScheduleSecondVirtualValue.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertSubjectEquals(subject, copy);
 

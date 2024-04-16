@@ -28,7 +28,6 @@ import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
 class EntityNumValueTest {
@@ -56,20 +55,6 @@ class EntityNumValueTest {
     }
 
     @Test
-    void deserializeWorksWithBuffer() throws IOException {
-        final ByteBuffer bin = ByteBuffer.allocate(8);
-        bin.putLong(2L);
-        bin.rewind();
-
-        final var expectedKey = new EntityNumValue();
-
-        expectedKey.deserialize(bin, 1);
-        bin.rewind();
-
-        assertEquals(2L, expectedKey.num());
-    }
-
-    @Test
     void deserializeWorksWithStream() throws IOException {
         final var in = mock(SerializableDataInputStream.class);
         final var expectedKey = new EntityNumValue();
@@ -81,23 +66,8 @@ class EntityNumValueTest {
     }
 
     @Test
-    void serializeWorksWithBuffer() throws IOException {
-        final ByteBuffer out = ByteBuffer.allocate(8);
-        final ByteBuffer verify = ByteBuffer.allocate(8);
-        verify.putLong(2L);
-        verify.rewind();
-
-        subject.serialize(out);
-        out.rewind();
-
-        assertEquals(verify, out);
-    }
-
-    @Test
     void cannotDeserializeForImmutableValue() {
         final var immutable = subject.asReadOnly();
-        final var buffer = ByteBuffer.allocate(0);
-        assertThrows(MutabilityException.class, () -> immutable.deserialize(buffer, 1));
         final var in = mock(SerializableDataInputStream.class);
         assertThrows(MutabilityException.class, () -> immutable.deserialize(in, 1));
     }

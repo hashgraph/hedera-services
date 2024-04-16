@@ -27,7 +27,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 @SuppressWarnings("unused")
 public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable {
@@ -149,37 +148,11 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
             return CURRENT_SERIALIZATION_VERSION;
         }
 
-        /**
-         * Deserialize a data item from a byte buffer, that was written with given data version
-         *
-         * @param buffer The buffer to read from containing the data item including its header
-         * @return Deserialized data item
-         */
-        @Override
-        public ExampleLongLongKeyFixedSize deserialize(final ByteBuffer buffer, final long dataVersion) {
-            final long value1 = buffer.getLong();
-            final long value2 = buffer.getLong();
-            return new ExampleLongLongKeyFixedSize(value1, value2);
-        }
-
         @Override
         public ExampleLongLongKeyFixedSize deserialize(ReadableSequentialData in) {
             final long value1 = in.readLong();
             final long value2 = in.readLong();
             return new ExampleLongLongKeyFixedSize(value1, value2);
-        }
-
-        /**
-         * Serialize a data item including header to the byte buffer returning the size of the data
-         * written
-         *
-         * @param data The data item to serialize
-         * @param buffer Byte buffer to write to
-         */
-        @Override
-        public void serialize(final ExampleLongLongKeyFixedSize data, final ByteBuffer buffer) throws IOException {
-            buffer.putLong(data.getValue1());
-            buffer.putLong(data.getValue2());
         }
 
         @Override
@@ -204,14 +177,6 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
         public boolean equals(final BufferedData buffer, final ExampleLongLongKeyFixedSize keyToCompare) {
             final long readValue1 = buffer.readLong();
             final long readValue2 = buffer.readLong();
-            return readValue1 == keyToCompare.getValue1() && readValue2 == keyToCompare.getValue2();
-        }
-
-        @Override
-        public boolean equals(ByteBuffer buffer, int dataVersion, ExampleLongLongKeyFixedSize keyToCompare)
-                throws IOException {
-            final long readValue1 = buffer.getLong();
-            final long readValue2 = buffer.getLong();
             return readValue1 == keyToCompare.getValue1() && readValue2 == keyToCompare.getValue2();
         }
 

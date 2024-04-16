@@ -21,7 +21,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class OnDiskAccountValueSerializer implements ValueSerializer<OnDiskAccount> {
@@ -78,14 +77,6 @@ public class OnDiskAccountValueSerializer implements ValueSerializer<OnDiskAccou
         value.serialize(out);
     }
 
-    @Override
-    @Deprecated
-    public void serialize(final OnDiskAccount value, final ByteBuffer buffer) {
-        Objects.requireNonNull(value);
-        Objects.requireNonNull(buffer);
-        value.serialize(buffer);
-    }
-
     // Value deserializatioin
 
     @Override
@@ -93,15 +84,6 @@ public class OnDiskAccountValueSerializer implements ValueSerializer<OnDiskAccou
         Objects.requireNonNull(in);
         final OnDiskAccount value = new OnDiskAccount();
         value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public OnDiskAccount deserialize(final ByteBuffer buffer, final long version) {
-        Objects.requireNonNull(buffer);
-        final OnDiskAccount value = new OnDiskAccount();
-        value.deserialize(buffer, (int) version);
         return value;
     }
 }

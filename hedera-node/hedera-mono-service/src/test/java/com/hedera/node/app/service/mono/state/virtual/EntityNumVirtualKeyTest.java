@@ -25,13 +25,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,29 +74,26 @@ class EntityNumVirtualKeyTest {
     }
 
     @Test
-    void serializeWorks() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocate(8);
-        final ByteBuffer verify = ByteBuffer.allocate(8);
+    void serializeWorks() {
+        final BufferedData buffer = BufferedData.allocate(8);
+        final BufferedData verify = BufferedData.allocate(8);
 
-        verify.putLong(longKey);
-        verify.limit(verify.position());
-        verify.rewind();
+        verify.writeLong(longKey);
+        verify.flip();
 
         subject.serialize(buffer);
-        buffer.rewind();
+        buffer.reset();
 
         assertEquals(buffer, verify);
     }
 
     @Test
-    void deserializeWorks() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocate(8);
-        buffer.putLong(longKey);
-        buffer.limit(buffer.position());
-        buffer.rewind();
+    void deserializeWorks() {
+        final BufferedData buffer = BufferedData.allocate(8);
+        buffer.writeLong(longKey);
+        buffer.flip();
 
         EntityNumVirtualKey key = new EntityNumVirtualKey();
-
         key.deserialize(buffer);
 
         assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
@@ -123,9 +120,9 @@ class EntityNumVirtualKeyTest {
     @Test
     void serializeActuallyWithByteBufferWorks() throws Exception {
         checkSerialize(() -> {
-            final var buffer = ByteBuffer.allocate(100000);
+            final var buffer = BufferedData.allocate(100000);
             subject.serialize(buffer);
-            buffer.rewind();
+            buffer.reset();
             var copy = new EntityNumVirtualKey();
             copy.deserialize(buffer);
 
@@ -138,12 +135,13 @@ class EntityNumVirtualKeyTest {
     @Test
     void serializeActuallyWithMixedWorksBytesFirst() throws Exception {
         checkSerialize(() -> {
-            final var buffer = ByteBuffer.allocate(100000);
+            final var arr = new byte[100000];
+            final var buffer = BufferedData.wrap(arr);
             subject.serialize(buffer);
 
             var copy = new EntityNumVirtualKey();
             copy.deserialize(
-                    new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+                    new SerializableDataInputStream(new ByteArrayInputStream(arr)),
                     EntityNumVirtualKey.CURRENT_VERSION);
 
             assertEquals(subject, copy);
@@ -159,7 +157,7 @@ class EntityNumVirtualKeyTest {
             final var out = new SerializableDataOutputStream(byteArr);
             subject.serialize(out);
 
-            final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+            final var buffer = BufferedData.wrap(byteArr.toByteArray());
             var copy = new EntityNumVirtualKey();
             copy.deserialize(buffer);
 
