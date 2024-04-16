@@ -32,7 +32,6 @@ import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
 import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +41,7 @@ import java.util.ServiceLoader.Provider;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -82,7 +81,7 @@ public class LoggingSystem implements LogEventConsumer {
     /**
      * The level configuration of the logging system that checks if a specific logger is enabled for a specific level.
      */
-    private final HandlerLoggingLevelConfig levelConfig;
+    private final AtomicReference<HandlerLoggingLevelConfig> levelConfig;
 
     /**
      * The factory that is used to create log events.
@@ -98,18 +97,18 @@ public class LoggingSystem implements LogEventConsumer {
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
         this.handlers = new CopyOnWriteArrayList<>();
         this.loggers = new ConcurrentHashMap<>();
-        this.levelConfig = new HandlerLoggingLevelConfig(configuration);
+        this.levelConfig = new AtomicReference<>(HandlerLoggingLevelConfig.create(configuration, null));
     }
 
     /**
      * Updates the logging system with the given configuration.
      *
-     * @implNote Currently only the level and marker configuration is updated. New handlers are not added and existing handlers are not removed for now.
-     *
      * @param configuration the configuration to update the logging system with
+     * @implNote Currently only the level and marker configuration is updated. New handlers are not added and existing
+     * handlers are not removed for now.
      */
     public void update(final @NonNull Configuration configuration) {
-        this.levelConfig.update(configuration);
+        this.levelConfig.set(HandlerLoggingLevelConfig.create(configuration, null));
         this.handlers.forEach(handler -> handler.update(configuration));
     }
 
@@ -170,56 +169,56 @@ public class LoggingSystem implements LogEventConsumer {
             EMERGENCY_LOGGER.logNPE("level");
             return true;
         }
-        if (handlers.isEmpty()) {
-            return levelConfig.isEnabled(name, level, marker);
-        } else {
-            for (final LogHandler handler : handlers) {
-                if (handler.isEnabled(name, level, marker)) {
-                    return true;
-                }
+        for (final LogHandler handler : handlers) {
+            if (handler.isEnabled(name, level, marker)) {
+                return true;
             }
-            return false;
+        }
+
+        if (marker == null) { // favor inlining
+            return levelConfig.get().isEnabled(name, level);
+        } else {
+            return levelConfig.get().isEnabled(name, level, marker);
         }
     }
 
-    @Override
+    /**
+     * Process the event if any of the handlers is able to handle it
+     *
+     * @param event     the event to process
+     */
     public void accept(@NonNull final LogEvent event) {
         if (event == null) {
             EMERGENCY_LOGGER.logNPE("event");
-        } else {
-            if (isEnabled(event.loggerName(), event.level(), event.marker())) {
-                try {
-                    final List<Consumer<LogEvent>> eventConsumers = new ArrayList<>();
-                    handlers.stream()
-                            .filter(handler -> handler.isEnabled(event.loggerName(), event.level(), event.marker()))
-                            .forEach(eventConsumers::add);
-
-                    if (eventConsumers.isEmpty()) {
-                        if (isEnabled(event.loggerName(), event.level(), event.marker())) {
-                            eventConsumers.add(e -> EMERGENCY_LOGGER.log(event));
-                        }
+            return;
+        }
+        try {
+            boolean handled = false;
+            for (LogHandler logHandler : handlers) {
+                if (logHandler.isEnabled(event.loggerName(), event.level(), event.marker())) {
+                    try {
+                        logHandler.handle(event);
+                        handled = true;
+                    } catch (final Throwable throwable) {
+                        EMERGENCY_LOGGER.log(
+                                Level.ERROR,
+                                "Exception in handling log event by logHandler "
+                                        + logHandler.getClass().getName(),
+                                throwable);
                     }
-                    if (!eventConsumers.isEmpty()) {
-                        eventConsumers.forEach(consumer -> {
-                            try {
-                                consumer.accept(event);
-                            } catch (final Throwable throwable) {
-                                EMERGENCY_LOGGER.log(
-                                        Level.ERROR, "Exception in handling log event by consumer", throwable);
-                            }
-                        });
-                    }
-                } catch (final Throwable throwable) {
-                    EMERGENCY_LOGGER.log(Level.ERROR, "Exception in handling log event", throwable);
                 }
             }
+            if (!handled && levelConfig.get().isEnabled(event.loggerName(), event.level(), event.marker())) {
+                EMERGENCY_LOGGER.log(event);
+            }
+        } catch (final Throwable throwable) {
+            EMERGENCY_LOGGER.log(Level.ERROR, "Exception in handling log event", throwable);
         }
     }
 
     /**
      * Loads all {@link LogProviderFactory} instances by SPI / {@link ServiceLoader} and installs them into the logging
      * system.
-     *
      */
     public void installProviders() {
         final ServiceLoader<LogProviderFactory> serviceLoader = ServiceLoader.load(LogProviderFactory.class);
@@ -235,7 +234,6 @@ public class LoggingSystem implements LogEventConsumer {
     /**
      * Loads all {@link LogHandlerFactory} instances by SPI / {@link ServiceLoader} and installs them into the logging
      * system.
-     *
      */
     public void installHandlers() {
         final Map<String, LogHandlerFactory> servicesMap = ServiceLoader.load(LogHandlerFactory.class).stream()

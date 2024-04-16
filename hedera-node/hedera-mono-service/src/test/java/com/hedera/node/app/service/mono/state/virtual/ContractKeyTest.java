@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.ContractKey.MERKLE_VERSION;
 import static com.hedera.node.app.service.mono.state.virtual.ContractKey.RUNTIME_CONSTRUCTABLE_ID;
-import static com.hedera.node.app.service.mono.state.virtual.ContractKey.readKeySize;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.asPackedInts;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,12 +29,12 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.primitives.Ints;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -109,14 +108,14 @@ class ContractKeyTest {
 
     @ParameterizedTest
     @CsvSource({"0,1,4096,1048576,1099511627776,562949953421312,9223372036854775807"})
-    void contractIdSerdesWork(final long contractId) throws IOException {
+    void contractIdSerdesWork(final long contractId) {
         final var key = new ContractKey(contractId, 0);
-        final var buffer = ByteBuffer.allocate(256);
+        final var buffer = BufferedData.allocate(256);
         key.serialize(buffer);
-        buffer.rewind();
-        buffer.get();
+        buffer.reset();
+        buffer.readByte();
         final var deserializedId =
-                ContractKey.deserializeContractID(key.getContractIdNonZeroBytes(), buffer, ByteBuffer::get);
+                ContractKey.deserializeContractID(key.getContractIdNonZeroBytes(), buffer, BufferedData::readByte);
         assertEquals(contractId, deserializedId);
     }
 
@@ -154,23 +153,23 @@ class ContractKeyTest {
     void serializeUsingByteBufferWorks() throws IOException {
         subject = new ContractKey(contractNum, key_array);
 
-        final ByteBuffer out = ByteBuffer.allocate(4);
-        final ByteBuffer inOrder = ByteBuffer.allocate(4);
+        final BufferedData out = BufferedData.allocate(4);
+        final BufferedData inOrder = BufferedData.allocate(4);
 
         final var contractIdNonZeroBytes = subject.getContractIdNonZeroBytes();
         final var uint256KeyNonZeroBytes = subject.getUint256KeyNonZeroBytes();
 
         subject.serialize(out);
-        out.rewind();
+        out.reset();
 
-        inOrder.put(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        inOrder.writeByte(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
-            inOrder.put((byte) (subject.getContractId() >> (b * 8)));
+            inOrder.writeByte((byte) (subject.getContractId() >> (b * 8)));
         }
         for (int b = uint256KeyNonZeroBytes - 1; b >= 0; b--) {
-            inOrder.put(subject.getUint256Byte(b));
+            inOrder.writeByte(subject.getUint256Byte(b));
         }
-        inOrder.rewind();
+        inOrder.reset();
 
         assertEquals(inOrder, out);
     }
@@ -203,15 +202,15 @@ class ContractKeyTest {
         subject = new ContractKey(contractNum, key);
         final var testSubject = new ContractKey();
 
-        final ByteBuffer bin = ByteBuffer.allocate(4);
-        bin.put(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
-        bin.put((byte) (subject.getContractId() >> 8));
-        bin.put((byte) (subject.getContractId()));
-        bin.put(subject.getUint256Byte(0));
-        bin.rewind();
+        final BufferedData bin = BufferedData.allocate(4);
+        bin.writeByte(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        bin.writeByte((byte) (subject.getContractId() >> 8));
+        bin.writeByte((byte) (subject.getContractId()));
+        bin.writeByte(subject.getUint256Byte(0));
+        bin.reset();
 
         testSubject.deserialize(bin);
-        bin.rewind();
+        bin.reset();
 
         assertEquals(subject, testSubject);
     }
@@ -263,18 +262,6 @@ class ContractKeyTest {
         testSubject.deserialize(fin, 1);
 
         assertEquals(subject, testSubject);
-    }
-
-    @Test
-    void readKeySizeWorks() {
-        subject = new ContractKey(contractNum, key);
-        final var contractIdNonZeroBytes = subject.getContractIdNonZeroBytes();
-        final var uint256KeyNonZeroBytes = subject.getUint256KeyNonZeroBytes();
-        final ByteBuffer bin = ByteBuffer.allocate(8);
-        bin.put(subject.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
-        bin.rewind();
-
-        assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, readKeySize(bin));
     }
 
     @Test

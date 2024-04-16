@@ -20,8 +20,10 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
@@ -30,14 +32,21 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKycWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKycWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociateWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociateWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreezeWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreezeWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccountWithAlias;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -63,6 +72,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_W
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
+import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -116,12 +127,170 @@ public class TokenManagementSpecs extends HapiSuite {
                 fungibleCommonMaxSupplyReachWork(),
                 mintingMaxLongValueWorks(),
                 nftMintProvidesMintedNftsAndNewTotalSupply(),
-                zeroUnitTokenOperationsWorkAsExpected());
+                zeroUnitTokenOperationsWorkAsExpected(),
+                aliasFormFailsForAllTokenOps()
+                // aliasFormWorksForAllTokenOps(), // this will be enabled when alias forms are allowed in all token ops
+                );
+    }
+
+    @HapiTest
+    private HapiSpec aliasFormFailsForAllTokenOps() {
+        final var CIVILIAN = "civilian";
+        final var PAUSE_KEY = "pauseKey";
+        final var KYC_KEY = "kycKey";
+        final var FREEZE_KEY = "freezeKey";
+        final var WIPE_KEY = "wipeKey";
+        final var PRIMARY = "primary";
+        final var partyAlias = "partyAlias";
+        final var counterAlias = "counterAlias";
+        return defaultHapiSpec("aliasFormFailsForAllTokenOps")
+                .given(
+                        newKeyNamed(partyAlias).shape(ED25519),
+                        newKeyNamed(counterAlias).shape(ED25519),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed(PAUSE_KEY),
+                        newKeyNamed(KYC_KEY),
+                        newKeyNamed(FREEZE_KEY),
+                        newKeyNamed(WIPE_KEY),
+                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, partyAlias, ONE_HBAR)),
+                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, counterAlias, ONE_HBAR)))
+                .when(
+                        tokenCreate(PRIMARY)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .treasury(TOKEN_TREASURY)
+                                .pauseKey(PAUSE_KEY)
+                                .kycKey(KYC_KEY)
+                                .freezeKey(FREEZE_KEY)
+                                .wipeKey(WIPE_KEY),
+
+                        // associate and dissociate with alias
+                        tokenAssociateWithAlias(partyAlias, PRIMARY)
+                                .signedBy(partyAlias, DEFAULT_PAYER)
+                                .hasPrecheck(INVALID_ACCOUNT_ID),
+                        tokenDissociateWithAlias(partyAlias, PRIMARY)
+                                .signedBy(partyAlias, DEFAULT_PAYER)
+                                .hasPrecheck(INVALID_ACCOUNT_ID),
+                        // associate again for next steps
+                        tokenAssociateWithAlias(partyAlias, PRIMARY)
+                                .signedBy(partyAlias, DEFAULT_PAYER)
+                                .hasPrecheck(INVALID_ACCOUNT_ID),
+                        // grant and revoke kyc
+                        grantTokenKycWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
+                        // revoke kyc
+                        revokeTokenKycWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
+                        // freeze, unfreeze
+                        tokenFreezeWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
+                        tokenUnfreezeWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
+
+                        // wipe won't happen if the kyc key exists and kyc not granted
+                        grantTokenKycWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
+                        wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1).hasPrecheck(INVALID_ACCOUNT_ID))
+                .then();
     }
 
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    //    @HapiTest
+    // This test should be enabled when aliases are supported in all transaction bodies
+    private HapiSpec aliasFormWorksForAllTokenOps() {
+        final var CIVILIAN = "civilian";
+        final var PAUSE_KEY = "pauseKey";
+        final var KYC_KEY = "kycKey";
+        final var FREEZE_KEY = "freezeKey";
+        final var WIPE_KEY = "wipeKey";
+        final var PRIMARY = "primary";
+        final var partyAlias = "partyAlias";
+        final var counterAlias = "counterAlias";
+        return defaultHapiSpec("aliasFormWorksForAllTokenOps")
+                .given(
+                        newKeyNamed(partyAlias).shape(ED25519),
+                        newKeyNamed(counterAlias).shape(ED25519),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed(PAUSE_KEY),
+                        newKeyNamed(KYC_KEY),
+                        newKeyNamed(FREEZE_KEY),
+                        newKeyNamed(WIPE_KEY),
+                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, partyAlias, ONE_HBAR)),
+                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, counterAlias, ONE_HBAR)))
+                .when(
+                        tokenCreate(PRIMARY)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .maxSupply(1000)
+                                .initialSupply(500)
+                                .decimals(1)
+                                .treasury(TOKEN_TREASURY)
+                                .pauseKey(PAUSE_KEY)
+                                .kycKey(KYC_KEY)
+                                .freezeKey(FREEZE_KEY)
+                                .wipeKey(WIPE_KEY),
+
+                        // associate and dissociate with alias
+                        tokenAssociateWithAlias(partyAlias, PRIMARY).signedBy(partyAlias, DEFAULT_PAYER),
+                        getAliasedAccountInfo(partyAlias)
+                                .hasToken(relationshipWith(PRIMARY).balance(0).kyc(Revoked))
+                                .logged(),
+                        tokenDissociateWithAlias(partyAlias, PRIMARY).signedBy(partyAlias, DEFAULT_PAYER),
+                        getAliasedAccountInfo(partyAlias)
+                                .hasNoTokenRelationship(PRIMARY)
+                                .logged(),
+
+                        // associate again for next steps
+                        tokenAssociateWithAlias(partyAlias, PRIMARY).signedBy(partyAlias, DEFAULT_PAYER),
+
+                        // grant and revoke kyc
+                        grantTokenKycWithAlias(PRIMARY, partyAlias),
+                        getAliasedAccountInfo(partyAlias)
+                                .hasToken(relationshipWith(PRIMARY).balance(0).kyc(Granted))
+                                .logged(),
+                        // transfer some tokens
+                        cryptoTransfer(moving(10, PRIMARY).between(TOKEN_TREASURY, partyAlias))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
+                        getAliasedAccountInfo(partyAlias)
+                                .hasToken(relationshipWith(PRIMARY).balance(10).kyc(Granted))
+                                .logged(),
+
+                        // revoke kyc
+                        revokeTokenKycWithAlias(PRIMARY, partyAlias),
+                        getAliasedAccountInfo(partyAlias)
+                                .hasToken(relationshipWith(PRIMARY).balance(10).kyc(Revoked))
+                                .logged(),
+
+                        // freeze, unfreeze
+                        tokenFreezeWithAlias(PRIMARY, partyAlias),
+                        getAliasedAccountInfo(partyAlias)
+                                .hasToken(relationshipWith(PRIMARY)
+                                        .balance(10)
+                                        .kyc(Revoked)
+                                        .freeze(Frozen))
+                                .logged(),
+                        tokenUnfreezeWithAlias(PRIMARY, partyAlias),
+                        getAliasedAccountInfo(partyAlias)
+                                .hasToken(relationshipWith(PRIMARY)
+                                        .balance(10)
+                                        .kyc(Revoked)
+                                        .freeze(Unfrozen))
+                                .logged(),
+
+                        // wipe won't happen if the kyc key exists and kyc not granted
+                        grantTokenKycWithAlias(PRIMARY, partyAlias),
+                        wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1),
+                        getAliasedAccountInfo(partyAlias)
+                                .hasToken(relationshipWith(PRIMARY)
+                                        .balance(9)
+                                        .kyc(Granted)
+                                        .freeze(Unfrozen))
+                                .logged())
+                .then();
     }
 
     // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
@@ -341,7 +510,7 @@ public class TokenManagementSpecs extends HapiSuite {
                             final var alias = key.hasECDSASecp256K1() ? key.getECDSASecp256K1() : key.getEd25519();
                             allRunFor(
                                     spec,
-                                    wipeTokenAccountWithAlias(unwipeableToken, alias, 1)
+                                    wipeTokenAccountWithAlias(unwipeableToken, "alias", 1)
                                             .signedBy(GENESIS)
                                             .hasKnownStatus(INVALID_ACCOUNT_ID));
                         }));

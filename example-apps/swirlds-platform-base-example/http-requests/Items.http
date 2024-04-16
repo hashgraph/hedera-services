@@ -69,3 +69,11 @@ Content-Type: application/json
 "amount": 10,
 "buyPrice": 15.99
 }
+
+### POST request to update a gauge
+POST http://{{server}}:{{port}}/metrics/updateGauge
+Content-Type: application/json
+
+{
+  "value": 7.2
+}

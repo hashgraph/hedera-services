@@ -28,7 +28,6 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
@@ -133,11 +132,6 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         serializeTo(out::writeInt, out::writeLong, out::writeBytes);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        serializeTo(buffer::putInt, buffer::putLong, buffer::put);
-    }
-
     private <E extends Exception> void deserializeFrom(
             final ThrowingSupplier<Integer, E> readIntFn,
             final ThrowingSupplier<Long, E> readLongFn,
@@ -163,11 +157,6 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
 
     void deserialize(final ReadableSequentialData in) {
         deserializeFrom(in::readInt, in::readLong, in::readBytes);
-    }
-
-    @Deprecated
-    void deserialize(ByteBuffer in, int version) {
-        deserializeFrom(in::getInt, in::getLong, in::get);
     }
 
     @Override

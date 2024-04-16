@@ -22,7 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.LongRunningAverage;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -304,7 +304,7 @@ public class PcesWriter {
      *
      * @param nonAncientBoundary describes the boundary between ancient and non-ancient events
      */
-    public void updateNonAncientEventBoundary(@NonNull final NonAncientEventWindow nonAncientBoundary) {
+    public void updateNonAncientEventBoundary(@NonNull final EventWindow nonAncientBoundary) {
         if (nonAncientBoundary.getAncientThreshold() < this.nonAncientBoundary) {
             throw new IllegalArgumentException("Non-ancient boundary cannot be decreased. Current = "
                     + this.nonAncientBoundary + ", requested = " + nonAncientBoundary);

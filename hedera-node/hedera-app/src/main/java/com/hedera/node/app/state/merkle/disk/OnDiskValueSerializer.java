@@ -24,7 +24,6 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -109,11 +108,6 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
         }
     }
 
-    @Override
-    public void serialize(final OnDiskValue<V> value, final ByteBuffer buffer) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
     // Value deserialization
 
     @Override
@@ -127,10 +121,5 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
         } catch (final ParseException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public OnDiskValue<V> deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        throw new UnsupportedOperationException();
     }
 }

@@ -859,13 +859,14 @@ public class TokenTransactSpecs extends HapiSuite {
     @HapiTest
     public HapiSpec duplicateAccountsInTokenTransferRejected() {
         return defaultHapiSpec("DuplicateAccountsInTokenTransferRejected")
-                .given(
-                        cryptoCreate(FIRST_TREASURY).balance(0L),
-                        cryptoCreate(BENEFICIARY).balance(0L))
-                .when(tokenCreate(A_TOKEN))
+                .given(cryptoCreate(FIRST_TREASURY), cryptoCreate(FIRST_USER), cryptoCreate(SECOND_USER))
+                .when(
+                        tokenCreate(A_TOKEN).initialSupply(TOTAL_SUPPLY).treasury(FIRST_TREASURY),
+                        tokenAssociate(FIRST_USER, A_TOKEN),
+                        tokenAssociate(SECOND_USER, A_TOKEN))
                 .then(cryptoTransfer(
-                                moving(1, A_TOKEN).between(FIRST_TREASURY, BENEFICIARY),
-                                moving(1, A_TOKEN).from(FIRST_TREASURY))
+                                moving(1, A_TOKEN).between(FIRST_TREASURY, FIRST_USER),
+                                moving(1, A_TOKEN).between(FIRST_TREASURY, SECOND_USER))
                         .dontFullyAggregateTokenTransfers()
                         .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
     }
@@ -958,7 +959,10 @@ public class TokenTransactSpecs extends HapiSuite {
                         mintToken(A_TOKEN, List.of(copyFromUtf8("memo"))),
                         mintToken(B_TOKEN, List.of(copyFromUtf8("memo2"))),
                         tokenAssociate(NEW_TREASURY, A_TOKEN, B_TOKEN),
-                        tokenUpdate(B_TOKEN).treasury(NEW_TREASURY).hasKnownStatus(SUCCESS))
+                        tokenUpdate(B_TOKEN)
+                                .treasury(NEW_TREASURY)
+                                .signedByPayerAnd(SUPPLY_KEY, NEW_TREASURY)
+                                .hasKnownStatus(SUCCESS))
                 .when(cryptoTransfer(movingUnique(A_TOKEN, 1).between(OLD_TREASURY, NEW_TREASURY))
                         .via("cryptoTransferTxn"))
                 .then(
