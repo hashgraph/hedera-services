@@ -50,8 +50,10 @@ import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.state.signed.DefaultSignedStateSentinel;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.util.MetricsDocUtils;
@@ -533,5 +535,10 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(), blocks.initialState().get().getAddressBook(), blocks.selfId());
         }
         return consensusEngine;
+    }
+
+    @NonNull
+    public SignedStateSentinel buildSignedStateSentinel() {
+        return new DefaultSignedStateSentinel(blocks.platformContext());
     }
 }
