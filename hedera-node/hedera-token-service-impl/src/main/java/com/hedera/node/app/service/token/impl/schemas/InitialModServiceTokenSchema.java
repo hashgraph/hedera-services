@@ -189,29 +189,7 @@ public class InitialModServiceTokenSchema extends Schema {
 
     @Override
     public void restart(@NonNull MigrationContext ctx) {
-        // We need to validate and mark any node that are removed during upgrade as deleted.
-        // Since restart is called in the schema after an upgrade, and we don't want to depend on schema version change
-        // validate all the nodeIds from the addressBook in state and mark them as deleted if they are not yet deleted
-        // in staking info.
-        final var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
-        final var networkInfo = ctx.networkInfo();
-        stakingToState.keys().forEachRemaining(nodeId -> {
-            final var stakingInfo = requireNonNull(stakingToState.get(nodeId));
-            if (!networkInfo.containsNode(nodeId.number()) && !stakingInfo.deleted()) {
-                stakingToState.put(
-                        nodeId, stakingInfo.copyBuilder().deleted(true).build());
-                log.info(
-                        "Node {} is marked deleted since it is deleted from addressBook during restart.",
-                        nodeId.number());
-            }
-        });
-        // validate if any new nodes are added in addressBook and not in staking info. If so, add them to staking info
-        // with weight 0. Also update maxStake and minStake for the new nodes.
-        addAdditionalNodesIfAny(stakingToState, networkInfo.addressBook(), ctx.configuration());
 
-        if (stakingToState.isModified()) {
-            ((WritableKVStateBase) stakingToState).commit();
-        }
     }
 
     @Override
@@ -434,41 +412,6 @@ public class InitialModServiceTokenSchema extends Schema {
 
         stakingFs = null;
         mnc = null;
-    }
-
-    private void addAdditionalNodesIfAny(
-            final WritableKVState<EntityNumber, StakingNodeInfo> stakingToState,
-            final List<NodeInfo> nodeInfos,
-            final Configuration config) {
-        final var existingNodeIds = stakingToState.size();
-        final var numberOfNodesInAddressBook = nodeInfos.size();
-        final long maxStakePerNode =
-                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodesInAddressBook;
-        final var numRewardHistoryStoredPeriods =
-                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
-
-        final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods + 1];
-        Arrays.fill(rewardSumHistory, 0L);
-        for (final var nodeId : nodeInfos) {
-            final var entityNum = new EntityNumber(nodeId.nodeId());
-            final var stakingInfo = stakingToState.get(entityNum);
-            if (stakingInfo != null) {
-                if (existingNodeIds != numberOfNodesInAddressBook) {
-                    stakingToState.put(
-                            entityNum,
-                            stakingInfo.copyBuilder().maxStake(maxStakePerNode).build());
-                }
-            } else {
-                final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
-                        .nodeNumber(nodeId.nodeId())
-                        .maxStake(maxStakePerNode)
-                        .minStake(0L)
-                        .rewardSumHistory(Arrays.asList(rewardSumHistory))
-                        .weight(0)
-                        .build();
-                stakingToState.put(entityNum, newNodeStakingInfo);
-            }
-        }
     }
 
     private void createGenesisSchema(@NonNull final MigrationContext ctx) {

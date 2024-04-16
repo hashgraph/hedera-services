@@ -16,16 +16,24 @@
 
 package com.hedera.node.app.state;
 
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.HederaLifecycles;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -35,6 +43,8 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -78,7 +88,9 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             @NonNull final MerkleHederaState state,
             @NonNull final AddressBook configAddressBook,
             @NonNull final PlatformContext context) {
-        final var tokenServiceState = state.getReadableStates(TokenService.NAME);
+        final var tokenServiceState = state.getWritableStates(TokenService.NAME);
+        final var stakingInfoState = state.getWritableStates(TokenService.NAME)
+                .<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
         if (!tokenServiceState.isEmpty()) {
             final var readableStoreFactory = new ReadableStoreFactory(state);
             // Get all nodeIds added in the config.txt
@@ -96,14 +108,65 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
                     configAddressBook.updateWeight(id, stakingInfo.weight());
                     configNodeIds.remove(id);
                 } else {
-                    logger.info("Node {} is deleted from configAddressBook during upgrade ", id);
+                    // We need to validate and mark any node that are removed during upgrade as deleted.
+                    stakingInfoState.put(EntityNumber.newBuilder().number(id.id()).build(),
+                            stakingInfo.copyBuilder()
+                                    .deleted(true)
+                                    .weight(0)
+                                    .build());
+                    logger.info("Node {} is deleted from configAddressBook during upgrade " +
+                            "and is marked deleted in state", id);
                 }
             }
             // for any newly added nodes that doesn't exist in state, weight should be set to 0
             // irrespective of the weight provided in config.txt
-            configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
+            configNodeIds.forEach(nodeId -> {
+                    addAdditionalNodesToState(stakingInfoState, configNodeIds, context.getConfiguration());
+                    configAddressBook.updateWeight(nodeId, 0);
+                    logger.info("Node {} is newly added in configAddressBook during upgrade " +
+                        "and is added to state with weight 0 in state", nodeId);
+            });
+
+            if (stakingInfoState.isModified()) {
+                ((WritableKVStateBase) stakingInfoState).commit();
+            }
         } else {
             logger.warn("Token service state is empty to update weights from StakingInfo Map");
+        }
+    }
+
+    private void addAdditionalNodesToState(
+            final WritableKVState<EntityNumber, StakingNodeInfo> stakingToState,
+            final Set<NodeId> nodeIds,
+            final Configuration config) {
+        final var existingNodeIds = stakingToState.size();
+        final var numberOfNodesInAddressBook = nodeIds.size();
+        final long maxStakePerNode =
+                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodesInAddressBook;
+        final var numRewardHistoryStoredPeriods =
+                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
+
+        final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods + 1];
+        Arrays.fill(rewardSumHistory, 0L);
+        for (final var nodeId : nodeIds) {
+            final var entityNum = new EntityNumber(nodeId.id());
+            final var stakingInfo = stakingToState.get(entityNum);
+            if (stakingInfo != null) {
+                if (existingNodeIds != numberOfNodesInAddressBook) {
+                    stakingToState.put(
+                            entityNum,
+                            stakingInfo.copyBuilder().maxStake(maxStakePerNode).build());
+                }
+            } else {
+                final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
+                        .nodeNumber(nodeId.id())
+                        .maxStake(maxStakePerNode)
+                        .minStake(0L)
+                        .rewardSumHistory(Arrays.asList(rewardSumHistory))
+                        .weight(0)
+                        .build();
+                stakingToState.put(entityNum, newNodeStakingInfo);
+            }
         }
     }
 

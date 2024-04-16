@@ -668,53 +668,6 @@ final class InitialModServiceTokenSchemaTest {
         }
     }
 
-    @Test
-    void marksNonExistingNodesToDeletedInStateAndAddsNewNodesToState() {
-        accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
-                .build();
-        // State has nodeIds 1, 2, 3
-        final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
-                .value(NODE_NUM_1, STAKING_INFO_1)
-                .value(NODE_NUM_2, STAKING_INFO_2)
-                .value(NODE_NUM_3, STAKING_INFO_3)
-                .build();
-        newStates = newStatesInstance(
-                accounts,
-                MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build(),
-                newWritableEntityIdState(),
-                stakingInfosState);
-        entityIdStore = new WritableEntityIdStore(newStates);
-        // Platform address book has node Ids 2, 4, 8
-        networkInfo = new FakeNetworkInfo();
-        config = buildConfig(DEFAULT_NUM_SYSTEM_ACCOUNTS, true);
-
-        final var schema = newSubjectWithAllExpected();
-        // When we call restart, the state will be updated to mark node 1 and 3 as deleted
-        schema.restart(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE,
-                newStates,
-                config,
-                networkInfo,
-                genesisRecordsBuilder,
-                entityIdStore,
-                null));
-        final var updatedStates = newStates.get(STAKING_INFO_KEY);
-        // marks nodes 1, 2 as deleted
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_1)).deleted()).isTrue();
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_2)).deleted()).isFalse();
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_3)).deleted()).isTrue();
-        // Also adds node 4 to the state
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).deleted()).isFalse();
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).weight()).isZero();
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).minStake()).isZero();
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).maxStake()).isEqualTo(1666666666666666666L);
-        // Also adds node 8 to the state
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).deleted()).isFalse();
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).weight()).isZero();
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).minStake()).isZero();
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).maxStake()).isEqualTo(1666666666666666666L);
-    }
-
     private Configuration overridingLedgerBalanceWithZero() {
         return configBuilder(DEFAULT_NUM_SYSTEM_ACCOUNTS, true)
                 .withValue("ledger.totalTinyBarFloat", "0")
