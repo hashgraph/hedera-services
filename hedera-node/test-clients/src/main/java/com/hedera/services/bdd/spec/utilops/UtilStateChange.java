@@ -82,7 +82,7 @@ public class UtilStateChange {
     private static List<HapiSpecOperation> createEthereumAccount(final String secp256k1Key, final String txnName) {
         final var newSpecKey = new NewSpecKey(secp256k1Key).shape(secp256k1Shape);
         final var cryptoTransfer = new HapiCryptoTransfer(
-            tinyBarsFromAccountToAlias(GENESIS, secp256k1Key, 20 * ONE_MILLION_HBARS))
+                        tinyBarsFromAccountToAlias(GENESIS, secp256k1Key, 20 * ONE_MILLION_HBARS))
                 .via(txnName)
                 .payingWith(GENESIS);
         return List.of(newSpecKey, cryptoTransfer);

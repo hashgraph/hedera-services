@@ -367,7 +367,7 @@ public class HapiSpec implements Runnable {
                 ops.addAll(createEthereumAccountForSpec(this));
             }
             ops.addAll(UtilVerbs.convertHapiCallsToEthereumCalls(
-                Stream.of(given, when, then).flatMap(Arrays::stream).toList()));
+                    Stream.of(given, when, then).flatMap(Arrays::stream).toList()));
         }
 
         try {
