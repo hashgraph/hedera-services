@@ -516,7 +516,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 .solderTo(pcesJoinWiring.getInputWire(PcesJoin::setLatestDurableSequenceNumber));
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
-                .solderTo(pcesWriterWiring.minimumAncientIdentifierToStoreInputWire());
+                .solderTo(pcesWriterWiring.minimumAncientIdentifierToStoreInputWire(), INJECT);
 
         runningEventHashOverrideWiring
                 .runningHashUpdateOutput()
