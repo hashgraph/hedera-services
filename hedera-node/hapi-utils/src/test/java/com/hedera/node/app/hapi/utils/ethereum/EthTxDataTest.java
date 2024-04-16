@@ -38,6 +38,8 @@ import java.util.Arrays;
 import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class EthTxDataTest {
 
@@ -568,72 +570,15 @@ class EthTxDataTest {
                 == 0);
     }
 
-    @Test
-    void negativeValueEIP1559() {
+    @ParameterizedTest
+    @EnumSource(EthTransactionType.class)
+    void negativeValueWithDifferentTypes(EthTransactionType type) {
         final var negativeValue = BigInteger.valueOf(-1000);
 
         final var oneByte = new byte[] {1};
         final EthTxData ethTxData = new EthTxData(
                 oneByte,
-                EthTransactionType.EIP1559,
-                oneByte,
-                1,
-                oneByte,
-                oneByte,
-                oneByte,
-                1,
-                oneByte,
-                negativeValue,
-                oneByte,
-                null,
-                1,
-                oneByte,
-                oneByte,
-                oneByte);
-        final var encoded = ethTxData.encodeTx();
-
-        final var populateEthTxData = EthTxData.populateEthTxData(encoded);
-
-        assertEquals(negativeValue, populateEthTxData.value());
-    }
-
-    @Test
-    void negativeValueEIP2930() {
-        final var negativeValue = BigInteger.valueOf(-1000);
-
-        final var oneByte = new byte[] {1};
-        final EthTxData ethTxData = new EthTxData(
-                oneByte,
-                EthTransactionType.EIP2930,
-                oneByte,
-                1,
-                oneByte,
-                oneByte,
-                oneByte,
-                1,
-                oneByte,
-                negativeValue,
-                oneByte,
-                null,
-                1,
-                oneByte,
-                oneByte,
-                oneByte);
-        final var encoded = ethTxData.encodeTx();
-
-        final var populateEthTxData = EthTxData.populateEthTxData(encoded);
-
-        assertEquals(negativeValue, populateEthTxData.value());
-    }
-
-    @Test
-    void negativeValueLegacy() {
-        final var negativeValue = BigInteger.valueOf(-1000);
-
-        final var oneByte = new byte[] {1};
-        final EthTxData ethTxData = new EthTxData(
-                oneByte,
-                EthTransactionType.LEGACY_ETHEREUM,
+                type,
                 oneByte,
                 1,
                 oneByte,
