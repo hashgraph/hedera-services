@@ -143,3 +143,4 @@ Verify that the new behavior of the `SELFDESTRUCT` operation is correct:
 * For both of the above, verify that the hbar balance is correctly sent to their beneficiary
   * But only where allowed by Hedera semantics (e.g., w.r.t. beneficiary account existence and type,
     and required signatures)
+
