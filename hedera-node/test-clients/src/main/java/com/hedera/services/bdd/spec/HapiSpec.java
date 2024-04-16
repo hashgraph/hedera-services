@@ -35,7 +35,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.createEthereumAccountForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
@@ -358,16 +358,16 @@ public class HapiSpec implements Runnable {
             return;
         }
 
-        List<HapiSpecOperation> ops;
+        List<HapiSpecOperation> ops = new ArrayList<>();
 
         if (!suitePrefix.endsWith(ETH_SUFFIX)) {
-            ops = Stream.of(given, when, then).flatMap(Arrays::stream).toList();
+            ops.addAll(Stream.of(given, when, then).flatMap(Arrays::stream).toList());
         } else {
             if (!isEthereumAccountCreatedForSpec(this)) {
-                initializeEthereumAccountForSpec(this);
+                ops.addAll(createEthereumAccountForSpec(this));
             }
-            ops = UtilVerbs.convertHapiCallsToEthereumCalls(
-                    Stream.of(given, when, then).flatMap(Arrays::stream).toList());
+            ops.addAll(UtilVerbs.convertHapiCallsToEthereumCalls(
+                Stream.of(given, when, then).flatMap(Arrays::stream).toList()));
         }
 
         try {
