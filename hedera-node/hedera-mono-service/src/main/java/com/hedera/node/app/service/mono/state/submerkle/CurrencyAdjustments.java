@@ -38,7 +38,7 @@ public class CurrencyAdjustments implements SelfSerializable {
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8b06bd46e12a466L;
 
     private static final long[] NO_ADJUSTMENTS = new long[0];
-    static final int MAX_NUM_ADJUSTMENTS = 25;
+    static final int MAX_NUM_ADJUSTMENTS = Integer.MAX_VALUE;
 
     long[] hbars = NO_ADJUSTMENTS;
     long[] accountNums = NO_ADJUSTMENTS;
