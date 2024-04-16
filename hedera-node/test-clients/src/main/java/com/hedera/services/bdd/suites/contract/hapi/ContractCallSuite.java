@@ -2521,6 +2521,36 @@ public class ContractCallSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
+    final HapiSpec test() {
+        final var contract = "MakeCalls";
+        final var withoutAmount = "makeCallWithoutAmount";
+
+        return defaultHapiSpec(
+                "test")
+                .given(
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract).gas(4_000_000L)
+                )
+                .when(contractCall(
+                                contract,
+                                withoutAmount,
+                                asHeadlongAddress(asAddress(AccountID.newBuilder().setAccountNum(356).build())),
+                                new byte[] {"WoRtHlEsS".getBytes()[1]})
+                                .via("asd")
+                                .signingWith(ACCOUNT)
+                                .payingWith(ACCOUNT)
+                )
+                .then(getTxnRecord("asd").logged(), withOpContext((spec, opLog) -> {
+                    final var op = getTxnRecord("asd");
+                    op.getResponseRecord().getContractCallResult();
+//                    allRunFor(spec, op);
+//                    final var record = op.getResponseRecord();
+//                    System.out.println("CHILD RECORDS -->" + op.getChildRecords().size());
+                }));
+    }
+
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {
         return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(contract));
     }
