@@ -19,9 +19,9 @@ package com.swirlds.platform.network.connectivity;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.crypto.AddressBookAndCerts;
 import com.swirlds.platform.crypto.CryptoArgsProvider;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
@@ -60,9 +60,9 @@ class TlsFactoryTest extends ConnectivityTestBase {
     @BeforeEach
     void setUp() throws Throwable {
         // create addressBook, keysAndCerts
-        final Pair<AddressBook, Map<NodeId, KeysAndCerts>> akPair1 = CryptoArgsProvider.loadAddressBookWithKeys(2);
-        final AddressBook addressBook = akPair1.left();
-        final Map<NodeId, KeysAndCerts> keysAndCerts = akPair1.right();
+        final AddressBookAndCerts addressBookAndCerts = CryptoArgsProvider.loadAddressBookWithKeys(2);
+        final AddressBook addressBook = addressBookAndCerts.addressBook();
+        final Map<NodeId, KeysAndCerts> keysAndCerts = addressBookAndCerts.nodeIdKeysAndCertsMap();
         assertTrue(addressBook.getSize() > 1, "Address book must contain at least 2 nodes");
 
         // choose 2 nodes to test connections
@@ -77,19 +77,18 @@ class TlsFactoryTest extends ConnectivityTestBase {
 
         // test that B can talk to A - A(serverSocket) -> B(clientSocket1)
         serverSocket = socketFactoryA.createServerSocket(PORT);
-        serverThread = createSocketThread(serverSocket, TEST_DATA, closeSeverConnection);
+        serverThread = createSocketThread(serverSocket, closeSeverConnection);
 
         clientSocketB = socketFactoryB.createClientSocket(STRING_IP, PORT);
         testSocket(serverThread, clientSocketB);
         Assertions.assertFalse(serverSocket.isClosed());
 
         // create a new address book with keys and new set of nodes
-        final Pair<AddressBook, Map<NodeId, KeysAndCerts>> addressBookWithKeys =
-                CryptoArgsProvider.loadAddressBookWithKeys(6);
-        updatedAddressBook = addressBookWithKeys.left();
+        final AddressBookAndCerts addressBookAndCerts1 = CryptoArgsProvider.loadAddressBookWithKeys(6);
+        updatedAddressBook = addressBookAndCerts1.addressBook();
         final Address address = addressBook.getAddress(nodeA).copySetNodeId(updatedAddressBook.getNextNodeId());
         updatedAddressBook.add(address); // ensure original node is in new
-        final Map<NodeId, KeysAndCerts> updatedKeysAndCerts = addressBookWithKeys.right();
+        final Map<NodeId, KeysAndCerts> updatedKeysAndCerts = addressBookAndCerts.nodeIdKeysAndCertsMap();
         assertTrue(updatedAddressBook.getSize() > 1, "Address book must contain at least 2 nodes");
 
         // pick a node for the 3rd connection C.
@@ -101,10 +100,12 @@ class TlsFactoryTest extends ConnectivityTestBase {
 
     /**
      * Asserts that for sockets A and B that can connect to each other, if A's peer list changes and in effect its trust
-     * store is reloaded, B, as well as peer C in the updated peer list can still connect to A.
+     * store reloaded, B, as well as a new peer C in the updated peer list can both connect to A.
      */
     @Test
     void tlsFactoryRefreshTest() throws Throwable {
+        // we expect that C can't talk to A yet, as C's certificate is not yet in A's trust store
+        assertThrows(IOException.class, () -> socketFactoryC.createClientSocket(STRING_IP, PORT));
         // re-initialize SSLContext for A using a new peer list which contains C
         socketFactoryA.reload(Utilities.createPeerInfoList(updatedAddressBook, nodeA));
         // now, we expect that C can talk to A
@@ -112,18 +113,8 @@ class TlsFactoryTest extends ConnectivityTestBase {
         testSocket(serverThread, clientSocketC);
         // also, B can still talk to A
         testSocket(serverThread, clientSocketB);
-        closeSeverConnection.set(true);
-        serverThread.join();
-        Assertions.assertTrue(serverSocket.isClosed());
-    }
 
-    /**
-     * Asserts that for sockets A and B that can connect to each other, a third socket C is unable to connect.
-     */
-    @Test
-    void tlsFactoryUntrustedConnectionThrowsTest() throws Throwable {
-        // we expect that C can't talk to A yet, as C's certificate is not in A's trust store
-        assertThrows(IOException.class, () -> socketFactoryC.createClientSocket(STRING_IP, PORT));
+        // we're done
         closeSeverConnection.set(true);
         serverThread.join();
         Assertions.assertTrue(serverSocket.isClosed());

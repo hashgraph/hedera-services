@@ -36,7 +36,6 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -44,7 +43,6 @@ import org.mockito.Mockito;
 
 class InboundConnectionHandlerTest extends ConnectivityTestBase {
 
-    private static final byte[] SOME_DATA = new byte[] {4, 5, 6};
     private static final int PORT = 31_000;
     private static final PlatformContext platformContext = TestPlatformContextBuilder.create()
             .withConfiguration(TLS_NO_IP_TOS_CONFIG)
@@ -78,12 +76,12 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
         final SocketFactory socketFactory2 =
                 NetworkUtils.createSocketFactory(otherNode, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
 
-        final AtomicBoolean stopFlag = new AtomicBoolean(false);
         final ServerSocket serverSocket = socketFactory1.createServerSocket(PORT);
-        final Thread serverThread = createSocketThread(serverSocket, SOME_DATA, stopFlag);
+        final Thread serverThread = createSocketThread(serverSocket);
+        serverThread.start();
 
         final Socket socket = socketFactory2.createClientSocket(STRING_IP, PORT);
-        socket.getOutputStream().write(SOME_DATA);
+        socket.getOutputStream().write(TEST_DATA);
 
         final InterruptableConsumer<Connection> connConsumer = conn -> {
             Assertions.assertNotNull(conn);
@@ -95,7 +93,6 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
         final InboundConnectionHandler inbound = new InboundConnectionHandler(
                 platformContext, ct, identifier, thisNode, connConsumer, Time.getCurrent());
         inbound.handle(socket, peerInfoList); // 2 can talk to 1 via tls ok
-        stopFlag.set(true);
         serverThread.join();
         socket.close();
     }
@@ -125,12 +122,12 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
         final SocketFactory s2 =
                 NetworkUtils.createSocketFactory(otherNode, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
 
-        final AtomicBoolean stopFlag = new AtomicBoolean(false);
         final ServerSocket serverSocket = s1.createServerSocket(PORT);
-        final Thread serverThread = createSocketThread(serverSocket, SOME_DATA, stopFlag);
+        final Thread serverThread = createSocketThread(serverSocket);
+        serverThread.start();
 
         final Socket socket = s2.createClientSocket(STRING_IP, PORT);
-        socket.getOutputStream().write(SOME_DATA);
+        socket.getOutputStream().write(TEST_DATA);
 
         final InterruptableConsumer<Connection> connConsumer =
                 conn -> Assertions.fail("connection should never have been created");
@@ -139,7 +136,6 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
                 platformContext, ct, identifier, thisNode, connConsumer, Time.getCurrent());
         inbound.handle(socket, peerInfoList);
         Assertions.assertTrue(socket.isClosed());
-        stopFlag.set(true);
         serverThread.join();
     }
 }

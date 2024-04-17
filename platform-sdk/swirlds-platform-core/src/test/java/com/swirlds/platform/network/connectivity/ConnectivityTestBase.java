@@ -26,7 +26,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -60,36 +59,54 @@ class ConnectivityTestBase {
     }
 
     /**
+     * creates a server socket thread for testing purposes
+     *
+     * @param serverSocket the server socket to listen on
+     */
+    static Thread createSocketThread(@NonNull final ServerSocket serverSocket) {
+        return new Thread(() -> {
+            try {
+                final Socket s = acceptAndVerify(serverSocket);
+                s.close();
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            } finally {
+                // for some reason, AutoClosable does not seem to close in time, and subsequent tests fail if used
+                try {
+                    serverSocket.close();
+                } catch (final IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
+    /**
      * Creates a socket thread which runs continuously until asked to close
      * - verifies the transferred data is correct
      * - leaves the server socket open until told to close
      *
-     * @param serverSocket  the server socket
-     * @param data          the data to be read from the socket
-     * @param stopFlag      flag for stopping the thread
+     * @param serverSocket the server socket
+     * @param stopFlag     flag for stopping the thread
      */
-    static Thread createSocketThread(
-            @NonNull final ServerSocket serverSocket,
-            @NonNull final byte[] data,
-            @NonNull final AtomicBoolean stopFlag) {
+    static Thread createSocketThread(@NonNull final ServerSocket serverSocket, @NonNull final AtomicBoolean stopFlag) {
         Objects.requireNonNull(serverSocket);
         Objects.requireNonNull(stopFlag);
         final Thread thread = new Thread(() -> {
+            Socket s = null;
             try {
                 while (!stopFlag.get()) {
-                    final Socket s = serverSocket.accept();
-                    final byte[] bytes = s.getInputStream().readNBytes(data.length);
-                    assertArrayEquals(data, bytes, "Data read from socket must be the same as the data written");
-                }
-            } catch (final IOException e) {
-                if (!(e instanceof SocketTimeoutException)) {
-                    throw new RuntimeException(e);
-                } else {
-                    // ignore timeout exceptions as the socket blocks for a while until eventually closing
+                    try {
+                        s = acceptAndVerify(serverSocket);
+                    } catch (final IOException e) {
+                        // ignore the exception, go reopen the socket
+                    }
                 }
             } finally {
-                // for some reason, AutoClosable does not seem to close in time, and subsequent tests fail if used
                 try {
+                    if (s != null) {
+                        s.close();
+                    }
                     serverSocket.close();
                 } catch (final IOException e) {
                     throw new RuntimeException(e);
@@ -114,5 +131,13 @@ class ConnectivityTestBase {
         if (threadException.get() != null) {
             throw threadException.get();
         }
+    }
+
+    @NonNull
+    private static Socket acceptAndVerify(@NonNull final ServerSocket serverSocket) throws IOException {
+        final Socket s = serverSocket.accept();
+        final byte[] bytes = s.getInputStream().readNBytes(TEST_DATA.length);
+        assertArrayEquals(TEST_DATA, bytes, "Data read from socket must be the same as the data written");
+        return s;
     }
 }

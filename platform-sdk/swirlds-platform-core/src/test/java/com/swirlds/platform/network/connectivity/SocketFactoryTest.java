@@ -27,7 +27,6 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -65,16 +64,16 @@ class SocketFactoryTest extends ConnectivityTestBase {
             throws Throwable {
 
         final ServerSocket serverSocket = serverFactory.createServerSocket(PORT);
-        final AtomicBoolean stopFlag = new AtomicBoolean(false);
 
-        final Thread server = createSocketThread(serverSocket, TEST_DATA, stopFlag);
+        final Thread serverThread = createSocketThread(serverSocket);
+        serverThread.start();
         final AtomicReference<Throwable> threadException = new AtomicReference<>();
-        server.setUncaughtExceptionHandler((t, e) -> threadException.set(e));
+        serverThread.setUncaughtExceptionHandler((t, e) -> threadException.set(e));
 
         final Socket clientSocket = clientFactory.createClientSocket(STRING_IP, PORT);
         clientSocket.getOutputStream().write(TEST_DATA);
 
-        server.join();
+        serverThread.join();
         clientSocket.close();
 
         if (threadException.get() != null) {
