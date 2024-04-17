@@ -138,9 +138,9 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateGarbageCollector,
         @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration signedStateSentinel,
-        @ConfigProperty(defaultValue = "200ms") Duration signedStateSentinelHeartbeatPeriod,
+        @ConfigProperty(defaultValue = "1000ms") Duration signedStateSentinelHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration platformPublisher,
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration consensusEventStream) {}

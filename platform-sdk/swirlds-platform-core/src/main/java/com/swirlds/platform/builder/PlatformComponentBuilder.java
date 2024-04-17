@@ -97,6 +97,7 @@ public class PlatformComponentBuilder {
     private InOrderLinker inOrderLinker;
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
+    private SignedStateSentinel signedStateSentinel;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -580,8 +581,32 @@ public class PlatformComponentBuilder {
         return consensusEventStream;
     }
 
+    /**
+     * Provide a signed state sentinel in place of the platform's default signed state sentinel.
+     *
+     * @param signedStateSentinel the signed state sentinel to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withSignedStateSentinel(@NonNull final SignedStateSentinel signedStateSentinel) {
+        throwIfAlreadyUsed();
+        if (this.signedStateSentinel != null) {
+            throw new IllegalStateException("Signed state sentinel has already been set");
+        }
+        this.signedStateSentinel = Objects.requireNonNull(signedStateSentinel);
+        return this;
+    }
+
+    /**
+     * Build the signed state sentinel if it has not yet been built. If one has been provided via
+     *
+     * @return the signed state sentinel
+     */
     @NonNull
     public SignedStateSentinel buildSignedStateSentinel() {
-        return new DefaultSignedStateSentinel(blocks.platformContext());
+        if (signedStateSentinel == null) {
+            signedStateSentinel = new DefaultSignedStateSentinel(blocks.platformContext());
+        }
+        return signedStateSentinel;
     }
 }

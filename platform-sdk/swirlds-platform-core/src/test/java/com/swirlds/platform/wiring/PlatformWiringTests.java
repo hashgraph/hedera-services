@@ -53,6 +53,7 @@ import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateHasher;
+import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
@@ -87,7 +88,9 @@ class PlatformWiringTests {
                 .withEventCreationManager(mock(EventCreationManager.class))
                 .withInOrderLinker(mock(InOrderLinker.class))
                 .withConsensusEngine(mock(ConsensusEngine.class))
-                .withConsensusEventStream(mock(ConsensusEventStream.class));
+                .withConsensusEventStream(mock(ConsensusEventStream.class))
+                .withConsensusEngine(mock(ConsensusEngine.class))
+                .withSignedStateSentinel(mock(SignedStateSentinel.class));
 
         wiring.bind(
                 componentBuilder,
