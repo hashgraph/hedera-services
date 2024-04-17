@@ -192,6 +192,8 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
+        assert digestType != null;
+        assert value != null;
         out.writeInt(digestType.id());
         out.writeByteArray(value);
     }
@@ -214,6 +216,10 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
 
         this.digestType = digestType;
         this.value = in.readByteArray(digestType.digestLength());
+
+        if (value == null) {
+            throw new BadIOException("Invalid hash value read from the stream");
+        }
     }
 
     /**
