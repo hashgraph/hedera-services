@@ -43,6 +43,7 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
         public static final int ADDED_EPOCH_HASH = 3;
     }
 
+    /** The protobuf data stored */
     private OneOf<PayloadOneOfType> payload;
 
     /**
@@ -50,6 +51,12 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
      */
     public StateSignatureTransaction() {}
 
+    /**
+     * Constructs a new StateSignatureTransaction with the given payload
+     *
+     * @param payload
+     * 		the payload to set
+     */
     public StateSignatureTransaction(@NonNull final StateSignaturePayload payload) {
         this.payload = new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, payload);
     }

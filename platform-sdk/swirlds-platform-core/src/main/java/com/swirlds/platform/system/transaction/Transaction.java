@@ -20,6 +20,7 @@ import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.proto.event.EventPayload;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -41,12 +42,16 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * behaviors.
      *
      * @return a direct reference to the transaction content/payload
-     * @deprecated use {@link #getPayload()} instead
+     * @deprecated this method will be removed once the migration to protobuf is complete. Use {@link #getPayload()} instead
      */
     @Deprecated
     byte[] getContents();
 
-    @Nullable
+    /**
+     * Returns the payload as a PBJ record
+     * @return the payload
+     */
+    @NonNull
     OneOf<EventPayload.PayloadOneOfType> getPayload();
 
     /**
