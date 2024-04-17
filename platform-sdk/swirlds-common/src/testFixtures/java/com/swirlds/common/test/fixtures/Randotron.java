@@ -179,6 +179,10 @@ public class Randotron extends Random {
      * @return a random boolean
      */
     public boolean randomBooleanWithProbability(final double trueProbability) {
+        if (trueProbability < 0 || trueProbability > 1) {
+            throw new IllegalArgumentException("Probability must be between 0 and 1");
+        }
+
         return this.nextDouble() < trueProbability;
     }
 

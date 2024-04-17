@@ -16,10 +16,21 @@
 
 package com.swirlds.common.utility;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.test.fixtures.Randotron;
+import java.net.InetAddress;
+import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +38,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the Randotron class
  */
-public class RandotronTests {
+class RandotronTests {
     private Randotron random1;
     private Randotron random1Duplicate;
     private Randotron random2;
@@ -42,37 +53,82 @@ public class RandotronTests {
     @Test
     @DisplayName("Test randomString with different seeds")
     void randomStringUnique() {
-        assertNotEquals(random1.randomString(10), random2.randomString(10));
+        final String randomString1 = random1.randomString(10);
+        final String randomString2 = random2.randomString(10);
+
+        assertNotEquals(randomString1, randomString2);
+        assertEquals(10, randomString1.length());
+        assertEquals(10, randomString2.length());
     }
 
     @Test
     @DisplayName("Test randomString with same seed")
     void randomStringSameSeed() {
-        assertEquals(random1.randomString(10), random1Duplicate.randomString(10));
+        final String randomString1 = random1.randomString(10);
+        final String randomString2 = random1Duplicate.randomString(10);
+
+        assertEquals(randomString1, randomString2);
+        assertEquals(10, randomString1.length());
+        assertEquals(10, randomString2.length());
+    }
+
+    @Test
+    @DisplayName("Test randomString edge cases")
+    void randomStringEdgeCases() {
+        assertEquals("", random1.randomString(0));
+        assertThrows(IllegalArgumentException.class, () -> random1.randomString(-1));
     }
 
     @Test
     @DisplayName("Test randomIp with different seeds")
     void randomIpUnique() {
-        assertNotEquals(random1.randomIp(), random2.randomIp());
+        final String ip1 = random1.randomIp();
+        final String ip2 = random2.randomIp();
+
+        assertNotEquals(ip1, ip2);
+        assertDoesNotThrow(() -> InetAddress.getByName(ip1));
+        assertDoesNotThrow(() -> InetAddress.getByName(ip2));
     }
 
     @Test
     @DisplayName("Test randomIp with same seed")
     void randomIpSameSeed() {
-        assertEquals(random1.randomIp(), random1Duplicate.randomIp());
+        final String ip1 = random1.randomIp();
+        final String ip2 = random1Duplicate.randomIp();
+
+        assertEquals(ip1, ip2);
+        assertDoesNotThrow(() -> InetAddress.getByName(ip1));
+        assertDoesNotThrow(() -> InetAddress.getByName(ip2));
     }
 
     @Test
     @DisplayName("Test bounded randomPositiveLong with different seeds")
     void randomPositiveBoundedLongUnique() {
-        assertNotEquals(random1.randomPositiveLong(10), random2.randomPositiveLong(10));
+        final long randomLong1 = random1.randomPositiveLong(10000000);
+        final long randomLong2 = random2.randomPositiveLong(10000000);
+
+        assertNotEquals(randomLong1, randomLong2);
+        assertTrue(randomLong1 < 10000000);
+        assertTrue(randomLong2 < 10000000);
     }
 
     @Test
-    @DisplayName("Test bounded randomPositiveLong(long) with same seed")
+    @DisplayName("Test bounded randomPositiveLong with same seed")
     void randomPositiveBoundedLongSameSeed() {
-        assertEquals(random1.randomPositiveLong(10), random1Duplicate.randomPositiveLong(10));
+        final long randomLong1 = random1.randomPositiveLong(10000000);
+        final long randomLong2 = random1Duplicate.randomPositiveLong(10000000);
+
+        assertEquals(randomLong1, randomLong2);
+        assertTrue(randomLong1 < 10000000);
+    }
+
+    @Test
+    @DisplayName("Test bounded randomPositiveLong edge cases")
+    void randomPositiveBoundedLongEdgeCases() {
+        assertThrows(IllegalArgumentException.class, () -> random1.randomPositiveLong(1));
+        assertThrows(IllegalArgumentException.class, () -> random1.randomPositiveLong(0));
+        assertThrows(IllegalArgumentException.class, () -> random1.randomPositiveLong(-1));
+        assertEquals(1, random1.randomPositiveLong(2));
     }
 
     @Test
@@ -90,61 +146,117 @@ public class RandotronTests {
     @Test
     @DisplayName("Test randomHash with different seeds")
     void randomHashUnique() {
-        assertNotEquals(random1.randomHash(), random2.randomHash());
+        final Hash hash1 = random1.randomHash();
+        final Hash hash2 = random2.randomHash();
+        assertNotEquals(hash1, hash2);
+
+        assertEquals(48, hash1.getValue().length);
+        assertEquals(48, hash2.getValue().length);
+        assertEquals(DigestType.SHA_384, hash1.getDigestType());
+        assertEquals(DigestType.SHA_384, hash2.getDigestType());
     }
 
     @Test
     @DisplayName("Test randomHash with same seed")
     void randomHashSameSeed() {
-        assertEquals(random1.randomHash(), random1Duplicate.randomHash());
+        final Hash hash1 = random1.randomHash();
+        final Hash hash2 = random1Duplicate.randomHash();
+
+        assertEquals(hash1, hash2);
+
+        assertEquals(48, hash1.getValue().length);
+        assertEquals(48, hash2.getValue().length);
+        assertEquals(DigestType.SHA_384, hash1.getDigestType());
+        assertEquals(DigestType.SHA_384, hash2.getDigestType());
     }
 
     @Test
     @DisplayName("Test randomHashBytes with different seeds")
     void randomHashBytesUnique() {
-        assertNotEquals(random1.randomHashBytes(), random2.randomHashBytes());
+        final Bytes hashBytes1 = random1.randomHashBytes();
+        final Bytes hashBytes2 = random2.randomHashBytes();
+
+        assertNotEquals(hashBytes1, hashBytes2);
+        assertEquals(48, hashBytes1.length());
+        assertEquals(48, hashBytes2.length());
     }
 
     @Test
     @DisplayName("Test randomHashBytes with same seed")
     void randomHashBytesSameSeed() {
-        assertEquals(random1.randomHashBytes(), random1Duplicate.randomHashBytes());
+        final Bytes hashBytes1 = random1.randomHashBytes();
+        final Bytes hashBytes2 = random1Duplicate.randomHashBytes();
+
+        assertEquals(hashBytes1, hashBytes2);
+        assertEquals(48, hashBytes1.length());
+        assertEquals(48, hashBytes2.length());
     }
 
     @Test
     @DisplayName("Test randomSignature with different seeds")
     void randomSignatureUnique() {
-        assertNotEquals(random1.randomSignature(), random2.randomSignature());
+        final Signature signature1 = random1.randomSignature();
+        final Signature signature2 = random2.randomSignature();
+
+        assertNotEquals(signature1, signature2);
+        assertEquals(384, signature1.getSignatureBytes().length);
+        assertEquals(384, signature2.getSignatureBytes().length);
     }
 
     @Test
     @DisplayName("Test randomSignature with same seed")
     void randomSignatureSameSeed() {
-        assertEquals(random1.randomSignature(), random1Duplicate.randomSignature());
+        final Signature signature1 = random1.randomSignature();
+        final Signature signature2 = random1Duplicate.randomSignature();
+
+        assertEquals(signature1, signature2);
+        assertEquals(384, signature1.getSignatureBytes().length);
+        assertEquals(384, signature2.getSignatureBytes().length);
     }
 
     @Test
     @DisplayName("Test randomSignatureBytes with different seeds")
     void randomSignatureBytesUnique() {
-        assertNotEquals(random1.randomSignatureBytes(), random2.randomSignatureBytes());
+        final Bytes signatureBytes1 = random1.randomSignatureBytes();
+        final Bytes signatureBytes2 = random2.randomSignatureBytes();
+
+        assertNotEquals(signatureBytes1, signatureBytes2);
+        assertEquals(384, signatureBytes1.length());
+        assertEquals(384, signatureBytes2.length());
     }
 
     @Test
     @DisplayName("Test randomSignatureBytes with same seed")
     void randomSignatureBytesSameSeed() {
-        assertEquals(random1.randomSignatureBytes(), random1Duplicate.randomSignatureBytes());
+        final Bytes signatureBytes1 = random1.randomSignatureBytes();
+        final Bytes signatureBytes2 = random1Duplicate.randomSignatureBytes();
+
+        assertEquals(signatureBytes1, signatureBytes2);
+        assertEquals(384, signatureBytes1.length());
+        assertEquals(384, signatureBytes2.length());
     }
 
     @Test
     @DisplayName("Test randomByteArray with different seeds")
     void randomByteArrayUnique() {
-        assertNotEquals(random1.randomByteArray(10), random2.randomByteArray(10));
+        final byte[] randomBytes1 = random1.randomByteArray(10);
+        final byte[] randomBytes2 = random2.randomByteArray(10);
+
+        assertFalse(Arrays.equals(randomBytes1, randomBytes2));
+
+        assertEquals(10, randomBytes1.length);
+        assertEquals(10, randomBytes2.length);
     }
 
     @Test
     @DisplayName("Test randomByteArray with same seed")
     void randomByteArraySameSeed() {
-        assertEquals(random1.randomByteArray(10), random1Duplicate.randomByteArray(10));
+        final byte[] randomBytes1 = random1.randomByteArray(10);
+        final byte[] randomBytes2 = random1Duplicate.randomByteArray(10);
+
+        assertArrayEquals(random1.randomByteArray(10), random1Duplicate.randomByteArray(10));
+        assertEquals(10, randomBytes1.length);
+        assertEquals(10, randomBytes2.length);
     }
 
     @Test
@@ -162,12 +274,31 @@ public class RandotronTests {
     @Test
     @DisplayName("Test randomBooleanWithProbability with different seeds")
     void randomBooleanWithProbabilityUnique() {
-        assertNotEquals(random1.randomBooleanWithProbability(0.5), random2.randomBooleanWithProbability(0.5));
+        boolean isDifferent = false;
+        for (int i = 0; i < 100; i++) {
+            if (random1.randomBooleanWithProbability(0.5) != random2.randomBooleanWithProbability(0.5)) {
+                isDifferent = true;
+                break;
+            }
+        }
+
+        assertTrue(isDifferent, "You should buy a lottery ticket if this test fails");
     }
 
     @Test
     @DisplayName("Test randomBooleanWithProbability with same seed")
     void randomBooleanWithProbabilitySameSeed() {
-        assertEquals(random1.randomBooleanWithProbability(0.5), random1Duplicate.randomBooleanWithProbability(0.5));
+        for (int i = 0; i < 100; i++) {
+            assertEquals(random1.randomBooleanWithProbability(0.5), random1Duplicate.randomBooleanWithProbability(0.5));
+        }
+    }
+
+    @Test
+    @DisplayName("Test randomBooleanWithProbability edge cases")
+    void randomBooleanWithProbabilityEdgeCases() {
+        assertThrows(IllegalArgumentException.class, () -> random1.randomBooleanWithProbability(1.1));
+        assertThrows(IllegalArgumentException.class, () -> random1.randomBooleanWithProbability(-0.1));
+        assertDoesNotThrow(() -> random1.randomBooleanWithProbability(0));
+        assertDoesNotThrow(() -> random1.randomBooleanWithProbability(1));
     }
 }
