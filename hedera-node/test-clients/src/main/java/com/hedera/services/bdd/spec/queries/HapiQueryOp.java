@@ -42,7 +42,7 @@ import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.spec.utilops.mod.QueryModification;
+import com.hedera.services.bdd.spec.utilops.mod.QueryMutation;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -77,8 +77,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     private boolean expectStrictCostAnswer = false;
 
     @Nullable
-    private QueryModification queryModification = null;
+    private QueryMutation queryMutation = null;
 
+    // The query sent to the network
+    protected Query query = null;
+    // The response received from the network
     protected Response response = null;
     protected List<TransactionRecord> childRecords = null;
     protected List<TransactionReceipt> childReceipts = null;
@@ -108,7 +111,8 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     protected abstract boolean needsPayment();
 
     protected Query maybeModified(@NonNull final Query query, @NonNull final HapiSpec spec) {
-        return queryModification != null ? queryModification.apply(query, spec) : query;
+        this.query = query;
+        return queryMutation != null ? queryMutation.apply(query, spec) : query;
     }
 
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
@@ -117,6 +121,10 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
     protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
         return 0L;
+    }
+
+    public Query getQuery() {
+        return query;
     }
 
     public Response getResponse() {
@@ -503,6 +511,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
     public T withPayment(HapiCryptoTransfer txn) {
         explicitPayment = Optional.of(txn);
+        return self();
+    }
+
+    public T withQueryMutation(@Nullable final QueryMutation queryMutation) {
+        this.queryMutation = queryMutation;
         return self();
     }
 }

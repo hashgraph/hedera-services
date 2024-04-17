@@ -91,7 +91,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
-import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
@@ -309,7 +309,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         mintToken("nonfungible", List.of(ByteString.copyFromUtf8("memo"))))
                 .when()
                 .then(submitModified(
-                        withSuccessivelyVariedIds(),
+                        withSuccessivelyVariedBodyIds(),
                         () -> cryptoTransfer(
                                 movingHbar(2 * ONE_HBAR).distributing(DEFAULT_PAYER, "a", "b"),
                                 moving(100L, "fungible").between(DEFAULT_PAYER, "a"),

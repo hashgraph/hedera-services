@@ -51,7 +51,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -175,7 +175,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         tokenCreate("a").treasury(TOKEN_TREASURY),
                         tokenCreate("b").treasury(TOKEN_TREASURY))
                 .when()
-                .then(submitModified(withSuccessivelyVariedIds(), () -> tokenAssociate(DEFAULT_PAYER, "a", "b")));
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenAssociate(DEFAULT_PAYER, "a", "b")));
     }
 
     @HapiTest

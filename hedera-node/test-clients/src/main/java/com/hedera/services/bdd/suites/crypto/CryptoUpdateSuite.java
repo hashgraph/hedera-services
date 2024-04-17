@@ -44,7 +44,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
-import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
@@ -147,8 +147,8 @@ public class CryptoUpdateSuite extends HapiSuite {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(cryptoCreate("user").stakedAccountId("0.0.20").declinedReward(true))
                 .when()
-                .then(submitModified(
-                        withSuccessivelyVariedIds(), () -> cryptoUpdate("user").newStakedAccountId("0.0.21")));
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoUpdate("user")
+                        .newStakedAccountId("0.0.21")));
     }
 
     @HapiTest

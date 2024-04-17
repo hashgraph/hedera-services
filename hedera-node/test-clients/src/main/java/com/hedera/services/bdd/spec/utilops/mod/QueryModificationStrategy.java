@@ -16,13 +16,4 @@
 
 package com.hedera.services.bdd.spec.utilops.mod;
 
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-public record Modification(
-        @NonNull String summary, @NonNull BodyModification modification, @NonNull ExpectedResponse expectedResponse) {
-
-    public void customize(@NonNull final HapiTxnOp<?> op) {
-        expectedResponse.customize(op.withBodyMod(modification));
-    }
-}
+public interface QueryModificationStrategy extends ModificationStrategy<QueryModification> {}

@@ -60,7 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -685,10 +685,10 @@ public class ContractCreateSuite extends HapiSuite {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(uploadInitCode(contract), cryptoCreate(autoRenewAccount).balance(ONE_HUNDRED_HBARS))
                 .when()
-                .then(submitModified(
-                        withSuccessivelyVariedIds(), () -> contractCreate("contract" + creationNumber.getAndIncrement())
-                                .bytecode(contract)
-                                .autoRenewAccountId(autoRenewAccount)));
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> contractCreate(
+                                "contract" + creationNumber.getAndIncrement())
+                        .bytecode(contract)
+                        .autoRenewAccountId(autoRenewAccount)));
     }
 
     @HapiTest

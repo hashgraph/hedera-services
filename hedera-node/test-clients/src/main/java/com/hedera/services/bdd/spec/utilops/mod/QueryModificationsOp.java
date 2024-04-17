@@ -23,39 +23,35 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.Query;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class SubmitModificationsOp extends UtilOp {
-    private final Supplier<HapiTxnOp<?>> txnOpSupplier;
-    private final Function<Transaction, List<TxnModification>> modificationsFn;
+public class QueryModificationsOp extends UtilOp {
+    private final Supplier<HapiQueryOp<?>> queryOpSupplier;
+    private final Function<Query, List<QueryModification>> modificationsFn;
 
-    public SubmitModificationsOp(
-            @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier,
-            @NonNull final Function<Transaction, List<TxnModification>> modificationsFn) {
-        this.txnOpSupplier = txnOpSupplier;
+    public QueryModificationsOp(
+            @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier,
+            @NonNull final Function<Query, List<QueryModification>> modificationsFn) {
+        this.queryOpSupplier = queryOpSupplier;
         this.modificationsFn = modificationsFn;
     }
 
     @Override
-    protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
-        final List<TxnModification> modifications = new ArrayList<>();
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
+        final var unmodifiedOp = queryOpSupplier.get();
         allRunFor(
                 spec,
-                txnOpSupplier.get().withTxnTransform(txn -> {
-                    modifications.addAll(modificationsFn.apply(txn));
-                    return txn;
-                }),
-                sourcing(() -> blockingOrder(modifications.stream()
+                unmodifiedOp,
+                sourcing(() -> blockingOrder(modificationsFn.apply(unmodifiedOp.getQuery()).stream()
                         .flatMap(modification -> {
-                            final var op = txnOpSupplier.get();
+                            final var op = queryOpSupplier.get();
                             modification.customize(op);
                             return Stream.of(logIt(modification.summary()), op);
                         })
