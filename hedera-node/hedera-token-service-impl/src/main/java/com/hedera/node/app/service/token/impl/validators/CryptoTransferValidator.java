@@ -30,6 +30,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZ
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
+import static com.hedera.node.app.spi.validation.Validations.validateTokenId;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -89,7 +90,7 @@ public class CryptoTransferValidator {
             final var tokenID = tokenTransfer.token();
             tokenIds.add(tokenID);
             validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
-
+            validateTokenId(tokenID);
             // Validate the fungible transfers
             final var uniqueTokenAcctIds = new HashSet<Pair<AccountID, Boolean>>();
             final var fungibleTransfers = tokenTransfer.transfersOrElse(emptyList());
@@ -97,6 +98,7 @@ public class CryptoTransferValidator {
             boolean nonZeroFungibleValueFound = false;
             for (final AccountAmount acctAmount : fungibleTransfers) {
                 validateTruePreCheck(acctAmount.hasAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                validateAccountID(acctAmount.accountIDOrThrow(), INVALID_TRANSFER_ACCOUNT_ID);
                 uniqueTokenAcctIds.add(Pair.of(acctAmount.accountIDOrThrow(), acctAmount.isApproval()));
                 if (!nonZeroFungibleValueFound && acctAmount.amount() != 0) {
                     nonZeroFungibleValueFound = true;
@@ -112,6 +114,8 @@ public class CryptoTransferValidator {
                 validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
                 validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                 validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                validateAccountID(nftTransfer.senderAccountIDOrThrow(), INVALID_TRANSFER_ACCOUNT_ID);
+                validateAccountID(nftTransfer.receiverAccountIDOrThrow(), INVALID_TRANSFER_ACCOUNT_ID);
                 validateFalsePreCheck(
                         !nftIds.isEmpty() && nftIds.contains(nftTransfer.serialNumber()), INVALID_ACCOUNT_AMOUNTS);
                 validateFalsePreCheck(

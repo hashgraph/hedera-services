@@ -16,8 +16,12 @@
 
 package com.hedera.node.app.spi.validation;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -71,6 +75,16 @@ public final class Validations {
                     responseCodeEnum == null ? ResponseCodeEnum.INVALID_ACCOUNT_ID : responseCodeEnum);
         }
         return result;
+    }
+
+    /**
+     * Performs a "pure" check for a given token ID. If the token ID is not in the body, is null, or is invalid, a {@link PreCheckException} is thrown.
+     */
+    public static void validateTokenId(@Nullable final TokenID tokenID) throws PreCheckException {
+        validateTruePreCheck(tokenID != null, INVALID_TOKEN_ID);
+        validateTruePreCheck(tokenID.shardNum() >= 0, INVALID_TOKEN_ID);
+        validateTruePreCheck(tokenID.realmNum() >= 0, INVALID_TOKEN_ID);
+        validateTruePreCheck(tokenID.tokenNum() > 0, INVALID_TOKEN_ID);
     }
 
     /**
