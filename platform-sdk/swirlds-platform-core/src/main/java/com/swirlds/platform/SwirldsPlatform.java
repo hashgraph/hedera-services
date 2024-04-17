@@ -84,8 +84,6 @@ import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
-import com.swirlds.platform.event.stream.DefaultEventStreamManager;
-import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
@@ -94,7 +92,6 @@ import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
@@ -135,7 +132,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.UptimeData;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
@@ -505,27 +501,6 @@ public class SwirldsPlatform implements Platform {
                 () -> latestImmutableStateNexus.getState("PCES replay"));
         final EventDurabilityNexus eventDurabilityNexus = new EventDurabilityNexus();
 
-        final Address address = getSelfAddress();
-        final String eventStreamManagerName;
-        if (!address.getMemo().isEmpty()) {
-            eventStreamManagerName = address.getMemo();
-        } else {
-            eventStreamManagerName = String.valueOf(selfId);
-        }
-
-        final EventStreamManager eventStreamManager = new DefaultEventStreamManager(
-                platformContext,
-                time,
-                threadManager,
-                getSelfId(),
-                this,
-                eventStreamManagerName,
-                eventConfig.enableEventStreaming(),
-                eventConfig.eventsLogDir(),
-                eventConfig.eventsLogPeriod(),
-                eventConfig.eventStreamQueueCapacity(),
-                this::isLastEventBeforeRestart);
-
         initializeState(initialState);
 
         final TransactionConfig transactionConfig =
@@ -555,6 +530,7 @@ public class SwirldsPlatform implements Platform {
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
         blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
+        blocks.isInFreezePeriodReference().set(swirldStateManager::isInFreezePeriod);
 
         platformWiring.wireExternalComponents(platformStatusManager, blocks.transactionPool());
 
@@ -590,7 +566,6 @@ public class SwirldsPlatform implements Platform {
                 transactionPrehandler,
                 eventWindowManager,
                 consensusRoundHandler,
-                eventStreamManager,
                 issDetector,
                 issHandler,
                 hashLogger,
@@ -1084,15 +1059,5 @@ public class SwirldsPlatform implements Platform {
         return wrapper == null
                 ? AutoCloseableWrapper.empty()
                 : new AutoCloseableWrapper<>((T) wrapper.get().getState().getSwirldState(), wrapper::close);
-    }
-
-    /**
-     * check whether the given event is the last event in its round, and the platform enters freeze period
-     *
-     * @param event a consensus event
-     * @return whether this event is the last event to be added before restart
-     */
-    private boolean isLastEventBeforeRestart(final EventImpl event) {
-        return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
     }
 }

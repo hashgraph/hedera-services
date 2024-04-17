@@ -38,10 +38,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class EventStreamManagerTest {
+class ConsensusEventStreamTest {
     private static final MultiStream<EventImpl> multiStreamMock = mock(MultiStream.class);
-    private static final EventStreamManager eventStreamManager =
-            new DefaultEventStreamManager(Time.getCurrent(), multiStreamMock, EventStreamManagerTest::isFreezeEvent);
+    private static final ConsensusEventStream CONSENSUS_EVENT_STREAM = new DefaultConsensusEventStream(
+            Time.getCurrent(), multiStreamMock, ConsensusEventStreamTest::isFreezeEvent);
 
     private static final EventImpl freezeEvent = mock(EventImpl.class);
 
@@ -50,7 +50,7 @@ class EventStreamManagerTest {
         final int nonFreezeEventsNum = 10;
         for (int i = 0; i < nonFreezeEventsNum; i++) {
             final EventImpl event = mock(EventImpl.class);
-            eventStreamManager.addEvents(List.of(event));
+            CONSENSUS_EVENT_STREAM.addEvents(List.of(event));
 
             verify(multiStreamMock).addObject(event);
             // for non-freeze event, multiStream should not be closed after adding it
@@ -60,22 +60,22 @@ class EventStreamManagerTest {
         final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
-        final ComponentWiring<EventStreamManager, Void> wiring = new ComponentWiring<>(
+        final ComponentWiring<ConsensusEventStream, Void> wiring = new ComponentWiring<>(
                 model,
-                EventStreamManager.class,
+                ConsensusEventStream.class,
                 model.schedulerBuilder("eventStreamManager")
                         .withType(TaskSchedulerType.DIRECT)
                         .build()
                         .cast());
-        wiring.bind(eventStreamManager);
+        wiring.bind(CONSENSUS_EVENT_STREAM);
 
-        wiring.getInputWire(EventStreamManager::addEvents).inject(List.of(freezeEvent));
+        wiring.getInputWire(ConsensusEventStream::addEvents).inject(List.of(freezeEvent));
         verify(multiStreamMock).addObject(freezeEvent);
         // for freeze event, multiStream should be closed after adding it
         verify(multiStreamMock).close();
 
         final EventImpl eventAddAfterFrozen = mock(EventImpl.class);
-        eventStreamManager.addEvents(List.of(eventAddAfterFrozen));
+        CONSENSUS_EVENT_STREAM.addEvents(List.of(eventAddAfterFrozen));
         // after frozen, when adding event to the EventStreamManager, multiStream.add(event) should not be called
         verify(multiStreamMock, never()).addObject(eventAddAfterFrozen);
     }
@@ -89,16 +89,16 @@ class EventStreamManagerTest {
         final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
-        final ComponentWiring<EventStreamManager, Void> wiring = new ComponentWiring<>(
+        final ComponentWiring<ConsensusEventStream, Void> wiring = new ComponentWiring<>(
                 model,
-                EventStreamManager.class,
+                ConsensusEventStream.class,
                 model.schedulerBuilder("eventStreamManager")
                         .withType(TaskSchedulerType.DIRECT)
                         .build()
                         .cast());
-        wiring.bind(eventStreamManager);
+        wiring.bind(CONSENSUS_EVENT_STREAM);
 
-        wiring.getInputWire(EventStreamManager::legacyHashOverride)
+        wiring.getInputWire(ConsensusEventStream::legacyHashOverride)
                 .inject(new RunningEventHashOverride(runningHash, randomHash(random), startWriteAtCompleteWindow));
         verify(multiStreamMock).setRunningHash(runningHash);
     }

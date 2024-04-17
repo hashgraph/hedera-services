@@ -318,10 +318,8 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
             int size = 0;
             size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoConstants.WIRE_TYPE_FIXED_32_BIT)
                     + Integer.BYTES;
-            if (value != 0) {
-                size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
-                        + Long.BYTES;
-            }
+            size += ProtoWriterTools.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoConstants.WIRE_TYPE_FIXED_64_BIT)
+                    + Long.BYTES;
             size += ProtoWriterTools.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySerializer.getSerializedSize(key));
             return size;
         }
@@ -329,10 +327,8 @@ public final class ParsedBucket<K extends VirtualKey> extends Bucket<K> {
         public void writeTo(final WritableSequentialData out) {
             ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
             out.writeInt(hashCode);
-            if (value != 0) {
-                ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_VALUE);
-                out.writeLong(value);
-            }
+            ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_VALUE);
+            out.writeLong(value);
             ProtoWriterTools.writeDelimited(
                     out,
                     FIELD_BUCKETENTRY_KEYBYTES,
