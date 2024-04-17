@@ -21,6 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRAN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LIVE_HASH_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
@@ -47,13 +48,14 @@ public interface OpProvider {
         BUSY,
         DUPLICATE_TRANSACTION,
         INVALID_PAYER_SIGNATURE,
+        INVALID_SIGNATURE,
         INSUFFICIENT_PAYER_BALANCE,
         PAYER_ACCOUNT_DELETED,
         PLATFORM_TRANSACTION_NOT_CREATED
     };
 
     ResponseCodeEnum[] STANDARD_PERMISSIBLE_OUTCOMES = {
-        SUCCESS, LIVE_HASH_NOT_FOUND, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, INSUFFICIENT_TX_FEE
+        SUCCESS, LIVE_HASH_NOT_FOUND, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, INSUFFICIENT_TX_FEE, INVALID_SIGNATURE
     };
 
     default List<HapiSpecOperation> suggestedInitializers() {

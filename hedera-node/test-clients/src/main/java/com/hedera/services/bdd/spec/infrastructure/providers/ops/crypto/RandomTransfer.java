@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -48,8 +49,8 @@ public class RandomTransfer implements OpProvider {
     public static final int DEFAULT_NUM_STABLE_ACCOUNTS = 200;
     public static final double DEFAULT_RECORD_PROBABILITY = 0.0;
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(ACCOUNT_DELETED, INSUFFICIENT_ACCOUNT_BALANCE, PAYER_ACCOUNT_DELETED);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+            ACCOUNT_DELETED, INSUFFICIENT_ACCOUNT_BALANCE, PAYER_ACCOUNT_DELETED, INVALID_SIGNATURE);
     private final ResponseCodeEnum[] customOutcomes;
 
     private int numStableAccounts = DEFAULT_NUM_STABLE_ACCOUNTS;
