@@ -124,7 +124,7 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                         spec,
                         newKeyNamed(THRESHOLD_KEY)
                                 .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, DELETE_TOKEN_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).adminKey(THRESHOLD_KEY),
+                        tokenUpdate(VANILLA_TOKEN).adminKey(THRESHOLD_KEY).signedByPayerAnd(MULTI_KEY, THRESHOLD_KEY),
                         cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
                         contractCall(
                                         DELETE_TOKEN_CONTRACT,
@@ -192,7 +192,7 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         newKeyNamed(THRESHOLD_KEY)
                                 .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, DELETE_TOKEN_CONTRACT))),
-                        tokenUpdate(VANILLA_TOKEN).adminKey(THRESHOLD_KEY),
+                        tokenUpdate(VANILLA_TOKEN).adminKey(THRESHOLD_KEY).signedByPayerAnd(MULTI_KEY, THRESHOLD_KEY),
                         cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
                         contractCall(
                                         DELETE_TOKEN_CONTRACT,

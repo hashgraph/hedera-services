@@ -18,15 +18,12 @@ package com.swirlds.merkledb.test.fixtures;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.merkledb.serialize.DataItemHeader;
-import com.swirlds.merkledb.serialize.DataItemSerializer;
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import com.swirlds.merkledb.serialize.BaseSerializer;
 
 /**
  * Very simple DataItem that is fixed size and has a long key and long value. Designed for testing
  */
-public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]> {
+public class ExampleFixedSizeDataSerializer implements BaseSerializer<long[]> {
 
     /**
      * Get the number of bytes a data item takes when serialized
@@ -45,22 +42,6 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
     }
 
     @Override
-    public int getHeaderSize() {
-        return Long.BYTES;
-    }
-
-    @Override
-    public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-        return new DataItemHeader(Long.BYTES * 2, buffer.getLong());
-    }
-
-    @Override
-    public void serialize(final long[] data, final ByteBuffer buffer) throws IOException {
-        buffer.putLong(data[0]);
-        buffer.putLong(data[1]);
-    }
-
-    @Override
     public void serialize(final long[] data, final WritableSequentialData out) {
         out.writeLong(data[0]);
         out.writeLong(data[1]);
@@ -69,10 +50,5 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
     @Override
     public long[] deserialize(final ReadableSequentialData in) {
         return new long[] {in.readLong(), in.readLong()};
-    }
-
-    @Override
-    public long[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-        return new long[] {buffer.getLong(), buffer.getLong()};
     }
 }
