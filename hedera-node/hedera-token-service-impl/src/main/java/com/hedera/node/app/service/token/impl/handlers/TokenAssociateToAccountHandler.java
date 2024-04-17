@@ -70,7 +70,9 @@ import javax.inject.Singleton;
 public class TokenAssociateToAccountHandler extends BaseTokenHandler implements TransactionHandler {
 
     @Inject
-    public TokenAssociateToAccountHandler() {}
+    public TokenAssociateToAccountHandler() {
+        // Exists for injection
+    }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
