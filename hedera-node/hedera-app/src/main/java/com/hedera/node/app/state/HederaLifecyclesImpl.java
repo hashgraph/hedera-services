@@ -33,8 +33,6 @@ import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.HederaLifecycles;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.node.config.data.StakingConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -192,10 +190,10 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             @NonNull final Set<NodeId> newNodeIds,
             @NonNull final Configuration config,
             final int configAddressBookSize) {
-        final long maxStakePerNode =
-                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / configAddressBookSize;
-        final var numRewardHistoryStoredPeriods =
-                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
+        // Since PlatformContext configuration is not available here,
+        // we are using the default values here. Need to see how to use config here
+        final long maxStakePerNode = 5000000000000000000L / configAddressBookSize;
+        final var numRewardHistoryStoredPeriods = 365;
 
         final var rewardSumHistory = new long[numRewardHistoryStoredPeriods + 1];
         Arrays.fill(rewardSumHistory, 0L);
@@ -233,10 +231,10 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             @NonNull final Set<NodeId> newNodeIds,
             @NonNull final Configuration config,
             final int configAddressBookSize) {
-        final long maxStakePerNode =
-                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / configAddressBookSize;
-        final var numRewardHistoryStoredPeriods =
-                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
+        // Since PlatformContext configuration is not available here,
+        // we are using the default values here. Need to see how to use config here
+        final long maxStakePerNode = 5000000000000000000L / configAddressBookSize;
+        final var numRewardHistoryStoredPeriods = 365;
 
         final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods + 1];
         Arrays.fill(rewardSumHistory, 0L);
