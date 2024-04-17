@@ -539,7 +539,7 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Provide a PCEs sequencer in place of the platform's default PCEs sequencer.
+     * Provide a PCES sequencer in place of the platform's default PCEs sequencer.
      *
      * @param pcesSequencer the PCEs sequencer to use
      * @return this builder
