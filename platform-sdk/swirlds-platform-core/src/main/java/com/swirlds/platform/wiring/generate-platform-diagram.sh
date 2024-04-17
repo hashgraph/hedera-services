@@ -49,7 +49,7 @@ pcli diagram \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
     -g 'State Verification:stateSigner,hashLogger,ISS Detector,🖋️,💥' \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
-    -g 'Wait For Crash Durability:PcesJoin,PcesJoinSplitter' \
+    -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \
@@ -57,5 +57,6 @@ pcli diagram \
     -c 'Consensus Round Handler' \
     -c 'State Hasher' \
     -c 'ISS Detector' \
+    -c 'Round Durability Buffer' \
     -c 'Wait For Crash Durability' \
     -o "${SCRIPT_PATH}/../../../../../../../../docs/core/wiring-diagram.svg"

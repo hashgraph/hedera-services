@@ -24,6 +24,6 @@ import java.time.Instant;
  * A consensus round that is not yet durable.
  *
  * @param round        the consensus round that is not yet durable
- * @param receivedTime the time at which the round was received by the {@link PcesJoin} instance
+ * @param receivedTime the time at which the round was received by the {@link RoundDurabilityBuffer} instance
  */
 record NotYetDurableRound(@NonNull ConsensusRound round, @NonNull Instant receivedTime) {}

@@ -27,7 +27,7 @@ import java.util.List;
  * durable via the PCES. This allows us to wait to handle the transactions within a round until we can guarantee that
  * all events required for that round to reach consensus have been made durable on disk.
  */
-public interface PcesJoin {
+public interface RoundDurabilityBuffer {
 
     /**
      * Specify the latest durable event, by sequence number.

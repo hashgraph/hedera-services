@@ -39,11 +39,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A default implementation of {@link PcesJoin}.
+ * A default implementation of {@link RoundDurabilityBuffer}.
  */
-public class DefaultPcesJoin implements PcesJoin {
+public class DefaultRoundDurabilityBuffer implements RoundDurabilityBuffer {
 
-    private static final Logger logger = LogManager.getLogger(DefaultPcesJoin.class);
+    private static final Logger logger = LogManager.getLogger(DefaultRoundDurabilityBuffer.class);
 
     private long durableSequenceNumber = -1;
     private final Queue<NotYetDurableRound> rounds = new LinkedList<>();
@@ -60,29 +60,30 @@ public class DefaultPcesJoin implements PcesJoin {
                             "The average delay between a round being eligible for handling and when the round's keystone event is guaranteed to be durable.");
     private final RunningAverageMetric averageRoundDurabilityDelayMetric;
 
-    private static final LongGauge.Config PCES_JOIN_BUFFER_SIZE_METRIC_CONFIG = new LongGauge.Config(
-                    "platform", "pcesJoinBufferSize")
+    private static final LongGauge.Config ROUND_DURABILITY_BUFFER_SIZE_METRIC_CONFIG = new LongGauge.Config(
+                    "platform", "roundDurabilityBufferSize")
             .withUnit("count")
             .withDescription("The number of rounds that are waiting for their keystone event to become durable");
-    private final LongGauge pcesJoinBufferSizeMetric;
+    private final LongGauge roundDurabilityBufferSizeMetric;
 
     /**
      * Constructor.
      *
      * @param platformContext the platform context
      */
-    public DefaultPcesJoin(@NonNull final PlatformContext platformContext) {
+    public DefaultRoundDurabilityBuffer(@NonNull final PlatformContext platformContext) {
         this.time = platformContext.getTime();
         suspiciousRoundDuration = platformContext
                 .getConfiguration()
                 .getConfigData(PcesConfig.class)
-                .suspiciousPcesJoinDuration();
+                .suspiciousRoundDurabilityDuration();
 
         suspiciousRoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(10));
 
         averageRoundDurabilityDelayMetric =
                 platformContext.getMetrics().getOrCreate(AVERAGE_ROUND_DURABILITY_DELAY_METRIC_CONFIG);
-        pcesJoinBufferSizeMetric = platformContext.getMetrics().getOrCreate(PCES_JOIN_BUFFER_SIZE_METRIC_CONFIG);
+        roundDurabilityBufferSizeMetric =
+                platformContext.getMetrics().getOrCreate(ROUND_DURABILITY_BUFFER_SIZE_METRIC_CONFIG);
     }
 
     /**
@@ -109,7 +110,7 @@ public class DefaultPcesJoin implements PcesJoin {
             durableRounds.add(round.round());
         }
 
-        pcesJoinBufferSizeMetric.set(rounds.size());
+        roundDurabilityBufferSizeMetric.set(rounds.size());
         return durableRounds;
     }
 
@@ -125,7 +126,7 @@ public class DefaultPcesJoin implements PcesJoin {
         }
 
         rounds.add(new NotYetDurableRound(round, time.now()));
-        pcesJoinBufferSizeMetric.set(rounds.size());
+        roundDurabilityBufferSizeMetric.set(rounds.size());
         return List.of();
     }
 

@@ -61,7 +61,7 @@ import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
-import com.swirlds.platform.event.preconsensus.join.PcesJoin;
+import com.swirlds.platform.event.preconsensus.join.RoundDurabilityBuffer;
 import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stream.EventStreamManager;
@@ -142,7 +142,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
     private final StateSignerWiring stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final PcesWriterWiring pcesWriterWiring;
-    private final ComponentWiring<PcesJoin, List<ConsensusRound>> pcesJoinWiring;
+    private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final ComponentWiring<PcesSequencer, GossipEvent> pcesSequencerWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final StateSignatureCollectorWiring stateSignatureCollectorWiring;
@@ -262,7 +262,8 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
-        pcesJoinWiring = new ComponentWiring<>(model, PcesJoin.class, config.pcesJoin());
+        roundDurabilityBufferWiring =
+                new ComponentWiring<>(model, RoundDurabilityBuffer.class, config.roundDurabilityBuffer());
 
         gossipWiring = GossipWiring.create(model);
         eventWindowManagerWiring = new ComponentWiring<>(
@@ -342,7 +343,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 applicationTransactionPrehandlerWiring,
                 stateSignatureCollectorWiring,
                 consensusRoundHandlerWiring,
-                pcesJoinWiring,
+                roundDurabilityBufferWiring,
                 signedStateHasherWiring);
 
         wire();
@@ -477,12 +478,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         // necessary keystone event is *never* flushed.
         consensusRoundOutputWire.orderedSolderTo(List.of(
                 keystoneEventSequenceNumberTransformer.getInputWire(),
-                pcesJoinWiring.getInputWire(PcesJoin::addRound)));
+                roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::addRound)));
         consensusRoundOutputWire.solderTo(
                 eventWindowManagerWiring.getInputWire(EventWindowManager::extractEventWindow));
 
-        final OutputWire<ConsensusRound> splitPcesJoinOutput = pcesJoinWiring.getSplitOutput();
-        splitPcesJoinOutput.solderTo(consensusRoundHandlerWiring.roundInput());
+        final OutputWire<ConsensusRound> splitRoundDurabilityBufferOutput =
+                roundDurabilityBufferWiring.getSplitOutput();
+        splitRoundDurabilityBufferOutput.solderTo(consensusRoundHandlerWiring.roundInput());
 
         consensusEngineWiring
                 .getSplitAndTransformedOutput(ConsensusEngine::getConsensusEvents)
@@ -515,12 +517,14 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
-                .solderTo(pcesJoinWiring.getInputWire(PcesJoin::setLatestDurableSequenceNumber), OFFER);
+                .solderTo(
+                        roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::setLatestDurableSequenceNumber),
+                        OFFER);
         model.buildHeartbeatWire(platformContext
                         .getConfiguration()
                         .getConfigData(PcesConfig.class)
-                        .pcesJoinHeartbeatPeriod())
-                .solderTo(pcesJoinWiring.getInputWire(PcesJoin::checkForStaleRounds));
+                        .roundDurabilityBufferHeartbeatPeriod())
+                .solderTo(roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::checkForStaleRounds));
 
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
@@ -572,7 +576,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventWindowManagerWiring.getInputWire(EventWindowManager::updateEventWindow);
         orphanBufferWiring.getInputWire(OrphanBuffer::clear);
         inOrderLinkerWiring.getInputWire(InOrderLinker::clear);
-        pcesJoinWiring.getInputWire(PcesJoin::clear);
+        roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear);
     }
 
     /**
@@ -672,7 +676,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(pcesWriter);
-        pcesJoinWiring.bind(builder.buildPcesJoin());
+        roundDurabilityBufferWiring.bind(builder.buildRoundDurabilityBuffer());
         shadowgraphWiring.bind(shadowgraph);
         pcesSequencerWiring.bind(pcesSequencer);
         eventCreationManagerWiring.bind(builder.buildEventCreationManager());

@@ -33,8 +33,8 @@ import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.join.DefaultPcesJoin;
-import com.swirlds.platform.event.preconsensus.join.PcesJoin;
+import com.swirlds.platform.event.preconsensus.join.DefaultRoundDurabilityBuffer;
+import com.swirlds.platform.event.preconsensus.join.RoundDurabilityBuffer;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -51,7 +51,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @WithLoggingMirror
-class PcesJoinTests {
+class RoundDurabilityBufferTests {
 
     // Round added before durability
     // round added after durability
@@ -90,11 +90,13 @@ class PcesJoinTests {
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final PcesJoin pcesJoin = new DefaultPcesJoin(platformContext);
+        final RoundDurabilityBuffer roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(platformContext);
 
         final long sequenceNumber = randotron.nextLong(1, 1000);
-        pcesJoin.setLatestDurableSequenceNumber(sequenceNumber);
-        assertThrows(IllegalArgumentException.class, () -> pcesJoin.setLatestDurableSequenceNumber(sequenceNumber - 1));
+        roundDurabilityBuffer.setLatestDurableSequenceNumber(sequenceNumber);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> roundDurabilityBuffer.setLatestDurableSequenceNumber(sequenceNumber - 1));
     }
 
     @Test
@@ -105,18 +107,18 @@ class PcesJoinTests {
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final PcesJoin pcesJoin = new DefaultPcesJoin(platformContext);
+        final RoundDurabilityBuffer roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(platformContext);
 
         final List<ConsensusRound> rounds = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             final ConsensusRound round = buildMockRound(randotron, i);
             rounds.add(round);
-            final List<ConsensusRound> result = pcesJoin.addRound(round);
+            final List<ConsensusRound> result = roundDurabilityBuffer.addRound(round);
             assertTrue(result.isEmpty());
         }
 
         // This method just logs. The least we can do is make sure it doesn't throw any exceptions.
-        pcesJoin.checkForStaleRounds(Instant.now());
+        roundDurabilityBuffer.checkForStaleRounds(Instant.now());
 
         // Slowly increase the durable sequence number a little at a time. Verify that the rounds are returned in
         // the proper order and at the proper time.
@@ -124,7 +126,8 @@ class PcesJoinTests {
         long durableSequenceNumber = -1;
         while (durableSequenceNumber < roundCount) {
             durableSequenceNumber += randotron.nextInt(1, 10);
-            final List<ConsensusRound> result = pcesJoin.setLatestDurableSequenceNumber(durableSequenceNumber);
+            final List<ConsensusRound> result =
+                    roundDurabilityBuffer.setLatestDurableSequenceNumber(durableSequenceNumber);
             durableRounds.addAll(result);
 
             assertEquals(durableRounds.size(), Math.min(durableSequenceNumber + 1, roundCount));
@@ -134,7 +137,7 @@ class PcesJoinTests {
         }
 
         // Should also not throw when there are no rounds in the buffer.
-        pcesJoin.checkForStaleRounds(Instant.now());
+        roundDurabilityBuffer.checkForStaleRounds(Instant.now());
     }
 
     @Test
@@ -145,13 +148,13 @@ class PcesJoinTests {
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final PcesJoin pcesJoin = new DefaultPcesJoin(platformContext);
+        final RoundDurabilityBuffer roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(platformContext);
 
-        pcesJoin.setLatestDurableSequenceNumber(roundCount + randotron.nextInt(1, 10));
+        roundDurabilityBuffer.setLatestDurableSequenceNumber(roundCount + randotron.nextInt(1, 10));
 
         for (int i = 0; i < 100; i++) {
             final ConsensusRound round = buildMockRound(randotron, i);
-            final List<ConsensusRound> result = pcesJoin.addRound(round);
+            final List<ConsensusRound> result = roundDurabilityBuffer.addRound(round);
             assertEquals(result.size(), 1);
             assertSame(result.getFirst(), round);
         }
@@ -165,18 +168,18 @@ class PcesJoinTests {
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final PcesJoin pcesJoin = new DefaultPcesJoin(platformContext);
+        final RoundDurabilityBuffer roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(platformContext);
 
         final List<ConsensusRound> rounds = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             final ConsensusRound round = buildMockRound(randotron, i);
             rounds.add(round);
-            final List<ConsensusRound> result = pcesJoin.addRound(round);
+            final List<ConsensusRound> result = roundDurabilityBuffer.addRound(round);
             assertTrue(result.isEmpty());
         }
 
         // This method just logs. The least we can do is make sure it doesn't throw any exceptions.
-        pcesJoin.checkForStaleRounds(Instant.now());
+        roundDurabilityBuffer.checkForStaleRounds(Instant.now());
 
         // Slowly increase the durable sequence number a little at a time. Verify that the rounds are returned in
         // the proper order and at the proper time.
@@ -185,15 +188,17 @@ class PcesJoinTests {
         boolean cleared = false;
         while (durableSequenceNumber < roundCount) {
             durableSequenceNumber += randotron.nextInt(1, 10);
-            final List<ConsensusRound> result = pcesJoin.setLatestDurableSequenceNumber(durableSequenceNumber);
+            final List<ConsensusRound> result =
+                    roundDurabilityBuffer.setLatestDurableSequenceNumber(durableSequenceNumber);
             durableRounds.addAll(result);
 
             if (durableSequenceNumber > roundCount / 2) {
                 if (!cleared) {
-                    pcesJoin.clear();
+                    roundDurabilityBuffer.clear();
                     cleared = true;
                 }
-                assertTrue(pcesJoin.setLatestDurableSequenceNumber(durableSequenceNumber)
+                assertTrue(roundDurabilityBuffer
+                        .setLatestDurableSequenceNumber(durableSequenceNumber)
                         .isEmpty());
             } else {
                 assertEquals(durableRounds.size(), Math.min(durableSequenceNumber + 1, roundCount));
@@ -204,7 +209,7 @@ class PcesJoinTests {
         }
 
         // Should also not throw when there are no rounds in the buffer.
-        pcesJoin.checkForStaleRounds(Instant.now());
+        roundDurabilityBuffer.checkForStaleRounds(Instant.now());
     }
 
     @Disabled // FUTURE WORK: enable once we switch to new logging API
@@ -216,43 +221,43 @@ class PcesJoinTests {
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
-        final PcesJoin pcesJoin = new DefaultPcesJoin(platformContext);
+        final RoundDurabilityBuffer roundDurabilityBuffer = new DefaultRoundDurabilityBuffer(platformContext);
 
         // Add a round that will sit around for a long time
         final ConsensusRound round = buildMockRound(randotron, 1234);
 
-        final List<ConsensusRound> results = pcesJoin.addRound(round);
+        final List<ConsensusRound> results = roundDurabilityBuffer.addRound(round);
         assertTrue(results.isEmpty());
 
         // Should not log.
-        pcesJoin.checkForStaleRounds(time.now());
+        roundDurabilityBuffer.checkForStaleRounds(time.now());
         assertEquals(0, loggingMirror.getEvents().size());
 
         final Duration suspicousDuration = platformContext
                 .getConfiguration()
                 .getConfigData(PcesConfig.class)
-                .suspiciousPcesJoinDuration();
+                .suspiciousRoundDurabilityDuration();
 
         // Should not log.
         time.tick(suspicousDuration.minusSeconds(1));
-        pcesJoin.checkForStaleRounds(time.now());
+        roundDurabilityBuffer.checkForStaleRounds(time.now());
         assertEquals(0, loggingMirror.getEvents().size());
 
         // Should finally log.
         time.tick(Duration.ofSeconds(2));
-        pcesJoin.checkForStaleRounds(time.now());
+        roundDurabilityBuffer.checkForStaleRounds(time.now());
         assertEquals(1, loggingMirror.getEvents().size());
         final LogEvent logMessage = loggingMirror.getEvents().getFirst();
         assertEquals(Level.ERROR, logMessage.level());
 
         // Logger should currently be rate limited, should not log.
         time.tick(Duration.ofSeconds(1));
-        pcesJoin.checkForStaleRounds(time.now());
+        roundDurabilityBuffer.checkForStaleRounds(time.now());
         assertEquals(1, loggingMirror.getEvents().size());
 
         // Should be able to log again after a long time passes.
         time.tick(Duration.ofMinutes(100));
-        pcesJoin.checkForStaleRounds(time.now());
+        roundDurabilityBuffer.checkForStaleRounds(time.now());
         assertEquals(2, loggingMirror.getEvents().size());
     }
 }
