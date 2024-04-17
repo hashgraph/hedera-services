@@ -57,6 +57,7 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
@@ -514,7 +515,13 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         pcesWriterWiring
                 .latestDurableSequenceNumberOutput()
-                .solderTo(pcesJoinWiring.getInputWire(PcesJoin::setLatestDurableSequenceNumber));
+                .solderTo(pcesJoinWiring.getInputWire(PcesJoin::setLatestDurableSequenceNumber), OFFER);
+        model.buildHeartbeatWire(platformContext
+                        .getConfiguration()
+                        .getConfigData(PcesConfig.class)
+                        .pcesJoinHeartbeatPeriod())
+                .solderTo(pcesJoinWiring.getInputWire(PcesJoin::checkForStaleRounds));
+
         signedStateFileManagerWiring
                 .oldestMinimumGenerationOnDiskOutputWire()
                 .solderTo(pcesWriterWiring.minimumAncientIdentifierToStoreInputWire(), INJECT);

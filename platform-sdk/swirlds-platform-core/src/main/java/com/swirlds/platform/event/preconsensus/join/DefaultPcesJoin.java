@@ -16,25 +16,56 @@
 
 package com.swirlds.platform.event.preconsensus.join;
 
+import static com.swirlds.common.utility.CompareTo.isGreaterThan;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
+import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A default implementation of {@link PcesJoin}.
  */
 public class DefaultPcesJoin implements PcesJoin {
 
+    private static Logger logger = LogManager.getLogger(DefaultPcesJoin.class);
+
     // TODO metrics why not
-    // TODO unit test
+    // TODO unit tests
 
     private long durableSequenceNumber = -1;
-    private final Queue<ConsensusRound> rounds = new LinkedList<>();
+    private final Queue<NotYetDurableRound> rounds = new LinkedList<>();
 
-    public DefaultPcesJoin() {}
+    private final Time time;
+    private final Duration suspiciousRoundDuration;
+
+    private final RateLimitedLogger suspiciousRoundLogger;
+
+    /**
+     * Constructor.
+     *
+     * @param platformContext the platform context
+     */
+    public DefaultPcesJoin(@NonNull final PlatformContext platformContext) {
+        this.time = platformContext.getTime();
+        suspiciousRoundDuration = platformContext
+                .getConfiguration()
+                .getConfigData(PcesConfig.class)
+                .suspiciousPcesJoinDuration();
+
+        suspiciousRoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(10));
+    }
 
     /**
      * {@inheritDoc}
@@ -52,8 +83,8 @@ public class DefaultPcesJoin implements PcesJoin {
 
         final List<ConsensusRound> durableRounds = new ArrayList<>();
 
-        while (!rounds.isEmpty() && getKeystoneSequence(rounds.peek()) <= durableSequenceNumber) {
-            durableRounds.add(rounds.remove());
+        while (!rounds.isEmpty() && getKeystoneSequence(rounds.peek().round()) <= durableSequenceNumber) {
+            durableRounds.add(rounds.remove().round());
         }
 
         return durableRounds;
@@ -69,7 +100,7 @@ public class DefaultPcesJoin implements PcesJoin {
             return List.of(round);
         }
 
-        rounds.add(round);
+        rounds.add(new NotYetDurableRound(round, time.now()));
         return List.of();
     }
 
@@ -90,5 +121,22 @@ public class DefaultPcesJoin implements PcesJoin {
     public void clear() {
         durableSequenceNumber = -1;
         rounds.clear();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void checkForStaleRounds(@NonNull final Instant now) {
+        for (final NotYetDurableRound round : rounds) {
+            final Duration duration = Duration.between(round.receivedTime(), now);
+            if (isGreaterThan(duration, suspiciousRoundDuration)) {
+                suspiciousRoundLogger.error(
+                        EXCEPTION.getMarker(),
+                        "Round " + round.round().getRoundNum()
+                                + " has been waiting for its keystone event to become durable for " + duration
+                                + ". System may be deadlocked.");
+            }
+        }
     }
 }

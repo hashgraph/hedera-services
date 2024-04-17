@@ -67,7 +67,8 @@ import java.time.Duration;
  *                                            events to be added to the hashgraph without their parents being added. Or
  *                                            Both. Use this with caution.
  * @param databaseDirectory                   the directory where preconsensus events will be stored, relative to
- *                                            {@link com.swirlds.common.config.StateCommonConfig#savedStateDirectory()}.
+ *                                            {@link
+ *                                            com.swirlds.common.config.StateCommonConfig#savedStateDirectory()}.
  * @param replayQueueSize                     the size of the queue used for holding preconsensus events that are
  *                                            waiting to be replayed
  * @param replayHashPoolSize                  the number of threads used for hashing events during replay
@@ -77,6 +78,11 @@ import java.time.Duration;
  * @param compactLastFileOnStartup            if true, then compact the last file's span on startup.
  * @param forceIgnorePcesSignatures           if true, then ignore the signatures on preconsensus events. Note: This is
  *                                            a TEST ONLY setting. It must never be enabled in production.
+ * @param pcesJoinHeartbeatPeriod             the period of the heartbeat heartbeats sent to the PCES join component,
+ *                                            which uses the opportunity to check for and log when a round has been
+ *                                            stuck for too long
+ * @param suspiciousPcesJoinDuration          the duration after which a round is considered stuck in the PCES join
+ *                                            component
  */
 @ConfigData("event.preconsensus")
 public record PcesConfig(
@@ -94,4 +100,6 @@ public record PcesConfig(
         @ConfigProperty(defaultValue = "8") int replayHashPoolSize,
         @ConfigProperty(defaultValue = "true") boolean copyRecentStreamToStateSnapshots,
         @ConfigProperty(defaultValue = "true") boolean compactLastFileOnStartup,
-        @ConfigProperty(defaultValue = "false") boolean forceIgnorePcesSignatures) {}
+        @ConfigProperty(defaultValue = "false") boolean forceIgnorePcesSignatures,
+        @ConfigProperty(defaultValue = "1m") Duration pcesJoinHeartbeatPeriod,
+        @ConfigProperty(defaultValue = "1m") Duration suspiciousPcesJoinDuration) {}

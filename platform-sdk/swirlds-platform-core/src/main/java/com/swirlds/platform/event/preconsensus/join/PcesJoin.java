@@ -19,6 +19,7 @@ package com.swirlds.platform.event.preconsensus.join;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -55,5 +56,11 @@ public interface PcesJoin {
      */
     void clear();
 
-    // TODO perhaps add a slow heartbeat that logs an error if we have held a state for too long
+    /**
+     * Check for rounds that have been stuck for too long. This method takes no action other than logging.
+     *
+     * @param now the current time
+     */
+    @InputWireLabel("heartbeat")
+    void checkForStaleRounds(@NonNull Instant now);
 }

@@ -564,7 +564,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public PcesJoin buildPcesJoin() {
         if (pcesJoin == null) {
-            pcesJoin = new DefaultPcesJoin();
+            pcesJoin = new DefaultPcesJoin(blocks.platformContext());
         }
         return pcesJoin;
     }
