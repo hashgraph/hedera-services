@@ -99,7 +99,6 @@ public class TlsFactory implements SocketFactory {
         keyManagerFactory.init(agrKeyStore, password);
         this.trustManagerFactory = TrustManagerFactory.getInstance(CryptoConstants.TRUST_MANAGER_FACTORY_TYPE);
         this.sslContext = SSLContext.getInstance(CryptoConstants.SSL_VERSION);
-//        SSLContext.setDefault(sslContext);
 
         reload(peers);
     }
