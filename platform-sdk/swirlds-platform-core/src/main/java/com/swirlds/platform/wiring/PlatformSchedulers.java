@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCommonHyperlink;
 import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 
@@ -33,7 +32,6 @@ import com.swirlds.platform.event.preconsensus.EventDurabilityNexus;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
-import com.swirlds.platform.event.stream.EventStreamManager;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
@@ -88,7 +86,6 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<List<ReservedSignedState>> stateSignatureCollectorScheduler,
         @NonNull TaskScheduler<Void> shadowgraphScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
-        @NonNull TaskScheduler<Void> eventStreamManagerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
         @NonNull TaskScheduler<List<IssNotification>> issDetectorScheduler,
         @NonNull TaskScheduler<Void> issHandlerScheduler,
@@ -204,11 +201,6 @@ public record PlatformSchedulers(
                         .withFlushingEnabled(true)
                         .withSquelchingEnabled(true)
                         .withHyperlink(platformCoreHyperlink(ConsensusRoundHandler.class))
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("eventStreamManager")
-                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                        .withHyperlink(platformCommonHyperlink(EventStreamManager.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("RunningEventHashOverride")

@@ -32,6 +32,7 @@ import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.RunningEventHashOverride;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.GossipEvent;
@@ -46,6 +47,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
+import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -105,6 +107,11 @@ public class ConsensusRoundHandler {
     private final PlatformContext platformContext;
 
     /**
+     * If true then write the legacy running event hash each round.
+     */
+    private boolean writeLegacyRunningEventHash;
+
+    /**
      * Constructor
      *
      * @param platformContext        contains various platform utilities
@@ -133,6 +140,14 @@ public class ConsensusRoundHandler {
         this.handlerMetrics = new RoundHandlingMetrics(platformContext);
 
         previousRoundLegacyRunningEventHash = platformContext.getCryptography().getNullHash();
+
+        // If the CES is using a no-op scheduler then the legacy running event hash won't be computed.
+        writeLegacyRunningEventHash = platformContext
+                        .getConfiguration()
+                        .getConfigData(PlatformSchedulersConfig.class)
+                        .consensusEventStream()
+                        .type()
+                != TaskSchedulerType.NO_OP;
     }
 
     /**
@@ -242,18 +257,23 @@ public class ConsensusRoundHandler {
 
         platformState.setRunningEventHash(round.getRunningEventHash());
 
-        // Update the running hash object. If there are no events, the running hash does not change.
-        // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is here
-        // anyway, for when that changes in the future.
-        if (!round.isEmpty()) {
-            previousRoundLegacyRunningEventHash = round.getConsensusEvents()
-                    .getLast()
-                    .getRunningHash()
-                    .getFutureHash()
-                    .getAndRethrow();
-        }
+        if (writeLegacyRunningEventHash) {
+            // Update the running hash object. If there are no events, the running hash does not change.
+            // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is
+            // here anyway, for when that changes in the future.
+            if (!round.isEmpty()) {
+                previousRoundLegacyRunningEventHash = round.getConsensusEvents()
+                        .getLast()
+                        .getRunningHash()
+                        .getFutureHash()
+                        .getAndRethrow();
+            }
 
-        platformState.setLegacyRunningEventHash(previousRoundLegacyRunningEventHash);
+            platformState.setLegacyRunningEventHash(previousRoundLegacyRunningEventHash);
+        } else {
+            platformState.setLegacyRunningEventHash(
+                    platformContext.getCryptography().getNullHash());
+        }
     }
 
     /**
