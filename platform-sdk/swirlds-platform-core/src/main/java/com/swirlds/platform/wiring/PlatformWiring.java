@@ -470,7 +470,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
 
-        // TODO: fix javadoc, consider better ways to wire
         // The request to flush the keystone event for a round must be sent to the PCES writer before the consensus
         // round is passed to the round handler. This prevents a deadlock scenario where the consensus round
         // handler has a full queue and won't accept additional rounds, and is waiting on a keystone event to be
