@@ -57,6 +57,8 @@ import org.apache.logging.log4j.Logger;
  */
 public class HederaLifecyclesImpl implements HederaLifecycles {
     private static final Logger logger = LogManager.getLogger(HederaLifecyclesImpl.class);
+    private static final long LEDGER_TOTAL_TINY_BAR_FLOAT = 5000000000000000000L;
+    private static final int NUM_REWARD_HISTORY_STORED_PERIODS = 365;
 
     private final Hedera hedera;
 
@@ -95,8 +97,7 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
         Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
         final var configAddressBookSize = configNodeIds.size();
         if (!tokenServiceState.isEmpty()) {
-            final var stakingInfoState =
-                    state.getWritableStates(TokenService.NAME).<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
+            final var stakingInfoState = tokenServiceState.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
             final var readableStoreFactory = new ReadableStoreFactory(state);
             final var stakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
             final var allNodeIds = stakingInfoStore.getAll();
@@ -148,7 +149,7 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             final var stakingInfosMap = MerkleMapLike.from(
                     (MerkleMap<EntityNum, MerkleStakingInfo>) state.getChild(StateChildIndices.STAKING_INFO));
             stakingInfosMap.forEachNode((nodeNum, stakingInfo) -> {
-                NodeId nodeId = new NodeId(nodeNum.longValue());
+                final NodeId nodeId = new NodeId(nodeNum.longValue());
                 if (configNodeIds.contains(nodeId)) {
                     configAddressBook.updateWeight(nodeId, stakingInfo.getWeight());
                     configNodeIds.remove(nodeId);
@@ -191,15 +192,15 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             @NonNull final Configuration config,
             final int configAddressBookSize) {
         // Since PlatformContext configuration is not available here,
-        // we are using the default values here. Need to see how to use config here
-        final long maxStakePerNode = 5000000000000000000L / configAddressBookSize;
-        final var numRewardHistoryStoredPeriods = 365;
-
-        final var rewardSumHistory = new long[numRewardHistoryStoredPeriods + 1];
-        Arrays.fill(rewardSumHistory, 0L);
+        // we are using the default values here. (FUTURE) Need to see how to use config here
+        // for ledger.totalTinyBarFloat and staking.rewardHistory.numStoredPeriods
+        final long maxStakePerNode = LEDGER_TOTAL_TINY_BAR_FLOAT / configAddressBookSize;
 
         // Add new nodes with weight 0
         for (final var nodeId : newNodeIds) {
+            final var rewardSumHistory = new long[NUM_REWARD_HISTORY_STORED_PERIODS + 1];
+            Arrays.fill(rewardSumHistory, 0L);
+
             final var id = new EntityNum((int) nodeId.id());
             final var newNodeStakingInfo = new MerkleStakingInfo();
             newNodeStakingInfo.setKey(id);
@@ -232,15 +233,15 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             @NonNull final Configuration config,
             final int configAddressBookSize) {
         // Since PlatformContext configuration is not available here,
-        // we are using the default values here. Need to see how to use config here
-        final long maxStakePerNode = 5000000000000000000L / configAddressBookSize;
-        final var numRewardHistoryStoredPeriods = 365;
-
-        final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods + 1];
-        Arrays.fill(rewardSumHistory, 0L);
+        // we are using the default values here. (FUTURE) Need to see how to use config here
+        // for ledger.totalTinyBarFloat and staking.rewardHistory.numStoredPeriods
+        final long maxStakePerNode = LEDGER_TOTAL_TINY_BAR_FLOAT / configAddressBookSize;
 
         // Add new nodes with weight 0
         for (final var nodeId : newNodeIds) {
+            final var rewardSumHistory = new Long[NUM_REWARD_HISTORY_STORED_PERIODS + 1];
+            Arrays.fill(rewardSumHistory, 0L);
+
             final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
                     .nodeNumber(nodeId.id())
                     .maxStake(maxStakePerNode)
