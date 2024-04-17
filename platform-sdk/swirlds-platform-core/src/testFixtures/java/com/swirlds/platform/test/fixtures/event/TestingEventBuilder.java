@@ -31,6 +31,7 @@ import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -394,10 +395,11 @@ public class TestingEventBuilder {
 
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {
             generatedTransactions[i] = new StateSignatureTransaction(
-                    random.nextLong(0, Long.MAX_VALUE),
-                    RandomUtils.randomSignatureBytes(random),
-                    RandomUtils.randomHashBytes(random),
-                    Bytes.EMPTY);
+                    StateSignaturePayload.newBuilder()
+                            .round(random.nextLong(0, Long.MAX_VALUE))
+                            .signature(RandomUtils.randomSignatureBytes(random))
+                            .hash(RandomUtils.randomHashBytes(random))
+                            .build());
         }
 
         return generatedTransactions;
