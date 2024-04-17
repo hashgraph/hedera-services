@@ -30,10 +30,13 @@ import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Utility functions for testing system transaction handling
@@ -42,48 +45,22 @@ public final class TransactionHandlingTestUtils {
     private TransactionHandlingTestUtils() {}
 
     /**
-     * Generate a new bare-bones event, containing DummySystemTransactions
-     *
-     * @param transactionCount the number of transactions to include in the event
-     * @return the new event
-     */
-    public static EventImpl newDummyEvent(final int transactionCount) {
-        final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
-
-        for (int index = 0; index < transactionCount; index++) {
-            transactions[index] = new DummySystemTransaction();
-        }
-
-        final EventDescriptor selfParent = new EventDescriptor(
-                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherParent = new EventDescriptor(
-                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
-
-        return new EventImpl(
-                new BaseEventHashedData(
-                        new BasicSoftwareVersion(1),
-                        new NodeId(0),
-                        selfParent,
-                        Collections.singletonList(otherParent),
-                        EventConstants.BIRTH_ROUND_UNDEFINED,
-                        Instant.now(),
-                        transactions),
-                new BaseEventUnhashedData(new byte[0]));
-    }
-
-    /**
      * Generate a new bare-bones consensus round, containing DummySystemTransactions
      *
      * @param eventCount           the number of events to include in the round
      * @param transactionsPerEvent the number of transactions to include in each event
      * @return a bare-bones consensus round
      */
-    public static ConsensusRound newDummyRound(final int eventCount, final int transactionsPerEvent) {
+    public static ConsensusRound newDummyRound(final Random random, final int eventCount, final int transactionsPerEvent) {
         final ConsensusRound round = mock(ConsensusRound.class);
 
         final List<EventImpl> events = new ArrayList<>();
         for (int index = 0; index < eventCount; index++) {
-            events.add(newDummyEvent(transactionsPerEvent));
+            events.add(EventImplTestUtils.createEventImpl(
+                    new TestingEventBuilder(random)
+                            .setSystemTransactionCount(transactionsPerEvent),
+                            null, null)
+                    );
         }
 
         when(round.getConsensusEvents()).thenReturn(events);

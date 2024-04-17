@@ -20,6 +20,7 @@ import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.proto.event.EventPayload;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
@@ -45,7 +46,7 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
     @Deprecated
     byte[] getContents();
 
-    OneOf<EventPayload.PayloadOneOfType> getPayload();
+    @Nullable OneOf<EventPayload.PayloadOneOfType> getPayload();
 
     /**
      * Get the size of the transaction
