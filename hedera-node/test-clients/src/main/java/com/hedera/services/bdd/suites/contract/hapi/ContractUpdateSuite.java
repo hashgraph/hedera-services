@@ -73,9 +73,9 @@ public class ContractUpdateSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ContractUpdateSuite.class);
 
-    private static final long defaultMaxLifetime =
+    private static final long DEFAULT_MAX_LIFETIME =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-    private static final long ONE_DAY = 60 * 60 * 24;
+    private static final long ONE_DAY = 60L * 60L * 24L;
     private static final long ONE_MONTH = 30 * ONE_DAY;
     public static final String ADMIN_KEY = "adminKey";
     public static final String NEW_ADMIN_KEY = "newAdminKey";
@@ -252,7 +252,7 @@ public class ContractUpdateSuite extends HapiSuite {
     @HapiTest
     final HapiSpec rejectsExpiryTooFarInTheFuture() {
         final var smallBuffer = 12_345L;
-        final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
+        final var excessiveExpiry = DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
 
         return defaultHapiSpec("RejectsExpiryTooFarInTheFuture", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -331,7 +331,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY))
                 .when(
-                        contractUpdate(CONTRACT).improperlyEmptyingAdminKey().hasKnownStatus(INVALID_ADMIN_KEY),
+                        contractUpdate(CONTRACT).improperlyEmptyingAdminKey().hasPrecheck(INVALID_ADMIN_KEY),
                         contractUpdate(CONTRACT).properlyEmptyingAdminKey())
                 .then(contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
@@ -345,7 +345,7 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(contractUpdate(contract)
                         .useDeprecatedAdminKey()
                         .signedBy(GENESIS, contract)
-                        .hasKnownStatus(INVALID_ADMIN_KEY));
+                        .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
     @HapiTest
