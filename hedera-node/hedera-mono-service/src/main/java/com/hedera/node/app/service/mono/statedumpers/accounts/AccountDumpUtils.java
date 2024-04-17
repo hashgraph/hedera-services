@@ -112,6 +112,9 @@ public class AccountDumpUtils {
 
     public static void reportOnAccounts(@NonNull final Writer writer, @NonNull final BBMHederaAccount[] accountsArr) {
         writer.write("account#");
+
+        // CHECK HERE
+
         writer.write(FIELD_SEPARATOR);
         writer.write(formatCsvHeader(allFieldNamesInOrder()));
         writer.newLine();

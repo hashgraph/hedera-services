@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_
 import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_NODE_ID;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.AccountID.Builder;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
