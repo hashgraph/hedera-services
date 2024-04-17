@@ -22,6 +22,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
@@ -93,7 +94,8 @@ class SocketFactoryTest extends ConnectivityTestBase {
      */
     @ParameterizedTest
     @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
-    void tlsFactoryTest(final AddressBook addressBook, final Map<NodeId, KeysAndCerts> keysAndCerts) throws Throwable {
+    void tlsFactoryTest(@NonNull final AddressBook addressBook, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts)
+            throws Throwable {
         assertTrue(addressBook.getSize() > 1, "Address book must contain at least 2 nodes");
         // choose 2 random nodes to test
         final Random random = new Random();
