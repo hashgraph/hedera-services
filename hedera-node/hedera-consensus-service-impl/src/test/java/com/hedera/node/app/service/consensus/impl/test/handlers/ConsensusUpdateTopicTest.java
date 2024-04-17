@@ -135,25 +135,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
     void rejectsMissingTopic() {
         final var txBody =
                 TransactionBody.newBuilder().consensusUpdateTopic(OP_BUILDER).build();
-        given(handleContext.body()).willReturn(txBody);
-
-        // expect:
-        assertFailsWith(INVALID_TOPIC_ID, () -> subject.handle(handleContext));
-    }
-
-    @Test
-    @DisplayName("Update a deleted topic ID fails")
-    void rejectsDeletedTopic() {
-        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), true);
-        refreshStoresWithCurrentTopicInBothReadableAndWritable();
-
-        final var txBody = TransactionBody.newBuilder()
-                .consensusUpdateTopic(OP_BUILDER.topicID(topicId))
-                .build();
-        given(handleContext.body()).willReturn(txBody);
-
-        // expect:
-        assertFailsWith(INVALID_TOPIC_ID, () -> subject.handle(handleContext));
+        assertThrowsPreCheck(() -> subject.pureChecks(txBody), INVALID_TOPIC_ID);
     }
 
     @Test
@@ -561,6 +543,24 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         final var op =
                 OP_BUILDER.topicID(TopicID.newBuilder().topicNum(123L).build()).build();
         final var context = new FakePreHandleContext(accountStore, txnWith(op));
+        context.registerStore(ReadableTopicStore.class, readableStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
+    }
+
+    @Test
+    @DisplayName("Update a deleted topic ID fails")
+    void rejectsDeletedTopic() throws PreCheckException {
+        givenValidTopic(payerId, true);
+        refreshStoresWithCurrentTopicInBothReadableAndWritable();
+
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerId))
+                .consensusUpdateTopic(OP_BUILDER.topicID(topicId))
+                .build();
+        given(accountStore.getAccountById(payerId)).willReturn(account);
+        given(account.key()).willReturn(adminKey);
+        final var context = new FakePreHandleContext(accountStore, txBody);
         context.registerStore(ReadableTopicStore.class, readableStore);
 
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOPIC_ID);
