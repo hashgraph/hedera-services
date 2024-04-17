@@ -70,14 +70,8 @@ public class WritableAirdropStore {
     void remove(@NonNull PendingAirdropId airdropId) {
         // invoked by the `TokenCancelAirdrop`
     }
-
-    void handleAirdrop(@NonNull final PendingAirdropId airdropId) {
-        // invoked by the `TokenClaimAirdrop`
-    }
 }
 ```
-
-The `handleAirdrop` method would fetch a `PendingAirdropValue` from the airdrop state, in the case of fungible airdrops, or directly use the `PendingAirdropId`, in the case of NFTs and construct a synthetic crypto transfer transaction that would be validated and propagated to the `CryptoTransferHandler.handle()`. More details about the `TokenClaimAirdrop` and the synthetic transaction creation would be covered in a separate design doc.
 
 ### Operations
 
@@ -87,11 +81,6 @@ The `handleAirdrop` method would fetch a `PendingAirdropValue` from the airdrop 
    - Only a single fungible or non-fungible airdrop for a specific token defined - we just put a new entry in the map
    - An airdrop for an existing `PendingAirdropId` is already defined - we should replace the existing `PendingAirdropValue` for this `PendingAirdropId` with the aggregated new fungible amount
 3. Handling an airdrop `cancel` in state - we remove the `PendingAirdropId` key for the airdrop we want to cancel
-4. Handling an airdrop `claim` in state:
-   - In case of a fungible token claim - based on the `PendingAirdropId`, get the corresponding `PendingAirdropValue` and create a synthetic `CryptoTransfer` with the corresponding `sender`, `receiver`, `token` and `amount`. Then delegate it to the `CryptoTransfer.handler()` to execute the transfer
-   - In case of an NFT - based on the `PendingAirdropId` itself, create a synthetic `CryptoTransfer` with the corresponding `sender`, `receiver`, `token` and `serial number`. Then delegate it to `CryptoTransfer.handler()` to execute the transfer
-
-   More details for claim and cancel would be covered in their corresponding design docs.
 
 ## Acceptance tests
 
