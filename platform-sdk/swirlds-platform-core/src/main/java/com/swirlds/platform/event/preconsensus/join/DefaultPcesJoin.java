@@ -16,12 +16,16 @@
 
 package com.swirlds.platform.event.preconsensus.join;
 
+import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
+import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,9 +43,8 @@ import org.apache.logging.log4j.Logger;
  */
 public class DefaultPcesJoin implements PcesJoin {
 
-    private static Logger logger = LogManager.getLogger(DefaultPcesJoin.class);
+    private static final Logger logger = LogManager.getLogger(DefaultPcesJoin.class);
 
-    // TODO metrics why not
     // TODO unit tests
 
     private long durableSequenceNumber = -1;
@@ -51,6 +54,19 @@ public class DefaultPcesJoin implements PcesJoin {
     private final Duration suspiciousRoundDuration;
 
     private final RateLimitedLogger suspiciousRoundLogger;
+
+    private static final RunningAverageMetric.Config AVERAGE_ROUND_DURABILITY_DELAY_METRIC_CONFIG =
+            new RunningAverageMetric.Config("platform", "averageRoundDurabilityDelay")
+                    .withUnit("us")
+                    .withDescription(
+                            "The average delay between a round being eligible for handling and when the round's keystone event is guaranteed to be durable.");
+    private final RunningAverageMetric averageRoundDurabilityDelayMetric;
+
+    private static final LongGauge.Config PCES_JOIN_BUFFER_SIZE_METRIC_CONFIG = new LongGauge.Config(
+                    "platform", "pcesJoinBufferSize")
+            .withUnit("count")
+            .withDescription("The number of rounds that are waiting for their keystone event to become durable");
+    private final LongGauge pcesJoinBufferSizeMetric;
 
     /**
      * Constructor.
@@ -65,6 +81,10 @@ public class DefaultPcesJoin implements PcesJoin {
                 .suspiciousPcesJoinDuration();
 
         suspiciousRoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(10));
+
+        averageRoundDurabilityDelayMetric =
+                platformContext.getMetrics().getOrCreate(AVERAGE_ROUND_DURABILITY_DELAY_METRIC_CONFIG);
+        pcesJoinBufferSizeMetric = platformContext.getMetrics().getOrCreate(PCES_JOIN_BUFFER_SIZE_METRIC_CONFIG);
     }
 
     /**
@@ -83,10 +103,15 @@ public class DefaultPcesJoin implements PcesJoin {
 
         final List<ConsensusRound> durableRounds = new ArrayList<>();
 
+        final Instant now = time.now();
         while (!rounds.isEmpty() && getKeystoneSequence(rounds.peek().round()) <= durableSequenceNumber) {
-            durableRounds.add(rounds.remove().round());
+            final NotYetDurableRound round = rounds.remove();
+            final Duration delay = Duration.between(round.receivedTime(), now);
+            averageRoundDurabilityDelayMetric.update(UNIT_NANOSECONDS.convertTo(delay.toNanos(), UNIT_MICROSECONDS));
+            durableRounds.add(round.round());
         }
 
+        pcesJoinBufferSizeMetric.set(rounds.size());
         return durableRounds;
     }
 
@@ -96,11 +121,13 @@ public class DefaultPcesJoin implements PcesJoin {
     @NonNull
     @Override
     public List<ConsensusRound> addRound(@NonNull final ConsensusRound round) {
-        if (round.isEmpty() && getKeystoneSequence(round) <= durableSequenceNumber) {
+        if (rounds.isEmpty() && getKeystoneSequence(round) <= durableSequenceNumber) {
+            averageRoundDurabilityDelayMetric.update(0);
             return List.of(round);
         }
 
         rounds.add(new NotYetDurableRound(round, time.now()));
+        pcesJoinBufferSizeMetric.set(rounds.size());
         return List.of();
     }
 
