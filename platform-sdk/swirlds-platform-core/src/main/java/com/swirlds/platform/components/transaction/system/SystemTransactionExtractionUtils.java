@@ -81,7 +81,7 @@ public class SystemTransactionExtractionUtils {
                 scopedTransactions.add(new ScopedSystemTransaction<>(
                         event.getHashedData().getCreatorId(),
                         event.getHashedData().getSoftwareVersion(),
-                        (T) transaction));
+                        (T) transaction.getPayload().value()));
             }
         }
         return scopedTransactions.isEmpty() ? null : scopedTransactions;

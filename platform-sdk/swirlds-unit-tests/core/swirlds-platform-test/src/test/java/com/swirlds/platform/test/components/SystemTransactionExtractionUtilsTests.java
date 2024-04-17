@@ -19,6 +19,7 @@ package com.swirlds.platform.test.components;
 import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.newDummyRound;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
@@ -48,6 +49,7 @@ class SystemTransactionExtractionUtilsTests {
         transactions.addAll(Objects.requireNonNull(SystemTransactionExtractionUtils.extractFromEvent(
                 new TestingEventBuilder(r).setSystemTransactionCount(2).build(), StateSignaturePayload.class)));
 
+        transactions.forEach(t -> assertTrue(StateSignaturePayload.class.isInstance(t.transaction())));
         assertEquals(3, transactions.size(), "incorrect number of transactions returned");
     }
 
@@ -63,6 +65,7 @@ class SystemTransactionExtractionUtilsTests {
         transactions.addAll(
                 SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r, 2, 2), StateSignaturePayload.class));
 
+        transactions.forEach(t -> assertTrue(StateSignaturePayload.class.isInstance(t.transaction())));
         assertEquals(5, transactions.size(), "incorrect number of transactions returned");
     }
 }
