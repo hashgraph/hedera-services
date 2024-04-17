@@ -27,8 +27,10 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
@@ -159,10 +161,11 @@ class CustomMessageCallProcessorTest {
         givenHaltableFrame(isHalted);
         givenCallWithCode(NON_EVM_PRECOMPILE_SYSTEM_ADDRESS);
         given(addressChecks.isSystemAccount(NON_EVM_PRECOMPILE_SYSTEM_ADDRESS)).willReturn(true);
+        when(frame.getValue()).thenReturn(Wei.of(2L));
 
         subject.start(frame, operationTracer);
 
-        verifyHalt(ExceptionalHaltReason.PRECOMPILE_ERROR);
+        verifyHalt(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED);
     }
 
     @Test
@@ -171,7 +174,7 @@ class CustomMessageCallProcessorTest {
         givenHaltableFrame(isHalted);
         givenCallWithCode(ADDRESS_6);
         given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
-        given(registry.get(ADDRESS_6)).willReturn(nativePrecompile);
+        lenient().when(registry.get(ADDRESS_6)).thenReturn(nativePrecompile);
         given(frame.getValue()).willReturn(Wei.ONE);
 
         subject.start(frame, operationTracer);

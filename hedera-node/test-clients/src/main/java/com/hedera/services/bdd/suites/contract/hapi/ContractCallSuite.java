@@ -100,7 +100,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -262,8 +261,7 @@ public class ContractCallSuite extends HapiSuite {
                 callsToSystemEntityNumsAreTreatedAsPrecompileCalls(),
                 hollowCreationFailsCleanly(),
                 repeatedCreate2FailsWithInterpretableActionSidecars(),
-                callStaticCallToLargeAddress(),
-                internalCallsAgainstSystemAccounts());
+                callStaticCallToLargeAddress());
     }
 
     @HapiTest
@@ -416,7 +414,7 @@ public class ContractCallSuite extends HapiSuite {
         final var failedResult = Bytes32.repeat((byte) 0);
         final ContractCallResult unsuccessfulResult = () -> failedResult;
         final ContractCallResult successfulResult = () -> failedResult.or(Bytes.of(1));
-        return defaultHapiSpec("callsToSystemEntityNumsAreTreatedAsPrecompileCalls", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("callsToSystemEntityNumsAreTreatedAsPrecompileCalls", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(TEST_CONTRACT),
                         contractCreate(
@@ -427,6 +425,7 @@ public class ContractCallSuite extends HapiSuite {
                                         BigInteger.ONE)
                                 .balance(ONE_HBAR))
                 .when(
+                        balanceSnapshot("initialBalance", TEST_CONTRACT),
                         // call to 0x0
                         contractCall(
                                         TEST_CONTRACT,
@@ -445,7 +444,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .build()))
                                 .sending(500L)
                                 .via(zeroAddressWithValueTxn)
-                                .hasKnownStatus(SUCCESS),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         // call to existing account in the 0-750 range, without precompile collision on the same address
                         contractCall(
                                         TEST_CONTRACT,
@@ -465,7 +464,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .build()))
                                 .via(existingSystemEntityWithValueTxn)
                                 .sending(500L)
-                                .hasKnownStatus(SUCCESS),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         // call to existing account in the 0-750 range, WITH precompile collision
                         contractCall(
                                         TEST_CONTRACT,
@@ -484,7 +483,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .build()))
                                 .via(existingNumAndPrecompileWithValueTxn)
                                 .sending(500L)
-                                .hasKnownStatus(SUCCESS),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         // call to non-existing account in the 0-750 range
                         contractCall(
                                         TEST_CONTRACT,
@@ -503,7 +502,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .build()))
                                 .via(nonExistingSystemEntityWithValueTxn)
                                 .sending(500L)
-                                .hasKnownStatus(SUCCESS),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         // delegate call to collision address (0.0.1)
                         contractCall(
                                         TEST_CONTRACT,
@@ -531,7 +530,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .build()))
                                 .via(delegateCallNonExistingPrecompile)
                                 .hasKnownStatus(SUCCESS),
-                        // self destruct with beneficiary in the 0-750 range
+                        // self-destruct with beneficiary in the 0-750 range
                         contractCall(
                                         TEST_CONTRACT,
                                         "selfDestructWithBeneficiary",
@@ -551,36 +550,31 @@ public class ContractCallSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS))
                 .then(
                         getTxnRecord(zeroAddressTxn)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .hasPriority(recordWith().status(SUCCESS))
                                 .logged(),
                         getTxnRecord(zeroAddressWithValueTxn)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
                                 .logged(),
                         getTxnRecord(existingSystemEntityTxn)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                        .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(existingSystemEntityWithValueTxn)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
                                 .logged(),
                         getTxnRecord(existingNumAndPrecompileTxn)
                                 .hasPriority(recordWith()
                                         .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(existingNumAndPrecompileWithValueTxn)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
                                 .logged(),
                         getTxnRecord(nonExistingSystemEntityTxn)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                        .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(nonExistingSystemEntityWithValueTxn)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
                                 .logged(),
                         getTxnRecord(existingNumAndPrecompileDelegateCallTxn)
                                 .hasPriority(recordWith()
@@ -588,11 +582,11 @@ public class ContractCallSuite extends HapiSuite {
                                 .logged(),
                         getTxnRecord(delegateCallNonExistingPrecompile)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                        .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(delegateCallExistingAccountNonExistingPrecompile)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                        .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(selfDestructToSystemAccountTxn)
                                 .hasPriority(recordWith()
@@ -600,9 +594,9 @@ public class ContractCallSuite extends HapiSuite {
                                 .logged(),
                         getTxnRecord(balanceOfSystemAccountTxn)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(
-                                                resultWith().contractCallResult(() -> Bytes32.repeat((byte) 0))))
-                                .logged());
+                                        .contractCallResult(resultWith().contractCallResult(unsuccessfulResult)))
+                                .logged(),
+                        getAccountBalance(TEST_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
@@ -780,42 +774,6 @@ public class ContractCallSuite extends HapiSuite {
                                             asHeadlongAddress(asAddress(tokenID.get())))
                                     .gas(GAS_TO_OFFER));
                 }))
-                .then();
-    }
-
-    @HapiTest
-    final HapiSpec internalCallsAgainstSystemAccounts() {
-        final var contract = "MakeCalls";
-        final var withAmount = "makeCallWithAmount";
-        final var withoutAmount = "makeCallWithoutAmount";
-
-        return defaultHapiSpec(
-                        "internalCallsAgainstSystemAccounts",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .given(
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
-                        uploadInitCode(contract),
-                        contractCreate(contract).gas(GAS_TO_OFFER))
-                .when(
-                        contractCall(
-                                        contract,
-                                        withoutAmount,
-                                        asHeadlongAddress(hex(asAddress(AccountID.newBuilder()
-                                                .setAccountNum(357)
-                                                .build()))),
-                                        new byte[] {"system account".getBytes()[0]})
-                                .gas(GAS_TO_OFFER),
-                        contractCall(
-                                        contract,
-                                        withAmount,
-                                        asHeadlongAddress(hex(asAddress(AccountID.newBuilder()
-                                                .setAccountNum(357)
-                                                .build()))),
-                                        new byte[] {"system account".getBytes()[0]})
-                                .gas(GAS_TO_OFFER)
-                                .sending(2L)
-                                .hasKnownStatus(INVALID_FEE_SUBMITTED))
                 .then();
     }
 

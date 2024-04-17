@@ -47,6 +47,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -58,9 +60,11 @@ import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.b
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -93,6 +97,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String ERC_721_ABI = "ERC721ABI";
     private static final String NON_EXISTING_MIRROR_ADDRESS = "0000000000000000000000000000000000123456";
     private static final String NON_EXISTING_NON_MIRROR_ADDRESS = "1234561234561234561234561234568888123456";
+    private static final String MAKE_CALLS_CONTRACT = "MakeCalls";
     private static final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
     private static final String INTERNAL_CALLEE_CONTRACT = "InternalCallee";
     private static final String REVERT_WITH_REVERT_REASON_FUNCTION = "revertWithRevertReason";
@@ -243,7 +248,11 @@ public class Evm46ValidationSuite extends HapiSuite {
                 internalCallWithValueToAccountWithReceiverSigRequiredTrue(),
 
                 // Internal call to system account
-                // EOA -calls-> InternalCaller -call-> 0.0.2 (ethereum precompile)
+                // EOA -calls-> MakeCalls -callWithValue-> 0.0.357 (system account)
+                internalCallsAgainstSystemAccountsWithValue(),
+                // EOA -calls-> MakeCalls -call-> 0.0.357 (system account)
+                internalCallsAgainstSystemAccountsWithoutValue(),
+                // EOA -calls-> MakeCalls -call-> 0.0.2 (ethereum precompile)
                 internalCallToEthereumPrecompile0x2ResultsInSuccess(),
                 // EOA -calls-> InternalCaller -callWithValue-> 0.0.2 (ethereum precompile)
                 internalCallWithValueToEthereumPrecompile0x2ResultsInRevert(),
@@ -1311,6 +1320,59 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
+    final HapiSpec internalCallsAgainstSystemAccountsWithValue() {
+        final var withAmount = "makeCallWithAmount";
+        return defaultHapiSpec(
+                        "internalCallsAgainstSystemAccountsWithValue",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                .given(
+                        uploadInitCode(MAKE_CALLS_CONTRACT),
+                        contractCreate(MAKE_CALLS_CONTRACT).gas(GAS_LIMIT_FOR_CALL * 4))
+                .when(
+                        balanceSnapshot("initialBalance", MAKE_CALLS_CONTRACT),
+                        contractCall(
+                                        MAKE_CALLS_CONTRACT,
+                                        withAmount,
+                                        asHeadlongAddress(hex(asAddress(AccountID.newBuilder()
+                                                .setAccountNum(357)
+                                                .build()))),
+                                        new byte[] {"system account".getBytes()[0]})
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .sending(2L)
+                                .via(INNER_TXN)
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED))
+                .then(getAccountBalance(MAKE_CALLS_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+    }
+
+    @HapiTest
+    final HapiSpec internalCallsAgainstSystemAccountsWithoutValue() {
+        final var withoutAmount = "makeCallWithoutAmount";
+        return defaultHapiSpec(
+                        "internalCallsAgainstSystemAccountsWithoutValue",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                .given(
+                        uploadInitCode(MAKE_CALLS_CONTRACT),
+                        contractCreate(MAKE_CALLS_CONTRACT).gas(GAS_LIMIT_FOR_CALL * 4))
+                .when(
+                        balanceSnapshot("initialBalance", MAKE_CALLS_CONTRACT),
+                        contractCall(
+                                        MAKE_CALLS_CONTRACT,
+                                        withoutAmount,
+                                        asHeadlongAddress(hex(asAddress(AccountID.newBuilder()
+                                                .setAccountNum(357)
+                                                .build()))),
+                                        new byte[] {"system account".getBytes()[0]})
+                                .gas(GAS_LIMIT_FOR_CALL * 4)
+                                .via(INNER_TXN)
+                                .hasKnownStatus(SUCCESS))
+                .then(
+                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
+                        getAccountBalance(MAKE_CALLS_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+    }
+
+    @HapiTest
     private HapiSpec internalCallToEthereumPrecompile0x2ResultsInSuccess() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(2L).build());
@@ -1360,18 +1422,9 @@ public class Evm46ValidationSuite extends HapiSuite {
                                                 CALL_WITH_VALUE_TO_FUNCTION,
                                                 mirrorAddrWith(targetId.get().getAccountNum()))
                                         .gas(GAS_LIMIT_FOR_CALL * 4)
-                                        .via(INNER_TXN))))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(INNER_TXN);
-                            allRunFor(spec, lookup);
-                            final var result = lookup.getResponseRecord()
-                                    .getContractCallResult()
-                                    .getContractCallResult();
-                            assertEquals(ByteString.copyFrom(new byte[0]), result);
-                        }),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+                                        .via(INNER_TXN)
+                                        .hasKnownStatus(INVALID_FEE_SUBMITTED))))
+                .then(getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
@@ -1442,11 +1495,9 @@ public class Evm46ValidationSuite extends HapiSuite {
                                                 CALL_WITH_VALUE_TO_FUNCTION,
                                                 mirrorAddrWith(targetId.get().getAccountNum()))
                                         .gas(GAS_LIMIT_FOR_CALL * 4)
-                                        .via(INNER_TXN))))
-                .then(
-                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
-                        getAccountBalance(INTERNAL_CALLER_CONTRACT)
-                                .hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+                                        .via(INNER_TXN)
+                                        .hasKnownStatus(INVALID_FEE_SUBMITTED))))
+                .then(getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
