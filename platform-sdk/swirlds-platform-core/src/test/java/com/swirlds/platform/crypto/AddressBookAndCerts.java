@@ -28,5 +28,4 @@ import java.util.Map;
  * @param nodeIdKeysAndCertsMap the keys and certificates associated with each node
  */
 public record AddressBookAndCerts(
-        @NonNull AddressBook addressBook, @NonNull Map<NodeId, KeysAndCerts> nodeIdKeysAndCertsMap) {
-}
+        @NonNull AddressBook addressBook, @NonNull Map<NodeId, KeysAndCerts> nodeIdKeysAndCertsMap) {}
