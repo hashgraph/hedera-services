@@ -452,7 +452,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
                 readBB.clear();
                 readBB.limit(PRE_READ_BUF_SIZE); // No need to read more than that for a header
                 int bytesRead = MerkleDbFileUtils.completelyRead(fileChannel, readBB, byteOffsetInFile);
-                assert bytesRead == Math.min(PRE_READ_BUF_SIZE, fileChannel.size() - byteOffsetInFile);
+                assert !isFileCompleted() || (bytesRead == Math.min(PRE_READ_BUF_SIZE, getSize() - byteOffsetInFile));
                 // Then read the tag and size from the read buffer, since it's wrapped over the byte buffer
                 readBuf.reset();
                 final int tag = readBuf.getVarInt(0, false); // tag
