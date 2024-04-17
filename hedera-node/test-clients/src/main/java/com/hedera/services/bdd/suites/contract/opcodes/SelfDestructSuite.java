@@ -65,7 +65,7 @@ public class SelfDestructSuite extends HapiSuite {
     private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
     private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
     private static final String EVM_VERSION_046 = "v0.46";
-    private static final String EVM_VERSION_049 = "v0.49";
+    private static final String EVM_VERSION_050 = "v0.50";
 
     private static final String SELF_DESTRUCT_CALLABLE_CONTRACT = "SelfDestructCallable";
     private static final String DESTROY_EXPLICIT_BENEFICIARY = "destroyExplicitBeneficiary";
@@ -86,11 +86,11 @@ public class SelfDestructSuite extends HapiSuite {
                 hscsEvm008SelfDestructInConstructorWorks(),
                 hscsEvm008SelfDestructWhenCalling(),
                 selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_046),
-                selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_049),
+                selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_050),
                 selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_046),
-                selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_049),
+                selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_050),
                 testSelfDestructForSystemAccounts(EVM_VERSION_046),
-                testSelfDestructForSystemAccounts(EVM_VERSION_049));
+                testSelfDestructForSystemAccounts(EVM_VERSION_050));
     }
 
     @Override
@@ -146,8 +146,8 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn49() {
-        return selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_049);
+    final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn50() {
+        return selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(EVM_VERSION_050);
     }
 
     final HapiSpec selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(
@@ -182,8 +182,8 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed49() {
-        return selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_049);
+    final HapiSpec selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed50() {
+        return selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(EVM_VERSION_050);
     }
 
     final HapiSpec selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(
@@ -209,8 +209,8 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec testSelfDestructForSystemAccounts49() {
-        return testSelfDestructForSystemAccounts(EVM_VERSION_049);
+    final HapiSpec testSelfDestructForSystemAccounts50() {
+        return testSelfDestructForSystemAccounts(EVM_VERSION_050);
     }
 
     final HapiSpec testSelfDestructForSystemAccounts(@NonNull final String evmVersion) {
