@@ -50,7 +50,7 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
      */
     public StateSignatureTransaction() {}
 
-    public StateSignatureTransaction(@NonNull final StateSignaturePayload payload){
+    public StateSignatureTransaction(@NonNull final StateSignaturePayload payload) {
         this.payload = new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, payload);
     }
 
@@ -76,7 +76,7 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
         stateSignaturePayload.hash().writeTo(out);
 
         out.writeLong(stateSignaturePayload.round());
-        out.writeInt(Integer.MIN_VALUE);// epochHash is always null
+        out.writeInt(Integer.MIN_VALUE); // epochHash is always null
     }
 
     /**
@@ -87,7 +87,7 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
         final byte[] sigBytes = in.readByteArray(SignatureType.RSA.signatureLength());
         final byte[] hashBytes = in.readByteArray(DigestType.SHA_384.digestLength());
         final long round = in.readLong();
-        in.readInt();// epochHash is always null
+        in.readInt(); // epochHash is always null
 
         this.payload = new OneOf<>(
                 PayloadOneOfType.STATE_SIGNATURE_PAYLOAD,
@@ -127,8 +127,10 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
      */
     @Override
     public int getSerializedLength() {
-        return Integer.BYTES + (int)getStateSignaturePayload().signature().length()
-                + Integer.BYTES + (int)getStateSignaturePayload().hash().length()
+        return Integer.BYTES
+                + (int) getStateSignaturePayload().signature().length()
+                + Integer.BYTES
+                + (int) getStateSignaturePayload().hash().length()
                 + Integer.BYTES // epochHash, always null
                 + Long.BYTES;
     }
@@ -174,7 +176,7 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
         return payload;
     }
 
-    private StateSignaturePayload getStateSignaturePayload(){
+    private StateSignaturePayload getStateSignaturePayload() {
         return payload.as();
     }
 }

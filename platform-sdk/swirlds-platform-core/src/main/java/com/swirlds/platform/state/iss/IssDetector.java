@@ -42,7 +42,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.util.MarkerFileWriter;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import com.swirlds.proto.event.StateSignaturePayload;

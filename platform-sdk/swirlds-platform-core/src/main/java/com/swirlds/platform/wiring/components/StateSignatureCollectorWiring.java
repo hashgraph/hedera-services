@@ -28,7 +28,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.SignedStateReserver;
 import com.swirlds.proto.event.StateSignaturePayload;
@@ -77,8 +76,7 @@ public class StateSignatureCollectorWiring {
                         model,
                         "extractPreconsensusSignatureTransactions",
                         "preconsensus signatures",
-                        event -> SystemTransactionExtractionUtils.extractFromEvent(
-                                event, StateSignaturePayload.class));
+                        event -> SystemTransactionExtractionUtils.extractFromEvent(event, StateSignaturePayload.class));
         preConsensusEventInput = preConsensusTransformer.getInputWire();
         preConsSigInput = taskScheduler.buildInputWire("preconsensus signature transactions");
         preConsensusTransformer.getOutputWire().solderTo(preConsSigInput);
@@ -89,8 +87,7 @@ public class StateSignatureCollectorWiring {
                         model,
                         "extractConsensusSignatureTransactions",
                         "consensus events",
-                        round -> SystemTransactionExtractionUtils.extractFromRound(
-                                round, StateSignaturePayload.class));
+                        round -> SystemTransactionExtractionUtils.extractFromRound(round, StateSignaturePayload.class));
         postConsensusEventInput = postConsensusTransformer.getInputWire();
         postConsSigInput = taskScheduler.buildInputWire("consensus signature transactions");
         postConsensusTransformer.getOutputWire().solderTo(postConsSigInput);

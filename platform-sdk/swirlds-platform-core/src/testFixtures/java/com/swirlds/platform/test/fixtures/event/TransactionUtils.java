@@ -26,7 +26,6 @@ import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.proto.event.StateSignaturePayload;
 import java.nio.ByteBuffer;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.random.RandomGenerator;
 
@@ -103,20 +102,18 @@ public class TransactionUtils {
                 .round(0)
                 .signature(randomSignatureBytes(random))
                 .hash(randomHashBytes(random))
-                .build()
-        );
+                .build());
     }
 
     public static StateSignatureTransaction randomStateSignatureTransaction(final RandomGenerator random) {
         final Random rand = new Random(random.nextLong());
         final Bytes signature = randomSignatureBytes(rand);
         final Bytes hash = randomHashBytes(rand);
-        return new StateSignatureTransaction(
-                StateSignaturePayload.newBuilder()
-                        .round(rand.nextLong())
-                        .signature(signature)
-                        .hash(hash)
-                        .build());
+        return new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                .round(rand.nextLong())
+                .signature(signature)
+                .hash(hash)
+                .build());
     }
 
     public static ConsensusTransactionImpl[] randomMixedTransactions(final RandomGenerator random, final int number) {

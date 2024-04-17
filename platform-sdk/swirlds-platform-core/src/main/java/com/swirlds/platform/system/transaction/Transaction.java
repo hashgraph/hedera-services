@@ -19,8 +19,8 @@ package com.swirlds.platform.system.transaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
-import java.util.concurrent.locks.ReadWriteLock;
 import com.swirlds.proto.event.EventPayload;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * A hashgraph transaction that consists of an array of bytes and a list of immutable {@link TransactionSignature}

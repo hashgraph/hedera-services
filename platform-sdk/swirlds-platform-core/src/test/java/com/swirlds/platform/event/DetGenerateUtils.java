@@ -118,12 +118,11 @@ public abstract class DetGenerateUtils {
             if (system) {
                 final Bytes signature = randomSignatureBytes(random);
                 final Bytes hash = randomHashBytes(random);
-                list.add(new StateSignatureTransaction(
-                        StateSignaturePayload.newBuilder()
-                                .round(random.nextLong())
-                                .signature(signature)
-                                .hash(hash)
-                                .build()));
+                list.add(new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                        .round(random.nextLong())
+                        .signature(signature)
+                        .hash(hash)
+                        .build()));
             } else {
                 list.add(new SwirldTransaction(bytes));
             }

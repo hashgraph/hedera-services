@@ -61,8 +61,7 @@ class TransactionSerializationTest {
                         .round(random.nextLong())
                         .signature(signature)
                         .hash(stateHash)
-                        .build()
-                        );
+                        .build());
         final StateSignatureTransaction deserialized = serializeDeserialize(systemTransactionSignature);
 
         assertEquals(systemTransactionSignature.getPayload(), deserialized.getPayload());

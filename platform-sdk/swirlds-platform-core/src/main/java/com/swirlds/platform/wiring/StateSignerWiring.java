@@ -32,8 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param stateSignature the output wire for the state signature
  */
 public record StateSignerWiring(
-        @NonNull InputWire<ReservedSignedState> signState,
-        @NonNull OutputWire<StateSignaturePayload> stateSignature) {
+        @NonNull InputWire<ReservedSignedState> signState, @NonNull OutputWire<StateSignaturePayload> stateSignature) {
 
     /**
      * Create a new instance of this wiring

@@ -22,7 +22,6 @@ import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -102,7 +101,8 @@ public class AbstractStateSignatureCollectorTest {
 
         final StateSignaturePayload transaction = StateSignaturePayload.newBuilder()
                 .round(round)
-                .signature(buildFakeSignatureBytes(addressBook.getAddress(nodeId).getSigPublicKey(), hash))
+                .signature(
+                        buildFakeSignatureBytes(addressBook.getAddress(nodeId).getSigPublicKey(), hash))
                 .hash(hash.getBytes())
                 .build();
 
