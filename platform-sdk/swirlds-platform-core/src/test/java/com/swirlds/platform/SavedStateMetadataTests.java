@@ -22,6 +22,8 @@ import static com.swirlds.platform.state.signed.SavedStateMetadataField.CONSENSU
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.EPOCH_HASH;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH_MNEMONIC;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH_MNEMONIC;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.NODE_ID;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
@@ -321,14 +323,15 @@ class SavedStateMetadataTests {
             ROUND,
             NUMBER_OF_CONSENSUS_EVENTS,
             CONSENSUS_TIMESTAMP,
-            RUNNING_EVENT_HASH,
             MINIMUM_GENERATION_NON_ANCIENT,
             SOFTWARE_VERSION,
             WALL_CLOCK_TIME,
             NODE_ID,
             SIGNING_NODES,
             SIGNING_WEIGHT_SUM,
-            TOTAL_WEIGHT);
+            TOTAL_WEIGHT,
+            HASH,
+            HASH_MNEMONIC);
 
     /**
      * Test the parsing of a mal-formatted file
@@ -415,11 +418,25 @@ class SavedStateMetadataTests {
         }
         assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
         assertEquals(timestamp, deserialized.consensusTimestamp());
-        assertEquals(runningEventHash, deserialized.runningEventHash());
+        if (invalidFields.contains(RUNNING_EVENT_HASH)) {
+            assertNull(deserialized.runningEventHash());
+        } else {
+            assertEquals(runningEventHash, deserialized.runningEventHash());
+        }
         if (invalidFields.contains(RUNNING_EVENT_HASH_MNEMONIC)) {
             assertNull(deserialized.runningEventHashMnemonic());
         } else {
             assertEquals(runningEventHash.toMnemonic(), deserialized.runningEventHashMnemonic());
+        }
+        if (invalidFields.contains(LEGACY_RUNNING_EVENT_HASH)) {
+            assertNull(deserialized.legacyRunningEventHash());
+        } else {
+            assertEquals(legacyRunningEventHash, deserialized.legacyRunningEventHash());
+        }
+        if (invalidFields.contains(LEGACY_RUNNING_EVENT_HASH_MNEMONIC)) {
+            assertNull(deserialized.legacyRunningEventHashMnemonic());
+        } else {
+            assertEquals(legacyRunningEventHash.toMnemonic(), deserialized.legacyRunningEventHashMnemonic());
         }
         assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
         assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
@@ -597,11 +614,21 @@ class SavedStateMetadataTests {
         testMalformedFile(
                 random, (s, m) -> s.replace(CONSENSUS_TIMESTAMP.name(), "notARealKey"), Set.of(CONSENSUS_TIMESTAMP));
         testMalformedFile(
-                random, (s, m) -> s.replace(RUNNING_EVENT_HASH.name(), "notARealKey"), Set.of(RUNNING_EVENT_HASH));
+                random,
+                (s, m) -> s.replace("\n" + RUNNING_EVENT_HASH.name() + ":", "\nnotARealKey:"),
+                Set.of(RUNNING_EVENT_HASH));
         testMalformedFile(
                 random,
-                (s, m) -> s.replace(RUNNING_EVENT_HASH_MNEMONIC.name(), "notARealKey"),
+                (s, m) -> s.replace("\n" + RUNNING_EVENT_HASH_MNEMONIC.name(), "\nnotARealKey"),
                 Set.of(RUNNING_EVENT_HASH_MNEMONIC));
+        testMalformedFile(
+                random,
+                (s, m) -> s.replace(LEGACY_RUNNING_EVENT_HASH.name() + ":", "notARealKey:"),
+                Set.of(LEGACY_RUNNING_EVENT_HASH));
+        testMalformedFile(
+                random,
+                (s, m) -> s.replace(LEGACY_RUNNING_EVENT_HASH_MNEMONIC.name(), "notARealKey"),
+                Set.of(LEGACY_RUNNING_EVENT_HASH_MNEMONIC));
         testMalformedFile(
                 random,
                 (s, m) -> s.replace(MINIMUM_GENERATION_NON_ANCIENT.name(), "notARealKey"),

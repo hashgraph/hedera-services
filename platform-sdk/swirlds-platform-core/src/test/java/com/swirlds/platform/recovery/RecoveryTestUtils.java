@@ -187,7 +187,7 @@ public final class RecoveryTestUtils {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.ENABLE_EVENT_STREAMING, true)
                 .withValue(EventConfig_.EVENTS_LOG_DIR, destination.toString())
-                .withValue(EventConfig_.EVENT_INTAKE_QUEUE_SIZE, Long.MAX_VALUE)
+                .withValue(EventConfig_.EVENT_INTAKE_QUEUE_SIZE, Integer.MAX_VALUE)
                 .withValue(EventConfig_.EVENTS_LOG_PERIOD, secondsPerFile)
                 .getOrCreateConfig();
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
