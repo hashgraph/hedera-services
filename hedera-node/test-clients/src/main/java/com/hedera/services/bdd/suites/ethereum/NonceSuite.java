@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemPropert
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -54,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
@@ -1028,7 +1030,7 @@ public class NonceSuite extends HapiSuite {
     HapiSpec nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompileEthContractCreate() {
         return defaultHapiSpec(
                         "nonceUpdatedAfterEvmReversionDueSendingValueToEthereumPrecompileEthContractCreate",
-                        NONDETERMINISTIC_ETHEREUM_DATA)
+                        FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
@@ -1041,15 +1043,12 @@ public class NonceSuite extends HapiSuite {
                         .payingWith(RELAYER)
                         .nonce(0)
                         .gasLimit(ENOUGH_GAS_LIMIT)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                        .hasKnownStatus(INVALID_FEE_SUBMITTED)
                         .via(TX))
                 .then(
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .has(accountWith().nonce(1L)),
-                        getTxnRecord(TX)
-                                .hasPriority(recordWith()
-                                        .status(CONTRACT_REVERT_EXECUTED)
-                                        .contractCreateResult(resultWith().signerNonce(1L))));
+                        getTxnRecord(TX).hasChildRecordCount(0));
     }
 
     // depends on https://github.com/hashgraph/hedera-services/pull/11359

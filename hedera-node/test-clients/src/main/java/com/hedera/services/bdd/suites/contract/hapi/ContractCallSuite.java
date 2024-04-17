@@ -358,7 +358,7 @@ public class ContractCallSuite extends HapiSuite {
         final var TEST_CONTRACT = "TestContract";
         final var somebody = "somebody";
         final var account = "0.0.1";
-        return defaultHapiSpec("LowLevelEcrecCallBehavior", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("LowLevelEcrecCallBehavior", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(TEST_CONTRACT),
                         contractCreate(
@@ -378,14 +378,14 @@ public class ContractCallSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS),
                         contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
                                 .payingWith(somebody)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         cryptoUpdate(account).receiverSigRequired(false).signedBy(GENESIS),
                         contractCall(TEST_CONTRACT, "lowLevelECREC")
                                 .payingWith(somebody)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
                                 .payingWith(somebody)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
                         getAccountBalance(account).hasTinyBars(changeFromSnapshot("start", +0)));
     }
 
