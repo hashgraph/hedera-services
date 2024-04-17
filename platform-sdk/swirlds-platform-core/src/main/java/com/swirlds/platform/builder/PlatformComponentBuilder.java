@@ -539,27 +539,27 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Provide a PCES sequencer in place of the platform's default PCEs sequencer.
+     * Provide a PCES sequencer in place of the platform's default PCES sequencer.
      *
-     * @param pcesSequencer the PCEs sequencer to use
+     * @param pcesSequencer the PCES sequencer to use
      * @return this builder
      */
     @NonNull
     public PlatformComponentBuilder withPcesSequencer(@NonNull final PcesSequencer pcesSequencer) {
         throwIfAlreadyUsed();
         if (this.pcesSequencer != null) {
-            throw new IllegalStateException("PCEs sequencer has already been set");
+            throw new IllegalStateException("PCES sequencer has already been set");
         }
         this.pcesSequencer = Objects.requireNonNull(pcesSequencer);
         return this;
     }
 
     /**
-     * Build the PCEs sequencer if it has not yet been built. If one has been provided via
+     * Build the PCES sequencer if it has not yet been built. If one has been provided via
      * {@link #withPcesSequencer(PcesSequencer)}, that sequencer will be used. If this method is called more than once,
-     * only the first call will build the PCEs sequencer. Otherwise, the default sequencer will be created and returned.
+     * only the first call will build the PCES sequencer. Otherwise, the default sequencer will be created and returned.
      *
-     * @return the PCEs sequencer
+     * @return the PCES sequencer
      */
     @NonNull
     public PcesSequencer buildPcesSequencer() {
