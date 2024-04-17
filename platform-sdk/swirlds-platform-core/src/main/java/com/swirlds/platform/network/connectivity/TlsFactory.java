@@ -21,7 +21,7 @@ import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
-import com.swirlds.platform.system.PlatformInitializationException;
+import com.swirlds.platform.system.PlatformConstructionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -99,7 +99,7 @@ public class TlsFactory implements SocketFactory {
         keyManagerFactory.init(agrKeyStore, password);
         this.trustManagerFactory = TrustManagerFactory.getInstance(CryptoConstants.TRUST_MANAGER_FACTORY_TYPE);
         this.sslContext = SSLContext.getInstance(CryptoConstants.SSL_VERSION);
-        SSLContext.setDefault(sslContext);
+//        SSLContext.setDefault(sslContext);
 
         reload(peers);
     }
@@ -148,7 +148,7 @@ public class TlsFactory implements SocketFactory {
             sslServerSocketFactory = sslContext.getServerSocketFactory();
             sslSocketFactory = sslContext.getSocketFactory();
         } catch (final KeyStoreException | KeyManagementException e) {
-            throw new PlatformInitializationException("A problem occurred while initializing the SocketFactory", e);
+            throw new PlatformConstructionException("A problem occurred while initializing the SocketFactory", e);
         } finally {
             lock.unlock();
         }
