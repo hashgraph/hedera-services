@@ -22,6 +22,10 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -34,6 +38,7 @@ import com.hedera.node.config.data.StakingConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -88,13 +93,13 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
             @NonNull final AddressBook configAddressBook,
             @NonNull final PlatformContext context) {
         final var tokenServiceState = state.getWritableStates(TokenService.NAME);
-        final var stakingInfoState =
-                state.getWritableStates(TokenService.NAME).<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
+        // Get all nodeIds added in the config.txt
+        Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
+        final var configAddressBookSize = configNodeIds.size();
         if (!tokenServiceState.isEmpty()) {
+            final var stakingInfoState =
+                    state.getWritableStates(TokenService.NAME).<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
             final var readableStoreFactory = new ReadableStoreFactory(state);
-            // Get all nodeIds added in the config.txt
-            Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
-            final var configAddressBookSize = configNodeIds.size();
             final var stakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
             final var allNodeIds = stakingInfoStore.getAll();
             for (final var nodeId : allNodeIds) {
@@ -138,8 +143,82 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
                 ((WritableKVStateBase) stakingInfoState).commit();
             }
         } else {
-            logger.warn("Token service state is empty to update weights from StakingInfo Map");
+            // When doing the first upgrade from 0.48 to 0.49, we will call updateWeight before BBM migration.
+            // In this case, we need to update the weight in the stakingInfo map from mono service state.
+            logger.info("Token service state is empty, so we are migrating from mono to mod-service with "
+                    + "and updating the mono-service stakingInfo map.");
+            final var stakingInfosMap = MerkleMapLike.from(
+                    (MerkleMap<EntityNum, MerkleStakingInfo>) state.getChild(StateChildIndices.STAKING_INFO));
+            stakingInfosMap.forEachNode((nodeNum, stakingInfo) -> {
+                NodeId nodeId = new NodeId(nodeNum.longValue());
+                if (configNodeIds.contains(nodeId)) {
+                    configAddressBook.updateWeight(nodeId, stakingInfo.getWeight());
+                    configNodeIds.remove(nodeId);
+                } else {
+                    final var newStakingInfo = stakingInfosMap.getForModify(nodeNum);
+                    newStakingInfo.setWeight(0);
+                    logger.warn(
+                            "Node {} is deleted from configAddressBook during upgrade and "
+                                    + "is updated with weight zero",
+                            nodeId);
+                }
+            });
+            // for any newly added nodes that doesn't exist in state, weight should be set to 0
+            // irrespective of the weight provided in config.txt
+            if (!configNodeIds.isEmpty()) {
+                configNodeIds.forEach(nodeId -> {
+                    configAddressBook.updateWeight(nodeId, 0);
+                    logger.info(
+                            "Node {} is newly added in configAddressBook during upgrade "
+                                    + "with weight 0 in configAddressBook",
+                            nodeId);
+                });
+                // update the state with new nodes and set weight to 0
+                addAdditionalNodesToState(
+                        stakingInfosMap, configNodeIds, context.getConfiguration(), configAddressBookSize);
+            }
         }
+    }
+
+    /**
+     * Add additional nodes to state with weight 0 and update all nodes maxStake to maxStakePerNode
+     * @param stakingInfoMap The state to update
+     * @param newNodeIds The new node ids to add
+     * @param config The configuration
+     * @param configAddressBookSize The size of the address book
+     */
+    private void addAdditionalNodesToState(
+            @NonNull final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfoMap,
+            @NonNull final Set<NodeId> newNodeIds,
+            @NonNull final Configuration config,
+            final int configAddressBookSize) {
+        final long maxStakePerNode =
+                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / configAddressBookSize;
+        final var numRewardHistoryStoredPeriods =
+                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
+
+        final var rewardSumHistory = new long[numRewardHistoryStoredPeriods + 1];
+        Arrays.fill(rewardSumHistory, 0L);
+
+        // Add new nodes with weight 0
+        for (final var nodeId : newNodeIds) {
+            final var id = new EntityNum((int) nodeId.id());
+            final var newNodeStakingInfo = new MerkleStakingInfo();
+            newNodeStakingInfo.setKey(id);
+            newNodeStakingInfo.setMaxStake(maxStakePerNode);
+            newNodeStakingInfo.setMinStake(0L);
+            newNodeStakingInfo.setRewardSumHistory(rewardSumHistory);
+            newNodeStakingInfo.setWeight(0);
+
+            stakingInfoMap.put(id, newNodeStakingInfo);
+            logger.info("Node {} is added in state with weight 0 and maxStakePerNode {} ", nodeId, maxStakePerNode);
+        }
+
+        // Update all nodes maxStake to maxStakePerNode
+        stakingInfoMap.forEachNode((k, v) -> {
+            final var stakingInfo = stakingInfoMap.getForModify(k);
+            stakingInfo.setMaxStake(maxStakePerNode);
+        });
     }
 
     /**
