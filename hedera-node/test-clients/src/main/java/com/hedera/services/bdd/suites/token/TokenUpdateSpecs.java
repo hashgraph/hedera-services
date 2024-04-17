@@ -243,7 +243,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .fee(ONE_HBAR)
                                 .payingWith(PAYER)
                                 .signedBy(PAYER)
-                                .hasKnownStatus(INVALID_TOKEN_ID),
+                                .hasPrecheck(INVALID_TOKEN_ID),
                         tokenUpdate("1.2.3")
                                 .fee(ONE_HBAR)
                                 .payingWith(PAYER)

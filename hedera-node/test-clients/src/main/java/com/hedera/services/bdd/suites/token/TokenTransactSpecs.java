@@ -670,7 +670,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 .then(
                         cryptoTransfer(moving(1L, "some").between(DEFAULT_PAYER, SENTINEL_ACCOUNT))
                                 .signedBy(DEFAULT_PAYER)
-                                .hasKnownStatus(INVALID_ACCOUNT_ID),
+                                .hasPrecheck(INVALID_ACCOUNT_ID),
                         cryptoTransfer(moving(100_000_000_000_000L, SENTINEL_ACCOUNT)
                                         .between(DEFAULT_PAYER, FUNDING))
                                 .signedBy(DEFAULT_PAYER)
