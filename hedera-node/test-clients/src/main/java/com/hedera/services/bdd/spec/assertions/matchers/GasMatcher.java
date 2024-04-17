@@ -48,13 +48,19 @@ public class GasMatcher extends TypeSafeMatcher<Long> {
     private final boolean ignoreGas;
 
     /**
+     * The maximum allowed difference between the actual and expected gas values
+     */
+    private final long maxDelta;
+
+    /**
      * @param expectedGas the expected gas
      * @param ignoreGas flag indicating whether to ignore gas completely
      */
-    public GasMatcher(final Long expectedGas, final boolean ignoreGas) {
+    public GasMatcher(final Long expectedGas, final boolean ignoreGas, final long maxDelta) {
         super(Long.class);
         this.expectedGas = expectedGas;
         this.ignoreGas = ignoreGas;
+        this.maxDelta = maxDelta;
     }
 
     /**
@@ -66,8 +72,7 @@ public class GasMatcher extends TypeSafeMatcher<Long> {
         if (ignoreGas) {
             return true;
         }
-        final long delta = Math.max(0L, Math.abs(actualGas - expectedGas));
-        return delta <= 32L;
+        return Math.abs(actualGas - expectedGas) <= maxDelta;
     }
 
     /**
@@ -78,7 +83,7 @@ public class GasMatcher extends TypeSafeMatcher<Long> {
         if (ignoreGas) {
             description.appendText("any gas");
         } else {
-            description.appendText("within 32 units of ").appendValue(expectedGas);
+            description.appendText("gas within %d units of %d".formatted(maxDelta, expectedGas));
         }
     }
 }

@@ -168,7 +168,7 @@ public final class TransactionSidecarRecordMatcher extends TypeSafeDiagnosingMat
      */
     public boolean matchesConsensusTimestampOf(final TransactionSidecarRecord sidecarRecord) {
         final Matcher<Timestamp> matcher = timestampMatcher.apply(consensusTimestamp);
-        return consensusTimestamp == null || matcher.matches(sidecarRecord.getConsensusTimestamp());
+        return consensusTimestamp != null && matcher.matches(sidecarRecord.getConsensusTimestamp());
     }
 
     private boolean matchesConsensusTimestampOf(
