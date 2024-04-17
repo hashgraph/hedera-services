@@ -133,7 +133,7 @@ public interface SocketFactory {
      * A convenient handler for reloading connectivity components
      * e.g. it could be used to reload a TLS trust store, or ask peers to re-authenticate
      *
-     * @param peerInfoList the updated list of peers
+     * @param peers the updated list of peers
      */
-    void reload(@NonNull final List<PeerInfo> peerInfoList);
+    void reload(@NonNull final List<PeerInfo> peers);
 }
