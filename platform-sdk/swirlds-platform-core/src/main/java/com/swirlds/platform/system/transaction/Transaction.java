@@ -21,7 +21,6 @@ import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.proto.event.EventPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
