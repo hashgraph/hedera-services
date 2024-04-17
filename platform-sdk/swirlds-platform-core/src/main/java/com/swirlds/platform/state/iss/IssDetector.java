@@ -42,6 +42,8 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.util.MarkerFileWriter;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import com.swirlds.proto.event.StateSignaturePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -115,6 +117,10 @@ public class IssDetector {
      * ISS related metrics
      */
     private final IssMetrics issMetrics;
+    /**
+     * Writes marker files to disk.
+     */
+    private final MarkerFileWriter markerFileWriter;
 
     /**
      * Create an object that tracks reported hashes and detects ISS events.
@@ -136,6 +142,7 @@ public class IssDetector {
             final boolean ignorePreconsensusSignatures,
             final long ignoredRound) {
         Objects.requireNonNull(platformContext);
+        markerFileWriter = new MarkerFileWriter(platformContext);
 
         final ConsensusConfig consensusConfig =
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class);
@@ -184,6 +191,7 @@ public class IssDetector {
         if (roundNumber == ignoredRound) {
             return null;
         }
+        markerFileWriter.writeMarkerFile(issType.toString());
         return new IssNotification(roundNumber, issType);
     }
 
