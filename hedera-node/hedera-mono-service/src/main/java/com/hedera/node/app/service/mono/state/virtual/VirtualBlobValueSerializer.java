@@ -20,7 +20,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class VirtualBlobValueSerializer implements ValueSerializer<VirtualBlobValue> {
@@ -77,12 +76,6 @@ public class VirtualBlobValueSerializer implements ValueSerializer<VirtualBlobVa
         value.serialize(out);
     }
 
-    @Override
-    @Deprecated
-    public void serialize(final VirtualBlobValue value, final ByteBuffer out) {
-        value.serialize(out);
-    }
-
     // Value deserialization
 
     @Override
@@ -90,14 +83,6 @@ public class VirtualBlobValueSerializer implements ValueSerializer<VirtualBlobVa
         Objects.requireNonNull(in);
         final VirtualBlobValue value = new VirtualBlobValue();
         value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public VirtualBlobValue deserialize(final ByteBuffer buffer, final long version) {
-        final VirtualBlobValue value = new VirtualBlobValue();
-        value.deserialize(buffer, (int) version);
         return value;
     }
 }

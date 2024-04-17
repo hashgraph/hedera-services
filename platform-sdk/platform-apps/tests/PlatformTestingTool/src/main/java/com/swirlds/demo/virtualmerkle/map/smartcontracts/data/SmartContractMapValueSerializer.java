@@ -20,7 +20,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 
 /** This class is the serializer of {@link SmartContractMapValue}. */
 public final class SmartContractMapValueSerializer implements ValueSerializer<SmartContractMapValue> {
@@ -62,23 +61,9 @@ public final class SmartContractMapValueSerializer implements ValueSerializer<Sm
     }
 
     @Override
-    @Deprecated
-    public void serialize(SmartContractMapValue value, ByteBuffer buffer) {
-        value.serialize(buffer);
-    }
-
-    @Override
     public SmartContractMapValue deserialize(@NonNull final ReadableSequentialData in) {
         final SmartContractMapValue value = new SmartContractMapValue();
         value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public SmartContractMapValue deserialize(ByteBuffer buffer, long dataVersion) {
-        final SmartContractMapValue value = new SmartContractMapValue();
-        value.deserialize(buffer, (int) dataVersion);
         return value;
     }
 }

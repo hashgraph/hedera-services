@@ -27,13 +27,13 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableMap;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -132,44 +132,40 @@ class ScheduleEqualityVirtualValueTest {
     }
 
     @Test
-    void serializeWithByteBufferWorks() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.allocate(1024);
+    void serializeWithBufferedDataWorks() {
+        final BufferedData buffer = BufferedData.allocate(1024);
         subject.serialize(buffer);
+        buffer.reset();
 
-        final ByteBuffer inOrder = ByteBuffer.allocate(buffer.limit());
-        inOrder.putInt(2);
-
-        inOrder.putInt(3);
-        inOrder.put("foo".getBytes(StandardCharsets.UTF_8));
-        inOrder.putLong(1L);
-
-        inOrder.putInt(5);
-        inOrder.put("truck".getBytes(StandardCharsets.UTF_8));
-        inOrder.putLong(2L);
-        inOrder.putLong(3L);
+        final BufferedData inOrder = BufferedData.allocate(1024);
+        inOrder.writeInt(2);
+        inOrder.writeInt(3);
+        inOrder.writeBytes("foo".getBytes(StandardCharsets.UTF_8));
+        inOrder.writeLong(1L);
+        inOrder.writeInt(5);
+        inOrder.writeBytes("truck".getBytes(StandardCharsets.UTF_8));
+        inOrder.writeLong(2L);
+        inOrder.writeLong(3L);
+        inOrder.reset();
 
         assertEquals(buffer, inOrder);
     }
 
     @Test
     void deserializeWithByteBufferWorks() throws IOException {
-        final var defaultSubject = new ScheduleEqualityVirtualValue();
+        final BufferedData buffer = BufferedData.allocate(1024);
+        buffer.writeInt(2);
+        buffer.writeInt(3);
+        buffer.writeBytes("foo".getBytes(StandardCharsets.UTF_8));
+        buffer.writeLong(1L);
+        buffer.writeInt(5);
+        buffer.writeBytes("truck".getBytes(StandardCharsets.UTF_8));
+        buffer.writeLong(2L);
+        buffer.writeLong(3L);
+        buffer.flip();
 
-        final ByteBuffer buffer = ByteBuffer.allocate(1024);
-        buffer.putInt(2);
-
-        buffer.putInt(3);
-        buffer.put("foo".getBytes(StandardCharsets.UTF_8));
-        buffer.putLong(1L);
-
-        buffer.putInt(5);
-        buffer.put("truck".getBytes(StandardCharsets.UTF_8));
-        buffer.putLong(2L);
-        buffer.putLong(3L);
-        buffer.limit(buffer.position());
-        buffer.rewind();
-
-        defaultSubject.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
+        final var serializer = new ScheduleEqualityVirtualValueSerializer();
+        final var defaultSubject = serializer.deserialize(buffer);
 
         assertSubjectEquals(subject, defaultSubject);
     }
@@ -195,11 +191,11 @@ class ScheduleEqualityVirtualValueTest {
     @Test
     void serializeActuallyWithByteBufferWorks() throws Exception {
         checkSerialize(() -> {
-            final var buffer = ByteBuffer.allocate(100000);
+            final var buffer = BufferedData.allocate(100000);
             subject.serialize(buffer);
-            buffer.rewind();
-            var copy = new ScheduleEqualityVirtualValue();
-            copy.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
+            buffer.reset();
+            final var serializer = new ScheduleEqualityVirtualValueSerializer();
+            var copy = serializer.deserialize(buffer);
 
             assertSubjectEquals(subject, copy);
 
@@ -210,12 +206,13 @@ class ScheduleEqualityVirtualValueTest {
     @Test
     void serializeActuallyWithMixedWorksBytesFirst() throws Exception {
         checkSerialize(() -> {
-            final var buffer = ByteBuffer.allocate(100000);
+            final var arr = new byte[100000];
+            final var buffer = BufferedData.wrap(arr);
             subject.serialize(buffer);
 
             var copy = new ScheduleEqualityVirtualValue();
             copy.deserialize(
-                    new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+                    new SerializableDataInputStream(new ByteArrayInputStream(arr)),
                     ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
             assertSubjectEquals(subject, copy);
@@ -231,9 +228,9 @@ class ScheduleEqualityVirtualValueTest {
             final var out = new SerializableDataOutputStream(byteArr);
             subject.serialize(out);
 
-            final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+            final var buffer = BufferedData.wrap(byteArr.toByteArray());
             var copy = new ScheduleEqualityVirtualValue();
-            copy.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertSubjectEquals(subject, copy);
 

@@ -22,8 +22,6 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<ScheduleEqualityVirtualKey> {
@@ -72,12 +70,6 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
         key.serialize(out);
     }
 
-    @Override
-    @Deprecated
-    public void serialize(final ScheduleEqualityVirtualKey key, final ByteBuffer buffer) throws IOException {
-        key.serialize(buffer);
-    }
-
     // Key deserialization
 
     @Override
@@ -89,23 +81,9 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
     }
 
     @Override
-    @Deprecated
-    public ScheduleEqualityVirtualKey deserialize(final ByteBuffer buffer, final long version) throws IOException {
-        final var key = new ScheduleEqualityVirtualKey();
-        key.deserialize(buffer);
-        return key;
-    }
-
-    @Override
     public boolean equals(@NonNull BufferedData buffer, @NonNull ScheduleEqualityVirtualKey keyToCompare) {
         Objects.requireNonNull(buffer);
         Objects.requireNonNull(keyToCompare);
         return keyToCompare.equalsTo(buffer);
-    }
-
-    @Override
-    @Deprecated
-    public boolean equals(ByteBuffer buffer, int version, ScheduleEqualityVirtualKey key) {
-        return key.equalsTo(buffer, version);
     }
 }
