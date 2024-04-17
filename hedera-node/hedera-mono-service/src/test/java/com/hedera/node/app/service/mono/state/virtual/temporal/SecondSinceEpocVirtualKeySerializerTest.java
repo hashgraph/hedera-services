@@ -22,9 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
 class SecondSinceEpocVirtualKeySerializerTest {
@@ -35,8 +34,6 @@ class SecondSinceEpocVirtualKeySerializerTest {
 
     @Test
     void gettersWork() {
-        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
-
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
         assertEquals(SecondSinceEpocVirtualKeySerializer.DATA_VERSION, subject.getCurrentDataVersion());
         assertEquals(SecondSinceEpocVirtualKeySerializer.CLASS_ID, subject.getClassId());
@@ -44,17 +41,18 @@ class SecondSinceEpocVirtualKeySerializerTest {
     }
 
     @Test
-    void deserializeWorks() throws IOException {
-        final ByteBuffer bin = ByteBuffer.allocate(100);
-        bin.putLong(longKey).rewind();
+    void deserializeWorks() {
+        final BufferedData bin = BufferedData.allocate(100);
+        bin.writeLong(longKey);
+        bin.reset();
         final var expectedKey = new SecondSinceEpocVirtualKey(longKey);
 
-        assertEquals(expectedKey, subject.deserialize(bin, 1));
+        assertEquals(expectedKey, subject.deserialize(bin));
     }
 
     @Test
-    void serializeWorks() throws IOException {
-        final ByteBuffer out = ByteBuffer.allocate(100);
+    void serializeWorks() {
+        final BufferedData out = BufferedData.allocate(100);
 
         final var virtualKey = new SecondSinceEpocVirtualKey(longKey);
 
@@ -63,17 +61,18 @@ class SecondSinceEpocVirtualKeySerializerTest {
     }
 
     @Test
-    void equalsUsingByteBufferWorks() throws IOException {
+    void equalsUsingByteBufferWorks() {
         final var someKey = new SecondSinceEpocVirtualKey(longKey);
         final var diffNum = new SecondSinceEpocVirtualKey(otherLongKey);
 
-        final ByteBuffer bin = ByteBuffer.allocate(Long.SIZE);
-        bin.putLong(someKey.getKeyAsLong()).rewind();
+        final BufferedData bin = BufferedData.allocate(Long.SIZE);
+        bin.writeLong(someKey.getKeyAsLong());
+        bin.reset();
 
-        assertTrue(subject.equals(bin, 1, someKey));
+        assertTrue(subject.equals(bin, someKey));
 
-        bin.rewind();
-        assertFalse(subject.equals(bin, 1, diffNum));
+        bin.reset();
+        assertFalse(subject.equals(bin, diffNum));
     }
 
     @Test

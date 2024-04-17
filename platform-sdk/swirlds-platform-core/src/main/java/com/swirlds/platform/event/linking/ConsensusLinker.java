@@ -33,7 +33,7 @@ import java.time.Instant;
  * <p>
  * This implementation adds extra metrics to the base class.
  */
-public class ConsensusLinker extends InOrderLinker {
+public class ConsensusLinker extends AbstractInOrderLinker {
 
     private final LongAccumulator missingParentAccumulator;
     private final LongAccumulator generationMismatchAccumulator;
