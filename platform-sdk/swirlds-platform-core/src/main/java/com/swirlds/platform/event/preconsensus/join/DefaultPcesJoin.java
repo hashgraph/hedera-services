@@ -45,8 +45,6 @@ public class DefaultPcesJoin implements PcesJoin {
 
     private static final Logger logger = LogManager.getLogger(DefaultPcesJoin.class);
 
-    // TODO unit tests
-
     private long durableSequenceNumber = -1;
     private final Queue<NotYetDurableRound> rounds = new LinkedList<>();
 
