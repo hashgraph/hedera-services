@@ -86,8 +86,8 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         final var op = context.body().consensusDeleteTopicOrThrow();
         final var topicStore = context.writableStore(WritableTopicStore.class);
         final var topicId = op.topicIDOrElse(TopicID.DEFAULT);
-        // preHandle already checks for topic existence
         final Topic topic = topicStore.getTopic(topicId);
+        // preHandle already checks for topic existence, so topic should never be null.
 
         /* Topics without adminKeys can't be deleted.*/
         if (topic.adminKey() == null) {

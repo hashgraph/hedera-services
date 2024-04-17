@@ -114,12 +114,12 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));
+        // preHandle already checks for topic existence, so topic should never be null.
 
         /* Validate all needed fields in the transaction */
         final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);
 
-        /* since we have validated topic exists, topic.get() is safe to be called */
         try {
             final var updatedTopic = updateRunningHashAndSequenceNumber(txn, topic, handleContext.consensusNow());
 

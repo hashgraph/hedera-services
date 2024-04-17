@@ -135,8 +135,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
+        // preHandle already checks for topic existence, so topic should never be null.
 
-        // preHandle already checks for topic existence and not deleted.
         // First validate this topic is mutable; and the pending mutations are allowed
         validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(op), UNAUTHORIZED);
         if (!(op.hasAutoRenewAccount() && designatesAccountRemoval(op.autoRenewAccount()))
