@@ -89,7 +89,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var op = context.body().consensusSubmitMessageOrThrow();
         final var topicStore = context.createStore(ReadableTopicStore.class);
         // The topic ID must be present on the transaction and the topic must exist.
-        final var topic = topicStore.getTopic(op.topicID());
+        final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
         mustExist(topic, INVALID_TOPIC_ID);
         validateFalsePreCheck(topic.deleted(), INVALID_TOPIC_ID);
         // If a submit key is specified on the topic, then only those transactions signed by that key can be
