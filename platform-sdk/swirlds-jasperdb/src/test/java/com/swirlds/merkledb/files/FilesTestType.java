@@ -17,7 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import com.swirlds.merkledb.MerkleDbDataSource;
-import com.swirlds.merkledb.serialize.DataItemSerializer;
+import com.swirlds.merkledb.serialize.BaseSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
@@ -43,13 +43,12 @@ public enum FilesTestType {
     variableComplexKey(new ExampleVariableSizeDataSerializer(), new ExampleLongLongKeyVariableSize.Serializer());
 
     /** used by files package level tests */
-    public final DataItemSerializer<long[]> dataItemSerializer;
+    public final BaseSerializer<long[]> dataItemSerializer;
 
     public final KeySerializer<? extends VirtualLongKey> keySerializer;
 
     FilesTestType(
-            final DataItemSerializer<long[]> dataItemSerializer,
-            KeySerializer<? extends VirtualLongKey> keySerializer) {
+            final BaseSerializer<long[]> dataItemSerializer, KeySerializer<? extends VirtualLongKey> keySerializer) {
         this.dataItemSerializer = dataItemSerializer;
         this.keySerializer = keySerializer;
     }

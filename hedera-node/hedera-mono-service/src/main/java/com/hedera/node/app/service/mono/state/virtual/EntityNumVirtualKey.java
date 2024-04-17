@@ -27,7 +27,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * A {@link com.swirlds.virtualmap.VirtualKey} for an {@link EntityNum}.
@@ -117,11 +116,6 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
         out.writeLong(value);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        buffer.putLong(value);
-    }
-
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         value = in.readLong();
@@ -129,11 +123,6 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
 
     void deserialize(final ReadableSequentialData in) {
         value = in.readLong();
-    }
-
-    @Deprecated
-    void deserialize(final ByteBuffer buffer) {
-        value = buffer.getLong();
     }
 
     /** {@inheritDoc} */
@@ -161,11 +150,6 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
      */
     boolean equalsTo(final BufferedData buffer) {
         return buffer.readLong() == this.value;
-    }
-
-    @Deprecated
-    boolean equalsTo(final ByteBuffer buffer, final int version) {
-        return buffer.getLong() == this.value;
     }
 
     /** {@inheritDoc} */

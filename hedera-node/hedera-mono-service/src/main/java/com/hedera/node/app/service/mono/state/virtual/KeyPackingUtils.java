@@ -20,7 +20,6 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -84,12 +83,6 @@ public class KeyPackingUtils {
             throws IOException {
         for (int b = numNonZero - 1; b >= 0; b--) {
             out.write(extractByte(packed, b));
-        }
-    }
-
-    static void serializePackedBytesToBuffer(final int[] packed, final byte numNonZero, final ByteBuffer out) {
-        for (int b = numNonZero - 1; b >= 0; b--) {
-            out.put(extractByte(packed, b));
         }
     }
 
