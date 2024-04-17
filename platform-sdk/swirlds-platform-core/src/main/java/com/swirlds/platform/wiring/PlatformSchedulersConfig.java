@@ -53,9 +53,8 @@ import java.time.Duration;
  * @param pcesWriterSchedulerType                           the preconsensus event writer scheduler type
  * @param pcesWriterUnhandledCapacity                       number of unhandled tasks allowed in the preconsensus event
  *                                                          writer scheduler
- * @param pcesSequencerSchedulerType                        the preconsensus event sequencer scheduler type
- * @param pcesSequencerUnhandledTaskCapacity                number of unhandled tasks allowed in the preconsensus event
- *                                                          sequencer scheduler
+ * @param pcesSequencer                                     configuration for the preconsensus event sequencer
+ *                                                          scheduler
  * @param applicationTransactionPrehandlerSchedulerType     the application transaction prehandler scheduler type
  * @param applicationTransactionPrehandlerUnhandledCapacity number of unhandled tasks allowed for the application
  *                                                          transaction prehandler
@@ -112,8 +111,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType pcesWriterSchedulerType,
         @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity,
-        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType pcesSequencerSchedulerType,
-        @ConfigProperty(defaultValue = "-1") int pcesSequencerUnhandledTaskCapacity,
+        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration pcesSequencer,
         @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
         @ConfigProperty(defaultValue = "500") int applicationTransactionPrehandlerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType stateSignatureCollectorSchedulerType,

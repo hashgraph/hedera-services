@@ -75,13 +75,11 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
-import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -519,8 +517,6 @@ public class SwirldsPlatform implements Platform {
         final ConsensusRoundHandler consensusRoundHandler =
                 new ConsensusRoundHandler(platformContext, swirldStateManager, platformStatusManager, appVersion);
 
-        final PcesSequencer sequencer = new DefaultPcesSequencer();
-
         final LongSupplier intakeQueueSizeSupplier =
                 oldStyleIntakeQueue == null ? platformWiring.getIntakeQueueSizeSupplier() : oldStyleIntakeQueue::size;
         blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
@@ -554,7 +550,6 @@ public class SwirldsPlatform implements Platform {
                 pcesReplayer,
                 pcesWriter,
                 shadowGraph,
-                sequencer,
                 stateSignatureCollector,
                 transactionPrehandler,
                 eventWindowManager,

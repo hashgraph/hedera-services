@@ -88,6 +88,7 @@ class PlatformWiringTests {
                 .withInOrderLinker(mock(InOrderLinker.class))
                 .withConsensusEngine(mock(ConsensusEngine.class))
                 .withConsensusEventStream(mock(ConsensusEventStream.class))
+                .withPcesSequencer(mock(PcesSequencer.class))
                 .withRoundDurabilityBuffer(mock(RoundDurabilityBuffer.class));
 
         wiring.bind(
@@ -97,7 +98,6 @@ class PlatformWiringTests {
                 mock(PcesReplayer.class),
                 mock(PcesWriter.class),
                 mock(Shadowgraph.class),
-                mock(PcesSequencer.class),
                 mock(StateSignatureCollector.class),
                 mock(TransactionPrehandler.class),
                 mock(EventWindowManager.class),
