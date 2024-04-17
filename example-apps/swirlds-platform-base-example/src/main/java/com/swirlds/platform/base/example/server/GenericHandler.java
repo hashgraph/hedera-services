@@ -65,7 +65,7 @@ public class GenericHandler<T> implements HttpHandlerDefinition {
     }
 
     @Override
-    public void handle(HttpExchange exchange) {
+    public void handle(final @NonNull HttpExchange exchange) {
         try {
 
             final String requestMethod = exchange.getRequestMethod();

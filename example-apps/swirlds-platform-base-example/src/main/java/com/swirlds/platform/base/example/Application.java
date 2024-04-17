@@ -19,9 +19,9 @@ package com.swirlds.platform.base.example;
 import com.swirlds.platform.base.example.ext.BaseContext;
 import com.swirlds.platform.base.example.ext.BaseContextFactory;
 import com.swirlds.platform.base.example.jdkmetrics.JVMInternalMetrics;
-import com.swirlds.platform.base.example.metricsample.MetricsSampleHandlerFactory;
+import com.swirlds.platform.base.example.metricsample.MetricsSampleHandlerRegistry;
 import com.swirlds.platform.base.example.server.Server;
-import com.swirlds.platform.base.example.store.StoreExampleHandlerFactory;
+import com.swirlds.platform.base.example.store.StoreExampleHandlerRegistry;
 import java.io.IOException;
 
 /**
@@ -33,6 +33,6 @@ public class Application {
         final BaseContext baseContext = BaseContextFactory.create();
         // Add JDK metrics to track memory, cpu, etc
         JVMInternalMetrics.registerMetrics(baseContext.metrics());
-        Server.start(baseContext, new StoreExampleHandlerFactory(), new MetricsSampleHandlerFactory());
+        Server.start(baseContext, new StoreExampleHandlerRegistry(), new MetricsSampleHandlerRegistry());
     }
 }

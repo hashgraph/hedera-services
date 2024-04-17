@@ -39,14 +39,15 @@ public class Server {
     /**
      * Creates and starts a Http server with a set of defined handlers
      */
-    public static void start(final @NonNull BaseContext context, HttpHandlerFactory... factories) throws IOException {
+    public static void start(final @NonNull BaseContext context, final @NonNull HttpHandlerRegistry... registries)
+            throws IOException {
         final BaseExampleRestApiConfig config = context.configuration().getConfigData(BaseExampleRestApiConfig.class);
         // Create HTTP server instance
         final HttpServerProvider provider = HttpServerProvider.provider();
         final HttpServer server = provider.createHttpServer(new InetSocketAddress(config.host(), config.port()), 0);
 
-        Arrays.stream(factories)
-                .map(f -> f.initAndCreate(context))
+        Arrays.stream(registries)
+                .map(f -> f.handlers(context))
                 .flatMap(Set::stream)
                 .forEach(h -> {
                     final String url = config.basePath() + "/" + h.path();

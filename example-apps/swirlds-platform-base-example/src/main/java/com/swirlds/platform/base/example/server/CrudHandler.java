@@ -31,7 +31,8 @@ public class CrudHandler<T> extends GenericHandler<T> {
      * @param context {@link BaseContext} to use
      * @param service the delegated {@link CrudService}
      */
-    public CrudHandler(@NonNull final String path, @NonNull final BaseContext context, final CrudService<T> service) {
+    public CrudHandler(
+            @NonNull final String path, @NonNull final BaseContext context, @NonNull final CrudService<T> service) {
         super(path, context, service.getResultType());
         this.setDeleteHandler(service::delete);
         this.setPostHandler(service::create);

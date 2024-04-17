@@ -27,8 +27,8 @@ public class GetHandler<T> extends GenericHandler<T> {
     public GetHandler(
             @NonNull final String path,
             @NonNull final BaseContext context,
-            Class<T> consumeType,
-            final GetHandler getHandler) {
+            @NonNull final Class<T> consumeType,
+            @NonNull final GetHandler getHandler) {
         super(path, context, consumeType);
         setGetHandler(getHandler);
     }

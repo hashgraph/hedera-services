@@ -19,7 +19,7 @@ package com.swirlds.platform.base.example.store;
 import com.swirlds.platform.base.example.ext.BaseContext;
 import com.swirlds.platform.base.example.server.CrudHandler;
 import com.swirlds.platform.base.example.server.HttpHandlerDefinition;
-import com.swirlds.platform.base.example.server.HttpHandlerFactory;
+import com.swirlds.platform.base.example.server.HttpHandlerRegistry;
 import com.swirlds.platform.base.example.store.metrics.StoreExampleMetrics;
 import com.swirlds.platform.base.example.store.service.InventoryService;
 import com.swirlds.platform.base.example.store.service.ItemService;
@@ -32,11 +32,11 @@ import java.util.Set;
 /**
  * Creates all HttpHandlers to expose Store-Rest-Api operations
  */
-public class StoreExampleHandlerFactory implements HttpHandlerFactory {
+public class StoreExampleHandlerRegistry implements HttpHandlerRegistry {
 
     @NonNull
     @Override
-    public Set<HttpHandlerDefinition> initAndCreate(@NonNull BaseContext context) {
+    public Set<HttpHandlerDefinition> handlers(@NonNull final BaseContext context) {
 
         StoreExampleMetrics.registerMetrics(context.metrics());
         InitialData.populate();

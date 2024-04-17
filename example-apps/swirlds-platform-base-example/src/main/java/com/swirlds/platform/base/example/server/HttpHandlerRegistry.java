@@ -20,8 +20,8 @@ import com.swirlds.platform.base.example.ext.BaseContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
-public interface HttpHandlerFactory {
+public interface HttpHandlerRegistry {
 
     @NonNull
-    Set<HttpHandlerDefinition> initAndCreate(@NonNull BaseContext context);
+    Set<HttpHandlerDefinition> handlers(@NonNull BaseContext context);
 }
