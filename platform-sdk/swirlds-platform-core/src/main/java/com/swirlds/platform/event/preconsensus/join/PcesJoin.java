@@ -50,5 +50,10 @@ public interface PcesJoin {
     @NonNull
     List<ConsensusRound> addRound(@NonNull ConsensusRound round);
 
+    /**
+     * Clear all internal data, resetting this object to its initial state.
+     */
+    void clear();
+
     // TODO perhaps add a slow heartbeat that logs an error if we have held a state for too long
 }

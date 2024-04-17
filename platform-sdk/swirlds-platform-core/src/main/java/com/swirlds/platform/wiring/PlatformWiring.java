@@ -259,21 +259,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
 
         signedStateHasherWiring = StateHasherWiring.create(schedulers.stateHasherScheduler());
 
-        platformCoordinator = new PlatformCoordinator(
-                hashingObjectCounter,
-                internalEventValidatorWiring,
-                eventDeduplicatorWiring,
-                eventSignatureValidatorWiring,
-                orphanBufferWiring,
-                inOrderLinkerWiring,
-                shadowgraphWiring,
-                consensusEngineWiring,
-                eventCreationManagerWiring,
-                applicationTransactionPrehandlerWiring,
-                stateSignatureCollectorWiring,
-                consensusRoundHandlerWiring,
-                signedStateHasherWiring);
-
         pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
         pcesWriterWiring = PcesWriterWiring.create(schedulers.pcesWriterScheduler());
         pcesJoinWiring = new ComponentWiring<>(model, PcesJoin.class, config.pcesJoin());
@@ -342,6 +327,22 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                 new ComponentWiring<>(model, StateGarbageCollector.class, config.stateGarbageCollector());
 
         runningEventHasherWiring = new ComponentWiring<>(model, RunningEventHasher.class, config.runningEventHasher());
+
+        platformCoordinator = new PlatformCoordinator(
+                hashingObjectCounter,
+                internalEventValidatorWiring,
+                eventDeduplicatorWiring,
+                eventSignatureValidatorWiring,
+                orphanBufferWiring,
+                inOrderLinkerWiring,
+                shadowgraphWiring,
+                consensusEngineWiring,
+                eventCreationManagerWiring,
+                applicationTransactionPrehandlerWiring,
+                stateSignatureCollectorWiring,
+                consensusRoundHandlerWiring,
+                pcesJoinWiring,
+                signedStateHasherWiring);
 
         wire();
     }
@@ -564,6 +565,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventWindowManagerWiring.getInputWire(EventWindowManager::updateEventWindow);
         orphanBufferWiring.getInputWire(OrphanBuffer::clear);
         inOrderLinkerWiring.getInputWire(InOrderLinker::clear);
+        pcesJoinWiring.getInputWire(PcesJoin::clear);
     }
 
     /**

@@ -82,4 +82,13 @@ public class DefaultPcesJoin implements PcesJoin {
     private static long getKeystoneSequence(@NonNull final ConsensusRound consensusRound) {
         return consensusRound.getKeystoneEvent().getBaseEvent().getStreamSequenceNumber();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clear() {
+        durableSequenceNumber = -1;
+        rounds.clear();
+    }
 }
