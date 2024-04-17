@@ -28,7 +28,7 @@ import java.util.Random;
 /**
  * An extension of the Random class that provides additional utility methods for generating random data.
  */
-public class Randotron extends Random {
+public final class Randotron extends Random {
     private final long seed;
 
     /**
