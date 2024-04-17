@@ -20,7 +20,6 @@ import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.swirlds.common.test.fixtures.DummySystemTransaction;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils;
@@ -43,23 +42,11 @@ class SystemTransactionExtractionUtilsTests {
         final Random r = RandomUtils.getRandomPrintSeed();
         final List<ScopedSystemTransaction<StateSignaturePayload>> transactions = new ArrayList<>();
         assertNull(SystemTransactionExtractionUtils.extractFromEvent(
-                new TestingEventBuilder(r)
-                        .setSystemTransactionCount(0)
-                        .build(),
-                StateSignaturePayload.class)
-        );
+                new TestingEventBuilder(r).setSystemTransactionCount(0).build(), StateSignaturePayload.class));
         transactions.addAll(Objects.requireNonNull(SystemTransactionExtractionUtils.extractFromEvent(
-                new TestingEventBuilder(r)
-                        .setSystemTransactionCount(1)
-                        .build(),
-                StateSignaturePayload.class))
-        );
+                new TestingEventBuilder(r).setSystemTransactionCount(1).build(), StateSignaturePayload.class)));
         transactions.addAll(Objects.requireNonNull(SystemTransactionExtractionUtils.extractFromEvent(
-                new TestingEventBuilder(r)
-                        .setSystemTransactionCount(2)
-                        .build(),
-                StateSignaturePayload.class))
-        );
+                new TestingEventBuilder(r).setSystemTransactionCount(2).build(), StateSignaturePayload.class)));
 
         assertEquals(3, transactions.size(), "incorrect number of transactions returned");
     }
@@ -70,11 +57,11 @@ class SystemTransactionExtractionUtilsTests {
         final Random r = RandomUtils.getRandomPrintSeed();
         final List<ScopedSystemTransaction<StateSignaturePayload>> transactions = new ArrayList<>();
         assertNull(
-                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r,0, 0), StateSignaturePayload.class));
+                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r, 0, 0), StateSignaturePayload.class));
         transactions.addAll(
-                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r,1, 1), StateSignaturePayload.class));
+                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r, 1, 1), StateSignaturePayload.class));
         transactions.addAll(
-                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r,2, 2), StateSignaturePayload.class));
+                SystemTransactionExtractionUtils.extractFromRound(newDummyRound(r, 2, 2), StateSignaturePayload.class));
 
         assertEquals(5, transactions.size(), "incorrect number of transactions returned");
     }

@@ -46,7 +46,8 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
     @Deprecated
     byte[] getContents();
 
-    @Nullable OneOf<EventPayload.PayloadOneOfType> getPayload();
+    @Nullable
+    OneOf<EventPayload.PayloadOneOfType> getPayload();
 
     /**
      * Get the size of the transaction
