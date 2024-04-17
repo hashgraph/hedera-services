@@ -17,6 +17,7 @@
 package com.swirlds.platform.event.stream;
 
 import static com.swirlds.base.units.UnitConstants.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EVENT_STREAM;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.INFO_CATEGORY;
@@ -37,8 +38,8 @@ import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -55,8 +56,8 @@ import org.apache.logging.log4j.Logger;
  * This class is used for generating event stream files when enableEventStreaming is true, and for calculating
  * runningHash for consensus Events.
  */
-public class DefaultEventStreamManager implements EventStreamManager {
-    private static final Logger logger = LogManager.getLogger(DefaultEventStreamManager.class);
+public class DefaultConsensusEventStream implements ConsensusEventStream {
+    private static final Logger logger = LogManager.getLogger(DefaultConsensusEventStream.class);
 
     /**
      * receives consensus events from ConsensusRoundHandler.addEvent(), then passes to hashQueueThread and
@@ -94,39 +95,30 @@ public class DefaultEventStreamManager implements EventStreamManager {
 
     /**
      * @param platformContext          the platform context
-     * @param time                     provides wall clock time
-     * @param threadManager            responsible for managing thread lifecycles
      * @param selfId                   the id of this node
      * @param signer                   an object that can sign things
      * @param nodeName                 name of this node
-     * @param enableEventStreaming     whether write event stream files or not
-     * @param eventsLogDir             eventStream files will be generated in this directory
-     * @param eventsLogPeriod          period of generating eventStream file
-     * @param eventStreamQueueCapacity the capacity of the queue
      * @param isLastEventInFreezeCheck a predicate which checks whether this event is the last event before restart
      */
-    public DefaultEventStreamManager(
+    public DefaultConsensusEventStream(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
-            @NonNull final ThreadManager threadManager,
             @NonNull final NodeId selfId,
             @NonNull final Signer signer,
             @NonNull final String nodeName,
-            final boolean enableEventStreaming,
-            @NonNull final String eventsLogDir,
-            final long eventsLogPeriod,
-            final int eventStreamQueueCapacity,
             @NonNull final Predicate<EventImpl> isLastEventInFreezeCheck) {
         Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(time);
-        Objects.requireNonNull(threadManager);
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(signer);
         Objects.requireNonNull(nodeName);
-        Objects.requireNonNull(eventsLogDir);
         Objects.requireNonNull(isLastEventInFreezeCheck);
 
-        eventAfterFreezeLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        eventAfterFreezeLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
+
+        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+        final boolean enableEventStreaming = eventConfig.enableEventStreaming();
+        final String eventsLogDir = eventConfig.eventsLogDir();
+        final long eventsLogPeriod = eventConfig.eventsLogPeriod();
+        final int eventStreamQueueCapacity = eventConfig.eventStreamQueueCapacity();
 
         if (enableEventStreaming) {
             // the directory to which event stream files are written
@@ -147,7 +139,7 @@ public class DefaultEventStreamManager implements EventStreamManager {
                     false,
                     EventStreamType.getInstance());
 
-            writeQueueThread = new QueueThreadObjectStreamConfiguration<EventImpl>(threadManager)
+            writeQueueThread = new QueueThreadObjectStreamConfiguration<EventImpl>(getStaticThreadManager())
                     .setNodeId(selfId)
                     .setComponent("event-stream")
                     .setThreadName("write-queue")
@@ -177,7 +169,7 @@ public class DefaultEventStreamManager implements EventStreamManager {
         // receives consensus events from hashQueueThread, calculates this event's Hash, then passes to
         // runningHashCalculator
         final HashCalculatorForStream<EventImpl> hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
-        hashQueueThread = new QueueThreadObjectStreamConfiguration<EventImpl>(threadManager)
+        hashQueueThread = new QueueThreadObjectStreamConfiguration<EventImpl>(getStaticThreadManager())
                 .setNodeId(selfId)
                 .setComponent("event-stream")
                 .setThreadName("hash-queue")
@@ -199,7 +191,7 @@ public class DefaultEventStreamManager implements EventStreamManager {
      *                                 passes to nextStreams
      * @param isLastEventInFreezeCheck a predicate which checks whether this event is the last event before restart
      */
-    public DefaultEventStreamManager(
+    public DefaultConsensusEventStream(
             @NonNull final Time time,
             @NonNull final MultiStream<EventImpl> multiStream,
             @NonNull final Predicate<EventImpl> isLastEventInFreezeCheck) {

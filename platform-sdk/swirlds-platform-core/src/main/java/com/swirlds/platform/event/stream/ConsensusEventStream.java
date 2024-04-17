@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Generates event stream files when enableEventStreaming is true, and calculates runningHash for consensus Events.
  */
-public interface EventStreamManager {
+public interface ConsensusEventStream {
 
     /**
      * Adds a list of events to the event stream.
