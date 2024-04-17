@@ -27,7 +27,7 @@ import com.google.protobuf.Message;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.spec.utilops.mod.BodyModification;
+import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -145,7 +145,7 @@ public class TxnFactory {
     public Transaction.Builder getReadyToSign(
             Consumer<TransactionBody.Builder> bodySpec,
             @Nullable final HapiSpec spec,
-            @Nullable final BodyModification modification) {
+            @Nullable final BodyMutation modification) {
         Consumer<TransactionBody.Builder> composedBodySpec = defaultBodySpec().andThen(bodySpec);
         TransactionBody.Builder bodyBuilder = TransactionBody.newBuilder();
         composedBodySpec.accept(bodyBuilder);

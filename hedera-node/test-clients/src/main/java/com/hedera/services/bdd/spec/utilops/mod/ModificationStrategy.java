@@ -20,9 +20,12 @@ import com.google.protobuf.Descriptors;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A strategy for determining whether a given field should be modified, and if so, how.
+ * A strategy for determining whether a field is one of the modification strategy's
+ * target; and if so, how it should be modified.
+ *
+ * @param <T> the type of modifications used by the strategy
  */
-public interface ModificationStrategy {
+public interface ModificationStrategy<T> {
     /**
      * Returns whether the given field should be modified.
      *
@@ -40,5 +43,5 @@ public interface ModificationStrategy {
      * @return the modification
      */
     @NonNull
-    Modification modificationForTarget(@NonNull Descriptors.FieldDescriptor descriptor, int encounterIndex);
+    T modificationForTarget(@NonNull Descriptors.FieldDescriptor descriptor, int encounterIndex);
 }

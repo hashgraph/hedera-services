@@ -22,6 +22,8 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,19 +34,68 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
+/**
+ * Helpers for creating and using {@link TxnModificationStrategy} and
+ * {@link QueryModificationStrategy} instances in {@link HapiSpec}s.
+ *
+ */
 public class ModificationUtils {
     private ModificationUtils() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static Function<Transaction, List<Modification>> withSuccessivelyVariedIds() {
-        return withStrategies(List.of(new IdClearingStrategy()));
+    /**
+     * Returns a factory that computes a list of {@link TxnModification}s from a
+     * {@link Transaction}, where these modifications focus on mutating entity ids.
+     * The default entity id modification strategies are:
+     * <ul>
+     *     <li>{@link BodyIdClearingStrategy} - which one at a time clears any
+     *     entity id set in the {@link TransactionBody}.</li>
+     * </ul>
+     *
+     * @return the default entity id modifications factory for transactions
+     */
+    public static Function<Transaction, List<TxnModification>> withSuccessivelyVariedBodyIds() {
+        return withTxnModificationStrategies(List.of(new BodyIdClearingStrategy()));
     }
 
-    public static Function<Transaction, List<Modification>> withStrategies(
-            @NonNull final List<ModificationStrategy> strategies) {
+    /**
+     * Returns a factory that computes a list of {@link QueryModification}s from a
+     * {@link Query}, where these modifications focus on mutating entity ids.
+     * The default entity id modification strategies are:
+     * <ul>
+     *     <li>{@link QueryIdClearingStrategy} - which one at a time clears any
+     *     entity id set in the {@link Query}.</li>
+     * </ul>
+     *
+     * @return the default entity id modifications factory for queries
+     */
+    public static Function<Query, List<QueryModification>> withSuccessivelyVariedQueryIds() {
+        return withQueryModificationStrategies(List.of(new QueryIdClearingStrategy()));
+    }
+
+    /**
+     * Returns a factory that computes a list of {@link QueryModification}s from a
+     * {@link Query}, where these modifications are derived from a given list of
+     * {@link QueryModificationStrategy} implementations.
+     *
+     * @return the modifications factory for queries based on the given strategies
+     */
+    public static Function<Query, List<QueryModification>> withQueryModificationStrategies(
+            @NonNull final List<QueryModificationStrategy> strategies) {
+        return query -> modificationsFor(query, strategies);
+    }
+
+    /**
+     * Returns a factory that computes a list of {@link TxnModification}s from a
+     * {@link TransactionBody}, where these modifications are derived from a given list of
+     * {@link TxnModificationStrategy} implementations.
+     *
+     * @return the modifications factory for transactions based on the given strategies
+     */
+    public static Function<Transaction, List<TxnModification>> withTxnModificationStrategies(
+            @NonNull final List<TxnModificationStrategy> strategies) {
         return transaction -> {
             final TransactionBody body;
             try {
@@ -52,28 +103,7 @@ public class ModificationUtils {
             } catch (InvalidProtocolBufferException e) {
                 throw new IllegalArgumentException(e);
             }
-            final List<Modification> modifications = new ArrayList<>();
-            for (final var strategy : strategies) {
-                final var targetFields = getTargetFields(body.toBuilder(), strategy::hasTarget);
-                final Map<String, AtomicInteger> occurrenceCounts = new HashMap<>();
-                modifications.addAll(targetFields.stream()
-                        .map(field -> {
-                            final var encounterIndex = occurrenceCounts
-                                    .computeIfAbsent(field.getFullName(), k -> new AtomicInteger(0))
-                                    .getAndIncrement();
-                            return strategy.modificationForTarget(field, encounterIndex);
-                        })
-                        .toList());
-            }
-            return modifications;
-        };
-    }
-
-    public static BodyModification specAgnosticMod(@NonNull final UnaryOperator<TransactionBody> operator) {
-        return (builder, spec) -> {
-            final var body = builder.build();
-            final var modifiedBody = operator.apply(body);
-            return modifiedBody.toBuilder();
+            return modificationsFor(body, strategies);
         };
     }
 
@@ -81,6 +111,24 @@ public class ModificationUtils {
             @NonNull final T message, @NonNull final Descriptors.FieldDescriptor descriptor, final int targetIndex) {
         final var currentIndex = new AtomicInteger(0);
         return withClearedField(message, descriptor, targetIndex, currentIndex);
+    }
+
+    private static <T, M extends ModificationStrategy<T>> List<T> modificationsFor(
+            @NonNull final GeneratedMessageV3 message, @NonNull final List<M> strategies) {
+        final List<T> modifications = new ArrayList<>();
+        for (final var strategy : strategies) {
+            final var targetFields = getTargetFields(message.toBuilder(), strategy::hasTarget);
+            final Map<String, AtomicInteger> occurrenceCounts = new HashMap<>();
+            modifications.addAll(targetFields.stream()
+                    .map(field -> {
+                        final var encounterIndex = occurrenceCounts
+                                .computeIfAbsent(field.getFullName(), k -> new AtomicInteger(0))
+                                .getAndIncrement();
+                        return strategy.modificationForTarget(field, encounterIndex);
+                    })
+                    .toList());
+        }
+        return modifications;
     }
 
     private static <T extends GeneratedMessageV3> T withClearedField(

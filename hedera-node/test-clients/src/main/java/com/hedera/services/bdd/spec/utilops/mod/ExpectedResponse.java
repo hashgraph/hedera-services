@@ -26,6 +26,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.Set;
 
+/**
+ * Encapsulates the expected response to a transaction; if the set of permissible
+ * prechecks is left null, it is assumed to contain only {@link ResponseCodeEnum#OK}.
+ *
+ * @param permissiblePrechecks a set of failure statuses if the transaction should not make it past ingest
+ * @param permissibleOutcomes a set of permissible status responses at consensus
+ */
 public record ExpectedResponse(
         @Nullable Set<ResponseCodeEnum> permissiblePrechecks, @Nullable Set<ResponseCodeEnum> permissibleOutcomes) {
 

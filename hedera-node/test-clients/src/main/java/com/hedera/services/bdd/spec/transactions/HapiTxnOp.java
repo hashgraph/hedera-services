@@ -55,7 +55,7 @@ import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.stats.TxnObs;
-import com.hedera.services.bdd.spec.utilops.mod.BodyModification;
+import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -824,8 +824,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
-    public T withBodyMod(@Nullable final BodyModification modification) {
-        this.modification = modification;
+    public T withBodyMutation(@Nullable final BodyMutation mutation) {
+        this.bodyMutation = mutation;
         return self();
     }
 

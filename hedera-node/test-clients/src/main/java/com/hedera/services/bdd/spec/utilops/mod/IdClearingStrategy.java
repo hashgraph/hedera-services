@@ -16,21 +16,6 @@
 
 package com.hedera.services.bdd.spec.utilops.mod;
 
-import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.specAgnosticMod;
-import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withClearedField;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-import static java.util.Map.entry;
-import static java.util.Objects.requireNonNull;
-
 import com.google.protobuf.Descriptors;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -38,37 +23,14 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
 
-public class IdClearingStrategy implements ModificationStrategy {
-    private static final Map<String, ExpectedResponse> CLEARED_ID_RESPONSES = Map.ofEntries(
-            entry("proto.TransactionID.accountID", ExpectedResponse.atIngest(PAYER_ACCOUNT_NOT_FOUND)),
-            entry("proto.TransactionBody.nodeAccountID", ExpectedResponse.atIngest(INVALID_NODE_ACCOUNT)),
-            // (FUTURE) Switch to expecting any "atIngest()" response below to atConsensus()
-            entry("proto.TokenAssociateTransactionBody.account", ExpectedResponse.atIngest(INVALID_ACCOUNT_ID)),
-            entry(
-                    "proto.TokenAssociateTransactionBody.tokens",
-                    ExpectedResponse.atConsensusOneOf(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
-            entry(
-                    "proto.AccountAmount.accountID",
-                    ExpectedResponse.atIngestOneOf(INVALID_ACCOUNT_ID, INVALID_TRANSFER_ACCOUNT_ID)),
-            entry("proto.NftTransfer.senderAccountID", ExpectedResponse.atIngest(INVALID_TRANSFER_ACCOUNT_ID)),
-            entry("proto.NftTransfer.receiverAccountID", ExpectedResponse.atIngest(INVALID_TRANSFER_ACCOUNT_ID)),
-            entry("proto.TokenTransferList.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
-            entry(
-                    "proto.CryptoUpdateTransactionBody.accountIDToUpdate",
-                    ExpectedResponse.atIngest(ACCOUNT_ID_DOES_NOT_EXIST)),
-            entry("proto.CryptoUpdateTransactionBody.staked_account_id", ExpectedResponse.atConsensus(SUCCESS)),
-            entry("proto.ContractCallTransactionBody.contractID", ExpectedResponse.atIngest(INVALID_CONTRACT_ID)),
-            entry(
-                    "proto.CryptoDeleteTransactionBody.transferAccountID",
-                    ExpectedResponse.atIngest(ACCOUNT_ID_DOES_NOT_EXIST)),
-            entry(
-                    "proto.CryptoDeleteTransactionBody.deleteAccountID",
-                    ExpectedResponse.atIngest(ACCOUNT_ID_DOES_NOT_EXIST)),
-            entry("proto.ContractCreateTransactionBody.fileID", ExpectedResponse.atConsensus(INVALID_FILE_ID)),
-            entry("proto.ContractCreateTransactionBody.auto_renew_account_id", ExpectedResponse.atConsensus(SUCCESS)));
-
+/**
+ * Implementation support for a {@link ModificationStrategy} that clears
+ * entity ids from a target message.
+ *
+ * @param <T> the type of modification used by the inheriting strategy
+ */
+public abstract class IdClearingStrategy<T> implements ModificationStrategy<T> {
     @Override
     public boolean hasTarget(@NonNull Descriptors.FieldDescriptor fieldDescriptor, @NonNull Object value) {
         return value instanceof AccountID
@@ -76,16 +38,5 @@ public class IdClearingStrategy implements ModificationStrategy {
                 || value instanceof FileID
                 || value instanceof TokenID
                 || value instanceof TopicID;
-    }
-
-    @NonNull
-    @Override
-    public Modification modificationForTarget(@NonNull Descriptors.FieldDescriptor descriptor, int encounterIndex) {
-        final var expectedResponse = CLEARED_ID_RESPONSES.get(descriptor.getFullName());
-        requireNonNull(expectedResponse, "No expected response for field " + descriptor.getFullName());
-        return new Modification(
-                "Clearing field " + descriptor.getFullName() + " (#" + encounterIndex + ")",
-                specAgnosticMod(b -> withClearedField(b, descriptor, encounterIndex)),
-                expectedResponse);
     }
 }
