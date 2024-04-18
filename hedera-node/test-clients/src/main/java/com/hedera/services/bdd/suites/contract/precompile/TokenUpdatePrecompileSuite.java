@@ -384,6 +384,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoTransfer(moving(500, TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+
+                        // Try updating token name
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenName",
@@ -413,6 +415,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try updating token symbol
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenSymbol",
@@ -442,6 +446,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try updating token memo
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenMemo",
@@ -471,6 +477,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try updating token treasury
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenTreasury",
@@ -500,6 +508,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try updating auto-renew account
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenAutoRenewAccount",
@@ -529,6 +539,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try updating auto-renew period
                         contractCall(
                                         tokenInfoUpdateContract,
                                         "updateTokenAutoRenewPeriod",
@@ -558,6 +570,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try update token admin key
                         contractCall(
                                         tokenInfoUpdateContract,
                                         updateToEdKey,
@@ -623,6 +637,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try update token kyc key
                         contractCall(
                                         tokenInfoUpdateContract,
                                         updateToEdKey,
@@ -688,6 +704,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try update token freeze key
                         contractCall(
                                         tokenInfoUpdateContract,
                                         updateToEdKey,
@@ -753,6 +771,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try update token wipe key
                         contractCall(
                                         tokenInfoUpdateContract,
                                         updateToEdKey,
@@ -818,6 +838,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasSupplyKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try update token supply key
                         contractCall(
                                         tokenInfoUpdateContract,
                                         updateToEdKey,
@@ -884,6 +906,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasPauseKey(MULTI_KEY)
                                 .hasFeeScheduleKey(MULTI_KEY)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try update token fee schedule key
                         contractCall(
                                         tokenInfoUpdateContract,
                                         updateToEdKey,
@@ -949,6 +973,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasSupplyKey(contractIdKey)
                                 .hasFeeScheduleKey(contractIdKey)
                                 .hasPauseKey(MULTI_KEY),
+
+                        // Try update token pause key
                         contractCall(
                                         tokenInfoUpdateContract,
                                         updateToEdKey,
