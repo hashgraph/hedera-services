@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.hapi.utils.ethereum;
 
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.DETERMINISTIC_DEPLOYER_TRANSACTION;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -29,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -532,5 +535,36 @@ class EthTxDataTest {
                 assertTrue(testTransaction.getMaxGasAsBigInteger().compareTo(BigInteger.ZERO) > 0);
             }
         }
+    }
+
+    @Test
+    void maxGasForDeterministicDeployerIsAsExpected() {
+        final var oneByte = new byte[] {1};
+        // 45 tinybar as weibar
+        final var smallGasPrice = Hex.decode("68c6171400");
+        final var type = EthTransactionType.LEGACY_ETHEREUM;
+        final EthTxData testTransaction = new EthTxData(
+                DETERMINISTIC_DEPLOYER_TRANSACTION,
+                type,
+                oneByte,
+                1,
+                smallGasPrice,
+                smallGasPrice,
+                smallGasPrice,
+                1,
+                oneByte,
+                BigInteger.ONE,
+                oneByte,
+                oneByte,
+                1,
+                oneByte,
+                oneByte,
+                oneByte);
+        assertTrue(testTransaction
+                        .getMaxGasAsBigInteger()
+                        .compareTo(BigInteger.valueOf(45)
+                                .multiply(BigInteger.valueOf(DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER))
+                                .multiply(WEIBARS_TO_TINYBARS))
+                == 0);
     }
 }
