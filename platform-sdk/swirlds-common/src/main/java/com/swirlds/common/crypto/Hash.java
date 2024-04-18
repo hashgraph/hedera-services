@@ -18,6 +18,7 @@ package com.swirlds.common.crypto;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.Mnemonics.generateMnemonic;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.SerializableWithKnownLength;
@@ -192,8 +193,8 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        assert digestType != null;
-        assert value != null;
+        requireNonNull(digestType, "digestType");
+        requireNonNull(value, "value");
         out.writeInt(digestType.id());
         out.writeByteArray(value);
     }
