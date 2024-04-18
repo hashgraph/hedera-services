@@ -134,7 +134,7 @@ Legend of the symbols used in the tables below:
      - fail, if the address is a contract, and we are **not** using the correct ABI.
    - **Hedera:** success with no op.
 
-_Please note that the expected behavior above is valid considering there is no `value` passed. If there is `value`, this falls in the next section._
+_Please note that the expected behavior above is valid considering there is no `value` passed. If there is `value`, this falls in the next section ("Transfer and send operations")._
 
 | Address                            | Calls in Ethereum (ABI)                                                                                                                                                            | Calls in Hedera (ABI)                                                                                        |
 |------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
