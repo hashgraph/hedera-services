@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,8 @@
 package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -29,12 +27,11 @@ import java.util.List;
 public interface TokenRejectRecordBuilder extends SingleTransactionRecordBuilder {
 
     /**
-     * Tracks the token transfers that are transfered from the payer account to the token treasuries,
-     * for both fungible and non-fungible types
+     * Tracks token transfers from the payer account to the treasuries as a result of TokenReject transaction,
+     * applicable for both fungible and non-fungible tokens.
      *
-     * @param tokenTransferLists the net list of token transfers to the token treasuries.
-     *
-     * @return this builder
+     * @param tokenTransferLists A list of {@link TokenTransferList} objects detailing the transfers for each token.
+     * @return this builder.
      */
     @NonNull
     TokenRejectRecordBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists);
