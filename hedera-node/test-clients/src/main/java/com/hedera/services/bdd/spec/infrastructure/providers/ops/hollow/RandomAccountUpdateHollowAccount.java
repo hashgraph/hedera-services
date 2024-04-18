@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,53 +14,41 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
+package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static java.util.Collections.EMPTY_LIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
-import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountUpdate;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoUpdate;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
 import java.util.Optional;
 
-public class RandomAccountUpdate implements OpProvider {
-    protected final EntityNameProvider<Key> keys;
-    protected final EntityNameProvider<AccountID> accounts;
+public class RandomAccountUpdateHollowAccount extends RandomAccountUpdate {
+    private final String[] signers;
 
-    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
-
-    public RandomAccountUpdate(EntityNameProvider<Key> keys, EntityNameProvider<AccountID> accounts) {
-        this.keys = keys;
-        this.accounts = accounts;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return EMPTY_LIST;
+    public RandomAccountUpdateHollowAccount(
+            EntityNameProvider<Key> keys, EntityNameProvider<AccountID> accounts, String... signers) {
+        super(keys, accounts);
+        this.signers = signers;
     }
 
     @Override
     public Optional<HapiSpecOperation> get() {
         final var target = accounts.getQualifying();
-        final var newKey = keys.getQualifying();
-        if (target.isEmpty() || newKey.isEmpty()) {
+        if (target.isEmpty()) {
             return Optional.empty();
         }
-
+        final var newKey = keys.getQualifying();
         HapiCryptoUpdate op = cryptoUpdate(target.get())
                 .key(newKey.get())
-                .payingWith(newKey.get())
-                .signedBy(newKey.get())
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasKnownStatusFrom(INVALID_SIGNATURE)
+                .signedBy(signers);
+
         return Optional.of(op);
     }
 }

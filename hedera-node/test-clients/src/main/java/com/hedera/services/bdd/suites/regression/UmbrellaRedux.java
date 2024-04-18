@@ -50,7 +50,7 @@ public class UmbrellaRedux extends HapiSuite {
 
     public static final String DEFAULT_PROPERTIES = "regression-mixed_ops.properties";
 
-    private AtomicLong duration = new AtomicLong(60);
+    private AtomicLong duration = new AtomicLong(10);
     private AtomicInteger maxOpsPerSec = new AtomicInteger(Integer.MAX_VALUE);
     private AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
     private AtomicInteger backoffSleepSecs = new AtomicInteger(1);

@@ -39,6 +39,7 @@ public class RandomSchedule implements OpProvider {
     private final AtomicInteger opNo = new AtomicInteger();
     private final RegistrySourcedNameProvider<ScheduleID> schedules;
     private final EntityNameProvider<AccountID> accounts;
+
     public final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(UNRESOLVABLE_REQUIRED_SIGNERS, IDENTICAL_SCHEDULE_ALREADY_CREATED);
 
