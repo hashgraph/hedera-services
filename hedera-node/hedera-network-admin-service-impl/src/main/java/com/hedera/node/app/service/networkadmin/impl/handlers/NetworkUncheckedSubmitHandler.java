@@ -50,21 +50,19 @@ public class NetworkUncheckedSubmitHandler implements TransactionHandler {
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
-        // this will never actually get called
-        // because pureChecks will always throw
         requireNonNull(context);
         throw new PreCheckException(NOT_SUPPORTED);
     }
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        throw new PreCheckException(NOT_SUPPORTED);
+        // nothing to do
     }
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         // this will never actually get called
-        // because pureChecks will always throw
+        // because preHandle will always throw
         requireNonNull(context);
         throw new HandleException(NOT_SUPPORTED);
     }
