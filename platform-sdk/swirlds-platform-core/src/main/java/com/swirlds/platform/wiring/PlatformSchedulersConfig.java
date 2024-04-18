@@ -84,6 +84,8 @@ import java.time.Duration;
  *                                                          garbage collector
  * @param platformPublisher                                 configuration for the platform publisher scheduler
  * @param consensusEventStream                              configuration for the consensus event stream scheduler
+ * @param signedStateSentinel                               configuration for the signed state sentinel scheduler
+ * @param signedStateSentinelHeartbeatPeriod                the frequency that heartbeats should be sent to the signed
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -138,7 +140,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration signedStateSentinel,
-        @ConfigProperty(defaultValue = "1000ms") Duration signedStateSentinelHeartbeatPeriod,
+        @ConfigProperty(defaultValue = "10s") Duration signedStateSentinelHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration platformPublisher,
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration consensusEventStream) {}

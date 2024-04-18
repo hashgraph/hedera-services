@@ -18,6 +18,10 @@ package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 
+/**
+ * The {@link SignedStateSentinel} is responsible for observing the lifespans of signed states, and taking action if a
+ * state suspected of a memory leak is observed.
+ */
 public interface SignedStateSentinel {
     /**
      * Check the maximum age of signed states, and take action if a really old state is observed.

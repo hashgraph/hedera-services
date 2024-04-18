@@ -689,7 +689,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         platformPublisherWiring.bind(platformPublisher);
         stateGarbageCollectorWiring.bind(builder.buildStateGarbageCollector());
         signedStateSentinelWiring.bind(builder.buildSignedStateSentinel());
-        stateGarbageCollectorWiring.bind(builder::buildStateGarbageCollector);
     }
 
     /**

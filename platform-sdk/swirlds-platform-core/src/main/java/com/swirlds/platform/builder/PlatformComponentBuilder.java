@@ -634,6 +634,9 @@ public class PlatformComponentBuilder {
 
     /**
      * Build the signed state sentinel if it has not yet been built. If one has been provided via
+     * {@link #withSignedStateSentinel(SignedStateSentinel)}, that sentinel will be used. If this method is called more
+     * than once, only the first call will build the signed state sentinel. Otherwise, the default sentinel will be
+     * created and returned.
      *
      * @return the signed state sentinel
      */

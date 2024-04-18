@@ -102,7 +102,6 @@ class PlatformWiringTests {
                 mock(PcesWriter.class),
                 mock(EventDurabilityNexus.class),
                 mock(Shadowgraph.class),
-                mock(PcesSequencer.class),
                 mock(StateSignatureCollector.class),
                 mock(TransactionPrehandler.class),
                 mock(EventWindowManager.class),

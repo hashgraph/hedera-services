@@ -63,6 +63,9 @@ public class DefaultSignedStateSentinel implements SignedStateSentinel {
      */
     @Override
     public void checkSignedStates() {
+        if (!rateLimiter.request()) {
+            return;
+        }
         final RuntimeObjectRecord objectRecord = RuntimeObjectRegistry.getOldestActiveObjectRecord(SignedState.class);
         if (objectRecord == null) {
             return;
@@ -71,8 +74,7 @@ public class DefaultSignedStateSentinel implements SignedStateSentinel {
         if (CompareTo.isGreaterThan(objectRecord.getAge(time.now()), maxSignedStateAge)
                 && rateLimiter.requestAndTrigger()) {
             final SignedStateHistory history = objectRecord.getMetadata();
-            DefaultSignedStateSentinel.logger.error(
-                    EXCEPTION.getMarker(), "old signed state detected, memory leak probable.\n{}", history);
+            logger.error(EXCEPTION.getMarker(), "old signed state detected, memory leak probable.\n{}", history);
         }
     }
 }
