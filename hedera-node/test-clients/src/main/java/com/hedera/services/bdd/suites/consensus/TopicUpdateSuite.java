@@ -72,6 +72,7 @@ public class TopicUpdateSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
+                pureCheckFails(),
                 validateMultipleFields(),
                 topicUpdateSigReqsEnforcedAtConsensus(),
                 updateSubmitKeyToDiffKey(),
@@ -90,6 +91,14 @@ public class TopicUpdateSuite extends HapiSuite {
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    @HapiTest
+    final HapiSpec pureCheckFails() {
+        return defaultHapiSpec("testTopic")
+                .given()
+                .when()
+                .then(updateTopic("0.0.1").hasPrecheck(INVALID_TOPIC_ID));
     }
 
     @HapiTest
