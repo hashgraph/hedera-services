@@ -243,7 +243,7 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
         eventCreationManagerWiring =
                 new ComponentWiring<>(model, EventCreationManager.class, config.eventCreationManager());
         selfEventSignerWiring = new ComponentWiring<>(model, SelfEventSigner.class, config.selfEventSigner());
-        pcesSequencerWiring = new ComponentWiring<>(model, PcesSequencer.class, schedulers.pcesSequencerScheduler());
+        pcesSequencerWiring = new ComponentWiring<>(model, PcesSequencer.class, config.pcesSequencer());
 
         applicationTransactionPrehandlerWiring = new ComponentWiring<>(
                 model, TransactionPrehandler.class, schedulers.applicationTransactionPrehandlerScheduler());
@@ -605,7 +605,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
      * @param pcesWriter                the PCES writer to bind
      * @param eventDurabilityNexus      the event durability nexus to bind
      * @param shadowgraph               the shadowgraph to bind
-     * @param pcesSequencer             the PCES sequencer to bind
      * @param stateSignatureCollector   the signed state manager to bind
      * @param transactionPrehandler     the transaction prehandler to bind
      * @param eventWindowManager        the event window manager to bind
@@ -631,7 +630,6 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final PcesWriter pcesWriter,
             @NonNull final EventDurabilityNexus eventDurabilityNexus,
             @NonNull final Shadowgraph shadowgraph,
-            @NonNull final PcesSequencer pcesSequencer,
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final TransactionPrehandler transactionPrehandler,
             @NonNull final EventWindowManager eventWindowManager,
@@ -648,20 +646,20 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
             @NonNull final AppNotifier notifier,
             @NonNull final PlatformPublisher platformPublisher) {
 
-        eventHasherWiring.bind(builder.buildEventHasher());
-        internalEventValidatorWiring.bind(builder.buildInternalEventValidator());
-        eventDeduplicatorWiring.bind(builder.buildEventDeduplicator());
-        eventSignatureValidatorWiring.bind(builder.buildEventSignatureValidator());
-        orphanBufferWiring.bind(builder.buildOrphanBuffer());
-        inOrderLinkerWiring.bind(builder.buildInOrderLinker());
-        consensusEngineWiring.bind(builder.buildConsensusEngine());
+        eventHasherWiring.bind(builder::buildEventHasher);
+        internalEventValidatorWiring.bind(builder::buildInternalEventValidator);
+        eventDeduplicatorWiring.bind(builder::buildEventDeduplicator);
+        eventSignatureValidatorWiring.bind(builder::buildEventSignatureValidator);
+        orphanBufferWiring.bind(builder::buildOrphanBuffer);
+        inOrderLinkerWiring.bind(builder::buildInOrderLinker);
+        consensusEngineWiring.bind(builder::buildConsensusEngine);
         signedStateFileManagerWiring.bind(signedStateFileManager);
         stateSignerWiring.bind(stateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(pcesWriter);
         eventDurabilityNexusWiring.bind(eventDurabilityNexus);
         shadowgraphWiring.bind(shadowgraph);
-        pcesSequencerWiring.bind(pcesSequencer);
+        pcesSequencerWiring.bind(builder::buildPcesSequencer);
         eventCreationManagerWiring.bind(builder::buildEventCreationManager);
         selfEventSignerWiring.bind(builder::buildSelfEventSigner);
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
