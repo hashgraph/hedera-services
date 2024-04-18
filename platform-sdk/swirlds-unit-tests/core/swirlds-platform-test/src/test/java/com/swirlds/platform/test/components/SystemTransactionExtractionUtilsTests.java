@@ -37,11 +37,12 @@ class SystemTransactionExtractionUtilsTests {
     @DisplayName("Handle event")
     void testHandleEvent() {
         final List<ScopedSystemTransaction<DummySystemTransaction>> transactions = new ArrayList<>();
-        assertNull(SystemTransactionExtractionUtils.extractFromEvent(newDummyEvent(0), DummySystemTransaction.class));
-        transactions.addAll(
-                SystemTransactionExtractionUtils.extractFromEvent(newDummyEvent(1), DummySystemTransaction.class));
-        transactions.addAll(
-                SystemTransactionExtractionUtils.extractFromEvent(newDummyEvent(2), DummySystemTransaction.class));
+        assertNull(SystemTransactionExtractionUtils.extractFromEvent(
+                newDummyEvent(0).getHashedData(), DummySystemTransaction.class));
+        transactions.addAll(SystemTransactionExtractionUtils.extractFromEvent(
+                newDummyEvent(1).getHashedData(), DummySystemTransaction.class));
+        transactions.addAll(SystemTransactionExtractionUtils.extractFromEvent(
+                newDummyEvent(2).getHashedData(), DummySystemTransaction.class));
 
         assertEquals(3, transactions.size(), "incorrect number of transactions returned");
     }

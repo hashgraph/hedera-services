@@ -39,10 +39,10 @@ public class TimestampChecker {
                                 "Consensus time does not increase!%n"
                                         + "Event %s consOrder:%s consTime:%s%n"
                                         + "Event %s consOrder:%s consTime:%s%n",
-                                previousConsensusEvent.toShortString(),
+                                previousConsensusEvent.getHashedData().getDescriptor(),
                                 previousConsensusEvent.getConsensusOrder(),
                                 previousConsensusEvent.getConsensusTimestamp(),
-                                e.toShortString(),
+                                e.getHashedData().getDescriptor(),
                                 e.getConsensusOrder(),
                                 e.getConsensusTimestamp()));
                 previousConsensusEvent = e;

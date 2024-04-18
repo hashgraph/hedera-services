@@ -18,7 +18,6 @@ package com.swirlds.platform.gossip.shadowgraph;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.EventStrings;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,7 +38,7 @@ public final class SyncLogging {
             return "null";
         }
         return shadows.stream()
-                .map(s -> EventStrings.toShortString(s.getEvent()))
+                .map(s -> s.getEvent().getHashedData().getDescriptor().toString())
                 .collect(Collectors.joining(","));
     }
 

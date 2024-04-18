@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.consensus;
 
-import com.swirlds.platform.system.events.BaseEvent;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.events.PlatformEvent;
 
 public interface GraphGenerations {
@@ -81,9 +81,9 @@ public interface GraphGenerations {
     }
 
     /**
-     * Same as {@link #isAncient(PlatformEvent)} but for {@link BaseEvent}
+     * Same as {@link #isAncient(PlatformEvent)} but for {@link GossipEvent}
      */
-    default boolean isAncient(final BaseEvent event) {
+    default boolean isAncient(final GossipEvent event) {
         return event.getHashedData().getGeneration() < getMinGenerationNonAncient();
     }
 
@@ -92,9 +92,9 @@ public interface GraphGenerations {
      *
      * @param event
      * 		the event to check
-     * @return true if it is expired, false if its not
+     * @return true if it is expired, false if it's not
      */
-    default boolean isExpired(final BaseEvent event) {
+    default boolean isExpired(final GossipEvent event) {
         return event.getHashedData().getGeneration() < getMinRoundGeneration();
     }
 }
