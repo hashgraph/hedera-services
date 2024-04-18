@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.base.example;
 
+import com.swirlds.platform.base.example.executorsample.BaseExecutorHandlerFactory;
 import com.swirlds.platform.base.example.ext.BaseContext;
 import com.swirlds.platform.base.example.ext.BaseContextFactory;
 import com.swirlds.platform.base.example.jdkmetrics.JVMInternalMetrics;
@@ -33,6 +34,10 @@ public class Application {
         final BaseContext baseContext = BaseContextFactory.create();
         // Add JDK metrics to track memory, cpu, etc
         JVMInternalMetrics.registerMetrics(baseContext.metrics());
-        Server.start(baseContext, new StoreExampleHandlerRegistry(), new MetricsSampleHandlerRegistry());
+        Server.start(
+                baseContext,
+                new StoreExampleHandlerRegistry(),
+                new MetricsSampleHandlerRegistry(),
+                new BaseExecutorHandlerFactory());
     }
 }

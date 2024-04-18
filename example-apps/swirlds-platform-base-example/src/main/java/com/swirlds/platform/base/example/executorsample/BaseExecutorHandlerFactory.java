@@ -32,6 +32,18 @@ public class BaseExecutorHandlerFactory implements HttpHandlerRegistry {
     @Override
     public Set<HttpHandlerDefinition> handlers(BaseContext context) {
         BaseExecutorFactoryMetrics.getInstance().installForBaseExecutor(context.metrics());
+        final Consumer<TaskDefinition> addTasksHandler = createTaskExecutionHandler();
+
+        final Consumer<Void> resetHandler = v -> {
+            BaseExecutorFactoryMetrics.getInstance().reset();
+        };
+
+        return Set.of(
+                new PostTriggerHandler<>("/executor/call", context, TaskDefinition.class, addTasksHandler),
+                new PostTriggerHandler<>("/executor/reset", context, Void.class, resetHandler));
+    }
+
+    private static Consumer<TaskDefinition> createTaskExecutionHandler() {
         final BaseExecutorFactory baseExecutorFactory = BaseExecutorFactory.getInstance();
 
         final Consumer<TaskDefinition> addTasksHandler = d -> {
@@ -48,13 +60,6 @@ public class BaseExecutorHandlerFactory implements HttpHandlerRegistry {
                 });
             }
         };
-
-        final Consumer<Void> resetHandler = v -> {
-            BaseExecutorFactoryMetrics.getInstance().reset();
-        };
-
-        return Set.of(
-                new PostTriggerHandler<>("/executor/call", context, TaskDefinition.class, addTasksHandler),
-                new PostTriggerHandler<>("/executor/reset", context, Void.class, resetHandler));
+        return addTasksHandler;
     }
 }
