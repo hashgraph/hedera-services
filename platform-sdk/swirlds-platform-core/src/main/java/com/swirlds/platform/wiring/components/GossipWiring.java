@@ -33,6 +33,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record GossipWiring(@NonNull InputWire<GossipEvent> eventInput, @NonNull OutputWire<GossipEvent> eventOutput) {
 
+    // TODO delete
+
     /**
      * Create a new instance of {@link GossipWiring}.
      *

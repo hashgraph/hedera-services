@@ -31,10 +31,14 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -82,6 +86,8 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.wiring.NoInput;
+import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -97,7 +103,7 @@ import java.util.function.Supplier;
 /**
  * Boilerplate code for gossip.
  */
-public class SyncGossip implements ConnectionTracker, Lifecycle {
+public class SyncGossip implements ConnectionTracker, Lifecycle, Gossip {
     private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
 
     private final ReconnectController reconnectController;
@@ -457,12 +463,6 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         syncManager.resetFallenBehind();
     }
 
-    /**
-     * Check if we have fallen behind.
-     */
-    public boolean hasFallenBehind() {
-        return syncManager.hasFallenBehind();
-    }
 
     /**
      * {@inheritDoc}
@@ -498,5 +498,21 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         throwIfNotInPhase(LifecyclePhase.STARTED);
         intakeEventCounter.reset();
         gossipHalted.set(false);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void bind(
+            @NonNull final WiringModel model,
+            @NonNull final BindableInputWire<GossipEvent, Void> eventInput,
+            @NonNull final BindableInputWire<EventWindow, Void> eventWindowInput,
+            @NonNull final BindableInputWire<NoInput, Void> startInput,
+            @NonNull final BindableInputWire<NoInput, Void> stopInput,
+            @NonNull final OutputWire<GossipEvent> eventOutput) {
+
+        // TODO!!!
+
     }
 }

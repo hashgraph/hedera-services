@@ -60,6 +60,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.util.MetricsDocUtils;
+import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -98,6 +99,7 @@ public class PlatformComponentBuilder {
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
     private PcesSequencer pcesSequencer;
+    private Gossip gossip;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -611,5 +613,38 @@ public class PlatformComponentBuilder {
             pcesSequencer = new DefaultPcesSequencer();
         }
         return pcesSequencer;
+    }
+
+    /**
+     * Provide a gossip in place of the platform's default gossip.
+     *
+     * @param gossip the gossip to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withGossip(@NonNull final Gossip gossip) {
+        throwIfAlreadyUsed();
+        if (this.gossip != null) {
+            throw new IllegalStateException("Gossip has already been set");
+        }
+        this.gossip = Objects.requireNonNull(gossip);
+        return this;
+    }
+
+    /**
+     * Build the gossip if it has not yet been built. If one has been provided via
+     * {@link #withGossip(Gossip)}, that gossip will be used. If this method is called more than once, only the first call
+     * will build the gossip. Otherwise, the default gossip will be created and returned.
+     *
+     * @return the gossip
+     */
+    @NonNull
+    public Gossip buildGossip() {
+        if (gossip == null) {
+            // TODO
+
+            throw new IllegalStateException("Gossip has not been set");
+        }
+        return gossip;
     }
 }
