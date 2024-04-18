@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -99,6 +100,14 @@ public class FileSystemManagerImpl implements FileSystemManager {
             rethrowIO(() -> FileUtils.deleteDirectory(tempPath));
         }
         rethrowIO(() -> Files.createDirectory(tempPath));
+
+        // FUTURE-WORK: --MIGRATION-- Remove this logic after the fs manager was deployed.
+        // Moves files in the old location of the recycle bin to the new one
+        final Path oldRecyclePath = rootPath.resolve("swirlds-recycle-bin");
+        if (!exists(recycleBinPath) && exists(oldRecyclePath)) {
+            rethrowIO(() -> Files.move(oldRecyclePath, recycleBinPath, StandardCopyOption.ATOMIC_MOVE));
+        }
+
         if (!exists(recycleBinPath)) {
             rethrowIO(() -> Files.createDirectory(recycleBinPath));
         }
