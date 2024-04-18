@@ -83,7 +83,7 @@ class EpochCachedFormatterTest {
     }
 
     @Test
-    void RandotronlyParsesData() {
+    void testRandomlyParsesData() {
         EpochCachedFormatter formatter = new EpochCachedFormatter();
         for (int i = 0; i < 2000000; i++) {
             final long epochMillis = generateRandomEpoch();

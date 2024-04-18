@@ -81,7 +81,7 @@ class TopologyTest {
         }
     }
 
-    private static void RandotronGraphWithSets(
+    private static void testRandomGraphWithSets(
             final RandomGraph randomGraph, final int numNodes, final int numNeighbors) {
         for (int curr = 0; curr < numNodes; curr++) {
             final int[] neighbors = randomGraph.getNeighbors(curr);
@@ -106,13 +106,13 @@ class TopologyTest {
 
     @ParameterizedTest
     @MethodSource({"failing", "topologicalVariations", "fullyConnected"})
-    void RandotronGraphs(final int numNodes, final int numNeighbors, final long seed) throws Exception {
+    void testRandomGraphs(final int numNodes, final int numNeighbors, final long seed) throws Exception {
         System.out.println("numNodes = " + numNodes + ", numNeighbors = " + numNeighbors + ", seed = " + seed);
         final Randotron random = Randotron.create();
         final RandomGraph randomGraph = new RandomGraph(random, numNodes, numNeighbors, seed);
 
-        RandotronGraphWithSets(randomGraph, numNodes, numNeighbors);
-        RandotronGraphTestIterative(randomGraph, numNodes, numNeighbors, seed);
+        testRandomGraphWithSets(randomGraph, numNodes, numNeighbors);
+        testRandomGraphTestIterative(randomGraph, numNodes, numNeighbors, seed);
     }
 
     @ParameterizedTest
@@ -144,12 +144,12 @@ class TopologyTest {
 
             assertFalse(topology.shouldConnectToMe(outOfBoundsId), "values >=numNodes should return to false");
 
-            RandotronGraphWithSets(topology.getConnectionGraph(), numNodes, numNeighbors);
+            testRandomGraphWithSets(topology.getConnectionGraph(), numNodes, numNeighbors);
         }
     }
 
     /** test a single random matrix with the given number of nodes and neighbors, created using the given seed */
-    private void RandotronGraphTestIterative(
+    private void testRandomGraphTestIterative(
             final RandomGraph graph, final int numNodes, final int numNeighbors, final long seed) throws Exception {
         for (int x = 0; x < numNodes; x++) { // x is a row of the adjacency matrix, representing one node
             int count = 0;

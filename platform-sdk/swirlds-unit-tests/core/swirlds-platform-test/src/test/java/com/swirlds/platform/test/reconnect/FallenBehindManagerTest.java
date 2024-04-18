@@ -35,27 +35,31 @@ import org.junit.jupiter.api.Test;
 
 class FallenBehindManagerTest {
     private final int numNodes = 11;
-    private final Randotron random = Randotron.create();
-    private final AddressBook addressBook =
-            new RandomAddressBookGenerator(random).setSize(numNodes).build();
     private final double fallenBehindThreshold = 0.5;
-    private final NodeId selfId = addressBook.getNodeId(0);
-    private final RandomGraph graph = new RandomGraph(random, numNodes, numNodes + (numNodes % 2), numNodes);
     private final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
     private final ReconnectConfig config = new TestConfigBuilder()
             .withValue(ReconnectConfig_.FALLEN_BEHIND_THRESHOLD, fallenBehindThreshold)
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
-    private final FallenBehindManager manager = new FallenBehindManagerImpl(
-            addressBook,
-            selfId,
-            graph,
-            mock(StatusActionSubmitter.class),
-            fallenBehindNotification::incrementAndGet,
-            config);
+
+    private FallenBehindManager manager;
 
     @Test
     void test() {
+        final Randotron random = Randotron.create();
+
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(numNodes).build();
+        final NodeId selfId = addressBook.getNodeId(0);
+        final RandomGraph graph = new RandomGraph(random, numNodes, numNodes + (numNodes % 2), numNodes);
+        manager = new FallenBehindManagerImpl(
+                addressBook,
+                selfId,
+                graph,
+                mock(StatusActionSubmitter.class),
+                fallenBehindNotification::incrementAndGet,
+                config);
+
         assertFallenBehind(false, 0, "default should be none report fallen behind");
 
         // node 1 reports fallen behind

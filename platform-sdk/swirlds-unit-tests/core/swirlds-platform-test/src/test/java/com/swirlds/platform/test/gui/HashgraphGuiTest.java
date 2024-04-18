@@ -28,7 +28,7 @@ class HashgraphGuiTest {
     @Test
     @Disabled("this test is useful for debugging consensus")
     void runGuiWithControls() {
-        final Randotron seed = Randotron.create(1);
+        final Randotron random = Randotron.create(1);
         final int numNodes = 4;
         final int initialEvents = 0;
 
@@ -36,9 +36,9 @@ class HashgraphGuiTest {
                 TestPlatformContextBuilder.create().build();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(seed).setSize(numNodes).build();
+                new RandomAddressBookGenerator(random).setSize(numNodes).build();
 
-        final TestGuiSource guiSource = new TestGuiSource(platformContext, seed, addressBook);
+        final TestGuiSource guiSource = new TestGuiSource(platformContext, random, addressBook);
         guiSource.generateEvents(initialEvents);
         guiSource.runGui();
     }

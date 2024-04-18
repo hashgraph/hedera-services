@@ -141,7 +141,6 @@ class EmergencyReconnectTests {
     @DisplayName("Verify learner-teacher interaction when teacher has compatible state")
     @Test
     void teacherHasCompatibleState() throws InterruptedException {
-        final Randotron random = Randotron.create();
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
         final int numNodes = 4;
         final List<NodeId> nodeIds =

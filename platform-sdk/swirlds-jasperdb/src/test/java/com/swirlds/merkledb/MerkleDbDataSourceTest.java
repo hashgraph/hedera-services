@@ -172,7 +172,7 @@ class MerkleDbDataSourceTest {
     @ParameterizedTest
     @Tag(TIMING_SENSITIVE)
     @EnumSource(TestType.class)
-    void RandotronHashUpdates(final TestType testType) throws IOException {
+    void testRandomHashUpdates(final TestType testType) throws IOException {
         final int testSize = 1000;
         createAndApplyDataSource(testDirectory, "test2", testType, testSize, dataSource -> {
             // create some node hashes

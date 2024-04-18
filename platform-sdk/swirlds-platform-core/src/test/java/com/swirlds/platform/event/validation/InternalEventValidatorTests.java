@@ -60,6 +60,7 @@ class InternalEventValidatorTests {
 
     @BeforeEach
     void setup() {
+        random = Randotron.create();
 
         exitedIntakePipelineCount = new AtomicLong(0);
         final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);

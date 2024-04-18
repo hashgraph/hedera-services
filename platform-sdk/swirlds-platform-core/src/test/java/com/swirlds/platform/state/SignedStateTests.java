@@ -38,7 +38,6 @@ import com.swirlds.platform.system.address.AddressBook;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -93,7 +92,7 @@ class SignedStateTests {
     @Test
     @DisplayName("Reservation Test")
     void reservationTest() throws InterruptedException {
-        final Randotron random = (Randotron) new Random();
+        final Randotron random = Randotron.create();
 
         final AtomicBoolean reserved = new AtomicBoolean(false);
         final AtomicBoolean released = new AtomicBoolean(false);
