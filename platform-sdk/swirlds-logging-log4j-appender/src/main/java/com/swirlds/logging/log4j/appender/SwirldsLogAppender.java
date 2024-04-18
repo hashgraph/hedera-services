@@ -17,8 +17,6 @@
 package com.swirlds.logging.log4j.appender;
 
 import com.swirlds.logging.api.Level;
-import com.swirlds.logging.api.Logger;
-import com.swirlds.logging.api.Loggers;
 import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
@@ -90,8 +88,6 @@ public class SwirldsLogAppender extends AbstractAppender {
      */
     private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
-    private static final Logger logger = Loggers.getLogger(SwirldsLogAppender.class);
-
     /**
      * A flag to ensure that the initialisation error is only printed once.
      */
@@ -110,7 +106,6 @@ public class SwirldsLogAppender extends AbstractAppender {
             @Nullable final Filter filter,
             @Nullable final Layout<? extends Serializable> layout) {
         super(name, filter, layout, false, Property.EMPTY_ARRAY);
-        logger.debug("SwirldsLogAppender created");
     }
 
     /**
