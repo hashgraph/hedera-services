@@ -31,7 +31,6 @@ import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  * message Bucket {
  *
  *     // Bucket index
- *     optional uint32 index = 1;
+ *     uint32 index = 1;
  *
  *     // Items
  *     repeated BucketEntry entries = 11;
@@ -63,7 +62,7 @@ import org.apache.logging.log4j.Logger;
  *     int32 hashCode = 1;
  *
  *     // Entry value, e.g. path
- *     optional int64 value = 2;
+ *     int64 value = 2;
  *
  *     // Serialized key
  *     bytes keyBytes = 3;
@@ -85,7 +84,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
     protected static final FieldDefinition FIELD_BUCKETENTRY_HASHCODE =
             new FieldDefinition("hashCode", FieldType.FIXED32, false, false, false, 1);
     protected static final FieldDefinition FIELD_BUCKETENTRY_VALUE =
-            new FieldDefinition("value", FieldType.FIXED64, false, true, false, 2);
+            new FieldDefinition("value", FieldType.FIXED64, false, false, false, 2);
     protected static final FieldDefinition FIELD_BUCKETENTRY_KEYBYTES =
             new FieldDefinition("keyBytes", FieldType.BYTES, false, false, false, 3);
 
@@ -104,7 +103,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
 
     private BufferedData bucketData;
 
-    private long bucketIndexFieldOffset = 0;
+    private volatile long bucketIndexFieldOffset = 0;
 
     private int entryCount = 0;
 
@@ -129,11 +128,13 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
         clear();
     }
 
-    private void setSize(final int size) {
+    private void setSize(final int size, final boolean keepContent) {
         if (bucketData.capacity() < size) {
             final BufferedData newData = BufferedData.allocate(size);
-            bucketData.resetPosition();
-            newData.writeBytes(bucketData);
+            if (keepContent) {
+                bucketData.resetPosition();
+                newData.writeBytes(bucketData);
+            }
             bucketData = newData;
         }
         bucketData.resetPosition();
@@ -154,7 +155,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
      * Reset for next use.
      */
     public void clear() {
-        setSize(METADATA_SIZE);
+        setSize(METADATA_SIZE, false);
         bucketIndexFieldOffset = 0;
         setBucketIndex(0);
         entryCount = 0;
@@ -300,7 +301,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
                         + Long.BYTES
                         + ProtoWriterTools.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySize);
         final int totalSize = ProtoWriterTools.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entrySize);
-        setSize(Math.toIntExact(entryOffset + totalSize));
+        setSize(Math.toIntExact(entryOffset + totalSize), true);
         bucketData.position(entryOffset);
         ProtoWriterTools.writeDelimited(bucketData, FIELD_BUCKET_ENTRIES, entrySize, out -> {
             ProtoWriterTools.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
@@ -314,7 +315,7 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
 
     public void readFrom(final ReadableSequentialData in) {
         final int size = Math.toIntExact(in.remaining());
-        setSize(size);
+        setSize(size, false);
         in.readBytes(bucketData);
         bucketData.flip();
 
@@ -331,23 +332,23 @@ public sealed class Bucket<K extends VirtualKey> implements Closeable permits Pa
                 bucketData.skip(entryBytesSize);
                 entryCount++;
             } else {
+                logger.error(
+                        MERKLE_DB.getMarker(),
+                        "Cannot read bucket: in={} off={} bd.pos={} bd.lim={} bd.data={}",
+                        in,
+                        fieldOffset,
+                        bucketData.position(),
+                        bucketData.limit(),
+                        bucketData);
                 throw new IllegalArgumentException("Unknown bucket field: " + fieldNum);
             }
         }
         checkLargestBucket(entryCount);
     }
 
-    void readFrom(final ByteBuffer buffer) throws IOException {
-        throw new UnsupportedOperationException("Cannot read Bucket from JDB");
-    }
-
     public void writeTo(final WritableSequentialData out) {
         bucketData.resetPosition();
         out.writeBytes(bucketData);
-    }
-
-    void writeTo(final ByteBuffer buffer) throws IOException {
-        throw new UnsupportedOperationException("Cannot write Bucket to JDB");
     }
 
     // =================================================================================================================

@@ -214,8 +214,7 @@ class DataFileCollectionTest {
         assertEquals(
                 10,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f ->
-                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "Temp file should not have changed since previous test in sequence");
@@ -439,8 +438,7 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f ->
-                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "unexpected # of files #1");
@@ -489,8 +487,7 @@ class DataFileCollectionTest {
         assertEquals(
                 2,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f ->
-                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "unexpected # of files");
@@ -597,8 +594,7 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f ->
-                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "unexpected # of files");
@@ -676,8 +672,7 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(dbDir)
-                        .filter(file -> file.getFileName().toString().matches(storeName + ".*pbj")
-                                || file.getFileName().toString().matches(storeName + ".*jdb"))
+                        .filter(file -> file.getFileName().toString().matches(storeName + ".*pbj"))
                         .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "expected 1 db files but had ["
@@ -743,9 +738,8 @@ class DataFileCollectionTest {
             List<DataFileReader<long[]>> allCompletedFiles = fileCollection.getAllCompletedFiles();
             DataFileReader<long[]> spy = Mockito.spy(allCompletedFiles.get(0));
             try {
-                AtomicInteger count = new AtomicInteger(0);
-                when(spy.getFileType()).thenAnswer(invocation -> {
-                    // on the first call to getFileType(), we interrupt the thread
+                when(spy.leaseFileChannel()).thenAnswer(invocation -> {
+                    // on the first call to leaseFileChannel(), we interrupt the thread
                     Thread.currentThread().interrupt();
                     return invocation.callRealMethod();
                 });

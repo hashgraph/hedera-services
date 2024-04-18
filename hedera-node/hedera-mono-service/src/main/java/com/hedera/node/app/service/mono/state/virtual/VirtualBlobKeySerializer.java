@@ -21,8 +21,6 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
@@ -69,14 +67,6 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
     }
 
     @Override
-    @Deprecated
-    public void serialize(final VirtualBlobKey key, final ByteBuffer buffer) throws IOException {
-        Objects.requireNonNull(key);
-        Objects.requireNonNull(buffer);
-        key.serialize(buffer);
-    }
-
-    @Override
     public VirtualBlobKey deserialize(@NonNull final ReadableSequentialData out) {
         Objects.requireNonNull(out);
         final var key = new VirtualBlobKey();
@@ -85,25 +75,9 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
     }
 
     @Override
-    @Deprecated
-    public VirtualBlobKey deserialize(final ByteBuffer buffer, final long version) throws IOException {
-        Objects.requireNonNull(buffer);
-        final var key = new VirtualBlobKey();
-        key.deserialize(buffer);
-        return key;
-    }
-
-    @Override
     public boolean equals(@NonNull final BufferedData buffer, @NonNull final VirtualBlobKey key) {
         Objects.requireNonNull(buffer);
         Objects.requireNonNull(key);
         return key.equalsTo(buffer);
-    }
-
-    @Override
-    @Deprecated
-    public boolean equals(final ByteBuffer buffer, final int version, final VirtualBlobKey key) throws IOException {
-        Objects.requireNonNull(buffer);
-        return key.equalsTo(buffer, version);
     }
 }

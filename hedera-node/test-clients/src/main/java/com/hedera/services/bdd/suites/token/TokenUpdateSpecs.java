@@ -198,7 +198,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         tokenCreate("tbd").adminKey("adminKey").treasury(TOKEN_TREASURY),
                         tokenDelete("tbd"))
                 .when()
-                .then(tokenUpdate("tbd").hasKnownStatus(TOKEN_WAS_DELETED));
+                .then(tokenUpdate("tbd").signedByPayerAnd("adminKey").hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
     @HapiTest
@@ -210,13 +210,16 @@ public class TokenUpdateSpecs extends HapiSuite {
                         cryptoCreate("neverToBe").balance(0L),
                         tokenCreate(mutableForNow).adminKey("initialAdmin"))
                 .when(
-                        tokenUpdate(mutableForNow).improperlyEmptyingAdminKey().hasPrecheck(INVALID_ADMIN_KEY),
-                        tokenUpdate(mutableForNow).properlyEmptyingAdminKey())
+                        tokenUpdate(mutableForNow)
+                                .improperlyEmptyingAdminKey()
+                                .signedByPayerAnd("initialAdmin")
+                                .hasPrecheck(INVALID_ADMIN_KEY),
+                        tokenUpdate(mutableForNow).properlyEmptyingAdminKey().signedByPayerAnd("initialAdmin"))
                 .then(
                         getTokenInfo(mutableForNow),
                         tokenUpdate(mutableForNow)
                                 .treasury("neverToBe")
-                                .signedBy(GENESIS, "neverToBe")
+                                .signedBy(GENESIS, "initialAdmin", "neverToBe")
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
@@ -298,7 +301,8 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .freezeKey("kycThenFreezeKey")
                                 .wipeKey("supplyThenWipeKey")
                                 .supplyKey("wipeThenSupplyKey")
-                                .feeScheduleKey("newFeeScheduleKey"),
+                                .feeScheduleKey("newFeeScheduleKey")
+                                .signedByPayerAnd("adminKey", "newAdminKey"),
                         tokenAssociate("misc", "tbu"))
                 .then(
                         getTokenInfo("tbu").logged(),
@@ -328,8 +332,11 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(
                         tokenUpdate("tbu")
                                 .treasury("newTreasuryWithoutRemainingAutoAssociations")
+                                .signedByPayerAnd("adminKey", "newTreasuryWithoutRemainingAutoAssociations")
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
-                        tokenUpdate("tbu").treasury("newTreasuryWithRemainingAutoAssociations"),
+                        tokenUpdate("tbu")
+                                .treasury("newTreasuryWithRemainingAutoAssociations")
+                                .signedByPayerAnd("adminKey", "newTreasuryWithRemainingAutoAssociations"),
                         getTokenInfo("tbu").hasTreasury("newTreasuryWithRemainingAutoAssociations"));
     }
 
@@ -349,7 +356,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .treasury("newTreasury")
                                 .signedBy(GENESIS, "adminKey")
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenUpdate("tbu").treasury("newTreasury"));
+                        tokenUpdate("tbu").treasury("newTreasury").signedByPayerAnd("adminKey", "newTreasury"));
     }
 
     @HapiTest
@@ -371,7 +378,10 @@ public class TokenUpdateSpecs extends HapiSuite {
                         getAccountInfo("oldTreasury").logged(),
                         getAccountInfo("newTreasury").logged(),
                         tokenAssociate("newTreasury", "tbu"),
-                        tokenUpdate("tbu").treasury("newTreasury").via(TREASURY_UPDATE_TXN))
+                        tokenUpdate("tbu")
+                                .treasury("newTreasury")
+                                .via(TREASURY_UPDATE_TXN)
+                                .signedByPayerAnd("adminKey", "newTreasury"))
                 .then(
                         getAccountInfo("oldTreasury").logged(),
                         getAccountInfo("newTreasury").logged(),
@@ -393,11 +403,14 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .autoRenewAccount("autoRenew")
                                 .autoRenewPeriod(firstPeriod),
                         tokenUpdate("tbu")
-                                .signedBy(GENESIS)
+                                .signedBy(GENESIS, "adminKey")
                                 .autoRenewAccount("newAutoRenew")
                                 .autoRenewPeriod(secondPeriod)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenUpdate("tbu").autoRenewAccount("newAutoRenew").autoRenewPeriod(secondPeriod))
+                        tokenUpdate("tbu")
+                                .autoRenewAccount("newAutoRenew")
+                                .autoRenewPeriod(secondPeriod)
+                                .signedByPayerAnd("adminKey", "newAutoRenew"))
                 .then(getTokenInfo("tbu").logged());
     }
 
@@ -409,7 +422,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .given(newKeyNamed("adminKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(
                         tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
-                        tokenUpdate("tbu").symbol(hopefullyUnique))
+                        tokenUpdate("tbu").symbol(hopefullyUnique).signedByPayerAnd("adminKey"))
                 .then(
                         getTokenInfo("tbu").hasSymbol(hopefullyUnique),
                         tokenAssociate(GENESIS, "tbu"),
@@ -427,7 +440,10 @@ public class TokenUpdateSpecs extends HapiSuite {
                         cryptoCreate(account).balance(0L))
                 .when(
                         tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
-                        tokenUpdate("tbu").autoRenewPeriod(1_000_000_000).autoRenewAccount(account))
+                        tokenUpdate("tbu")
+                                .autoRenewPeriod(1_000_000_000)
+                                .autoRenewAccount(account)
+                                .signedByPayerAnd("adminKey", account))
                 .then(getTokenInfo("tbu").hasAutoRenewAccount(account));
     }
 
@@ -439,7 +455,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .given(newKeyNamed("adminKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(
                         tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
-                        tokenUpdate("tbu").name(hopefullyUnique))
+                        tokenUpdate("tbu").name(hopefullyUnique).signedByPayerAnd("adminKey"))
                 .then(getTokenInfo("tbu").hasName(hopefullyUnique));
     }
 
@@ -450,7 +466,10 @@ public class TokenUpdateSpecs extends HapiSuite {
         return defaultHapiSpec("TooLongNameCheckHolds")
                 .given(newKeyNamed("adminKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY))
-                .then(tokenUpdate("tbu").name(tooLongName).hasPrecheck(TOKEN_NAME_TOO_LONG));
+                .then(tokenUpdate("tbu")
+                        .name(tooLongName)
+                        .signedByPayerAnd("adminKey")
+                        .hasPrecheck(TOKEN_NAME_TOO_LONG));
     }
 
     @HapiTest
@@ -460,7 +479,10 @@ public class TokenUpdateSpecs extends HapiSuite {
         return defaultHapiSpec("TooLongSymbolCheckHolds")
                 .given(newKeyNamed("adminKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY))
-                .then(tokenUpdate("tbu").symbol(tooLongSymbol).hasPrecheck(TOKEN_SYMBOL_TOO_LONG));
+                .then(tokenUpdate("tbu")
+                        .symbol(tooLongSymbol)
+                        .signedByPayerAnd("adminKey")
+                        .hasPrecheck(TOKEN_SYMBOL_TOO_LONG));
     }
 
     @HapiTest
@@ -475,6 +497,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY))
                 .then(tokenUpdate("tbu")
                         .autoRenewAccount("autoRenewAccount")
+                        .signedByPayerAnd("adminKey", "autoRenewAccount")
                         .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT));
     }
 
@@ -495,14 +518,20 @@ public class TokenUpdateSpecs extends HapiSuite {
                         tokenUpdate("tbu")
                                 .autoRenewAccount("autoRenewAccount")
                                 .autoRenewPeriod(-1123)
+                                .signedByPayerAnd("adminKey", "autoRenewAccount")
                                 .hasKnownStatus(INVALID_RENEWAL_PERIOD),
                         tokenUpdate("tbu")
                                 .autoRenewAccount("autoRenewAccount")
                                 .autoRenewPeriod(0)
+                                .signedByPayerAnd("adminKey", "autoRenewAccount")
                                 .hasKnownStatus(INVALID_RENEWAL_PERIOD),
-                        tokenUpdate("withAutoRenewAcc").autoRenewPeriod(-1).hasKnownStatus(INVALID_RENEWAL_PERIOD),
+                        tokenUpdate("withAutoRenewAcc")
+                                .autoRenewPeriod(-1)
+                                .signedByPayerAnd("adminKey")
+                                .hasKnownStatus(INVALID_RENEWAL_PERIOD),
                         tokenUpdate("withAutoRenewAcc")
                                 .autoRenewPeriod(100000000000L)
+                                .signedByPayerAnd("adminKey")
                                 .hasKnownStatus(INVALID_RENEWAL_PERIOD));
     }
 
@@ -516,7 +545,10 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .when(
                         cryptoDelete(INVALID_TREASURY),
                         tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY))
-                .then(tokenUpdate("tbu").treasury(INVALID_TREASURY).hasKnownStatus(ACCOUNT_DELETED));
+                .then(tokenUpdate("tbu")
+                        .treasury(INVALID_TREASURY)
+                        .signedByPayerAnd("adminKey", INVALID_TREASURY)
+                        .hasKnownStatus(ACCOUNT_DELETED));
     }
 
     @HapiTest
@@ -561,7 +593,10 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .payingWith(civilian))
                 .when(
                         tokenAssociate("newTokenTreasury", "primary"),
-                        tokenUpdate("primary").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                        tokenUpdate("primary")
+                                .entityMemo(ZERO_BYTE_MEMO)
+                                .signedByPayerAnd("adminKey")
+                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         tokenUpdate("primary")
                                 .name(newSaltedName)
                                 .entityMemo(updatedMemo)
@@ -573,6 +608,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .supplyKey("newSupplyKey")
                                 .wipeKey("newWipeKey")
                                 .pauseKey("newPauseKey")
+                                .signedByPayerAnd("adminKey", "newTokenTreasury", "newAutoRenewAccount", civilian)
                                 .payingWith(civilian))
                 .then(
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance("primary", 0),
@@ -624,6 +660,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         cryptoTransfer(movingUnique("non-fungible", 1).between("oldTreasury", "newTreasury")))
                 .then(tokenUpdate("non-fungible")
                         .treasury("newTreasury")
+                        .signedByPayerAnd("adminKey", "newTreasury")
                         .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES));
     }
 
@@ -638,7 +675,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         newKeyNamed(multiKey),
                         tokenCreate(token).entityMemo(memoToBeErased).adminKey(multiKey),
                         getTokenInfo(token).hasEntityMemo(memoToBeErased))
-                .when(tokenUpdate(token).entityMemo(""))
+                .when(tokenUpdate(token).entityMemo("").signedByPayerAnd(multiKey))
                 .then(getTokenInfo(token).logged().hasEntityMemo(""));
     }
 
@@ -661,7 +698,10 @@ public class TokenUpdateSpecs extends HapiSuite {
                         mintToken("primary", List.of(ByteString.copyFromUtf8("memo1"))))
                 .when(
                         tokenAssociate("newTokenTreasury", "primary"),
-                        tokenUpdate("primary").treasury("newTokenTreasury").via("tokenUpdateTxn"))
+                        tokenUpdate("primary")
+                                .treasury("newTokenTreasury")
+                                .via("tokenUpdateTxn")
+                                .signedByPayerAnd("adminKeyA", "newTokenTreasury"))
                 .then(
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance("primary", 0),
                         getAccountBalance("newTokenTreasury").hasTokenBalance("primary", 1),
@@ -758,12 +798,16 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .when(
                         tokenUpdate(tokenNoFeeKey)
                                 .feeScheduleKey(newFeeScheduleKey)
+                                .signedByPayerAnd(adminKey)
                                 .hasKnownStatus(TOKEN_HAS_NO_FEE_SCHEDULE_KEY),
                         tokenUpdate(tokenWithFeeKey)
                                 .usingInvalidFeeScheduleKey()
                                 .feeScheduleKey(newFeeScheduleKey)
+                                .signedByPayerAnd(adminKey)
                                 .hasPrecheck(INVALID_CUSTOM_FEE_SCHEDULE_KEY),
-                        tokenUpdate(tokenWithFeeKey).feeScheduleKey(newFeeScheduleKey),
+                        tokenUpdate(tokenWithFeeKey)
+                                .feeScheduleKey(newFeeScheduleKey)
+                                .signedByPayerAnd(adminKey),
                         tokenFeeScheduleUpdate(tokenWithFeeKey).withCustom(fixedHbarFee(newHbarFee, hbarCollector)),
                         tokenFeeScheduleUpdate(uniqueTokenFeeKey)
                                 .withCustom(royaltyFeeWithFallback(
@@ -793,11 +837,14 @@ public class TokenUpdateSpecs extends HapiSuite {
                         getAccountInfo("oldTreasury").logged(),
                         getAccountInfo("newTreasury").logged(),
                         tokenAssociate("newTreasury", "tbu"),
-                        tokenUpdate("tbu").memo("newMemo"),
-                        tokenUpdate("tbu").treasury("newTreasury"),
+                        tokenUpdate("tbu").memo("newMemo").signedByPayerAnd(specialKey),
+                        tokenUpdate("tbu").treasury("newTreasury").signedByPayerAnd(specialKey, "newTreasury"),
                         burnToken("tbu", List.of(1L)),
                         getTokenInfo("tbu").hasTreasury("newTreasury"),
-                        tokenUpdate("tbu").treasury("newTreasury").via(TREASURY_UPDATE_TXN))
+                        tokenUpdate("tbu")
+                                .treasury("newTreasury")
+                                .via(TREASURY_UPDATE_TXN)
+                                .signedByPayerAnd(specialKey, "newTreasury"))
                 .then(
                         getAccountInfo("oldTreasury").logged(),
                         getAccountInfo("newTreasury").logged(),
