@@ -109,8 +109,6 @@ service TokenService {
 
 The basic `TokenClaimAirdrop` fee should be proportional to the number of airdrops being claimed in the transaction.
 
-Additionally, we should have a fee component for the token association and the crypto transfer that will happen as result of the airdrop claim.
-
 An update into the `feeSchedule` file would be needed to specify that.
 
 ### Services updates
