@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFo
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -590,10 +591,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     @HapiTest
     HapiSpec internalBurnToZeroAddressReverts() {
-        return defaultHapiSpec(
-                        "internalBurnToZeroAddressReverts",
-                        NONDETERMINISTIC_ETHEREUM_DATA,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("internalBurnToZeroAddressReverts", FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS),
@@ -608,7 +606,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
                         .sending(depositAmount)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                        .hasKnownStatus(INVALID_FEE_SUBMITTED));
     }
 
     @Override
