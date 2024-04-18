@@ -486,6 +486,7 @@ public final class PlatformBuilder {
                 new TransactionPool(platformContext),
                 new AtomicReference<>(STARTING_UP),
                 new AtomicReference<>(null),
+                new AtomicReference<>(null),
                 firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);

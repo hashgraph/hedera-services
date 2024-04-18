@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.CreateTopicResourceUsage;
@@ -58,6 +59,11 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     @Inject
     public ConsensusCreateTopicHandler() {
         // Exists for injection
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        // nothing to do
     }
 
     @Override

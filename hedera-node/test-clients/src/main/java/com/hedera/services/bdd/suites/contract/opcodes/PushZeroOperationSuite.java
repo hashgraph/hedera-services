@@ -80,7 +80,7 @@ public class PushZeroOperationSuite extends HapiSuite {
     final HapiSpec pushZeroHappyPathWorks() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";
-        return defaultHapiSpec("prngPrecompileHappyPathWorks", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("pushZeroHappyPathWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_38),

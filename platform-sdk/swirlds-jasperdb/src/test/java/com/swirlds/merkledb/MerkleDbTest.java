@@ -103,8 +103,7 @@ public class MerkleDbTest {
         // same here
         Assertions.assertEquals(tempDir.resolve("tables"), instance.getTablesDir());
         // and here
-        Assertions.assertTrue(Files.exists(
-                tempDir.resolve(instance.getConfig().usePbj() ? "database_metadata.pbj" : "metadata.mdb")));
+        Assertions.assertTrue(Files.exists(tempDir.resolve("database_metadata.pbj")));
     }
 
     @ParameterizedTest
@@ -155,8 +154,7 @@ public class MerkleDbTest {
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
-        Assertions.assertTrue(
-                Files.exists(dbDir.resolve(instance.getConfig().usePbj() ? "database_metadata.pbj" : "metadata.mdb")));
+        Assertions.assertTrue(Files.exists(dbDir.resolve("database_metadata.pbj")));
         final int tableId = dataSource.getTableId();
         Assertions.assertEquals(dbDir.resolve("tables/" + tableName + "-" + tableId), dataSource.getStorageDir());
         Assertions.assertEquals(

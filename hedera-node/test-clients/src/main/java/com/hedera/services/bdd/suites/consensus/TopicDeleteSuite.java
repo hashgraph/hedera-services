@@ -54,12 +54,24 @@ public class TopicDeleteSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
+                pureCheckFails(),
                 cannotDeleteAccountAsTopic(),
                 topicIdIsValidated(),
                 noAdminKeyCannotDelete(),
                 deleteWithAdminKey(),
                 deleteFailedWithWrongKey(),
                 feeAsExpected());
+    }
+
+    @HapiTest
+    final HapiSpec pureCheckFails() {
+        return defaultHapiSpec("CannotDeleteAccountAsTopic")
+                .given(cryptoCreate("nonTopicId"))
+                .when()
+                .then(
+                        deleteTopic(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
+                                .hasPrecheck(INVALID_TOPIC_ID),
+                        deleteTopic((String) null).hasPrecheck(INVALID_TOPIC_ID));
     }
 
     @HapiTest

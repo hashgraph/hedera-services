@@ -26,5 +26,7 @@ testModuleInfo {
     requires("awaitility")
     requires("org.junit.jupiter.params")
     requires("org.mockito.junit.jupiter")
+    requires("com.swirlds.metrics.api")
+    requires("org.mockito")
     requiresStatic("com.github.spotbugs.annotations")
 }

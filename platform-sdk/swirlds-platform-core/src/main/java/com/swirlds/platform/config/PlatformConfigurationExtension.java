@@ -33,7 +33,6 @@ import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.ProtocolConfig;
-import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.network.SocketConfig;
@@ -63,7 +62,6 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
                 AddressBookConfig.class,
                 BasicCommonConfig.class,
                 BasicConfig.class,
-                ChatterConfig.class,
                 ConsensusConfig.class,
                 CryptoConfig.class,
                 EventConfig.class,
