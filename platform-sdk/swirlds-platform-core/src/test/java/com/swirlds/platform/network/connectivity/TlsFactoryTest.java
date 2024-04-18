@@ -84,11 +84,11 @@ class TlsFactoryTest extends ConnectivityTestBase {
         Assertions.assertFalse(serverSocket.isClosed());
 
         // create a new address book with keys and new set of nodes
-        final AddressBookAndCerts addressBookAndCerts1 = CryptoArgsProvider.loadAddressBookWithKeys(6);
-        updatedAddressBook = addressBookAndCerts1.addressBook();
+        final AddressBookAndCerts updatdAddressBookAndCerts = CryptoArgsProvider.loadAddressBookWithKeys(6);
+        updatedAddressBook = updatdAddressBookAndCerts.addressBook();
         final Address address = addressBook.getAddress(nodeA).copySetNodeId(updatedAddressBook.getNextNodeId());
         updatedAddressBook.add(address); // ensure original node is in new
-        final Map<NodeId, KeysAndCerts> updatedKeysAndCerts = addressBookAndCerts.nodeIdKeysAndCertsMap();
+        final Map<NodeId, KeysAndCerts> updatedKeysAndCerts = updatdAddressBookAndCerts.nodeIdKeysAndCertsMap();
         assertTrue(updatedAddressBook.getSize() > 1, "Address book must contain at least 2 nodes");
 
         // pick a node for the 3rd connection C.
