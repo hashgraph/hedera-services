@@ -124,11 +124,23 @@ public class ModificationUtils {
         return withClearedField(message, descriptor, targetIndex, currentIndex);
     }
 
+    /**
+     * Given a list of {@link ModificationStrategy} instances, returns a list of
+     * modifications for the given {@link GeneratedMessageV3} message.
+     *
+     * @param message the message to modify
+     * @param strategies the modification strategies to apply
+     * @return the list of modifications
+     * @param <T> the type of the message
+     * @param <M> the type of the modification strategy
+     */
     private static <T, M extends ModificationStrategy<T>> List<T> modificationsFor(
             @NonNull final GeneratedMessageV3 message, @NonNull final List<M> strategies) {
         final List<T> modifications = new ArrayList<>();
         for (final var strategy : strategies) {
             final var targetFields = getTargetFields(message.toBuilder(), strategy::hasTarget);
+            // Since the same field descriptor can appear multiple times in the message,
+            // we need to track its occurrence count to target each appearance separately
             final Map<String, AtomicInteger> occurrenceCounts = new HashMap<>();
             modifications.addAll(targetFields.stream()
                     .map(field -> {

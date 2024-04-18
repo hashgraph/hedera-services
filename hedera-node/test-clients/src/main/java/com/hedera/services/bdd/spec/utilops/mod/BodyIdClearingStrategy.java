@@ -101,7 +101,22 @@ public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> 
             entry(
                     "proto.CustomFee.fee_collector_account_id",
                     ExpectedResponse.atConsensus(INVALID_CUSTOM_FEE_COLLECTOR)),
-            entry("proto.FixedFee.denominating_token_id", ExpectedResponse.atConsensus(SUCCESS)));
+            entry("proto.FixedFee.denominating_token_id", ExpectedResponse.atConsensus(SUCCESS)),
+            entry("proto.TokenFreezeAccountTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.TokenFreezeAccountTransactionBody.account", ExpectedResponse.atIngest(INVALID_ACCOUNT_ID)),
+            entry("proto.TokenUnfreezeAccountTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.TokenUnfreezeAccountTransactionBody.account", ExpectedResponse.atIngest(INVALID_ACCOUNT_ID)),
+            entry("proto.TokenGrantKycTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.TokenGrantKycTransactionBody.account", ExpectedResponse.atIngest(INVALID_ACCOUNT_ID)),
+            entry("proto.TokenRevokeKycTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.TokenRevokeKycTransactionBody.account", ExpectedResponse.atIngest(INVALID_ACCOUNT_ID)),
+            entry("proto.TokenDeleteTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.TokenUpdateTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.TokenUpdateTransactionBody.autoRenewAccount", ExpectedResponse.atConsensus(SUCCESS)),
+            entry("proto.TokenMintTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.TokenBurnTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.TokenWipeAccountTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.TokenWipeAccountTransactionBody.account", ExpectedResponse.atIngest(INVALID_ACCOUNT_ID)));
 
     @NonNull
     @Override
