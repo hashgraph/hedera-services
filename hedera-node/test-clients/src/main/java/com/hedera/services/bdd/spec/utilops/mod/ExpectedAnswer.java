@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.mod;
 
+import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -23,6 +24,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Encapsulates the expected answer to a query; if the {@link ResponseType#COST_ANSWER}
@@ -31,13 +34,14 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param costAnswerStatus a failure status if the COST_ANSWER query should fail
  * @param answerOnlyStatus a failure status if just the ANSWER_ONLY query should fail
  */
-public record ExpectedAnswer(@Nullable ResponseCodeEnum costAnswerStatus, @Nullable ResponseCodeEnum answerOnlyStatus) {
+public record ExpectedAnswer(
+        @Nullable ResponseCodeEnum costAnswerStatus, @Nullable Set<ResponseCodeEnum> answerOnlyStatus) {
     public static ExpectedAnswer onCostAnswer(@NonNull ResponseCodeEnum status) {
         return new ExpectedAnswer(status, null);
     }
 
-    public static ExpectedAnswer onAnswerOnly(@NonNull ResponseCodeEnum status) {
-        return new ExpectedAnswer(null, status);
+    public static ExpectedAnswer onAnswerOnly(@NonNull ResponseCodeEnum... statuses) {
+        return new ExpectedAnswer(null, EnumSet.copyOf(asList(statuses)));
     }
 
     public void customize(@NonNull final HapiQueryOp<?> op) {
@@ -45,7 +49,7 @@ public record ExpectedAnswer(@Nullable ResponseCodeEnum costAnswerStatus, @Nulla
             op.hasCostAnswerPrecheck(costAnswerStatus);
         } else {
             requireNonNull(answerOnlyStatus);
-            op.hasAnswerOnlyPrecheck(answerOnlyStatus);
+            op.hasAnswerOnlyPrecheckFrom(answerOnlyStatus.toArray(ResponseCodeEnum[]::new));
         }
     }
 }

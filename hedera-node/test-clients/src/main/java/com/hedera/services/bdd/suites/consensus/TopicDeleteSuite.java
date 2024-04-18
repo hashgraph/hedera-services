@@ -23,7 +23,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
@@ -72,6 +74,14 @@ public class TopicDeleteSuite extends HapiSuite {
                         deleteTopic(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
                                 .hasPrecheck(INVALID_TOPIC_ID),
                         deleteTopic((String) null).hasPrecheck(INVALID_TOPIC_ID));
+    }
+
+    @HapiTest
+    public HapiSpec idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(newKeyNamed("adminKey"))
+                .when(createTopic("topic").adminKeyName("adminKey"))
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> deleteTopic("topic")));
     }
 
     @HapiTest

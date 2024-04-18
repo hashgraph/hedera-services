@@ -33,6 +33,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+/**
+ * An operation that submits a transaction and then resubmits modified versions
+ * of it based on modifications returned by a function that will receive the
+ * original transaction.
+ */
 public class SubmitModificationsOp extends UtilOp {
     private final Supplier<HapiTxnOp<?>> txnOpSupplier;
     private final Function<Transaction, List<TxnModification>> modificationsFn;

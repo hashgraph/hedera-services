@@ -17,7 +17,12 @@
 package com.hedera.services.bdd.spec.utilops.mod;
 
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withClearedField;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.Descriptors;
@@ -27,7 +32,19 @@ import java.util.Map;
 public class QueryIdClearingStrategy extends IdClearingStrategy<QueryModification>
         implements QueryModificationStrategy {
     private static final Map<String, ExpectedAnswer> CLEARED_ID_ANSWERS = Map.ofEntries(
-            Map.entry("proto.ContractGetInfoQuery.contractID", ExpectedAnswer.onAnswerOnly(INVALID_CONTRACT_ID)));
+            Map.entry("proto.ContractGetInfoQuery.contractID", ExpectedAnswer.onAnswerOnly(INVALID_CONTRACT_ID)),
+            Map.entry("proto.ContractCallLocalQuery.contractID", ExpectedAnswer.onAnswerOnly(INVALID_CONTRACT_ID)),
+            Map.entry("proto.CryptoGetAccountBalanceQuery.accountID", ExpectedAnswer.onAnswerOnly(INVALID_ACCOUNT_ID)),
+            Map.entry("proto.CryptoGetAccountRecordsQuery.accountID", ExpectedAnswer.onAnswerOnly(INVALID_ACCOUNT_ID)),
+            Map.entry("proto.CryptoGetInfoQuery.accountID", ExpectedAnswer.onAnswerOnly(INVALID_ACCOUNT_ID)),
+            Map.entry("proto.ContractGetBytecodeQuery.contractID", ExpectedAnswer.onAnswerOnly(INVALID_CONTRACT_ID)),
+            Map.entry("proto.FileGetContentsQuery.fileID", ExpectedAnswer.onAnswerOnly(INVALID_FILE_ID)),
+            Map.entry("proto.FileGetInfoQuery.fileID", ExpectedAnswer.onAnswerOnly(INVALID_FILE_ID)),
+            Map.entry(
+                    "proto.TransactionID.accountID",
+                    ExpectedAnswer.onAnswerOnly(INVALID_ACCOUNT_ID, INVALID_TRANSACTION_ID)),
+            Map.entry("proto.ConsensusGetTopicInfoQuery.topicID", ExpectedAnswer.onAnswerOnly(INVALID_TOPIC_ID)),
+            Map.entry("proto.TokenGetInfoQuery.token", ExpectedAnswer.onAnswerOnly(INVALID_TOKEN_ID)));
 
     @NonNull
     @Override

@@ -20,10 +20,15 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withCle
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -34,6 +39,10 @@ import com.google.protobuf.Descriptors;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
+/**
+ * A {@link ModificationStrategy} that clears entity ids from the original
+ * transaction body.
+ */
 public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> implements TxnModificationStrategy {
     private static final Map<String, ExpectedResponse> CLEARED_ID_RESPONSES = Map.ofEntries(
             entry("proto.TransactionID.accountID", ExpectedResponse.atIngest(PAYER_ACCOUNT_NOT_FOUND)),
@@ -61,7 +70,38 @@ public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> 
                     "proto.CryptoDeleteTransactionBody.deleteAccountID",
                     ExpectedResponse.atIngest(ACCOUNT_ID_DOES_NOT_EXIST)),
             entry("proto.ContractCreateTransactionBody.fileID", ExpectedResponse.atConsensus(INVALID_FILE_ID)),
-            entry("proto.ContractCreateTransactionBody.auto_renew_account_id", ExpectedResponse.atConsensus(SUCCESS)));
+            entry("proto.ContractCreateTransactionBody.auto_renew_account_id", ExpectedResponse.atConsensus(SUCCESS)),
+            entry("proto.ContractUpdateTransactionBody.contractID", ExpectedResponse.atConsensus(INVALID_CONTRACT_ID)),
+            entry("proto.ContractUpdateTransactionBody.auto_renew_account_id", ExpectedResponse.atConsensus(SUCCESS)),
+            entry("proto.ContractUpdateTransactionBody.staked_account_id", ExpectedResponse.atConsensus(SUCCESS)),
+            entry("proto.FileAppendTransactionBody.fileID", ExpectedResponse.atIngest(INVALID_FILE_ID)),
+            entry("proto.FileUpdateTransactionBody.fileID", ExpectedResponse.atIngest(INVALID_FILE_ID)),
+            entry("proto.FileDeleteTransactionBody.fileID", ExpectedResponse.atIngest(INVALID_FILE_ID)),
+            entry("proto.CryptoCreateTransactionBody.staked_account_id", ExpectedResponse.atConsensus(SUCCESS)),
+            entry("proto.SystemDeleteTransactionBody.fileID", ExpectedResponse.atIngest(INVALID_TRANSACTION_BODY)),
+            entry("proto.SystemUndeleteTransactionBody.fileID", ExpectedResponse.atIngest(INVALID_TRANSACTION_BODY)),
+            entry("proto.ContractDeleteTransactionBody.contractID", ExpectedResponse.atIngest(INVALID_CONTRACT_ID)),
+            entry(
+                    "proto.ContractDeleteTransactionBody.transferAccountID",
+                    ExpectedResponse.atConsensus(OBTAINER_REQUIRED)),
+            entry(
+                    "proto.ContractDeleteTransactionBody.transferContractID",
+                    ExpectedResponse.atConsensus(OBTAINER_REQUIRED)),
+            entry("proto.ConsensusCreateTopicTransactionBody.autoRenewAccount", ExpectedResponse.atConsensus(SUCCESS)),
+            entry("proto.ConsensusUpdateTopicTransactionBody.topicID", ExpectedResponse.atConsensus(INVALID_TOPIC_ID)),
+            entry("proto.ConsensusUpdateTopicTransactionBody.autoRenewAccount", ExpectedResponse.atConsensus(SUCCESS)),
+            entry("proto.ConsensusDeleteTopicTransactionBody.topicID", ExpectedResponse.atConsensus(INVALID_TOPIC_ID)),
+            entry(
+                    "proto.ConsensusSubmitMessageTransactionBody.topicID",
+                    ExpectedResponse.atConsensus(INVALID_TOPIC_ID)),
+            entry(
+                    "proto.TokenCreateTransactionBody.treasury",
+                    ExpectedResponse.atIngest(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)),
+            entry("proto.TokenCreateTransactionBody.autoRenewAccount", ExpectedResponse.atConsensus(SUCCESS)),
+            entry(
+                    "proto.CustomFee.fee_collector_account_id",
+                    ExpectedResponse.atConsensus(INVALID_CUSTOM_FEE_COLLECTOR)),
+            entry("proto.FixedFee.denominating_token_id", ExpectedResponse.atConsensus(SUCCESS)));
 
     @NonNull
     @Override
