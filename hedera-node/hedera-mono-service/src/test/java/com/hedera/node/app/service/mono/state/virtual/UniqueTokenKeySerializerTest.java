@@ -45,8 +45,8 @@ class UniqueTokenKeySerializerTest {
         src.serialize(new SerializableDataOutputStream(byteStream));
 
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        final ByteBuffer inputBuffer = ByteBuffer.wrap(byteStream.toByteArray());
-        final UniqueTokenKey dst = serializer.deserialize(inputBuffer, UniqueTokenKey.CURRENT_VERSION);
+        final BufferedData inputBuffer = BufferedData.wrap(byteStream.toByteArray());
+        final UniqueTokenKey dst = serializer.deserialize(inputBuffer);
         assertThat(dst.getNum()).isEqualTo(Long.MAX_VALUE);
         assertThat(dst.getTokenSerial()).isEqualTo(EXAMPLE_SERIAL);
     }
@@ -71,12 +71,13 @@ class UniqueTokenKeySerializerTest {
 
     @Test
     void serializeToByteBuffer_shouldReturnExpectedBytes() throws IOException {
-        final ByteBuffer byteBuffer = ByteBuffer.allocate(UNIQUE_TOKEN_KEY_SIZE);
+        final byte[] arr = new byte[UNIQUE_TOKEN_KEY_SIZE];
+        final BufferedData byteBuffer = BufferedData.wrap(arr);
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
         serializer.serialize(new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL), byteBuffer);
 
         assertThat(byteBuffer.position()).isEqualTo(UNIQUE_TOKEN_KEY_SIZE);
-        assertThat(byteBuffer.array())
+        assertThat(arr)
                 .isEqualTo(Bytes.concat(
                         new byte[] {(byte) 0x88},
                         Longs.toByteArray(Long.MAX_VALUE),
@@ -85,22 +86,20 @@ class UniqueTokenKeySerializerTest {
 
     @Test
     void serializerEquals_whenCorrectDataVersion_shouldReturnTrue() throws IOException {
-        final ByteBuffer buffer = ByteBuffer.wrap(new byte[UNIQUE_TOKEN_KEY_SIZE]);
-        new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL).serialize(buffer);
-        buffer.rewind();
+        final BufferedData buffer = BufferedData.wrap(new byte[UNIQUE_TOKEN_KEY_SIZE]);
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
+        serializer.serialize(new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL), buffer);
+        buffer.reset();
 
-        assertThat(serializer.equals(
-                        buffer, UniqueTokenKey.CURRENT_VERSION, new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL)))
+        assertThat(serializer.equals(buffer, new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL)))
                 .isTrue();
 
-        buffer.rewind();
-        assertThat(serializer.equals(
-                        buffer, UniqueTokenKey.CURRENT_VERSION, new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL)))
+        buffer.reset();
+        assertThat(serializer.equals(buffer, new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL)))
                 .isTrue();
 
-        buffer.rewind();
-        assertThat(serializer.equals(buffer, UniqueTokenKey.CURRENT_VERSION, new UniqueTokenKey(10, EXAMPLE_SERIAL)))
+        buffer.reset();
+        assertThat(serializer.equals(buffer, new UniqueTokenKey(10, EXAMPLE_SERIAL)))
                 .isFalse();
     }
 

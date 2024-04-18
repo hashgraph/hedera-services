@@ -22,8 +22,6 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVirtualKey> {
@@ -76,14 +74,6 @@ public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVir
     }
 
     @Override
-    @Deprecated
-    public void serialize(final EntityNumVirtualKey key, final ByteBuffer buffer) throws IOException {
-        Objects.requireNonNull(key);
-        Objects.requireNonNull(buffer);
-        key.serialize(buffer);
-    }
-
-    @Override
     public EntityNumVirtualKey deserialize(@NonNull final ReadableSequentialData in) {
         Objects.requireNonNull(in);
         final var key = new EntityNumVirtualKey();
@@ -92,24 +82,8 @@ public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVir
     }
 
     @Override
-    @Deprecated
-    public EntityNumVirtualKey deserialize(final ByteBuffer buffer, final long version) throws IOException {
-        Objects.requireNonNull(buffer);
-        final var key = new EntityNumVirtualKey();
-        key.deserialize(buffer);
-        return key;
-    }
-
-    @Override
     public boolean equals(@NonNull final BufferedData buf, @NonNull final EntityNumVirtualKey key) {
         Objects.requireNonNull(buf);
         return key.equalsTo(buf);
-    }
-
-    @Override
-    @Deprecated
-    public boolean equals(ByteBuffer buffer, int version, EntityNumVirtualKey key) throws IOException {
-        Objects.requireNonNull(buffer);
-        return key.equalsTo(buffer, version);
     }
 }

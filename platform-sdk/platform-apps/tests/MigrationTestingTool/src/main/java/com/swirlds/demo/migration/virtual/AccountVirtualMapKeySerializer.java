@@ -20,8 +20,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * This is the key serializer for the {@link AccountVirtualMapKey}.
@@ -78,14 +76,6 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
      * {@inheritDoc}
      */
     @Override
-    public void serialize(AccountVirtualMapKey key, ByteBuffer buffer) throws IOException {
-        key.serialize(buffer);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public AccountVirtualMapKey deserialize(final ReadableSequentialData in) {
         final AccountVirtualMapKey key = new AccountVirtualMapKey();
         key.deserialize(in);
@@ -96,25 +86,7 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
      * {@inheritDoc}
      */
     @Override
-    public AccountVirtualMapKey deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-        final AccountVirtualMapKey key = new AccountVirtualMapKey();
-        key.deserialize(buffer);
-        return key;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean equals(final BufferedData buffer, final AccountVirtualMapKey keyToCompare) {
         return keyToCompare.equals(buffer);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(ByteBuffer buffer, int dataVersion, AccountVirtualMapKey keyToCompare) throws IOException {
-        return keyToCompare.equals(buffer, dataVersion);
     }
 }

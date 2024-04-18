@@ -22,7 +22,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * This class represents an account being store inside
@@ -94,15 +93,6 @@ public class AccountVirtualMapValue implements VirtualValue {
         out.writeLong(uid);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        buffer.putLong(balance);
-        buffer.putLong(sendThreshold);
-        buffer.putLong(receiveThreshold);
-        buffer.put(getRequireSignatureAsByte());
-        buffer.putLong(uid);
-    }
-
     void serialize(final WritableSequentialData out) {
         out.writeLong(balance);
         out.writeLong(sendThreshold);
@@ -126,15 +116,6 @@ public class AccountVirtualMapValue implements VirtualValue {
         this.receiveThreshold = in.readLong();
         this.requireSignature = in.readByte() == 1;
         this.uid = in.readLong();
-    }
-
-    @Deprecated
-    void deserialize(final ByteBuffer buffer, final int version) {
-        this.balance = buffer.getLong();
-        this.sendThreshold = buffer.getLong();
-        this.receiveThreshold = buffer.getLong();
-        this.requireSignature = buffer.get() == 1;
-        this.uid = buffer.getLong();
     }
 
     /**

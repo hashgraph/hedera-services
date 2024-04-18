@@ -37,7 +37,7 @@ import org.apache.logging.log4j.Logger;
 public class HollowAccountCompletionFuzzing extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HollowAccountCompletionFuzzing.class);
 
-    private static final String PROPERTIES = "hollow-account-fuzzing.properties";
+    private static final String PROPERTIES = "hollow-account-completion-fuzzing.properties";
 
     public static void main(String... args) {
         new HollowAccountCompletionFuzzing().runSuiteSync();

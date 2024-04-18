@@ -30,7 +30,6 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -143,11 +142,6 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
         serializeTo(out::writeInt, out::writeLong);
     }
 
-    @Deprecated
-    void serialize(ByteBuffer buffer) {
-        serializeTo(buffer::putInt, buffer::putLong);
-    }
-
     private <E extends Exception> void deserializeFrom(
             final ThrowingSupplier<Integer, E> readIntFn, final ThrowingSupplier<Long, E> readLongFn) throws E {
         int s = readIntFn.get();
@@ -172,11 +166,6 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
 
     void deserialize(final ReadableSequentialData in) {
         deserializeFrom(in::readInt, in::readLong);
-    }
-
-    @Deprecated
-    void deserialize(ByteBuffer buffer, int version) {
-        deserializeFrom(buffer::getInt, buffer::getLong);
     }
 
     @Override
