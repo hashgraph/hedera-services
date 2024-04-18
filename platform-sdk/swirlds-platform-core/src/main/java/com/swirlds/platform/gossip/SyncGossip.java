@@ -231,7 +231,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         reconnectHelper = new ReconnectHelper(
                 this::pause,
                 clearAllPipelinesForReconnect::run,
-                swirldStateManager::getConsensusState,
+                () -> null, // TODO swirldStateManager::getConsensusState,
                 latestCompleteState::getRound,
                 new ReconnectLearnerThrottle(platformContext.getTime(), selfId, reconnectConfig),
                 loadReconnectState,

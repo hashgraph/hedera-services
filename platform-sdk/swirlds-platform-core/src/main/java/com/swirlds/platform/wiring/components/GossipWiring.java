@@ -54,7 +54,7 @@ public class GossipWiring {
                 .build()
                 .cast();
 
-        eventInput = scheduler.buildInputWire("received events");
+        eventInput = scheduler.buildInputWire("events to gossip");
         eventWindowInput = scheduler.buildInputWire("event window");
         startInput = scheduler.buildInputWire("start");
         stopInput = scheduler.buildInputWire("stop");

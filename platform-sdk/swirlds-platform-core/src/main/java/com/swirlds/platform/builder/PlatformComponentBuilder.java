@@ -55,7 +55,7 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.SyncMetrics;
+import com.swirlds.platform.state.nexus.LockFreeStateNexus;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
@@ -619,11 +619,11 @@ public class PlatformComponentBuilder {
                     blocks.selfId(),
                     blocks.appVersion(),
                     () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong(),
-                    null,
-                    null,
+                    null, // TODO wrong
+                    new LockFreeStateNexus(), // TODO wrong
                     blocks.currentPlatformStatus(),
-                    null,
-                    null,
+                    state -> {}, // TODO wrong
+                    () -> {}, // TODO wrong
                     blocks.intakeEventCounter()) {};
 
             throw new IllegalStateException("Gossip has not been set");
