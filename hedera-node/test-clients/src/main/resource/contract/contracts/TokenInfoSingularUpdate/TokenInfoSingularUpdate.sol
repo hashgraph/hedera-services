@@ -71,4 +71,26 @@ contract TokenInfoSingularUpdate is HederaTokenService, KeyHelper {
             revert ("Update of tokenInfo failed!");
         }
     }
+
+    function updateTokenKeyEd(address tokenAddress, bytes memory newKey, KeyType keyType) external {
+        IHederaTokenService.HederaToken memory token;
+        token.tokenKeys = getCustomSingleTypeKeys(keyType, KeyValueType.ED25519, newKey);
+        int responseCode = HederaTokenService.updateTokenInfo(tokenAddress, token);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of tokenInfo failed!");
+        }
+    }
+
+    function updateTokenKeyContractId(address tokenAddress, address contractId, KeyType keyType) external {
+        IHederaTokenService.HederaToken memory token;
+        IHederaTokenService.TokenKey[] memory tokenKeys = new IHederaTokenService.TokenKey[](1);
+        tokenKeys[0] = KeyHelper.getSingleKey(keyType, KeyValueType.CONTRACT_ID, contractId);
+        token.tokenKeys = tokenKeys;
+        int responseCode = HederaTokenService.updateTokenInfo(tokenAddress, token);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of tokenInfo failed!");
+        }
+    }
 }
