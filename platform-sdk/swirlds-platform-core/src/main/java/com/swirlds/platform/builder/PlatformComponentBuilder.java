@@ -625,8 +625,6 @@ public class PlatformComponentBuilder {
                     state -> {}, // TODO wrong
                     () -> {}, // TODO wrong
                     blocks.intakeEventCounter()) {};
-
-            throw new IllegalStateException("Gossip has not been set");
         }
         return gossip;
     }
