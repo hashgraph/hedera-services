@@ -19,6 +19,7 @@ package com.hedera.node.app.service.util.impl.handlers;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -58,8 +59,13 @@ public class UtilPrngHandler implements TransactionHandler {
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        // nothing to do
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         // Negative ranges are not allowed
-        if (context.body().utilPrngOrThrow().range() < 0) {
+        if (txn.utilPrngOrThrow().range() < 0) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_PRNG_RANGE);
         }
     }

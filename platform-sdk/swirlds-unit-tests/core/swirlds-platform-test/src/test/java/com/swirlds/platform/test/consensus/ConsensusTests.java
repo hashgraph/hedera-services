@@ -17,11 +17,17 @@
 package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.common.test.fixtures.WeightGenerators.RANDOM;
-import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.RANDOM_WEIGHT_DESC;
 
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.ConsensusImpl;
+import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.eventhandling.EventConfig_;
+import com.swirlds.platform.test.PlatformTest;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Function;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -30,16 +36,49 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("Consensus Tests")
-class ConsensusTests {
+class ConsensusTests extends PlatformTest {
+
     /**
-     * Number of iterations in each test. An iteration is to create one graph, and feed it in twice
-     * in different topological orders, and check if they match.
+     * Number of iterations in each test. An iteration is to create one graph, and feed it in twice in different
+     * topological orders, and check if they match.
      */
     private final int NUM_ITER = 1;
 
     @BeforeAll
     public static void initConfig() {
         new TestConfigBuilder().getOrCreateConfig();
+    }
+
+    @AfterEach
+    void checkForMarkerFiles() {
+        assertMarkerFile(ConsensusImpl.NO_SUPER_MAJORITY_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.COIN_ROUND_MARKER_FILE, false);
+        assertMarkerFile(ConsensusImpl.NO_JUDGES_MARKER_FILE, false);
+    }
+
+    /**
+     * Replaces the {@link com.swirlds.common.context.PlatformContext} in the test parameters with a new one built from
+     * the {@link PlatformTest#createPlatformContext(Function, Function)} and preserves the birthRound configuration
+     * setting.
+     *
+     * @param params the test parameters
+     * @return the modified test parameters
+     */
+    @NonNull
+    private ConsensusTestParams modifyParams(@NonNull final ConsensusTestParams params) {
+        return new ConsensusTestParams(
+                createPlatformContext(
+                        null,
+                        configBuilder -> configBuilder.withValue(
+                                EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
+                                params.platformContext()
+                                        .getConfiguration()
+                                        .getConfigData(EventConfig.class)
+                                        .useBirthRoundAncientThreshold())),
+                params.numNodes(),
+                params.weightGenerator(),
+                params.weightDesc(),
+                params.seeds());
     }
 
     @ParameterizedTest
@@ -50,7 +89,7 @@ class ConsensusTests {
     void orderInvarianceTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::orderInvarianceTests)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -63,7 +102,7 @@ class ConsensusTests {
     void reconnectSimulation(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::reconnect)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -76,7 +115,7 @@ class ConsensusTests {
     void staleEvent(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::stale)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -89,7 +128,7 @@ class ConsensusTests {
     void forkingTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::forkingTests)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -102,7 +141,7 @@ class ConsensusTests {
     void partitionTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::partitionTests)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -115,7 +154,7 @@ class ConsensusTests {
     void subQuorumPartitionTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::subQuorumPartitionTests)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -128,7 +167,7 @@ class ConsensusTests {
     void cliqueTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::cliqueTests)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -141,7 +180,7 @@ class ConsensusTests {
     void variableRateTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::variableRateTests)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -154,7 +193,7 @@ class ConsensusTests {
     void nodeUsesStaleOtherParents(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::usesStaleOtherParents)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -167,7 +206,7 @@ class ConsensusTests {
     void nodeProvidesStaleOtherParents(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::providesStaleOtherParents)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -180,7 +219,7 @@ class ConsensusTests {
     void quorumOfNodesGoDownTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::quorumOfNodesGoDown)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -193,7 +232,7 @@ class ConsensusTests {
     void subQuorumOfNodesGoDownTests(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::subQuorumOfNodesGoDown)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -206,7 +245,7 @@ class ConsensusTests {
     void repeatedTimestampTest(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::repeatedTimestampTest)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -219,7 +258,7 @@ class ConsensusTests {
     void ancientEventTest(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::ancient)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -232,7 +271,7 @@ class ConsensusTests {
     void fastRestartWithEvents(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::restart)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -245,7 +284,7 @@ class ConsensusTests {
     void nodeRemoveTest(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::removeNode)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -254,7 +293,7 @@ class ConsensusTests {
     void syntheticSnapshotTest() {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::syntheticSnapshot)
-                .setParams(new ConsensusTestParams(DEFAULT_PLATFORM_CONTEXT, 4, RANDOM, RANDOM_WEIGHT_DESC))
+                .setParams(new ConsensusTestParams(createDefaultPlatformContext(), 4, RANDOM, RANDOM_WEIGHT_DESC))
                 .setIterations(NUM_ITER)
                 .run();
     }
@@ -267,7 +306,7 @@ class ConsensusTests {
     void genesisSnapshotTest(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::genesisSnapshotTest)
-                .setParams(params)
+                .setParams(modifyParams(params))
                 .setIterations(NUM_ITER)
                 .run();
     }
