@@ -112,7 +112,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.hasAutoRenewAccount()) {
             context.requireKeyOrThrow(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
-        if (op.hasTreasury() && !isZeroAccount(op.treasury())) {
+        // If the transactionID is missing we have contract call,
+        // so we need to verify that the provided treasury is not a zero account.
+        if (op.hasTreasury() && !(!context.body().hasTransactionID() && isZeroAccount(op.treasury()))) {
             context.requireKeyOrThrow(op.treasuryOrThrow(), INVALID_ACCOUNT_ID);
         }
         if (op.hasAdminKey()) {
