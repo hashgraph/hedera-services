@@ -22,13 +22,15 @@ public enum HederaEvmVersion {
     VERSION_030("v0.30"),
     VERSION_034("v0.34"),
     VERSION_038("v0.38"),
-    VERSION_046("v0.46");
+    VERSION_046("v0.46"),
+    VERSION_050("v0.50") /* Cancun */;
 
     public static final Map<String, HederaEvmVersion> EVM_VERSIONS = Map.of(
             VERSION_030.key(), VERSION_030,
             VERSION_034.key(), VERSION_034,
             VERSION_038.key(), VERSION_038,
-            VERSION_046.key(), VERSION_046);
+            VERSION_046.key(), VERSION_046,
+            VERSION_050.key(), VERSION_050);
 
     HederaEvmVersion(String key) {
         this.key = key;

@@ -21,7 +21,6 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 
 public class TestValueSerializer implements ValueSerializer<TestValue> {
 
@@ -65,27 +64,10 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
     }
 
     @Override
-    public void serialize(TestValue data, ByteBuffer buffer) {
-        final String s = data.getValue();
-        final byte[] bytes = CommonUtils.getNormalisedStringBytes(s);
-        buffer.putInt(bytes.length);
-        buffer.put(bytes);
-    }
-
-    @Override
     public TestValue deserialize(final ReadableSequentialData in) {
         final int length = in.readInt();
         final byte[] bytes = new byte[length];
         in.readBytes(bytes);
-        final String s = CommonUtils.getNormalisedStringFromBytes(bytes);
-        return new TestValue(s);
-    }
-
-    @Override
-    public TestValue deserialize(ByteBuffer buffer, long dataVersion) {
-        final int length = buffer.getInt();
-        final byte[] bytes = new byte[length];
-        buffer.get(bytes);
         final String s = CommonUtils.getNormalisedStringFromBytes(bytes);
         return new TestValue(s);
     }

@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.time.Duration;
 
 /**
  * Contains configuration values for the platform schedulers.
@@ -38,18 +39,11 @@ import com.swirlds.config.api.ConfigProperty;
  * @param internalEventValidator                            configuration for the internal event validator scheduler
  * @param eventDeduplicator                                 configuration for the event deduplicator scheduler
  * @param eventSignatureValidator                           configuration for the event signature validator scheduler
- * @param orphanBufferSchedulerType                         the orphan buffer scheduler type
- * @param orphanBufferUnhandledCapacity                     number of unhandled tasks allowed in the orphan buffer
- *                                                          scheduler
- * @param inOrderLinkerSchedulerType                        the in-order linker scheduler type
- * @param inOrderLinkerUnhandledCapacity                    number of unhandled tasks allowed in the in-order linker
- *                                                          scheduler
- * @param consensusEngineSchedulerType                      the consensus engine scheduler type
- * @param consensusEngineUnhandledCapacity                  number of unhandled tasks allowed in the consensus engine
- *                                                          scheduler
- * @param eventCreationManagerSchedulerType                 the event creation manager scheduler type
- * @param eventCreationManagerUnhandledCapacity             number of unhandled tasks allowed in the event creation
- *                                                          manager scheduler
+ * @param orphanBuffer                                      configuration for the orphan buffer scheduler scheduler
+ * @param consensusEngine                                   configuration for the consensus engine scheduler
+ * @param inOrderLinker                                     configuration for the in order linker scheduler
+ * @param eventCreationManager                              configuration for the event creation manager scheduler
+ * @param selfEventSigner                                   configuration for the self event signer scheduler
  * @param signedStateFileManagerSchedulerType               the signed state file manager scheduler type
  * @param signedStateFileManagerUnhandledCapacity           number of unhandled tasks allowed in the signed state file
  *                                                          manager scheduler
@@ -59,9 +53,8 @@ import com.swirlds.config.api.ConfigProperty;
  * @param pcesWriterSchedulerType                           the preconsensus event writer scheduler type
  * @param pcesWriterUnhandledCapacity                       number of unhandled tasks allowed in the preconsensus event
  *                                                          writer scheduler
- * @param pcesSequencerSchedulerType                        the preconsensus event sequencer scheduler type
- * @param pcesSequencerUnhandledTaskCapacity                number of unhandled tasks allowed in the preconsensus event
- *                                                          sequencer scheduler
+ * @param pcesSequencer                                     configuration for the preconsensus event sequencer
+ *                                                          scheduler
  * @param eventDurabilityNexusSchedulerType                 the durability nexus scheduler type
  * @param eventDurabilityNexusUnhandledTaskCapacity         number of unhandled tasks allowed in the durability nexus
  *                                                          scheduler
@@ -76,6 +69,7 @@ import com.swirlds.config.api.ConfigProperty;
  * @param consensusRoundHandlerSchedulerType                the consensus round handler scheduler type
  * @param consensusRoundHandlerUnhandledCapacity            number of unhandled tasks allowed for the consensus round
  *                                                          handler
+ * @param runningEventHasher                                configuration for the running event hasher scheduler
  * @param issDetectorSchedulerType                          the ISS detector scheduler type
  * @param issDetectorUnhandledCapacity                      number of unhandled tasks allowed for the ISS detector
  * @param hashLoggerSchedulerType                           the hash logger scheduler type
@@ -85,7 +79,11 @@ import com.swirlds.config.api.ConfigProperty;
  *                                                          notifier
  * @param stateHasherSchedulerType                          the state hasher scheduler type
  * @param stateHasherUnhandledCapacity                      number of unhandled tasks allowed for the state hasher
+ * @param stateGarbageCollector                             configuration for the state garbage collector scheduler
+ * @param stateGarbageCollectorHeartbeatPeriod              the frequency that heartbeats should be sent to the state
+ *                                                          garbage collector
  * @param platformPublisher                                 configuration for the platform publisher scheduler
+ * @param consensusEventStream                              configuration for the consensus event stream scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -98,22 +96,24 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration eventDeduplicator,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventSignatureValidator,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType orphanBufferSchedulerType,
-        @ConfigProperty(defaultValue = "500") int orphanBufferUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType inOrderLinkerSchedulerType,
-        @ConfigProperty(defaultValue = "500") int inOrderLinkerUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusEngineSchedulerType,
-        @ConfigProperty(defaultValue = "500") int consensusEngineUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType eventCreationManagerSchedulerType,
-        @ConfigProperty(defaultValue = "500") int eventCreationManagerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration orphanBuffer,
+        @ConfigProperty(
+                        defaultValue =
+                                "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
+                TaskSchedulerConfiguration consensusEngine,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration inOrderLinker,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration eventCreationManager,
+        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration selfEventSigner,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType signedStateFileManagerSchedulerType,
         @ConfigProperty(defaultValue = "20") int signedStateFileManagerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
         @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType pcesWriterSchedulerType,
         @ConfigProperty(defaultValue = "500") int pcesWriterUnhandledCapacity,
-        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType pcesSequencerSchedulerType,
-        @ConfigProperty(defaultValue = "-1") int pcesSequencerUnhandledTaskCapacity,
+        @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration pcesSequencer,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerType eventDurabilityNexusSchedulerType,
         @ConfigProperty(defaultValue = "-1") int eventDurabilityNexusUnhandledTaskCapacity,
         @ConfigProperty(defaultValue = "CONCURRENT") TaskSchedulerType applicationTransactionPrehandlerSchedulerType,
@@ -124,6 +124,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int shadowgraphUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
         @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
+                TaskSchedulerConfiguration runningEventHasher,
         @ConfigProperty(defaultValue = "SEQUENTIAL") TaskSchedulerType issDetectorSchedulerType,
         @ConfigProperty(defaultValue = "500") int issDetectorUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType hashLoggerSchedulerType,
@@ -131,5 +133,9 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateHasherSchedulerType,
         @ConfigProperty(defaultValue = "2") int stateHasherUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration stateGarbageCollector,
+        @ConfigProperty(defaultValue = "200ms") Duration stateGarbageCollectorHeartbeatPeriod,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration platformPublisher) {}
+                TaskSchedulerConfiguration platformPublisher,
+        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration consensusEventStream) {}

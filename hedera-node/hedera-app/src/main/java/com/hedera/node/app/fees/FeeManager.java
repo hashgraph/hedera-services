@@ -115,12 +115,7 @@ public final class FeeManager {
 
         // Populate the map of HederaFunctionality -> FeeData for the current schedule
         this.currentFeeDataMap = new HashMap<>();
-        if (currentSchedule.hasTransactionFeeSchedule()) {
-            populateFeeDataMap(currentFeeDataMap, currentSchedule.transactionFeeScheduleOrThrow());
-        } else {
-            logger.warn("The current fee schedule is missing transaction information, effectively disabling all"
-                    + "transactions.");
-        }
+        populateFeeDataMap(currentFeeDataMap, currentSchedule.transactionFeeSchedule());
 
         // Get the expiration time of the current schedule
         if (currentSchedule.hasExpiryTime()) {
@@ -145,12 +140,7 @@ public final class FeeManager {
         } else {
             // Populate the map of HederaFunctionality -> FeeData for the current schedule
             this.nextFeeDataMap = new HashMap<>();
-            if (nextSchedule.hasTransactionFeeSchedule()) {
-                populateFeeDataMap(nextFeeDataMap, nextSchedule.transactionFeeScheduleOrThrow());
-            } else {
-                logger.warn("The next fee schedule is missing transaction information, effectively disabling all"
-                        + "transactions once it becomes active.");
-            }
+            populateFeeDataMap(nextFeeDataMap, nextSchedule.transactionFeeSchedule());
         }
 
         return SUCCESS;
@@ -244,8 +234,8 @@ public final class FeeManager {
     private void populateFeeDataMap(
             @NonNull final Map<Entry, FeeData> feeDataMap, @NonNull final List<TransactionFeeSchedule> feeSchedule) {
         feeSchedule.forEach(t -> {
-            if (t.hasFees()) {
-                for (final var feeData : t.feesOrThrow()) {
+            if (!t.fees().isEmpty()) {
+                for (final var feeData : t.fees()) {
                     feeDataMap.put(new Entry(t.hederaFunctionality(), feeData.subType()), feeData);
                 }
             } else if (t.hasFeeData()) {

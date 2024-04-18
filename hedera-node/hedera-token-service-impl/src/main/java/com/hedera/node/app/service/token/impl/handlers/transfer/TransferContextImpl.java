@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_A
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenAssociation;
@@ -79,7 +78,7 @@ public class TransferContextImpl implements TransferContext {
 
     @Override
     public AccountID getFromAlias(final AccountID aliasedId) {
-        final var account = accountStore.get(aliasedId);
+        final var account = accountStore.getAliasedAccountById(aliasedId);
 
         if (account != null) {
             final var id = account.accountId();
@@ -166,10 +165,12 @@ public class TransferContextImpl implements TransferContext {
     public void validateHbarAllowances() {
         final var topLevelPayer = context.payer();
         final var op = context.body().cryptoTransferOrThrow();
-        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
+        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
             if (aa.isApproval() && aa.amount() < 0L) {
                 maybeValidateHbarAllowance(
-                        accountStore.get(aa.accountIDOrElse(AccountID.DEFAULT)), topLevelPayer, aa.amount());
+                        accountStore.getAliasedAccountById(aa.accountIDOrElse(AccountID.DEFAULT)),
+                        topLevelPayer,
+                        aa.amount());
             }
         }
     }
@@ -177,7 +178,7 @@ public class TransferContextImpl implements TransferContext {
     private void maybeValidateHbarAllowance(
             @Nullable final Account account, @NonNull final AccountID topLevelPayer, final long amount) {
         if (account != null) {
-            final var cryptoAllowances = account.cryptoAllowancesOrElse(emptyList());
+            final var cryptoAllowances = account.cryptoAllowances();
             for (final var allowance : cryptoAllowances) {
                 if (topLevelPayer.equals(allowance.spenderId())) {
                     final var newAllowanceAmount = allowance.amount() + amount;

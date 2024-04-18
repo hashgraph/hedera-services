@@ -25,7 +25,6 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.preHandleFailure;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFailure;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -355,7 +354,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             return previousResult.verificationResults();
         }
         // If not, bootstrap the expanded signature pairs by grabbing all prefixes that are "full" keys already
-        final var originals = txInfo.signatureMap().sigPairOrElse(emptyList());
+        final var originals = txInfo.signatureMap().sigPair();
         final var expanded = new LinkedHashSet<ExpandedSignaturePair>();
         signatureExpander.expand(originals, expanded);
         // Expand the payer account key signatures if it is not a hollow account

@@ -29,6 +29,8 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.transactions.system;
     exports com.hedera.services.bdd.suites.crypto.staking;
     exports com.hedera.services.bdd.spec.fees;
+    exports com.hedera.services.bdd.spec.verification.traceability;
+    exports com.hedera.services.bdd.spec.assertions;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
@@ -48,6 +50,7 @@ module com.hedera.node.test.clients {
     requires transitive org.junit.platform.engine;
     requires transitive org.testcontainers;
     requires transitive org.yaml.snakeyaml;
+    requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app;
@@ -72,7 +75,6 @@ module com.hedera.node.test.clients {
     requires org.hyperledger.besu.internal.crypto;
     requires org.json;
     requires org.opentest4j;
-    requires tuweni.bytes;
     requires tuweni.units;
     requires static com.github.spotbugs.annotations;
 }

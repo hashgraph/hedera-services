@@ -19,13 +19,13 @@ package com.swirlds.platform.test.consensus;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
-import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -35,10 +35,11 @@ import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
@@ -46,13 +47,11 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
-import com.swirlds.platform.wiring.OrphanBufferWiring;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 
 /**
  * Event intake with consensus and shadowgraph, used for testing
@@ -61,7 +60,7 @@ public class TestIntake {
     private final ConsensusOutput output;
 
     private final ComponentWiring<EventHasher, GossipEvent> hasherWiring;
-    private final OrphanBufferWiring orphanBufferWiring;
+    private final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final WiringModel model;
     private final int roundsNonAncient;
@@ -80,7 +79,7 @@ public class TestIntake {
         final Time time = Time.getCurrent();
         output = new ConsensusOutput(time);
 
-        model = WiringModel.create(platformContext, mock(ForkJoinPool.class));
+        model = WiringModelBuilder.create(platformContext).build();
 
         hasherWiring = new ComponentWiring<>(model, EventHasher.class, directScheduler("eventHasher"));
         final EventHasher eventHasher = new DefaultEventHasher(platformContext);
@@ -90,8 +89,8 @@ public class TestIntake {
                 new PassThroughWiring(model, "GossipEvent", "postHashCollector", TaskSchedulerType.DIRECT);
 
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
-        final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
-        orphanBufferWiring = OrphanBufferWiring.create(directScheduler("orphanBuffer"));
+        final OrphanBuffer orphanBuffer = new DefaultOrphanBuffer(platformContext, intakeEventCounter);
+        orphanBufferWiring = new ComponentWiring<>(model, OrphanBuffer.class, directScheduler("orphanBuffer"));
         orphanBufferWiring.bind(orphanBuffer);
 
         final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, addressBook, selfId);
@@ -99,20 +98,23 @@ public class TestIntake {
         consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, directScheduler("consensusEngine"));
         consensusEngineWiring.bind(consensusEngine);
 
-        final ComponentWiring<EventWindowManager, NonAncientEventWindow> eventWindowManagerWiring =
+        final ComponentWiring<EventWindowManager, EventWindow> eventWindowManagerWiring =
                 new ComponentWiring<>(model, EventWindowManager.class, directScheduler("eventWindowManager"));
         eventWindowManagerWiring.bind(new DefaultEventWindowManager());
 
         hasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
-        postHashCollectorWiring.getOutputWire().solderTo(orphanBufferWiring.eventInput());
-        orphanBufferWiring.eventOutput().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+        postHashCollectorWiring.getOutputWire().solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::handleEvent));
+        final OutputWire<GossipEvent> splitOutput = orphanBufferWiring.getSplitOutput();
+        splitOutput.solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
         consensusRoundOutputWire.solderTo(
                 eventWindowManagerWiring.getInputWire(EventWindowManager::extractEventWindow));
         consensusRoundOutputWire.solderTo("consensusOutputTestTool", "round output", output::consensusRound);
 
-        eventWindowManagerWiring.getOutputWire().solderTo(orphanBufferWiring.nonAncientEventWindowInput(), INJECT);
+        eventWindowManagerWiring
+                .getOutputWire()
+                .solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::setEventWindow), INJECT);
 
         // Ensure unsoldered wires are created.
         hasherWiring.getInputWire(EventHasher::hashEvent);
@@ -159,13 +161,13 @@ public class TestIntake {
         // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
         // production.
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 snapshot.round(),
                 snapshot.getMinimumGenerationNonAncient(roundsNonAncient),
                 snapshot.getMinimumGenerationNonAncient(roundsNonAncient),
                 GENERATION_THRESHOLD);
 
-        orphanBufferWiring.nonAncientEventWindowInput().put(eventWindow);
+        orphanBufferWiring.getInputWire(OrphanBuffer::setEventWindow).put(eventWindow);
         consensusEngineWiring
                 .getInputWire(ConsensusEngine::outOfBandSnapshotUpdate)
                 .put(snapshot);

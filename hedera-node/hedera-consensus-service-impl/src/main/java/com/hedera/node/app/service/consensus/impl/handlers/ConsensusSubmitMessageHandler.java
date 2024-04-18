@@ -94,6 +94,11 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
     }
 
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        // nothing to do
+    }
+
     /**
      * Given the appropriate context, submits a message to a topic.
      *

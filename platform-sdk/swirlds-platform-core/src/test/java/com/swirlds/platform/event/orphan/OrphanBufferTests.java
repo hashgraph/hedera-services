@@ -17,7 +17,6 @@
 package com.swirlds.platform.event.orphan;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,17 +29,16 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -106,8 +104,6 @@ class OrphanBufferTests {
 
     private AtomicLong eventsExitedIntakePipeline;
 
-    private OrphanBuffer orphanBuffer;
-
     /**
      * Create a bootstrap event for a node. This is just a descriptor, and will never be received from intake.
      *
@@ -115,63 +111,13 @@ class OrphanBufferTests {
      * @param parentCandidates the list of events to choose from when selecting an other parent
      * @return the bootstrap event descriptor
      */
-    private EventDescriptor createBootstrapEvent(
-            @NonNull final NodeId nodeId, @NonNull final List<EventDescriptor> parentCandidates) {
-        final EventDescriptor bootstrapEvent =
-                new EventDescriptor(randomHash(random), nodeId, 0, ConsensusConstants.ROUND_FIRST);
+    private GossipEvent createBootstrapEvent(
+            @NonNull final NodeId nodeId, @NonNull final List<GossipEvent> parentCandidates) {
 
+        final GossipEvent bootstrapEvent =
+                new TestingEventBuilder(random).setCreatorId(nodeId).build();
         parentCandidates.add(bootstrapEvent);
-
         return bootstrapEvent;
-    }
-
-    /**
-     * Create a gossip event with the given parameters.
-     *
-     * @param eventHash       the hash of the event
-     * @param eventCreator    the creator of the event
-     * @param eventGeneration the generation of the event
-     * @param eventBirthRound the birth round of the event
-     * @param selfParent      the self parent of the event
-     * @param otherParent     the other parent of the event
-     * @return the gossip event
-     */
-    private static GossipEvent createGossipEvent(
-            @NonNull final Hash eventHash,
-            @NonNull final NodeId eventCreator,
-            final long eventGeneration,
-            final long eventBirthRound,
-            @NonNull final EventDescriptor selfParent,
-            @NonNull final EventDescriptor otherParent) {
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        when(hashedData.getHash()).thenReturn(eventHash);
-        when(hashedData.getCreatorId()).thenReturn(eventCreator);
-        when(hashedData.getGeneration()).thenReturn(eventGeneration);
-        when(hashedData.getBirthRound()).thenReturn(eventBirthRound);
-        when(hashedData.getSelfParentGen()).thenReturn(selfParent.getGeneration());
-        when(hashedData.getOtherParentGen()).thenReturn(otherParent.getGeneration());
-        when(hashedData.getSelfParentHash()).thenReturn(selfParent.getHash());
-        when(hashedData.getOtherParentHash()).thenReturn(otherParent.getHash());
-        when(hashedData.getTimeCreated()).thenReturn(Instant.now());
-        when(hashedData.getSelfParent()).thenReturn(selfParent == null ? null : selfParent);
-        when(hashedData.getOtherParents())
-                .thenReturn(otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent));
-
-        final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
-
-        final GossipEvent event = mock(GossipEvent.class);
-        when(event.getHashedData()).thenReturn(hashedData);
-        when(event.getUnhashedData()).thenReturn(unhashedData);
-        when(event.getDescriptor())
-                .thenReturn(new EventDescriptor(eventHash, eventCreator, eventGeneration, eventBirthRound));
-        when(event.getGeneration()).thenReturn(eventGeneration);
-        when(event.getSenderId()).thenReturn(eventCreator);
-        when(event.getAncientIndicator(any()))
-                .thenAnswer(args -> args.getArguments()[0] == AncientMode.BIRTH_ROUND_THRESHOLD
-                        ? eventBirthRound
-                        : eventGeneration);
-
-        return event;
     }
 
     /**
@@ -182,58 +128,57 @@ class OrphanBufferTests {
      * @return the random event
      */
     private GossipEvent createRandomEvent(
-            @NonNull final List<EventDescriptor> parentCandidates, @NonNull final Map<NodeId, EventDescriptor> tips) {
+            @NonNull final List<GossipEvent> parentCandidates, @NonNull final Map<NodeId, GossipEvent> tips) {
 
-        final Hash eventHash = randomHash(random);
         final NodeId eventCreator = new NodeId(random.nextInt(NODE_ID_COUNT));
 
-        final EventDescriptor selfParent =
+        final GossipEvent selfParent =
                 tips.computeIfAbsent(eventCreator, creator -> createBootstrapEvent(creator, parentCandidates));
 
-        final EventDescriptor otherParent = chooseOtherParent(parentCandidates);
+        final GossipEvent otherParent = chooseOtherParent(parentCandidates);
 
         final long maxParentGeneration = Math.max(selfParent.getGeneration(), otherParent.getGeneration());
         final long eventGeneration = maxParentGeneration + 1;
         maxGeneration = Math.max(maxGeneration, eventGeneration);
 
-        final long maxParentBirthRound = Math.max(selfParent.getBirthRound(), otherParent.getBirthRound());
-        // simulate advancing consensus rounds by advancing birth round periodically.
-        final long eventBirthRound = maxParentBirthRound + maybeAdvanceRound.apply(random);
-
-        return createGossipEvent(eventHash, eventCreator, eventGeneration, eventBirthRound, selfParent, otherParent);
+        return new TestingEventBuilder(random)
+                .setCreatorId(eventCreator)
+                .setSelfParent(selfParent)
+                .setOtherParent(otherParent)
+                .build();
     }
 
     /**
      * Check if an event has been emitted or is ancient
      *
-     * @param event                 the event to check
-     * @param nonAncientEventWindow the non-ancient event window defining ancient.
+     * @param event       the event to check
+     * @param eventWindow the event window defining ancient.
      * @return true if the event has been emitted or is ancient, false otherwise
      */
     private static boolean eventEmittedOrAncient(
             @NonNull final EventDescriptor event,
-            @NonNull final NonAncientEventWindow nonAncientEventWindow,
+            @NonNull final EventWindow eventWindow,
             @NonNull final Collection<Hash> emittedEvents) {
 
-        return emittedEvents.contains(event.getHash()) || nonAncientEventWindow.isAncient(event);
+        return emittedEvents.contains(event.getHash()) || eventWindow.isAncient(event);
     }
 
     /**
      * Assert that an event should have been emitted by the orphan buffer, based on its parents being either emitted or
      * ancient.
      *
-     * @param event                 the event to check
-     * @param nonAncientEventWindow the non-ancient event window defining ancient.
-     * @param emittedEvents         the events that have been emitted so far
+     * @param event         the event to check
+     * @param eventWindow   the event window
+     * @param emittedEvents the events that have been emitted so far
      */
     private static void assertValidParents(
             @NonNull final GossipEvent event,
-            @NonNull final NonAncientEventWindow nonAncientEventWindow,
+            @NonNull final EventWindow eventWindow,
             @NonNull final Collection<Hash> emittedEvents) {
-        assertTrue(eventEmittedOrAncient(event.getHashedData().getSelfParent(), nonAncientEventWindow, emittedEvents));
+        assertTrue(eventEmittedOrAncient(event.getHashedData().getSelfParent(), eventWindow, emittedEvents));
 
         for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
-            assertTrue(eventEmittedOrAncient(otherParent, nonAncientEventWindow, emittedEvents));
+            assertTrue(eventEmittedOrAncient(otherParent, eventWindow, emittedEvents));
         }
     }
 
@@ -244,7 +189,7 @@ class OrphanBufferTests {
      * @param parentCandidates the list of candidates
      * @return the chosen other parent
      */
-    private EventDescriptor chooseOtherParent(@NonNull final List<EventDescriptor> parentCandidates) {
+    private GossipEvent chooseOtherParent(@NonNull final List<GossipEvent> parentCandidates) {
         final int startIndex = Math.max(0, parentCandidates.size() - PARENT_SELECTION_WINDOW);
         return parentCandidates.get(
                 startIndex + random.nextInt(Math.min(PARENT_SELECTION_WINDOW, parentCandidates.size())));
@@ -254,15 +199,15 @@ class OrphanBufferTests {
     void setup() {
         random = getRandomPrintSeed();
 
-        final List<EventDescriptor> parentCandidates = new ArrayList<>();
-        final Map<NodeId, EventDescriptor> tips = new HashMap<>();
+        final List<GossipEvent> parentCandidates = new ArrayList<>();
+        final Map<NodeId, GossipEvent> tips = new HashMap<>();
 
         intakeEvents = new ArrayList<>();
 
         for (long i = 0; i < TEST_EVENT_COUNT; i++) {
             final GossipEvent newEvent = createRandomEvent(parentCandidates, tips);
 
-            parentCandidates.add(newEvent.getDescriptor());
+            parentCandidates.add(newEvent);
             intakeEvents.add(newEvent);
         }
 
@@ -283,7 +228,7 @@ class OrphanBufferTests {
                 })
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
-        orphanBuffer = new OrphanBuffer(
+        final DefaultOrphanBuffer orphanBuffer = new DefaultOrphanBuffer(
                 TestPlatformContextBuilder.create()
                         .withConfiguration(new TestConfigBuilder()
                                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, useBirthRoundForAncient)
@@ -315,16 +260,16 @@ class OrphanBufferTests {
             latestConsensusRound += maybeAdvanceRound.apply(random);
             final AncientMode ancientMode =
                     useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
-            final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(
+            final EventWindow eventWindow = new EventWindow(
                     latestConsensusRound,
                     ancientMode.selectIndicator(
                             minimumGenerationNonAncient, Math.max(1, latestConsensusRound - 26 + 1)),
                     1 /* ignored in this context */,
                     ancientMode);
-            unorphanedEvents.addAll(orphanBuffer.setNonAncientEventWindow(nonAncientEventWindow));
+            unorphanedEvents.addAll(orphanBuffer.setEventWindow(eventWindow));
 
             for (final GossipEvent unorphanedEvent : unorphanedEvents) {
-                assertValidParents(unorphanedEvent, nonAncientEventWindow, emittedEvents);
+                assertValidParents(unorphanedEvent, eventWindow, emittedEvents);
                 emittedEvents.add(unorphanedEvent.getHashedData().getHash());
             }
         }

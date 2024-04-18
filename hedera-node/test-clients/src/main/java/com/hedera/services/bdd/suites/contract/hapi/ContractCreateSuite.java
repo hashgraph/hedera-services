@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitContrac
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitEthereumTransaction;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
@@ -78,6 +79,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -123,6 +125,11 @@ public class ContractCreateSuite extends HapiSuite {
     private static final String PATTERN = "0.0.%d";
 
     private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
+    private static final String FOUNDRY_DEPLOYMENT_SIGNER = "3fab184622dc19b6109349b94811493bf2a45362";
+    private static final String FOUNDRY_DEPLOYMENT_TRANSACTION =
+            "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
+    private static final String EXPECTED_FOUNDRY_DEPLOYER_ADDRESS = "4e59b44847b379578588920ca78fbf26c0b4956c";
+    private static final String FOUNDRY_DEPLOYER = "FoundryDeployerContract";
 
     public static void main(String... args) {
         new ContractCreateSuite().runSuiteAsync();
@@ -131,6 +138,7 @@ public class ContractCreateSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
+                createFoundryDeterministicDeployer(),
                 createEmptyConstructor(),
                 insufficientPayerBalanceUponCreation(),
                 rejectsInvalidMemo(),
@@ -152,12 +160,33 @@ public class ContractCreateSuite extends HapiSuite {
                 newAccountsCanUsePureContractIdKey(),
                 createContractWithStakingFields(),
                 disallowCreationsOfEmptyInitCode(),
-                createCallInConstructor());
+                createCallInConstructor(),
+                cannotSetMaxAutomaticAssociations());
     }
 
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    @HapiTest
+    final HapiSpec createFoundryDeterministicDeployer() {
+        final var creatorAddress = ByteString.copyFrom(CommonUtils.unhex(FOUNDRY_DEPLOYMENT_SIGNER));
+        final var transaction = ByteString.copyFrom(CommonUtils.unhex(FOUNDRY_DEPLOYMENT_TRANSACTION));
+        final var systemFileId = FileID.newBuilder().setFileNum(159).build();
+
+        return defaultHapiSpec("createFoundryDeterministicDeployer")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(PAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromTo(PAYER, creatorAddress, ONE_HUNDRED_HBARS)))
+                .when(explicitEthereumTransaction(FOUNDRY_DEPLOYER, (spec, b) -> b.setCallData(systemFileId)
+                                .setEthereumData(transaction))
+                        .payingWith(PAYER))
+                .then(getContractInfo(FOUNDRY_DEPLOYER)
+                        .has(contractWith().addressOrAlias(EXPECTED_FOUNDRY_DEPLOYER_ADDRESS))
+                        .logged());
     }
 
     @HapiTest
@@ -697,6 +726,16 @@ public class ContractCreateSuite extends HapiSuite {
                                 .logged())
                 .when()
                 .then();
+    }
+
+    @HapiTest
+    private HapiSpec cannotSetMaxAutomaticAssociations() {
+        return defaultHapiSpec("cannotSetMaxAutomaticAssociations")
+                .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+                .when()
+                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                        .maxAutomaticTokenAssociations(10)
+                        .hasKnownStatus(NOT_SUPPORTED));
     }
 
     @Override
