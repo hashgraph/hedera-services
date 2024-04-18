@@ -125,6 +125,7 @@ public final class Randotron extends Random {
      *
      * @return random Bytes
      */
+    @NonNull
     public Bytes randomHashBytes() {
         return Bytes.wrap(randomByteArray(DigestType.SHA_384.digestLength()));
     }
