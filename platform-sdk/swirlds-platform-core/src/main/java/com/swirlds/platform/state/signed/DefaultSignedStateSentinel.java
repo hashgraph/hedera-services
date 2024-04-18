@@ -50,12 +50,10 @@ public class DefaultSignedStateSentinel implements SignedStateSentinel {
      */
     public DefaultSignedStateSentinel(@NonNull final PlatformContext platformContext) {
         this.time = platformContext.getTime();
-        maxSignedStateAge = platformContext
-                .getConfiguration()
-                .getConfigData(StateConfig.class)
-                .suspiciousSignedStateAge();
-
-        rateLimiter = new RateLimiter(Time.getCurrent(), Duration.ofMinutes(10));
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        maxSignedStateAge = stateConfig.suspiciousSignedStateAge();
+        final Duration rateLimitPeriod = stateConfig.signedStateAgeCheckPeriod();
+        rateLimiter = new RateLimiter(Time.getCurrent(), rateLimitPeriod);
     }
 
     /**
