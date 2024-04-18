@@ -32,8 +32,8 @@ import java.util.List;
 import java.util.Optional;
 
 public class RandomAccountUpdate implements OpProvider {
-    private final EntityNameProvider<Key> keys;
-    private final EntityNameProvider<AccountID> accounts;
+    protected final EntityNameProvider<Key> keys;
+    protected final EntityNameProvider<AccountID> accounts;
 
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
 
@@ -54,7 +54,6 @@ public class RandomAccountUpdate implements OpProvider {
             return Optional.empty();
         }
         final var newKey = keys.getQualifying();
-
         HapiCryptoUpdate op = cryptoUpdate(target.get())
                 .key(newKey.get())
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)

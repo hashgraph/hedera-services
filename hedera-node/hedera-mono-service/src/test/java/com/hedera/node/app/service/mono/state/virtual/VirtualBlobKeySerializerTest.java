@@ -27,9 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
 class VirtualBlobKeySerializerTest {
@@ -40,8 +40,6 @@ class VirtualBlobKeySerializerTest {
 
     @Test
     void gettersWork() {
-        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
-
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
         assertEquals(DATA_VERSION, subject.getCurrentDataVersion());
         assertEquals(CLASS_ID, subject.getClassId());
@@ -57,18 +55,18 @@ class VirtualBlobKeySerializerTest {
 
     @Test
     void deserializeWorks() throws IOException {
-        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
+        final BufferedData bin = BufferedData.allocate(subject.getSerializedSize());
         final var expectedKey = new VirtualBlobKey(FILE_DATA, entityNum);
-        bin.put((byte) FILE_DATA.ordinal());
-        bin.putInt(entityNum);
-        bin.rewind();
+        bin.writeByte((byte) FILE_DATA.ordinal());
+        bin.writeInt(entityNum);
+        bin.reset();
 
-        assertEquals(expectedKey, subject.deserialize(bin, 1));
+        assertEquals(expectedKey, subject.deserialize(bin));
     }
 
     @Test
-    void serializeWorks() throws IOException {
-        final ByteBuffer out = ByteBuffer.allocate(subject.getSerializedSize());
+    void serializeWorks() {
+        final BufferedData out = BufferedData.allocate(subject.getSerializedSize());
         final var virtualBlobKey = new VirtualBlobKey(FILE_DATA, entityNum);
 
         subject.serialize(virtualBlobKey, out);
@@ -81,16 +79,16 @@ class VirtualBlobKeySerializerTest {
         final var sameTypeDiffNum = new VirtualBlobKey(FILE_DATA, otherEntityNum);
         final var diffTypeSameNum = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
 
-        final ByteBuffer bin = ByteBuffer.allocate(subject.getSerializedSize());
-        bin.put((byte) someKey.getType().ordinal());
-        bin.putInt(someKey.getEntityNumCode());
-        bin.rewind();
+        final BufferedData bin = BufferedData.allocate(subject.getSerializedSize());
+        bin.writeByte((byte) someKey.getType().ordinal());
+        bin.writeInt(someKey.getEntityNumCode());
+        bin.reset();
 
-        assertTrue(subject.equals(bin, 1, someKey));
-        bin.rewind();
-        assertFalse(subject.equals(bin, 1, sameTypeDiffNum));
-        bin.rewind();
-        assertFalse(subject.equals(bin, 1, diffTypeSameNum));
+        assertTrue(subject.equals(bin, someKey));
+        bin.reset();
+        assertFalse(subject.equals(bin, sameTypeDiffNum));
+        bin.reset();
+        assertFalse(subject.equals(bin, diffTypeSameNum));
     }
 
     @Test

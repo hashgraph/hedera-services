@@ -19,19 +19,19 @@ package com.swirlds.platform.eventhandling;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Duration;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,9 +43,10 @@ class TransactionPrehandlerTests {
     @Test
     @DisplayName("Normal operation")
     void normalOperation() {
+        final Random random = RandomUtils.getRandomPrintSeed();
+
         final AtomicBoolean returnValidState = new AtomicBoolean(false);
         final AtomicBoolean stateRetrievalAttempted = new AtomicBoolean(false);
-        final AtomicBoolean prehandleCompleted = new AtomicBoolean(false);
 
         final ReservedSignedState state = mock(ReservedSignedState.class);
         final SignedStateNexus latestImmutableStateNexus = mock(SignedStateNexus.class);
@@ -61,17 +62,14 @@ class TransactionPrehandlerTests {
         final TransactionPrehandler transactionPrehandler =
                 new DefaultTransactionPrehandler(platformContext, latestImmutableStateNexus);
 
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
-        final GossipEvent gossipEvent = mock(GossipEvent.class);
-        when(gossipEvent.getHashedData()).thenReturn(hashedData);
-        when(gossipEvent.getUnhashedData()).thenReturn(unhashedData);
-        doAnswer(invocation -> {
+        final GossipEvent gossipEvent = new TestingEventBuilder(random).build();
+
+        final AtomicBoolean prehandleCompleted = new AtomicBoolean(false);
+        new Thread(() -> {
+                    gossipEvent.awaitPrehandleCompletion();
                     prehandleCompleted.set(true);
-                    return null;
                 })
-                .when(gossipEvent)
-                .signalPrehandleCompletion();
+                .start();
 
         new Thread(() -> transactionPrehandler.prehandleApplicationTransactions(gossipEvent)).start();
 

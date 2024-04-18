@@ -67,6 +67,7 @@ import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
@@ -81,6 +82,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
@@ -105,6 +107,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -844,5 +847,14 @@ public class TestHelpers {
         given(frame.getMessageFrameStack()).willReturn(stack);
         doReturn(config).when(frame).getContextVariable(CONFIG_CONTEXT_VARIABLE);
         given(frame.getMessageFrameStack()).willReturn(stack);
+    }
+
+    /** Returns the test (mock) processor for all current EVM modules.
+     *
+     * Needs to be updated when a new EVM module is created.
+     */
+    public static Map<HederaEvmVersion, TransactionProcessor> processorsForAllCurrentEvmVersions(
+            @NonNull final TransactionProcessor processor) {
+        return Map.of(HederaEvmVersion.VERSION_046, processor, HederaEvmVersion.VERSION_050, processor);
     }
 }
