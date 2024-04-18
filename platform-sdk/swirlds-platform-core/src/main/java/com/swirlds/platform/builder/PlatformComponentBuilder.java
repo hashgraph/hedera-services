@@ -619,12 +619,11 @@ public class PlatformComponentBuilder {
                     blocks.selfId(),
                     blocks.appVersion(),
                     () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong(),
-                    null /* TODO swirldStateManager */,
-                    null /* TODO latestCompleteStateNexus */,
-                    new SyncMetrics(blocks.platformContext().getMetrics()),
-                    null /* TODO platformStatusManager */,
-                    null /* TODO this::loadReconnectState */,
-                    null /* TODO this::clearAllPipelines */,
+                    null,
+                    null,
+                    blocks.currentPlatformStatus(),
+                    null,
+                    null,
                     blocks.intakeEventCounter()) {};
 
             throw new IllegalStateException("Gossip has not been set");

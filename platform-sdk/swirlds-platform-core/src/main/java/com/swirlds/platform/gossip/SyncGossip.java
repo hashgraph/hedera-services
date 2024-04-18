@@ -80,7 +80,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -90,6 +90,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
@@ -128,7 +129,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private final SyncManagerImpl syncManager;
     private final ReconnectThrottle reconnectThrottle;
     private final ReconnectMetrics reconnectMetrics;
-    private final PlatformStatusManager platformStatusManager;
+    private final AtomicReference<PlatformStatus> currentPlatformStatus;
 
     private final List<Startable> thingsToStart = new ArrayList<>();
 
@@ -147,8 +148,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
-     * @param syncMetrics                   metrics for sync
-     * @param platformStatusManager         the platform status manager
+     * @param currentPlatformStatus         holds the current platform status
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
@@ -164,8 +164,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestCompleteState,
-            @NonNull final SyncMetrics syncMetrics,
-            @NonNull final PlatformStatusManager platformStatusManager,
+            @NonNull final AtomicReference<PlatformStatus> currentPlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
             @NonNull final IntakeEventCounter intakeEventCounter) {
@@ -173,7 +172,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
-        this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
+        this.currentPlatformStatus = Objects.requireNonNull(currentPlatformStatus);
 
         inOrderLinker = new GossipLinker(platformContext, intakeEventCounter);
         shadowGraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
@@ -251,6 +250,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
         final ParallelExecutor shadowgraphExecutor = new CachedPoolParallelExecutor(threadManager, "node-sync");
         thingsToStart.add(shadowgraphExecutor);
+        final SyncMetrics syncMetrics = new SyncMetrics(platformContext.getMetrics());
         syncShadowgraphSynchronizer = new ShadowgraphSynchronizer(
                 platformContext,
                 shadowGraph,
@@ -284,7 +284,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 intakeQueueSizeSupplier,
                 latestCompleteState,
                 syncMetrics,
-                platformStatusManager,
                 hangingThreadDuration,
                 protocolConfig,
                 reconnectConfig,
@@ -301,7 +300,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             final LongSupplier intakeQueueSizeSupplier,
             final SignedStateNexus latestCompleteState,
             final SyncMetrics syncMetrics,
-            final PlatformStatusManager platformStatusManager,
             final Duration hangingThreadDuration,
             final ProtocolConfig protocolConfig,
             final ReconnectConfig reconnectConfig,
@@ -315,7 +313,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 () -> intakeQueueSizeSupplier.getAsLong() >= eventConfig.eventIntakeQueueThrottleSize(),
                 Duration.ZERO,
                 syncMetrics,
-                platformStatusManager);
+                currentPlatformStatus::get);
         final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
                 platformContext,
                 threadManager,
@@ -326,7 +324,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 reconnectController,
                 new DefaultSignedStateValidator(platformContext),
                 fallenBehindManager,
-                platformStatusManager,
+                currentPlatformStatus::get,
                 platformContext.getConfiguration());
         final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(
                 Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()), networkMetrics, platformContext.getTime());
@@ -362,7 +360,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 addressBook,
                 selfId,
                 topology.getConnectionGraph(),
-                platformStatusManager,
+                platformStatusAction -> {} /* TODO this needs to be wired into the platform status manager */,
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
