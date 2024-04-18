@@ -118,7 +118,7 @@ public class TxnUtils {
     public static Key EMPTY_KEY_LIST =
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
     public static Key ALL_ZEROS_INVALID_KEY = Key.newBuilder()
-            .setECDSASecp256K1(ByteString.fromHex("0000000000000000000000000000000000000000"))
+            .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000"))
             .build();
 
     public static Key netOf(

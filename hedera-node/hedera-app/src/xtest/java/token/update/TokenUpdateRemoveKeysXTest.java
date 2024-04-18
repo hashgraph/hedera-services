@@ -21,16 +21,10 @@ import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
 import token.AbstractTokenXTest;
@@ -93,17 +87,6 @@ public class TokenUpdateRemoveKeysXTest extends AbstractTokenXTest {
                 component.tokenUpdateHandler(),
                 tokenUpdate(idOfNamedToken(TOKEN_REMOVE_KEYS_ID), List.of(b -> b.adminKey(IMMUTABILITY_SENTINEL_KEY))),
                 OK);
-    }
-
-    @Override
-    protected void assertExpectedNfts(@NonNull ReadableKVState<NftID, Nft> nfts) {
-        // Here is where we can e.g. assert the NFT has been transferred to the counterparty
-    }
-
-    @Override
-    protected void assertExpectedTokenRelations(@NonNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {
-        // Here is where we can e.g. assert the expected royalties have been collected from the
-        // fungible value exchanged for the NFT
     }
 
     @Override

@@ -428,14 +428,14 @@ public class BaseTokenHandler {
      * low priority keys are -> wipeKey, kycKey, supplyKey, freezeKey, feeScheduleKey, pauseKey, metadataKey
      */
     public static boolean containsKeyRemoval(@NonNull final TokenUpdateTransactionBody op) {
-        return op.hasAdminKey() && isKeyRemoval(op.adminKey())
-                || op.hasWipeKey() && isKeyRemoval(op.wipeKey())
-                || op.hasKycKey() && isKeyRemoval(op.kycKey())
-                || op.hasSupplyKey() && isKeyRemoval(op.supplyKey())
-                || op.hasFreezeKey() && isKeyRemoval(op.freezeKey())
-                || op.hasFeeScheduleKey() && isKeyRemoval(op.feeScheduleKey())
-                || op.hasPauseKey() && isKeyRemoval(op.pauseKey())
-                || op.hasMetadataKey() && isKeyRemoval(op.metadataKey());
+        return isKeyRemoval(op.adminKey())
+                || isKeyRemoval(op.wipeKey())
+                || isKeyRemoval(op.kycKey())
+                || isKeyRemoval(op.supplyKey())
+                || isKeyRemoval(op.freezeKey())
+                || isKeyRemoval(op.feeScheduleKey())
+                || isKeyRemoval(op.pauseKey())
+                || isKeyRemoval(op.metadataKey());
     }
 
     /**

@@ -82,8 +82,10 @@ public interface AttributeValidator {
      * @param source the key to check
      * @return true if the key is a key removal, false otherwise
      */
-    static boolean isKeyRemoval(@NonNull final Key source) {
-        requireNonNull(source);
+    static boolean isKeyRemoval(final Key source) {
+        if (source == null) {
+            return false;
+        }
         return isImmutableKey(source);
     }
 }
